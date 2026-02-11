@@ -1,0 +1,836 @@
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { View, ScrollView, TouchableOpacity, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '../../components/ui/Typography';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import {
+    ChevronLeft,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    CircleDollarSign,
+    Search,
+    ChevronRight,
+    CreditCard,
+    Plus,
+} from 'lucide-react-native';
+import { useRouter, router } from 'expo-router';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
+import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { usePiutangList, usePiutangSummary, useProcessPayment, useCreatePiutang } from '../../hooks/useKeuangan';
+import { AlertDialog } from '../../components/ui/AlertDialog';
+import { SkeletonCard } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+
+const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
+    { label: 'Semua', value: 'all' },
+    { label: 'Belum Lunas', value: 'belum_lunas' },
+    { label: 'Sebagian', value: 'sebagian' },
+    { label: 'Lunas', value: 'lunas' },
+    { label: 'Jatuh Tempo', value: 'overdue' },
+];
+
+const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = {
+    belum_lunas: 'warning',
+    sebagian: 'info',
+    lunas: 'success',
+};
+
+const SUMBER_LABEL: Record<string, string> = {
+    bengkel: 'Bengkel',
+    jual_beli_mobil: 'Jual Mobil',
+    jasa_angkut: 'Jasa Angkut',
+    kasbon_karyawan: 'Kasbon',
+    lainnya: 'Lainnya',
+};
+
+export default function PiutangUsahaScreen() {
+    const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('all');
+    const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
+    const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
+    const [refreshing, setRefreshing] = useState(false);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    // API Hooks
+    const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePiutangList({
+        limit: 50,
+        status: selectedFilter === 'all' || selectedFilter === 'overdue' ? undefined : selectedFilter,
+        overdue_only: selectedFilter === 'overdue',
+    });
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary();
+    const paymentMutation = useProcessPayment();
+    const createMutation = useCreatePiutang();
+
+    const createSheetRef = useRef<BottomSheet>(null);
+    const detailSheetRef = useRef<BottomSheet>(null);
+    const paymentSheetRef = useRef<BottomSheet>(null);
+
+    const createSnapPoints = useMemo(() => ['75%', '90%'], []);
+    const detailSnapPoints = useMemo(() => ['70%', '85%'], []);
+    const paymentSnapPoints = useMemo(() => ['65%', '85%'], []);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([refetchList(), refetchSummary()]);
+        setRefreshing(false);
+    }, [refetchList, refetchSummary]);
+
+    // Alert State
+    const [alertState, setAlertState] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        variant: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        variant: 'info',
+    });
+
+    const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+        setAlertState({
+            visible: true,
+            title,
+            message,
+            variant,
+        });
+    };
+
+    const hideAlert = () => {
+        setAlertState((prev) => ({ ...prev, visible: false }));
+    };
+
+    const piutangList = listData?.data || [];
+
+    const handleGoBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/finance');
+        }
+    };
+
+    // Payment form
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentNote, setPaymentNote] = useState('');
+    const [payMetode, setPayMetode] = useState('tunai');
+
+    // Create form state
+    const [createSource, setCreateSource] = useState('lainnya');
+    const [createName, setCreateName] = useState('');
+    const [createAmount, setCreateAmount] = useState('');
+    const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
+    const [createNote, setCreateNote] = useState('');
+    const [createMethod, setCreateMethod] = useState<'tunai' | 'transfer' | undefined>(undefined);
+
+    const [createVisible, setCreateVisible] = useState(false);
+    const [detailVisible, setDetailVisible] = useState(false);
+    const [paymentVisible, setPaymentVisible] = useState(false);
+
+    const handleOpenDetail = (piutang: Piutang) => {
+        setSelectedPiutang(piutang);
+        setViewMode('detail');
+        if (Platform.OS === 'web') {
+            setDetailVisible(true);
+            setIsSheetOpen(true);
+        } else {
+            detailSheetRef.current?.expand();
+            setIsSheetOpen(true);
+        }
+    };
+
+    const handleOpenPayment = () => {
+        if (!selectedPiutang) return;
+        setPaymentAmount(formatNumber(selectedPiutang.sisa_piutang.toString()));
+        setPaymentNote('');
+        setPayMetode('tunai');
+        if (Platform.OS === 'web') {
+            setDetailVisible(false);
+            setPaymentVisible(true);
+            setIsSheetOpen(true);
+        } else {
+            detailSheetRef.current?.close();
+            setTimeout(() => {
+                paymentSheetRef.current?.expand();
+                setIsSheetOpen(true);
+            }, 300);
+        }
+    };
+
+    const handleOpenCreate = () => {
+        console.log('Opening Create Sheet');
+        setCreateSource('lainnya');
+        setCreateName('');
+        setCreateAmount('');
+        setCreateNote('');
+        setCreateMethod(undefined);
+        setCreateDate(new Date().toISOString().split('T')[0]);
+
+        if (Platform.OS === 'web') {
+            setCreateVisible(true);
+            setIsSheetOpen(true);
+        } else {
+            createSheetRef.current?.snapToIndex(0);
+            setIsSheetOpen(true);
+        }
+    };
+
+    const handleSubmitPayment = async () => {
+        if (!selectedPiutang || !paymentAmount) return;
+
+        const amount = parseNumber(paymentAmount);
+        if (amount <= 0 || amount > selectedPiutang.sisa_piutang) {
+            showAlert('Error', 'Nominal pembayaran tidak valid', 'error');
+            return;
+        }
+
+        try {
+            await paymentMutation.mutateAsync({
+                piutang_id: selectedPiutang.id,
+                tanggal: new Date().toISOString().split('T')[0],
+                nominal: amount,
+                metode_bayar: payMetode,
+                catatan: paymentNote,
+            });
+            showAlert('Sukses', 'Pembayaran berhasil dicatat', 'success');
+            if (Platform.OS === 'web') {
+                setPaymentVisible(false);
+                setIsSheetOpen(false);
+            }
+            else {
+                paymentSheetRef.current?.close();
+                setIsSheetOpen(false);
+            }
+            setSelectedPiutang(null);
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat memproses pembayaran';
+            showAlert('Gagal', errorMessage, 'error');
+            console.error(error);
+        }
+    };
+
+    const handleSubmitCreate = async () => {
+        if (!createName || !createAmount) {
+            showAlert('Error', 'Nama Debitur dan Nominal wajib diisi', 'error');
+            return;
+        }
+
+        try {
+            await createMutation.mutateAsync({
+                tanggal: createDate,
+                sumber: createSource as any,
+                nama_debitur: createName,
+                nominal_piutang: parseNumber(createAmount),
+                metode_pembayaran: createMethod,
+                catatan: createNote,
+            });
+            showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
+            if (Platform.OS === 'web') {
+                setCreateVisible(false);
+                setIsSheetOpen(false);
+            }
+            else {
+                createSheetRef.current?.close();
+                setIsSheetOpen(false);
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat membuat piutang';
+            showAlert('Gagal', errorMessage, 'error');
+            console.error(error);
+        }
+    };
+
+    const renderCreateContent = () => (
+        <>
+            <Typography variant="h2" weight="bold" className="mb-4">Buat Piutang Baru</Typography>
+
+            <Input
+                label="Nama Debitur"
+                placeholder="Nama orang/perusahaan"
+                value={createName}
+                onChangeText={setCreateName}
+            />
+
+            <Input
+                label="Nominal (Rp)"
+                keyboardType="numeric"
+                placeholder="0"
+                value={createAmount}
+                onChangeText={(t) => setCreateAmount(formatNumber(t))}
+            />
+
+            <View className="mb-4">
+                <Typography className="mb-2 text-gray-600 font-medium">Sumber Piutang</Typography>
+                <View className="flex-row flex-wrap">
+                    {Object.entries(SUMBER_LABEL).map(([key, label]) => (
+                        <TouchableOpacity
+                            key={key}
+                            onPress={() => setCreateSource(key)}
+                            className={`mr-2 mb-2 px-3 py-2 rounded-lg border ${createSource === key ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                        >
+                            <Typography
+                                className={createSource === key ? 'text-primary' : 'text-gray-500'}
+                                weight={createSource === key ? 'semibold' : 'normal'}
+                                variant="caption"
+                            >
+                                {label}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View className="mb-4">
+                <Typography className="mb-2 text-gray-600 font-medium">Metode Pencairan (Opsional)</Typography>
+                <View className="flex-row space-x-2">
+                    <TouchableOpacity
+                        onPress={() => setCreateMethod(undefined)}
+                        className={`flex-1 py-3 items-center rounded-xl border ${!createMethod ? 'border-gray-400 bg-gray-100/50' : 'border-gray-200'}`}
+                    >
+                        <Typography className={!createMethod ? 'text-gray-800' : 'text-gray-500'}>Tidak Ada</Typography>
+                    </TouchableOpacity>
+                    {['tunai', 'transfer'].map((m) => (
+                        <TouchableOpacity
+                            key={m}
+                            onPress={() => setCreateMethod(m as 'tunai' | 'transfer')}
+                            className={`flex-1 py-3 items-center rounded-xl border ${createMethod === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                        >
+                            <Typography
+                                className={createMethod === m ? 'text-primary' : 'text-gray-500'}
+                                weight={createMethod === m ? 'semibold' : 'normal'}
+                            >
+                                {m.charAt(0).toUpperCase() + m.slice(1)}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <Typography variant="caption" className="text-gray-400 mt-1">
+                    Pilih jika piutang ini melibatkan pengeluaran uang.
+                </Typography>
+            </View>
+
+            <Input
+                label="Tanggal (YYYY-MM-DD)"
+                placeholder="2024-01-01"
+                value={createDate}
+                onChangeText={setCreateDate}
+            />
+
+            <Input
+                label="Catatan (Opsional)"
+                placeholder="Keterangan tambahan"
+                value={createNote}
+                onChangeText={setCreateNote}
+                multiline
+                numberOfLines={3}
+                style={{ height: 80, textAlignVertical: 'top' }}
+            />
+
+            <Button
+                title={createMutation.isPending ? 'Menyimpan...' : 'Simpan Piutang'}
+                onPress={handleSubmitCreate}
+                disabled={createMutation.isPending || !createName || !createAmount}
+                loading={createMutation.isPending}
+                className="mt-6"
+            />
+        </>
+    );
+
+    const renderDetailContent = () => (
+        selectedPiutang && (
+            <View className="p-6">
+                <View className="flex-row justify-between items-start mb-4">
+                    <View>
+                        <Typography variant="h2" weight="bold">{selectedPiutang.nama_debitur}</Typography>
+                        <Typography variant="caption" className="text-gray-400">{selectedPiutang.nomor_piutang}</Typography>
+                    </View>
+                    <Badge
+                        label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : selectedPiutang.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                        variant={selectedPiutang.is_overdue ? 'error' : STATUS_BADGE_MAP[selectedPiutang.status]}
+                    />
+                </View>
+
+                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
+                    <View className="flex-row justify-between mb-2">
+                        <Typography variant="caption" className="text-gray-500">Total Piutang</Typography>
+                        <Typography variant="body2" weight="bold">{formatCurrency(selectedPiutang.nominal_piutang)}</Typography>
+                    </View>
+                    <View className="flex-row justify-between mb-2">
+                        <Typography variant="caption" className="text-gray-500">Sudah Dibayar</Typography>
+                        <Typography variant="body2" weight="medium" className="text-green-600">{formatCurrency(selectedPiutang.total_dibayar)}</Typography>
+                    </View>
+                    <View className="h-[1px] bg-gray-100 my-2" />
+                    <View className="flex-row justify-between">
+                        <Typography variant="caption" weight="bold" className="text-gray-600">Sisa Piutang</Typography>
+                        <Typography variant="body1" weight="bold" className="text-red-600">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
+                    </View>
+                </Card>
+
+                {/* Payment History */}
+                {selectedPiutang.pembayaran && selectedPiutang.pembayaran.length > 0 && (
+                    <View className="mb-4">
+                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2">RIWAYAT PEMBAYARAN</Typography>
+                        {selectedPiutang.pembayaran.map((p: PembayaranPiutang) => (
+                            <View key={p.id} className="flex-row justify-between py-2 border-b border-gray-50">
+                                <Typography variant="caption">{formatDate(p.tanggal)}</Typography>
+                                <Typography variant="caption" weight="medium" className="text-green-600">+{formatCurrency(p.nominal)}</Typography>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Footer Buttons */}
+                <View className="flex-row justify-end mt-4 gap-2">
+                    <Button
+                        title="Tutup"
+                        variant="outline"
+                        onPress={() => {
+                            if (Platform.OS === 'web') {
+                                setDetailVisible(false);
+                                setIsSheetOpen(false);
+                            } else {
+                                detailSheetRef.current?.close();
+                            }
+                        }}
+                    />
+                    {selectedPiutang.status !== 'lunas' && (
+                        <Button
+                            title="Catat Pembayaran"
+                            onPress={handleOpenPayment}
+                            className="flex-1"
+                        />
+                    )}
+                </View>
+            </View>
+        )
+    );
+
+    const renderPaymentContent = () => (
+        <View className="p-6">
+            <Typography variant="h2" weight="bold" className="mb-4">Catat Pembayaran</Typography>
+
+            {selectedPiutang && (
+                <Card variant="outlined" className="p-3 mb-4 border-gray-100 flex-row justify-between">
+                    <Typography variant="caption" className="text-gray-500">Sisa Piutang</Typography>
+                    <Typography variant="body2" weight="bold" className="text-red-600">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
+                </Card>
+            )}
+
+            <Input
+                label="Nominal Bayar (Rp)"
+                keyboardType="numeric"
+                placeholder="0"
+                value={paymentAmount}
+                onChangeText={(t) => setPaymentAmount(formatNumber(t))}
+            />
+
+            <View className="mb-4">
+                <Typography className="mb-2 text-gray-600 font-medium">Metode Pembayaran</Typography>
+                <View className="flex-row space-x-2">
+                    {['tunai', 'transfer'].map((m) => (
+                        <TouchableOpacity
+                            key={m}
+                            onPress={() => setPayMetode(m)}
+                            className={`flex-1 py-3 items-center rounded-xl border ${payMetode === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                        >
+                            <Typography
+                                className={payMetode === m ? 'text-primary' : 'text-gray-500'}
+                                weight={payMetode === m ? 'semibold' : 'normal'}
+                            >
+                                {m.charAt(0).toUpperCase() + m.slice(1)}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <Input
+                label="Catatan (Opsional)"
+                placeholder="Contoh: Pembayaran via transfer"
+                value={paymentNote}
+                onChangeText={setPaymentNote}
+            />
+
+            <View className="flex-row justify-end mt-4 gap-2">
+                <Button
+                    title="Batal"
+                    variant="outline"
+                    onPress={() => {
+                        if (Platform.OS === 'web') {
+                            setPaymentVisible(false);
+                            setIsSheetOpen(false);
+                        } else {
+                            paymentSheetRef.current?.close();
+                        }
+                    }}
+                />
+                <Button
+                    title={paymentMutation.isPending ? 'Memproses...' : 'Simpan Pembayaran'}
+                    onPress={handleSubmitPayment}
+                    disabled={paymentMutation.isPending || !paymentAmount}
+                    loading={paymentMutation.isPending}
+                    className="flex-1"
+                />
+            </View>
+        </View>
+    );
+
+    const renderPiutangItem = ({ item }: { item: Piutang }) => {
+        const progressPercent = item.persentase_terbayar;
+        return (
+            <TouchableOpacity onPress={() => handleOpenDetail(item)} activeOpacity={0.7}>
+                <Card className="mb-3 p-4">
+                    <View className="flex-row justify-between items-start mb-2">
+                        <View className="flex-1 mr-3">
+                            <Typography variant="body2" weight="bold" numberOfLines={1}>
+                                {item.nama_debitur}
+                            </Typography>
+                            <Typography variant="caption" className="text-gray-400 mt-0.5">
+                                {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
+                            </Typography>
+                        </View>
+                        <View className="items-end">
+                            <Badge
+                                label={item.is_overdue ? 'Jatuh Tempo' : item.status === 'lunas' ? 'Lunas' : item.status === 'sebagian' ? 'Sebagian' : 'Belum Lunas'}
+                                variant={item.is_overdue ? 'error' : STATUS_BADGE_MAP[item.status]}
+                            />
+                        </View>
+                    </View>
+
+                    <View className="flex-row justify-between items-center mb-2">
+                        <Typography variant="caption" className="text-gray-500">
+                            Sisa: <Typography variant="caption" weight="bold" className="text-red-600">{formatCurrency(item.sisa_piutang)}</Typography>
+                        </Typography>
+                        <Typography variant="caption" className="text-gray-400">
+                            dari {formatCurrency(item.nominal_piutang)}
+                        </Typography>
+                    </View>
+
+                    {/* Progress Bar */}
+                    <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <View
+                            className="h-full bg-primary rounded-full"
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </View>
+
+                    {item.tanggal_jatuh_tempo && (
+                        <Typography variant="caption" className={`mt-2 ${item.is_overdue ? 'text-red-500' : 'text-gray-400'}`}>
+                            {item.is_overdue ? '⚠️ ' : ''}Jatuh tempo: {formatDate(item.tanggal_jatuh_tempo)}
+                        </Typography>
+                    )}
+                </Card>
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <View className="flex-1 bg-surface">
+            <StatusBar barStyle="light-content" />
+
+            {/* Premium Header (Design System) */}
+            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+                <View className="flex-row items-center justify-between mb-8">
+                    <View className="flex-row items-center">
+                        <TouchableOpacity
+                            onPress={handleGoBack}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                        >
+                            <ChevronLeft size={24} color="white" />
+                        </TouchableOpacity>
+                        <View>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Piutang Usaha</Typography>
+                            <Typography className="text-white/50 text-xs mt-0.5">Pantau Penagihan & Jatuh Tempo</Typography>
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        onPress={handleOpenCreate}
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                    >
+                        <Plus size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Receivables Insight Card (Glassmorphism) */}
+                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
+                    <View className="flex-row justify-between items-center mb-6">
+                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
+                        </View>
+                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Saldo Piutang</Typography>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                        <View>
+                            <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
+                                {formatCurrency(summary?.total_sisa || 0)}
+                            </Typography>
+                            <Typography className="text-white/40 text-xs mt-1">Total Dari {summary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                        </View>
+                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                            <CircleDollarSign size={24} color="white" />
+                        </View>
+                    </View>
+
+                    {/* Bento Stats Row Inside Header */}
+                    <View className="h-[1px] bg-white/10 my-6" />
+                    <View className="flex-row justify-between">
+                        <View className="flex-1">
+                            <View className="flex-row items-center mb-1">
+                                <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
+                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Belum Lunas</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-white text-sm">{summary?.jumlah_belum_lunas || 0} Akun</Typography>
+                        </View>
+                        <View className="flex-1 items-end pl-4 border-l border-white/5">
+                            <View className="flex-row items-center mb-1">
+                                <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
+                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-rose-300 text-sm">{summary?.jumlah_overdue || 0} Akun</Typography>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            {/* Filter & Search Navigator Overlay */}
+            {!isSheetOpen && (
+                <View className="px-6 -mt-8 z-10">
+                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
+                            {STATUS_FILTERS.map((filter) => (
+                                <TouchableOpacity
+                                    key={filter.value}
+                                    onPress={() => setSelectedFilter(filter.value)}
+                                    className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
+                                >
+                                    <Typography
+                                        variant="caption"
+                                        weight="bold"
+                                        className={selectedFilter === filter.value ? 'text-white' : 'text-textGray/60'}
+                                    >
+                                        {filter.label}
+                                    </Typography>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
+                            <Search size={18} color="#9CA3AF" />
+                            <Typography className="ml-3 text-sm text-gray-400 font-medium">Cari nama debitur atau invoice...</Typography>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {/* Receivables List */}
+            <FlatList
+                data={piutangList}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => {
+                    const progressPercent = item.persentase_terbayar;
+                    const isOverdue = item.is_overdue;
+                    return (
+                        <TouchableOpacity
+                            onPress={() => handleOpenDetail(item)}
+                            activeOpacity={0.9}
+                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
+                        >
+                            <View className="flex-row justify-between items-start mb-4">
+                                <View className="flex-1 mr-3">
+                                    <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
+                                        {item.nama_debitur}
+                                    </Typography>
+                                    <Typography variant="caption" className="text-textGray mt-0.5">
+                                        {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
+                                    </Typography>
+                                </View>
+                                <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'lunas' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>
+                                    <Typography weight="bold" className={isOverdue ? "text-rose-600 text-[10px]" : item.status === 'lunas' ? "text-emerald-600 text-[10px]" : "text-blue-600 text-[10px]"}>
+                                        {isOverdue ? 'JATUH TEMPO' : item.status.toUpperCase()}
+                                    </Typography>
+                                </View>
+                            </View>
+
+                            {/* Financial Bento Inner Grid */}
+                            <View className="bg-gray-50 p-4 rounded-2xl flex-row justify-between mb-4 border border-gray-100/50">
+                                <View>
+                                    <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Total</Typography>
+                                    <Typography weight="semibold" className="text-textMain text-sm">{formatCurrency(item.nominal_piutang)}</Typography>
+                                </View>
+                                <View className="items-end">
+                                    <Typography className="text-rose-600/60 text-[9px] font-bold uppercase tracking-widest mb-1">Sisa Tagihan</Typography>
+                                    <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(item.sisa_piutang)}</Typography>
+                                </View>
+                            </View>
+
+                            {/* Enhanced Progress Bar */}
+                            <View className="mb-4">
+                                <View className="flex-row justify-between items-center mb-1.5">
+                                    <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
+                                    <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent)}%</Typography>
+                                </View>
+                                <View className="h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/20">
+                                    <View
+                                        className="h-full bg-primary rounded-full"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Footer Utility Row */}
+                            <View className="flex-row items-center justify-between pt-4 border-t border-gray-50">
+                                <View className="flex-row items-center">
+                                    <Clock size={12} color={isOverdue ? "#EF4444" : "#9CA3AF"} />
+                                    <Typography className={`${isOverdue ? 'text-rose-600' : 'text-textGray/60'} text-[10px] ml-1.5 font-bold uppercase tracking-widest`}>
+                                        {isOverdue ? 'MELEWATI BATAS' : 'TEMPO'}: {formatDate(item.tanggal_jatuh_tempo || item.tanggal)}
+                                    </Typography>
+                                </View>
+                                <ChevronRight size={16} color="#D1D5DB" />
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                ListHeaderComponent={
+                    isLoadingList ? (
+                        <View className="space-y-6">
+                            <SkeletonCard className="rounded-[32px] h-40" />
+                            <SkeletonCard className="rounded-[32px] h-40" />
+                            <SkeletonCard className="rounded-[32px] h-40" />
+                        </View>
+                    ) : null
+                }
+                ListEmptyComponent={
+                    isLoadingList ? null : (
+                        <View className="mt-10">
+                            <EmptyState
+                                title={selectedFilter === 'lunas' ? 'Semua Piutang Lunas' : 'Tidak Ada Piutang'}
+                                description={selectedFilter === 'lunas' ? 'Belum ada riwayat piutang yang sudah lunas.' : 'Belum ada data piutang untuk filter ini.'}
+                                icon={CheckCircle2}
+                            />
+                        </View>
+                    )
+                }
+            />
+
+            {/* Modals & Bottom Sheets Upgraded to Premium Style */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={createVisible} transparent animationType="slide" onRequestClose={() => {
+                    setCreateVisible(false);
+                    setIsSheetOpen(false);
+                }}>
+                    <View className="flex-1 justify-end bg-black/40">
+                        <TouchableOpacity className="absolute inset-0" onPress={() => {
+                            setCreateVisible(false);
+                            setIsSheetOpen(false);
+                        }} />
+                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView className="px-8 flex-1">
+                                {renderCreateContent()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={createSheetRef}
+                    index={-1}
+                    snapPoints={createSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    onChange={(index) => setIsSheetOpen(index !== -1)}
+                >
+                    <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
+                        {renderCreateContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
+
+            {/* Detail UI - Platform Specific */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={detailVisible} transparent animationType="slide" onRequestClose={() => {
+                    setDetailVisible(false);
+                    setIsSheetOpen(false);
+                }}>
+                    <View className="flex-1 justify-end bg-black/40">
+                        <TouchableOpacity className="absolute inset-0" onPress={() => {
+                            setDetailVisible(false);
+                            setIsSheetOpen(false);
+                        }} />
+                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView className="flex-1">
+                                {renderDetailContent()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={detailSheetRef}
+                    index={-1}
+                    snapPoints={detailSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    onChange={(index) => setIsSheetOpen(index !== -1)}
+                >
+                    <BottomSheetScrollView>
+                        {renderDetailContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
+
+            {/* Payment UI - Platform Specific */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={paymentVisible} transparent animationType="slide" onRequestClose={() => {
+                    setPaymentVisible(false);
+                    setIsSheetOpen(false);
+                }}>
+                    <View className="flex-1 justify-end bg-black/40">
+                        <TouchableOpacity className="absolute inset-0" onPress={() => {
+                            setPaymentVisible(false);
+                            setIsSheetOpen(false);
+                        }} />
+                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[75%] self-center p-0 overflow-hidden shadow-2xl relative">
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView className="flex-1">
+                                {renderPaymentContent()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={paymentSheetRef}
+                    index={-1}
+                    snapPoints={paymentSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    onChange={(index) => setIsSheetOpen(index !== -1)}
+                >
+                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                        {renderPaymentContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
+
+            {/* Global Alert */}
+            <AlertDialog
+                visible={alertState.visible}
+                title={alertState.title}
+                message={alertState.message}
+                variant={alertState.variant}
+                onClose={hideAlert}
+                onConfirm={hideAlert}
+            />
+        </View>
+    );
+}

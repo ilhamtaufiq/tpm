@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "TPM Super App",
+    "slug": "tpm-super-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon2.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "package": "com.olobor.tpmsuperapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon2.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-image-picker",
+      "expo-av"
+    ],
+    "scheme": "tpm",
+    "extra": {
+      "eas": {
+        "projectId": "e9ea627b-eee0-4cc1-9d9e-14268a911a7d"
+      }
+    }
+  }
+}

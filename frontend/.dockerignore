@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+dist/
+build/
+.git/
+.vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.agent/
+.docs/
+.scripts/
+android/
+ios/
+web-build/

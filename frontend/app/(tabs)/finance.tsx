@@ -1,0 +1,268 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Typography } from '../../components/ui/Typography';
+import { Card } from '../../components/ui/Card';
+import {
+    ChevronLeft,
+    TrendingUp,
+    TrendingDown,
+    Wallet,
+    ArrowRightLeft,
+    CircleDollarSign,
+    BarChart3,
+    RefreshCw,
+    ChevronRight,
+    AlertTriangle,
+    PlusCircle
+} from 'lucide-react-native';
+import { useRouter, router } from 'expo-router';
+import { formatCurrency } from '../../utils/format';
+import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
+import { useDashboardSummary, usePiutangSummary } from '../../hooks/useKeuangan';
+import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
+
+export default function FinanceTab() {
+    const [refreshing, setRefreshing] = useState(false);
+
+    // API Hooks
+    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary();
+    const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary();
+
+    const handleGoBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/(tabs)/home');
+        }
+    };
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await Promise.all([refetchDashboard(), refetchPiutang()]);
+        setRefreshing(false);
+    }, [refetchDashboard, refetchPiutang]);
+
+    // Calculate totals
+    const totalPendapatan = dashboard ? (
+        dashboard.bengkel.total_penjualan +
+        dashboard.mobil.total_penjualan +
+        dashboard.jasa_angkut.total_pendapatan
+    ) : 0;
+
+    const totalPengeluaran = dashboard?.pengeluaran.total || 0;
+
+    const totalLabaBersih = dashboard ? (
+        (dashboard.bengkel?.laba_kotor || 0) +
+        (dashboard.mobil?.laba_tpm || 0) +
+        (dashboard.jasa_angkut?.laba_tpm || 0) -
+        totalPengeluaran
+    ) : 0;
+
+    return (
+        <View className="flex-1 bg-surface">
+            <StatusBar barStyle="light-content" />
+
+            {/* Premium Header (Design System) */}
+            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+                <View className="flex-row items-center justify-between mb-8">
+                    <View className="flex-row items-center">
+                        <TouchableOpacity
+                            onPress={handleGoBack}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                        >
+                            <ChevronLeft size={24} color="white" />
+                        </TouchableOpacity>
+                        <View>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Finance Hub</Typography>
+                            <Typography className="text-white/50 text-xs mt-0.5">Ringkasan Keuangan Seluruh Unit</Typography>
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                    >
+                        <RefreshCw size={20} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Main Profit Card (Bento Style) */}
+                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
+                    <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
+                    <Typography variant="h1" weight="bold" className="text-white text-3xl mb-6 tracking-tighter">
+                        {formatCurrency(totalLabaBersih)}
+                    </Typography>
+
+                    <View className="flex-row justify-between pt-5 border-t border-white/10">
+                        <View className="flex-1">
+                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1">Pemasukan</Typography>
+                            <View className="flex-row items-center">
+                                <View className="w-6 h-6 bg-emerald-500/20 rounded-lg items-center justify-center mr-2">
+                                    <TrendingUp size={12} color="#10B981" />
+                                </View>
+                                <Typography className="text-white text-xs font-bold">{formatCurrency(totalPendapatan)}</Typography>
+                            </View>
+                        </View>
+                        <View className="flex-1 ml-4">
+                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1">Pengeluaran</Typography>
+                            <View className="flex-row items-center">
+                                <View className="w-6 h-6 bg-rose-500/20 rounded-lg items-center justify-center mr-2">
+                                    <TrendingDown size={12} color="#EF4444" />
+                                </View>
+                                <Typography className="text-white text-xs font-bold">{formatCurrency(totalPengeluaran)}</Typography>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            <ScrollView
+                className="flex-1 px-6 pt-10"
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+            >
+                {/* Saldo Grid (Adaptive) */}
+                <View className="flex-row justify-between mb-8">
+                    <View className="w-[48%] bg-white p-5 rounded-[28px] border border-gray-50 shadow-sm">
+                        <View className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center mb-3">
+                            <Wallet size={20} color="#10B981" />
+                        </View>
+                        <Typography className="text-textGray text-[10px] uppercase font-bold mb-1">Total Saldo</Typography>
+                        <Typography weight="bold" className="text-emerald-600 text-sm">
+                            {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
+                        </Typography>
+                    </View>
+
+                    <View className="w-[48%] bg-white p-5 rounded-[28px] border border-gray-50 shadow-sm">
+                        <View className="w-10 h-10 bg-blue-50 rounded-2xl items-center justify-center mb-3">
+                            <CircleDollarSign size={20} color="#3B82F6" />
+                        </View>
+                        <Typography className="text-textGray text-[10px] uppercase font-bold mb-1">Piutang Aktif</Typography>
+                        <Typography weight="bold" className="text-blue-600 text-sm">
+                            {formatCurrency(piutangSummary?.total_sisa || 0)}
+                        </Typography>
+                    </View>
+                </View>
+
+                {/* Piutang Alert Overlay */}
+                {piutangSummary && piutangSummary.jumlah_overdue > 0 && (
+                    <TouchableOpacity
+                        onPress={() => router.push('/finance/piutang')}
+                        className="bg-rose-50 p-5 rounded-[32px] mb-8 border border-rose-100/50 flex-row items-center"
+                    >
+                        <View className="w-12 h-12 bg-rose-500 rounded-2xl items-center justify-center mr-4 shadow-lg shadow-rose-500/20">
+                            <AlertTriangle size={24} color="white" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography variant="body1" weight="bold" className="text-rose-900 tracking-tight">
+                                {piutangSummary.jumlah_overdue} Jatuh Tempo!
+                            </Typography>
+                            <Typography className="text-rose-600/70 text-xs">Ketuk untuk tindak lanjuti segera</Typography>
+                        </View>
+                        <View className="w-10 h-10 bg-rose-100 rounded-xl items-center justify-center">
+                            <ChevronRight size={20} color="#EF4444" />
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {/* Circular Glass Quick Actions */}
+                <View className="mb-10">
+                    <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Aksi Cepat</Typography>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
+                        {[
+                            { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
+                            { label: 'Piutang', icon: CircleDollarSign, color: '#EF4444', path: '/finance/piutang' },
+                            { label: 'Setoran', icon: PlusCircle, color: '#10B981', path: '/finance/mutasi' },
+                            { label: 'Transfer', icon: ArrowRightLeft, color: '#8B5CF6', path: '/finance/mutasi' },
+                            { label: 'Laporan', icon: BarChart3, color: '#F59E0B', path: '/laporan' },
+                        ].map((action, idx) => (
+                            <TouchableOpacity
+                                key={idx}
+                                className="mr-6 items-center"
+                                onPress={() => router.push(action.path as any)}
+                            >
+                                <View style={{ backgroundColor: `${action.color}10` }} className="w-16 h-16 rounded-[24px] items-center justify-center mb-3 border border-white shadow-sm">
+                                    <action.icon size={26} color={action.color} />
+                                </View>
+                                <Typography className="text-textMain text-[10px] font-bold uppercase tracking-wider">{action.label}</Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+
+                {/* Unit Business Breakdown (Card Pattern 3) */}
+                <View className="mb-10">
+                    <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Ringkasan Unit Bisnis</Typography>
+
+                    {/* Bengkel */}
+                    <TouchableOpacity
+                        onPress={() => router.push('/bengkel')}
+                        activeOpacity={0.9}
+                        className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                    >
+                        <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
+                            <Typography weight="bold" className="text-amber-600 text-lg">B</Typography>
+                        </View>
+                        <View className="flex-1">
+                            <View className="flex-row items-center justify-between mb-1">
+                                <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Bengkel & POS</Typography>
+                                <Typography weight="bold" className="text-primary text-sm">
+                                    {formatCurrency(dashboard?.bengkel?.laba_kotor || 0)}
+                                </Typography>
+                            </View>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                {dashboard?.bengkel?.total_transaksi || 0} Transaksi • Laba Kotor
+                            </Typography>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Jual Beli Mobil */}
+                    <TouchableOpacity
+                        onPress={() => router.push('/mobil')}
+                        activeOpacity={0.9}
+                        className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                    >
+                        <View className="w-16 h-16 bg-blue-50 rounded-[20px] items-center justify-center mr-4 border border-blue-100/50">
+                            <Typography weight="bold" className="text-blue-600 text-lg">M</Typography>
+                        </View>
+                        <View className="flex-1">
+                            <View className="flex-row items-center justify-between mb-1">
+                                <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Jual Beli Mobil</Typography>
+                                <Typography weight="bold" className="text-primary text-sm">
+                                    {formatCurrency(dashboard?.mobil?.laba_tpm || 0)}
+                                </Typography>
+                            </View>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                {dashboard?.mobil?.total_transaksi || 0} Transaksi • Laba TPM
+                            </Typography>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Jasa Angkut */}
+                    <TouchableOpacity
+                        onPress={() => router.push('/jasa-angkut')}
+                        activeOpacity={0.9}
+                        className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                    >
+                        <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
+                            <Typography weight="bold" className="text-emerald-600 text-lg">A</Typography>
+                        </View>
+                        <View className="flex-1">
+                            <View className="flex-row items-center justify-between mb-1">
+                                <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Jasa Angkut</Typography>
+                                <Typography weight="bold" className="text-primary text-sm">
+                                    {formatCurrency(dashboard?.jasa_angkut?.laba_tpm || 0)}
+                                </Typography>
+                            </View>
+                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                {dashboard?.jasa_angkut?.total_transaksi || 0} Transaksi • Laba TPM
+                            </Typography>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <View className="h-40" />
+            </ScrollView>
+        </View>
+    );
+}

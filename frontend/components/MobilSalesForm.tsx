@@ -1,0 +1,410 @@
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, TextInput, Alert, ActivityIndicator, Platform, StyleSheet, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+// import { TouchableOpacity } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
+import { Typography } from './ui/Typography';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { User, CreditCard, Tag, Calculator, TrendingUp, Wallet, Trash2 } from 'lucide-react-native';
+import { useCreatePenjualanMobil, useMobilDetail } from '../hooks/useMobil';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { AlertDialog } from './ui/AlertDialog';
+import { getErrorMessage } from '../utils/error';
+import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
+
+interface MobilSalesFormProps {
+    unit: any;
+    onSuccess?: () => void;
+}
+
+export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
+    const { data: detailUnit, isLoading: isDetailLoading } = useMobilDetail(unit?.id);
+    const activeUnit = detailUnit || unit;
+
+    const { mutate, isPending } = useCreatePenjualanMobil();
+    const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
+    const [namaPembeli, setNamaPembeli] = useState('');
+    const [teleponPembeli, setTeleponPembeli] = useState('');
+    const [hargaJual, setHargaJual] = useState('');
+    const [dp, setDp] = useState('0');
+    const [metodeBayar, setMetodeBayar] = useState('tunai');
+    const [catatan, setCatatan] = useState('');
+
+    const [dialogConfig, setDialogConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        variant: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        variant: 'info'
+    });
+
+    // Dynamic Costs (like MuatanForm)
+    const [operationalCosts, setOperationalCosts] = useState<{ deskripsi: string; jumlah: string }[]>([]);
+
+    // Calculations
+    const [labaKotor, setLabaKotor] = useState(0);
+    const [labaInvestor, setLabaInvestor] = useState(0);
+    const [labaTpm, setLabaTpm] = useState(0);
+    const [sisaBayar, setSisaBayar] = useState(0);
+    const [totalCostsAtSale, setTotalCostsAtSale] = useState(0);
+
+    useEffect(() => {
+        // Parse removing all non-digits (handling '10.000.000' -> 10000000)
+        const parseRaw = parseNumber;
+
+        const jual = parseRaw(hargaJual);
+        const downpayment = parseRaw(dp);
+        const modalAwal = parseFloat(String(activeUnit.total_modal)) || 0;
+
+        // Calculate dynamic costs added during sale
+        const opCostTotal = operationalCosts.reduce((acc, item) => acc + parseRaw(item.jumlah), 0);
+        const currentTotalCosts = opCostTotal;
+        setTotalCostsAtSale(currentTotalCosts);
+
+        const adjustedModal = modalAwal + currentTotalCosts;
+        const profitTotal = jual - adjustedModal;
+
+        setLabaKotor(profitTotal);
+        setSisaBayar(jual - downpayment);
+
+        if (activeUnit.tipe_kepemilikan === 'investor' && profitTotal > 0) {
+            const persentase = parseFloat(String(activeUnit.persentase_investor)) || 0;
+            const forInvestor = (profitTotal * persentase) / 100;
+            setLabaInvestor(forInvestor);
+            setLabaTpm(profitTotal - forInvestor);
+        } else {
+            setLabaInvestor(0);
+            setLabaTpm(profitTotal);
+        }
+    }, [hargaJual, dp, activeUnit, operationalCosts]);
+
+    // Cost Management Helpers
+    const addOpCost = () => setOperationalCosts([...operationalCosts, { deskripsi: '', jumlah: '' }]);
+    const removeOpCost = (index: number) => {
+        const newCosts = [...operationalCosts];
+        newCosts.splice(index, 1);
+        setOperationalCosts(newCosts);
+    };
+    const updateOpCost = (index: number, key: 'deskripsi' | 'jumlah', value: string) => {
+        const newCosts = [...operationalCosts];
+        if (key === 'jumlah') {
+            newCosts[index][key] = formatNumber(value);
+        } else {
+            newCosts[index][key] = value;
+        }
+        setOperationalCosts(newCosts);
+    };
+
+    const handleSubmit = () => {
+        try {
+            if (!namaPembeli || !hargaJual) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Validasi',
+                    message: 'Mohon lengkapi Nama Pembeli dan Harga Jual',
+                    variant: 'warning'
+                });
+                return;
+            }
+
+            const payload = {
+                tanggal,
+                mobil_id: activeUnit.id,
+                nama_pembeli: namaPembeli,
+                telepon_pembeli: teleponPembeli || null,
+                harga_jual: parseNumber(hargaJual),
+                dp: parseNumber(dp),
+                metode_bayar: metodeBayar.toLowerCase(),
+                catatan: catatan || null,
+                biaya_operasional: operationalCosts
+                    .filter(c => c.deskripsi && c.jumlah)
+                    .map(c => ({
+                        deskripsi: c.deskripsi,
+                        jumlah: parseNumber(c.jumlah)
+                    })),
+            };
+
+            mutate(payload, {
+                onSuccess: () => {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Sukses',
+                        message: 'Penjualan berhasil dicatat',
+                        variant: 'success'
+                    });
+                    setTimeout(() => {
+                        onSuccess?.();
+                    }, 1500);
+                },
+                onError: (err: any) => {
+                    console.error("Mutation Error:", err);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Eror Pencatatan',
+                        message: getErrorMessage(err, 'Gagal menyimpan transaksi'),
+                        variant: 'error'
+                    });
+                }
+            });
+        } catch (error) {
+            console.error("Submit Error:", error);
+            setDialogConfig({
+                visible: true,
+                title: 'Kesalahan Sistem',
+                message: getErrorMessage(error, 'Terjadi kesalahan saat memproses data'),
+                variant: 'error'
+            });
+        }
+    };
+
+    const renderFormContent = () => (
+        <View className="px-6 pb-12 pt-4">
+            {/* Unit Info Summary */}
+            <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
+                <View className="flex-row items-center mb-2">
+                    <TrendingUp size={16} color="#00AA13" />
+                    <Typography weight="bold" className="ml-2 text-primary text-xs uppercase">Informasi Modal Unit</Typography>
+                </View>
+                <Typography variant="h3" weight="bold">{activeUnit.merek} {activeUnit.model}</Typography>
+                <Typography variant="caption" className="text-gray-500 mb-3">{activeUnit.nomor_plat}</Typography>
+
+                <View className="flex-row justify-between border-t border-gray-100 pt-3">
+                    <View>
+                        <Typography variant="caption" className="text-gray-400">Total Modal</Typography>
+                        <Typography weight="bold" className="text-sm">{formatCurrency(activeUnit.total_modal)}</Typography>
+                    </View>
+                    <View className="items-end">
+                        <Typography variant="caption" className="text-gray-400">Tipe Unit</Typography>
+                        <Typography weight="bold" className="text-sm capitalize">{activeUnit.tipe_kepemilikan}</Typography>
+                    </View>
+                </View>
+                {isDetailLoading && <ActivityIndicator color="#00AA13" size="small" className="mt-2" />}
+            </Card>
+
+            {/* Buyer Details */}
+            <View className="mb-6">
+                <View className="flex-row items-center mb-4">
+                    <User size={18} color="#00AA13" />
+                    <Typography weight="bold" className="ml-2 text-primary">DATA PEMBELI</Typography>
+                </View>
+                <Input label="Nama Pembeli" placeholder="Masukkan nama lengkap" value={namaPembeli} onChangeText={setNamaPembeli} />
+                <Input label="Nomor Telepon" placeholder="0812..." keyboardType="phone-pad" value={teleponPembeli} onChangeText={setTeleponPembeli} />
+            </View>
+
+            {/* Transaction details */}
+            <View className="mb-6">
+                <View className="flex-row items-center mb-4">
+                    <Tag size={18} color="#00AA13" />
+                    <Typography weight="bold" className="ml-2 text-primary">TRANSAKSI</Typography>
+                </View>
+
+                <Input label="Harga Jual (Rp)" placeholder="0" keyboardType="numeric" value={hargaJual} onChangeText={(v) => setHargaJual(formatNumber(v))} />
+                <Input label="DP / Tanda Jadi (Rp)" placeholder="0" keyboardType="numeric" value={dp} onChangeText={(v) => setDp(formatNumber(v))} />
+
+                <Typography variant="body2" className="text-textGray mb-2 font-medium">Metode Pembayaran</Typography>
+                <View className="flex-row space-x-3 mb-4">
+                    {['tunai', 'transfer', 'kredit'].map((m) => (
+                        <TouchableOpacity
+                            key={m}
+                            onPress={() => setMetodeBayar(m)}
+                            className={`flex - 1 py - 3 rounded - xl border - 2 items - center capitalize ${metodeBayar === m ? 'border-primary bg-primary/5' : 'border-gray-100'} `}
+                        >
+                            <Typography weight="bold" className={metodeBayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            {/* Additional Costs Section (MuatanForm style) */}
+            <View className="mb-6">
+                <View className="flex-row justify-between items-center mb-4">
+                    <View className="flex-row items-center">
+                        <TrendingUp size={18} color="#00AA13" />
+                        <Typography weight="bold" className="ml-2 text-primary">BIAYA TAMBAHAN PENJUALAN</Typography>
+                    </View>
+                    <TouchableOpacity onPress={addOpCost}>
+                        <Typography variant="caption" weight="bold" className="text-primary">+ Tambah</Typography>
+                    </TouchableOpacity>
+                </View>
+
+                {operationalCosts.length === 0 && (
+                    <Typography variant="caption" className="text-gray-400 italic mb-4">Tidak ada biaya tambahan operasional.</Typography>
+                )}
+
+                {operationalCosts.map((item, index) => (
+                    <View key={index} className="flex-row space-x-2 items-center mb-3">
+                        <View className="flex-[2]">
+                            <Input
+                                placeholder="Ket: Komisi, Cuci, dll"
+                                value={item.deskripsi}
+                                onChangeText={v => updateOpCost(index, 'deskripsi', v)}
+                                containerClassName="mb-0"
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Input
+                                placeholder="Rp 0"
+                                keyboardType="numeric"
+                                value={item.jumlah}
+                                onChangeText={v => updateOpCost(index, 'jumlah', v)}
+                                containerClassName="mb-0"
+                            />
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => removeOpCost(index)}
+                            className="p-2 bg-red-50 rounded-full"
+                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                            style={{
+                                padding: 8,
+                                zIndex: 100,
+                                cursor: Platform.OS === 'web' ? 'pointer' : undefined
+                            }}
+                        >
+                            <Trash2 size={18} color="#EE2737" />
+                        </TouchableOpacity>
+                    </View>
+                ))}
+            </View>
+
+            <Input label="Catatan Transaksi" placeholder="..." value={catatan} onChangeText={setCatatan} multiline numberOfLines={3} />
+
+            {/* Profit Calculation Summary */}
+            <Card className="bg-primary/5 border-primary/10 p-5 mb-8">
+                <View className="flex-row items-center mb-4">
+                    <Calculator size={18} color="#00AA13" />
+                    <Typography weight="bold" className="ml-2 text-primary">ESTIMASI LABA</Typography>
+                </View>
+
+                <View className="space-y-3">
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600">Harga Jual</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(parseNumber(hargaJual) || 0)}</Typography>
+                    </View>
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600">Harga Beli Unit</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.harga_beli || 0)}</Typography>
+                    </View>
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600">Biaya Persiapan (MBU)</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency((activeUnit.total_biaya || 0) + (activeUnit.total_part_service || 0))}</Typography>
+                    </View>
+                    <View className="flex-row justify-between bg-gray-50 p-2 rounded-lg">
+                        <Typography variant="body2" className="text-gray-600 font-bold">Total Modal Unit (Awal)</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.total_modal || 0)}</Typography>
+                    </View>
+                    {totalCostsAtSale > 0 && (
+                        <View className="flex-row justify-between">
+                            <Typography variant="body2" className="text-secondary font-medium">Biaya Tambahan Sales</Typography>
+                            <Typography weight="bold" className="text-secondary">{formatCurrency(totalCostsAtSale)}</Typography>
+                        </View>
+                    )}
+
+                    <View className="h-[1px] bg-primary/10 w-full my-1" />
+
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600 font-bold">Total Laba Kotor</Typography>
+                        <Typography weight="bold" className={labaKotor >= 0 ? 'text-primary' : 'text-secondary'}>
+                            {formatCurrency(labaKotor)}
+                        </Typography>
+                    </View>
+
+                    {activeUnit.tipe_kepemilikan === 'investor' && (
+                        <>
+                            <View className="flex-row justify-between">
+                                <Typography variant="body2" className="text-gray-600">Bagian Investor ({activeUnit.persentase_investor}%)</Typography>
+                                <Typography weight="bold" className="text-gray-800">{formatCurrency(labaInvestor)}</Typography>
+                            </View>
+                            <View className="h-[1px] bg-primary/10 w-full my-1" />
+                        </>
+                    )}
+
+                    <View className="flex-row justify-between items-center">
+                        <View className="flex-row items-center">
+                            <Wallet size={16} color="#00AA13" />
+                            <Typography weight="bold" className="ml-1.5 text-primary">Net Profit TPM</Typography>
+                        </View>
+                        <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(labaTpm)}</Typography>
+                    </View>
+                </View>
+            </Card>
+
+            <Button
+                title={isPending ? "Memproses..." : "Selesaikan Penjualan"}
+                variant="primary"
+                size="lg"
+                onPress={handleSubmit}
+                disabled={isPending}
+            />
+
+            <AlertDialog
+                visible={dialogConfig.visible}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+            />
+        </View>
+    );
+
+    if (Platform.OS === 'web') {
+        return (
+            <View style={styles.webContainer}>
+                <View style={styles.header}>
+                    <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
+                    <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
+                </View>
+                <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
+                    {renderFormContent()}
+                </ScrollView>
+            </View>
+        );
+    }
+
+    return (
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.flex1}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        >
+            <View style={styles.mobileContainer}>
+                <View style={styles.header}>
+                    <Typography variant="h3" weight="bold">Konfirmasi Penjualan</Typography>
+                    <Typography variant="caption" className="text-gray-400">Pencatatan transaksi penjualan unit mobil</Typography>
+                </View>
+                <BottomSheetScrollView
+                    style={styles.flex1}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                >
+                    {renderFormContent()}
+                </BottomSheetScrollView>
+            </View>
+        </KeyboardAvoidingView>
+    );
+};
+
+const styles = StyleSheet.create({
+    flex1: {
+        flex: 1,
+    },
+    webContainer: {
+        flex: 1,
+        backgroundColor: 'white',
+        height: '80vh' as any,
+    },
+    mobileContainer: {
+        flex: 1,
+        backgroundColor: 'white',
+    },
+    header: {
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f3f4f6',
+        backgroundColor: 'white',
+    },
+});

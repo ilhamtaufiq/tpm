@@ -1,0 +1,74 @@
+{
+  "name": "tpm-app",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@expo-google-fonts/inter": "^0.2.3",
+    "@expo-google-fonts/outfit": "^0.2.3",
+    "@expo/metro-runtime": "~4.0.0",
+    "@gorhom/bottom-sheet": "^5",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "@tanstack/react-query": "^5.90.20",
+    "autoprefixer": "^10.4.23",
+    "axios": "^1.13.4",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "expo": "~52.0.0",
+    "expo-av": "~15.0.1",
+    "expo-constants": "~17.0.3",
+    "expo-font": "~13.0.1",
+    "expo-image-picker": "~16.0.3",
+    "expo-linking": "~7.0.3",
+    "expo-print": "~14.0.3",
+    "expo-router": "~4.0.0",
+    "expo-sharing": "~13.0.1",
+    "expo-status-bar": "~2.0.0",
+    "html2pdf.js": "^0.14.0",
+    "lucide-react-native": "^0.563.0",
+    "nativewind": "^4.2.1",
+    "postcss": "^8.5.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-css-interop": "^0.2.1",
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-svg": "15.8.0",
+    "react-native-thermal-receipt-printer": "^1.2.0-rc.2",
+    "react-native-web": "~0.19.13",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^3.4.1",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@types/react": "~18.3.12",
+    "babel-preset-expo": "~12.0.0",
+    "lightningcss": "^1.27.0",
+    "patch-package": "^8.0.1",
+    "typescript": "~5.3.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "expo-av",
+          "autoprefixer",
+          "postcss",
+          "react-native-css-interop",
+          "react-native-thermal-receipt-printer"
+        ]
+      }
+    }
+  },
+  "private": true
+}
