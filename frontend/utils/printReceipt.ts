@@ -3,17 +3,25 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { PrintSettings } from './printSettings';
 
+export interface PrintReceiptItem {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+}
+
 export interface PrintReceiptData {
     type: 'bengkel' | 'jasa_angkut';
     transactionNumber: string;
+    antrian?: string | number;
     date: Date;
     customerName: string;
-    items: Array<{
-        description: string;
-        quantity?: number;
-        unitPrice?: number;
-        subtotal: number;
-    }>;
+    cashierName?: string;
+    mechanicName?: string;
+    status?: string;
+    items?: PrintReceiptItem[]; // For backward compatibility
+    services?: PrintReceiptItem[];
+    parts?: PrintReceiptItem[];
     subtotal: number;
     tax?: number;
     discount?: number;
@@ -38,108 +46,62 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
             minimumFractionDigits: 0
         }).format(amount);
     };
 
     const formatDate = (date: Date) => {
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        const h = date.getHours().toString().padStart(2, '0');
+        const min = date.getMinutes().toString().padStart(2, '0');
+        return `${d}/${m}/${y} - ${h}:${min}`;
     };
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    };
+    const renderItem = (item: PrintReceiptItem) => `
+        <div style="margin-bottom: 4px;">
+            <div style="font-size: 11px; text-transform: uppercase;">${item.description}</div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span>${item.quantity} x ${formatCurrency(item.unitPrice)}</span>
+                <span>${formatCurrency(item.subtotal)}</span>
+            </div>
+        </div>
+    `;
 
-    let itemsHTML = '';
-    data.items.forEach(item => {
-        const qtyPrice = item.quantity && item.unitPrice
-            ? `<div style="font-size: 9px; color: #666;">${item.quantity} x ${formatCurrency(item.unitPrice)}</div>`
-            : '';
-
-        itemsHTML += `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <div style="flex: 1; margin-right: 8px;">
-                    <div style="font-size: 10px; font-weight: 500;">${item.description}</div>
-                    ${qtyPrice}
-                </div>
-                <div style="font-size: 10px; font-weight: 600; text-align: right;">${formatCurrency(item.subtotal)}</div>
+    let layananHTML = '';
+    const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
+    if (services.length > 0) {
+        layananHTML = `
+            <div style="text-align: center; font-size: 12px; margin-bottom: 8px;">LAYANAN</div>
+            ${services.map(renderItem).join('')}
+            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
+                <span>Total</span>
+                <span>${formatCurrency(services.reduce((acc, curr) => acc + curr.subtotal, 0))}</span>
             </div>
         `;
-    });
+    }
 
-    const logoHTML = settings.logoUri
-        ? `<img src="${settings.logoUri}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 8px;" />`
-        : '';
+    let sparePartHTML = '';
+    const parts = data.parts || [];
+    if (parts.length > 0) {
+        sparePartHTML = `
+            <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+            <div style="text-align: center; font-size: 12px; margin-bottom: 8px;">SPARE PART</div>
+            ${parts.map(renderItem).join('')}
+            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
+                <span>Total</span>
+                <span>${formatCurrency(parts.reduce((acc, curr) => acc + curr.subtotal, 0))}</span>
+            </div>
+        `;
+    }
 
-    const typeSpecificHTML = data.type === 'bengkel' && data.vehiclePlate ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">No. Polisi</span>
-            <span style="font-size: 10px; font-weight: 500; text-align: right;">${data.vehiclePlate}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Jenis Kendaraan</span>
-            <span style="font-size: 10px; font-weight: 500; text-align: right;">${data.vehicleType || '-'}</span>
-        </div>
-    ` : data.type === 'jasa_angkut' && data.origin ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Rute</span>
-            <span style="font-size: 10px; font-weight: 500; text-align: right;">${data.origin} → ${data.destination}</span>
-        </div>
-        ${data.driverName ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Supir</span>
-            <span style="font-size: 10px; font-weight: 500; text-align: right;">${data.driverName}</span>
-        </div>
-        ` : ''}
-    ` : '';
-
-    const taxHTML = data.tax && data.tax > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Pajak</span>
-            <span style="font-size: 10px; font-weight: 500;">${formatCurrency(data.tax)}</span>
-        </div>
-    ` : '';
-
-    const discountHTML = data.discount && data.discount > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Diskon</span>
-            <span style="font-size: 10px; font-weight: 500;">-${formatCurrency(data.discount)}</span>
-        </div>
-    ` : '';
-
-    const paymentHTML = data.paymentMethod ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Metode Bayar</span>
-            <span style="font-size: 10px; font-weight: 500;">${data.paymentMethod.toUpperCase()}</span>
-        </div>
-        ${data.paid && data.paid > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Dibayar</span>
-            <span style="font-size: 10px; font-weight: 500;">${formatCurrency(data.paid)}</span>
-        </div>
-        ${data.change && data.change > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span style="font-size: 10px; color: #333;">Kembalian</span>
-            <span style="font-size: 10px; font-weight: 500;">${formatCurrency(data.change)}</span>
-        </div>
-        ` : ''}
-        ` : ''}
-    ` : '';
-
-    const notesHTML = data.notes ? `
-        <div style="border-top: 1px dashed #000; margin: 8px 0; padding-top: 8px;">
-            <div style="font-size: 10px; color: #333; margin-bottom: 2px;">Catatan:</div>
-            <div style="font-size: 9px; font-style: italic; color: #666;">${data.notes}</div>
+    const infoRow = (label: string, value: string | number | undefined) => value ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>${label}</span>
+            <span>${value}</span>
         </div>
     ` : '';
 
@@ -150,94 +112,86 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
             <meta charset="utf-8">
             <meta name="viewport" content="width=${paperWidth}, initial-scale=1.0">
             <style>
-                @page {
-                    size: ${paperWidth} auto;
-                    margin: 0;
-                }
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
+                @page { size: ${paperWidth} auto; margin: 0; }
+                * { margin: 0; padding: 0; box-sizing: border-box; }
                 body {
                     font-family: 'Courier New', Courier, monospace;
                     width: ${widthPx};
                     padding: 12px;
                     background: white;
+                    color: black;
+                    font-weight: 500;
                 }
-                @media print {
-                    body {
-                        width: ${paperWidth};
-                    }
-                }
+                .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+                .text-center { text-align: center; }
+                .flex-between { display: flex; justify-content: space-between; }
+                @media print { body { width: ${paperWidth}; } }
             </style>
         </head>
         <body>
             <!-- Header -->
-            <div style="text-align: center; margin-bottom: 8px;">
-                ${logoHTML}
-                <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">${settings.companyName}</div>
-                ${settings.header ? `<div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">${settings.header}</div>` : ''}
-                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">${settings.companyAddress}</div>
-                <div style="font-size: 10px; color: #666; margin-bottom: 2px;">${settings.companyPhone}</div>
+            <div class="text-center">
+                ${settings.logoUri ? `<img src="${settings.logoUri}" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 4px;" />` : ''}
+                <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
+                <div style="font-size: 10px; margin-bottom: 2px;">${settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</div>
+                <div style="font-size: 10px;">cianjur &nbsp; HP ${settings.companyPhone || '087720225244'}</div>
             </div>
 
-            <div style="border-bottom: 1px dashed #000; margin: 8px 0;"></div>
+            <div class="divider"></div>
 
             <!-- Transaction Info -->
-            <div style="margin-bottom: 4px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-size: 10px; color: #333;">No. Transaksi</span>
-                    <span style="font-size: 10px; font-weight: 500;">${data.transactionNumber}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-size: 10px; color: #333;">Tanggal</span>
-                    <span style="font-size: 10px; font-weight: 500;">${formatDate(data.date)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-size: 10px; color: #333;">Jam</span>
-                    <span style="font-size: 10px; font-weight: 500;">${formatTime(data.date)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-size: 10px; color: #333;">Customer</span>
-                    <span style="font-size: 10px; font-weight: 500; text-align: right; max-width: 60%;">${data.customerName}</span>
-                </div>
-                ${typeSpecificHTML}
+            <div style="font-size: 11px;">
+                ${infoRow('No Nota', data.transactionNumber)}
+                ${infoRow('Antrian', data.antrian)}
+                ${infoRow('Pelanggan', data.customerName)}
+                ${infoRow('Tanggal', formatDate(data.date))}
+                ${infoRow('Kasir', data.cashierName)}
+                ${infoRow('Mekanik', data.mechanicName)}
             </div>
 
-            <div style="border-bottom: 1px dashed #000; margin: 8px 0;"></div>
+            <div class="divider"></div>
 
-            <!-- Items -->
-            <div style="margin-bottom: 4px;">
-                <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px;">RINCIAN</div>
-                ${itemsHTML}
+            <!-- Content -->
+            ${layananHTML}
+            ${sparePartHTML}
+
+            <div class="divider"></div>
+
+            <!-- Summary -->
+            <div style="font-size: 11px;">
+                ${infoRow('Status', data.status)}
+                ${infoRow('Metode Bayar', data.paymentMethod)}
+                ${infoRow('SubTotal', formatCurrency(data.subtotal))}
+                ${data.discount ? infoRow('Diskon', '-' + formatCurrency(data.discount)) : ''}
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; margin-top: 4px; border-top: 1px solid #000; padding-top: 4px;">
+                    <span>Total</span>
+                    <span>${formatCurrency(data.total)}</span>
+                </div>
+                ${data.paid !== undefined ? `
+                <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+                    <span>Dibayar</span>
+                    <span>${formatCurrency(data.paid)}</span>
+                </div>
+                ` : ''}
+                ${data.paid !== undefined && data.total > data.paid ? `
+                <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 2px;">
+                    <span>Sisa (Piutang)</span>
+                    <span>${formatCurrency(data.total - data.paid)}</span>
+                </div>
+                ` : ''}
+                ${data.change !== undefined && data.change > 0 ? infoRow('Kembalian', formatCurrency(data.change)) : ''}
             </div>
 
-            <div style="border-bottom: 1px dashed #000; margin: 8px 0;"></div>
-
-            <!-- Totals -->
-            <div style="margin-bottom: 4px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span style="font-size: 10px; color: #333;">Subtotal</span>
-                    <span style="font-size: 10px; font-weight: 500;">${formatCurrency(data.subtotal)}</span>
-                </div>
-                ${taxHTML}
-                ${discountHTML}
-                <div style="display: flex; justify-content: space-between; margin-top: 4px; padding-top: 4px; border-top: 1px solid #000;">
-                    <span style="font-size: 12px; font-weight: bold;">TOTAL</span>
-                    <span style="font-size: 12px; font-weight: bold;">${formatCurrency(data.total)}</span>
-                </div>
-                ${paymentHTML}
-            </div>
-
-            ${notesHTML}
-
-            <div style="border-bottom: 1px dashed #000; margin: 8px 0;"></div>
+            <div class="divider"></div>
+            
+            ${data.vehiclePlate ? `
+                <div style="font-size: 11px; margin-bottom: 8px;">${data.vehiclePlate}</div>
+                <div class="divider"></div>
+            ` : ''}
 
             <!-- Footer -->
-            <div style="text-align: center; margin-top: 4px;">
-                ${settings.footer ? `<div style="font-size: 10px; margin-bottom: 4px;">${settings.footer}</div>` : ''}
-                <div style="font-size: 8px; color: #999;">Struk ini dicetak otomatis</div>
+            <div class="text-center" style="font-size: 10px; margin-top: 10px;">
+                ${settings.footer || 'Terimakasih atas kepercayaan anda'}
             </div>
         </body>
         </html>

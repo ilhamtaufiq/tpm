@@ -5,8 +5,12 @@ FROM node:20-slim AS build
 WORKDIR /app
 
 # Install dependencies
+# Install dependencies with caching and faster registry (optional)
 COPY package*.json ./
-RUN npm install
+# Gunakan npm ci untuk instalasi lebih cepat dan konsisten (wajib ada package-lock.json)
+# Opsional: Gunakan registry mirror, misal dari Cloudflare atau Taobao jika official lambat
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm ci --prefer-offline --no-audit
 
 # Copy project files
 COPY . .

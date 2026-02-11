@@ -37,7 +37,10 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
 
     const [services, setServices] = useState<{ id: number; service_id: number; nama_jasa: string; harga: string | number; qty: number }[]>([{ id: Date.now(), service_id: 0, nama_jasa: '', harga: 0, qty: 1 }]);
     const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
-    const [total, setTotal] = useState(0);
+    const [total, setTotal] = useState(0); // Subtotal
+    const [diskon, setDiskon] = useState('0');
+    const [dp, setDp] = useState('0');
+    const [grandTotal, setGrandTotal] = useState(0);
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
@@ -60,8 +63,12 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     useEffect(() => {
         const serviceTotal = services.reduce((acc, s) => acc + (Number(parseNumber(s.harga.toString())) * (Number(s.qty) || 1)), 0);
         const partTotal = parts.reduce((acc, p) => acc + ((Number(parseNumber(p.harga.toString())) || 0) * (Number(p.qty) || 0)), 0);
-        setTotal(serviceTotal + partTotal);
-    }, [services, parts]);
+        const subtotal = serviceTotal + partTotal;
+        setTotal(subtotal);
+
+        const discAmount = Number(parseNumber(diskon)) || 0;
+        setGrandTotal(Math.max(0, subtotal - discAmount));
+    }, [services, parts, diskon]);
 
     const addService = () => setServices([...services, { id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
     const addPart = () => setParts([...parts, { id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
@@ -102,7 +109,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     qty: Number(p.qty) || 1,
                     harga_jual: Number(parseNumber(p.harga.toString())) || 0
                 })),
-            jumlah_bayar: total
+            jumlah_bayar: Number(parseNumber(dp)) || 0,
+            diskon: Number(parseNumber(diskon)) || 0
         };
 
         try {
@@ -161,7 +169,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     }}
                 />
 
-                {selectedCustomer && selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 && (
+                {selectedCustomer && selectedCustomer.vehicles && selectedCustomer.vehicles.length > 0 ? (
                     <View className="mt-2 bg-gray-50 p-4 rounded-2xl border border-gray-100">
                         <Typography variant="caption" weight="bold" className="text-gray-400 uppercase mb-3">Kendaraan Terdaftar</Typography>
                         <View className="flex-row flex-wrap gap-2">
@@ -186,7 +194,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                             ))}
                         </View>
                     </View>
-                )}
+                ) : null}
             </View>
 
             {/* Kendaraan */}
@@ -265,7 +273,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                     }}
                                 />
                             </View>
-                            {services.length > 1 && (
+                            {services.length > 1 ? (
                                 <TouchableOpacity
                                     onPress={() => setServices(services.filter(s => s.id !== service.id))}
                                     hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
@@ -279,7 +287,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                 >
                                     <Trash2 size={20} color="#EE2737" />
                                 </TouchableOpacity>
-                            )}
+                            ) : null}
                         </View>
                     </Card>
                 ))}
@@ -346,11 +354,11 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                 value={part.harga.toString()}
                                 onChangeText={(val) => {
                                     const newP = [...parts];
-                                    newP[index].harga = Number(val);
+                                    newP[index].harga = formatNumber(val);
                                     setParts(newP);
                                 }}
                             />
-                            {parts.length > 1 && (
+                            {parts.length > 1 ? (
                                 <TouchableOpacity
                                     onPress={() => setParts(parts.filter(p => p.id !== part.id))}
                                     hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
@@ -363,7 +371,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                 >
                                     <Trash2 size={20} color="#EE2737" />
                                 </TouchableOpacity>
-                            )}
+                            ) : null}
                         </View>
                     </Card>
                 ))}
@@ -386,11 +394,62 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                             ))}
                         </View>
                     </View>
+
+                    <View className="flex-row space-x-3 mb-4">
+                        <View className="flex-1">
+                            <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Diskon (Rp)</Typography>
+                            <Input
+                                placeholder="0"
+                                keyboardType="numeric"
+                                containerClassName="mb-0"
+                                className="h-10 text-sm"
+                                value={diskon}
+                                onChangeText={(val) => setDiskon(formatNumber(val))}
+                            />
+                        </View>
+                        <View className="flex-1">
+                            <Typography variant="caption" weight="medium" className="text-primary mb-1 ml-1">DP / Bayar (Rp)</Typography>
+                            <Input
+                                placeholder="0"
+                                keyboardType="numeric"
+                                containerClassName="mb-0"
+                                className="h-10 text-sm border-primary/30"
+                                value={dp}
+                                onChangeText={(val) => setDp(formatNumber(val))}
+                            />
+                        </View>
+                    </View>
+
                     <View className="h-[1px] bg-primary/10 mb-4" />
+
+                    <View className="space-y-2 mb-3">
+                        <View className="flex-row justify-between items-center">
+                            <Typography variant="caption" className="text-textGray">Subtotal</Typography>
+                            <Typography variant="caption" weight="semibold">{formatCurrency(total)}</Typography>
+                        </View>
+                        {Number(parseNumber(diskon)) > 0 ? (
+                            <View className="flex-row justify-between items-center">
+                                <Typography variant="caption" className="text-rose-500">Diskon</Typography>
+                                <Typography variant="caption" weight="semibold" className="text-rose-500">-{formatCurrency(Number(parseNumber(diskon)))}</Typography>
+                            </View>
+                        ) : null}
+                        <View className="flex-row justify-between items-center">
+                            <Typography variant="caption" className="text-textGray">Dibayar</Typography>
+                            <Typography variant="caption" weight="semibold">{formatCurrency(Number(parseNumber(dp)) || 0)}</Typography>
+                        </View>
+                    </View>
+
                     <View className="flex-row justify-between items-center">
-                        <Typography variant="h3" weight="bold">Total Biaya</Typography>
+                        <View>
+                            <Typography variant="body2" weight="bold">Total Akhir</Typography>
+                            {grandTotal > (Number(parseNumber(dp)) || 0) ? (
+                                <Typography variant="caption" className="text-rose-600 font-bold">
+                                    Sisa: {formatCurrency(grandTotal - (Number(parseNumber(dp)) || 0))}
+                                </Typography>
+                            ) : null}
+                        </View>
                         <Typography variant="h2" weight="bold" className="text-primary text-xl">
-                            Rp {total.toLocaleString('id-ID')}
+                            {formatCurrency(grandTotal)}
                         </Typography>
                     </View>
                 </Card>

@@ -8,6 +8,7 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.bengkel import (
     TransaksiBengkelCreate,
     TransaksiBengkelResponse,
+    PaymentUpdate,
 )
 from app.services.transaksi_bengkel_service import TransaksiBengkelService
 from app.utils.constants import PaymentStatus, PaymentMethod, WorkshopStatus
@@ -93,14 +94,13 @@ def get_transaksi(
 @router.patch("/{transaksi_id}/payment", response_model=TransaksiBengkelResponse)
 def update_payment(
     transaksi_id: int,
-    jumlah_bayar: Decimal,
+    data: PaymentUpdate,
     db: DBSession,
     current_user: ManagerUser,
-    metode_bayar: Optional[PaymentMethod] = None,
 ):
     """Add payment to transaction."""
     service = TransaksiBengkelService(db)
-    return service.update_payment(transaksi_id, jumlah_bayar, metode_bayar, current_user.id)
+    return service.update_payment(transaksi_id, data.jumlah_bayar, data.metode_bayar, current_user.id)
 
 
 @router.patch("/{transaksi_id}/status", response_model=TransaksiBengkelResponse)

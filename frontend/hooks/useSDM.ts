@@ -94,6 +94,18 @@ export const useClockOut = () => {
     });
 };
 
+export const useBulkClockIn = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ karyawanId, dates }: { karyawanId: number; dates: string[] }) =>
+            sdmService.bulkClockIn(karyawanId, dates),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['absensi_harian'] });
+            queryClient.invalidateQueries({ queryKey: ['absensi_bulanan'] });
+        },
+    });
+};
+
 // =============================================
 // KASBON
 // =============================================
@@ -158,6 +170,14 @@ export const useSlipGajiPreview = (tahun: number, minggu: number, enabled: boole
     });
 };
 
+export const useSlipGajiPreviewRange = (tanggalDari: string, tanggalSampai: string, enabled: boolean = false) => {
+    return useQuery({
+        queryKey: ['slip_gaji_preview_range', tanggalDari, tanggalSampai],
+        queryFn: () => sdmService.getSlipGajiPreviewRange(tanggalDari, tanggalSampai),
+        enabled,
+    });
+};
+
 export const useCreateBulkSlipGaji = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -166,6 +186,20 @@ export const useCreateBulkSlipGaji = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
             queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview_range'] });
+        },
+    });
+};
+
+export const useCreateBulkSlipGajiRange = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ tanggalDari, tanggalSampai, items }: { tanggalDari: string; tanggalSampai: string; items?: any[] }) =>
+            sdmService.createBulkSlipGajiRange(tanggalDari, tanggalSampai, items),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_preview_range'] });
         },
     });
 };
@@ -187,5 +221,5 @@ export const useProcessSlipGajiPayment = () => {
 // =============================================
 export const usePayrollList = useSlipGajiList;
 export const usePayrollSummary = useSlipGajiWeeklySummary;
-export const useCreatePayroll = useCreateBulkSlipGaji;
+export const useCreatePayroll = useCreateBulkSlipGajiRange;
 export const useProcessPayrollPayment = useProcessSlipGajiPayment;

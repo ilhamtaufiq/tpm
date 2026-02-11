@@ -18,6 +18,7 @@ import { useSparePartsList, useLowStockParts } from '../../../hooks/useBengkel';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { RefreshControl as RNRefreshControl } from 'react-native';
+import { formatCurrency } from '../../../utils/format';
 
 const PARTS = [
     { id: '1', nama: 'Oli MPX 2 0.8L', kode: 'OL-001', stok: 2, stok_minimum: 5, price: 'Rp 65.000', category: 'Pelumas' },
@@ -27,7 +28,7 @@ const PARTS = [
 ];
 
 export default function InventoryScreen() {
-    const router = useRouter();    const [search, setSearch] = useState('');
+    const router = useRouter(); const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
     // API Hooks
@@ -148,7 +149,7 @@ export default function InventoryScreen() {
                             </View>
 
                             <View className="items-end">
-                                <Typography variant="body2" weight="bold">Rp {part.harga_jual.toLocaleString()}</Typography>
+                                <Typography variant="body2" weight="bold">{formatCurrency(part.harga_jual)}</Typography>
                                 <TouchableOpacity
                                     className="mt-2 bg-gray-50 px-2 py-1 rounded-md"
                                     onPress={() => {/* Detail modal/page */ }}

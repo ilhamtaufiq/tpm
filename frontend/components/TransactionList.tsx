@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { ActivityItem } from '../services/keuangan';
 import { router } from 'expo-router';
+import { formatCurrency } from '../utils/format';
 
 const getSourceConfig = (source: string) => {
     switch (source) {
@@ -95,7 +96,7 @@ export const TransactionList = () => {
 
                             <View className="items-end ml-2">
                                 <Typography weight="bold" className={item.is_incoming ? "text-emerald-600" : "text-rose-500"}>
-                                    {item.is_incoming ? '+' : '-'} {item.amount.toLocaleString('id-ID')}
+                                    {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
                                 </Typography>
                                 <Badge
                                     label={badge.label}

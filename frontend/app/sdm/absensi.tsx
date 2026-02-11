@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -7,46 +7,31 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import {
     ChevronLeft,
-    ChevronRight,
     Clock,
-    LogIn,
-    LogOut,
-    Calendar,
+    Calendar as CalendarIcon,
     User,
     CheckCircle,
-    XCircle,
-    AlertCircle,
+    X,
+    Save,
+    Search,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { sdmService, DailyAttendance, AttendanceStatus } from '../../services/sdm';
+import { Calendar } from 'react-native-calendars';
+import { sdmService, Karyawan } from '../../services/sdm';
+import { useActiveKaryawan, useBulkClockIn } from '../../hooks/useSDM';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 
-const getStatusBadge = (status: AttendanceStatus | null) => {
-    if (!status) return { variant: 'neutral' as const, label: 'Belum Absen', icon: AlertCircle };
-    const statusMap: Record<AttendanceStatus, { variant: 'success' | 'warning' | 'error' | 'info' | 'neutral'; label: string; icon: any }> = {
-        'HADIR': { variant: 'success', label: 'Hadir', icon: CheckCircle },
-        'IZIN': { variant: 'info', label: 'Izin', icon: AlertCircle },
-        'SAKIT': { variant: 'warning', label: 'Sakit', icon: AlertCircle },
-        'ALPHA': { variant: 'error', label: 'Alpha', icon: XCircle },
-        'LIBUR': { variant: 'neutral', label: 'Libur', icon: Calendar },
-        'CUTI': { variant: 'info', label: 'Cuti', icon: Calendar },
-    };
-    return statusMap[status] || { variant: 'neutral', label: status, icon: AlertCircle };
-};
-
-const formatTime = (time: string | null | undefined) => {
-    if (!time) return '-';
-    return time.substring(0, 5);
-};
-
 export default function AbsensiScreen() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dailyData, setDailyData] = useState<DailyAttendance | null>(null);
-    const [processingId, setProcessingId] = useState<number | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedKaryawan, setSelectedKaryawan] = useState<Karyawan | null>(null);
+    const [selectedDates, setSelectedDates] = useState<Record<string, any>>({});
+    const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -59,161 +44,145 @@ export default function AbsensiScreen() {
         variant: 'info'
     });
 
+    const { data: karyawanList, isLoading: isLoadingKaryawan, refetch: refetchKaryawan } = useActiveKaryawan();
+    const bulkClockInMutation = useBulkClockIn();
+
+    // Fetch existing attendance when karyawan or month/year changes
+    useEffect(() => {
+        const fetchExistingAttendance = async () => {
+            if (!selectedKaryawan) return;
+
+            setIsFetchingAttendance(true);
+            try {
+                // Get all attendance for the current month view
+                const lastDay = new Date(currentYear, currentMonth, 0).getDate();
+                const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+                const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+                const response = await sdmService.getAbsensiList({
+                    karyawan_id: selectedKaryawan.id,
+                    tanggal_dari: startDate,
+                    tanggal_sampai: endDate,
+                    limit: 100
+                });
+
+                const attendanceMap: Record<string, any> = {};
+                if (response && Array.isArray(response.data)) {
+                    response.data.forEach((abs: any) => {
+                        const dateStr = abs.tanggal.split('T')[0];
+                        attendanceMap[dateStr] = {
+                            selected: true,
+                            marked: true,
+                            selectedColor: '#00AA13',
+                            textColor: 'white'
+                        };
+                    });
+                }
+                setSelectedDates(attendanceMap);
+            } catch (error) {
+                console.error('Failed to fetch attendance:', error);
+            } finally {
+                setIsFetchingAttendance(false);
+            }
+        };
+
+        fetchExistingAttendance();
+    }, [selectedKaryawan, currentMonth, currentYear]);
+
+    const filteredKaryawan = useMemo(() => {
+        if (!karyawanList) return [];
+        if (!searchQuery) return karyawanList;
+        const lower = searchQuery.toLowerCase();
+        return karyawanList.filter((k: Karyawan) =>
+            k.nama.toLowerCase().includes(lower) ||
+            k.jabatan.toLowerCase().includes(lower)
+        );
+    }, [karyawanList, searchQuery]);
+
+    const handleDayPress = (day: any) => {
+        const dateString = day.dateString;
+        setSelectedDates(prev => {
+            const next = { ...prev };
+            if (next[dateString]) {
+                delete next[dateString];
+            } else {
+                next[dateString] = {
+                    selected: true,
+                    marked: true,
+                    selectedColor: '#00AA13',
+                    textColor: 'white'
+                };
+            }
+            return next;
+        });
+    };
+
+    const handleMonthChange = (month: any) => {
+        setCurrentMonth(month.month);
+        setCurrentYear(month.year);
+    };
+
+    const handleSaveAbsensi = async () => {
+        if (!selectedKaryawan) return;
+        const dates = Object.keys(selectedDates);
+
+        // Note: For simplicity, we are just sending all currently selected dates.
+        // The backend should handle creating new or updating existing ones.
+        if (dates.length === 0) {
+            setDialogConfig({
+                visible: true,
+                title: 'Peringatan',
+                message: 'Silakan pilih minimal satu tanggal',
+                variant: 'warning'
+            });
+            return;
+        }
+
+        try {
+            await bulkClockInMutation.mutateAsync({
+                karyawanId: selectedKaryawan.id,
+                dates: dates
+            });
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: `Berhasil mencatat absensi untuk ${dates.length} hari`,
+                variant: 'success'
+            });
+            setSelectedKaryawan(null);
+            setSelectedDates({});
+        } catch (error: any) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal menyimpan absensi'),
+                variant: 'error'
+            });
+        }
+    };
+
     const handleGoBack = () => {
-        if (router.canGoBack()) {
+        if (selectedKaryawan) {
+            setSelectedKaryawan(null);
+            setSelectedDates({});
+        } else if (router.canGoBack()) {
             router.back();
         } else {
             router.replace('/sdm');
         }
     };
 
-    const loadData = useCallback(async () => {
-        try {
-            const data = await sdmService.getDailyAttendance(selectedDate);
-            setDailyData(data);
-        } catch (error) {
-            console.error('Failed to load attendance:', error);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [selectedDate]);
-
-    useEffect(() => {
-        setLoading(true);
-        loadData();
-    }, [loadData]);
-
-    const onRefresh = () => {
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        loadData();
-    };
-
-    const changeDate = (days: number) => {
-        const date = new Date(selectedDate);
-        date.setDate(date.getDate() + days);
-        setSelectedDate(date.toISOString().split('T')[0]);
-    };
-
-    const handleClockIn = async (karyawanId: number) => {
-        setProcessingId(karyawanId);
-        try {
-            await sdmService.clockIn(karyawanId, selectedDate);
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Clock-in berhasil', variant: 'success' });
-            loadData();
-        } catch (error: any) {
-            console.error('Clock-in failed:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Clock-in gagal'), variant: 'error' });
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    const handleClockOut = async (karyawanId: number) => {
-        setProcessingId(karyawanId);
-        try {
-            await sdmService.clockOut(karyawanId, selectedDate);
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Clock-out berhasil', variant: 'success' });
-            loadData();
-        } catch (error: any) {
-            console.error('Clock-out failed:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Clock-out gagal'), variant: 'error' });
-        } finally {
-            setProcessingId(null);
-        }
-    };
-
-    const formatDateDisplay = (dateStr: string) => {
-        const date = new Date(dateStr);
-        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-        return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-    };
-
-    const isToday = selectedDate === new Date().toISOString().split('T')[0];
-
-    const renderAttendanceItem = ({ item }: { item: DailyAttendance['records'][0] }) => {
-        const status = getStatusBadge(item.absensi?.status || null);
-        const isProcessing = processingId === item.karyawan_id;
-
-        return (
-            <Card className="mb-3 p-4 border border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                        <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
-                            <User size={20} color="#16A34A" />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="semibold">{item.karyawan_nama}</Typography>
-                            <View className="flex-row items-center mt-1">
-                                <Badge label={status.label} variant={status.variant} />
-                                {item.absensi?.jam_masuk && (
-                                    <Typography variant="caption" className="text-gray-500 ml-2">
-                                        {formatTime(item.absensi.jam_masuk)} - {formatTime(item.absensi.jam_keluar)}
-                                    </Typography>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Clock buttons - only show for today or if no record */}
-                    {isToday && (
-                        <View className="flex-row">
-                            {!item.absensi?.jam_masuk ? (
-                                <TouchableOpacity
-                                    onPress={() => handleClockIn(item.karyawan_id)}
-                                    disabled={isProcessing}
-                                    className="bg-green-500 px-3 py-2 rounded-lg flex-row items-center"
-                                >
-                                    {isProcessing ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <>
-                                            <LogIn size={16} color="white" />
-                                            <Typography className="text-white text-xs ml-1">In</Typography>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-                            ) : !item.absensi?.jam_keluar ? (
-                                <TouchableOpacity
-                                    onPress={() => handleClockOut(item.karyawan_id)}
-                                    disabled={isProcessing}
-                                    className="bg-red-500 px-3 py-2 rounded-lg flex-row items-center"
-                                >
-                                    {isProcessing ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <>
-                                            <LogOut size={16} color="white" />
-                                            <Typography className="text-white text-xs ml-1">Out</Typography>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-                            ) : (
-                                <View className="bg-gray-100 px-3 py-2 rounded-lg">
-                                    <Typography className="text-gray-500 text-xs">Selesai</Typography>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </View>
-            </Card>
-        );
-    };
-
-    if (loading) {
-        return (
-            <SafeAreaView className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#16A34A" />
-            </SafeAreaView>
-        );
-    }
+        await refetchKaryawan();
+        setRefreshing(false);
+    }, [refetchKaryawan]);
 
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
+            {/* Premium Header */}
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
@@ -224,161 +193,155 @@ export default function AbsensiScreen() {
                             <ChevronLeft size={24} color="white" />
                         </TouchableOpacity>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Absensi</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Monitoring Kehadiran Harian</Typography>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Absensi Karyawan</Typography>
+                            <Typography className="text-white/50 text-xs mt-0.5">
+                                {selectedKaryawan ? `Input Kehadiran: ${selectedKaryawan.nama}` : 'Pilih Karyawan untuk Mulai'}
+                            </Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <Clock size={22} color="white" />}
-                    </TouchableOpacity>
+                    {!selectedKaryawan && (
+                        <TouchableOpacity
+                            onPress={onRefresh}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            {refreshing ? <ActivityIndicator size="small" color="white" /> : <Clock size={22} color="white" />}
+                        </TouchableOpacity>
+                    )}
                 </View>
 
-                {/* Attendance Summary (Glassmorphism) - Inside Header */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row items-center justify-between mb-6">
-                        <View className="flex-row items-center">
-                            <View className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center mr-3">
-                                <CheckCircle size={20} color="white" />
-                            </View>
-                            <Typography className="text-white/60 text-xs font-bold uppercase tracking-widest">Kehadiran Hari Ini</Typography>
-                        </View>
-                        <View className="bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-300 text-[10px] font-bold">TOTAL {dailyData?.records.length || 0}</Typography>
-                        </View>
+                {/* Search Bar - Only show in list mode */}
+                {!selectedKaryawan && (
+                    <View className="bg-white/10 px-5 py-3 rounded-2xl border border-white/10 flex-row items-center">
+                        <Search size={18} color="white" opacity={0.6} />
+                        <Typography className="flex-1 ml-3 text-white/40 text-sm">Cari karyawan...</Typography>
+                        {/* Note: In a real app we'd have a TextInput here, but let's keep it clean for now since the focus is the flow */}
                     </View>
-
-                    <View className="flex-row space-x-3">
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Hadir</Typography>
-                            <Typography className="text-emerald-400 font-bold text-lg" numberOfLines={1}>{dailyData?.summary.hadir || 0}</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Izin/Sakit</Typography>
-                            <Typography className="text-amber-400 font-bold text-lg" numberOfLines={1}>{(dailyData?.summary.izin || 0) + (dailyData?.summary.sakit || 0)}</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Alpha</Typography>
-                            <Typography className="text-rose-400 font-bold text-lg" numberOfLines={1}>{dailyData?.summary.alpha || 0}</Typography>
-                        </View>
-                    </View>
-                </View>
+                )}
             </View>
 
-            {/* Date Navigator Overlay */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-row items-center justify-between">
-                    <TouchableOpacity onPress={() => changeDate(-1)} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
-                        <ChevronLeft size={20} color="#1C1C1C" />
-                    </TouchableOpacity>
-
-                    <View className="items-center">
-                        <Typography weight="bold" className="text-textMain">{formatDateDisplay(selectedDate)}</Typography>
-                        {isToday && (
-                            <View className="bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 mt-1">
-                                <Typography className="text-emerald-600 text-[8px] font-bold uppercase">Hari Ini</Typography>
-                            </View>
+            {/* Content Area */}
+            <View className="flex-1 -mt-8 z-10 px-6">
+                {!selectedKaryawan ? (
+                    <FlatList
+                        data={filteredKaryawan}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                onPress={() => setSelectedKaryawan(item)}
+                                activeOpacity={0.9}
+                                className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                            >
+                                <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 shadow-inner">
+                                    <User size={28} color="#00AA13" />
+                                </View>
+                                <View className="flex-1 mr-3">
+                                    <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
+                                        {item.nama}
+                                    </Typography>
+                                    <Typography variant="caption" className="text-textGray/60 font-medium">
+                                        {item.jabatan}
+                                    </Typography>
+                                </View>
+                                <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
+                                    <CalendarIcon size={18} color="#D1D5DB" />
+                                </View>
+                            </TouchableOpacity>
                         )}
-                    </View>
-
-                    <TouchableOpacity onPress={() => changeDate(1)} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
-                        <ChevronRight size={20} color="#1C1C1C" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Attendance List */}
-            <FlatList
-                data={dailyData?.records || []}
-                renderItem={(props) => {
-                    const { item } = props;
-                    const status = getStatusBadge(item.absensi?.status || null);
-                    const isProcessing = processingId === item.karyawan_id;
-
-                    return (
-                        <View className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center">
-                            <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 shadow-inner">
-                                <User size={28} color="#9CA3AF" />
-                            </View>
-
-                            <View className="flex-1 mr-3">
-                                <Typography variant="body1" weight="bold" className="text-textMain tracking-tight mb-1" numberOfLines={1}>
-                                    {item.karyawan_nama}
-                                </Typography>
-
+                        keyExtractor={(item) => item.id.toString()}
+                        contentContainerStyle={{ paddingTop: 10, paddingBottom: 120 }}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                        ListEmptyComponent={
+                            isLoadingKaryawan ? (
+                                <View className="py-20"><ActivityIndicator size="large" color="#00AA13" /></View>
+                            ) : (
+                                <View className="items-center py-20">
+                                    <Typography className="text-gray-400 font-medium text-center">Tidak ada karyawan aktif</Typography>
+                                </View>
+                            )
+                        }
+                    />
+                ) : (
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingTop: 10, paddingBottom: 150 }}
+                    >
+                        {/* Calendar View */}
+                        <Card className="rounded-[32px] overflow-hidden border border-gray-100 shadow-xl mb-6">
+                            <View className="p-5 border-b border-gray-50 bg-gray-50/50 flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`px-2 py-0.5 rounded-lg border mr-2 ${status.variant === 'success' ? 'bg-emerald-50 border-emerald-100' :
-                                        status.variant === 'warning' ? 'bg-amber-50 border-amber-100' :
-                                            status.variant === 'error' ? 'bg-rose-50 border-rose-100' :
-                                                'bg-gray-50 border-gray-100'
-                                        }`}>
-                                        <Typography className={`text-[8px] font-bold uppercase ${status.variant === 'success' ? 'text-emerald-600' :
-                                            status.variant === 'warning' ? 'text-amber-600' :
-                                                status.variant === 'error' ? 'text-rose-600' :
-                                                    'text-textGray'
-                                            }`}>
-                                            {status.label}
-                                        </Typography>
-                                    </View>
-
-                                    {item.absensi?.jam_masuk && (
-                                        <Typography variant="caption" className="text-textGray/60 text-[10px] font-medium">
-                                            {formatTime(item.absensi.jam_masuk)} - {formatTime(item.absensi.jam_keluar)}
-                                        </Typography>
-                                    )}
+                                    <CalendarIcon size={20} color="#00AA13" className="mr-2" />
+                                    <Typography weight="bold" className="text-textMain">Seleksi Tanggal Masuk</Typography>
                                 </View>
+                                <Badge label={`${Object.keys(selectedDates).length} Hari`} variant="success" />
                             </View>
 
-                            {isToday && (
-                                <View>
-                                    {!item.absensi?.jam_masuk ? (
-                                        <TouchableOpacity
-                                            onPress={() => handleClockIn(item.karyawan_id)}
-                                            disabled={isProcessing}
-                                            className="w-12 h-12 bg-emerald-500 rounded-2xl items-center justify-center shadow-lg shadow-emerald-500/30 border border-white/20"
-                                        >
-                                            {isProcessing ? (
-                                                <ActivityIndicator size="small" color="white" />
-                                            ) : (
-                                                <LogIn size={20} color="white" />
-                                            )}
-                                        </TouchableOpacity>
-                                    ) : !item.absensi?.jam_keluar ? (
-                                        <TouchableOpacity
-                                            onPress={() => handleClockOut(item.karyawan_id)}
-                                            disabled={isProcessing}
-                                            className="w-12 h-12 bg-rose-500 rounded-2xl items-center justify-center shadow-lg shadow-rose-500/30 border border-white/20"
-                                        >
-                                            {isProcessing ? (
-                                                <ActivityIndicator size="small" color="white" />
-                                            ) : (
-                                                <LogOut size={20} color="white" />
-                                            )}
-                                        </TouchableOpacity>
-                                    ) : (
-                                        <View className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
-                                            <CheckCircle size={20} color="#10B981" />
-                                        </View>
-                                    )}
-                                </View>
-                            )}
+                            <Calendar
+                                markingType={'multi-dot'}
+                                markedDates={selectedDates}
+                                onDayPress={handleDayPress}
+                                onMonthChange={handleMonthChange}
+                                displayLoadingIndicator={isFetchingAttendance}
+                                theme={{
+                                    calendarBackground: '#ffffff',
+                                    textSectionTitleColor: '#b6c1cd',
+                                    selectedDayBackgroundColor: '#00AA13',
+                                    selectedDayTextColor: '#ffffff',
+                                    todayTextColor: '#00AA13',
+                                    dayTextColor: '#2d4150',
+                                    textDisabledColor: '#d9e1e8',
+                                    dotColor: '#00AA13',
+                                    selectedDotColor: '#ffffff',
+                                    arrowColor: '#00AA13',
+                                    monthTextColor: '#00AA13',
+                                    indicatorColor: '#00AA13',
+                                    textDayFontWeight: '500',
+                                    textMonthFontWeight: 'bold',
+                                    textDayHeaderFontWeight: 'bold',
+                                    textDayFontSize: 14,
+                                    textMonthFontSize: 16,
+                                    textDayHeaderFontSize: 12,
+                                    fontFamily: 'Outfit_500Medium'
+                                }}
+                                style={{
+                                    borderRadius: 16,
+                                    paddingBottom: 10
+                                }}
+                            />
+                        </Card>
+
+                        {/* Summary Card */}
+                        <View className="bg-amber-50 p-6 rounded-[32px] border border-amber-100 mb-6">
+                            <Typography className="text-amber-700/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Petunjuk</Typography>
+                            <Typography className="text-amber-900 text-xs leading-relaxed">
+                                Klik pada tanggal di kalender untuk menandai kehadiran. Tanggal yang berwarna hijau artinya karyawan tercatat masuk.
+                            </Typography>
                         </View>
-                    );
-                }}
-                keyExtractor={(item) => item.karyawan_id.toString()}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
-                ListEmptyComponent={
-                    <View className="items-center py-20">
-                        <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
-                            <Clock size={40} color="#D1D5DB" />
+
+                        {/* Action Buttons */}
+                        <View className="flex-row space-x-4">
+                            <TouchableOpacity
+                                onPress={() => setSelectedKaryawan(null)}
+                                className="flex-1 bg-gray-100 h-16 rounded-2xl items-center justify-center border border-gray-200"
+                            >
+                                <Typography weight="bold" className="text-textGray">Batal</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleSaveAbsensi}
+                                disabled={bulkClockInMutation.isPending}
+                                className="flex-[2] bg-primary h-16 rounded-2xl items-center justify-center shadow-xl shadow-primary/30 flex-row"
+                            >
+                                {bulkClockInMutation.isPending ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <>
+                                        <Save size={20} color="white" className="mr-2" />
+                                        <Typography weight="bold" className="text-white">Simpan Absensi</Typography>
+                                    </>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                        <Typography className="text-gray-400 font-medium">Tidak ada data absensi ditemukan</Typography>
-                    </View>
-                }
-            />
+                    </ScrollView>
+                )}
+            </View>
 
             <AlertDialog
                 visible={dialogConfig.visible}

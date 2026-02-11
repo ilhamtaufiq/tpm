@@ -58,6 +58,27 @@ class PenjualanMobilService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def _generate_nomor_piutang(self) -> str:
+        """Generate unique receivable number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["piutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(PiutangUsaha)
+            .filter(PiutangUsaha.nomor_piutang.like(f"{prefix}{date_str}%"))
+            .order_by(PiutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_piutang[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
     def _generate_nomor_transaksi_bengkel(self) -> str:
         """Generate unique workshop transaction number."""
         today = datetime.now()
@@ -313,16 +334,22 @@ class PenjualanMobilService:
 
         # Create piutang if not fully paid
         if status_bayar != PaymentStatus.LUNAS and data.customer_id:
+            customer = self.db.query(Customer).get(data.customer_id)
             piutang = PiutangUsaha(
+                nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
                 customer_id=data.customer_id,
+                nama_debitur=customer.nama if customer else data.nama_pembeli,
+                telepon_debitur=customer.telepon if customer else data.telepon_pembeli,
+                alamat_debitur=customer.alamat if customer else data.alamat_pembeli,
                 sumber=PiutangSource.JUAL_BELI_MOBIL,
                 referensi_id=None,  # Will update after commit
-                referensi_nomor=nomor_transaksi,
-                nominal=data.harga_jual,
+                nomor_referensi=nomor_transaksi,
+                nominal_piutang=data.harga_jual,
                 sisa_piutang=sisa_bayar,
                 status=PiutangStatus.BELUM_LUNAS if data.dp == 0 else PiutangStatus.SEBAGIAN,
-                keterangan=f"Piutang penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                catatan=f"Piutang penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                created_by=user_id,
             )
             self.db.add(piutang)
 
@@ -333,7 +360,7 @@ class PenjualanMobilService:
         if status_bayar != PaymentStatus.LUNAS and data.customer_id:
             piutang_record = (
                 self.db.query(PiutangUsaha)
-                .filter(PiutangUsaha.referensi_nomor == nomor_transaksi)
+                .filter(PiutangUsaha.nomor_referensi == nomor_transaksi)
                 .first()
             )
             if piutang_record:
@@ -494,7 +521,7 @@ class PenjualanMobilService:
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
-                PiutangUsaha.referensi_nomor == transaksi.nomor_transaksi,
+                PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
             )
             .first()

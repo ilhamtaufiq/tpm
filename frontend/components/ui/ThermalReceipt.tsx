@@ -12,17 +12,23 @@ declare global {
 
 interface BaseReceiptItem {
     description: string;
-    quantity?: number;
-    unitPrice?: number;
+    quantity: number;
+    unitPrice: number;
     subtotal: number;
 }
 
 interface ReceiptData {
     type: 'bengkel' | 'jasa_angkut';
     transactionNumber: string;
+    antrian?: string | number;
     date: Date;
     customerName: string;
-    items: BaseReceiptItem[];
+    cashierName?: string;
+    mechanicName?: string;
+    status?: string;
+    items?: BaseReceiptItem[]; // For backward compatibility
+    services?: BaseReceiptItem[];
+    parts?: BaseReceiptItem[];
     subtotal: number;
     tax?: number;
     discount?: number;
@@ -31,15 +37,8 @@ interface ReceiptData {
     change?: number;
     paymentMethod?: string;
     notes?: string;
-
-    // Bengkel specific
     vehiclePlate?: string;
     vehicleType?: string;
-
-    // Jasa Angkut specific
-    origin?: string;
-    destination?: string;
-    driverName?: string;
 }
 
 interface ThermalReceiptProps {
@@ -58,149 +57,148 @@ export const ThermalReceipt = React.forwardRef<View, ThermalReceiptProps>(({ dat
                 {settings.logoUri && (
                     <Image source={{ uri: settings.logoUri }} style={styles.logo} resizeMode="contain" />
                 )}
-                <Text style={styles.companyName}>{settings.companyName}</Text>
-                {settings.header && <Text style={styles.headerText}>{settings.header}</Text>}
-                <Text style={styles.companyInfo}>{settings.companyAddress}</Text>
-                <Text style={styles.companyInfo}>{settings.companyPhone}</Text>
+                <Text style={[styles.companyName, { fontFamily: 'monospace' }]}>{settings.companyName || 'TIGA PUTRA MOTOR'}</Text>
+                <Text style={[styles.companyInfo, { color: '#000', fontFamily: 'monospace' }]}>{settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</Text>
+                <Text style={[styles.companyInfo, { color: '#000', fontFamily: 'monospace' }]}>cianjur   HP {settings.companyPhone || '087720225244'}</Text>
             </View>
 
             <View style={styles.divider} />
 
             {/* Transaction Info */}
             <View style={styles.section}>
-                <View style={styles.row}>
-                    <Text style={styles.label}>No. Transaksi</Text>
-                    <Text style={styles.value}>{data.transactionNumber}</Text>
-                </View>
-                <View style={styles.row}>
-                    <Text style={styles.label}>Tanggal</Text>
-                    <Text style={styles.value}>{formatDate(data.date.toISOString())}</Text>
-                </View>
-                <View style={styles.row}>
-                    <Text style={styles.label}>Jam</Text>
-                    <Text style={styles.value}>{formatTime(data.date)}</Text>
-                </View>
-                <View style={styles.row}>
-                    <Text style={styles.label}>Customer</Text>
-                    <Text style={styles.value}>{data.customerName}</Text>
-                </View>
-
-                {/* Type specific info */}
-                {data.type === 'bengkel' && data.vehiclePlate && (
-                    <>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>No. Polisi</Text>
-                            <Text style={styles.value}>{data.vehiclePlate}</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Jenis Kendaraan</Text>
-                            <Text style={styles.value}>{data.vehicleType}</Text>
-                        </View>
-                    </>
-                )}
-
-                {data.type === 'jasa_angkut' && data.origin && (
-                    <>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Rute</Text>
-                            <Text style={styles.value}>{data.origin} → {data.destination}</Text>
-                        </View>
-                        {data.driverName && (
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Supir</Text>
-                                <Text style={styles.value}>{data.driverName}</Text>
-                            </View>
-                        )}
-                    </>
-                )}
+                {[
+                    { label: 'No Nota', value: data.transactionNumber },
+                    { label: 'Antrian', value: data.antrian },
+                    { label: 'Pelanggan', value: data.customerName },
+                    { label: 'Tanggal', value: formatDate(data.date.toISOString()) + ' - ' + formatTime(data.date).substring(0, 5) },
+                    { label: 'Kasir', value: data.cashierName },
+                    { label: 'Mekanik', value: data.mechanicName },
+                ].map((row, i) => row.value ? (
+                    <View key={i} style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>{row.label}</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000' }]}>{row.value}</Text>
+                    </View>
+                ) : null)}
             </View>
 
             <View style={styles.divider} />
 
-            {/* Items */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>RINCIAN</Text>
-                {data.items.map((item, index) => (
-                    <View key={index} style={styles.itemRow}>
-                        <View style={styles.itemDescription}>
-                            <Text style={styles.itemName}>{item.description}</Text>
-                            {item.quantity && item.unitPrice && (
-                                <Text style={styles.itemDetails}>
-                                    {item.quantity} x {formatCurrency(item.unitPrice)}
+            {/* Layanan Section */}
+            {(data.services || (data.type === 'bengkel' ? [] : data.items || [])).length > 0 && (
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { textAlign: 'center', fontFamily: 'monospace' }]}>LAYANAN</Text>
+                    {(data.services || (data.type === 'bengkel' ? [] : data.items || [])).map((item, index) => (
+                        <View key={index} style={{ marginBottom: 6 }}>
+                            <Text style={[styles.itemName, { fontFamily: 'monospace', textTransform: 'uppercase' }]}>{item.description}</Text>
+                            <View style={styles.row}>
+                                <Text style={[styles.itemDetails, { fontFamily: 'monospace', color: '#000' }]}>
+                                    {item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}
                                 </Text>
-                            )}
-                        </View>
-                        <Text style={styles.itemPrice}>{formatCurrency(item.subtotal)}</Text>
-                    </View>
-                ))}
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Totals */}
-            <View style={styles.section}>
-                <View style={styles.row}>
-                    <Text style={styles.label}>Subtotal</Text>
-                    <Text style={styles.value}>{formatCurrency(data.subtotal)}</Text>
-                </View>
-
-                {data.tax && data.tax > 0 && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Pajak</Text>
-                        <Text style={styles.value}>{formatCurrency(data.tax)}</Text>
-                    </View>
-                )}
-
-                {data.discount && data.discount > 0 && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Diskon</Text>
-                        <Text style={styles.value}>-{formatCurrency(data.discount)}</Text>
-                    </View>
-                )}
-
-                <View style={[styles.row, styles.totalRow]}>
-                    <Text style={styles.totalLabel}>TOTAL</Text>
-                    <Text style={styles.totalValue}>{formatCurrency(data.total)}</Text>
-                </View>
-
-                {data.paymentMethod && (
-                    <View style={styles.row}>
-                        <Text style={styles.label}>Metode Bayar</Text>
-                        <Text style={styles.value}>{data.paymentMethod.toUpperCase()}</Text>
-                    </View>
-                )}
-
-                {data.paid && data.paid > 0 && (
-                    <>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Dibayar</Text>
-                            <Text style={styles.value}>{formatCurrency(data.paid)}</Text>
-                        </View>
-                        {data.change && data.change > 0 && (
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Kembalian</Text>
-                                <Text style={styles.value}>{formatCurrency(data.change)}</Text>
+                                <Text style={[styles.itemPrice, { fontFamily: 'monospace' }]}>
+                                    {formatCurrency(item.subtotal).replace('Rp', '').trim()}
+                                </Text>
                             </View>
-                        )}
-                    </>
-                )}
-            </View>
-
-            {data.notes && (
-                <>
-                    <View style={styles.divider} />
-                    <View style={styles.section}>
-                        <Text style={styles.label}>Catatan:</Text>
-                        <Text style={styles.notes}>{data.notes}</Text>
+                        </View>
+                    ))}
+                    <View style={[styles.divider, { marginVertical: 4 }]} />
+                    <View style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>Total</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000', fontWeight: 'bold' }]}>
+                            {formatCurrency((data.services || (data.type === 'bengkel' ? [] : data.items || [])).reduce((acc, c) => acc + c.subtotal, 0)).replace('Rp', '').trim()}
+                        </Text>
                     </View>
-                </>
+                </View>
             )}
 
-            {/* Footer */}
+            {/* Spare Part Section */}
+            {(data.parts || []).length > 0 && (
+                <View style={styles.section}>
+                    <View style={styles.divider} />
+                    <Text style={[styles.sectionTitle, { textAlign: 'center', fontFamily: 'monospace' }]}>SPARE PART</Text>
+                    {(data.parts || []).map((item, index) => (
+                        <View key={index} style={{ marginBottom: 6 }}>
+                            <Text style={[styles.itemName, { fontFamily: 'monospace', textTransform: 'uppercase' }]}>{item.description}</Text>
+                            <View style={styles.row}>
+                                <Text style={[styles.itemDetails, { fontFamily: 'monospace', color: '#000' }]}>
+                                    {item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}
+                                </Text>
+                                <Text style={[styles.itemPrice, { fontFamily: 'monospace' }]}>
+                                    {formatCurrency(item.subtotal).replace('Rp', '').trim()}
+                                </Text>
+                            </View>
+                        </View>
+                    ))}
+                    <View style={[styles.divider, { marginVertical: 4 }]} />
+                    <View style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>Total</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000', fontWeight: 'bold' }]}>
+                            {formatCurrency((data.parts || []).reduce((acc, c) => acc + c.subtotal, 0)).replace('Rp', '').trim()}
+                        </Text>
+                    </View>
+                </View>
+            )}
+
             <View style={styles.divider} />
+
+            {/* Totals / Summary */}
+            <View style={styles.section}>
+                {[
+                    { label: 'Status', value: data.status },
+                    { label: 'Metode Bayar', value: data.paymentMethod },
+                    { label: 'SubTotal', value: formatCurrency(data.subtotal).replace('Rp', '').trim() },
+                    { label: 'Diskon', value: data.discount ? formatCurrency(data.discount).replace('Rp', '').trim() : null },
+                ].map((row, i) => row.value ? (
+                    <View key={i} style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>{row.label}</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000' }]}>{row.value}</Text>
+                    </View>
+                ) : null)}
+
+                <View style={[styles.row, styles.totalRow, { borderTopColor: '#000' }]}>
+                    <Text style={[styles.totalLabel, { fontFamily: 'monospace' }]}>Total</Text>
+                    <Text style={[styles.totalValue, { fontFamily: 'monospace' }]}>{formatCurrency(data.total).replace('Rp', '').trim()}</Text>
+                </View>
+
+                {data.paid !== undefined ? (
+                    <View style={[styles.row, { marginTop: 4 }]}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>Dibayar</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000' }]}>
+                            {formatCurrency(data.paid).replace('Rp', '').trim()}
+                        </Text>
+                    </View>
+                ) : null}
+
+                {data.paid !== undefined && data.total > data.paid ? (
+                    <View style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000', fontWeight: 'bold' }]}>Sisa (Piutang)</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000', fontWeight: 'bold' }]}>
+                            {formatCurrency(data.total - data.paid).replace('Rp', '').trim()}
+                        </Text>
+                    </View>
+                ) : null}
+
+                {data.change !== undefined && data.change > 0 ? (
+                    <View style={styles.row}>
+                        <Text style={[styles.label, { fontFamily: 'monospace', color: '#000' }]}>Kembalian</Text>
+                        <Text style={[styles.value, { fontFamily: 'monospace', color: '#000' }]}>
+                            {formatCurrency(data.change).replace('Rp', '').trim()}
+                        </Text>
+                    </View>
+                ) : null}
+            </View>
+
+            <View style={styles.divider} />
+
+            {data.vehiclePlate ? (
+                <View style={styles.section}>
+                    <Text style={[styles.value, { fontFamily: 'monospace', textAlign: 'left', maxWidth: '100%' }]}>{data.vehiclePlate}</Text>
+                    <View style={[styles.divider, { marginVertical: 4 }]} />
+                </View>
+            ) : null}
+
+            {/* Footer */}
             <View style={styles.footer}>
-                {settings.footer && <Text style={styles.footerText}>{settings.footer}</Text>}
-                <Text style={styles.footerInfo}>Struk ini dicetak otomatis</Text>
+                <Text style={[styles.footerText, { fontFamily: 'monospace' }]}>{settings.footer || 'Terimakasih atas kepercayaan anda'}</Text>
             </View>
         </View>
     );

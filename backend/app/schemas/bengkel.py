@@ -280,6 +280,12 @@ class TransaksiBengkelResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PaymentUpdate(BaseModel):
+    """Schema for adding payment to transaction."""
+    jumlah_bayar: Decimal = Field(..., ge=0)
+    metode_bayar: Optional[PaymentMethod] = None
+
+
 # ============================================
 # PENGELUARAN BENGKEL SCHEMAS
 # ============================================

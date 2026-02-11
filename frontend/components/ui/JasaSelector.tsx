@@ -7,6 +7,7 @@ import { Search, Wrench, X, Check } from 'lucide-react-native';
 import { jasaServisService } from '../../services/jasaServis';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatCurrency, parseNumber } from '../../utils/format';
 
 interface JasaSelectorProps {
     value?: any; // Selected object or null
@@ -62,7 +63,7 @@ export const JasaSelector = ({
                             <>
                                 <Typography weight="semibold" className="text-text text-base">{value.nama}</Typography>
                                 <Typography variant="caption" className="text-gray-500">
-                                    {value.kategori || 'Servis'} • Rp {Number(value.harga).toLocaleString('id-ID')}
+                                    {value.kategori || 'Servis'} • {formatCurrency(value.harga)}
                                 </Typography>
                             </>
                         ) : (
@@ -132,7 +133,7 @@ export const JasaSelector = ({
                                                             className="mr-2"
                                                         />
                                                         <Typography weight="bold" className="text-primary">
-                                                            Rp {Number(item.harga).toLocaleString('id-ID')}
+                                                            {formatCurrency(item.harga)}
                                                         </Typography>
                                                     </View>
                                                 </View>

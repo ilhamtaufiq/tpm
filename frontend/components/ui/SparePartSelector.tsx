@@ -7,6 +7,7 @@ import { Search, Package, X, Check } from 'lucide-react-native';
 import { bengkelService } from '../../services/bengkel';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatCurrency } from '../../utils/format';
 
 interface SparePartSelectorProps {
     value?: any; // Selected object or null
@@ -132,7 +133,7 @@ export const SparePartSelector = ({
                                                         />
                                                     </View>
                                                     <Typography weight="bold" className="text-primary mt-1">
-                                                        Rp {item.harga_jual.toLocaleString('id-ID')}
+                                                        {formatCurrency(item.harga_jual)}
                                                     </Typography>
                                                 </View>
                                                 {value?.id === item.id && (

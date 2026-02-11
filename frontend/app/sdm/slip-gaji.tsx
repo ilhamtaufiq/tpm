@@ -14,14 +14,18 @@ import {
     X,
     Edit3,
     Search,
+    CheckCircle2,
+    Clock,
+    ArrowRight,
+    TrendingUp,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Calendar as RNCalendar } from 'react-native-calendars';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate } from '../../utils/format';
-import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment } from '../../hooks/useSDM';
+import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 
@@ -34,31 +38,57 @@ const getWeekNumber = (d: Date): number => {
     return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 };
 
-const STATUS_FILTERS = [
-    { key: 'all', label: 'Semua' },
-    { key: 'BELUM_LUNAS', label: 'Belum Dibayar' },
-    { key: 'LUNAS', label: 'Sudah Dibayar' },
-];
+// Helper to get ISO week start date
+const getStartDateOfWeek = (w: number, y: number) => {
+    const simple = new Date(y, 0, 1 + (w - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = simple;
+    if (dow <= 4)
+        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+    return ISOweekStart.toISOString().split('T')[0];
+};
 
 export default function SlipGajiScreen() {
-    const router = useRouter(); const [selectedFilter, setSelectedFilter] = useState<PaymentStatus | 'all'>('all');
+    const router = useRouter();
+    const now = new Date();
+    const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
     const [selectedSlip, setSelectedSlip] = useState<SlipGaji | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Period state - weekly
-    const now = new Date();
-    const [selectedWeek, setSelectedWeek] = useState(getWeekNumber(now));
-    const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+    // Period state - Date Range
+    const getInitialRange = () => {
+        const d = new Date();
+        const day = d.getDay() || 7;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - day + 1);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return {
+            start: monday.toISOString().split('T')[0],
+            end: sunday.toISOString().split('T')[0]
+        };
+    };
 
-    // Preview modal state
-    const [showPreviewModal, setShowPreviewModal] = useState(false);
-    const [previewItems, setPreviewItems] = useState<SlipGajiPreviewItem[]>([]);
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [previewDates, setPreviewDates] = useState({ mulai: '', akhir: '' });
-    const [customTanggalMulai, setCustomTanggalMulai] = useState('');
-    const [previewSearchQuery, setPreviewSearchQuery] = useState('');
+    const initialRange = getInitialRange();
+    const [startDate, setStartDate] = useState(initialRange.start);
+    const [endDate, setEndDate] = useState(initialRange.end);
+    const [datePickingMode, setDatePickingMode] = useState<'start' | 'end' | 'slip'>('slip');
+
+    // The "Tanggal Slip" user chooses
+    const [slipDate, setSlipDate] = useState(now.toISOString().split('T')[0]);
+
+    // Local state for attendance edits
+    const [attendanceEdits, setAttendanceEdits] = useState<Record<number, number>>({});
+
+    // Search query
+    const [searchQuery, setSearchQuery] = useState('');
+
     const [generatingId, setGeneratingId] = useState<number | null>(null);
     const [payMetode, setPayMetode] = useState('transfer');
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -75,18 +105,53 @@ export default function SlipGajiScreen() {
     });
 
     // API Hooks
+    // 1. History (Processed Slips)
     const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePayrollList({
         limit: 100,
-        periode_minggu: selectedWeek,
-        periode_tahun: selectedYear,
-        status: selectedFilter === 'all' ? undefined : selectedFilter,
+        // For history, we can still filter by the year/week of the startDate for consistency,
+        // or just show all. Let's use the startDate's week for now to avoid breaking the backend summary.
+        periode_minggu: getWeekNumber(new Date(startDate)),
+        periode_tahun: new Date(startDate).getFullYear(),
     });
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePayrollSummary(selectedYear, selectedWeek);
+
+    // 2. Summary
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePayrollSummary(
+        new Date(startDate).getFullYear(),
+        getWeekNumber(new Date(startDate))
+    );
+
+    // 3. Pending (Employees without slips) - NOW RANGE BASED
+    const { data: previewData, isLoading: isLoadingPreview, refetch: refetchPreview } = useSlipGajiPreviewRange(startDate, endDate, true);
 
     const createBulkMutation = useCreatePayroll();
     const processPaymentMutation = useProcessPayrollPayment();
 
-    const slipList = listData?.data || [];
+    const slipHistory = listData?.data || [];
+    const pendingEmployees = previewData?.items || [];
+
+    // Filtered Lists
+    const filteredPending = useMemo(() => {
+        let items = pendingEmployees;
+        if (searchQuery) {
+            const lower = searchQuery.toLowerCase();
+            items = items.filter((item: SlipGajiPreviewItem) =>
+                item.karyawan_nama.toLowerCase().includes(lower) ||
+                item.karyawan_kode.toLowerCase().includes(lower)
+            );
+        }
+        return items;
+    }, [pendingEmployees, searchQuery]);
+
+    const filteredHistory = useMemo(() => {
+        let items = slipHistory;
+        if (searchQuery) {
+            const lower = searchQuery.toLowerCase();
+            items = items.filter((item: SlipGaji) =>
+                item.karyawan_nama?.toLowerCase().includes(lower)
+            );
+        }
+        return items;
+    }, [slipHistory, searchQuery]);
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['65%', '85%'], []);
@@ -101,120 +166,98 @@ export default function SlipGajiScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchList(), refetchSummary()]);
+        await Promise.all([refetchList(), refetchSummary(), refetchPreview()]);
         setRefreshing(false);
-    }, [refetchList, refetchSummary]);
-
-    const handleOpenPreview = async () => {
-        setPreviewLoading(true);
-        setShowPreviewModal(true);
-        setPreviewSearchQuery('');
-        try {
-            const preview = await sdmService.getSlipGajiPreview(selectedYear, selectedWeek);
-            setPreviewItems(preview.items);
-            setPreviewDates({ mulai: preview.tanggal_mulai, akhir: preview.tanggal_akhir });
-            setCustomTanggalMulai(preview.tanggal_mulai);
-        } catch (error: any) {
-            console.error('Failed to load preview:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal memuat preview'), variant: 'error' });
-            setShowPreviewModal(false);
-        } finally {
-            setPreviewLoading(false);
-        }
-    };
+    }, [refetchList, refetchSummary, refetchPreview]);
 
     const handleUpdateAttendance = (karyawanId: number, value: string) => {
         const numValue = parseInt(value) || 0;
-        setPreviewItems(items =>
-            items.map(item =>
-                item.karyawan_id === karyawanId
-                    ? {
-                        ...item,
-                        jumlah_hadir: numValue,
-                        gaji_bersih: item.gaji_pokok - item.potongan_kasbon,
-                    }
-                    : item
-            )
-        );
+        setAttendanceEdits(prev => ({
+            ...prev,
+            [karyawanId]: numValue
+        }));
     };
 
-    const handleGenerateBulk = async () => {
-        if (previewItems.length === 0) {
-            setDialogConfig({ visible: true, title: 'Info', message: 'Tidak ada karyawan yang perlu di-generate slip gajinya', variant: 'info' });
-            return;
-        }
-
-        try {
-            const result = await createBulkMutation.mutateAsync({
-                tahun: selectedYear,
-                minggu: selectedWeek,
-                items: previewItems,
-                tanggalMulai: customTanggalMulai,
-            });
-            setDialogConfig({ visible: true, title: 'Sukses', message: `${result.created || 0} slip gaji berhasil dibuat`, variant: 'success' });
-            setShowPreviewModal(false);
-            refetchList();
-            refetchSummary();
-        } catch (error: any) {
-            console.error('Failed to generate:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal generate slip gaji'), variant: 'error' });
-        }
+    const getAttendanceValue = (item: SlipGajiPreviewItem) => {
+        return attendanceEdits[item.karyawan_id] !== undefined
+            ? attendanceEdits[item.karyawan_id]
+            : item.jumlah_hadir;
     };
 
     const handleGenerateSingle = async (item: SlipGajiPreviewItem) => {
         setGeneratingId(item.karyawan_id);
+        const finalAttendance = getAttendanceValue(item);
+
         try {
-            const result = await createBulkMutation.mutateAsync({
-                tahun: selectedYear,
-                minggu: selectedWeek,
-                items: [item],
-                tanggalMulai: customTanggalMulai,
+            await createBulkMutation.mutateAsync({
+                tanggalDari: startDate,
+                tanggalSampai: endDate,
+                items: [{ ...item, jumlah_hadir: finalAttendance }],
             });
-            setDialogConfig({ visible: true, title: 'Sukses', message: `Slip gaji ${item.karyawan_nama} berhasil dibuat`, variant: 'success' });
-
-            // Remove from preview list
-            setPreviewItems(prev => prev.filter(p => p.karyawan_id !== item.karyawan_id));
-
-            refetchList();
-            refetchSummary();
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: `Slip gaji ${item.karyawan_nama} berhasil dibuat`,
+                variant: 'success'
+            });
+            onRefresh();
         } catch (error: any) {
             console.error('Failed to generate:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal generate slip gaji'), variant: 'error' });
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal generate slip gaji'),
+                variant: 'error'
+            });
         } finally {
             setGeneratingId(null);
         }
     };
 
-    const filteredPreviewItems = useMemo(() => {
-        if (!previewSearchQuery) return previewItems;
-        const query = previewSearchQuery.toLowerCase();
-        return previewItems.filter(item =>
-            item.karyawan_nama.toLowerCase().includes(query) ||
-            item.karyawan_kode.toLowerCase().includes(query)
-        );
-    }, [previewItems, previewSearchQuery]);
+    const handleGenerateBulk = async () => {
+        if (filteredPending.length === 0) return;
+
+        try {
+            const itemsToGenerate = filteredPending.map((item: SlipGajiPreviewItem) => ({
+                ...item,
+                jumlah_hadir: getAttendanceValue(item)
+            }));
+
+            await createBulkMutation.mutateAsync({
+                tanggalDari: startDate,
+                tanggalSampai: endDate,
+                items: itemsToGenerate,
+            });
+
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: `${itemsToGenerate.length} slip gaji berhasil dibuat`,
+                variant: 'success'
+            });
+            onRefresh();
+        } catch (error: any) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal generate bulk'),
+                variant: 'error'
+            });
+        }
+    };
 
     const openDetail = (slip: SlipGaji) => {
         setSelectedSlip(slip);
         setPayMetode('transfer');
-        bottomSheetRef.current?.expand();
+        if (Platform.OS !== 'web') bottomSheetRef.current?.expand();
     };
 
     const handleProcessPayment = async () => {
-        if (!selectedSlip) {
-            console.log('handleProcessPayment: No slip selected');
-            return;
-        }
-
-        console.log('handleProcessPayment: Starting for slip', selectedSlip.id);
-
-        const title = 'Konfirmasi Pembayaran';
-        const message = `Apakah Anda yakin ingin memproses pembayaran untuk slip gaji ${selectedSlip.karyawan_nama}?`;
-
+        if (!selectedSlip) return;
         setDialogConfig({
             visible: true,
-            title: title,
-            message: message,
+            title: 'Konfirmasi Pembayaran',
+            message: `Proses pembayaran untuk ${selectedSlip.karyawan_nama}?`,
             variant: 'info',
             type: 'confirm',
             onConfirm: executePayment
@@ -224,71 +267,106 @@ export default function SlipGajiScreen() {
     const executePayment = async () => {
         if (!selectedSlip) return;
         try {
-            console.log('executePayment: Processing payment for slip:', selectedSlip.id);
             await processPaymentMutation.mutateAsync({
                 id: selectedSlip.id,
-                data: {
-                    metode_bayar: payMetode,
-                },
+                data: { metode_bayar: payMetode },
             });
-            console.log('executePayment: Success');
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran gaji berhasil diproses', variant: 'success' });
-            if (Platform.OS === 'web') {
-                setSelectedSlip(null);
-            } else {
-                bottomSheetRef.current?.close();
-                // setSelectedSlip(null) will be called via onClose of BottomSheet
-            }
-            refetchList();
-            refetchSummary();
+            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran berhasil', variant: 'success' });
+            if (Platform.OS === 'web') setSelectedSlip(null);
+            else bottomSheetRef.current?.close();
+            onRefresh();
         } catch (error: any) {
-            console.error('executePayment: Failed', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal memproses pembayaran'), variant: 'error' });
+            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal bayar'), variant: 'error' });
         }
     };
 
+    const renderPendingItem = ({ item }: { item: SlipGajiPreviewItem }) => {
+        const isGenerating = generatingId === item.karyawan_id;
+        const currentAttendance = getAttendanceValue(item);
 
-    const changeWeek = (direction: number) => {
-        let newWeek = selectedWeek + direction;
-        let newYear = selectedYear;
+        return (
+            <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
+                <View className="flex-row items-start justify-between">
+                    <View className="flex-1 mr-4">
+                        <View className="flex-row items-center mb-1">
+                            <View className="w-8 h-8 bg-amber-50 rounded-full items-center justify-center mr-2">
+                                <User size={16} color="#F59E0B" />
+                            </View>
+                            <Typography weight="bold" className="text-textMain text-base">{item.karyawan_nama}</Typography>
+                        </View>
+                        <Typography variant="caption" className="text-gray-400 mb-3">{item.karyawan_kode}</Typography>
 
-        if (newWeek < 1) {
-            newWeek = 52;
-            newYear--;
-        } else if (newWeek > 52) {
-            newWeek = 1;
-            newYear++;
-        }
+                        <View className="flex-row items-center space-x-3">
+                            <View className="bg-gray-50 px-2 py-1.5 rounded-xl border border-gray-100 flex-row items-center">
+                                <Typography className="text-[10px] text-gray-400 font-bold uppercase mr-1">Pokok:</Typography>
+                                <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok)}</Typography>
+                            </View>
+                            {item.potongan_kasbon > 0 && (
+                                <View className="bg-rose-50 px-2 py-1.5 rounded-xl border border-rose-100 flex-row items-center">
+                                    <Typography className="text-[10px] text-rose-400 font-bold uppercase mr-1">Kasbon:</Typography>
+                                    <Typography weight="bold" className="text-[11px] text-rose-600">-{formatCurrency(item.potongan_kasbon)}</Typography>
+                                </View>
+                            )}
+                        </View>
+                    </View>
 
-        setSelectedWeek(newWeek);
-        setSelectedYear(newYear);
+                    <View className="items-end">
+                        <Typography className="text-[9px] text-gray-400 font-bold uppercase mb-1 tracking-widest">Kehadiran</Typography>
+                        <View className="flex-row items-center bg-white rounded-2xl border border-gray-200 px-3 py-1 mb-3">
+                            <TextInput
+                                className="w-8 text-center text-primary font-bold p-0 text-xl"
+                                keyboardType="numeric"
+                                value={String(currentAttendance)}
+                                onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
+                                selectTextOnFocus
+                            />
+                            <Typography className="text-[10px] text-gray-400 font-bold uppercase ml-1">Hari</Typography>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => handleGenerateSingle(item)}
+                            disabled={isGenerating || !!generatingId}
+                            className={`px-4 py-2 rounded-xl flex-row items-center ${isGenerating ? 'bg-gray-100' : 'bg-primary'}`}
+                        >
+                            {isGenerating ? (
+                                <ActivityIndicator size="small" color="#16A34A" />
+                            ) : (
+                                <>
+                                    <Typography className="text-white text-[10px] font-bold uppercase mr-2">Proses</Typography>
+                                    <ArrowRight size={12} color="white" />
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Card>
+        );
     };
 
-    const renderSlipItem = ({ item }: { item: SlipGaji }) => {
+    const renderHistoryItem = ({ item }: { item: SlipGaji }) => {
         const isLunas = item.status?.toUpperCase() === 'LUNAS';
         return (
-            <TouchableOpacity onPress={() => openDetail(item)}>
-                <Card className="mb-3 p-4 border border-gray-100">
+            <TouchableOpacity onPress={() => openDetail(item)} activeOpacity={0.7}>
+                <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1">
-                            <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${isLunas ? 'bg-green-100' : 'bg-purple-100'}`}>
-                                <FileText size={20} color={isLunas ? '#16A34A' : '#8B5CF6'} />
+                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isLunas ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                                <FileText size={24} color={isLunas ? '#10B981' : '#F59E0B'} />
                             </View>
                             <View className="flex-1">
-                                <Typography weight="semibold">{item.karyawan_nama}</Typography>
+                                <Typography weight="bold" className="text-textMain">{item.karyawan_nama}</Typography>
                                 <View className="flex-row items-center mt-1">
-                                    <Typography variant="caption" className="text-gray-500">
-                                        Hadir: {item.jumlah_hadir} hari
-                                    </Typography>
-                                    <Typography variant="caption" className="text-gray-400 mx-2">•</Typography>
-                                    <Typography variant="caption" className="text-primary font-semibold">
-                                        {formatCurrency(item.gaji_bersih)}
+                                    <View className="bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 mr-2">
+                                        <Typography className="text-primary text-[10px] font-bold">{item.jumlah_hadir} HARI</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-gray-400 text-xs">
+                                        • {formatCurrency(item.gaji_bersih)}
                                     </Typography>
                                 </View>
                             </View>
                         </View>
                         <Badge
-                            label={isLunas ? 'Dibayar' : 'Pending'}
+                            label={isLunas ? 'LUNAS' : 'PENDING'}
                             variant={isLunas ? 'success' : 'warning'}
                         />
                     </View>
@@ -297,324 +375,205 @@ export default function SlipGajiScreen() {
         );
     };
 
-    const renderPreviewItem = ({ item }: { item: SlipGajiPreviewItem }) => {
-        const isGenerating = generatingId === item.karyawan_id;
-
-        return (
-            <Card className="mb-3 p-4 border border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
-                        <Typography weight="semibold">{item.karyawan_nama}</Typography>
-                        <Typography variant="caption" className="text-gray-500">{item.karyawan_kode}</Typography>
-                        <View className="flex-row items-center mt-2">
-                            <Typography variant="caption" className="text-gray-600 mr-2">{`Gaji: ${formatCurrency(item.gaji_pokok)}`}</Typography>
-                            {item.potongan_kasbon > 0 ? (
-                                <Typography variant="caption" className="text-red-500">
-                                    {`- Kasbon ${formatCurrency(item.potongan_kasbon)}`}
-                                </Typography>
-                            ) : null}
-                        </View>
-
-                        <TouchableOpacity
-                            onPress={() => handleGenerateSingle(item)}
-                            disabled={isGenerating || !!generatingId}
-                            className={`mt-3 self-start px-3 py-1.5 rounded-lg border ${isGenerating ? 'bg-gray-50 border-gray-200' : 'bg-primary/10 border-primary/20'}`}
-                        >
-                            {isGenerating ? (
-                                <ActivityIndicator size="small" color="#16A34A" />
-                            ) : (
-                                <Typography className="text-primary text-xs font-semibold">Generate Slip</Typography>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                    <View className="items-end">
-                        <Typography variant="caption" className="text-gray-500 mb-1">Kehadiran</Typography>
-                        <View className="flex-row items-center bg-gray-100 rounded-lg px-2">
-                            <TextInput
-                                className="w-12 text-center py-2 text-lg font-semibold"
-                                keyboardType="numeric"
-                                value={String(item.jumlah_hadir)}
-                                onChangeText={(value) => handleUpdateAttendance(item.karyawan_id, value)}
-                            />
-                            <Typography className="text-gray-500 ml-1">hari</Typography>
-                        </View>
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+            {/* Redesigned Header */}
+            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                            className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
                         </TouchableOpacity>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Slip Gaji</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Manajemen Payroll Mingguan</Typography>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Sistem Payroll</Typography>
+                            <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Berdasarkan Range Tanggal</Typography>
                         </View>
                     </View>
+
+                    <View className="bg-white/10 rounded-2xl py-2 px-4 border border-white/10 flex-row items-center">
+                        <Clock size={16} color="white" className="mr-2" />
+                        <Typography className="text-white font-bold text-xs">Custom Range</Typography>
+                    </View>
+                </View>
+
+                {/* Range Selection Card */}
+                <View className="flex-row space-x-3 mb-4">
                     <TouchableOpacity
-                        onPress={handleOpenPreview}
-                        disabled={createBulkMutation.isPending}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
+                        className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
                     >
-                        {createBulkMutation.isPending ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
+                        <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
+                        <Typography className="text-white font-bold text-sm">{startDate}</Typography>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
+                        className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
+                    >
+                        <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
+                        <Typography className="text-white font-bold text-sm">{endDate}</Typography>
                     </TouchableOpacity>
                 </View>
 
-                {/* Salary Summary (Glassmorphism) - Inside Header */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row items-center justify-between mb-4">
-                        <View className="flex-row items-center">
-                            <View className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center mr-3">
-                                <FileText size={20} color="white" />
-                            </View>
-                            <Typography className="text-white/60 text-xs font-bold uppercase tracking-widest">Total Gaji Minggu Ini</Typography>
-                        </View>
-                        <View className="bg-white/10 px-3 py-1 rounded-full border border-white/5">
-                            <Typography className="text-white/80 text-[10px] font-bold">W{selectedWeek}</Typography>
-                        </View>
+                {/* Date Selection Card - PREMIUM */}
+                <TouchableOpacity
+                    onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
+                    activeOpacity={0.9}
+                    className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center"
+                >
+                    <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
+                        <Calendar size={28} color="#00AA13" />
                     </View>
-
-                    <Typography variant="h1" weight="bold" className="text-white text-3xl mb-4 tracking-tight">
-                        {isLoadingSummary ? '...' : formatCurrency(summary?.total_gaji_bersih || 0)}
-                    </Typography>
-
-                    <View className="flex-row space-x-3">
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Sudah Bayar</Typography>
-                            <Typography className="text-white font-bold text-xs" numberOfLines={1}>{formatCurrency(summary?.total_dibayar || 0)}</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Sisa Belum</Typography>
-                            <Typography className="text-amber-400 font-bold text-xs" numberOfLines={1}>{formatCurrency(summary?.total_belum_dibayar || 0)}</Typography>
-                        </View>
+                    <View className="flex-1">
+                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Tanggal Cetak Slip</Typography>
+                        <Typography className="text-textMain font-bold text-xl">{slipDate}</Typography>
                     </View>
-                </View>
+                    <View className="bg-primary/10 px-4 py-2 rounded-full">
+                        <Typography className="text-primary text-[10px] font-black uppercase">Ubah</Typography>
+                    </View>
+                </TouchableOpacity>
             </View>
 
-            {/* Week Slider & Filter Navigator Overlay */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
-                    <View className="flex-row items-center justify-between px-2 mb-2 bg-gray-50 h-14 rounded-2xl border border-gray-100">
-                        <TouchableOpacity onPress={() => changeWeek(-1)} className="w-10 h-10 items-center justify-center">
-                            <ChevronLeft size={20} color="#1C1C1C" />
-                        </TouchableOpacity>
+            {/* Search & Tabs Area */}
+            <View className="flex-1 mt-6 z-20">
+                <View className="mx-6 h-full bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden">
 
-                        <View className="items-center">
-                            <Typography variant="caption" weight="bold" className="text-textMain">Minggu ke-{selectedWeek}</Typography>
-                            <Typography className="text-[9px] text-textGray/60 font-medium">{selectedYear}</Typography>
-                        </View>
-
-                        <TouchableOpacity onPress={() => changeWeek(1)} className="w-10 h-10 items-center justify-center">
-                            <ChevronLeft size={20} color="#1C1C1C" style={{ transform: [{ rotate: '180deg' }] }} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="p-1">
-                        {STATUS_FILTERS.map((filter) => (
-                            <TouchableOpacity
-                                key={filter.key}
-                                onPress={() => setSelectedFilter(filter.key as PaymentStatus | 'all')}
-                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-transparent border border-transparent'}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={selectedFilter === filter.key ? 'text-white' : 'text-textGray/60'}
-                                >
-                                    {filter.label}
-                                </Typography>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            </View>
-
-            {/* Slip List */}
-            <FlatList
-                data={slipList}
-                renderItem={(props) => {
-                    const { item } = props;
-                    const isLunas = item.status?.toUpperCase() === 'LUNAS';
-                    return (
-                        <TouchableOpacity
-                            onPress={() => openDetail(item)}
-                            activeOpacity={0.9}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
-                        >
-                            <View className={`w-14 h-14 ${isLunas ? 'bg-emerald-50' : 'bg-amber-50'} rounded-2xl items-center justify-center mr-4 border ${isLunas ? 'border-emerald-100/50' : 'border-amber-100/50'}`}>
-                                <FileText size={28} color={isLunas ? '#10B981' : '#F59E0B'} />
-                            </View>
-                            <View className="flex-1 mr-3">
-                                <View className="flex-row items-center mb-1">
-                                    <Typography variant="body1" weight="bold" className="text-textMain tracking-tight mr-2" numberOfLines={1}>
-                                        {item.karyawan_nama}
-                                    </Typography>
-                                    <View className={isLunas ? "bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100" : "bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100"}>
-                                        <Typography className={isLunas ? "text-emerald-600 text-[8px] font-bold" : "text-amber-600 text-[8px] font-bold"}>
-                                            {isLunas ? 'PAID' : 'PENDING'}
-                                        </Typography>
-                                    </View>
-                                </View>
-                                <Typography variant="caption" className="text-textGray mb-1">
-                                    Hadir {item.jumlah_hadir} hari
-                                </Typography>
-                                <Typography variant="body2" weight="bold" className="text-primary text-xs">
-                                    {formatCurrency(item.gaji_bersih)}
-                                </Typography>
-                            </View>
-                            <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
-                                <ChevronLeft size={18} color="#D1D5DB" style={{ transform: [{ rotate: '180deg' }] }} />
-                            </View>
-                        </TouchableOpacity>
-                    );
-                }}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
-                ListEmptyComponent={
-                    isLoadingList ? (
-                        <View className="space-y-4">
-                            {[1, 2, 3].map(i => <SkeletonCard key={i} className="h-24 rounded-[32px]" />)}
-                        </View>
-                    ) : (
-                        <View className="items-center py-20">
-                            <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
-                                <FileText size={40} color="#D1D5DB" />
-                            </View>
-                            <Typography className="text-gray-400 font-medium text-center px-10">Belum ada slip gaji minggu ini</Typography>
-                        </View>
-                    )
-                }
-            />
-
-            {/* Preview Generative Modal */}
-            <Modal visible={showPreviewModal} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowPreviewModal(false)}>
-                <View className="flex-1 bg-surface">
-                    <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[40px] shadow-lg">
-                        <View className="flex-row items-center justify-between mb-6">
-                            <View>
-                                <Typography variant="h2" weight="bold" className="text-white text-xl">Generate Preview</Typography>
-                                <Typography className="text-white/50 text-xs">Week {selectedWeek}, {selectedYear}</Typography>
-                            </View>
-                            <TouchableOpacity onPress={() => setShowPreviewModal(false)} className="w-10 h-10 bg-white/10 rounded-full items-center justify-center">
-                                <X size={20} color="white" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View className="bg-white/10 px-4 py-3 rounded-2xl border border-white/10 flex-row items-center">
-                            <Search size={18} color="#FFFFFF" strokeWidth={2} />
+                    {/* Glassmorphic Search */}
+                    <View className="px-6 pt-6 pb-2">
+                        <View className="bg-gray-50 px-5 py-4 rounded-[24px] border border-gray-100 flex-row items-center shadow-inner">
+                            <Search size={20} color="#D1D5DB" strokeWidth={2.5} />
                             <TextInput
-                                className="flex-1 ml-3 text-white font-medium text-sm"
+                                className="flex-1 ml-4 text-textMain font-medium"
                                 placeholder="Cari karyawan..."
-                                placeholderTextColor="rgba(255,255,255,0.4)"
-                                value={previewSearchQuery}
-                                onChangeText={setPreviewSearchQuery}
+                                placeholderTextColor="#D1D5DB"
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
                             />
                         </View>
                     </View>
 
-                    {previewLoading ? (
-                        <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#00AA13" />
-                            <Typography className="text-textGray mt-4 font-medium">Menghitung gaji...</Typography>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={filteredPreviewItems}
-                            renderItem={(props) => {
-                                const { item } = props;
-                                const isGenerating = generatingId === item.karyawan_id;
-                                return (
-                                    <View className="bg-white mx-6 p-5 rounded-[32px] mb-4 border border-gray-100 shadow-sm flex-row items-center">
-                                        <View className="flex-1">
-                                            <Typography weight="bold" className="text-textMain">{item.karyawan_nama}</Typography>
-                                            <Typography variant="caption" className="text-textGray mb-2">{item.karyawan_kode}</Typography>
-                                            <View className="flex-row items-center">
-                                                <Typography className="text-[10px] text-textGray font-bold bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100">
-                                                    {formatCurrency(item.gaji_pokok)}
+                    {/* Modern Tab Switcher */}
+                    <View className="flex-row p-4 space-x-2">
+                        <TouchableOpacity
+                            onPress={() => setActiveTab('pending')}
+                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
+                        >
+                            <Clock size={18} color={activeTab === 'pending' ? 'white' : '#9CA3AF'} className="mr-2" />
+                            <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-gray-400'}>
+                                Belum ({filteredPending.length})
+                            </Typography>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => setActiveTab('history')}
+                            className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'history' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
+                        >
+                            <CheckCircle2 size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} className="mr-2" />
+                            <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-gray-400'}>
+                                Riwayat ({filteredHistory.length})
+                            </Typography>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Dynamic List */}
+                    <View className="flex-1 bg-white">
+                        {activeTab === 'pending' ? (
+                            <FlatList
+                                data={filteredPending}
+                                renderItem={renderPendingItem}
+                                keyExtractor={(item) => item.karyawan_id.toString()}
+                                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                                ListEmptyComponent={
+                                    <View className="items-center py-20 px-10">
+                                        {isLoadingPreview ? (
+                                            <ActivityIndicator size="large" color="#00AA13" />
+                                        ) : (
+                                            <>
+                                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
+                                                    <CheckCircle2 size={40} color="#D1D5DB" />
+                                                </View>
+                                                <Typography className="text-gray-400 text-center font-medium">
+                                                    Semua karyawan minggu ini sudah diproses.
                                                 </Typography>
-                                                {item.potongan_kasbon > 0 && (
-                                                    <Typography className="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100 ml-2">
-                                                        - K{formatCurrency(item.potongan_kasbon)}
-                                                    </Typography>
-                                                )}
-                                            </View>
-                                        </View>
-
-                                        <View className="items-end">
-                                            <View className="flex-row items-center bg-gray-50 rounded-2xl border border-gray-100 px-3 py-2 mb-2">
-                                                <TextInput
-                                                    className="w-10 text-center text-textMain font-bold p-0"
-                                                    keyboardType="numeric"
-                                                    value={String(item.jumlah_hadir)}
-                                                    onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
-                                                />
-                                                <Typography className="text-[10px] text-textGray font-bold uppercase ml-1">Days</Typography>
-                                            </View>
-
-                                            <TouchableOpacity
-                                                onPress={() => handleGenerateSingle(item)}
-                                                disabled={isGenerating || !!generatingId}
-                                                className={`px-4 py-2 rounded-xl ${isGenerating ? 'bg-gray-100' : 'bg-primary shadow-lg shadow-primary/20 border border-white/10'}`}
-                                            >
-                                                {isGenerating ? <ActivityIndicator size="small" color="#00AA13" /> : (
-                                                    <Typography className="text-white text-[10px] font-bold uppercase">Gen</Typography>
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
+                                            </>
+                                        )}
                                     </View>
-                                );
-                            }}
-                            keyExtractor={(item) => item.karyawan_id.toString()}
-                            contentContainerStyle={{ paddingVertical: 24, paddingBottom: 100 }}
-                            ListEmptyComponent={
-                                <View className="items-center py-20 px-10">
-                                    <FileText size={48} color="#D1D5DB" />
-                                    <Typography className="text-textGray text-center mt-4 font-medium">Semua karyawan sudah memiliki slip gaji atau tidak ada data ditemukan</Typography>
-                                </View>
-                            }
-                        />
-                    )}
+                                }
+                            />
+                        ) : (
+                            <FlatList
+                                data={filteredHistory}
+                                renderItem={renderHistoryItem}
+                                keyExtractor={(item) => item.id.toString()}
+                                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                                ListEmptyComponent={
+                                    <View className="items-center py-20 px-10">
+                                        {isLoadingList ? (
+                                            <ActivityIndicator size="large" color="#00AA13" />
+                                        ) : (
+                                            <>
+                                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
+                                                    <FileText size={40} color="#D1D5DB" />
+                                                </View>
+                                                <Typography className="text-gray-400 text-center font-medium">
+                                                    Belum ada riwayat slip gaji untuk periode ini.
+                                                </Typography>
+                                            </>
+                                        )}
+                                    </View>
+                                }
+                            />
+                        )}
+                    </View>
 
-                    {!previewLoading && previewItems.length > 0 && (
-                        <View className="absolute bottom-10 left-6 right-6">
+                    {/* Bulk Generate FAB */}
+                    {activeTab === 'pending' && filteredPending.length > 0 && (
+                        <View className="absolute bottom-6 left-6 right-6">
                             <TouchableOpacity
                                 onPress={handleGenerateBulk}
-                                disabled={createBulkMutation.isPending || !!generatingId}
-                                className="bg-primary h-16 rounded-[24px] items-center justify-center shadow-xl shadow-primary/30 flex-row border border-white/10"
+                                disabled={createBulkMutation.isPending}
+                                className="bg-primary h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20"
                             >
                                 {createBulkMutation.isPending ? <ActivityIndicator color="white" /> : (
                                     <>
-                                        <RefreshCw size={20} color="white" className="mr-3" />
-                                        <Typography className="text-white font-bold text-lg">Generate Bulk ({previewItems.length})</Typography>
+                                        <Typography weight="bold" className="text-white text-lg mr-2">Generate Semua ({filteredPending.length})</Typography>
+                                        <TrendingUp size={20} color="white" />
                                     </>
                                 )}
                             </TouchableOpacity>
                         </View>
                     )}
                 </View>
-            </Modal>
+            </View>
 
-            {/* Bottom Sheet Detail */}
+            {/* Summary Panel for History */}
+            {activeTab === 'history' && summary && (
+                <View className="absolute bottom-0 left-0 right-0 bg-white p-6 rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between">
+                    <View>
+                        <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-wider mb-1">Total Pengeluaran</Typography>
+                        <Typography className="text-textMain text-xl font-black">{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
+                    </View>
+                    <View className="items-end">
+                        <Typography className="text-amber-500 font-bold text-xs">Belum: {formatCurrency(summary.total_belum_dibayar)}</Typography>
+                        <Typography className="text-emerald-600 font-bold text-xs">Sudah: {formatCurrency(summary.total_dibayar)}</Typography>
+                    </View>
+                </View>
+            )}
+
+            {/* Detail Sheet */}
             {Platform.OS === 'web' ? (
                 <Modal visible={!!selectedSlip} transparent animationType="slide" onRequestClose={() => setSelectedSlip(null)}>
                     <View className="flex-1 justify-end bg-black/40">
                         <TouchableOpacity className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View className="bg-white rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView className="px-8 flex-1">
+                            <ScrollView className="px-10 flex-1">
                                 {selectedSlip && renderDetailContent()}
                             </ScrollView>
                         </View>
@@ -626,10 +585,10 @@ export default function SlipGajiScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 56, backgroundColor: 'white' }}
                     onClose={() => setSelectedSlip(null)}
                 >
-                    <BottomSheetScrollView className="px-8">
+                    <BottomSheetScrollView className="px-10">
                         {selectedSlip && renderDetailContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -644,6 +603,48 @@ export default function SlipGajiScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
+
+            {/* Date Picker Modal */}
+            <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+                <View className="flex-1 justify-center bg-black/50 px-6">
+                    <Card className="rounded-[40px] overflow-hidden p-0 border border-gray-100 shadow-2xl">
+                        <View className="bg-primary p-6 flex-row justify-between items-center">
+                            <Typography weight="bold" className="text-white text-lg">
+                                {datePickingMode === 'start' ? 'Pilih Tanggal Mulai' :
+                                    datePickingMode === 'end' ? 'Pilih Tanggal Selesai' :
+                                        'Pilih Tanggal Slip'}
+                            </Typography>
+                            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                <X size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                        <View className="p-4">
+                            <RNCalendar // Renamed Calendar to RNCalendar
+                                onDayPress={(day: any) => {
+                                    if (datePickingMode === 'start') setStartDate(day.dateString);
+                                    else if (datePickingMode === 'end') setEndDate(day.dateString);
+                                    else setSlipDate(day.dateString);
+                                    setShowDatePicker(false);
+                                }}
+                                markedDates={{
+                                    [datePickingMode === 'start' ? startDate :
+                                        datePickingMode === 'end' ? endDate : slipDate]:
+                                        { selected: true, selectedColor: '#00AA13' }
+                                }}
+                                theme={{
+                                    todayTextColor: '#00AA13',
+                                    selectedDayBackgroundColor: '#00AA13',
+                                    arrowColor: '#00AA13',
+                                    monthTextColor: '#00AA13',
+                                    textDayFontWeight: '500',
+                                    textMonthFontWeight: 'bold',
+                                    textDayHeaderFontWeight: 'bold',
+                                }}
+                            />
+                        </View>
+                    </Card>
+                </View>
+            </Modal>
         </View>
     );
 
@@ -652,102 +653,90 @@ export default function SlipGajiScreen() {
         const isLunas = selectedSlip.status?.toUpperCase() === 'LUNAS';
 
         return (
-            <View className="pb-10">
-                <View className="flex-row justify-between items-center mb-8">
-                    <View className="flex-row items-center">
-                        <View className="w-1 h-6 bg-primary rounded-full mr-3" />
-                        <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Detail Payroll</Typography>
-                    </View>
-                    <TouchableOpacity onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
-                        <X size={20} color="#6B7280" />
+            <View className="pb-16">
+                <View className="flex-row justify-between items-center mb-10">
+                    <Typography variant="h2" weight="bold" className="text-3xl tracking-tight">Payroll Detail</Typography>
+                    <TouchableOpacity onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
+                        <X size={24} color="#6B7280" />
                     </TouchableOpacity>
                 </View>
 
-                <View className="items-center mb-8">
-                    <View className="p-1 bg-gray-50 rounded-full border border-gray-100 shadow-sm">
-                        <View className="w-20 h-20 bg-primary/10 rounded-full items-center justify-center">
-                            <User size={40} color="#00AA13" />
+                <View className="items-center mb-12">
+                    <View className="p-1 bg-primary/5 rounded-[40px] border border-primary/10 mb-6">
+                        <View className="w-24 h-24 bg-primary/10 rounded-[36px] items-center justify-center">
+                            <User size={48} color="#00AA13" />
                         </View>
                     </View>
-                    <Typography variant="h3" weight="bold" className="mt-4 text-xl tracking-tight text-textMain">{selectedSlip.karyawan_nama}</Typography>
-                    <Typography className="text-textGray mt-0.5 font-medium">Minggu {selectedSlip.periode_minggu} • {selectedSlip.periode_tahun}</Typography>
+                    <Typography variant="h2" weight="bold" className="text-2xl text-textMain text-center">{selectedSlip.karyawan_nama}</Typography>
+                    <Typography className="text-textGray mt-1 font-medium text-lg">W{selectedSlip.periode_minggu} • {selectedSlip.periode_tahun}</Typography>
 
-                    <View className="flex-row mt-4">
-                        <View className={isLunas ? "bg-emerald-50 px-4 py-1.5 rounded-full border border-emerald-100" : "bg-amber-50 px-4 py-1.5 rounded-full border border-amber-100"}>
-                            <Typography className={isLunas ? "text-emerald-600 font-bold text-[10px] uppercase tracking-widest" : "text-amber-600 font-bold text-[10px] uppercase tracking-widest"}>
-                                {isLunas ? 'SUDAH TERBAYAR' : 'MENUNGGU PEMBAYARAN'}
-                            </Typography>
-                        </View>
+                    <View className="mt-6">
+                        <Badge
+                            label={isLunas ? 'TRANSFER BERHASIL' : 'MENUNGGU KONFIRMASI'}
+                            variant={isLunas ? 'success' : 'warning'}
+                            className="px-6 py-2"
+                        />
                     </View>
                 </View>
 
-                {/* Salary Bento Grid */}
-                <View className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 shadow-sm mb-8">
-                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-gray-200/50">
-                        <Typography className="text-textGray text-xs font-medium">Gaji Pokok</Typography>
-                        <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(selectedSlip.gaji_pokok)}</Typography>
+                {/* Info Bento Grid */}
+                <View className="bg-gray-50 p-8 rounded-[48px] border border-gray-100 shadow-sm mb-10">
+                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
+                        <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Gaji Pokok</Typography>
+                        <Typography weight="bold" className="text-textMain text-lg">{formatCurrency(selectedSlip.gaji_pokok)}</Typography>
                     </View>
-                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-gray-200/50">
-                        <Typography className="text-textGray text-xs font-medium">Total Hadir</Typography>
-                        <Typography weight="bold" className="text-textMain text-sm">{selectedSlip.jumlah_hadir} Hari</Typography>
+                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
+                        <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Kehadiran</Typography>
+                        <Typography weight="bold" className="text-textMain text-lg">{selectedSlip.jumlah_hadir} Hari</Typography>
                     </View>
-                    <View className="flex-row justify-between items-center mb-6">
-                        <Typography className="text-textGray text-xs font-medium">Potongan Kasbon</Typography>
-                        <Typography weight="bold" className="text-rose-500 text-sm">-{formatCurrency(selectedSlip.potongan_kasbon)}</Typography>
+                    <View className="flex-row justify-between items-center mb-8">
+                        <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Potongan Kasbon</Typography>
+                        <Typography weight="bold" className="text-rose-500 text-lg">-{formatCurrency(selectedSlip.potongan_kasbon)}</Typography>
                     </View>
 
-                    <View className="bg-white p-4 rounded-2xl border border-gray-200/50 flex-row items-center justify-between shadow-sm">
-                        <Typography variant="body1" weight="bold" className="text-textGray uppercase text-[10px] tracking-widest">Gaji Bersih</Typography>
-                        <Typography variant="h2" weight="bold" className="text-primary text-xl tracking-tighter">
+                    <View className="bg-white p-6 rounded-[32px] border border-primary/10 flex-row items-center justify-between shadow-xl">
+                        <Typography weight="bold" className="text-primary uppercase text-xs tracking-[2px]">Total Gaji Bersih</Typography>
+                        <Typography weight="bold" className="text-primary text-2xl tracking-tighter">
                             {formatCurrency(selectedSlip.gaji_bersih)}
                         </Typography>
                     </View>
                 </View>
 
                 {!isLunas && (
-                    <View className="mb-8">
-                        <Typography className="mb-4 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Metode Bayar</Typography>
-                        <View className="flex-row space-x-3">
+                    <View className="space-y-4">
+                        <Typography className="text-textGray/60 font-black text-[10px] uppercase tracking-[3px] ml-2 mb-2">Pilih Metode Pembayaran</Typography>
+                        <View className="flex-row space-x-4">
                             {['tunai', 'transfer'].map((m) => (
                                 <TouchableOpacity
                                     key={m}
                                     onPress={() => setPayMetode(m)}
-                                    className={`flex-1 py-4 items-center rounded-2xl border ${payMetode === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
+                                    className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-gray-200 bg-white'}`}
                                 >
-                                    <Typography
-                                        className={payMetode === m ? 'text-white' : 'text-textGray'}
-                                        weight="bold"
-                                    >
-                                        {m.toUpperCase()}
-                                    </Typography>
+                                    <Typography className={payMetode === m ? 'text-white' : 'text-textGray'} weight="bold">{m.toUpperCase()}</Typography>
                                 </TouchableOpacity>
                             ))}
                         </View>
+
+                        <TouchableOpacity
+                            onPress={handleProcessPayment}
+                            disabled={processPaymentMutation.isPending}
+                            className="bg-primary h-20 rounded-[32px] items-center justify-center shadow-2xl shadow-primary/40 mt-6 border border-white/20"
+                        >
+                            {processPaymentMutation.isPending ? <ActivityIndicator color="white" /> : (
+                                <Typography weight="bold" className="text-white text-xl">Selesaikan Pembayaran</Typography>
+                            )}
+                        </TouchableOpacity>
                     </View>
                 )}
 
-                {!isLunas && (
-                    <TouchableOpacity
-                        onPress={handleProcessPayment}
-                        disabled={processPaymentMutation.isPending}
-                        className="bg-primary h-16 rounded-[24px] items-center justify-center shadow-xl shadow-primary/30 border border-white/10"
-                    >
-                        {processPaymentMutation.isPending ? <ActivityIndicator color="white" /> : (
-                            <Typography weight="bold" className="text-white text-lg">Selesaikan Pembayaran</Typography>
-                        )}
-                    </TouchableOpacity>
-                )}
-
-                {isLunas && !!selectedSlip.tanggal_bayar && (
-                    <View className="bg-emerald-50 p-5 rounded-[24px] border border-emerald-100 flex-row items-center">
-                        <View className="w-10 h-10 bg-emerald-100 rounded-full items-center justify-center mr-4">
-                            <Calendar size={20} color="#059669" />
+                {isLunas && selectedSlip.tanggal_bayar && (
+                    <View className="bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 flex-row items-center">
+                        <View className="w-14 h-14 bg-emerald-100 rounded-2xl items-center justify-center mr-5">
+                            <Calendar size={28} color="#059669" />
                         </View>
                         <View>
-                            <Typography className="text-emerald-800 font-bold text-sm">Pembayaran Selesai</Typography>
-                            <Typography className="text-emerald-600/60 text-xs font-medium mt-0.5">
-                                Dana dikirim pada {formatDate(selectedSlip.tanggal_bayar)}
-                            </Typography>
+                            <Typography className="text-emerald-900 font-bold text-lg">Dana Terkirim</Typography>
+                            <Typography className="text-emerald-600/60 font-medium text-sm">Pada {formatDate(selectedSlip.tanggal_bayar)}</Typography>
                         </View>
                     </View>
                 )}

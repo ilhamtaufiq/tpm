@@ -254,7 +254,7 @@ class KasbonService:
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
-                PiutangUsaha.referensi_nomor == kasbon.nomor_kasbon,
+                PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
                 PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
             )
             .first()
@@ -280,7 +280,7 @@ class KasbonService:
 
         # Delete related piutang
         self.db.query(PiutangUsaha).filter(
-            PiutangUsaha.referensi_nomor == kasbon.nomor_kasbon,
+            PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
             PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
         ).delete()
 

@@ -258,6 +258,64 @@ export const sdmService = {
         return response.data;
     },
 
+    bulkClockIn: async (karyawanId: number, dates: string[]): Promise<any> => {
+        // 1. Get current month records to compare
+        // We take the first date as a reference to determine the month
+        if (dates.length === 0) return [];
+
+        const refDate = new Date(dates[0]);
+        const year = refDate.getFullYear();
+        const month = refDate.getMonth() + 1;
+        const lastDay = new Date(year, month, 0).getDate();
+
+        const existing = await sdmService.getAbsensiList({
+            karyawan_id: karyawanId,
+            tanggal_dari: `${year}-${String(month).padStart(2, '0')}-01`,
+            tanggal_sampai: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+            limit: 100
+        });
+
+        const existingMap = new Map();
+        if (existing && Array.isArray(existing.data)) {
+            existing.data.forEach((abs: any) => {
+                existingMap.set(abs.tanggal.split('T')[0], abs.id);
+            });
+        }
+
+        const datesToCreate = dates.filter(d => !existingMap.has(d));
+        const idsToDelete = [];
+        const selectedDatesSet = new Set(dates);
+
+        for (const [date, id] of existingMap.entries()) {
+            if (!selectedDatesSet.has(date)) {
+                idsToDelete.push(id);
+            }
+        }
+
+        const results = [];
+
+        // Delete removals
+        for (const id of idsToDelete) {
+            try {
+                await sdmService.deleteAbsensi(id);
+            } catch (err) {
+                console.error(`Failed to delete attendance ${id}:`, err);
+            }
+        }
+
+        // Create additions
+        for (const date of datesToCreate) {
+            try {
+                const res = await sdmService.clockIn(karyawanId, date);
+                results.push(res);
+            } catch (error) {
+                console.error(`Failed to clock in for ${date}:`, error);
+            }
+        }
+
+        return results;
+    },
+
     clockOut: async (karyawanId: number, tanggal?: string, jam?: string): Promise<Absensi> => {
         const params: any = { karyawan_id: karyawanId };
         if (tanggal) params.tanggal = tanggal;
@@ -357,6 +415,13 @@ export const sdmService = {
         return response.data;
     },
 
+    getSlipGajiPreviewRange: async (tanggalDari: string, tanggalSampai: string): Promise<SlipGajiPreview> => {
+        const response = await api.get('/slip-gaji/preview-range', {
+            params: { tanggal_dari: tanggalDari, tanggal_sampai: tanggalSampai }
+        });
+        return response.data;
+    },
+
     createSlipGaji: async (data: Partial<SlipGaji>): Promise<SlipGaji> => {
         const response = await api.post('/slip-gaji', data);
         return response.data;
@@ -368,6 +433,16 @@ export const sdmService = {
             tanggal_mulai: tanggalMulai
         };
         const response = await api.post(`/slip-gaji/bulk/${tahun}/${minggu}`, data);
+        return response.data;
+    },
+
+    createBulkSlipGajiRange: async (tanggalDari: string, tanggalSampai: string, items?: SlipGajiPreviewItem[]) => {
+        const data = {
+            items: items ? items.map(i => ({ karyawan_id: i.karyawan_id, jumlah_hadir: i.jumlah_hadir })) : undefined,
+        };
+        const response = await api.post('/slip-gaji/bulk-range', data, {
+            params: { tanggal_dari: tanggalDari, tanggal_sampai: tanggalSampai }
+        });
         return response.data;
     },
 

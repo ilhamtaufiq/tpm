@@ -252,6 +252,47 @@ class SlipGajiService:
             "items": items,
         }
 
+    def get_preview_by_range(
+        self,
+        tanggal_mulai: date,
+        tanggal_akhir: date,
+    ) -> Dict[str, Any]:
+        """Get preview of employees for slip gaji generation within a custom date range."""
+        # Get all active employees
+        employees = (
+            self.db.query(Karyawan)
+            .filter(
+                Karyawan.deleted_at.is_(None),
+                Karyawan.status == EmployeeStatus.AKTIF,
+            )
+            .order_by(Karyawan.nama.asc())
+            .all()
+        )
+
+        items = []
+        for emp in employees:
+            # Get attendance within range
+            jumlah_hadir = self._get_weekly_attendance(emp.id, tanggal_mulai, tanggal_akhir)
+
+            # Get kasbon
+            kasbon_total = self._get_kasbon_total(emp.id)
+
+            items.append({
+                "karyawan_id": emp.id,
+                "karyawan_nama": emp.nama,
+                "karyawan_kode": emp.kode,
+                "gaji_pokok": float(emp.gaji_pokok),
+                "jumlah_hadir": jumlah_hadir,
+                "potongan_kasbon": float(kasbon_total),
+                "gaji_bersih": float(emp.gaji_pokok - kasbon_total),
+            })
+
+        return {
+            "tanggal_mulai": tanggal_mulai.isoformat(),
+            "tanggal_akhir": tanggal_akhir.isoformat(),
+            "items": items,
+        }
+
     def create_bulk(
         self,
         minggu: int,
@@ -330,6 +371,78 @@ class SlipGajiService:
                 "skipped": 0,
                 "total_employees": len(items),
             }
+
+    def create_bulk_by_range(
+        self,
+        tanggal_mulai: date,
+        tanggal_akhir: date,
+        minggu: int,
+        tahun: int,
+        items: Optional[List[Dict[str, Any]]] = None,
+        user_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Create payroll slips for a custom date range."""
+        if not items:
+            return {"created": 0, "skipped": 0, "total_employees": 0}
+
+        created = 0
+        for item in items:
+            karyawan_id = item.get("karyawan_id")
+            jumlah_hadir = item.get("jumlah_hadir", 0)
+
+            # Check if already exists for this specific period
+            existing = (
+                self.db.query(SlipGaji)
+                .filter(
+                    SlipGaji.karyawan_id == karyawan_id,
+                    SlipGaji.periode_minggu == minggu,
+                    SlipGaji.periode_tahun == tahun,
+                )
+                .first()
+            )
+            if existing:
+                continue
+
+            # Get employee
+            karyawan = (
+                self.db.query(Karyawan)
+                .filter(Karyawan.id == karyawan_id)
+                .first()
+            )
+            if not karyawan:
+                continue
+
+            # Get kasbon
+            kasbon_total = self._get_kasbon_total(karyawan_id)
+
+            # Generate slip number
+            nomor_slip = self._generate_nomor_slip(minggu, tahun)
+
+            # Create slip with range dates
+            slip = SlipGaji(
+                nomor_slip=nomor_slip,
+                karyawan_id=karyawan_id,
+                periode_minggu=minggu,
+                periode_tahun=tahun,
+                tanggal_mulai=tanggal_mulai,
+                tanggal_akhir=tanggal_akhir,
+                jumlah_hadir=jumlah_hadir,
+                gaji_pokok=karyawan.gaji_pokok,
+                potongan_kasbon=kasbon_total,
+                status=PaymentStatus.BELUM_LUNAS,
+                created_by=user_id,
+            )
+            slip.calculate_totals()
+
+            self.db.add(slip)
+            created += 1
+
+        self.db.commit()
+        return {
+            "created": created,
+            "skipped": 0,
+            "total_employees": len(items),
+        }
 
         # Otherwise, auto-calculate for all active employees
         employees = (

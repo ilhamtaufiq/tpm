@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Modal, TouchableOpacity, Platform } from 'react-native';
+import { View, ScrollView, Modal, TouchableOpacity, Platform, Image } from 'react-native';
 import { X, Printer, Download, ZoomIn, ZoomOut } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Button } from './Button';
@@ -112,21 +112,17 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                     >
                         {/* Header */}
                         <View style={{ alignItems: 'center', marginBottom: 8 * zoom }}>
-                            <Typography
-                                style={{ fontSize: 16 * zoom, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 * zoom }}
-                            >
-                                {settings.companyName}
+                            {settings.logoUri ? (
+                                <Image source={{ uri: settings.logoUri }} style={{ width: 60 * zoom, height: 60 * zoom, marginBottom: 4 * zoom }} resizeMode="contain" />
+                            ) : null}
+                            <Typography style={{ fontSize: 16 * zoom, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 * zoom, fontFamily: 'monospace' }}>
+                                {settings.companyName || 'TIGA PUTRA MOTOR'}
                             </Typography>
-                            {settings.header && (
-                                <Typography style={{ fontSize: 12 * zoom, fontWeight: '600', textAlign: 'center', marginBottom: 4 * zoom }}>
-                                    {settings.header}
-                                </Typography>
-                            )}
-                            <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', color: '#666', marginBottom: 2 * zoom }}>
-                                {settings.companyAddress}
+                            <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', color: '#000', marginBottom: 2 * zoom, fontFamily: 'monospace' }}>
+                                {settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}
                             </Typography>
-                            <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', color: '#666' }}>
-                                {settings.companyPhone}
+                            <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', color: '#000', fontFamily: 'monospace' }}>
+                                cianjur &nbsp; HP {settings.companyPhone || '087720225244'}
                             </Typography>
                         </View>
 
@@ -135,92 +131,115 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
                         {/* Transaction Info */}
                         <View style={{ marginBottom: 4 * zoom }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>No. Transaksi</Typography>
-                                <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{data.transactionNumber}</Typography>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>Tanggal</Typography>
-                                <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{formatDate(data.date)}</Typography>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>Jam</Typography>
-                                <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{formatTime(data.date)}</Typography>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>Customer</Typography>
-                                <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{data.customerName}</Typography>
-                            </View>
-
-                            {/* Type specific */}
-                            {data.type === 'bengkel' && data.vehiclePlate && (
-                                <>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                        <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>No. Polisi</Typography>
-                                        <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{data.vehiclePlate}</Typography>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 * zoom }}>
-                                        <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>Kendaraan</Typography>
-                                        <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{data.vehicleType}</Typography>
-                                    </View>
-                                </>
-                            )}
+                            {[
+                                { label: 'No Nota', value: data.transactionNumber },
+                                { label: 'Antrian', value: data.antrian },
+                                { label: 'Pelanggan', value: data.customerName },
+                                { label: 'Tanggal', value: formatDate(data.date) + ' - ' + formatTime(data.date).substring(0, 5) },
+                                { label: 'Kasir', value: data.cashierName },
+                                { label: 'Mekanik', value: data.mechanicName },
+                            ].map((row, i) => row.value ? (
+                                <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 * zoom }}>
+                                    <Typography style={{ fontSize: 10 * zoom, fontFamily: 'monospace' }}>{row.label}</Typography>
+                                    <Typography style={{ fontSize: 10 * zoom, fontFamily: 'monospace', fontWeight: '500' }}>{row.value}</Typography>
+                                </View>
+                            ) : null)}
                         </View>
 
                         {/* Divider */}
                         <View style={{ borderBottomWidth: 1, borderBottomColor: '#000', borderStyle: 'dashed', marginVertical: 8 * zoom }} />
 
-                        {/* Items */}
-                        <View style={{ marginBottom: 4 * zoom }}>
-                            <Typography style={{ fontSize: 11 * zoom, fontWeight: 'bold', marginBottom: 6 * zoom }}>RINCIAN</Typography>
-                            {data.items.map((item, index) => (
-                                <View key={index} style={{ marginBottom: 6 * zoom }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                        <View style={{ flex: 1, marginRight: 8 * zoom }}>
-                                            <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{item.description}</Typography>
-                                            {item.quantity && item.unitPrice && (
-                                                <Typography style={{ fontSize: 9 * zoom, color: '#666' }}>
-                                                    {item.quantity} x {formatCurrency(item.unitPrice)}
-                                                </Typography>
-                                            )}
+                        {/* Layanan Section */}
+                        {(data.services || (data.type === 'bengkel' ? [] : data.items || [])).length > 0 && (
+                            <View style={{ marginBottom: 8 * zoom }}>
+                                <Typography style={{ fontSize: 11 * zoom, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 * zoom, fontFamily: 'monospace' }}>LAYANAN</Typography>
+                                {(data.services || (data.type === 'bengkel' ? [] : data.items || [])).map((item, index) => (
+                                    <View key={index} style={{ marginBottom: 6 * zoom }}>
+                                        <Typography style={{ fontSize: 11 * zoom, fontWeight: '500', fontFamily: 'monospace', textTransform: 'uppercase' }}>{item.description}</Typography>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Typography style={{ fontSize: 11 * zoom, fontFamily: 'monospace' }}>
+                                                {item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}
+                                            </Typography>
+                                            <Typography style={{ fontSize: 11 * zoom, fontWeight: '600', fontFamily: 'monospace' }}>
+                                                {formatCurrency(item.subtotal).replace('Rp', '').trim()}
+                                            </Typography>
                                         </View>
-                                        <Typography style={{ fontSize: 10 * zoom, fontWeight: '600' }}>
-                                            {formatCurrency(item.subtotal)}
-                                        </Typography>
                                     </View>
+                                ))}
+                                <View style={{ borderTopWidth: 1, borderTopColor: '#000', borderStyle: 'dashed', marginVertical: 4 * zoom }} />
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                    <Typography style={{ fontSize: 11 * zoom, fontFamily: 'monospace' }}>Total</Typography>
+                                    <Typography style={{ fontSize: 11 * zoom, fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                        {formatCurrency((data.services || (data.type === 'bengkel' ? [] : data.items || [])).reduce((acc, c) => acc + c.subtotal, 0)).replace('Rp', '').trim()}
+                                    </Typography>
                                 </View>
-                            ))}
-                        </View>
-
-                        {/* Divider */}
-                        <View style={{ borderBottomWidth: 1, borderBottomColor: '#000', borderStyle: 'dashed', marginVertical: 8 * zoom }} />
-
-                        {/* Total */}
-                        <View style={{ marginBottom: 4 * zoom }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 * zoom, paddingTop: 4 * zoom, borderTopWidth: 1, borderTopColor: '#000' }}>
-                                <Typography style={{ fontSize: 12 * zoom, fontWeight: 'bold' }}>TOTAL</Typography>
-                                <Typography style={{ fontSize: 12 * zoom, fontWeight: 'bold' }}>{formatCurrency(data.total)}</Typography>
                             </View>
-                            {data.paymentMethod && (
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 * zoom }}>
-                                    <Typography style={{ fontSize: 10 * zoom, color: '#333' }}>Metode Bayar</Typography>
-                                    <Typography style={{ fontSize: 10 * zoom, fontWeight: '500' }}>{data.paymentMethod.toUpperCase()}</Typography>
+                        )}
+
+                        {/* Spare Part Section */}
+                        {(data.parts || []).length > 0 && (
+                            <View style={{ marginBottom: 8 * zoom }}>
+                                <View style={{ borderTopWidth: 1, borderTopColor: '#000', borderStyle: 'dashed', marginVertical: 8 * zoom }} />
+                                <Typography style={{ fontSize: 11 * zoom, fontWeight: 'bold', textAlign: 'center', marginBottom: 6 * zoom, fontFamily: 'monospace' }}>SPARE PART</Typography>
+                                {(data.parts || []).map((item, index) => (
+                                    <View key={index} style={{ marginBottom: 6 * zoom }}>
+                                        <Typography style={{ fontSize: 11 * zoom, fontWeight: '500', fontFamily: 'monospace', textTransform: 'uppercase' }}>{item.description}</Typography>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Typography style={{ fontSize: 11 * zoom, fontFamily: 'monospace' }}>
+                                                {item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}
+                                            </Typography>
+                                            <Typography style={{ fontSize: 11 * zoom, fontWeight: '600', fontFamily: 'monospace' }}>
+                                                {formatCurrency(item.subtotal).replace('Rp', '').trim()}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                ))}
+                                <View style={{ borderTopWidth: 1, borderTopColor: '#000', borderStyle: 'dashed', marginVertical: 4 * zoom }} />
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                    <Typography style={{ fontSize: 11 * zoom, fontFamily: 'monospace' }}>Total</Typography>
+                                    <Typography style={{ fontSize: 11 * zoom, fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                        {formatCurrency((data.parts || []).reduce((acc, c) => acc + c.subtotal, 0)).replace('Rp', '').trim()}
+                                    </Typography>
                                 </View>
-                            )}
-                        </View>
+                            </View>
+                        )}
 
                         {/* Divider */}
                         <View style={{ borderBottomWidth: 1, borderBottomColor: '#000', borderStyle: 'dashed', marginVertical: 8 * zoom }} />
+
+                        {/* Summary */}
+                        <View style={{ marginBottom: 4 * zoom }}>
+                            {[
+                                { label: 'Status', value: data.status },
+                                { label: 'Metode Bayar', value: data.paymentMethod },
+                                { label: 'SubTotal', value: formatCurrency(data.subtotal).replace('Rp', '').trim() },
+                                { label: 'Diskon', value: formatCurrency(data.discount || 0).replace('Rp', '').trim() },
+                            ].map((row, i) => row.value ? (
+                                <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 * zoom }}>
+                                    <Typography style={{ fontSize: 10 * zoom, fontFamily: 'monospace' }}>{row.label}</Typography>
+                                    <Typography style={{ fontSize: 10 * zoom, fontFamily: 'monospace', fontWeight: '500' }}>{row.value}</Typography>
+                                </View>
+                            ) : null)}
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 * zoom, paddingTop: 4 * zoom, borderTopWidth: 1, borderTopColor: '#000' }}>
+                                <Typography style={{ fontSize: 12 * zoom, fontWeight: 'bold', fontFamily: 'monospace' }}>Total</Typography>
+                                <Typography style={{ fontSize: 12 * zoom, fontWeight: 'bold', fontFamily: 'monospace' }}>{formatCurrency(data.total).replace('Rp', '').trim()}</Typography>
+                            </View>
+                        </View>
 
                         {/* Footer */}
-                        <View style={{ alignItems: 'center' }}>
-                            {settings.footer && (
-                                <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', marginBottom: 4 * zoom }}>
-                                    {settings.footer}
-                                </Typography>
-                            )}
-                            <Typography style={{ fontSize: 8 * zoom, color: '#999', textAlign: 'center' }}>
-                                Struk ini dicetak otomatis
+                        <View style={{ borderTopWidth: 1, borderTopColor: '#000', borderStyle: 'dashed', marginVertical: 8 * zoom }} />
+
+                        {data.vehiclePlate ? (
+                            <View style={{ marginBottom: 8 * zoom }}>
+                                <Typography style={{ fontSize: 11 * zoom, fontWeight: '500', fontFamily: 'monospace' }}>{data.vehiclePlate}</Typography>
+                                <View style={{ borderTopWidth: 1, borderTopColor: '#000', borderStyle: 'dashed', marginVertical: 4 * zoom }} />
+                            </View>
+                        ) : null}
+
+                        <View style={{ alignItems: 'center', marginTop: 4 * zoom }}>
+                            <Typography style={{ fontSize: 10 * zoom, textAlign: 'center', fontFamily: 'monospace' }}>
+                                {settings.footer || 'Terimakasih atas kepercayaan anda'}
                             </Typography>
                         </View>
                     </View>

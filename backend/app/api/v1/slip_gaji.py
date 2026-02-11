@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Optional, List
 
-from fastapi import APIRouter, Query, status, Body
+from fastapi import APIRouter, Query, status, Body, HTTPException
 from pydantic import BaseModel
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
@@ -51,6 +52,24 @@ def get_preview(
     return service.get_preview(minggu, tahun)
 
 
+@router.get("/preview-range")
+def get_preview_range(
+    tanggal_dari: str,
+    tanggal_sampai: str,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Get preview of employees for slip gaji generation within a custom date range."""
+    service = SlipGajiService(db)
+    try:
+        start_date = datetime.strptime(tanggal_dari, "%Y-%m-%d").date()
+        end_date = datetime.strptime(tanggal_sampai, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    return service.get_preview_by_range(start_date, end_date)
+
+
 @router.post("/bulk/{tahun}/{minggu}")
 def create_bulk_slip_gaji(
     tahun: int,
@@ -64,6 +83,31 @@ def create_bulk_slip_gaji(
     items = [item.model_dump() for item in data.items] if data else None
     tanggal_mulai = data.tanggal_mulai if data else None
     return service.create_bulk(minggu, tahun, items, current_user.id, tanggal_mulai)
+
+
+@router.post("/bulk-range")
+def create_bulk_range(
+    tanggal_dari: str,
+    tanggal_sampai: str,
+    db: DBSession,
+    current_user: ManagerUser,
+    data: Optional[SlipGajiBulkCreate] = None,
+):
+    """Create payroll slips for a custom date range."""
+    service = SlipGajiService(db)
+    try:
+        start_date = datetime.strptime(tanggal_dari, "%Y-%m-%d").date()
+        end_date = datetime.strptime(tanggal_sampai, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Use start date to determine target week/year for the record
+    from app.services.slip_gaji_service import get_current_week
+    minggu, tahun = get_current_week(start_date)
+    
+    items = [item.model_dump() for item in data.items] if data else None
+    # We still need to pass tanggal_mulai/akhir to the service if we want to override the default week range
+    return service.create_bulk_by_range(start_date, end_date, minggu, tahun, items, current_user.id)
 
 
 @router.get("")

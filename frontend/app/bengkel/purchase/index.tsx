@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList } from '../../../hooks/useBengkel';
-import { formatNumber, parseNumber } from '../../../utils/format';
+import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
 
 export default function PurchaseScreen() {
     const router = useRouter(); const queryClient = useQueryClient();
@@ -251,7 +251,7 @@ export default function PurchaseScreen() {
                         {/* Subtotal preview */}
                         <View className="flex-row justify-end mt-1">
                             <Typography variant="caption" className="text-gray-500">
-                                Subtotal: Rp {((Number(item.qty) || 0) * (Number(parseNumber(item.price)) || 0)).toLocaleString('id-ID')}
+                                Subtotal: {formatCurrency((Number(item.qty) || 0) * (Number(parseNumber(item.price)) || 0))}
                             </Typography>
                         </View>
                     </Card>
@@ -283,7 +283,7 @@ export default function PurchaseScreen() {
                         <View className="flex-row justify-between items-center">
                             <Typography variant="h3" weight="bold">Total Pembelian</Typography>
                             <Typography variant="h2" weight="bold" className="text-primary">
-                                Rp {total.toLocaleString('id-ID')}
+                                {formatCurrency(total)}
                             </Typography>
                         </View>
                     </Card>
@@ -352,7 +352,7 @@ export default function PurchaseScreen() {
                                                 </View>
                                                 <View className="items-end">
                                                     <Typography weight="bold" className="text-primary">
-                                                        Rp {item.harga_beli.toLocaleString('id-ID')}
+                                                        {formatCurrency(item.harga_beli)}
                                                     </Typography>
                                                     <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
                                                 </View>

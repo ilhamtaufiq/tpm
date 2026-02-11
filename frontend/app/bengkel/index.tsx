@@ -18,19 +18,21 @@ import {
     ArrowRight,
     Printer,
     Download,
-    X
+    X,
+    AlertCircle,
+    Banknote
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
-import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus } from '../../hooks/useBengkel';
+import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 
@@ -52,10 +54,14 @@ export default function BengkelScreen() {
     );
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
+    const updatePaymentMutation = useUpdateTransaksiBengkelPayment();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
     const [view, setView] = React.useState<'form' | 'detail'>('form');
+    const [settlementModal, setSettlementModal] = useState(false);
+    const [settlementAmount, setSettlementAmount] = useState('');
+    const [settlementMethod, setSettlementMethod] = useState('Tunai');
     const [refreshing, setRefreshing] = React.useState(false);
     const [sheetIndex, setSheetIndex] = React.useState(-1);
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
@@ -120,28 +126,33 @@ export default function BengkelScreen() {
 
             const receiptData: PrintReceiptData = {
                 type: 'bengkel',
-                transactionNumber: item.id.toString(),
+                transactionNumber: item.nomor_transaksi || item.id.toString(),
+                antrian: item.nomor_antrian || '-',
                 date: new Date(item.created_at || new Date()),
                 customerName: item.nama_customer || 'Umum',
+                cashierName: item.kasir_nama || '-',
+                mechanicName: item.mekanik_nama || '-',
+                status: item.status_bayar || 'Belum Bayar',
                 vehiclePlate: item.nomor_plat,
                 vehicleType: item.jenis_kendaraan,
-                items: [
-                    ...(item.detail_services || []).map((s: any) => ({
-                        description: s.nama_jasa,
-                        quantity: 1,
-                        unitPrice: Number(s.harga),
-                        subtotal: Number(s.harga)
-                    })),
-                    ...(item.detail_parts || []).map((p: any) => ({
-                        description: p.spare_part_nama || 'Sparepart',
-                        quantity: p.qty,
-                        unitPrice: Number(p.subtotal) / p.qty,
-                        subtotal: Number(p.subtotal)
-                    }))
-                ],
-                subtotal: item.grand_total,
+                services: (item.detail_services || []).map((s: any) => ({
+                    description: s.nama_jasa,
+                    quantity: 1,
+                    unitPrice: Number(s.harga),
+                    subtotal: Number(s.harga)
+                })),
+                parts: (item.detail_parts || []).map((p: any) => ({
+                    description: p.spare_part_nama || 'Sparepart',
+                    quantity: p.qty,
+                    unitPrice: Number(p.subtotal) / p.qty,
+                    subtotal: Number(p.subtotal)
+                })),
+                subtotal: item.subtotal || item.total_biaya || item.grand_total,
+                discount: item.diskon || 0,
                 total: item.grand_total,
-                paymentMethod: item.metode_bayar,
+                paid: item.jumlah_bayar,
+                change: item.kembalian,
+                paymentMethod: item.metode_bayar || '-',
                 notes: item.catatan
             };
 
@@ -184,28 +195,30 @@ export default function BengkelScreen() {
 
             const receiptData: PrintReceiptData = {
                 type: 'bengkel',
-                transactionNumber: item.id.toString(),
+                transactionNumber: item.nomor_transaksi || item.id.toString(),
+                antrian: item.nomor_antrian || '-',
                 date: new Date(item.created_at || new Date()),
                 customerName: item.nama_customer || 'Umum',
+                cashierName: item.kasir_nama || '-',
+                mechanicName: item.mekanik_nama || '-',
+                status: item.status_bayar || 'Belum Bayar',
                 vehiclePlate: item.nomor_plat,
                 vehicleType: item.jenis_kendaraan,
-                items: [
-                    ...(item.detail_services || []).map((s: any) => ({
-                        description: s.nama_jasa,
-                        quantity: 1,
-                        unitPrice: Number(s.harga),
-                        subtotal: Number(s.harga)
-                    })),
-                    ...(item.detail_parts || []).map((p: any) => ({
-                        description: p.spare_part_nama || 'Sparepart',
-                        quantity: p.qty,
-                        unitPrice: Number(p.subtotal) / p.qty,
-                        subtotal: Number(p.subtotal)
-                    }))
-                ],
-                subtotal: item.grand_total,
+                services: (item.detail_services || []).map((s: any) => ({
+                    description: s.nama_jasa,
+                    quantity: 1,
+                    unitPrice: Number(s.harga),
+                    subtotal: Number(s.harga)
+                })),
+                parts: (item.detail_parts || []).map((p: any) => ({
+                    description: p.spare_part_nama || 'Sparepart',
+                    quantity: p.qty,
+                    unitPrice: Number(p.subtotal) / p.qty,
+                    subtotal: Number(p.subtotal)
+                })),
+                subtotal: item.total_biaya || item.grand_total,
                 total: item.grand_total,
-                paymentMethod: item.metode_bayar,
+                paymentMethod: item.metode_bayar || '-',
                 notes: item.catatan
             };
 
@@ -268,6 +281,51 @@ export default function BengkelScreen() {
         }
     };
 
+    const handleSettlement = async () => {
+        if (!selectedItem || !settlementAmount) return;
+
+        try {
+            const amountNum = Number(parseNumber(settlementAmount));
+            if (amountNum <= 0) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Validasi',
+                    message: 'Jumlah pembayaran harus lebih dari 0',
+                    variant: 'warning',
+                    type: 'alert'
+                });
+                return;
+            }
+
+            await updatePaymentMutation.mutateAsync({
+                id: selectedItem.id,
+                data: {
+                    jumlah_bayar: amountNum,
+                    metode_bayar: settlementMethod.toLowerCase()
+                }
+            });
+
+            setSettlementModal(false);
+            setSettlementAmount('');
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'Pembayaran pelunasan berhasil dicatat',
+                variant: 'success',
+                type: 'alert'
+            });
+            handleClosePress();
+        } catch (error) {
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal mencatat pembayaran'),
+                variant: 'error',
+                type: 'alert'
+            });
+        }
+    };
+
     const renderBottomSheetContent = () => (
         <View style={{ flex: 1 }}>
             {view === 'form' ? (
@@ -296,7 +354,7 @@ export default function BengkelScreen() {
                         {(selectedItem.detail_services || []).map((s: any, idx: number) => (
                             <View key={`svc-${idx}`} className="flex-row justify-between mb-2">
                                 <Typography variant="body2" className="flex-1 text-textMain">{s.nama_jasa}</Typography>
-                                <Typography variant="body2" weight="bold" className="text-textMain">Rp {Number(s.harga).toLocaleString('id-ID')}</Typography>
+                                <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
                             </View>
                         ))}
 
@@ -307,27 +365,53 @@ export default function BengkelScreen() {
                                     {p.spare_part_nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
                                 </Typography>
                                 <Typography variant="body2" weight="medium" className="text-textGray">
-                                    Rp {Number(p.subtotal).toLocaleString('id-ID')}
+                                    {formatCurrency(p.subtotal)}
                                 </Typography>
                             </View>
                         ))}
 
-                        {(!selectedItem.detail_services?.length && !selectedItem.detail_parts?.length) && (
-                            <Typography variant="body2" className="mb-4 text-gray-400 italic">Tidak ada item rincian</Typography>
-                        )}
+                        <View className="h-[1px] bg-gray-200 my-4" />
 
-                        {selectedItem.catatan && (
+                        <View className="space-y-1 mb-2">
+                            <View className="flex-row justify-between items-center">
+                                <Typography variant="caption" className="text-textGray">Subtotal</Typography>
+                                <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.subtotal || 0)}</Typography>
+                            </View>
+                            {selectedItem.diskon > 0 ? (
+                                <View className="flex-row justify-between items-center">
+                                    <Typography variant="caption" className="text-rose-500">Diskon</Typography>
+                                    <Typography variant="caption" weight="semibold" className="text-rose-500">-{formatCurrency(selectedItem.diskon)}</Typography>
+                                </View>
+                            ) : null}
+                            <View className="flex-row justify-between items-center">
+                                <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
+                                <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
+                            </View>
+                        </View>
+
+                        {(!selectedItem.detail_services?.length && !selectedItem.detail_parts?.length) ? (
+                            <Typography variant="body2" className="mb-4 text-gray-400 italic">Tidak ada item rincian</Typography>
+                        ) : null}
+
+                        {selectedItem.catatan ? (
                             <View className="mt-4 pt-4 border-t border-gray-100">
                                 <Typography variant="caption" className="text-gray-400 mb-1">Catatan:</Typography>
                                 <Typography variant="body2" className="italic text-textMain">{selectedItem.catatan}</Typography>
                             </View>
-                        )}
+                        ) : null}
 
                         <View className="h-[1px] bg-gray-200 my-4" />
                         <View className="flex-row justify-between items-center">
-                            <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
+                            <View>
+                                <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
+                                {selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) ? (
+                                    <Typography variant="caption" className="text-rose-600 font-bold">
+                                        Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
+                                    </Typography>
+                                ) : null}
+                            </View>
                             <Typography variant="h2" weight="bold" className="text-primary">
-                                Rp {(selectedItem.grand_total || 0).toLocaleString('id-ID')}
+                                {formatCurrency(selectedItem.grand_total || 0)}
                             </Typography>
                         </View>
                     </Card>
@@ -372,6 +456,20 @@ export default function BengkelScreen() {
                             </>
                         )}
 
+                        {/* Settlement Button for Unpaid Orders */}
+                        {selectedItem.status_bayar !== 'lunas' ? (
+                            <Button
+                                variant="secondary"
+                                title="Pelunasan Piutang"
+                                onPress={() => {
+                                    setSettlementAmount(formatNumber((selectedItem.grand_total - (selectedItem.jumlah_bayar || 0)).toString()));
+                                    setSettlementModal(true);
+                                }}
+                                icon={<Banknote size={20} color="white" />}
+                                className="rounded-2xl h-14"
+                            />
+                        ) : null}
+
                         <Button
                             variant="outline-danger"
                             title="Batalkan Order"
@@ -381,6 +479,69 @@ export default function BengkelScreen() {
                     </View>
                 </View>
             ) : null}
+
+            {/* Settlement Modal */}
+            <Modal visible={settlementModal} transparent animationType="fade">
+                <View className="flex-1 justify-center items-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <Card className="w-full p-6 rounded-[32px]">
+                        <Typography variant="h3" weight="bold" className="mb-2">Pelunasan Piutang</Typography>
+                        <Typography variant="caption" className="text-textGray mb-6">Mencatat pembayaran tagihan yang tertunda</Typography>
+
+                        <View className="bg-primary/5 p-4 rounded-2xl mb-6">
+                            <View className="flex-row justify-between mb-2">
+                                <Typography variant="caption" className="text-textGray">Total Tagihan</Typography>
+                                <Typography variant="caption" weight="bold">{formatCurrency(selectedItem?.grand_total || 0)}</Typography>
+                            </View>
+                            <View className="flex-row justify-between mb-2">
+                                <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
+                                <Typography variant="caption" weight="bold" className="text-emerald-600">{formatCurrency(selectedItem?.jumlah_bayar || 0)}</Typography>
+                            </View>
+                            <View className="h-[1px] bg-primary/10 my-2" />
+                            <View className="flex-row justify-between">
+                                <Typography variant="body2" weight="bold">Sisa Tagihan</Typography>
+                                <Typography variant="body2" weight="bold" className="text-rose-600">{formatCurrency((selectedItem?.grand_total || 0) - (selectedItem?.jumlah_bayar || 0))}</Typography>
+                            </View>
+                        </View>
+
+                        <Typography variant="caption" weight="bold" className="text-textMain mb-2 ml-1">Metode Pembayaran</Typography>
+                        <View className="flex-row space-x-2 mb-6">
+                            {['Tunai', 'Transfer'].map((m) => (
+                                <TouchableOpacity
+                                    key={m}
+                                    onPress={() => setSettlementMethod(m)}
+                                    className={`flex-1 py-3 rounded-xl border ${settlementMethod === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                >
+                                    <Typography className={`text-center font-bold ${settlementMethod === m ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Typography variant="caption" weight="bold" className="text-textMain mb-2 ml-1">Jumlah Bayar (Rp)</Typography>
+                        <TextInput
+                            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 font-bold text-lg text-primary mb-8"
+                            keyboardType="numeric"
+                            value={settlementAmount}
+                            onChangeText={(val) => setSettlementAmount(formatNumber(val))}
+                            placeholder="0"
+                        />
+
+                        <View className="flex-row space-x-3">
+                            <Button
+                                variant="outline"
+                                title="Batal"
+                                onPress={() => setSettlementModal(false)}
+                                className="flex-1"
+                            />
+                            <Button
+                                title="Simpan"
+                                onPress={handleSettlement}
+                                className="flex-1"
+                                loading={updatePaymentMutation.isPending}
+                            />
+                        </View>
+                    </Card>
+                </View>
+            </Modal>
         </View>
     );
 
@@ -510,6 +671,23 @@ export default function BengkelScreen() {
                     </View>
                 </View>
 
+                {/* Unpaid Info Pills */}
+                {summary && summary.piutang_count > 0 ? (
+                    <View className="flex-row space-x-2 mb-6">
+                        <View className="bg-rose-50 px-4 py-2.5 rounded-2xl border border-rose-100 flex-row items-center shadow-sm">
+                            <AlertCircle size={16} color="#E11D48" />
+                            <Typography variant="caption" weight="bold" className="text-rose-600 ml-2">
+                                {summary.piutang_count} Order Belum Lunas
+                            </Typography>
+                        </View>
+                        <View className="bg-rose-50 px-4 py-2.5 rounded-2xl border border-rose-100 flex-row items-center shadow-sm">
+                            <Typography variant="caption" weight="bold" className="text-rose-600">
+                                Total: {formatCurrency(summary.piutang_nilai)}
+                            </Typography>
+                        </View>
+                    </View>
+                ) : null}
+
                 {/* Queue List */}
                 {isLoading ? (
                     <View className="space-y-4">
@@ -551,14 +729,21 @@ export default function BengkelScreen() {
                                     <Typography variant="body1" weight="bold" className="text-textMain text-lg tracking-tight">
                                         {item.nomor_plat}
                                     </Typography>
-                                    <View className={`px-2.5 py-1 rounded-full ${item.status_pengerjaan === 'proses' ? 'bg-blue-50' :
-                                        item.status_pengerjaan === 'selesai' ? 'bg-emerald-50' : 'bg-amber-50'
-                                        }`}>
-                                        <Typography variant="caption" weight="bold" className={`uppercase text-[8px] tracking-widest ${item.status_pengerjaan === 'proses' ? 'text-blue-500' :
-                                            item.status_pengerjaan === 'selesai' ? 'text-emerald-500' : 'text-amber-500'
+                                    <View className="flex-row items-center space-x-2">
+                                        {item.status_bayar !== 'lunas' ? (
+                                            <View className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100">
+                                                <Typography weight="bold" className="text-rose-500 text-[7px] uppercase tracking-tighter">BELUM LUNAS</Typography>
+                                            </View>
+                                        ) : null}
+                                        <View className={`px-2.5 py-1 rounded-full ${item.status_pengerjaan === 'proses' ? 'bg-blue-50' :
+                                            item.status_pengerjaan === 'selesai' ? 'bg-emerald-50' : 'bg-amber-50'
                                             }`}>
-                                            {item.status_pengerjaan}
-                                        </Typography>
+                                            <Typography variant="caption" weight="bold" className={`uppercase text-[8px] tracking-widest ${item.status_pengerjaan === 'proses' ? 'text-blue-500' :
+                                                item.status_pengerjaan === 'selesai' ? 'text-emerald-500' : 'text-amber-500'
+                                                }`}>
+                                                {item.status_pengerjaan}
+                                            </Typography>
+                                        </View>
                                     </View>
                                 </View>
 
@@ -573,7 +758,7 @@ export default function BengkelScreen() {
                                     </Typography>
                                     {item.grand_total > 0 && (
                                         <Typography weight="bold" className="text-primary text-xs ml-auto">
-                                            Rp {Number(item.grand_total).toLocaleString('id-ID')}
+                                            {formatCurrency(item.grand_total)}
                                         </Typography>
                                     )}
                                 </View>

@@ -55,6 +55,27 @@ class TransaksiBengkelService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def _generate_nomor_piutang(self) -> str:
+        """Generate unique receivable number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["piutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(PiutangUsaha)
+            .filter(PiutangUsaha.nomor_piutang.like(f"{prefix}{date_str}%"))
+            .order_by(PiutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_piutang[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
     def _validate_customer(self, customer_id: int) -> Customer:
         """Validate customer exists."""
         customer = (
@@ -223,15 +244,20 @@ class TransaksiBengkelService:
         # Create piutang if not fully paid
         if status_bayar != PaymentStatus.LUNAS and customer:
             piutang = PiutangUsaha(
+                nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
                 customer_id=customer.id,
+                nama_debitur=customer.nama,
+                telepon_debitur=customer.telepon,
+                alamat_debitur=customer.alamat,
                 sumber=PiutangSource.BENGKEL,
                 referensi_id=None,  # Will update after commit
-                referensi_nomor=nomor_transaksi,
-                nominal=grand_total,
+                nomor_referensi=nomor_transaksi,
+                nominal_piutang=grand_total,
                 sisa_piutang=grand_total - data.jumlah_bayar,
                 status=PiutangStatus.BELUM_LUNAS if data.jumlah_bayar == 0 else PiutangStatus.SEBAGIAN,
-                keterangan=f"Piutang dari transaksi bengkel {nomor_transaksi}",
+                catatan=f"Piutang dari transaksi bengkel {nomor_transaksi}",
+                created_by=user_id,
             )
             self.db.add(piutang)
 
@@ -242,7 +268,7 @@ class TransaksiBengkelService:
         if status_bayar != PaymentStatus.LUNAS and customer:
             piutang_record = (
                 self.db.query(PiutangUsaha)
-                .filter(PiutangUsaha.referensi_nomor == nomor_transaksi)
+                .filter(PiutangUsaha.nomor_referensi == nomor_transaksi)
                 .first()
             )
             if piutang_record:
@@ -491,7 +517,7 @@ class TransaksiBengkelService:
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
-                PiutangUsaha.referensi_nomor == transaksi.nomor_transaksi,
+                PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.BENGKEL,
             )
             .first()
@@ -557,7 +583,7 @@ class TransaksiBengkelService:
 
         # Delete related piutang
         self.db.query(PiutangUsaha).filter(
-            PiutangUsaha.referensi_nomor == transaksi.nomor_transaksi,
+            PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
             PiutangUsaha.sumber == PiutangSource.BENGKEL,
         ).delete()
 

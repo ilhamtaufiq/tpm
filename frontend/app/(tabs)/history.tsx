@@ -25,6 +25,7 @@ import { useRecentActivity } from '../../hooks/useKeuangan';
 import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { ActivityItem } from '../../services/keuangan';
+import { formatCurrency } from '../../utils/format';
 
 const getSourceConfig = (source: string) => {
     switch (source) {
@@ -203,7 +204,7 @@ export default function HistoryTab() {
 
                                 <View className="items-end ml-2 pl-2 border-l border-gray-50">
                                     <Typography weight="bold" className={item.is_incoming ? "text-emerald-600 mb-0.5" : "text-rose-500 mb-0.5"}>
-                                        {item.is_incoming ? '+' : '-'} {item.amount.toLocaleString('id-ID')}
+                                        {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
                                     </Typography>
                                     <Typography className="text-[9px] text-textGray/40 uppercase font-black">{config.label}</Typography>
                                 </View>
