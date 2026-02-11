@@ -497,6 +497,7 @@ export default function LaporanPerubahanModalScreen() {
 
                     <Row label="Beban Operasional Bengkel" value={data.operasional} isNegative />
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
+                    <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
 
                     <View className="h-[1px] bg-gray-200 my-2" />
                     <Row label="Total Pengurangan" value={data.total_c} bold large color="text-red-600" />
@@ -539,11 +540,11 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="caption" weight="bold" className="text-slate-300 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
                         </View>
 
-                        <Row label="Modal Berjalan (A - C)" value={data.theoretical_modal} bold large color="text-yellow-400" isDark />
+                        <Row label="Modal Berjalan (A - B - C)" value={data.theoretical_modal} bold large color="text-yellow-400" isDark />
 
                         <View className="mt-3 pt-3 border-t border-slate-700/50">
                             <Typography variant="caption" className="text-slate-500 italic leading-4">
-                                *Angka ini merupakan akumulasi Laba Kotor dikurangi Biaya & Pengembalian Modal. Idealnya saldo Kas + Piutang mendekati angka ini.
+                                *Angka ini merupakan akumulasi Laba Kotor dikurangi Piutang, Biaya & Pengembalian Modal. Idealnya saldo Kas + Transfer cocok dengan angka ini.
                             </Typography>
                         </View>
                     </View>

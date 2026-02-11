@@ -340,11 +340,12 @@ def get_capital_report(
     gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
 
     # --- A. Laba dan Modal Awal ---
-    # 1. Setoran Modal (Cash In from MODAL)
-    setoran_modal = get_kas_sum(KasBankSource.MODAL, KasBankType.MASUK)
+    # 1. Setoran Modal (Net Capital: Masuk - Keluar)
+    modal_in = get_kas_sum(KasBankSource.MODAL, KasBankType.MASUK)
+    modal_out = get_kas_sum(KasBankSource.MODAL, KasBankType.KELUAR)
+    setoran_modal = modal_in - modal_out
 
     # 2. Earnings & Basis (HPP, Laba)
-    # Re-use profit summary logic to get exact figures matches Laba Rugi
     bengkel_summ = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
     mobil_summ = mobil_service.get_summary(tanggal_dari, tanggal_sampai)
     muatan_summ = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -353,13 +354,10 @@ def get_capital_report(
     hpp_mobil = mobil_summ["total_modal"]   # Total Modal Mobil (Harga Beli + Biaya)
     
     # Laba (Gross Profit contributions)
-    # Note: Use Gross Profit for Section A so Section C can show Investor Share as reduction
     laba_bengkel = bengkel_summ["total_laba_kotor"]
     laba_mobil_kotor = mobil_summ["total_laba_kotor"]
     laba_jasa_angkut_tpm = muatan_summ["laba_tpm"]
     
-    # We want to show the TPM part vs Investor part clearly.
-    # For now, let's keep Section A showing the Gross Potential for others, but Net TPM for Jasa Angkut
     total_laba_kotor = laba_bengkel + laba_mobil_kotor + laba_jasa_angkut_tpm
 
     # A. Summary
@@ -379,21 +377,14 @@ def get_capital_report(
     }
 
     # --- B. Piutang ---
-    # Breakdown by source
     piutang_summ = piutang_service.get_summary(tanggal_dari, tanggal_sampai)
     p_by_sumber = piutang_summ.get("by_sumber", {})
     
-    # 1. Piutang Lainnya
     p_lainnya = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("sisa_piutang", 0)
-
-    # 2. Piutang Jual Beli Mobil
     p_mobil = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_piutang", 0)
-
-    # 3. Piutang Sparepart & Servis (Bengkel + Jasa Angkut Integrated Bengkel)
     p_bengkel_pure = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
     
-    # Calculate integrated bengkel piutang (from Unpaid Jasa Angkut)
-    # Logic: Sum of 'Perawatan Bengkel' costs in Muatan where status_bayar == BELUM_LUNAS
+    # Integrated bengkel piutang (from Unpaid Jasa Angkut)
     q_integrated = (
         db.query(func.sum(JasaAngkutBiayaLainnya.jumlah))
         .join(MuatanJasaAngkut)
@@ -402,31 +393,23 @@ def get_capital_report(
             MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS
         )
     )
-    if tanggal_dari:
-        q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai:
-        q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+    if tanggal_dari: q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
     p_bengkel_integrated = float(q_integrated.scalar() or 0)
     p_bengkel_total = p_bengkel_pure + p_bengkel_integrated
 
-    # 4. Piutang Jasa Angkut (Laba TPM 50%)
-    # Logic: Sum of 'laba_tpm' from Unpaid Muatan
+    # Piutang Jasa Angkut (Laba TPM part)
     q_ja_tpm = (
         db.query(func.sum(MuatanJasaAngkut.laba_tpm))
         .filter(MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS)
     )
-    if tanggal_dari:
-        q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai:
-        q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+    if tanggal_dari: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
     p_jasa_angkut_tpm = float(q_ja_tpm.scalar() or 0)
-
-    # 5. Piutang Karyawan (Kasbon)
     p_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
     
-    # Total B (Sum of adjusted values)
     total_b = p_lainnya + p_mobil + p_bengkel_total + p_jasa_angkut_tpm + p_karyawan
 
     section_b = {
@@ -438,60 +421,25 @@ def get_capital_report(
         "total_b": total_b
     }
 
-    # --- C. Pengurangan Laba dan Modal ---
-    # 1. Total Pembelian Part (Fallback to PembelianPartService summary if KasBank empty)
-    # 1. Total Pembelian Part (Direct from Transaction Table)
-    def get_part_sum(method):
-        q = db.query(func.sum(PembelianSparePart.grand_total)).filter(
-            PembelianSparePart.metode_bayar == method
-        )
-        if tanggal_dari:
-            q = q.filter(PembelianSparePart.tanggal >= tanggal_dari)
-        if tanggal_sampai:
-            q = q.filter(PembelianSparePart.tanggal <= tanggal_sampai)
-        return float(q.scalar() or 0)
+    # --- C. Pengurangan Laba dan Modal (Actual Cash Transacted) ---
+    # 1. Total Pembelian Part (From KasBank to ensure sync with cash position)
+    beli_part_cash = get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'cash')
+    beli_part_transfer = get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'transfer')
 
-    beli_part_cash = get_part_sum(PaymentMethod.TUNAI)
-    beli_part_transfer = get_part_sum(PaymentMethod.TRANSFER)
+    # 2. Total Pembelian Mobil (From KasBank)
+    beli_mobil_cash = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'cash')
+    beli_mobil_transfer = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'transfer')
 
-    # 2. Total Pembelian Mobil (Fallback to Mobil summary if KasBank empty)
-    beli_mobil_cash_kas = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'cash')
-    beli_mobil_transfer_kas = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'transfer')
+    # 3. Pengembalian Investor / Share Profit (From KasBank)
+    investor_cash = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
+    investor_transfer = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'transfer')
 
-    # If kas is empty, calculate from Mobil.harga_beli specifically for cars entered in this period
-    if (beli_mobil_cash_kas + beli_mobil_transfer_kas) == 0:
-        q_m_beli = db.query(func.sum(Mobil.harga_beli)).filter(Mobil.deleted_at.is_(None))
-        if tanggal_dari: q_m_beli = q_m_beli.filter(Mobil.tanggal_masuk >= tanggal_dari)
-        if tanggal_sampai: q_m_beli = q_m_beli.filter(Mobil.tanggal_masuk <= tanggal_sampai)
-        beli_mobil_transfer = float(q_m_beli.scalar() or 0)
-        beli_mobil_cash = 0
-    else:
-        beli_mobil_cash = beli_mobil_cash_kas
-        beli_mobil_transfer = beli_mobil_transfer_kas
+    # 4. Beban Operasional, Gaji, Prive (From KasBank)
+    biaya_opr = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
+    biaya_gaji = get_kas_sum(KasBankSource.GAJI, KasBankType.KELUAR)
+    prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
-    # 3. Pengembalian Investor
-    # 3. Pengembalian Investor (Porsi Laba Investor dari Penjualan)
-    # We use the calculated share from Section A to ensure consistency
-    laba_inv_total = mobil_summ["laba_investor"]
-    
-    # Try to see if there's actual cash out in KasBank for this (as refinement)
-    investor_cash_kas = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
-    investor_transfer_kas = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'transfer')
-
-    if (investor_cash_kas + investor_transfer_kas) == 0:
-        # Fallback: Assume all investor laba in this period is a "reduction" from current modal
-        investor_cash = 0
-        investor_transfer = laba_inv_total
-    else:
-        investor_cash = investor_cash_kas
-        investor_transfer = investor_transfer_kas
-
-    # 4. Beban Operasional & Gaji
-    biaya_opr = float(pengeluaran.get("total_pengeluaran", 0))
-    biaya_gaji = float(gaji_summary.get("total", 0))
-
-    # 5. Biaya Persiapan Mobil (Internal Bengkel or Others not in Opr)
-    # This is a capital allocation to cars.
+    # 5. Biaya Persiapan Mobil (Internal adjust or Cash)
     q_prep = db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil)
     if tanggal_dari: q_prep = q_prep.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
     if tanggal_sampai: q_prep = q_prep.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
@@ -501,7 +449,7 @@ def get_capital_report(
         beli_part_cash + beli_part_transfer +
         beli_mobil_cash + beli_mobil_transfer +
         investor_cash + investor_transfer +
-        biaya_opr + biaya_gaji +
+        biaya_opr + biaya_gaji + prive + 
         biaya_persiapan
     )
 
@@ -523,16 +471,13 @@ def get_capital_report(
         },
         "operasional": biaya_opr,
         "gaji": biaya_gaji,
+        "prive": prive,
         "biaya_persiapan": biaya_persiapan,
         "total_c": total_c
     }
 
     # --- D. Sisa Laba dan Modal (Cash Position) ---
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    # Aggregate by Category (Cash vs Transfer)
-    # Cash = CASH account
-    # Transfer = All BANK accounts
-    
     posisi_cash = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
     
     posisi_transfer = 0
@@ -544,7 +489,7 @@ def get_capital_report(
         "cash": posisi_cash,
         "transfer": posisi_transfer,
         "total_d": posisi_cash + posisi_transfer,
-        "theoretical_modal": section_a["total_a"] - section_c["total_c"]
+        "theoretical_modal": section_a["total_a"] - section_b["total_b"] - section_c["total_c"]
     }
 
     return {

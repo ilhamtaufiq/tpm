@@ -50,7 +50,7 @@ export const TransactionList = () => {
         );
     }
 
-    const list = transactions || [];
+    const list = Array.isArray(transactions) ? transactions : [];
 
     return (
         <View className="px-6 mt-8 pb-32">

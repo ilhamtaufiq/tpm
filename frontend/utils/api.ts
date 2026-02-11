@@ -12,8 +12,12 @@ const getBaseUrl = () => {
 
         // In production or Docker environment where frontend and backend are served on the same host/port 
         // (or via Nginx proxy), we should use relative paths.
-        if (hostname === 'tpm.cianjur.space' || hostname === 'localhost' || hostname === '127.0.0.1') {
+        if (hostname === 'tpm.cianjur.space') {
             return '';
+        }
+
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:8000';
         }
 
         // For local development with tpm.test pointing to Laragon
