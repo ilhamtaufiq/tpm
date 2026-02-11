@@ -1,0 +1,140 @@
+from typing import Optional, List
+
+from fastapi import APIRouter, Query, status, Body
+from pydantic import BaseModel
+
+from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.schemas.karyawan import (
+    SlipGajiCreate,
+    SlipGajiUpdate,
+    SlipGajiResponse,
+)
+from app.services.slip_gaji_service import SlipGajiService
+from app.utils.constants import PaymentStatus
+
+
+router = APIRouter(prefix="/slip-gaji", tags=["Slip Gaji (Weekly Payroll)"])
+
+
+class SlipGajiBulkItem(BaseModel):
+    """Item for bulk slip gaji creation with attendance override."""
+    karyawan_id: int
+    jumlah_hadir: int
+
+
+class SlipGajiBulkCreate(BaseModel):
+    """Request body for bulk slip gaji creation."""
+    items: List[SlipGajiBulkItem]
+    tanggal_mulai: Optional[str] = None  # Custom start date override (YYYY-MM-DD)
+
+
+@router.post("", response_model=SlipGajiResponse, status_code=status.HTTP_201_CREATED)
+def create_slip_gaji(
+    data: SlipGajiCreate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Create a new weekly payroll slip."""
+    service = SlipGajiService(db)
+    return service.create(data, current_user.id)
+
+
+@router.get("/preview/{tahun}/{minggu}")
+def get_preview(
+    tahun: int,
+    minggu: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Get preview of employees for slip gaji generation with calculated attendance."""
+    service = SlipGajiService(db)
+    return service.get_preview(minggu, tahun)
+
+
+@router.post("/bulk/{tahun}/{minggu}")
+def create_bulk_slip_gaji(
+    tahun: int,
+    minggu: int,
+    db: DBSession,
+    current_user: ManagerUser,
+    data: Optional[SlipGajiBulkCreate] = None,
+):
+    """Create weekly payroll slips with optional attendance override."""
+    service = SlipGajiService(db)
+    items = [item.model_dump() for item in data.items] if data else None
+    tanggal_mulai = data.tanggal_mulai if data else None
+    return service.create_bulk(minggu, tahun, items, current_user.id, tanggal_mulai)
+
+
+@router.get("")
+def list_slip_gaji(
+    db: DBSession,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    karyawan_id: Optional[int] = None,
+    periode_minggu: Optional[int] = None,
+    periode_tahun: Optional[int] = None,
+    status: Optional[PaymentStatus] = None,
+    sort_by: str = "periode",
+    sort_order: str = "desc",
+):
+    """Get list of weekly payroll slips with pagination and filters."""
+    service = SlipGajiService(db)
+    return service.get_list(
+        skip=skip,
+        limit=limit,
+        karyawan_id=karyawan_id,
+        periode_minggu=periode_minggu,
+        periode_tahun=periode_tahun,
+        status=status,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+
+@router.get("/summary/{tahun}/{minggu}")
+def get_weekly_summary(
+    tahun: int,
+    minggu: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Get summary of payroll for a week."""
+    service = SlipGajiService(db)
+    return service.get_weekly_summary(minggu, tahun)
+
+
+@router.get("/{slip_id}", response_model=SlipGajiResponse)
+def get_slip_gaji(
+    slip_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get payroll slip by ID."""
+    service = SlipGajiService(db)
+    return service.get_by_id(slip_id)
+
+
+@router.post("/{slip_id}/pay", response_model=SlipGajiResponse)
+def process_payment(
+    slip_id: int,
+    data: SlipGajiUpdate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process salary payment."""
+    service = SlipGajiService(db)
+    return service.process_payment(slip_id, data, current_user.id)
+
+
+@router.delete("/{slip_id}")
+def delete_slip_gaji(
+    slip_id: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Delete payroll slip (only if unpaid)."""
+    service = SlipGajiService(db)
+    service.delete(slip_id)
+    return {"message": "Slip gaji berhasil dihapus"}

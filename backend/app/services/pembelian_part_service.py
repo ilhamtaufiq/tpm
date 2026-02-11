@@ -1,0 +1,409 @@
+from datetime import datetime, date
+from decimal import Decimal
+from typing import Optional, Dict, Any, List
+
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload
+from fastapi import HTTPException, status
+
+from app.models.bengkel import (
+    PembelianSparePart,
+    DetailPembelianSparePart,
+    SparePart,
+)
+from app.models.supplier import Supplier
+from app.schemas.bengkel import PembelianSparePartCreate
+from app.utils.constants import (
+    PaymentStatus,
+    PaymentMethod,
+    TRANSACTION_PREFIXES,
+    KasBankType,
+    KasBankSource,
+)
+from app.services.kas_bank_integration import create_kas_entry
+
+
+class PembelianPartService:
+    """Service for spare part purchase transactions."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _generate_nomor_transaksi(self) -> str:
+        """Generate unique purchase transaction number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["pembelian"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(PembelianSparePart)
+            .filter(PembelianSparePart.nomor_transaksi.like(f"{prefix}{date_str}%"))
+            .order_by(PembelianSparePart.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_transaksi[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _validate_supplier(self, supplier_id: int) -> Supplier:
+        """Validate supplier exists and is active."""
+        supplier = (
+            self.db.query(Supplier)
+            .filter(
+                Supplier.id == supplier_id,
+                Supplier.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not supplier:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Supplier tidak ditemukan",
+            )
+        return supplier
+
+    def _validate_spare_parts(
+        self, detail_items: List[Dict[str, Any]]
+    ) -> Dict[int, SparePart]:
+        """Validate all spare parts exist."""
+        spare_part_ids = [item.spare_part_id for item in detail_items]
+
+        spare_parts = (
+            self.db.query(SparePart)
+            .filter(
+                SparePart.id.in_(spare_part_ids),
+                SparePart.deleted_at.is_(None),
+            )
+            .all()
+        )
+
+        found_ids = {sp.id for sp in spare_parts}
+        missing_ids = set(spare_part_ids) - found_ids
+
+        if missing_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Spare part dengan ID {missing_ids} tidak ditemukan",
+            )
+
+        return {sp.id: sp for sp in spare_parts}
+
+    def create(
+        self,
+        data: PembelianSparePartCreate,
+        user_id: Optional[int] = None,
+    ) -> PembelianSparePart:
+        """Create a new spare part purchase transaction."""
+        # Validate supplier
+        self._validate_supplier(data.supplier_id)
+
+        # Validate spare parts
+        spare_parts_map = self._validate_spare_parts(data.detail)
+
+        # Generate transaction number
+        nomor_transaksi = self._generate_nomor_transaksi()
+
+        # Calculate totals
+        total = Decimal("0")
+        detail_records = []
+
+        for item in data.detail:
+            subtotal = item.harga_satuan * item.qty
+            total += subtotal
+
+            detail_records.append(
+                DetailPembelianSparePart(
+                    spare_part_id=item.spare_part_id,
+                    qty=item.qty,
+                    harga_satuan=item.harga_satuan,
+                    subtotal=subtotal,
+                )
+            )
+
+        grand_total = total - data.diskon
+
+        # Determine payment status
+        status_bayar = PaymentStatus.BELUM_LUNAS
+        tanggal_bayar = None
+
+        if data.metode_bayar and data.metode_bayar != PaymentMethod.KREDIT:
+            status_bayar = PaymentStatus.LUNAS
+            tanggal_bayar = data.tanggal
+
+        # Create purchase record
+        pembelian = PembelianSparePart(
+            nomor_transaksi=nomor_transaksi,
+            tanggal=data.tanggal,
+            supplier_id=data.supplier_id,
+            nomor_faktur=data.nomor_faktur,
+            total=total,
+            diskon=data.diskon,
+            grand_total=grand_total,
+            status_bayar=status_bayar,
+            metode_bayar=data.metode_bayar,
+            tanggal_bayar=tanggal_bayar,
+            catatan=data.catatan,
+            created_by=user_id,
+            detail=detail_records,
+        )
+
+        self.db.add(pembelian)
+        self.db.flush()  # Get ID for kas entry
+
+        # Update spare part stock and price
+        for item in data.detail:
+            spare_part = spare_parts_map[item.spare_part_id]
+            spare_part.stok += item.qty
+            spare_part.harga_beli = item.harga_satuan  # Update latest purchase price
+
+        # Record purchase payment to kas/bank if paid immediately
+        if status_bayar == PaymentStatus.LUNAS:
+            # This will check balance and raise HTTPException if insufficient.
+            # Failure will prevent purchase and stock update from being committed.
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal,
+                tipe=KasBankType.KELUAR,
+                nominal=grand_total,
+                sumber=KasBankSource.PEMBELIAN_PART,
+                metode_bayar=data.metode_bayar,
+                referensi_id=pembelian.id,
+                nomor_referensi=pembelian.nomor_transaksi,
+                keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
+                user_id=user_id,
+            )
+
+        self.db.commit()
+        self.db.refresh(pembelian)
+
+        return pembelian
+
+    def get_by_id(self, pembelian_id: int) -> PembelianSparePart:
+        """Get purchase by ID with details."""
+        pembelian = (
+            self.db.query(PembelianSparePart)
+            .options(
+                joinedload(PembelianSparePart.supplier),
+                joinedload(PembelianSparePart.detail).joinedload(
+                    DetailPembelianSparePart.spare_part
+                ),
+            )
+            .filter(PembelianSparePart.id == pembelian_id)
+            .first()
+        )
+        if not pembelian:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaksi pembelian tidak ditemukan",
+            )
+        return pembelian
+
+    def get_by_nomor(self, nomor_transaksi: str) -> Optional[PembelianSparePart]:
+        """Get purchase by transaction number."""
+        return (
+            self.db.query(PembelianSparePart)
+            .options(
+                joinedload(PembelianSparePart.supplier),
+                joinedload(PembelianSparePart.detail),
+            )
+            .filter(PembelianSparePart.nomor_transaksi == nomor_transaksi)
+            .first()
+        )
+
+    def get_list(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        search: Optional[str] = None,
+        supplier_id: Optional[int] = None,
+        status_bayar: Optional[PaymentStatus] = None,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+        sort_by: str = "tanggal",
+        sort_order: str = "desc",
+    ) -> Dict[str, Any]:
+        """Get list of purchases with pagination and filters."""
+        query = self.db.query(PembelianSparePart).options(
+            joinedload(PembelianSparePart.supplier),
+            joinedload(PembelianSparePart.detail).joinedload(
+                DetailPembelianSparePart.spare_part
+            )
+        )
+
+        # Search filter
+        if search:
+            search_filter = f"%{search}%"
+            query = query.join(PembelianSparePart.supplier).filter(
+                or_(
+                    PembelianSparePart.nomor_transaksi.ilike(search_filter),
+                    PembelianSparePart.nomor_faktur.ilike(search_filter),
+                    Supplier.nama.ilike(search_filter),
+                )
+            )
+
+        # Supplier filter
+        if supplier_id:
+            query = query.filter(PembelianSparePart.supplier_id == supplier_id)
+
+        # Payment status filter
+        if status_bayar:
+            query = query.filter(PembelianSparePart.status_bayar == status_bayar)
+
+        # Date range filter
+        if tanggal_dari:
+            query = query.filter(PembelianSparePart.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(PembelianSparePart.tanggal <= tanggal_sampai)
+
+        # Count total
+        total = query.count()
+
+        # Sorting
+        sort_column = getattr(PembelianSparePart, sort_by, PembelianSparePart.tanggal)
+        if sort_order == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+
+        # Pagination
+        pembelians = query.offset(skip).limit(limit).all()
+
+        # Calculate pages
+        pages = (total + limit - 1) // limit if limit > 0 else 1
+
+        return {
+            "data": pembelians,
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "size": limit,
+            "pages": pages,
+        }
+
+    def update_payment(
+        self,
+        pembelian_id: int,
+        metode_bayar: str,
+        tanggal_bayar: Optional[date] = None,
+        user_id: Optional[int] = None,
+    ) -> PembelianSparePart:
+        """Mark purchase as paid."""
+        pembelian = self.get_by_id(pembelian_id)
+
+        if pembelian.status_bayar == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi sudah lunas",
+            )
+
+        pembelian.status_bayar = PaymentStatus.LUNAS
+        pembelian.metode_bayar = metode_bayar
+        pembelian.tanggal_bayar = tanggal_bayar or date.today()
+
+        # Record purchase payment to kas/bank (money going out)
+        # This will check balance and raise HTTPException if insufficient.
+        # Since it's in the same session, failing here will prevent status update from being committed.
+        create_kas_entry(
+            db=self.db,
+            tanggal=pembelian.tanggal_bayar,
+            tipe=KasBankType.KELUAR,
+            nominal=pembelian.grand_total,
+            sumber=KasBankSource.PEMBELIAN_PART,
+            metode_bayar=metode_bayar,
+            referensi_id=pembelian.id,
+            nomor_referensi=pembelian.nomor_transaksi,
+            keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi}",
+            user_id=user_id,
+        )
+
+        self.db.commit()
+        self.db.refresh(pembelian)
+
+        return pembelian
+
+    def delete(self, pembelian_id: int) -> bool:
+        """Delete purchase and revert stock changes.
+
+        Note: Only allows deletion of recent unpaid purchases.
+        """
+        pembelian = self.get_by_id(pembelian_id)
+
+        # Only allow deletion of unpaid purchases
+        if pembelian.status_bayar == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat menghapus transaksi yang sudah lunas",
+            )
+
+        # Revert stock changes
+        for detail in pembelian.detail:
+            spare_part = (
+                self.db.query(SparePart)
+                .filter(SparePart.id == detail.spare_part_id)
+                .first()
+            )
+            if spare_part:
+                spare_part.stok -= detail.qty
+                if spare_part.stok < 0:
+                    spare_part.stok = 0
+
+        # Delete purchase (cascade will delete details)
+        self.db.delete(pembelian)
+        self.db.commit()
+
+        return True
+
+    def get_summary(
+        self,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """Get purchase summary statistics."""
+        query = self.db.query(PembelianSparePart)
+
+        if tanggal_dari:
+            query = query.filter(PembelianSparePart.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(PembelianSparePart.tanggal <= tanggal_sampai)
+
+        # Total purchases
+        total_count = query.count()
+        total_value = (
+            query.with_entities(func.sum(PembelianSparePart.grand_total)).scalar()
+            or Decimal("0")
+        )
+
+        # Unpaid purchases
+        unpaid_query = query.filter(
+            PembelianSparePart.status_bayar == PaymentStatus.BELUM_LUNAS
+        )
+        unpaid_count = unpaid_query.count()
+        unpaid_value = (
+            unpaid_query.with_entities(func.sum(PembelianSparePart.grand_total)).scalar()
+            or Decimal("0")
+        )
+
+        return {
+            "total_transaksi": total_count,
+            "total_nilai": float(total_value),
+            "belum_lunas_count": unpaid_count,
+            "belum_lunas_nilai": float(unpaid_value),
+        }
+
+    def get_by_supplier(
+        self,
+        supplier_id: int,
+        limit: int = 10,
+    ) -> List[PembelianSparePart]:
+        """Get recent purchases from a supplier."""
+        return (
+            self.db.query(PembelianSparePart)
+            .filter(PembelianSparePart.supplier_id == supplier_id)
+            .order_by(PembelianSparePart.tanggal.desc())
+            .limit(limit)
+            .all()
+        )

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(./venv/Scripts/python.exe -m pip:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(source venv/Scripts/activate)",
+      "Bash(alembic revision:*)",
+      "Bash(alembic upgrade:*)"
+    ]
+  }
+}

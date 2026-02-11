@@ -1,0 +1,239 @@
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Optional, List
+
+from pydantic import BaseModel, Field
+
+from app.utils.constants import PaymentStatus, PaymentMethod
+
+
+# ============================================
+# SUPIR (DRIVER) SCHEMAS
+# ============================================
+
+class SupirBase(BaseModel):
+    """Base driver schema."""
+
+    nama: str = Field(..., min_length=2, max_length=100)
+    nik: Optional[str] = Field(None, max_length=20)
+    alamat: Optional[str] = None
+    telepon: Optional[str] = Field(None, max_length=20)
+    nomor_sim: Optional[str] = Field(None, max_length=30)
+    jenis_sim: Optional[str] = Field(None, max_length=10)
+    catatan: Optional[str] = None
+
+
+class SupirCreate(SupirBase):
+    """Schema for creating driver."""
+
+    kode: Optional[str] = Field(None, max_length=20)
+    tanggal_bergabung: date
+
+
+class SupirUpdate(BaseModel):
+    """Schema for updating driver."""
+
+    nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    nik: Optional[str] = Field(None, max_length=20)
+    alamat: Optional[str] = None
+    telepon: Optional[str] = Field(None, max_length=20)
+    nomor_sim: Optional[str] = Field(None, max_length=30)
+    jenis_sim: Optional[str] = Field(None, max_length=10)
+    is_active: Optional[bool] = None
+    catatan: Optional[str] = None
+
+
+class SupirResponse(BaseModel):
+    """Schema for driver response."""
+
+    id: int
+    kode: str
+    nama: str
+    nik: Optional[str] = None
+    alamat: Optional[str] = None
+    telepon: Optional[str] = None
+    nomor_sim: Optional[str] = None
+    jenis_sim: Optional[str] = None
+    tanggal_bergabung: date
+    is_active: bool
+    catatan: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SupirList(BaseModel):
+    """Schema for paginated driver list."""
+
+    data: List[SupirResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+class SupirSummary(BaseModel):
+    """Schema for driver summary with statistics."""
+
+    supir: SupirResponse
+    total_muatan: int = 0
+    total_pendapatan: Decimal = Decimal("0")
+    total_laba_tpm: Decimal = Decimal("0")
+    total_piutang: Decimal = Decimal("0")
+
+
+# ============================================
+# MUATAN JASA ANGKUT SCHEMAS
+# ============================================
+
+class BiayaItem(BaseModel):
+    """Schema for dynamic operational cost item."""
+    id: Optional[int] = None # For updates
+    deskripsi: str = Field(..., min_length=1, max_length=255)
+    jumlah: Decimal = Field(..., ge=0)
+
+class PartItem(BaseModel):
+    """Schema for spare part item in workshop transaction."""
+    part_id: int
+    qty: int = Field(default=1, ge=1)
+
+class ServiceItem(BaseModel):
+    """Schema for service item in workshop transaction."""
+    deskripsi: str = Field(..., min_length=1, max_length=255)
+    harga: Decimal = Field(..., ge=0)
+
+class BengkelItems(BaseModel):
+    """Schema for workshop items integration."""
+    parts: List[PartItem] = []
+    services: List[ServiceItem] = []
+
+class BiayaTambahanResponse(BaseModel):
+    """Schema for additional cost response."""
+    id: int
+    kategori: str
+    deskripsi: str
+    jumlah: Decimal
+    model_config = {"from_attributes": True}
+
+class MuatanCreate(BaseModel):
+    """Schema for creating transport load."""
+
+    tanggal: date
+    supir_id: Optional[int] = None
+    supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    nopol: Optional[str] = Field(None, max_length=20)
+    asal: str = Field(..., min_length=2, max_length=100)
+    tujuan: str = Field(..., min_length=2, max_length=100)
+    jenis_muatan: Optional[str] = Field(None, max_length=100)
+    ritase: int = Field(default=1, ge=1)
+    berat_muatan: Optional[str] = Field(None, max_length=50)
+    
+    # Trading values
+    harga_beli: Decimal = Field(default=Decimal("0"), ge=0)
+    harga_jual: Decimal = Field(default=Decimal("0"), ge=0)
+    
+    # Calculated on backend
+    pendapatan_kotor: Optional[Decimal] = Field(None, ge=0)
+
+    # Dynamic operational costs
+    biaya_operasional: List[BiayaItem] = []
+    
+    # Workshop Integration
+    bengkel_items: Optional[BengkelItems] = None
+
+    # Legacy fields (kept for backward compatibility but default to 0)
+    biaya_bbm: Decimal = Field(default=Decimal("0"), ge=0)
+    biaya_tol: Decimal = Field(default=Decimal("0"), ge=0)
+    biaya_makan: Decimal = Field(default=Decimal("0"), ge=0)
+    biaya_parkir: Decimal = Field(default=Decimal("0"), ge=0)
+    biaya_lainnya: Decimal = Field(default=Decimal("0"), ge=0)
+    
+    persentase_tpm: Decimal = Field(default=Decimal("100"), ge=0, le=100)
+    status_bayar: Optional[PaymentStatus] = PaymentStatus.BELUM_LUNAS
+    metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    catatan: Optional[str] = None
+
+
+class MuatanUpdate(BaseModel):
+    """Schema for updating transport load."""
+
+    tanggal: Optional[date] = None
+    supir_id: Optional[int] = None
+    supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    nopol: Optional[str] = Field(None, max_length=20)
+    asal: Optional[str] = Field(None, min_length=2, max_length=100)
+    tujuan: Optional[str] = Field(None, min_length=2, max_length=100)
+    jenis_muatan: Optional[str] = Field(None, max_length=100)
+    ritase: Optional[int] = Field(None, ge=1)
+    berat_muatan: Optional[str] = Field(None, max_length=50)
+    
+    harga_beli: Optional[Decimal] = Field(None, ge=0)
+    harga_jual: Optional[Decimal] = Field(None, ge=0)
+    pendapatan_kotor: Optional[Decimal] = Field(None, ge=0)
+
+    # Dynamic operational costs
+    biaya_operasional: Optional[List[BiayaItem]] = None
+    
+    # Workshop Integration
+    bengkel_items: Optional[BengkelItems] = None
+
+    # Legacy fields
+    biaya_bbm: Optional[Decimal] = Field(None, ge=0)
+    biaya_tol: Optional[Decimal] = Field(None, ge=0)
+    biaya_makan: Optional[Decimal] = Field(None, ge=0)
+    biaya_parkir: Optional[Decimal] = Field(None, ge=0)
+    biaya_lainnya: Optional[Decimal] = Field(None, ge=0)
+    
+    persentase_tpm: Optional[Decimal] = Field(None, ge=0, le=100)
+    catatan: Optional[str] = None
+
+
+class MuatanResponse(BaseModel):
+    """Schema for transport load response."""
+
+    id: int
+    nomor_transaksi: str
+    tanggal: date
+    supir_id: Optional[int] = None
+    supir: Optional["SupirResponse"] = None # Full driver object
+    supir_nama: Optional[str] = None
+    supir_nama_manual: Optional[str] = None
+    nopol: Optional[str] = None
+    asal: str
+    tujuan: str
+    jenis_muatan: Optional[str] = None
+    ritase: int
+    berat_muatan: Optional[str] = None
+    
+    harga_beli: Decimal
+    harga_jual: Decimal
+    pendapatan_kotor: Decimal
+    
+    biaya_bbm: Decimal
+    biaya_tol: Decimal
+    biaya_makan: Decimal
+    biaya_parkir: Decimal
+    biaya_lainnya: Decimal
+    total_biaya: Decimal
+    laba_kotor: Decimal
+    persentase_tpm: Decimal
+    laba_tpm: Decimal
+    laba_supir: Decimal
+    status_bayar: PaymentStatus
+    tanggal_bayar: Optional[date] = None
+    biaya_tambahan: List[BiayaTambahanResponse] = []
+    catatan: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MuatanList(BaseModel):
+    """Schema for paginated transport load list."""
+
+    data: List[MuatanResponse]
+    total: int
+    page: int
+    size: int
+    pages: int

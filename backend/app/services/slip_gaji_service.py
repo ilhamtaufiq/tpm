@@ -1,0 +1,586 @@
+from datetime import datetime, date, timedelta
+from decimal import Decimal
+from typing import Optional, Dict, Any, List
+
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload
+from fastapi import HTTPException, status
+
+from app.models.karyawan import Karyawan, Absensi, SlipGaji, KasbonKaryawan
+from app.schemas.karyawan import SlipGajiCreate, SlipGajiUpdate
+from app.utils.constants import (
+    AttendanceStatus,
+    EmployeeStatus,
+    PaymentStatus,
+    PaymentMethod,
+    TRANSACTION_PREFIXES,
+    KasBankType,
+    KasBankSource,
+)
+from app.services.kas_bank_integration import create_kas_entry
+
+
+def get_week_dates(tahun: int, minggu: int) -> tuple[date, date]:
+    """Get start and end dates for a week number."""
+    # Get first day of year
+    first_day = date(tahun, 1, 1)
+    # Find first Monday
+    days_to_monday = (7 - first_day.weekday()) % 7
+    if first_day.weekday() != 0:
+        first_monday = first_day + timedelta(days=days_to_monday)
+    else:
+        first_monday = first_day
+
+    # Calculate week start (Monday)
+    week_start = first_monday + timedelta(weeks=minggu - 1)
+    # Week end is Saturday (6 days for workweek Mon-Sat)
+    week_end = week_start + timedelta(days=5)
+
+    return week_start, week_end
+
+
+def get_current_week(tanggal: date = None) -> tuple[int, int]:
+    """Get week number and year for a date."""
+    if tanggal is None:
+        tanggal = date.today()
+    iso_cal = tanggal.isocalendar()
+    return iso_cal[1], iso_cal[0]  # week, year
+
+
+class SlipGajiPreviewItem:
+    """Preview item for slip gaji generation."""
+    def __init__(self, karyawan_id: int, karyawan_nama: str, karyawan_kode: str,
+                 gaji_pokok: Decimal, jumlah_hadir: int, potongan_kasbon: Decimal):
+        self.karyawan_id = karyawan_id
+        self.karyawan_nama = karyawan_nama
+        self.karyawan_kode = karyawan_kode
+        self.gaji_pokok = gaji_pokok
+        self.jumlah_hadir = jumlah_hadir
+        self.potongan_kasbon = potongan_kasbon
+        self.gaji_bersih = gaji_pokok - potongan_kasbon
+
+
+class SlipGajiService:
+    """Service for employee weekly payroll management."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def _generate_nomor_slip(self, minggu: int, tahun: int) -> str:
+        """Generate unique payroll slip number."""
+        prefix = TRANSACTION_PREFIXES["slip_gaji"]
+        date_str = f"{tahun % 100:02d}W{minggu:02d}"
+
+        last = (
+            self.db.query(SlipGaji)
+            .filter(SlipGaji.nomor_slip.like(f"{prefix}{date_str}%"))
+            .order_by(SlipGaji.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_slip[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _get_weekly_attendance(
+        self,
+        karyawan_id: int,
+        tanggal_mulai: date,
+        tanggal_akhir: date,
+    ) -> int:
+        """Get attendance count for a week."""
+        count = (
+            self.db.query(Absensi)
+            .filter(
+                Absensi.karyawan_id == karyawan_id,
+                Absensi.tanggal >= tanggal_mulai,
+                Absensi.tanggal <= tanggal_akhir,
+                Absensi.status == AttendanceStatus.HADIR,
+            )
+            .count()
+        )
+        return count
+
+    def _get_kasbon_total(self, karyawan_id: int) -> Decimal:
+        """Get total unpaid kasbon for employee."""
+        result = (
+            self.db.query(func.sum(KasbonKaryawan.nominal))
+            .filter(
+                KasbonKaryawan.karyawan_id == karyawan_id,
+                KasbonKaryawan.status != PaymentStatus.LUNAS,
+            )
+            .scalar()
+        )
+        return result or Decimal("0")
+
+    def create(
+        self,
+        data: SlipGajiCreate,
+        user_id: Optional[int] = None,
+    ) -> SlipGaji:
+        """Create a new weekly payroll slip."""
+        # Validate employee
+        karyawan = (
+            self.db.query(Karyawan)
+            .filter(
+                Karyawan.id == data.karyawan_id,
+                Karyawan.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not karyawan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Karyawan tidak ditemukan",
+            )
+
+        # Check if already exists for the period
+        existing = (
+            self.db.query(SlipGaji)
+            .filter(
+                SlipGaji.karyawan_id == data.karyawan_id,
+                SlipGaji.periode_minggu == data.periode_minggu,
+                SlipGaji.periode_tahun == data.periode_tahun,
+            )
+            .first()
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Slip gaji untuk minggu {data.periode_minggu}/{data.periode_tahun} sudah ada",
+            )
+
+        # Get week dates
+        tanggal_mulai, tanggal_akhir = get_week_dates(data.periode_tahun, data.periode_minggu)
+
+        # Get attendance count
+        jumlah_hadir = self._get_weekly_attendance(
+            data.karyawan_id,
+            tanggal_mulai,
+            tanggal_akhir,
+        )
+
+        # Get kasbon total
+        kasbon_total = self._get_kasbon_total(data.karyawan_id)
+
+        # Generate slip number
+        nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
+
+        # Create slip
+        slip = SlipGaji(
+            nomor_slip=nomor_slip,
+            karyawan_id=data.karyawan_id,
+            periode_minggu=data.periode_minggu,
+            periode_tahun=data.periode_tahun,
+            tanggal_mulai=tanggal_mulai,
+            tanggal_akhir=tanggal_akhir,
+            jumlah_hadir=jumlah_hadir,
+            gaji_pokok=karyawan.gaji_pokok,
+            potongan_kasbon=kasbon_total,
+            status=PaymentStatus.BELUM_LUNAS,
+            created_by=user_id,
+        )
+
+        # Calculate totals
+        slip.calculate_totals()
+
+        self.db.add(slip)
+        self.db.commit()
+        self.db.refresh(slip)
+
+        return slip
+
+    def get_preview(
+        self,
+        minggu: int,
+        tahun: int,
+    ) -> Dict[str, Any]:
+        """Get preview of employees for slip gaji generation with calculated attendance."""
+        tanggal_mulai, tanggal_akhir = get_week_dates(tahun, minggu)
+
+        # Get all active employees
+        employees = (
+            self.db.query(Karyawan)
+            .filter(
+                Karyawan.deleted_at.is_(None),
+                Karyawan.status == EmployeeStatus.AKTIF,
+            )
+            .order_by(Karyawan.nama.asc())
+            .all()
+        )
+
+        items = []
+        for emp in employees:
+            # Check if already exists
+            existing = (
+                self.db.query(SlipGaji)
+                .filter(
+                    SlipGaji.karyawan_id == emp.id,
+                    SlipGaji.periode_minggu == minggu,
+                    SlipGaji.periode_tahun == tahun,
+                )
+                .first()
+            )
+            if existing:
+                continue
+
+            # Get attendance
+            jumlah_hadir = self._get_weekly_attendance(emp.id, tanggal_mulai, tanggal_akhir)
+
+            # Get kasbon
+            kasbon_total = self._get_kasbon_total(emp.id)
+
+            items.append({
+                "karyawan_id": emp.id,
+                "karyawan_nama": emp.nama,
+                "karyawan_kode": emp.kode,
+                "gaji_pokok": float(emp.gaji_pokok),
+                "jumlah_hadir": jumlah_hadir,
+                "potongan_kasbon": float(kasbon_total),
+                "gaji_bersih": float(emp.gaji_pokok - kasbon_total),
+            })
+
+        return {
+            "periode_minggu": minggu,
+            "periode_tahun": tahun,
+            "tanggal_mulai": tanggal_mulai.isoformat(),
+            "tanggal_akhir": tanggal_akhir.isoformat(),
+            "items": items,
+        }
+
+    def create_bulk(
+        self,
+        minggu: int,
+        tahun: int,
+        items: Optional[List[Dict[str, Any]]] = None,
+        user_id: Optional[int] = None,
+        tanggal_mulai_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create payroll slips for employees with optional attendance override."""
+        tanggal_mulai, tanggal_akhir = get_week_dates(tahun, minggu)
+
+        # Apply start date override if provided
+        if tanggal_mulai_override:
+            try:
+                tanggal_mulai = datetime.strptime(tanggal_mulai_override, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        # If items provided, use them (with attendance override)
+        if items:
+            created = 0
+            for item in items:
+                karyawan_id = item.get("karyawan_id")
+                jumlah_hadir = item.get("jumlah_hadir", 0)
+
+                # Skip if already exists
+                existing = (
+                    self.db.query(SlipGaji)
+                    .filter(
+                        SlipGaji.karyawan_id == karyawan_id,
+                        SlipGaji.periode_minggu == minggu,
+                        SlipGaji.periode_tahun == tahun,
+                    )
+                    .first()
+                )
+                if existing:
+                    continue
+
+                # Get employee
+                karyawan = (
+                    self.db.query(Karyawan)
+                    .filter(Karyawan.id == karyawan_id)
+                    .first()
+                )
+                if not karyawan:
+                    continue
+
+                # Get kasbon
+                kasbon_total = self._get_kasbon_total(karyawan_id)
+
+                # Generate slip number
+                nomor_slip = self._generate_nomor_slip(minggu, tahun)
+
+                # Create slip with overridden attendance
+                slip = SlipGaji(
+                    nomor_slip=nomor_slip,
+                    karyawan_id=karyawan_id,
+                    periode_minggu=minggu,
+                    periode_tahun=tahun,
+                    tanggal_mulai=tanggal_mulai,
+                    tanggal_akhir=tanggal_akhir,
+                    jumlah_hadir=jumlah_hadir,
+                    gaji_pokok=karyawan.gaji_pokok,
+                    potongan_kasbon=kasbon_total,
+                    status=PaymentStatus.BELUM_LUNAS,
+                    created_by=user_id,
+                )
+                slip.calculate_totals()
+
+                self.db.add(slip)
+                created += 1
+
+            self.db.commit()
+            return {
+                "created": created,
+                "skipped": 0,
+                "total_employees": len(items),
+            }
+
+        # Otherwise, auto-calculate for all active employees
+        employees = (
+            self.db.query(Karyawan)
+            .filter(
+                Karyawan.deleted_at.is_(None),
+                Karyawan.status == EmployeeStatus.AKTIF,
+            )
+            .all()
+        )
+
+        created = 0
+        skipped = 0
+
+        for emp in employees:
+            # Skip if already exists
+            existing = (
+                self.db.query(SlipGaji)
+                .filter(
+                    SlipGaji.karyawan_id == emp.id,
+                    SlipGaji.periode_minggu == minggu,
+                    SlipGaji.periode_tahun == tahun,
+                )
+                .first()
+            )
+            if existing:
+                skipped += 1
+                continue
+
+            data = SlipGajiCreate(
+                karyawan_id=emp.id,
+                periode_minggu=minggu,
+                periode_tahun=tahun,
+            )
+            self.create(data, user_id)
+            created += 1
+
+        return {
+            "created": created,
+            "skipped": skipped,
+            "total_employees": len(employees),
+        }
+
+    def get_by_id(self, slip_id: int) -> SlipGaji:
+        """Get payroll slip by ID."""
+        slip = (
+            self.db.query(SlipGaji)
+            .options(joinedload(SlipGaji.karyawan))
+            .filter(SlipGaji.id == slip_id)
+            .first()
+        )
+        if not slip:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Slip gaji tidak ditemukan",
+            )
+        return slip
+
+    def get_by_nomor(self, nomor_slip: str) -> Optional[SlipGaji]:
+        """Get payroll slip by number."""
+        return (
+            self.db.query(SlipGaji)
+            .options(joinedload(SlipGaji.karyawan))
+            .filter(SlipGaji.nomor_slip == nomor_slip)
+            .first()
+        )
+
+    def get_list(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        karyawan_id: Optional[int] = None,
+        periode_minggu: Optional[int] = None,
+        periode_tahun: Optional[int] = None,
+        status: Optional[PaymentStatus] = None,
+        sort_by: str = "periode_tahun",
+        sort_order: str = "desc",
+    ) -> Dict[str, Any]:
+        """Get list of payroll slips with pagination and filters."""
+        query = self.db.query(SlipGaji).options(joinedload(SlipGaji.karyawan))
+
+        # Employee filter
+        if karyawan_id:
+            query = query.filter(SlipGaji.karyawan_id == karyawan_id)
+
+        # Period filters
+        if periode_minggu:
+            query = query.filter(SlipGaji.periode_minggu == periode_minggu)
+        if periode_tahun:
+            query = query.filter(SlipGaji.periode_tahun == periode_tahun)
+
+        # Status filter
+        if status:
+            query = query.filter(SlipGaji.status == status)
+
+        # Count total
+        total = query.count()
+
+        # Sorting
+        if sort_by == "periode":
+            if sort_order == "desc":
+                query = query.order_by(
+                    SlipGaji.periode_tahun.desc(),
+                    SlipGaji.periode_minggu.desc(),
+                )
+            else:
+                query = query.order_by(
+                    SlipGaji.periode_tahun.asc(),
+                    SlipGaji.periode_minggu.asc(),
+                )
+        else:
+            sort_column = getattr(SlipGaji, sort_by, SlipGaji.created_at)
+            if sort_order == "desc":
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
+
+        # Pagination
+        slips = query.offset(skip).limit(limit).all()
+
+        # Calculate pages
+        pages = (total + limit - 1) // limit if limit > 0 else 1
+
+        return {
+            "data": slips,
+            "total": total,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "size": limit,
+            "pages": pages,
+        }
+
+    def process_payment(
+        self,
+        slip_id: int,
+        data: SlipGajiUpdate,
+        user_id: Optional[int] = None,
+    ) -> SlipGaji:
+        """Process salary payment."""
+        slip = self.get_by_id(slip_id)
+
+        if slip.status == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Slip gaji sudah dibayar",
+            )
+
+        # Prepare slip update (don't commit yet)
+        slip.metode_bayar = data.metode_bayar
+        slip.tanggal_bayar = date.today()
+        slip.status = PaymentStatus.LUNAS
+        slip.catatan = data.catatan
+
+        # Record salary payment to kas/bank (money going out)
+        # This function will check balance and raise HTTPException if insufficient.
+        # Since it's in the same session, failing here will prevent slip status update from being committed.
+        karyawan_nama = slip.karyawan.nama if slip.karyawan else "Unknown"
+        create_kas_entry(
+            db=self.db,
+            tanggal=date.today(),
+            tipe=KasBankType.KELUAR,
+            nominal=slip.gaji_bersih,
+            sumber=KasBankSource.GAJI,
+            metode_bayar=data.metode_bayar,
+            referensi_id=slip.id,
+            nomor_referensi=slip.nomor_slip,
+            keterangan=f"Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
+            user_id=user_id,
+        )
+
+        return slip
+
+    def delete(self, slip_id: int) -> bool:
+        """Delete payroll slip."""
+        slip = self.get_by_id(slip_id)
+
+        if slip.status == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat menghapus slip gaji yang sudah dibayar",
+            )
+
+        self.db.delete(slip)
+        self.db.commit()
+
+        return True
+
+    def get_weekly_summary(
+        self,
+        minggu: int,
+        tahun: int,
+    ) -> Dict[str, Any]:
+        """Get summary of payroll for a week."""
+        tanggal_mulai, tanggal_akhir = get_week_dates(tahun, minggu)
+
+        query = self.db.query(SlipGaji).filter(
+            SlipGaji.periode_minggu == minggu,
+            SlipGaji.periode_tahun == tahun,
+        )
+
+        total_slips = query.count()
+
+        aggregates = query.with_entities(
+            func.sum(SlipGaji.gaji_pokok).label("total_gaji_pokok"),
+            func.sum(SlipGaji.potongan_kasbon).label("total_potongan_kasbon"),
+            func.sum(SlipGaji.gaji_bersih).label("total_gaji_bersih"),
+        ).first()
+
+        # Paid vs unpaid
+        paid_total = (
+            query.filter(SlipGaji.status == PaymentStatus.LUNAS)
+            .with_entities(func.sum(SlipGaji.gaji_bersih))
+            .scalar()
+        ) or Decimal("0")
+
+        unpaid_total = (
+            query.filter(SlipGaji.status != PaymentStatus.LUNAS)
+            .with_entities(func.sum(SlipGaji.gaji_bersih))
+            .scalar()
+        ) or Decimal("0")
+
+        return {
+            "periode_minggu": minggu,
+            "periode_tahun": tahun,
+            "tanggal_mulai": tanggal_mulai.isoformat(),
+            "tanggal_akhir": tanggal_akhir.isoformat(),
+            "total_karyawan": total_slips,
+            "total_gaji_pokok": float(aggregates.total_gaji_pokok or 0),
+            "total_potongan_kasbon": float(aggregates.total_potongan_kasbon or 0),
+            "total_gaji_bersih": float(aggregates.total_gaji_bersih or 0),
+            "total_dibayar": float(paid_total),
+            "total_belum_dibayar": float(unpaid_total),
+        }
+    def get_summary_by_date_range(
+        self,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """Get summary of paid payroll for a date range."""
+        query = self.db.query(SlipGaji).filter(SlipGaji.status == PaymentStatus.LUNAS)
+
+        if tanggal_dari:
+            query = query.filter(SlipGaji.tanggal_bayar >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(SlipGaji.tanggal_bayar <= tanggal_sampai)
+
+        result = query.with_entities(
+            func.count(SlipGaji.id).label("count"),
+            func.sum(SlipGaji.gaji_bersih).label("total"),
+        ).first()
+
+        return {
+            "count": result.count or 0,
+            "total": float(result.total or 0),
+        }

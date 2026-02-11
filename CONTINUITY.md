@@ -1,0 +1,31 @@
+# Continuity Ledger
+
+- Goal (incl. success criteria):
+  - Deploy the application (FastAPI backend + Expo Frontend + MySQL) using Docker.
+  - Successfully run the entire stack with `docker-compose up`.
+- Constraints/Assumptions:
+  - Backend: FastAPI, MySQL database.
+  - Frontend: Expo (React Native for Web).
+  - Production-ready Docker configuration.
+- Key decisions:
+  - Use a multi-stage build for the frontend (Expo web export -> Nginx).
+  - Use a standard Python image for the backend.
+  - Include MySQL in the docker-compose setup.
+- State:
+  - Done:
+    - Analyzed project structure and tech stack.
+    - Identified backend (FastAPI/MySQL) and frontend (Expo v52).
+    - Created Dockerfiles and nginx configuration.
+    - Integrated Cloudflare Tunnel (cloudflared) service.
+  - Now:
+    - Waiting for user to add `CLOUDFLARE_TUNNEL_TOKEN` to the root `.env` file.
+  - Next:
+    - Run `docker-compose up --build`.
+    - Verify tunnel connection in Cloudflare Dashboard.
+- Open questions (UNCONFIRMED if needed):
+  - Do you have a preference for the database Docker image (e.g., MySQL 8.0)?
+  - Should I include automatic migrations in the Docker entrypoint?
+- Working set (files/ids/commands):
+  - backend/Dockerfile
+  - frontend/Dockerfile
+  - docker-compose.yml

@@ -1,0 +1,84 @@
+"""
+Helper functions for KasBank integration.
+
+This module provides utilities for automatically recording financial transactions
+to the kas_bank ledger when transactions occur in other parts of the system.
+"""
+
+from datetime import date
+from decimal import Decimal
+from typing import Optional
+
+from sqlalchemy.orm import Session
+
+from app.models.keuangan import KasBank
+from app.schemas.keuangan import KasBankCreate
+from app.services.kas_bank_service import KasBankService
+from app.utils.constants import (
+    KasBankType,
+    KasBankSource,
+    KasBankJenis,
+    PaymentMethod,
+)
+
+
+def get_kas_jenis(metode_bayar: PaymentMethod) -> KasBankJenis:
+    """Map payment method to kas/bank account type.
+
+    Args:
+        metode_bayar: The payment method used
+
+    Returns:
+        KasBankJenis indicating which account to use
+    """
+    if metode_bayar == PaymentMethod.TRANSFER:
+        return KasBankJenis.BANK_BCA
+    return KasBankJenis.CASH
+
+
+def create_kas_entry(
+    db: Session,
+    tanggal: date,
+    tipe: KasBankType,
+    nominal: Decimal,
+    sumber: KasBankSource,
+    metode_bayar: PaymentMethod,
+    referensi_id: Optional[int],
+    nomor_referensi: str,
+    keterangan: str,
+    user_id: Optional[int] = None,
+) -> KasBank:
+    """Create a kas/bank entry for financial transactions.
+
+    This function automatically records financial transactions to the kas_bank
+    ledger, ensuring all money movements are tracked through the cash/bank system.
+
+    Args:
+        db: Database session
+        tanggal: Transaction date
+        tipe: Transaction type (MASUK for incoming, KELUAR for outgoing)
+        nominal: Transaction amount (must be positive)
+        sumber: Source of the transaction (BENGKEL, GAJI, KASBON, etc.)
+        metode_bayar: Payment method (TUNAI or TRANSFER)
+        referensi_id: ID of the source transaction (optional)
+        nomor_referensi: Reference number of the source transaction
+        keterangan: Description of the transaction
+        user_id: ID of the user creating the transaction (optional)
+
+    Returns:
+        The created KasBank record
+    """
+    service = KasBankService(db)
+
+    data = KasBankCreate(
+        tanggal=tanggal,
+        jenis=get_kas_jenis(metode_bayar),
+        tipe=tipe,
+        nominal=nominal,
+        sumber=sumber,
+        referensi_id=referensi_id,
+        nomor_referensi=nomor_referensi,
+        keterangan=keterangan,
+    )
+
+    return service.create(data, user_id)
