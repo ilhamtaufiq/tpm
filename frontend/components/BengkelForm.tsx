@@ -7,24 +7,32 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Plus, Trash2, Wrench, Package } from 'lucide-react-native';
+import { Plus, Trash2, Wrench, Package, Truck, Car } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useCreateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
+import { useMuatanList } from '../hooks/useJasaAngkut';
+import { useMobilList } from '../hooks/useMobil';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { SparePartSelector } from './ui/SparePartSelector';
 import { JasaSelector } from './ui/JasaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
-import { Truck } from 'lucide-react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 
 interface BengkelFormProps {
     onSuccess: () => void;
 }
 
 export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
+    // Category selection
+    const [kategori, setKategori] = useState<BengkelKategori>('umum');
+    const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
+    const [selectedMobil, setSelectedMobil] = useState<any>(null);
+
     const [nomorPlat, setNomorPlat] = useState('');
     const [jenisKendaraan, setJenisKendaraan] = useState('');
 
@@ -39,12 +47,20 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
     const [total, setTotal] = useState(0); // Subtotal
     const [diskon, setDiskon] = useState('0');
-    const [dp, setDp] = useState('0');
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([{ id: Date.now(), metode: 'Tunai', jumlah: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
     const createTransaksiMutation = useCreateTransaksiBengkel();
+
+    // Load muatan & mobil data for category pickers
+    const { data: muatanData } = useMuatanList({ limit: 50 });
+    const { data: mobilData } = useMobilList({ status: 'available' });
+
+    const muatanList = muatanData?.data || [];
+    const mobilList = mobilData?.data || mobilData || [];
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -85,15 +101,28 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             return;
         }
 
+        // Category-specific validation
+        if (kategori === 'jasa_angkut' && !selectedMuatan) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih transaksi muatan untuk kategori Jasa Angkut', variant: 'warning' });
+            return;
+        }
+        if (kategori === 'jual_beli_mobil' && !selectedMobil) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih mobil untuk kategori Jual Beli Mobil', variant: 'warning' });
+            return;
+        }
+
         const validatedPlat = nomorPlat.substring(0, 15);
         const validatedCustomerName = finalCustomerName.substring(0, 100);
 
-        const payload = {
+        const payload: any = {
             tanggal: new Date().toISOString().split('T')[0],
             nomor_plat: validatedPlat,
             jenis_kendaraan: jenisKendaraan.substring(0, 50),
             nama_customer: validatedCustomerName,
             customer_id: selectedCustomer ? selectedCustomer.id : null,
+            kategori: kategori,
+            muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
+            mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
             metode_bayar: metodeBayar.toLowerCase(),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
@@ -109,8 +138,14 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     qty: Number(p.qty) || 1,
                     harga_jual: Number(parseNumber(p.harga.toString())) || 0
                 })),
-            jumlah_bayar: Number(parseNumber(dp)) || 0,
-            diskon: Number(parseNumber(diskon)) || 0
+            diskon: Number(parseNumber(diskon)) || 0,
+            payments: payments
+                .filter(p => Number(parseNumber(p.jumlah)) > 0)
+                .map(p => ({
+                    metode: p.metode.toLowerCase(),
+                    jumlah: Number(parseNumber(p.jumlah))
+                })),
+            jumlah_bayar: payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0)
         };
 
         try {
@@ -140,6 +175,149 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     // Form content rendered inside scroll view
     const renderFormContent = () => (
         <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 10 }}>
+
+            {/* ===== CATEGORY SELECTOR ===== */}
+            <View className="mb-6">
+                <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Kategori Bengkel</Typography>
+                <View className="flex-row space-x-2">
+                    {([
+                        { key: 'umum', label: 'Umum', icon: Wrench, color: '#023C69' },
+                        { key: 'jasa_angkut', label: 'Jasa Angkut', icon: Truck, color: '#10B981' },
+                        { key: 'jual_beli_mobil', label: 'Jual Beli Mobil', icon: Car, color: '#3B82F6' },
+                    ] as const).map((cat) => (
+                        <TouchableOpacity
+                            key={cat.key}
+                            onPress={() => {
+                                setKategori(cat.key);
+                                if (cat.key !== 'jasa_angkut') setSelectedMuatan(null);
+                                if (cat.key !== 'jual_beli_mobil') setSelectedMobil(null);
+                            }}
+                            className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.key
+                                ? 'bg-primary/10 border-primary'
+                                : 'bg-gray-50 border-gray-100'
+                                }`}
+                        >
+                            <cat.icon size={20} color={kategori === cat.key ? cat.color : '#9CA3AF'} />
+                            <Typography
+                                weight={kategori === cat.key ? 'bold' : 'medium'}
+                                className={`text-[10px] mt-1 ${kategori === cat.key ? 'text-primary' : 'text-textGray'}`}
+                            >
+                                {cat.label}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            {/* ===== MUATAN PICKER (Jasa Angkut) ===== */}
+            {kategori === 'jasa_angkut' && (
+                <View className="mb-6">
+                    <Typography variant="body2" weight="semibold" className="mb-3 text-emerald-600">
+                        Pilih Transaksi Muatan
+                    </Typography>
+                    {muatanList.length === 0 ? (
+                        <Card variant="outlined" className="p-4 border-gray-100 rounded-2xl items-center">
+                            <Typography variant="caption" className="text-textGray italic">Tidak ada data muatan</Typography>
+                        </Card>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
+                            <View className="flex-row px-1" style={{ gap: 8 }}>
+                                {muatanList.slice(0, 10).map((m: any) => (
+                                    <TouchableOpacity
+                                        key={m.id}
+                                        onPress={() => setSelectedMuatan(m)}
+                                        className={`p-3 rounded-2xl border min-w-[140px] ${selectedMuatan?.id === m.id
+                                            ? 'bg-emerald-50 border-emerald-400'
+                                            : 'bg-white border-gray-100'
+                                            }`}
+                                    >
+                                        <Typography weight="bold" className={`text-xs ${selectedMuatan?.id === m.id ? 'text-emerald-700' : 'text-textMain'}`} numberOfLines={1}>
+                                            {m.tujuan || m.asal}
+                                        </Typography>
+                                        <Typography className="text-[9px] text-textGray mt-0.5" numberOfLines={1}>
+                                            {m.supir_nama || '-'} • {m.nomor_transaksi}
+                                        </Typography>
+                                        <Typography weight="bold" className={`text-[10px] mt-1 ${selectedMuatan?.id === m.id ? 'text-emerald-600' : 'text-primary'}`}>
+                                            {formatCurrency(m.pendapatan_kotor || 0)}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    )}
+                    {selectedMuatan && (
+                        <Card variant="outlined" className="mt-3 p-3 rounded-2xl border-emerald-200 bg-emerald-50/50">
+                            <View className="flex-row justify-between items-center">
+                                <View>
+                                    <Typography weight="bold" className="text-emerald-700 text-xs">Muatan Terpilih</Typography>
+                                    <Typography className="text-textGray text-[10px]">{selectedMuatan.nomor_transaksi} • {selectedMuatan.supir_nama}</Typography>
+                                </View>
+                                <TouchableOpacity onPress={() => setSelectedMuatan(null)}>
+                                    <Typography className="text-rose-500 text-xs font-bold">Hapus</Typography>
+                                </TouchableOpacity>
+                            </View>
+                        </Card>
+                    )}
+                </View>
+            )}
+
+            {/* ===== MOBIL PICKER (Jual Beli Mobil) ===== */}
+            {kategori === 'jual_beli_mobil' && (
+                <View className="mb-6">
+                    <Typography variant="body2" weight="semibold" className="mb-3 text-blue-600">
+                        Pilih Mobil
+                    </Typography>
+                    {mobilList.length === 0 ? (
+                        <Card variant="outlined" className="p-4 border-gray-100 rounded-2xl items-center">
+                            <Typography variant="caption" className="text-textGray italic">Tidak ada data mobil</Typography>
+                        </Card>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
+                            <View className="flex-row px-1" style={{ gap: 8 }}>
+                                {mobilList.slice(0, 10).map((mob: any) => (
+                                    <TouchableOpacity
+                                        key={mob.id}
+                                        onPress={() => {
+                                            setSelectedMobil(mob);
+                                            // Auto-fill plate & vehicle type from car
+                                            if (mob.nomor_plat) setNomorPlat(mob.nomor_plat);
+                                            if (mob.merek && mob.model) setJenisKendaraan(`${mob.merek} ${mob.model}`);
+                                        }}
+                                        className={`p-3 rounded-2xl border min-w-[140px] ${selectedMobil?.id === mob.id
+                                            ? 'bg-blue-50 border-blue-400'
+                                            : 'bg-white border-gray-100'
+                                            }`}
+                                    >
+                                        <Typography weight="bold" className={`text-xs ${selectedMobil?.id === mob.id ? 'text-blue-700' : 'text-textMain'}`} numberOfLines={1}>
+                                            {mob.nomor_plat || '-'}
+                                        </Typography>
+                                        <Typography className="text-[9px] text-textGray mt-0.5" numberOfLines={1}>
+                                            {mob.merek} {mob.model} • {mob.tahun || ''}
+                                        </Typography>
+                                        <Typography weight="bold" className={`text-[10px] mt-1 ${selectedMobil?.id === mob.id ? 'text-blue-600' : 'text-primary'}`}>
+                                            {formatCurrency(mob.harga_beli || 0)}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    )}
+                    {selectedMobil && (
+                        <Card variant="outlined" className="mt-3 p-3 rounded-2xl border-blue-200 bg-blue-50/50">
+                            <View className="flex-row justify-between items-center">
+                                <View>
+                                    <Typography weight="bold" className="text-blue-700 text-xs">Mobil Terpilih</Typography>
+                                    <Typography className="text-textGray text-[10px]">{selectedMobil.nomor_plat} • {selectedMobil.merek} {selectedMobil.model}</Typography>
+                                </View>
+                                <TouchableOpacity onPress={() => setSelectedMobil(null)}>
+                                    <Typography className="text-rose-500 text-xs font-bold">Hapus</Typography>
+                                </TouchableOpacity>
+                            </View>
+                        </Card>
+                    )}
+                </View>
+            )}
+
             {/* Pelanggan */}
             <View className="mb-6">
                 <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Informasi Pelanggan</Typography>
@@ -183,7 +361,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                     }}
                                     className={`px-4 py-3 rounded-xl border flex-row items-center ${selectedVehicle?.id === v.id ? 'bg-primary/10 border-primary' : 'bg-white border-gray-100'}`}
                                 >
-                                    <Truck size={14} color={selectedVehicle?.id === v.id ? '#00AA13' : '#6B7280'} />
+                                    <Truck size={14} color={selectedVehicle?.id === v.id ? '#023C69' : '#6B7280'} />
                                     <View className="ml-2">
                                         <Typography weight="bold" className={selectedVehicle?.id === v.id ? 'text-primary' : 'text-textMain'}>
                                             {v.plat_nomor}
@@ -225,11 +403,11 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
                     <View className="flex-row items-center">
-                        <Wrench size={18} color="#00AA13" />
+                        <Wrench size={18} color="#023C69" />
                         <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
                     </View>
                     <TouchableOpacity onPress={addService} className="flex-row items-center">
-                        <Plus size={16} color="#00AA13" />
+                        <Plus size={16} color="#023C69" />
                         <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
                     </TouchableOpacity>
                 </View>
@@ -381,23 +559,124 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             <View className="mb-6">
                 <Card className="bg-primary/5 border border-primary/10 p-5 rounded-3xl">
                     <View className="flex-row justify-between items-center mb-4">
-                        <Typography weight="semibold">Metode Bayar</Typography>
-                        <View className="flex-row space-x-2">
-                            {['Tunai', 'Transfer'].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setMetodeBayar(m)}
-                                    className={`px-3 py-1.5 rounded-full ${metodeBayar === m ? 'bg-primary' : 'bg-gray-200'}`}
-                                >
-                                    <Typography className={metodeBayar === m ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>{m}</Typography>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                        <Typography weight="semibold">Metode Pembayaran</Typography>
+                        <TouchableOpacity
+                            onPress={() => setIsSplitPayment(!isSplitPayment)}
+                            className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                        >
+                            <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                            </Typography>
+                        </TouchableOpacity>
                     </View>
+
+                    {/* Basic Mode: Single Payment */}
+                    {!isSplitPayment && (
+                        <View className="flex-row space-x-3 mb-4">
+                            <View className="flex-[1.5]">
+                                <Typography variant="caption" weight="medium" className="text-textGray mb-2 ml-1">Metode</Typography>
+                                <View className="flex-row space-x-1">
+                                    {['Tunai', 'Transfer'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => {
+                                                const newP = [...payments];
+                                                newP[0].metode = m;
+                                                setPayments(newP);
+                                            }}
+                                            className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+                                        >
+                                            <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-textGray text-[10px]'}>{m}</Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="caption" weight="medium" className="text-primary mb-2 ml-1">DP / Bayar (Rp)</Typography>
+                                <Input
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    containerClassName="mb-0"
+                                    className="h-10 text-sm border-primary/30"
+                                    value={payments[0]?.jumlah || ''}
+                                    onChangeText={(val) => {
+                                        const newP = [...payments];
+                                        newP[0].jumlah = formatNumber(val);
+                                        setPayments(newP);
+                                    }}
+                                />
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Split Mode: Multiple Payments */}
+                    {isSplitPayment && (
+                        <View className="mb-4">
+                            {payments.map((p, idx) => (
+                                <View key={p.id} className="flex-row space-x-2 items-end mb-3">
+                                    <View className="flex-1">
+                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Metode</Typography>}
+                                        <View className="flex-row bg-white border border-gray-200 rounded-xl overflow-hidden h-10">
+                                            {['Tunai', 'Trf'].map((m, mIdx) => {
+                                                const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={m}
+                                                        onPress={() => {
+                                                            const newP = [...payments];
+                                                            newP[idx].metode = longM;
+                                                            setPayments(newP);
+                                                        }}
+                                                        className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
+                                                    >
+                                                        <Typography className={`text-[9px] font-bold ${p.metode === longM ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                    <View className="flex-1">
+                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Nominal</Typography>}
+                                        <Input
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            containerClassName="mb-0"
+                                            className="h-10 text-sm"
+                                            value={p.jumlah}
+                                            onChangeText={(val) => {
+                                                const newP = [...payments];
+                                                newP[idx].jumlah = formatNumber(val);
+                                                setPayments(newP);
+                                            }}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (payments.length > 1) {
+                                                setPayments(payments.filter(pay => pay.id !== p.id));
+                                            } else {
+                                                setIsSplitPayment(false);
+                                            }
+                                        }}
+                                        className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
+                                    >
+                                        <Trash2 size={14} color="#F43F5E" />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            <TouchableOpacity
+                                onPress={() => setPayments([...payments, { id: Date.now(), metode: 'Tunai', jumlah: '' }])}
+                                className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
+                            >
+                                <Plus size={14} color="#023C69" />
+                                <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     <View className="flex-row space-x-3 mb-4">
                         <View className="flex-1">
-                            <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Diskon (Rp)</Typography>
+                            <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Diskon Total (Rp)</Typography>
                             <Input
                                 placeholder="0"
                                 keyboardType="numeric"
@@ -407,46 +686,33 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                 onChangeText={(val) => setDiskon(formatNumber(val))}
                             />
                         </View>
-                        <View className="flex-1">
-                            <Typography variant="caption" weight="medium" className="text-primary mb-1 ml-1">DP / Bayar (Rp)</Typography>
-                            <Input
-                                placeholder="0"
-                                keyboardType="numeric"
-                                containerClassName="mb-0"
-                                className="h-10 text-sm border-primary/30"
-                                value={dp}
-                                onChangeText={(val) => setDp(formatNumber(val))}
-                            />
+                        <View className="flex-1 justify-end items-end pb-2">
+                            <Typography variant="caption" className="text-textGray">Subtotal: {formatCurrency(total)}</Typography>
                         </View>
                     </View>
 
                     <View className="h-[1px] bg-primary/10 mb-4" />
 
-                    <View className="space-y-2 mb-3">
-                        <View className="flex-row justify-between items-center">
-                            <Typography variant="caption" className="text-textGray">Subtotal</Typography>
-                            <Typography variant="caption" weight="semibold">{formatCurrency(total)}</Typography>
-                        </View>
-                        {Number(parseNumber(diskon)) > 0 ? (
-                            <View className="flex-row justify-between items-center">
-                                <Typography variant="caption" className="text-rose-500">Diskon</Typography>
-                                <Typography variant="caption" weight="semibold" className="text-rose-500">-{formatCurrency(Number(parseNumber(diskon)))}</Typography>
-                            </View>
-                        ) : null}
-                        <View className="flex-row justify-between items-center">
-                            <Typography variant="caption" className="text-textGray">Dibayar</Typography>
-                            <Typography variant="caption" weight="semibold">{formatCurrency(Number(parseNumber(dp)) || 0)}</Typography>
-                        </View>
-                    </View>
-
                     <View className="flex-row justify-between items-center">
                         <View>
                             <Typography variant="body2" weight="bold">Total Akhir</Typography>
-                            {grandTotal > (Number(parseNumber(dp)) || 0) ? (
-                                <Typography variant="caption" className="text-rose-600 font-bold">
-                                    Sisa: {formatCurrency(grandTotal - (Number(parseNumber(dp)) || 0))}
-                                </Typography>
-                            ) : null}
+                            {(() => {
+                                const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0);
+                                if (grandTotal > totalPaid) {
+                                    return (
+                                        <Typography variant="caption" className="text-rose-600 font-bold">
+                                            Sisa: {formatCurrency(grandTotal - totalPaid)}
+                                        </Typography>
+                                    );
+                                } else if (totalPaid > grandTotal) {
+                                    return (
+                                        <Typography variant="caption" className="text-emerald-600 font-bold">
+                                            Kembalian: {formatCurrency(totalPaid - grandTotal)}
+                                        </Typography>
+                                    );
+                                }
+                                return <Typography variant="caption" className="text-emerald-500 font-medium">Pas / Lunas</Typography>;
+                            })()}
                         </View>
                         <Typography variant="h2" weight="bold" className="text-primary text-xl">
                             {formatCurrency(grandTotal)}

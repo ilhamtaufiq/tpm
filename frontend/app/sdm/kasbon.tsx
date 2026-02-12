@@ -198,7 +198,7 @@ export default function KasbonScreen() {
     if (loading) {
         return (
             <View className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#00AA13" />
+                <ActivityIndicator size="large" color="#023C69" />
             </View>
         );
     }
@@ -329,7 +329,7 @@ export default function KasbonScreen() {
                 }}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListEmptyComponent={
                     <View className="items-center py-20">
                         <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
@@ -409,7 +409,7 @@ export default function KasbonScreen() {
                             className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center justify-between"
                         >
                             <View className="flex-row items-center">
-                                <User size={18} color={formData.karyawan_nama ? "#00AA13" : "#9CA3AF"} />
+                                <User size={18} color={formData.karyawan_nama ? "#023C69" : "#9CA3AF"} />
                                 <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray/40'}`}>
                                     {formData.karyawan_nama || 'Pilih Karyawan'}
                                 </Typography>

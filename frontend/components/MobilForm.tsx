@@ -64,7 +64,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
         const payload = {
             merek,
             model,
-            tahun: parseNumber(tahun),
+            tahun: parseInt(tahun) || 0,
             nomor_plat: nomorPlat,
             warna,
             nomor_rangka: nomorRangka,
@@ -107,7 +107,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             {/* Section: Informasi Kendaraan */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <Car size={18} color="#00AA13" />
+                    <Car size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">DATA KENDARAAN</Typography>
                 </View>
 
@@ -117,7 +117,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
                 </View>
 
                 <View className="flex-row space-x-3 mb-1">
-                    <Input label="Tahun" placeholder="2022" containerClassName="flex-1" keyboardType="numeric" value={tahun} onChangeText={(v) => setTahun(formatNumber(v))} />
+                    <Input label="Tahun" placeholder="2022" containerClassName="flex-1" keyboardType="numeric" value={tahun} onChangeText={(v) => setTahun(v.replace(/[^0-9]/g, '').slice(0, 4))} maxLength={4} />
                     <Input label="Plat Nomor" placeholder="B 1234 ABC" containerClassName="flex-1" value={nomorPlat} onChangeText={setNomorPlat} autoCapitalize="characters" />
                 </View>
 
@@ -127,7 +127,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             {/* Section: Detail Teknis */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <ShieldCheck size={18} color="#00AA13" />
+                    <ShieldCheck size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">DETAIL TEKNIS</Typography>
                 </View>
 
@@ -156,7 +156,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             {/* Section: Kepemilikan & Harga */}
             <View className="mb-8">
                 <View className="flex-row items-center mb-4">
-                    <DollarSign size={18} color="#00AA13" />
+                    <DollarSign size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">KEPEMILIKAN & HARGA</Typography>
                 </View>
 

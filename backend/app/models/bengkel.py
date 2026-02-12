@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
+import enum
 
 from sqlalchemy import (
     String,
@@ -147,6 +148,17 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
     nama_customer: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     nomor_plat: Mapped[Optional[str]] = mapped_column(String(15), nullable=True)
     jenis_kendaraan: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Category: umum (default), jasa_angkut, jual_beli_mobil
+    kategori: Mapped[str] = mapped_column(String(30), default="umum", server_default="umum")
+    muatan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("muatan.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    mobil_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("mobil.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Totals
     total_parts: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)

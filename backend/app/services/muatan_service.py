@@ -8,20 +8,10 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 from fastapi import HTTPException, status
 
-from app.models.jasa_angkut import (
-    Supir,
-    MuatanJasaAngkut,
-    JasaAngkutBiayaLainnya,
-)
-from app.models.bengkel import (
-    TransaksiPenjualanBengkel,
-    DetailTransaksiSpareParts,
-    DetailTransaksiServices,
-    SparePart,
-    WorkshopStatus,
-)
+from app.models.jasa_angkut import Supir, MuatanJasaAngkut, JasaAngkutBiayaLainnya
+from app.models.bengkel import SparePart
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang
-from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate, BengkelItems
+from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate
 from app.utils.constants import (
     PaymentStatus,
     PiutangStatus,
@@ -85,26 +75,7 @@ class MuatanService:
             
         return f"{prefix}{date_str}{new_num:04d}"
 
-    def _generate_nomor_transaksi_bengkel(self) -> str:
-        """Generate unique workshop transaction number."""
-        today = datetime.now()
-        prefix = TRANSACTION_PREFIXES["bengkel"]
-        date_str = today.strftime("%y%m%d")
-        
-        last = (
-            self.db.query(TransaksiPenjualanBengkel)
-            .filter(TransaksiPenjualanBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
-            .order_by(TransaksiPenjualanBengkel.id.desc())
-            .first()
-        )
 
-        if last:
-            last_num = int(last.nomor_transaksi[-4:])
-            new_num = last_num + 1
-        else:
-            new_num = 1
-
-        return f"{prefix}{date_str}{new_num:04d}"
 
     def _validate_supir(self, supir_id: Optional[int]) -> Optional[Supir]:
         """Validate driver exists and is active."""
@@ -239,88 +210,7 @@ class MuatanService:
         # Determine total dynamic cost initially
         total_dynamic_cost = sum(item.jumlah for item in data.biaya_operasional)
 
-        # Handle Bengkel Integration
-        if data.bengkel_items and (data.bengkel_items.parts or data.bengkel_items.services):
-             # ... (Existing Bengkel Logic) ...
-             # We need to copy this part exactly or verify if replace_file_content handles large blocks well.
-             # To avoid breaking, I'll assume the context fits or just target specific lines if possible.
-             # But create method is large. I will use the code provided in file view and rebuild the create method with Piutang addition.
-             
-             # ... (Copied Bengkel Logic for completeness in replacement)
-            no_trans_bengkel = self._generate_nomor_transaksi_bengkel()
-            customer_name = data.supir_nama if data.supir_nama else (supir.nama if supir else "Internal Jasa Angkut")
-            
-            trans_bengkel = TransaksiPenjualanBengkel(
-                nomor_transaksi=no_trans_bengkel,
-                tanggal=data.tanggal,
-                customer_id=None,
-                nama_customer=f"Ref: {muatan.nomor_transaksi} ({customer_name})",
-                nomor_plat=data.nopol,
-                jenis_kendaraan="Truck",
-                status_pengerjaan=WorkshopStatus.SELESAI,
-                status_bayar=muatan.status_bayar, # Inherit status from Muatan
-                metode_bayar=PaymentMethod.TUNAI if muatan.status_bayar == PaymentStatus.LUNAS else None,
-                catatan=f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}",
-                created_by=user_id,
-            )
-            self.db.add(trans_bengkel)
-            self.db.flush()
 
-            total_parts = Decimal("0")
-            hpp_parts = Decimal("0")
-            
-            for part_item in data.bengkel_items.parts:
-                part = self.db.query(SparePart).filter(SparePart.id == part_item.part_id).first()
-                if not part:
-                    raise HTTPException(status_code=404, detail=f"Sparepart ID {part_item.part_id} not found")
-                if part.stok < part_item.qty:
-                    raise HTTPException(status_code=400, detail=f"Stok {part.nama} tidak cukup")
-                
-                part.stok -= part_item.qty
-                subtotal = part.harga_jual * part_item.qty
-                total_parts += subtotal
-                hpp_parts += part.harga_beli * part_item.qty
-                
-                detail_part = DetailTransaksiSpareParts(
-                    transaksi_id=trans_bengkel.id,
-                    spare_part_id=part.id,
-                    qty=part_item.qty,
-                    harga_beli=part.harga_beli,
-                    harga_jual=part.harga_jual,
-                    subtotal=subtotal
-                )
-                self.db.add(detail_part)
-
-            total_services = Decimal("0")
-            for service_item in data.bengkel_items.services:
-                subtotal = service_item.harga
-                total_services += subtotal
-                detail_service = DetailTransaksiServices(
-                    transaksi_id=trans_bengkel.id,
-                    nama_jasa=service_item.deskripsi,
-                    deskripsi=service_item.deskripsi,
-                    harga=service_item.harga,
-                    qty=1,
-                    subtotal=subtotal
-                )
-                self.db.add(detail_service)
-
-            trans_bengkel.total_parts = total_parts
-            trans_bengkel.total_jasa = total_services
-            trans_bengkel.subtotal = total_parts + total_services
-            trans_bengkel.grand_total = trans_bengkel.subtotal
-            trans_bengkel.jumlah_bayar = trans_bengkel.grand_total
-            trans_bengkel.hpp_parts = hpp_parts
-            trans_bengkel.laba_kotor = trans_bengkel.grand_total - hpp_parts
-
-            biaya_bengkel = JasaAngkutBiayaLainnya(
-                muatan_id=muatan.id,
-                kategori="Perawatan Bengkel",
-                deskripsi=f"Servis & Sparepart (Ref: {no_trans_bengkel})",
-                jumlah=trans_bengkel.grand_total,
-            )
-            self.db.add(biaya_bengkel)
-            total_dynamic_cost += trans_bengkel.grand_total
 
         # Calculate final profit
         profit = self._calculate_profit(
@@ -411,7 +301,7 @@ class MuatanService:
 
         return muatan
 
-        return muatan
+
 
     def get_by_id(self, muatan_id: int) -> MuatanJasaAngkut:
         """Get transport load by ID."""
@@ -565,124 +455,7 @@ class MuatanService:
             
             total_dynamic_cost = sum(item.jumlah for item in data.biaya_operasional) + bengkel_cost
 
-        # Handle Bengkel Items update
-        if data.bengkel_items is not None:
-            # 1. Find and cleanup EXISTING Bengkel Transaction
-            existing_bengkel_trx = self.db.query(TransaksiPenjualanBengkel).filter(
-                TransaksiPenjualanBengkel.catatan == f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}",
-                TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.BATAL # Safety check
-            ).first()
 
-            if existing_bengkel_trx:
-                # Restore stock
-                for detail in existing_bengkel_trx.detail_parts:
-                    part = self.db.query(SparePart).get(detail.spare_part_id)
-                    if part:
-                        part.stok += detail.qty
-                
-                # Delete details
-                self.db.query(DetailTransaksiSpareParts).filter(DetailTransaksiSpareParts.transaksi_id == existing_bengkel_trx.id).delete()
-                self.db.query(DetailTransaksiServices).filter(DetailTransaksiServices.transaksi_id == existing_bengkel_trx.id).delete()
-                
-                # Delete transaction
-                self.db.delete(existing_bengkel_trx)
-                
-                # Delete Linked Cost
-                self.db.query(JasaAngkutBiayaLainnya).filter(
-                    JasaAngkutBiayaLainnya.muatan_id == muatan.id,
-                    JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
-                ).delete()
-
-            # 2. Create NEW Bengkel Transaction if items provided
-            if data.bengkel_items.parts or data.bengkel_items.services:
-                no_trans_bengkel = self._generate_nomor_transaksi_bengkel()
-                
-                # Resolve driver/customer name logic (reused from create)
-                supir = self.db.query(Supir).get(muatan.supir_id) if muatan.supir_id else None
-                customer_name = muatan.supir_nama_manual if muatan.supir_nama_manual else (supir.nama if supir else "Internal Jasa Angkut")
-                
-                trans_bengkel = TransaksiPenjualanBengkel(
-                    nomor_transaksi=no_trans_bengkel,
-                    tanggal=muatan.tanggal, # Use muatan date
-                    customer_id=None,
-                    nama_customer=f"Ref: {muatan.nomor_transaksi} ({customer_name})",
-                    nomor_plat=muatan.nopol,
-                    jenis_kendaraan="Truck",
-                    status_pengerjaan=WorkshopStatus.SELESAI,
-                    status_bayar=muatan.status_bayar,
-                    metode_bayar=PaymentMethod.TUNAI if muatan.status_bayar == PaymentStatus.LUNAS else None,
-                    catatan=f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}",
-                    created_by=muatan.created_by, # Keep original creator or current user
-                )
-                self.db.add(trans_bengkel)
-                self.db.flush()
-
-                total_parts = Decimal("0")
-                hpp_parts = Decimal("0")
-                
-                for part_item in data.bengkel_items.parts:
-                    part = self.db.query(SparePart).filter(SparePart.id == part_item.part_id).first()
-                    if not part:
-                        raise HTTPException(status_code=404, detail=f"Sparepart ID {part_item.part_id} not found")
-                    if part.stok < part_item.qty:
-                        raise HTTPException(status_code=400, detail=f"Stok {part.nama} tidak cukup")
-                    
-                    part.stok -= part_item.qty
-                    subtotal = part.harga_jual * part_item.qty
-                    total_parts += subtotal
-                    hpp_parts += part.harga_beli * part_item.qty
-                    
-                    detail_part = DetailTransaksiSpareParts(
-                        transaksi_id=trans_bengkel.id,
-                        spare_part_id=part.id,
-                        qty=part_item.qty,
-                        harga_beli=part.harga_beli,
-                        harga_jual=part.harga_jual,
-                        subtotal=subtotal
-                    )
-                    self.db.add(detail_part)
-
-                total_services = Decimal("0")
-                for service_item in data.bengkel_items.services:
-                    subtotal = service_item.harga
-                    total_services += subtotal
-                    detail_service = DetailTransaksiServices(
-                        transaksi_id=trans_bengkel.id,
-                        nama_jasa=service_item.deskripsi,
-                        deskripsi=service_item.deskripsi,
-                        harga=service_item.harga,
-                        qty=1,
-                        subtotal=subtotal
-                    )
-                    self.db.add(detail_service)
-
-                trans_bengkel.total_parts = total_parts
-                trans_bengkel.total_jasa = total_services
-                trans_bengkel.subtotal = total_parts + total_services
-                trans_bengkel.grand_total = trans_bengkel.subtotal
-                trans_bengkel.jumlah_bayar = trans_bengkel.grand_total
-                trans_bengkel.hpp_parts = hpp_parts
-                trans_bengkel.laba_kotor = trans_bengkel.grand_total - hpp_parts
-
-                biaya_bengkel = JasaAngkutBiayaLainnya(
-                    muatan_id=muatan.id,
-                    kategori="Perawatan Bengkel",
-                    deskripsi=f"Servis & Sparepart (Ref: {no_trans_bengkel})",
-                    jumlah=trans_bengkel.grand_total,
-                )
-                self.db.add(biaya_bengkel)
-            
-            # Recalculate total dynamic cost needs to include the new Bengkel cost
-            # Re-fetch or calculate
-            # Safest is to sum all 'Operasional' (from input if we just set it, or DB) + 'Perawatan Bengkel' (which we just added or deleted)
-            
-            # We can re-query JasaAngkutBiayaLainnya sum
-            # Need flush first to see new records
-            self.db.flush()
-            
-            total_dynamic_cost = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).filter(
-                JasaAngkutBiayaLainnya.muatan_id == muatan.id
-            ).scalar() or Decimal("0")
         
         else:
             # If bengkel items not touched, check if total_dynamic_cost was calculated (if expenses touched)
@@ -771,20 +544,7 @@ class MuatanService:
                  user_id=user_id,
              )
 
-        # Mark linked Bengkel transaction as paid (Internal Adjustment)
-        linked_bengkel_trx = (
-            self.db.query(TransaksiPenjualanBengkel)
-            .filter(
-                TransaksiPenjualanBengkel.catatan == f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}"
-            )
-            .first()
-        )
-        
-        if linked_bengkel_trx and linked_bengkel_trx.status_bayar != PaymentStatus.LUNAS:
-            linked_bengkel_trx.status_bayar = PaymentStatus.LUNAS
-            linked_bengkel_trx.jumlah_bayar = linked_bengkel_trx.grand_total
-            # No KasBank entry needed for internal transfer as the main payment covers it
-            # and is recorded via Piutang payment or initial Cash In.
+
 
         self.db.commit()
         self.db.refresh(muatan)

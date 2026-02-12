@@ -64,7 +64,7 @@ export const Button = ({
                 <ActivityIndicator color={
                     variant === 'outline-danger' ? '#EE2737' :
                         variant === 'outline-neutral' ? '#6B7280' :
-                            variant.includes('outline') || variant === 'ghost' ? '#00AA13' : 'white'
+                            variant.includes('outline') || variant === 'ghost' ? '#023C69' : 'white'
                 } />
             ) : (
                 <>

@@ -134,7 +134,7 @@ export default function SDMScreen() {
                 className="flex-1"
                 contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32, paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {/* Premium Circular Quick Actions */}
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Navigasi Cepat</Typography>

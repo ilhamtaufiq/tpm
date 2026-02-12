@@ -11,7 +11,6 @@ from app.schemas.mobil import (
     MobilResponse,
     MobilList,
     MobilMediaResponse,
-    BengkelItems,
     MobilBiayaCreate,
     MobilPartServiceCreate,
 )
@@ -222,23 +221,7 @@ def delete_part_service(
     service = MobilService(db)
     service.delete_part_service(part_service_id)
     return {"message": "Part/Service berhasil dihapus"}
-@router.post("/{mobil_id}/bengkel-transaction")
-def add_bengkel_transaction(
-    mobil_id: int,
-    data: BengkelItems,
-    db: DBSession,
-    current_user: ManagerUser,
-    tanggal: Optional[date] = None,
-):
-    """Integrate workshop transaction into car costs."""
-    service = MobilService(db)
-    return service.add_bengkel_transaction(
-        mobil_id=mobil_id,
-        tanggal=tanggal or date.today(),
-        parts=data.parts,
-        services=data.services,
-        user_id=current_user.id,
-    )
+
 @router.post("/{mobil_id}/media", response_model=List[MobilMediaResponse])
 def upload_media(
     mobil_id: int,

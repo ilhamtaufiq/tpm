@@ -229,7 +229,7 @@ export default function LabaRugiScreen() {
                     </TouchableOpacity>
 
                     <View className="flex-1 flex-row items-center justify-center">
-                        <Calendar size={18} color="#00AA13" className="mr-2" />
+                        <Calendar size={18} color="#023C69" className="mr-2" />
                         <Typography variant="body2" weight="bold" className="text-textMain capitalize tracking-tight">
                             {getFormattedDate()}
                         </Typography>
@@ -247,7 +247,7 @@ export default function LabaRugiScreen() {
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center p-12">
-                    <ActivityIndicator size="large" color="#00AA13" />
+                    <ActivityIndicator size="large" color="#023C69" />
                     <Typography className="mt-4 text-textGray font-bold uppercase text-[10px] tracking-widest">Mengolah Data Finansial...</Typography>
                 </View>
             ) : (
@@ -266,6 +266,7 @@ export default function LabaRugiScreen() {
                             <ReportRow label="1. Penjualan Sparepart & Jasa" value={bengkelData.penjualan}>
                                 <SubItemRow label="Sparepart" value={reportData?.bengkel_details?.total_parts || 0} />
                                 <SubItemRow label="Jasa" value={reportData?.bengkel_details?.total_jasa || 0} />
+                                <SubItemRow label="Diskon" value={reportData?.bengkel_details?.total_diskon || 0} isNegative />
                             </ReportRow>
                             <ReportRow label="2. HPP Sparepart Terjual" value={bengkelData.hpp} isNegative />
 

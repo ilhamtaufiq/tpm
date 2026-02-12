@@ -73,16 +73,7 @@ export const useCreatePenjualanMobil = () => {
         },
     });
 };
-export const useAddBengkelTransaction = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: any }) => mobilService.addBengkelTransaction(id, data),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['mobils'] });
-            queryClient.invalidateQueries({ queryKey: ['mobils', variables.id] });
-        },
-    });
-};
+
 
 export const useMobilDetail = (id: number) => {
     return useQuery({

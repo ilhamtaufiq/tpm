@@ -173,20 +173,7 @@ class BiayaItem(BaseModel):
     deskripsi: str = Field(..., min_length=1, max_length=255)
     jumlah: Decimal = Field(..., ge=0)
 
-class PartItem(BaseModel):
-    """Schema for spare part item in workshop transaction."""
-    part_id: int
-    qty: int = Field(default=1, ge=1)
 
-class ServiceItem(BaseModel):
-    """Schema for service item in workshop transaction."""
-    deskripsi: str = Field(..., min_length=1, max_length=255)
-    harga: Decimal = Field(..., ge=0)
-
-class BengkelItems(BaseModel):
-    """Schema for workshop items integration."""
-    parts: List[PartItem] = []
-    services: List[ServiceItem] = []
 
 
 # ============================================
@@ -209,8 +196,7 @@ class TransaksiMobilCreate(BaseModel):
     # Dynamic operational costs added at sale
     biaya_operasional: List[BiayaItem] = []
     
-    # Workshop Integration during sale
-    bengkel_items: Optional[BengkelItems] = None
+
     
     catatan: Optional[str] = None
 

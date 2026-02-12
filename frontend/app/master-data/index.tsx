@@ -67,7 +67,7 @@ export default function MasterDataScreen() {
     if (loading) {
         return (
             <View className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#00AA13" />
+                <ActivityIndicator size="large" color="#023C69" />
             </View>
         );
     }
@@ -131,7 +131,7 @@ export default function MasterDataScreen() {
 
             <ScrollView
                 className="flex-1 px-6 -mt-6"
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Menu Items */}

@@ -9,6 +9,7 @@ from app.schemas.karyawan import (
     SlipGajiCreate,
     SlipGajiUpdate,
     SlipGajiResponse,
+    SlipGajiList,
 )
 from app.services.slip_gaji_service import SlipGajiService
 from app.utils.constants import PaymentStatus
@@ -110,7 +111,7 @@ def create_bulk_range(
     return service.create_bulk_by_range(start_date, end_date, minggu, tahun, items, current_user.id)
 
 
-@router.get("")
+@router.get("", response_model=SlipGajiList)
 def list_slip_gaji(
     db: DBSession,
     current_user: CurrentUser,

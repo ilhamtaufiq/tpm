@@ -522,7 +522,7 @@ export default function MutasiKasScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
                     isLoadingTx ? (
                         <View className="space-y-6">

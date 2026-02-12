@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMobilDetail, useUploadMedia, useDeleteMedia } from '../hooks/useMobil';
 import { FILE_URL } from '../utils/api';
 import { formatCurrency } from '../utils/format';
+import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 
 const { width } = Dimensions.get('window');
 
@@ -45,7 +46,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailP
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
-            case 'tersedia': return '#00AA13';
+            case 'tersedia': return '#023C69';
             case 'booking': return '#FF9500';
             case 'terjual': return '#8E8E93';
             default: return '#EE2737';
@@ -194,9 +195,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailP
                         className="absolute bottom-6 right-6 w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-2xl border border-gray-100"
                     >
                         {uploadMediaAction.isPending ? (
-                            <ActivityIndicator size="small" color="#00AA13" />
+                            <ActivityIndicator size="small" color="#023C69" />
                         ) : (
-                            <Plus size={24} color="#00AA13" strokeWidth={3} />
+                            <Plus size={24} color="#023C69" strokeWidth={3} />
                         )}
                     </TouchableOpacity>
                 </View>
@@ -276,6 +277,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailP
                             </View>
                         )}
                     </Card>
+
+                    {/* Related Workshop Transactions */}
+                    {activeUnit && <RelatedBengkelTransactions mobil_id={activeUnit.id} />}
 
                     {/* Notes Section with Style */}
                     {activeUnit.catatan && (

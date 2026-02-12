@@ -169,7 +169,7 @@ export default function MobilInventoryScreen() {
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
-            case 'tersedia': return '#00AA13';
+            case 'tersedia': return '#023C69';
             case 'booking': return '#FF9500';
             case 'terjual': return '#8E8E93';
             default: return '#EE2737';
@@ -242,7 +242,7 @@ export default function MobilInventoryScreen() {
                             />
                         </View>
                         <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <Filter size={20} color="#00AA13" />
+                            <Filter size={20} color="#023C69" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -266,7 +266,7 @@ export default function MobilInventoryScreen() {
                     className="flex-1 px-6 pt-4"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isLoading && mobils.length > 0} onRefresh={refetch} colors={['#00AA13']} />
+                        <RefreshControl refreshing={isLoading && mobils.length > 0} onRefresh={refetch} colors={['#023C69']} />
                     }
                 >
                     {isLoading && mobils.length === 0 ? (

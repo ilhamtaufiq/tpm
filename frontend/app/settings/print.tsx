@@ -190,7 +190,7 @@ export default function PrintSettingsScreen() {
                         </Typography>
                     </View>
                     <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                        <Printer size={24} color="#00AA13" />
+                        <Printer size={24} color="#023C69" />
                     </View>
                 </View>
             </View>

@@ -5,15 +5,13 @@ import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Receipt, Wrench, Plus, Trash2, Calendar, FileText } from 'lucide-react-native';
-import { useAddBiaya, useDeleteBiaya, useAddPartService, useDeletePartService, useAddBengkelTransaction, useMobilDetail } from '../hooks/useMobil';
-import { SparePartSelector } from './ui/SparePartSelector';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Receipt, Wrench, Trash2, Calendar, FileText } from 'lucide-react-native';
+import { useAddBiaya, useDeleteBiaya, useAddPartService, useDeletePartService, useMobilDetail } from '../hooks/useMobil';
+
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
-import { JasaSelector } from './ui/JasaSelector';
-
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 interface MobilCostFormProps {
     unit: any;
     onSuccess?: () => void;
@@ -30,16 +28,13 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const deleteBiayaMutation = useDeleteBiaya();
     const addPartServiceMutation = useAddPartService();
     const deletePartServiceMutation = useDeletePartService();
-    const addBengkelTrxMutation = useAddBengkelTransaction();
+
 
     // Form States
     const [newLainnya, setNewLainnya] = useState({ kategori: 'BBN', deskripsi: '', jumlah: '' });
     const [newPerbaikan, setNewPerbaikan] = useState({ tipe: 'perbaikan', deskripsi: '', qty: '1', harga_satuan: '' });
 
-    // Workshop Integration States
-    const [showBengkel, setShowBengkel] = useState(false);
-    const [bengkelServices, setBengkelServices] = useState<{ deskripsi: string; harga: string }[]>([]);
-    const [bengkelParts, setBengkelParts] = useState<{ id: number; nama: string; qty: string; harga: number }[]>([]);
+
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -58,94 +53,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
         loading: false
     });
 
-    const handleAddBengkelTrx = () => {
-        if (bengkelServices.length === 0 && bengkelParts.length === 0) {
-            setDialogConfig({ visible: true, title: 'Error', message: 'Belum ada data servis atau sparepart', variant: 'error', type: 'alert' });
-            return;
-        }
 
-        const payload = {
-            parts: bengkelParts.filter(p => p.id !== 0 && parseFloat(p.qty) > 0).map(p => ({
-                part_id: p.id,
-                qty: parseInt(p.qty)
-            })),
-            services: bengkelServices.filter(s => s.deskripsi && s.harga).map(s => ({
-                deskripsi: s.deskripsi,
-                harga: typeof s.harga === 'string' ? parseNumber(s.harga) : s.harga
-            }))
-        };
-
-        addBengkelTrxMutation.mutate({
-            id: activeUnit.id,
-            data: payload
-        }, {
-            onSuccess: () => {
-                setShowBengkel(false);
-                setBengkelServices([]);
-                setBengkelParts([]);
-                setDialogConfig({
-                    visible: true,
-                    title: 'Sukses',
-                    message: 'Integrasi bengkel berhasil dicatat',
-                    variant: 'success',
-                    type: 'alert',
-                    loading: false
-                });
-            },
-            onError: (err: any) => {
-                setDialogConfig({
-                    visible: true,
-                    title: 'Error',
-                    message: getErrorMessage(err, 'Gagal integrasi bengkel'),
-                    variant: 'error',
-                    type: 'alert',
-                    loading: false
-                });
-            }
-        });
-    };
-
-    // Cost Management Helpers
-    const addService = () => setBengkelServices([...bengkelServices, { deskripsi: '', harga: '' }]);
-    const removeService = (index: number) => {
-        const newServices = [...bengkelServices];
-        newServices.splice(index, 1);
-        setBengkelServices(newServices);
-    };
-    const updateService = (index: number, key: 'deskripsi' | 'harga', value: string) => {
-        const newServices = [...bengkelServices];
-        if (key === 'harga') {
-            newServices[index][key] = formatNumber(value);
-        } else {
-            newServices[index][key] = value;
-        }
-        setBengkelServices(newServices);
-    };
-
-    const addPart = () => setBengkelParts([...bengkelParts, { id: 0, nama: '', qty: '1', harga: 0 }]);
-    const removePart = (index: number) => {
-        const newParts = [...bengkelParts];
-        newParts.splice(index, 1);
-        setBengkelParts(newParts);
-    };
-    const updatePart = (index: number, part: any) => {
-        const newParts = [...bengkelParts];
-        if (part) {
-            newParts[index].id = part.id;
-            newParts[index].nama = part.nama;
-            newParts[index].harga = part.harga_jual;
-        } else {
-            newParts[index].id = 0;
-            newParts[index].nama = '';
-            newParts[index].harga = 0;
-        }
-        setBengkelParts(newParts);
-    };
-    const updatePartQty = (index: number, qty: string) => {
-        const newParts = [...bengkelParts];
-        newParts[index].qty = qty;
-        setBengkelParts(newParts);
-    };
 
     const handleAddBiaya = () => {
         const jumlahNum = parseNumber(newLainnya.jumlah);
@@ -292,7 +200,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'lainnya' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <View className="flex-row items-center">
-                        <Receipt size={14} color={activeTab === 'lainnya' ? '#00AA13' : '#8E8E93'} />
+                        <Receipt size={14} color={activeTab === 'lainnya' ? '#023C69' : '#8E8E93'} />
                         <Typography weight="bold" className={`ml-2 ${activeTab === 'lainnya' ? 'text-primary' : 'text-gray-400'}`}>Admin & Pajak</Typography>
                     </View>
                 </TouchableOpacity>
@@ -301,7 +209,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     className={`flex-1 py-2 rounded-lg items-center ${activeTab === 'perbaikan' ? 'bg-white shadow-sm' : ''}`}
                 >
                     <View className="flex-row items-center">
-                        <Wrench size={14} color={activeTab === 'perbaikan' ? '#00AA13' : '#8E8E93'} />
+                        <Wrench size={14} color={activeTab === 'perbaikan' ? '#023C69' : '#8E8E93'} />
                         <Typography weight="bold" className={`ml-2 ${activeTab === 'perbaikan' ? 'text-primary' : 'text-gray-400'}`}>Perbaikan</Typography>
                     </View>
                 </TouchableOpacity>
@@ -359,7 +267,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     {(activeUnit?.biaya_lainnya || []).map((item: any) => (
                         <Card key={item.id} className="mb-3 p-3 flex-row items-center border border-gray-100">
                             <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center mr-3">
-                                <FileText size={18} color="#00AA13" />
+                                <FileText size={18} color="#023C69" />
                             </View>
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-xs">{item.kategori}</Typography>
@@ -379,181 +287,56 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             </TouchableOpacity>
                         </Card>
                     ))}
-                    {isDetailLoading && <ActivityIndicator color="#00AA13" className="my-4" />}
+                    {isDetailLoading && <ActivityIndicator color="#023C69" className="my-4" />}
                 </View>
             ) : (
                 <View>
-                    <View className="flex-row justify-between items-center mb-4">
-                        <Typography variant="body2" weight="bold" className="text-primary">METODE INPUT PERBAIKAN</Typography>
-                        <TouchableOpacity
-                            onPress={() => setShowBengkel(!showBengkel)}
-                            className={`px-3 py-1 rounded-full border ${showBengkel ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={showBengkel ? 'text-white' : 'text-gray-600'}>
-                                {showBengkel ? "Integrasi Bengkel" : "Input Manual"}
-                            </Typography>
-                        </TouchableOpacity>
-                    </View>
+                    <Card className="bg-primary/5 border border-primary/10 p-4 mb-6">
+                        <Typography variant="body2" weight="bold" className="text-primary mb-4">INPUT PERBAIKAN / PART (MANUAL)</Typography>
 
-                    {showBengkel ? (
-                        <Card className="bg-orange-50 border border-orange-100 p-4 mb-6">
-                            <Typography variant="caption" className="text-orange-600 mb-4 italic font-medium">
-                                Mode Integrasi: Stok sparepart akan berkurang dan transaksi tercatat di modul Bengkel.
-                            </Typography>
+                        <Input
+                            label="Deskripsi Pekerjaan"
+                            placeholder="Contoh: Ganti Ban Depan"
+                            containerClassName="mb-3"
+                            className="h-10 text-xs"
+                            value={newPerbaikan.deskripsi}
+                            onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, deskripsi: val })}
+                        />
 
-                            {/* Services */}
-                            <View className="mb-4">
-                                <View className="flex-row justify-between items-center mb-2">
-                                    <View className="flex-row items-center">
-                                        <Typography variant="caption" weight="bold">JASA SERVIS</Typography>
-                                    </View>
-                                    <TouchableOpacity onPress={addService}>
-                                        <Plus size={16} color="#F97316" />
-                                    </TouchableOpacity>
-                                </View>
-                                {bengkelServices.length === 0 && <Typography variant="caption" className="text-gray-400 mb-2">Belum ada jasa servis</Typography>}
-                                {bengkelServices.map((item, index) => (
-                                    <View key={index} className="flex-row space-x-2 items-center mb-2">
-                                        <View className="flex-[2]">
-                                            <JasaSelector
-                                                value={item.deskripsi ? { nama: item.deskripsi, harga: parseNumber(item.harga) } : null}
-                                                onSelect={(val) => {
-                                                    const newServices = [...bengkelServices];
-                                                    if (val) {
-                                                        const cleanPrice = Math.floor(Number(val.harga)).toString();
-                                                        newServices[index] = { deskripsi: val.nama, harga: formatNumber(cleanPrice) };
-                                                    } else {
-                                                        newServices[index] = { deskripsi: '', harga: '' };
-                                                    }
-                                                    setBengkelServices(newServices);
-                                                }}
-                                                placeholder="Pilih Jasa Servis..."
-                                            />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Input
-                                                placeholder="Harga"
-                                                keyboardType="numeric"
-                                                value={item.harga}
-                                                onChangeText={v => updateService(index, 'harga', v)}
-                                                containerClassName="mb-0"
-                                                className="bg-white"
-                                            />
-                                        </View>
-                                        <TouchableOpacity
-                                            onPress={() => removeService(index)}
-                                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                            style={{ padding: 8 }}
-                                        >
-                                            <Trash2 size={18} color="#EE2737" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </View>
-
-                            {/* Parts */}
-                            <View className="mb-4">
-                                <View className="flex-row justify-between items-center mb-2">
-                                    <Typography variant="caption" weight="bold">SPAREPART</Typography>
-                                    <TouchableOpacity onPress={addPart}>
-                                        <Plus size={16} color="#F97316" />
-                                    </TouchableOpacity>
-                                </View>
-                                {bengkelParts.length === 0 && <Typography variant="caption" className="text-gray-400 mb-2">Belum ada sparepart</Typography>}
-                                {bengkelParts.map((item, index) => (
-                                    <View key={index} className="mb-3 border-b border-orange-200 pb-2">
-                                        <SparePartSelector
-                                            value={item.id ? { id: item.id, nama: item.nama, harga_jual: item.harga } : null}
-                                            onSelect={(p) => updatePart(index, p)}
-                                        />
-                                        <View className="flex-row space-x-2 mt-2 items-center">
-                                            <View className="flex-1">
-                                                <Input
-                                                    label="Qty"
-                                                    keyboardType="numeric"
-                                                    value={item.qty}
-                                                    onChangeText={v => updatePartQty(index, v)}
-                                                    containerClassName="mb-0"
-                                                    className="bg-white"
-                                                />
-                                            </View>
-                                            <View className="flex-[2]">
-                                                <Typography variant="caption" className="text-gray-500">
-                                                    @ {formatCurrency(item.harga)}
-                                                </Typography>
-                                                <Typography weight="bold">
-                                                    Total: {formatCurrency(item.harga * (parseFloat(item.qty) || 0))}
-                                                </Typography>
-                                            </View>
-                                            <TouchableOpacity
-                                                onPress={() => removePart(index)}
-                                                className="pt-4"
-                                                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                                style={{ padding: 8 }}
-                                            >
-                                                <Trash2 size={18} color="#EE2737" />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
-
-                            <Button
-                                title={addBengkelTrxMutation.isPending ? "Memproses..." : "Tambah Perbaikan Bengkel"}
-                                variant="primary"
-                                size="sm"
-                                onPress={handleAddBengkelTrx}
-                                disabled={addBengkelTrxMutation.isPending}
-                            />
-                        </Card>
-                    ) : (
-                        <Card className="bg-primary/5 border border-primary/10 p-4 mb-6">
-                            <Typography variant="body2" weight="bold" className="text-primary mb-4">INPUT PERBAIKAN / PART (MANUAL)</Typography>
-
+                        <View className="flex-row space-x-3 mb-4">
                             <Input
-                                label="Deskripsi Pekerjaan"
-                                placeholder="Contoh: Ganti Ban Depan"
-                                containerClassName="mb-3"
+                                label="Qty"
+                                placeholder="1"
+                                keyboardType="numeric"
+                                containerClassName="w-20"
                                 className="h-10 text-xs"
-                                value={newPerbaikan.deskripsi}
-                                onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, deskripsi: val })}
+                                value={newPerbaikan.qty}
+                                onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, qty: val })}
                             />
-
-                            <View className="flex-row space-x-3 mb-4">
-                                <Input
-                                    label="Qty"
-                                    placeholder="1"
-                                    keyboardType="numeric"
-                                    containerClassName="w-20"
-                                    className="h-10 text-xs"
-                                    value={newPerbaikan.qty}
-                                    onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, qty: val })}
-                                />
-                                <Input
-                                    label="Harga/Item (Rp)"
-                                    placeholder="0"
-                                    keyboardType="numeric"
-                                    containerClassName="flex-1"
-                                    className="h-10 text-xs"
-                                    value={newPerbaikan.harga_satuan}
-                                    onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, harga_satuan: formatNumber(val) })}
-                                />
-                            </View>
-
-                            <Button
-                                title={addPartServiceMutation.isPending ? "Menambahkan..." : "Tambah Perbaikan"}
-                                variant="primary"
-                                size="sm"
-                                onPress={handleAddPerbaikan}
-                                disabled={addPartServiceMutation.isPending}
+                            <Input
+                                label="Harga/Item (Rp)"
+                                placeholder="0"
+                                keyboardType="numeric"
+                                containerClassName="flex-1"
+                                className="h-10 text-xs"
+                                value={newPerbaikan.harga_satuan}
+                                onChangeText={(val) => setNewPerbaikan({ ...newPerbaikan, harga_satuan: formatNumber(val) })}
                             />
-                        </Card>
-                    )}
+                        </View>
+
+                        <Button
+                            title={addPartServiceMutation.isPending ? "Menambahkan..." : "Tambah Perbaikan"}
+                            variant="primary"
+                            size="sm"
+                            onPress={handleAddPerbaikan}
+                            disabled={addPartServiceMutation.isPending}
+                        />
+                    </Card>
 
                     {(activeUnit?.part_services || []).map((item: any) => (
                         <Card key={item.id} className="mb-3 p-3 flex-row items-center border border-gray-100">
                             <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center mr-3">
-                                <Wrench size={18} color="#00AA13" />
+                                <Wrench size={18} color="#023C69" />
                             </View>
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-xs">{item.deskripsi}</Typography>
@@ -573,7 +356,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             </TouchableOpacity>
                         </Card>
                     ))}
-                    {isDetailLoading && <ActivityIndicator color="#00AA13" className="my-4" />}
+                    {isDetailLoading && <ActivityIndicator color="#023C69" className="my-4" />}
                 </View>
             )}
         </View>

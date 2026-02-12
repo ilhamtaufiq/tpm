@@ -46,7 +46,7 @@ export const TransactionList = () => {
     if (isLoading) {
         return (
             <View className="px-6 mt-8 items-center justify-center py-10">
-                <ActivityIndicator color="#00AA13" />
+                <ActivityIndicator color="#023C69" />
             </View>
         );
     }

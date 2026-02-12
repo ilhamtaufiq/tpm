@@ -697,7 +697,7 @@ export default function PiutangUsahaScreen() {
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
                     isLoadingList ? (
                         <View className="space-y-6">

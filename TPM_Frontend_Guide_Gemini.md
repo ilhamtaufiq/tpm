@@ -61,7 +61,7 @@ Tambahkan dependencies penting:
 - @tanstack/react-query
 
 Berikan konten file `tailwind.config.js` dengan custom colors ala "Fintech App":
-- primary: '#00AA13' (GoJek Green like)
+- primary: '#023C69' (TPM Blue)
 - secondary: '#EE2737'
 - background: '#F9F9F9'
 - surface: '#FFFFFF'

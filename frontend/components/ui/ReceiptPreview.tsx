@@ -259,7 +259,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                         title="Simpan PDF"
                         onPress={onSavePDF}
                         loading={loading}
-                        icon={<Download size={20} color="#00AA13" />}
+                        icon={<Download size={20} color="#023C69" />}
                         className="h-14 rounded-2xl"
                     />
                 </View>

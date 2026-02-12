@@ -63,7 +63,7 @@ export const Tabs = ({
                             <View className={cn("mr-2", isActive ? "opacity-100" : "opacity-40")}>
                                 <Icon
                                     size={16}
-                                    color={isActive ? (variant === 'pill' ? "white" : "#00AA13") : "#6B7280"}
+                                    color={isActive ? (variant === 'pill' ? "white" : "#023C69") : "#6B7280"}
                                     strokeWidth={isActive ? 2.5 : 2}
                                 />
                             </View>

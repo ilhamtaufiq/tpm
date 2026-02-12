@@ -93,20 +93,7 @@ class BiayaItem(BaseModel):
     deskripsi: str = Field(..., min_length=1, max_length=255)
     jumlah: Decimal = Field(..., ge=0)
 
-class PartItem(BaseModel):
-    """Schema for spare part item in workshop transaction."""
-    part_id: int
-    qty: int = Field(default=1, ge=1)
 
-class ServiceItem(BaseModel):
-    """Schema for service item in workshop transaction."""
-    deskripsi: str = Field(..., min_length=1, max_length=255)
-    harga: Decimal = Field(..., ge=0)
-
-class BengkelItems(BaseModel):
-    """Schema for workshop items integration."""
-    parts: List[PartItem] = []
-    services: List[ServiceItem] = []
 
 class BiayaTambahanResponse(BaseModel):
     """Schema for additional cost response."""
@@ -139,8 +126,7 @@ class MuatanCreate(BaseModel):
     # Dynamic operational costs
     biaya_operasional: List[BiayaItem] = []
     
-    # Workshop Integration
-    bengkel_items: Optional[BengkelItems] = None
+
 
     # Legacy fields (kept for backward compatibility but default to 0)
     biaya_bbm: Decimal = Field(default=Decimal("0"), ge=0)
@@ -175,8 +161,7 @@ class MuatanUpdate(BaseModel):
     # Dynamic operational costs
     biaya_operasional: Optional[List[BiayaItem]] = None
     
-    # Workshop Integration
-    bengkel_items: Optional[BengkelItems] = None
+
 
     # Legacy fields
     biaya_bbm: Optional[Decimal] = Field(None, ge=0)

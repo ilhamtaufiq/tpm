@@ -403,7 +403,7 @@ export default function KaryawanScreen() {
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                         >
                             <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100/50">
-                                <User size={28} color="#00AA13" />
+                                <User size={28} color="#023C69" />
                             </View>
                             <View className="flex-1 mr-3">
                                 <View className="flex-row items-center mb-1">
@@ -434,7 +434,7 @@ export default function KaryawanScreen() {
                 }}
                 keyExtractor={(item: Karyawan) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListEmptyComponent={
                     <View className="items-center py-20">
                         <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
@@ -521,7 +521,7 @@ export default function KaryawanScreen() {
                 <View className="items-center mb-10">
                     <View className="p-1 bg-gray-50 rounded-full border border-gray-100 shadow-sm">
                         <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center">
-                            <User size={48} color="#00AA13" />
+                            <User size={48} color="#023C69" />
                         </View>
                     </View>
                     <Typography variant="h2" weight="bold" className="mt-6 text-xl text-textMain">{karyawan.nama}</Typography>
@@ -549,21 +549,21 @@ export default function KaryawanScreen() {
                     <View className="w-full bg-gray-50 p-5 rounded-[32px] border border-gray-100/50 shadow-sm">
                         <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-200/50">
                             <View className="flex-row items-center">
-                                <Phone size={16} color="#00AA13" />
+                                <Phone size={16} color="#023C69" />
                                 <Typography className="ml-3 text-textMain font-medium text-sm">{karyawan.telepon || '-'}</Typography>
                             </View>
                             <Typography className="text-textGray/40 text-[9px] font-bold uppercase">Telepon</Typography>
                         </View>
                         <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-200/50">
                             <View className="flex-row items-center">
-                                <Mail size={16} color="#00AA13" />
+                                <Mail size={16} color="#023C69" />
                                 <Typography className="ml-3 text-textMain font-medium text-sm" numberOfLines={1}>{karyawan.email || '-'}</Typography>
                             </View>
                             <Typography className="text-textGray/40 text-[9px] font-bold uppercase">Email</Typography>
                         </View>
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
-                                <Calendar size={16} color="#00AA13" />
+                                <Calendar size={16} color="#023C69" />
                                 <Typography className="ml-3 text-textMain font-medium text-sm">{formatDate(karyawan.tanggal_bergabung)}</Typography>
                             </View>
                             <Typography className="text-textGray/40 text-[9px] font-bold uppercase">Bergabung</Typography>

@@ -13,14 +13,14 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const MENUS = [
-    { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: '#00AA13', path: '/bengkel' },
-    { id: 'angkut', label: 'Logistik', icon: Truck, color: '#00AA13', path: '/jasa-angkut' },
-    { id: 'mobil', label: 'Mobil', icon: CarFront, color: '#00AA13', path: '/mobil' },
-    { id: 'sdm', label: 'SDM', icon: Users, color: '#00AA13', path: '/sdm' },
-    { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#00AA13', path: '/laporan' },
-    { id: 'master', label: 'Master', icon: Database, color: '#00AA13', path: '/master-data' },
-    { id: 'pembelian', label: 'Restock', icon: Receipt, color: '#00AA13', path: '/bengkel/purchase' },
-    { id: 'history', label: 'Riwayat', icon: History, color: '#00AA13', path: '/history' },
+    { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: '#023C69', path: '/bengkel' },
+    { id: 'angkut', label: 'Logistik', icon: Truck, color: '#023C69', path: '/jasa-angkut' },
+    { id: 'mobil', label: 'Mobil', icon: CarFront, color: '#023C69', path: '/mobil' },
+    { id: 'sdm', label: 'SDM', icon: Users, color: '#023C69', path: '/sdm' },
+    { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#023C69', path: '/laporan' },
+    { id: 'master', label: 'Master', icon: Database, color: '#023C69', path: '/master-data' },
+    { id: 'pembelian', label: 'Restock', icon: Receipt, color: '#023C69', path: '/bengkel/purchase' },
+    { id: 'history', label: 'Riwayat', icon: History, color: '#023C69', path: '/history' },
 ];
 
 const ServiceCard = ({ menu, index }: { menu: typeof MENUS[0], index: number }) => {

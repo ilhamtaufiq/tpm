@@ -126,7 +126,7 @@ export default function ProfileSettingsScreen() {
                             {image ? (
                                 <Image source={{ uri: image }} className="w-full h-full" />
                             ) : (
-                                <User size={60} color="#00AA13" strokeWidth={1.5} />
+                                <User size={60} color="#023C69" strokeWidth={1.5} />
                             )}
                             {isPicking && (
                                 <View className="absolute inset-0 bg-black/20 items-center justify-center">

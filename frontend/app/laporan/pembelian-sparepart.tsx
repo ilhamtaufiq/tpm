@@ -338,7 +338,7 @@ export default function PembelianSparepartReportScreen() {
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#00AA13" />
+                            <ActivityIndicator size="large" color="#023C69" />
                             <Typography className="mt-4 text-gray-400">Memuat detail</Typography>
                         </View>
                     ) : selectedTransaction ? (

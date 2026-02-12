@@ -120,28 +120,85 @@ export default function FinanceTab() {
             <ScrollView
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
-                {/* Saldo Grid (Adaptive) */}
-                <View className="flex-row justify-between mb-8">
-                    <View className="w-[48%] bg-white p-5 rounded-[28px] border border-gray-50 shadow-sm">
-                        <View className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center mb-3">
-                            <Wallet size={20} color="#10B981" />
+                {/* Wallet Cards */}
+                <View className="mb-6">
+                    <Typography variant="h3" weight="bold" className="mb-4 tracking-tight px-1">Saldo Kas & Bank</Typography>
+
+                    {/* Cash & Bank Row */}
+                    <View className="flex-row justify-between mb-3">
+                        <View className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm">
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center mr-2.5">
+                                    <Wallet size={18} color="#10B981" />
+                                </View>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Cash</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-emerald-600 text-base tracking-tight">
+                                {formatCurrency(dashboard?.kas_bank?.cash?.saldo || 0)}
+                            </Typography>
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                                <TrendingUp size={10} color="#10B981" />
+                                <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
+                                    {formatCurrency(dashboard?.kas_bank?.cash?.total_masuk_bulan_ini || 0)}
+                                </Typography>
+                            </View>
                         </View>
-                        <Typography className="text-textGray text-[10px] uppercase font-bold mb-1">Total Saldo</Typography>
-                        <Typography weight="bold" className="text-emerald-600 text-sm">
-                            {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
-                        </Typography>
+
+                        <View className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm">
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-9 h-9 bg-blue-50 rounded-xl items-center justify-center mr-2.5">
+                                    <ArrowRightLeft size={18} color="#3B82F6" />
+                                </View>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank BCA</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-blue-600 text-base tracking-tight">
+                                {formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}
+                            </Typography>
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                                <TrendingUp size={10} color="#3B82F6" />
+                                <Typography className="text-blue-500 text-[9px] font-bold ml-1">
+                                    {formatCurrency(dashboard?.kas_bank?.bank_bca?.total_masuk_bulan_ini || 0)}
+                                </Typography>
+                            </View>
+                        </View>
                     </View>
 
-                    <View className="w-[48%] bg-white p-5 rounded-[28px] border border-gray-50 shadow-sm">
-                        <View className="w-10 h-10 bg-blue-50 rounded-2xl items-center justify-center mb-3">
-                            <CircleDollarSign size={20} color="#3B82F6" />
+                    {/* Total Saldo & Piutang Row */}
+                    <View className="flex-row justify-between">
+                        <View className="w-[48%] bg-gradient-to-br from-primary/5 to-emerald-50 p-4 rounded-[24px] border border-primary/10 shadow-sm">
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-9 h-9 bg-primary/10 rounded-xl items-center justify-center mr-2.5">
+                                    <BarChart3 size={18} color="#023C69" />
+                                </View>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Total Saldo</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-primary text-base tracking-tight">
+                                {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
+                            </Typography>
                         </View>
-                        <Typography className="text-textGray text-[10px] uppercase font-bold mb-1">Piutang Aktif</Typography>
-                        <Typography weight="bold" className="text-blue-600 text-sm">
-                            {formatCurrency(piutangSummary?.total_sisa || 0)}
-                        </Typography>
+
+                        <TouchableOpacity
+                            onPress={() => router.push('/finance/piutang')}
+                            className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
+                            activeOpacity={0.8}
+                        >
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-9 h-9 bg-amber-50 rounded-xl items-center justify-center mr-2.5">
+                                    <CircleDollarSign size={18} color="#F59E0B" />
+                                </View>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Piutang</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-amber-600 text-base tracking-tight">
+                                {formatCurrency(piutangSummary?.total_sisa || 0)}
+                            </Typography>
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                                <Typography className="text-rose-500 text-[9px] font-bold">
+                                    {piutangSummary?.jumlah_belum_lunas || 0} belum lunas
+                                </Typography>
+                            </View>
+                        </TouchableOpacity>
                     </View>
                 </View>
 

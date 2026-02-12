@@ -12,7 +12,7 @@ module.exports = {
                 "outfit-bold": ["Outfit_700Bold"],
             },
             colors: {
-                primary: "#00AA13", // Gojek Green like
+                primary: "#023C69", // TPM Blue
                 secondary: "#EE2737",
                 background: "#F9F9F9",
                 surface: "#FFFFFF",

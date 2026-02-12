@@ -74,10 +74,7 @@ export const mobilService = {
         const response = await api.get('/penjualan-mobil/summary', { params });
         return response.data;
     },
-    addBengkelTransaction: async (id: number, data: any) => {
-        const response = await api.post(`/mobil/${id}/bengkel-transaction`, data);
-        return response.data;
-    },
+
     uploadMedia: async (id: number, files: any[]) => {
         const formData = new FormData();
 

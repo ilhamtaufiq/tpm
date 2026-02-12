@@ -130,11 +130,11 @@ export default function HistoryTab() {
             <ScrollView
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#00AA13" />
+                        <ActivityIndicator size="large" color="#023C69" />
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (

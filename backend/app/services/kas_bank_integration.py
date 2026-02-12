@@ -76,6 +76,7 @@ def create_kas_entry(
         tipe=tipe,
         nominal=nominal,
         sumber=sumber,
+        metode_bayar=metode_bayar,
         referensi_id=referensi_id,
         nomor_referensi=nomor_referensi,
         keterangan=keterangan,

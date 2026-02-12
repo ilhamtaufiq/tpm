@@ -11,13 +11,7 @@ from fastapi import HTTPException, status, UploadFile
 from app.config import settings
 
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService
-from app.models.bengkel import (
-    TransaksiPenjualanBengkel,
-    DetailTransaksiSpareParts,
-    DetailTransaksiServices,
-    SparePart,
-    WorkshopStatus,
-)
+from app.models.bengkel import SparePart
 from app.schemas.mobil import MobilCreate, MobilUpdate
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource
 from app.services.kas_bank_integration import create_kas_entry
@@ -50,26 +44,7 @@ class MobilService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
-    def _generate_nomor_transaksi_bengkel(self) -> str:
-        """Generate unique workshop transaction number."""
-        today = datetime.now()
-        prefix = TRANSACTION_PREFIXES["bengkel"]
-        date_str = today.strftime("%y%m%d")
 
-        last = (
-            self.db.query(TransaksiPenjualanBengkel)
-            .filter(TransaksiPenjualanBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
-            .order_by(TransaksiPenjualanBengkel.id.desc())
-            .first()
-        )
-
-        if last:
-            last_num = int(last.nomor_transaksi[-4:])
-            new_num = last_num + 1
-        else:
-            new_num = 1
-
-        return f"{prefix}{date_str}{new_num:04d}"
 
     def create(
         self,
@@ -460,98 +435,7 @@ class MobilService:
 
         return part_service
 
-    def add_bengkel_transaction(
-        self,
-        mobil_id: int,
-        tanggal: date,
-        parts: List[Any],
-        services: List[Any],
-        user_id: Optional[int] = None,
-    ) -> MobilBiayaLainnya:
-        """Process a workshop transaction and add its total as a cost to the car."""
-        mobil = self.get_by_id(mobil_id)
-        if mobil.status == CarStatus.TERJUAL:
-            raise HTTPException(status_code=400, detail="Mobil sudah terjual")
 
-        no_trans_bengkel = self._generate_nomor_transaksi_bengkel()
-        
-        trans_bengkel = TransaksiPenjualanBengkel(
-            nomor_transaksi=no_trans_bengkel,
-            tanggal=tanggal,
-            customer_id=None,
-            nama_customer=f"Persiapan Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
-            nomor_plat=mobil.nomor_plat,
-            jenis_kendaraan="Mobil",
-            status_pengerjaan=WorkshopStatus.SELESAI,
-            status_bayar=PaymentStatus.BELUM_LUNAS,
-            metode_bayar=PaymentMethod.TUNAI, # Internal adjustment
-            catatan=f"Otomatis dari Persiapan Unit Mobil {mobil.kode}",
-            created_by=user_id,
-        )
-        self.db.add(trans_bengkel)
-        self.db.flush()
-
-        total_parts = Decimal("0")
-        hpp_parts = Decimal("0")
-        
-        for part_item in parts:
-            part = self.db.query(SparePart).filter(SparePart.id == part_item.part_id).first()
-            if not part:
-                raise HTTPException(status_code=404, detail=f"Sparepart ID {part_item.part_id} tidak ditemukan")
-            if part.stok < part_item.qty:
-                raise HTTPException(status_code=400, detail=f"Stok {part.nama} tidak cukup")
-            
-            part.stok -= part_item.qty
-            subtotal = part.harga_jual * part_item.qty
-            total_parts += subtotal
-            hpp_parts += part.harga_beli * part_item.qty
-            
-            detail_part = DetailTransaksiSpareParts(
-                transaksi_id=trans_bengkel.id,
-                spare_part_id=part.id,
-                qty=part_item.qty,
-                harga_beli=part.harga_beli,
-                harga_jual=part.harga_jual,
-                subtotal=subtotal
-            )
-            self.db.add(detail_part)
-
-        total_services = Decimal("0")
-        for service_item in services:
-            subtotal = service_item.harga
-            total_services += subtotal
-            detail_service = DetailTransaksiServices(
-                transaksi_id=trans_bengkel.id,
-                nama_jasa=service_item.deskripsi,
-                deskripsi=service_item.deskripsi,
-                harga=service_item.harga,
-                qty=1,
-                subtotal=subtotal
-            )
-            self.db.add(detail_service)
-
-        trans_bengkel.total_parts = total_parts
-        trans_bengkel.total_jasa = total_services
-        trans_bengkel.subtotal = total_parts + total_services
-        trans_bengkel.grand_total = trans_bengkel.subtotal
-        trans_bengkel.jumlah_bayar = trans_bengkel.grand_total
-        trans_bengkel.hpp_parts = hpp_parts
-        trans_bengkel.laba_kotor = trans_bengkel.grand_total - hpp_parts
-
-        # Add to Car Costs
-        biaya_bengkel = MobilBiayaLainnya(
-            mobil_id=mobil_id,
-            tanggal=tanggal,
-            kategori="Perawatan Bengkel",
-            deskripsi=f"Servis & Sparepart (Ref: {no_trans_bengkel})",
-            jumlah=trans_bengkel.grand_total,
-            catatan=f"Otomatis dari Bengkel"
-        )
-        self.db.add(biaya_bengkel)
-        self.db.commit()
-        self.db.refresh(biaya_bengkel)
-
-        return biaya_bengkel
 
     def delete_part_service(self, part_service_id: int) -> bool:
         """Delete part/service cost."""

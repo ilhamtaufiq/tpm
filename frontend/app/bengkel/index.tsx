@@ -20,7 +20,9 @@ import {
     Download,
     X,
     AlertCircle,
-    Banknote
+    Banknote,
+    Truck,
+    Car
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -347,6 +349,34 @@ export default function BengkelScreen() {
                         />
                     </View>
 
+                    {/* Category Info */}
+                    {selectedItem.kategori && selectedItem.kategori !== 'umum' && (
+                        <View className={`flex-row items-center mb-4 px-4 py-2.5 rounded-2xl border ${selectedItem.kategori === 'jasa_angkut'
+                                ? 'bg-emerald-50 border-emerald-200'
+                                : 'bg-blue-50 border-blue-200'
+                            }`}>
+                            {selectedItem.kategori === 'jasa_angkut' ? (
+                                <Truck size={16} color="#10B981" />
+                            ) : (
+                                <Car size={16} color="#3B82F6" />
+                            )}
+                            <Typography weight="bold" className={`ml-2 text-xs ${selectedItem.kategori === 'jasa_angkut' ? 'text-emerald-700' : 'text-blue-700'
+                                }`}>
+                                {selectedItem.kategori === 'jasa_angkut' ? 'Jasa Angkut' : 'Jual Beli Mobil'}
+                            </Typography>
+                            {selectedItem.muatan_id && (
+                                <Typography className="text-emerald-500 text-[10px] ml-2">
+                                    Muatan #{selectedItem.muatan_id}
+                                </Typography>
+                            )}
+                            {selectedItem.mobil_id && (
+                                <Typography className="text-blue-500 text-[10px] ml-2">
+                                    Mobil #{selectedItem.mobil_id}
+                                </Typography>
+                            )}
+                        </View>
+                    )}
+
                     <Card variant="outlined" className="p-6 border-gray-100 mb-8 bg-gray-50/50 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-primary uppercase tracking-widest">Rincian Order</Typography>
 
@@ -442,7 +472,7 @@ export default function BengkelScreen() {
                                     title="Cetak Struk"
                                     onPress={() => handlePrintReceipt(selectedItem)}
                                     loading={printing}
-                                    icon={<Printer size={20} color="#00AA13" />}
+                                    icon={<Printer size={20} color="#023C69" />}
                                     className="rounded-2xl h-14"
                                 />
                                 <Button
@@ -650,7 +680,7 @@ export default function BengkelScreen() {
                             )}
                         </View>
                         <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <Filter size={20} color="#00AA13" />
+                            <Filter size={20} color="#023C69" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -660,7 +690,7 @@ export default function BengkelScreen() {
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
                 {/* Section Header */}
@@ -730,6 +760,19 @@ export default function BengkelScreen() {
                                         {item.nomor_plat}
                                     </Typography>
                                     <View className="flex-row items-center space-x-2">
+                                        {/* Category Badge */}
+                                        {item.kategori === 'jasa_angkut' && (
+                                            <View className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 flex-row items-center">
+                                                <Truck size={8} color="#10B981" />
+                                                <Typography weight="bold" className="text-emerald-600 text-[7px] uppercase tracking-tighter ml-0.5">ANGKUT</Typography>
+                                            </View>
+                                        )}
+                                        {item.kategori === 'jual_beli_mobil' && (
+                                            <View className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex-row items-center">
+                                                <Car size={8} color="#3B82F6" />
+                                                <Typography weight="bold" className="text-blue-600 text-[7px] uppercase tracking-tighter ml-0.5">MOBIL</Typography>
+                                            </View>
+                                        )}
                                         {item.status_bayar !== 'lunas' ? (
                                             <View className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100">
                                                 <Typography weight="bold" className="text-rose-500 text-[7px] uppercase tracking-tighter">BELUM LUNAS</Typography>

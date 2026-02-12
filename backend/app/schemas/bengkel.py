@@ -190,6 +190,11 @@ class PembelianSparePartResponse(BaseModel):
 # TRANSAKSI BENGKEL SCHEMAS
 # ============================================
 
+class PaymentItem(BaseModel):
+    """Schema for split payment item."""
+    metode: PaymentMethod
+    jumlah: Decimal = Field(..., ge=0)
+
 class DetailPartCreate(BaseModel):
     """Schema for transaction part item."""
 
@@ -215,11 +220,15 @@ class TransaksiBengkelCreate(BaseModel):
     nama_customer: Optional[str] = Field(None, max_length=100)
     nomor_plat: Optional[str] = Field(None, max_length=15)
     jenis_kendaraan: Optional[str] = Field(None, max_length=50)
+    kategori: str = Field(default="umum", pattern="^(umum|jasa_angkut|jual_beli_mobil)$")
+    muatan_id: Optional[int] = None
+    mobil_id: Optional[int] = None
     detail_parts: List[DetailPartCreate] = []
     detail_services: List[DetailServiceCreate] = []
     diskon: Decimal = Field(default=Decimal("0"), ge=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     jumlah_bayar: Decimal = Field(default=Decimal("0"), ge=0)
+    payments: List[PaymentItem] = []  # For split payments
     catatan: Optional[str] = None
 
 
@@ -260,6 +269,9 @@ class TransaksiBengkelResponse(BaseModel):
     nama_customer: Optional[str] = None
     nomor_plat: Optional[str] = None
     jenis_kendaraan: Optional[str] = None
+    kategori: str = "umum"
+    muatan_id: Optional[int] = None
+    mobil_id: Optional[int] = None
     total_parts: Decimal
     total_jasa: Decimal
     subtotal: Decimal

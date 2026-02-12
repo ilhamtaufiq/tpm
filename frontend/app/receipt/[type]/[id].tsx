@@ -83,7 +83,7 @@ export default function PublicReceiptPage() {
     if (loading) {
         return (
             <SafeAreaView className="flex-1 bg-background items-center justify-center">
-                <ActivityIndicator size="large" color="#00AA13" />
+                <ActivityIndicator size="large" color="#023C69" />
                 <Typography variant="body2" className="mt-4 text-textGray">
                     Memuat struk...
                 </Typography>
@@ -127,7 +127,7 @@ export default function PublicReceiptPage() {
                         </Typography>
                     </View>
                     <View className="w-12 h-12 bg-emerald-50 rounded-full items-center justify-center">
-                        <CheckCircle2 size={24} color="#00AA13" />
+                        <CheckCircle2 size={24} color="#023C69" />
                     </View>
                 </View>
             </View>
@@ -137,7 +137,7 @@ export default function PublicReceiptPage() {
                 <Card className="p-6 mb-6 rounded-[24px] bg-gradient-to-br from-emerald-50 to-white border border-emerald-100">
                     <View className="items-center">
                         <View className="w-16 h-16 bg-emerald-100 rounded-full items-center justify-center mb-3">
-                            <CheckCircle2 size={32} color="#00AA13" />
+                            <CheckCircle2 size={32} color="#023C69" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-emerald-700 mb-1">
                             Transaksi Berhasil
@@ -303,7 +303,7 @@ export default function PublicReceiptPage() {
                         variant="outline"
                         title="Bagikan Struk"
                         onPress={handleShare}
-                        icon={<Share2 size={20} color="#00AA13" />}
+                        icon={<Share2 size={20} color="#023C69" />}
                         className="h-14 rounded-2xl"
                     />
                 </View>

@@ -166,7 +166,7 @@ export const MasterDataSelector = ({
                             )}
 
                             {isLoading ? (
-                                <ActivityIndicator className="mt-4" color="#00AA13" />
+                                <ActivityIndicator className="mt-4" color="#023C69" />
                             ) : (
                                 <FlatList
                                     data={searchResults || []}

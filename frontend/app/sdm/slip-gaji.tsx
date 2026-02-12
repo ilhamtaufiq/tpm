@@ -426,7 +426,7 @@ export default function SlipGajiScreen() {
                     className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center"
                 >
                     <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
-                        <Calendar size={28} color="#00AA13" />
+                        <Calendar size={28} color="#023C69" />
                     </View>
                     <View className="flex-1">
                         <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Tanggal Cetak Slip</Typography>
@@ -487,11 +487,11 @@ export default function SlipGajiScreen() {
                                 renderItem={renderPendingItem}
                                 keyExtractor={(item) => item.karyawan_id.toString()}
                                 contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
-                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
                                         {isLoadingPreview ? (
-                                            <ActivityIndicator size="large" color="#00AA13" />
+                                            <ActivityIndicator size="large" color="#023C69" />
                                         ) : (
                                             <>
                                                 <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
@@ -511,11 +511,11 @@ export default function SlipGajiScreen() {
                                 renderItem={renderHistoryItem}
                                 keyExtractor={(item) => item.id.toString()}
                                 contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
-                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
                                         {isLoadingList ? (
-                                            <ActivityIndicator size="large" color="#00AA13" />
+                                            <ActivityIndicator size="large" color="#023C69" />
                                         ) : (
                                             <>
                                                 <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-6">
@@ -629,13 +629,13 @@ export default function SlipGajiScreen() {
                                 markedDates={{
                                     [datePickingMode === 'start' ? startDate :
                                         datePickingMode === 'end' ? endDate : slipDate]:
-                                        { selected: true, selectedColor: '#00AA13' }
+                                        { selected: true, selectedColor: '#023C69' }
                                 }}
                                 theme={{
-                                    todayTextColor: '#00AA13',
-                                    selectedDayBackgroundColor: '#00AA13',
-                                    arrowColor: '#00AA13',
-                                    monthTextColor: '#00AA13',
+                                    todayTextColor: '#023C69',
+                                    selectedDayBackgroundColor: '#023C69',
+                                    arrowColor: '#023C69',
+                                    monthTextColor: '#023C69',
                                     textDayFontWeight: '500',
                                     textMonthFontWeight: 'bold',
                                     textDayHeaderFontWeight: 'bold',
@@ -664,7 +664,7 @@ export default function SlipGajiScreen() {
                 <View className="items-center mb-12">
                     <View className="p-1 bg-primary/5 rounded-[40px] border border-primary/10 mb-6">
                         <View className="w-24 h-24 bg-primary/10 rounded-[36px] items-center justify-center">
-                            <User size={48} color="#00AA13" />
+                            <User size={48} color="#023C69" />
                         </View>
                     </View>
                     <Typography variant="h2" weight="bold" className="text-2xl text-textMain text-center">{selectedSlip.karyawan_nama}</Typography>

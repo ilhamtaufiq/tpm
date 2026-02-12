@@ -5,7 +5,7 @@ Sistem desain ini menggunakan pendekatan **Premium Bento Layout** dengan sentuha
 ## 🎨 Color Palette
 
 ### Core Colors
-- **Primary (TPM Green):** `#00AA13` (Gunakan untuk aksi utama, FAB, dan identitas brand)
+- **Primary (TPM Blue):** `#023C69` (Gunakan untuk aksi utama, FAB, dan identitas brand)
 - **Secondary (Emerald):** `#10B981` (Gunakan untuk indikator positif, saldo, atau status tersedia)
 - **Surface:** `#F8F9FA` (Background halaman utama agar kartu terlihat "pop-out")
 - **Dark Surface:** `#121212` / `#1A1A1A` (Background header premium)
@@ -67,7 +67,7 @@ Gunakan overlay ini untuk memberikan akses cepat pada data tanpa memakan space p
             <TextInput placeholder="Search data..." className="flex-1 ml-3 text-sm font-medium" />
         </View>
         <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-            <Filter size={20} color="#00AA13" />
+            <Filter size={20} color="#023C69" />
         </TouchableOpacity>
     </View>
 </View>

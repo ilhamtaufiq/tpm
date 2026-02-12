@@ -135,6 +135,7 @@ class KasBankCreate(BaseModel):
     tipe: KasBankType
     nominal: Decimal = Field(..., gt=0)
     sumber: KasBankSource
+    metode_bayar: Optional[PaymentMethod] = None
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = Field(None, max_length=30)
     keterangan: str = Field(..., min_length=2, max_length=255)

@@ -79,7 +79,7 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                         activeOpacity={0.7}
                     >
                         <View className={cn("mb-1", isFocused ? "scale-110" : "scale-100 opacity-40")}>
-                            {renderIcon(isFocused ? '#00AA13' : '#6B7280')}
+                            {renderIcon(isFocused ? '#023C69' : '#6B7280')}
                         </View>
                         <Typography
                             variant="caption"

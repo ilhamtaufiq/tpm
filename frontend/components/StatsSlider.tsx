@@ -44,7 +44,7 @@ export const StatsSlider = () => {
             subtitle: 'Total pendapatan hari ini',
             value: formatCurrency(bengkelStats?.total_pendapatan || 0),
             icon: Wrench,
-            color: '#00AA13', // Gojek Green
+            color: '#023C69', // Gojek Green
             path: '/laporan/bengkel',
         },
         {

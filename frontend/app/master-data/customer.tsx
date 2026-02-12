@@ -474,7 +474,7 @@ export default function CustomerScreen() {
                                 onPress={addVehicle}
                                 className="flex-row items-center bg-primary/10 px-3 py-2 rounded-xl"
                             >
-                                <Plus size={16} color="#00AA13" />
+                                <Plus size={16} color="#023C69" />
                                 <Typography className="text-primary font-bold text-xs ml-1">Tambah</Typography>
                             </TouchableOpacity>
                         </View>
@@ -640,7 +640,7 @@ export default function CustomerScreen() {
                 renderItem={renderCustomerItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
                     isLoading ? (
                         <View className="mt-4">

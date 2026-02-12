@@ -28,6 +28,9 @@ export interface TransaksiBengkel {
     plat_nomor: string;
     tipe_motor?: string;
     kilometer?: number;
+    kategori: 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
+    muatan_id?: number;
+    mobil_id?: number;
     total_jasa: number;
     total_part: number;
     total_biaya: number;

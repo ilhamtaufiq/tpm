@@ -199,7 +199,7 @@ export default function PenjualanMobilReportScreen() {
                     <View className="flex-1 bg-white/5 p-4 rounded-[24px] border border-white/5 mr-3">
                         <View className="flex-row items-center mb-1">
                             <View className="w-5 h-5 bg-primary/20 rounded-md items-center justify-center mr-2">
-                                <TrendingUp size={12} color="#00AA13" />
+                                <TrendingUp size={12} color="#023C69" />
                             </View>
                             <Typography className="text-white/40 text-[9px] uppercase font-bold">Laba TPM</Typography>
                         </View>
@@ -254,7 +254,7 @@ export default function PenjualanMobilReportScreen() {
                         </TouchableOpacity>
 
                         <View className="flex-row items-center">
-                            <Calendar size={18} color="#00AA13" className="mr-2" />
+                            <Calendar size={18} color="#023C69" className="mr-2" />
                             <Typography variant="body1" weight="bold" className="text-textMain">
                                 {getFormattedDate()}
                             </Typography>
@@ -285,7 +285,7 @@ export default function PenjualanMobilReportScreen() {
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
                 {/* Secondary Info Stats */}
@@ -323,7 +323,7 @@ export default function PenjualanMobilReportScreen() {
 
                 {isLoading ? (
                     <View className="py-10">
-                        <ActivityIndicator size="large" color="#00AA13" />
+                        <ActivityIndicator size="large" color="#023C69" />
                     </View>
                 ) : transaksis.length === 0 ? (
                     <View className="items-center justify-center py-16 bg-white rounded-[40px] border border-dashed border-gray-200">
@@ -413,7 +413,7 @@ export default function PenjualanMobilReportScreen() {
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#00AA13" />
+                            <ActivityIndicator size="large" color="#023C69" />
                             <Typography className="mt-4 text-gray-400">Memuat detail...</Typography>
                         </View>
                     ) : selectedTransaction ? (

@@ -100,11 +100,18 @@ export default function LaporanPerubahanModalScreen() {
             const b8 = a7 - b7; // Intermediate balance
 
             // C. Pengurang
-            const c1 = report.section_c.pembelian_part?.total || 0;
-            const c2 = report.section_c.pembelian_mobil?.total || 0;
-            const c3 = report.section_c.pengembalian_investor?.total || 0;
+            const c_part_cash = report.section_c.pembelian_part?.cash || 0;
+            const c_part_transfer = report.section_c.pembelian_part?.transfer || 0;
+            const c_part_total = report.section_c.pembelian_part?.total || 0;
+            const c_mobil_cash = report.section_c.pembelian_mobil?.cash || 0;
+            const c_mobil_transfer = report.section_c.pembelian_mobil?.transfer || 0;
+            const c_mobil_total = report.section_c.pembelian_mobil?.total || 0;
+            const c_inv_cash = report.section_c.pengembalian_investor?.cash || 0;
+            const c_inv_transfer = report.section_c.pengembalian_investor?.transfer || 0;
+            const c_inv_total = report.section_c.pengembalian_investor?.total || 0;
             const c_op = report.section_c.operasional || 0;
             const c_gaji = report.section_c.gaji || 0;
+            const c_prive = report.section_c.prive || 0;
 
             const c4 = report.section_c.total_c || 0; // Total C from Backend (includes all)
             const c5 = report.section_d.theoretical_modal || 0; // Modal Berjalan (A - B - C) from Backend
@@ -133,6 +140,7 @@ export default function LaporanPerubahanModalScreen() {
                         .pink-box { background-color: #fca5a5; font-weight: bold; }
                         
                         .border-bottom { border-bottom: 1px solid #000; }
+                        .sub-row { font-size: 9px; color: #555; }
                     </style>
                 </head>
                 <body>
@@ -230,18 +238,48 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="3" style="font-weight: bold; font-style: italic;">PENGURANG LABA & MODAL:</td>
                         </tr>
                         <tr class="green-row">
-                            <td>TOTAL PEMBELIAN PART CASH</td>
-                            <td class="amount">${formatCurrency(c1)}</td>
+                            <td><b>TOTAL PEMBELIAN PART</b></td>
+                            <td class="amount"><b>${formatCurrency(c_part_total)}</b></td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">a. Cash</td>
+                            <td class="amount">${formatCurrency(c_part_cash)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">b. Transfer</td>
+                            <td class="amount">${formatCurrency(c_part_transfer)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row">
-                            <td>TOTAL PEMBELIAN MOBIL CASH</td>
-                            <td class="amount">${formatCurrency(c2)}</td>
+                            <td><b>TOTAL PEMBELIAN MOBIL</b></td>
+                            <td class="amount"><b>${formatCurrency(c_mobil_total)}</b></td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">a. Cash</td>
+                            <td class="amount">${formatCurrency(c_mobil_cash)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">b. Transfer</td>
+                            <td class="amount">${formatCurrency(c_mobil_transfer)}</td>
                             <td></td>
                         </tr>
                          <tr class="green-row border-bottom">
-                            <td>TOTAL PENGEMBALIAN MODAL INVESTOR JB MOBIL</td>
-                            <td class="amount">${formatCurrency(c3)}</td>
+                            <td><b>TOTAL PENGEMBALIAN MODAL INVESTOR JB MOBIL</b></td>
+                            <td class="amount"><b>${formatCurrency(c_inv_total)}</b></td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">a. Cash</td>
+                            <td class="amount">${formatCurrency(c_inv_cash)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row border-bottom">
+                            <td style="padding-left: 20px;">b. Transfer</td>
+                            <td class="amount">${formatCurrency(c_inv_transfer)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row">
@@ -249,9 +287,14 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_op)}</td>
                             <td></td>
                         </tr>
-                        <tr class="green-row border-bottom">
+                        <tr class="green-row">
                             <td>BEBAN GAJI KARYAWAN</td>
                             <td class="amount">${formatCurrency(c_gaji)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row border-bottom">
+                            <td>PRIVE (PENGAMBILAN PEMILIK)</td>
+                            <td class="amount">${formatCurrency(c_prive)}</td>
                             <td></td>
                         </tr>
                          <tr>

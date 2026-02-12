@@ -77,7 +77,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                     {/* Modal Header */}
                     <View className="pt-14 pb-4 px-6 border-b border-gray-100 flex-row items-center">
                         <View className="flex-1 bg-gray-50 h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
-                            <Search size={20} color="#00AA13" />
+                            <Search size={20} color="#023C69" />
                             <TextInput
                                 autoFocus
                                 placeholder="Ketik rute, layanan, atau laporan..."
@@ -120,7 +120,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                             activeOpacity={0.7}
                                         >
                                             <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center mr-4">
-                                                <Icon size={24} color="#00AA13" />
+                                                <Icon size={24} color="#023C69" />
                                             </View>
                                             <View className="flex-1">
                                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">{route.label}</Typography>

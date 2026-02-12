@@ -31,6 +31,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { getErrorMessage } from '../../utils/error';
+import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 
 export default function JasaAngkutScreen() {
 
@@ -257,22 +258,15 @@ export default function JasaAngkutScreen() {
                         </View>
                     </Card>
 
+                    {trip && <RelatedBengkelTransactions muatan_id={trip.id} />}
+
                     <Card variant="outlined" className="p-6 border-gray-100 mb-8 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Analisa Laba Rugi</Typography>
                         <View className="flex-row justify-between mb-3">
                             <Typography variant="body2" className="text-textGray">Pendapatan Kotor</Typography>
                             <Typography weight="bold" className="text-textMain">{formatCurrency(trip.pendapatan_kotor)}</Typography>
                         </View>
-                        <View className="flex-row justify-between mb-3">
-                            <Typography variant="body2" className="text-textGray">Bengkel (Integrasi)</Typography>
-                            <Typography weight="bold" className="text-rose-500">
-                                -{formatCurrency(
-                                    (trip.biaya_tambahan || [])
-                                        .filter((b: any) => b.kategori === 'Perawatan Bengkel')
-                                        .reduce((acc: number, curr: any) => acc + Number(curr.jumlah), 0)
-                                )}
-                            </Typography>
-                        </View>
+
                         <View className="flex-row justify-between mb-3">
                             <Typography variant="body2" className="text-textGray">Biaya Operasional</Typography>
                             <Typography weight="bold" className="text-rose-500">
@@ -303,7 +297,7 @@ export default function JasaAngkutScreen() {
                             title="Edit Muatan"
                             onPress={() => handleEdit(trip)}
                             className="rounded-2xl h-14"
-                            icon={<Edit size={20} color="#00AA13" />}
+                            icon={<Edit size={20} color="#023C69" />}
                         />
                         {trip.status_bayar !== 'Lunas' && (
                             <Button
@@ -407,7 +401,7 @@ export default function JasaAngkutScreen() {
                             <Typography className="ml-3 text-sm text-gray-400 font-medium">Cari riwayat ritase...</Typography>
                         </View>
                         <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <RefreshCw size={20} color="#00AA13" />
+                            <RefreshCw size={20} color="#023C69" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -416,7 +410,7 @@ export default function JasaAngkutScreen() {
             <ScrollView
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {/* Section Title */}
                 <View className="flex-row justify-between items-center mb-6">

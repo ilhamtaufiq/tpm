@@ -126,12 +126,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                         <TouchableOpacity
                             onPress={this.handleReset}
                             style={{
-                                backgroundColor: '#00AA13',
+                                backgroundColor: '#023C69',
                                 paddingVertical: 16,
                                 paddingHorizontal: 32,
                                 borderRadius: 12,
                                 alignItems: 'center',
-                                shadowColor: '#00AA13',
+                                shadowColor: '#023C69',
                                 shadowOffset: { width: 0, height: 4 },
                                 shadowOpacity: 0.2,
                                 shadowRadius: 8,

@@ -254,7 +254,7 @@ export default function JasaAngkutReportScreen() {
                         </TouchableOpacity>
 
                         <View className="flex-row items-center">
-                            <Calendar size={18} color="#00AA13" className="mr-2" />
+                            <Calendar size={18} color="#023C69" className="mr-2" />
                             <Typography variant="body1" weight="bold" className="text-textMain">
                                 {getFormattedDate()}
                             </Typography>
@@ -285,7 +285,7 @@ export default function JasaAngkutReportScreen() {
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
                 {/* Section Header */}
@@ -301,7 +301,7 @@ export default function JasaAngkutReportScreen() {
 
                 {isLoading ? (
                     <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#00AA13" />
+                        <ActivityIndicator size="large" color="#023C69" />
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENGAMBIL DATA...</Typography>
                     </View>
                 ) : trips.length === 0 ? (
@@ -403,7 +403,7 @@ export default function JasaAngkutReportScreen() {
 
                     {detailLoading ? (
                         <View className="flex-1 items-center justify-center">
-                            <ActivityIndicator size="large" color="#00AA13" />
+                            <ActivityIndicator size="large" color="#023C69" />
                             <Typography className="mt-4 text-gray-400">Memuat detail...</Typography>
                         </View>
                     ) : selectedTrip ? (

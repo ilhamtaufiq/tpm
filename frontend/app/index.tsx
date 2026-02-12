@@ -54,11 +54,11 @@ export default function Index() {
                     width: 80,
                     height: 80,
                     borderRadius: 40,
-                    backgroundColor: '#00AA13',
+                    backgroundColor: '#023C69',
                     justifyContent: 'center',
                     alignItems: 'center',
                     marginBottom: 24,
-                    shadowColor: '#00AA13',
+                    shadowColor: '#023C69',
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.3,
                     shadowRadius: 16,
@@ -68,7 +68,7 @@ export default function Index() {
                         TPM
                     </Text>
                 </View>
-                <ActivityIndicator size="large" color="#00AA13" />
+                <ActivityIndicator size="large" color="#023C69" />
                 <Text style={{
                     marginTop: 16,
                     fontSize: 16,

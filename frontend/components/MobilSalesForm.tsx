@@ -166,7 +166,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             {/* Unit Info Summary */}
             <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
                 <View className="flex-row items-center mb-2">
-                    <TrendingUp size={16} color="#00AA13" />
+                    <TrendingUp size={16} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary text-xs uppercase">Informasi Modal Unit</Typography>
                 </View>
                 <Typography variant="h3" weight="bold">{activeUnit.merek} {activeUnit.model}</Typography>
@@ -182,13 +182,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <Typography weight="bold" className="text-sm capitalize">{activeUnit.tipe_kepemilikan}</Typography>
                     </View>
                 </View>
-                {isDetailLoading && <ActivityIndicator color="#00AA13" size="small" className="mt-2" />}
+                {isDetailLoading && <ActivityIndicator color="#023C69" size="small" className="mt-2" />}
             </Card>
 
             {/* Buyer Details */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <User size={18} color="#00AA13" />
+                    <User size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">DATA PEMBELI</Typography>
                 </View>
                 <Input label="Nama Pembeli" placeholder="Masukkan nama lengkap" value={namaPembeli} onChangeText={setNamaPembeli} />
@@ -198,7 +198,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             {/* Transaction details */}
             <View className="mb-6">
                 <View className="flex-row items-center mb-4">
-                    <Tag size={18} color="#00AA13" />
+                    <Tag size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">TRANSAKSI</Typography>
                 </View>
 
@@ -223,7 +223,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center">
-                        <TrendingUp size={18} color="#00AA13" />
+                        <TrendingUp size={18} color="#023C69" />
                         <Typography weight="bold" className="ml-2 text-primary">BIAYA TAMBAHAN PENJUALAN</Typography>
                     </View>
                     <TouchableOpacity onPress={addOpCost}>
@@ -275,7 +275,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
             {/* Profit Calculation Summary */}
             <Card className="bg-primary/5 border-primary/10 p-5 mb-8">
                 <View className="flex-row items-center mb-4">
-                    <Calculator size={18} color="#00AA13" />
+                    <Calculator size={18} color="#023C69" />
                     <Typography weight="bold" className="ml-2 text-primary">ESTIMASI LABA</Typography>
                 </View>
 
@@ -324,7 +324,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
                     <View className="flex-row justify-between items-center">
                         <View className="flex-row items-center">
-                            <Wallet size={16} color="#00AA13" />
+                            <Wallet size={16} color="#023C69" />
                             <Typography weight="bold" className="ml-1.5 text-primary">Net Profit TPM</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(labaTpm)}</Typography>

@@ -73,7 +73,7 @@ export default function AbsensiScreen() {
                         attendanceMap[dateStr] = {
                             selected: true,
                             marked: true,
-                            selectedColor: '#00AA13',
+                            selectedColor: '#023C69',
                             textColor: 'white'
                         };
                     });
@@ -109,7 +109,7 @@ export default function AbsensiScreen() {
                 next[dateString] = {
                     selected: true,
                     marked: true,
-                    selectedColor: '#00AA13',
+                    selectedColor: '#023C69',
                     textColor: 'white'
                 };
             }
@@ -231,7 +231,7 @@ export default function AbsensiScreen() {
                                 className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
                             >
                                 <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 shadow-inner">
-                                    <User size={28} color="#00AA13" />
+                                    <User size={28} color="#023C69" />
                                 </View>
                                 <View className="flex-1 mr-3">
                                     <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
@@ -248,10 +248,10 @@ export default function AbsensiScreen() {
                         )}
                         keyExtractor={(item) => item.id.toString()}
                         contentContainerStyle={{ paddingTop: 10, paddingBottom: 120 }}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                         ListEmptyComponent={
                             isLoadingKaryawan ? (
-                                <View className="py-20"><ActivityIndicator size="large" color="#00AA13" /></View>
+                                <View className="py-20"><ActivityIndicator size="large" color="#023C69" /></View>
                             ) : (
                                 <View className="items-center py-20">
                                     <Typography className="text-gray-400 font-medium text-center">Tidak ada karyawan aktif</Typography>
@@ -268,7 +268,7 @@ export default function AbsensiScreen() {
                         <Card className="rounded-[32px] overflow-hidden border border-gray-100 shadow-xl mb-6">
                             <View className="p-5 border-b border-gray-50 bg-gray-50/50 flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <CalendarIcon size={20} color="#00AA13" className="mr-2" />
+                                    <CalendarIcon size={20} color="#023C69" className="mr-2" />
                                     <Typography weight="bold" className="text-textMain">Seleksi Tanggal Masuk</Typography>
                                 </View>
                                 <Badge label={`${Object.keys(selectedDates).length} Hari`} variant="success" />
@@ -283,16 +283,16 @@ export default function AbsensiScreen() {
                                 theme={{
                                     calendarBackground: '#ffffff',
                                     textSectionTitleColor: '#b6c1cd',
-                                    selectedDayBackgroundColor: '#00AA13',
+                                    selectedDayBackgroundColor: '#023C69',
                                     selectedDayTextColor: '#ffffff',
-                                    todayTextColor: '#00AA13',
+                                    todayTextColor: '#023C69',
                                     dayTextColor: '#2d4150',
                                     textDisabledColor: '#d9e1e8',
-                                    dotColor: '#00AA13',
+                                    dotColor: '#023C69',
                                     selectedDotColor: '#ffffff',
-                                    arrowColor: '#00AA13',
-                                    monthTextColor: '#00AA13',
-                                    indicatorColor: '#00AA13',
+                                    arrowColor: '#023C69',
+                                    monthTextColor: '#023C69',
+                                    indicatorColor: '#023C69',
                                     textDayFontWeight: '500',
                                     textMonthFontWeight: 'bold',
                                     textDayHeaderFontWeight: 'bold',

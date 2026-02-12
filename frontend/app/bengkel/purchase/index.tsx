@@ -197,7 +197,7 @@ export default function PurchaseScreen() {
                 <View className="flex-row justify-between items-center mt-2 mb-4">
                     <Typography variant="body2" weight="bold">Daftar Barang</Typography>
                     <TouchableOpacity onPress={handleAddItem} className="flex-row items-center bg-green-50 px-3 py-1.5 rounded-full">
-                        <Plus size={16} color="#00AA13" />
+                        <Plus size={16} color="#023C69" />
                         <Typography className="text-primary text-xs ml-1 font-bold">Tambah Item</Typography>
                     </TouchableOpacity>
                 </View>
@@ -332,7 +332,7 @@ export default function PurchaseScreen() {
                             </View>
 
                             {isLoadingParts ? (
-                                <ActivityIndicator color="#00AA13" className="mt-4" />
+                                <ActivityIndicator color="#023C69" className="mt-4" />
                             ) : (
                                 <FlatList
                                     data={spareParts}

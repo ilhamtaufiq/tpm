@@ -484,7 +484,7 @@ export default function SupplierScreen() {
                 renderItem={renderSupplierItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00AA13" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
                     isLoading ? (
                         <View className="mt-4">

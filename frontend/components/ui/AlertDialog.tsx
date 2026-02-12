@@ -32,7 +32,7 @@ const DialogButton = ({
     const isOutline = variant === 'outline-neutral';
 
     // Determine background color
-    let bgColor = '#00AA13'; // Primary Default
+    let bgColor = '#023C69'; // Primary Default
     let borderColor = 'transparent';
     let borderWidth = 0;
 

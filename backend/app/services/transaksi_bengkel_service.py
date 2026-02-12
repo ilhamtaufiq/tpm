@@ -194,12 +194,28 @@ class TransaksiBengkelService:
         grand_total = subtotal - data.diskon
         laba_kotor = grand_total - hpp_parts
 
-        # Calculate payment and change
+        # Calculate summary of payments
+        total_pembayaran = Decimal("0")
+        metode_utama = data.metode_bayar
+        
+        if data.payments:
+            total_pembayaran = sum(p.jumlah for p in data.payments)
+            # If multiple methods used, set main method as SPLIT
+            metodes = list(set(p.metode for p in data.payments if p.jumlah > 0))
+            if len(metodes) > 1:
+                metode_utama = PaymentMethod.SPLIT
+            elif len(metodes) == 1:
+                metode_utama = metodes[0]
+        else:
+            total_pembayaran = data.jumlah_bayar
+            metode_utama = data.metode_bayar
+
+        # Calculate payment status and change
         kembalian = Decimal("0")
-        if data.jumlah_bayar >= grand_total:
-            kembalian = data.jumlah_bayar - grand_total
+        if total_pembayaran >= grand_total:
+            kembalian = total_pembayaran - grand_total
             status_bayar = PaymentStatus.LUNAS
-        elif data.jumlah_bayar > 0:
+        elif total_pembayaran > 0:
             status_bayar = PaymentStatus.CICILAN
         else:
             status_bayar = PaymentStatus.BELUM_LUNAS
@@ -217,6 +233,9 @@ class TransaksiBengkelService:
             nama_customer=nama_customer,
             nomor_plat=data.nomor_plat,
             jenis_kendaraan=data.jenis_kendaraan,
+            kategori=getattr(data, 'kategori', 'umum') or 'umum',
+            muatan_id=getattr(data, 'muatan_id', None),
+            mobil_id=getattr(data, 'mobil_id', None),
             total_parts=total_parts,
             total_jasa=total_jasa,
             subtotal=subtotal,
@@ -225,8 +244,8 @@ class TransaksiBengkelService:
             hpp_parts=hpp_parts,
             laba_kotor=laba_kotor,
             status_bayar=status_bayar,
-            metode_bayar=data.metode_bayar,
-            jumlah_bayar=data.jumlah_bayar,
+            metode_bayar=metode_utama,
+            jumlah_bayar=total_pembayaran,
             kembalian=kembalian,
             catatan=data.catatan,
             created_by=user_id,
@@ -254,8 +273,8 @@ class TransaksiBengkelService:
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
                 nominal_piutang=grand_total,
-                sisa_piutang=grand_total - data.jumlah_bayar,
-                status=PiutangStatus.BELUM_LUNAS if data.jumlah_bayar == 0 else PiutangStatus.SEBAGIAN,
+                sisa_piutang=max(grand_total - total_pembayaran, Decimal("0")),
+                status=PiutangStatus.BELUM_LUNAS if total_pembayaran == 0 else PiutangStatus.SEBAGIAN,
                 catatan=f"Piutang dari transaksi bengkel {nomor_transaksi}",
                 created_by=user_id,
             )
@@ -276,7 +295,22 @@ class TransaksiBengkelService:
                 self.db.commit()
 
         # Record payment to kas/bank if any payment was made
-        if data.jumlah_bayar > 0:
+        if data.payments:
+            for p in data.payments:
+                if p.jumlah > 0:
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=data.tanggal,
+                        tipe=KasBankType.MASUK,
+                        nominal=p.jumlah,
+                        sumber=KasBankSource.BENGKEL,
+                        metode_bayar=p.metode,
+                        referensi_id=transaksi.id,
+                        nomor_referensi=transaksi.nomor_transaksi,
+                        keterangan=f"Pembayaran ({p.metode.upper()}) bengkel {transaksi.nomor_transaksi}",
+                        user_id=user_id,
+                    )
+        elif data.jumlah_bayar > 0:
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
@@ -286,7 +320,7 @@ class TransaksiBengkelService:
                 metode_bayar=data.metode_bayar,
                 referensi_id=transaksi.id,
                 nomor_referensi=transaksi.nomor_transaksi,
-                keterangan=f"Pembayaran transaksi bengkel {transaksi.nomor_transaksi}",
+                keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
                 user_id=user_id,
             )
 
@@ -420,6 +454,7 @@ class TransaksiBengkelService:
             func.sum(TransaksiPenjualanBengkel.total_jasa).label("total_jasa"),
             func.sum(TransaksiPenjualanBengkel.hpp_parts).label("total_hpp"),
             func.sum(TransaksiPenjualanBengkel.laba_kotor).label("total_laba"),
+            func.sum(TransaksiPenjualanBengkel.diskon).label("total_diskon"),
         ).first()
 
         # Unpaid transactions (For Separated Stats)
@@ -456,6 +491,7 @@ class TransaksiBengkelService:
             "total_penjualan": float(aggregates.total_penjualan or 0),
             "total_parts": float(aggregates.total_parts or 0),
             "total_jasa": float(aggregates.total_jasa or 0),
+            "total_diskon": float(aggregates.total_diskon or 0),
             "total_hpp": float(aggregates.total_hpp or 0),
             "total_laba_kotor": float(aggregates.total_laba or 0),
             "piutang_count": unpaid_count,

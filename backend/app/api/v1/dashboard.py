@@ -13,7 +13,7 @@ from app.services.kas_bank_service import KasBankService
 from app.services.karyawan_service import KaryawanService
 from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentMethod, PaymentStatus, PiutangSource
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource
 from app.models.keuangan import KasBank
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya
 from app.models.mobil import Mobil, MobilBiayaLainnya
@@ -221,6 +221,7 @@ def get_profit_summary(
             "total_penjualan": bengkel["total_penjualan"],
             "total_parts": bengkel["total_parts"],
             "total_jasa": bengkel["total_jasa"],
+            "total_diskon": bengkel["total_diskon"],
             "total_hpp": bengkel["total_hpp"],
             "total_laba_kotor": bengkel["total_laba_kotor"],
         },
@@ -315,15 +316,9 @@ def get_capital_report(
             q = q.filter(KasBank.tanggal <= tanggal_sampai)
         if method_filter:
             if method_filter == 'cash':
-                q = q.filter(KasBank.jenis == KasBankJenis.CASH) # Or metode_bayar == TUNAI?
-                # User asked for "Cash" vs "Transfer". 
-                # KasBank has 'jenis' (Account: CASH, BANK_*) and 'metode_bayar' (TUNAI, TRANSFER).
-                # Usually 'metode_bayar' is better for transaction type, but 'jenis' is better for "where money is".
-                # For "Total Pembelian ... a. cash b. transfer", usually implies Payment Method.
-                # Let's use 'metode_bayar'.
-                q = q.filter(KasBank.metode_bayar == PaymentMethod.TUNAI)
+                q = q.filter(KasBank.jenis == KasBankJenis.CASH)
             elif method_filter == 'transfer':
-                q = q.filter(KasBank.metode_bayar == PaymentMethod.TRANSFER)
+                q = q.filter(KasBank.jenis != KasBankJenis.CASH)
         return float(q.scalar() or 0)
 
     # Services

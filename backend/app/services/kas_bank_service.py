@@ -80,6 +80,7 @@ class KasBankService:
             tipe=data.tipe,
             nominal=data.nominal,
             sumber=data.sumber,
+            metode_bayar=data.metode_bayar,
             referensi_id=data.referensi_id,
             nomor_referensi=data.nomor_referensi,
             keterangan=data.keterangan,

@@ -68,7 +68,7 @@ export default function InventoryScreen() {
                     onPress={() => router.push('/bengkel/purchase')}
                     className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center"
                 >
-                    <Plus size={16} color="#00AA13" />
+                    <Plus size={16} color="#023C69" />
                     <Typography className="text-primary text-xs font-bold ml-1">Restock</Typography>
                 </TouchableOpacity>
             </View>
@@ -128,7 +128,7 @@ export default function InventoryScreen() {
                     parts.map((part: any) => (
                         <Card key={part.id} className="mb-4 p-4 flex-row items-center">
                             <View className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center mr-4">
-                                <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#00AA13'} />
+                                <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
                             </View>
 
                             <View className="flex-1">

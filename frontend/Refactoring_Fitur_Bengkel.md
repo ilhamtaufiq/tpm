@@ -1,0 +1,4 @@
+jadi di fitur bengkel tambahkan fungsi kategori, ada dua; kategori jasa angkut, dan kategori jual beli mobil.
+misalkan, ada transaksi di jasa angkut. user bisa membuat transaksi bengkel dengan kategori jasa angkut, dengan memilih transakasi bengkel, jual beli mobil juga begitu. bengkel, kategori jual beli mobil. pilih mobil nya dulu.
+karena integerasi bengkel ini dipindah berarti yang integerasi bengkel di jasa angkut dan jual beli mobil dihapus, tetapi, untuk detailnya nanti muncul di masing-masing transaksi sesuai kategori.
+ini tidak mempengaruhi alur keuangan hanya memindah kan fitur integrasi bengkel saja.

@@ -43,6 +43,7 @@ class PaymentMethod(str, Enum):
     TRANSFER = "transfer"
     KREDIT = "kredit"
     DEBIT = "debit"
+    SPLIT = "split"
 
 
 class AttendanceStatus(str, Enum):

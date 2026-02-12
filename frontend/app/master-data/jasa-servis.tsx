@@ -346,7 +346,7 @@ export default function JasaServisScreen() {
             {/* List */}
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#00AA13" />
+                    <ActivityIndicator size="large" color="#023C69" />
                 </View>
             ) : (
                 <FlatList
@@ -355,7 +355,7 @@ export default function JasaServisScreen() {
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
                     refreshControl={
-                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#00AA13" />
+                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#023C69" />
                     }
                     ListEmptyComponent={
                         <View className="items-center justify-center py-20 mt-10">

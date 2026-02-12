@@ -8,9 +8,7 @@ import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
 import { jasaAngkutService, Supir } from '../../services/jasaAngkut';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { Plus, Trash2, Wrench, Package } from 'lucide-react-native';
-import { SparePartSelector } from '../ui/SparePartSelector';
-import { JasaSelector } from '../ui/JasaSelector';
+import { Plus, Trash2 } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -46,12 +44,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const [operationalCosts, setOperationalCosts] = useState<{ deskripsi: string; jumlah: string }[]>([
         { deskripsi: 'BBM/TOL/Parkir', jumlah: '' },
     ]);
-
-    const [showBengkel, setShowBengkel] = useState(false);
-    const [bengkelServices, setBengkelServices] = useState<{ deskripsi: string; harga: string }[]>([
-        { deskripsi: '', harga: '' },
-    ]);
-    const [bengkelParts, setBengkelParts] = useState<{ id: number; nama: string; qty: string; harga: number }[]>([]);
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -124,37 +116,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 setOperationalCosts(opsCosts);
             }
 
-            // Initialize Bengkel Data (Integration)
-            const hasBengkelData = initialData.bengkel_services?.length > 0 || initialData.bengkel_parts?.length > 0;
-            if (hasBengkelData) {
-                setShowBengkel(true);
-                if (initialData.bengkel_services && Array.isArray(initialData.bengkel_services)) {
-                    setBengkelServices(initialData.bengkel_services.map((s: any) => ({
-                        deskripsi: s.deskripsi,
-                        harga: formatNumber(s.harga?.toString() || '0')
-                    })));
-                }
-                if (initialData.bengkel_parts && Array.isArray(initialData.bengkel_parts)) {
-                    setBengkelParts(initialData.bengkel_parts.map((p: any) => ({
-                        id: p.part_id || p.id,
-                        nama: p.nama || (p.part?.nama),
-                        qty: p.qty?.toString() || '1',
-                        harga: p.harga || (p.part?.harga_jual || 0)
-                    })));
-                }
-            } else {
-                // Also check if there's any 'Perawatan Bengkel' in biaya_tambahan
-                const bengkelCosts = (initialData.biaya_tambahan || []).filter((b: any) => b.kategori === 'Perawatan Bengkel');
-                if (bengkelCosts.length > 0) {
-                    setShowBengkel(true);
-                    setBengkelServices(bengkelCosts.map((b: any) => ({
-                        deskripsi: b.deskripsi,
-                        harga: formatNumber(b.jumlah?.toString() || '0')
-                    })));
-                }
-            }
         }
     }, [initialData]);
+
 
     const loadDrivers = async () => {
         try {
@@ -195,48 +159,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         setOperationalCosts(newCosts);
     };
 
-    const updateService = (index: number, key: 'deskripsi' | 'harga', value: string) => {
-        const newS = [...bengkelServices];
-        if (key === 'harga') {
-            newS[index][key] = formatNumber(value);
-        } else {
-            newS[index][key] = value;
-        }
-        setBengkelServices(newS);
-    };
-
-    const addService = () => setBengkelServices([...bengkelServices, { deskripsi: '', harga: '' }]);
-    const removeService = (index: number) => {
-        const newS = [...bengkelServices];
-        newS.splice(index, 1);
-        setBengkelServices(newS);
-    };
-
-    const addPart = () => setBengkelParts([...bengkelParts, { id: 0, nama: '', qty: '1', harga: 0 }]);
-    const removePart = (index: number) => {
-        const newP = [...bengkelParts];
-        newP.splice(index, 1);
-        setBengkelParts(newP);
-    };
-
-    const updatePart = (index: number, part: any) => {
-        const newP = [...bengkelParts];
-        if (part) {
-            newP[index].id = part.id;
-            newP[index].nama = part.nama;
-            newP[index].harga = part.harga_jual;
-        } else {
-            newP[index].id = 0;
-            newP[index].nama = '';
-            newP[index].harga = 0;
-        }
-        setBengkelParts(newP);
-    };
-
     const updatePartQty = (index: number, qty: string) => {
-        const newP = [...bengkelParts];
-        newP[index].qty = qty;
-        setBengkelParts(newP);
+        // ... removed related to bengkelParts
     };
 
     const calculations = useMemo(() => {
@@ -244,20 +168,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const jual = parseNumber(formData.harga_jual) || 0;
         const revenue = jual - beli;
 
-        let totalCosts = operationalCosts.reduce((acc, item) => {
+        const totalCosts = operationalCosts.reduce((acc, item) => {
             return acc + (parseNumber(item.jumlah) || 0);
         }, 0);
 
-        let bengkelTotal = 0;
-        if (showBengkel) {
-            const servicesCost = bengkelServices.reduce((acc, item) => acc + (parseNumber(item.harga) || 0), 0);
-            const partsCost = bengkelParts.reduce((acc, item) => acc + (item.harga * (parseFloat(item.qty) || 0)), 0);
-            bengkelTotal = servicesCost + partsCost;
-            totalCosts += bengkelTotal;
-        }
-
-        return { revenue, totalCosts, beli, jual, bengkelTotal };
-    }, [formData, operationalCosts, showBengkel, bengkelServices, bengkelParts]);
+        return { revenue, totalCosts, beli, jual, bengkelTotal: 0 };
+    }, [formData, operationalCosts]);
 
     const handleSubmit = async () => {
         if (driverMode === 'registered' && !formData.supir_id) {
@@ -294,16 +210,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         deskripsi: c.deskripsi,
                         jumlah: parseNumber(c.jumlah)
                     })),
-                bengkel_items: showBengkel ? {
-                    parts: bengkelParts.filter(p => p.id !== 0 && parseFloat(p.qty) > 0).map(p => ({
-                        part_id: p.id,
-                        qty: parseInt(p.qty)
-                    })),
-                    services: bengkelServices.filter(s => s.deskripsi && s.harga).map(s => ({
-                        deskripsi: s.deskripsi,
-                        harga: parseNumber(s.harga)
-                    }))
-                } : undefined,
                 persentase_tpm: 50
             };
 
@@ -572,126 +478,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ))}
             </View>
 
-            {/* Bengkel Integration Section */}
             <View className="h-[1px] bg-gray-200 my-6" />
-
-            <View className="flex-row justify-between items-center mb-4">
-                <View className="flex-row items-center">
-                    <Wrench size={18} color="#4B5563" />
-                    <Typography variant="body1" weight="bold" className="ml-2">Integrasi Bengkel</Typography>
-                </View>
-                <TouchableOpacity
-                    onPress={() => setShowBengkel(!showBengkel)}
-                    className={`px-3 py-1.5 rounded-full border ${showBengkel ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}
-                >
-                    <Typography variant="caption" weight="bold" className={showBengkel ? 'text-white' : 'text-gray-600'}>
-                        {showBengkel ? "Aktif" : "Tidak Aktif"}
-                    </Typography>
-                </TouchableOpacity>
-            </View>
-
-            {showBengkel && (
-                <View className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-6">
-                    <Typography variant="caption" className="text-orange-600 mb-2 italic">
-                        Transaksi ini akan otomatis tercatat di modul Bengkel dan biaya akan mengurangi profit muatan ini.
-                    </Typography>
-
-                    {/* Services */}
-                    <View className="mb-4">
-                        <View className="flex-row justify-between items-center mb-2">
-                            <Typography variant="caption" weight="bold">JASA SERVIS</Typography>
-                            <TouchableOpacity onPress={addService}>
-                                <Plus size={16} color="#F97316" />
-                            </TouchableOpacity>
-                        </View>
-                        {bengkelServices.map((item, index) => (
-                            <View key={index} className="mb-3 border-b border-orange-200 pb-2">
-                                <View className="flex-row items-start space-x-2">
-                                    <View className="flex-1">
-                                        <JasaSelector
-                                            value={item.deskripsi ? { nama: item.deskripsi, harga: parseNumber(item.harga) } : null}
-                                            onSelect={(val) => {
-                                                const newS = [...bengkelServices];
-                                                if (val) {
-                                                    const cleanPrice = Math.floor(Number(val.harga)).toString();
-                                                    newS[index] = { deskripsi: val.nama, harga: formatNumber(cleanPrice) };
-                                                } else {
-                                                    newS[index] = { deskripsi: '', harga: '' };
-                                                }
-                                                setBengkelServices(newS);
-                                            }}
-                                            placeholder="Pilih Jasa Servis..."
-                                        />
-                                    </View>
-                                    <TouchableOpacity onPress={() => removeService(index)} className="pt-4">
-                                        <Trash2 size={16} color="#EE2737" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <View className="flex-row space-x-2 -mt-2">
-                                    <View className="flex-1">
-                                        <Input
-                                            label="Biaya Jasa"
-                                            placeholder="Harga"
-                                            keyboardType="numeric"
-                                            value={item.harga}
-                                            onChangeText={v => updateService(index, 'harga', v)}
-                                            containerClassName="mb-0"
-                                            className="bg-white h-9"
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        ))}
-                    </View>
-
-                    {/* Parts */}
-                    <View>
-                        <View className="flex-row justify-between items-center mb-2">
-                            <Typography variant="caption" weight="bold">SPAREPART</Typography>
-                            <TouchableOpacity onPress={addPart}>
-                                <Plus size={16} color="#F97316" />
-                            </TouchableOpacity>
-                        </View>
-                        {bengkelParts.map((item, index) => (
-                            <View key={index} className="mb-3 border-b border-orange-200 pb-2">
-                                <SparePartSelector
-                                    value={item.id ? { id: item.id, nama: item.nama, harga_jual: item.harga } : null}
-                                    onSelect={(p) => updatePart(index, p)}
-                                />
-                                <View className="flex-row space-x-2 mt-2 items-center">
-                                    <View className="flex-1">
-                                        <Input
-                                            label="Qty"
-                                            keyboardType="numeric"
-                                            value={item.qty}
-                                            onChangeText={v => updatePartQty(index, v)}
-                                            containerClassName="mb-0"
-                                            className="bg-white h-9"
-                                        />
-                                    </View>
-                                    <View className="flex-[2]">
-                                        <Typography variant="caption" className="text-gray-500">
-                                            @ {formatCurrency(item.harga)}
-                                        </Typography>
-                                        <Typography weight="bold">
-                                            Total: {formatCurrency(item.harga * (parseFloat(item.qty) || 0))}
-                                        </Typography>
-                                    </View>
-                                    <TouchableOpacity onPress={() => removePart(index)} className="pt-4">
-                                        <Trash2 size={16} color="#EE2737" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))}
-                    </View>
-
-                    <View className="mt-2 pt-2 border-t border-orange-200 flex-row justify-between">
-                        <Typography weight="bold">Total Biaya Bengkel:</Typography>
-                        <Typography weight="bold" className="text-orange-700">{formatCurrency(calculations.bengkelTotal)}</Typography>
-                    </View>
-                </View>
-            )}
 
             {/* Live Profit Split */}
             <ProfitSplitCard
