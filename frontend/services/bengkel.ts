@@ -99,6 +99,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    voidTransaksi: async (id: number) => {
+        const response = await api.delete(`/transaksi-bengkel/${id}`);
+        return response.data;
+    },
+
     // Spare Part Methods
     getSpareParts: async (params?: any) => {
         const response = await api.get('/spare-parts', { params });

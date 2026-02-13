@@ -55,6 +55,17 @@ export const useUpdateTransaksiBengkelStatus = () => {
     });
 };
 
+export const useVoidTransaksiBengkel = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => bengkelService.voidTransaksi(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
+        },
+    });
+};
+
 // =============================================
 // SPARE PARTS
 // =============================================

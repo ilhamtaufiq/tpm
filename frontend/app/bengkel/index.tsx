@@ -27,7 +27,7 @@ import {
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
-import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment } from '../../hooks/useBengkel';
+import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDistanceToNow } from 'date-fns';
@@ -57,6 +57,7 @@ export default function BengkelScreen() {
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
     const updatePaymentMutation = useUpdateTransaksiBengkelPayment();
+    const voidMutation = useVoidTransaksiBengkel();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
@@ -74,12 +75,16 @@ export default function BengkelScreen() {
         message: string;
         variant: 'success' | 'error' | 'warning' | 'info';
         type: 'alert' | 'confirm';
+        onConfirm?: () => void;
+        loading?: boolean;
     }>({
         visible: false,
         title: '',
         message: '',
         variant: 'info',
-        type: 'alert'
+        type: 'alert',
+        onConfirm: undefined,
+        loading: false
     });
 
     const queue = queueData?.data || [];
@@ -328,6 +333,42 @@ export default function BengkelScreen() {
         }
     };
 
+    const handleVoidOrder = async (item: any) => {
+        setDialogConfig({
+            visible: true,
+            title: 'Batalkan Order',
+            message: `Yakin ingin membatalkan order ${item.nomor_plat}? Transaksi akan dihapus permanen dan stok sparepart akan dikembalikan.`,
+            variant: 'error',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    setDialogConfig(prev => ({ ...prev, loading: true }));
+                    await voidMutation.mutateAsync(item.id);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Sukses',
+                        message: 'Order berhasil dibatalkan',
+                        variant: 'success',
+                        type: 'alert',
+                        onConfirm: undefined,
+                        loading: false
+                    });
+                    handleClosePress();
+                } catch (err: any) {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Gagal',
+                        message: getErrorMessage(err, 'Gagal membatalkan order'),
+                        variant: 'error',
+                        type: 'alert',
+                        onConfirm: undefined,
+                        loading: false
+                    });
+                }
+            }
+        });
+    };
+
     const renderBottomSheetContent = () => (
         <View style={{ flex: 1 }}>
             {view === 'form' ? (
@@ -513,7 +554,8 @@ export default function BengkelScreen() {
                         <Button
                             variant="outline-danger"
                             title="Batalkan Order"
-                            onPress={handleClosePress}
+                            onPress={() => handleVoidOrder(selectedItem)}
+                            loading={voidMutation.isPending}
                             className="rounded-2xl h-14"
                         />
                     </View>
@@ -869,7 +911,8 @@ export default function BengkelScreen() {
                 variant={dialogConfig.variant}
                 type={dialogConfig.type}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-                loading={printing}
+                onConfirm={dialogConfig.onConfirm}
+                loading={dialogConfig.loading || printing}
             />
         </View>
     );

@@ -13,7 +13,7 @@ from app.models.bengkel import (
     SparePart,
 )
 from app.models.customer import Customer
-from app.models.keuangan import PiutangUsaha
+from app.models.keuangan import PiutangUsaha, KasBank, PembayaranPiutang
 from app.models.mobil import MobilPartService
 from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import TransaksiBengkelCreate
@@ -737,7 +737,7 @@ class TransaksiBengkelService:
         """
         transaksi = self.get_by_id(transaksi_id)
 
-        # Restore spare part stock
+        # 1. Restore spare part stock
         for detail in transaksi.detail_parts:
             spare_part = (
                 self.db.query(SparePart)
@@ -747,12 +747,38 @@ class TransaksiBengkelService:
             if spare_part:
                 spare_part.stok += detail.qty
 
-        self.db.query(PiutangUsaha).filter(
-            PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
-            PiutangUsaha.sumber == PiutangSource.BENGKEL,
-        ).delete()
+        # 2. Get related Piutang
+        piutang = (
+            self.db.query(PiutangUsaha)
+            .filter(
+                PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+                PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            )
+            .first()
+        )
 
-        # Delete linked costs (Mobil & Jasa Angkut)
+        # 3. Delete related KasBank entries (Direct Payments & Piutang Payments)
+        # 3.a Direct payments
+        self.db.query(KasBank).filter(
+            KasBank.referensi_id == transaksi.id,
+            KasBank.sumber == KasBankSource.BENGKEL,
+        ).delete(synchronize_session=False)
+
+        # 3.b Piutang and its payments
+        if piutang:
+            # Delete payments entries in KasBank for this Piutang
+            pembayaran_ids = [p.id for p in piutang.pembayaran]
+            if pembayaran_ids:
+                self.db.query(KasBank).filter(
+                    KasBank.referensi_id.in_(pembayaran_ids),
+                    KasBank.sumber == KasBankSource.PIUTANG,
+                    KasBank.nomor_referensi == piutang.nomor_piutang
+                ).delete(synchronize_session=False)
+            
+            # PembayaranPiutang records will be deleted via cascade on PiutangUsaha
+            self.db.delete(piutang)
+
+        # 4. Delete linked costs (Mobil & Jasa Angkut)
         self.db.query(MobilPartService).filter(
             MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)
@@ -761,7 +787,7 @@ class TransaksiBengkelService:
             JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)
 
-        # Delete transaction (cascade will delete details)
+        # 5. Delete transaction (cascade will delete details)
         self.db.delete(transaksi)
         self.db.commit()
 

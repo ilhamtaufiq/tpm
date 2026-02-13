@@ -155,58 +155,62 @@ export default function HistoryTab() {
                             <TouchableOpacity
                                 key={item.id}
                                 activeOpacity={0.7}
-                                className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                                className="bg-white p-4 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
                             >
+                                {/* Left: Source Icon */}
                                 <View
                                     style={{ backgroundColor: `${config.color}10` }}
-                                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 border border-white"
+                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-white flex-shrink-0"
                                 >
-                                    <Icon size={24} color={config.color} strokeWidth={2.5} />
+                                    <Icon size={20} color={config.color} strokeWidth={2.5} />
                                 </View>
 
-                                <View className="flex-1">
-                                    <View className="flex-row items-center justify-between">
-                                        <Typography variant="body1" weight="bold" className="text-textMain tracking-tight pr-2" numberOfLines={1}>
+                                {/* Middle: Main Details */}
+                                <View className="flex-1 min-w-0">
+                                    <View className="flex-row items-center mb-0.5">
+                                        <Typography variant="body2" weight="bold" className="text-textMain tracking-tight flex-1" numberOfLines={1}>
                                             {item.title}
                                         </Typography>
-                                        <View className={item.is_incoming ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-rose-50 px-2 py-1 rounded-lg"}>
-                                            <Typography weight="bold" className={item.is_incoming ? "text-emerald-600 text-[9px]" : "text-rose-600 text-[9px]"}>
-                                                {item.is_incoming ? 'MASUK' : 'KELUAR'}
-                                            </Typography>
-                                        </View>
                                     </View>
 
-                                    <View className="flex-row items-center mt-1">
-                                        <Typography variant="caption" className="text-textGray/60 italic" numberOfLines={1}>
-                                            {item.subtitle}
-                                        </Typography>
-                                        {item.ref_number && (
-                                            <>
-                                                <View className="w-1 h-1 rounded-full bg-gray-200 mx-2" />
-                                                <Typography variant="caption" className="text-primary/60 font-medium">
-                                                    Ref: {item.ref_number}
-                                                </Typography>
-                                            </>
-                                        )}
-                                    </View>
+                                    <Typography variant="caption" className="text-textGray/60 italic leading-4 mb-1" numberOfLines={1}>
+                                        {item.subtitle}
+                                    </Typography>
 
-                                    <View className="flex-row items-center mt-1.5">
+                                    <View className="flex-row items-center">
                                         <Badge
                                             label={badge.label}
                                             variant={badge.variant as any}
+                                            className="px-1.5 py-0.5 h-auto"
+                                            textClassName="text-[8px]"
                                         />
-                                        <View className="w-1 h-1 rounded-full bg-gray-200 mx-2" />
-                                        <Typography variant="caption" className="text-textGray/60">
+                                        <View className="w-1 h-1 rounded-full bg-gray-200 mx-1.5" />
+                                        <Typography className="text-[10px] text-textGray/60 font-medium">
                                             {format(new Date(item.timestamp), 'dd MMM, HH:mm', { locale: localeID })}
                                         </Typography>
                                     </View>
                                 </View>
 
-                                <View className="items-end ml-2 pl-2 border-l border-gray-50">
-                                    <Typography weight="bold" className={item.is_incoming ? "text-emerald-600 mb-0.5" : "text-rose-500 mb-0.5"}>
+                                {/* Right: Amount & Status */}
+                                <View className="items-end ml-2 pl-3 border-l border-gray-50 flex-shrink-0 min-w-[100px]">
+                                    <Typography
+                                        weight="bold"
+                                        className={`text-[13px] mb-1 ${item.is_incoming ? "text-emerald-600" : "text-rose-500"}`}
+                                        numberOfLines={1}
+                                    >
                                         {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
                                     </Typography>
-                                    <Typography className="text-[9px] text-textGray/40 uppercase font-black">{config.label}</Typography>
+
+                                    <View className="flex-row items-center">
+                                        <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.is_incoming ? "bg-emerald-50" : "bg-rose-50"}`}>
+                                            <Typography weight="bold" className={item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]"}>
+                                                {item.is_incoming ? 'IN' : 'OUT'}
+                                            </Typography>
+                                        </View>
+                                        <Typography className="text-[8px] text-textGray/40 uppercase font-black tracking-tighter">
+                                            {config.label}
+                                        </Typography>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         );
