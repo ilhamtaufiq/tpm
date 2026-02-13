@@ -9,15 +9,15 @@ const getBaseUrl = () => {
     // Check if running in web browser
     if (typeof window !== 'undefined' && window.location && window.location.hostname) {
         const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
 
-        // In production or Docker environment where frontend and backend are served on the same host/port 
-        // (or via Nginx proxy), we should use relative paths.
+        // In production or Docker environment
         if (hostname === 'tpm.cianjur.space') {
-            return '';
+            return 'https://tpm.cianjur.space';
         }
 
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:8000';
+            return `${protocol}//${hostname}:8000`;
         }
 
         // For local development with tpm.test pointing to Laragon

@@ -53,18 +53,21 @@ def create_app() -> FastAPI:
     setup_exception_handlers(app)
 
     # Ensure upload directory exists
-    if not os.path.exists(settings.upload_dir):
-        os.makedirs(settings.upload_dir)
+    # uploads is at backend/uploads, main.py is at backend/app/main.py
+    upload_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", settings.upload_dir))
+    if not os.path.exists(upload_path):
+        os.makedirs(upload_path)
 
     # Mount static files for uploads
-    app.mount(f"/{settings.upload_dir}", StaticFiles(directory=settings.upload_dir), name="uploads")
+    app.mount(f"/{settings.upload_dir}", StaticFiles(directory=upload_path), name="uploads")
 
     # Include API router
     app.include_router(api_router)
 
     # Serve Frontend Static Files (from frontend/dist)
     # Ensure this is after api_router so API calls take precedence
-    frontend_dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "dist"))
+    # frontend/dist is at backend/../frontend/dist (relative to app/)
+    frontend_dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
     
     if os.path.exists(frontend_dist_path):
         app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="frontend")

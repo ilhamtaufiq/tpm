@@ -271,6 +271,7 @@ class TransaksiBengkelResponse(BaseModel):
     jenis_kendaraan: Optional[str] = None
     kategori: str = "umum"
     muatan_id: Optional[int] = None
+    muatan_nomor: Optional[str] = None
     mobil_id: Optional[int] = None
     total_parts: Decimal
     total_jasa: Decimal
@@ -284,12 +285,25 @@ class TransaksiBengkelResponse(BaseModel):
     metode_bayar: PaymentMethod
     jumlah_bayar: Decimal
     kembalian: Decimal
+    # Aliases for frontend compatibility
+    total_biaya: Decimal
+    total_part: Decimal
+    customer_nama: Optional[str] = None
+    plat_nomor: Optional[str] = None
     catatan: Optional[str] = None
     detail_parts: List[DetailPartResponse] = []
     detail_services: List[DetailServiceResponse] = []
     created_at: datetime
 
     model_config = {"from_attributes": True}
+    
+class TransaksiBengkelList(BaseModel):
+    """Schema for paginated workshop transaction list."""
+    data: List[TransaksiBengkelResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 
 class PaymentUpdate(BaseModel):

@@ -100,12 +100,8 @@ export const mobilService = {
 
         const response = await api.post(`/mobil/${id}/media`, formData, {
             headers: {
-                // On Web, letting the browser set the Content-Type automatically includes the boundary.
-                // On Native, we might need to specify it, but usually letting the FormData polyfill handle it is better.
-                'Content-Type': Platform.OS === 'web' ? undefined : 'multipart/form-data',
+                'Content-Type': 'multipart/form-data',
             },
-            // Prevent Axios from trying to stringify the FormData
-            transformRequest: (data) => data,
         });
         return response.data;
     },

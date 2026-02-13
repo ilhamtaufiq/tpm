@@ -36,8 +36,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
-        status_bayar: 'belum_lunas',
-        metode_bayar: 'tunai',
+        status_bayar: 'BELUM_LUNAS',
+        metode_bayar: 'TUNAI',
         catatan: ''
     });
 
@@ -75,8 +75,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
-                status_bayar: initialData.status_bayar === 'Lunas' ? 'lunas' : 'belum_lunas',
-                metode_bayar: initialData.metode_bayar || 'tunai',
+                status_bayar: initialData.status_bayar === 'LUNAS' ? 'LUNAS' : 'BELUM_LUNAS',
+                metode_bayar: initialData.metode_bayar?.toUpperCase() || 'TUNAI',
                 catatan: initialData.catatan || ''
             });
 
@@ -198,6 +198,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             const payload: any = {
                 ...formData,
+                status_bayar: formData.status_bayar?.toUpperCase(),
+                metode_bayar: formData.metode_bayar?.toUpperCase(),
                 supir_id: driverMode === 'registered' ? parseInt(formData.supir_id) : undefined,
                 supir_nama: driverMode === 'manual' ? formData.supir_nama : undefined,
                 ritase: parseInt(formData.ritase) || 1,
@@ -394,25 +396,25 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     <Typography variant="body2">Status Pembayaran</Typography>
                     <View className="flex-row bg-white rounded-lg p-1 border border-gray-200">
                         <TouchableOpacity
-                            onPress={() => updateField('status_bayar', 'belum_lunas')}
-                            className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'belum_lunas' ? 'bg-orange-100' : ''}`}
+                            onPress={() => updateField('status_bayar', 'BELUM_LUNAS')}
+                            className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'BELUM_LUNAS' ? 'bg-orange-100' : ''}`}
                         >
                             <Typography
                                 variant="caption"
-                                weight={formData.status_bayar === 'belum_lunas' ? 'bold' : 'medium'}
-                                className={formData.status_bayar === 'belum_lunas' ? 'text-orange-700' : 'text-gray-500'}
+                                weight={formData.status_bayar === 'BELUM_LUNAS' ? 'bold' : 'medium'}
+                                className={formData.status_bayar === 'BELUM_LUNAS' ? 'text-orange-700' : 'text-gray-500'}
                             >
-                                Belum Lunas
+                                BELUM_LUNAS
                             </Typography>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            onPress={() => updateField('status_bayar', 'lunas')}
-                            className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'lunas' ? 'bg-green-100' : ''}`}
+                            onPress={() => updateField('status_bayar', 'LUNAS')}
+                            className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'LUNAS' ? 'bg-green-100' : ''}`}
                         >
                             <Typography
                                 variant="caption"
-                                weight={formData.status_bayar === 'lunas' ? 'bold' : 'medium'}
-                                className={formData.status_bayar === 'lunas' ? 'text-green-700' : 'text-gray-500'}
+                                weight={formData.status_bayar === 'LUNAS' ? 'bold' : 'medium'}
+                                className={formData.status_bayar === 'LUNAS' ? 'text-green-700' : 'text-gray-500'}
                             >
                                 Lunas
                             </Typography>
@@ -420,11 +422,11 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     </View>
                 </View>
 
-                {formData.status_bayar === 'lunas' && (
+                {formData.status_bayar === 'LUNAS' && (
                     <View>
                         <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
                         <View className="flex-row space-x-2">
-                            {['tunai', 'transfer'].map((m) => (
+                            {['TUNAI', 'TRANSFER'].map((m) => (
                                 <TouchableOpacity
                                     key={m}
                                     onPress={() => updateField('metode_bayar', m)}

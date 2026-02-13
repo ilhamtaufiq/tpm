@@ -91,13 +91,13 @@ export default function LaporanPerubahanModalScreen() {
             // B. Piutang
             const b1 = report.section_b.piutang_lainnya || 0;
             const b2 = report.section_b.piutang_mobil || 0;
-            const b3 = report.section_b.piutang_bengkel || 0;
+            const b3 = report.section_b.piutang_part_mobil || 0;
             const b4 = report.section_b.piutang_jasa_angkut || 0;
             const b5 = report.section_b.piutang_karyawan || 0;
-            const b6 = 0; // Piutang Usaha
+            const b6 = report.section_b.piutang_usaha || 0;
 
             const b7 = report.section_b.total_b || 0; // Total B from Backend
-            const b8 = a7 - b7; // Intermediate balance
+            const b8 = a7 - b7; // Intermediate balance (A.7 - B.7)
 
             // C. Pengurang
             const c_part_cash = report.section_c.pembelian_part?.cash || 0;
@@ -188,7 +188,7 @@ export default function LaporanPerubahanModalScreen() {
                     <!-- SECTION B -->
                     <table cellspacing="0">
                         <tr>
-                            <td colspan="3" style="font-weight: bold; font-style: italic;">UANG DILUAR:</td>
+                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #f1f5f9;">B. PIUTANG:</td>
                         </tr>
                         <tr>
                             <td>PIUTANG LAINNYA</td>
@@ -196,12 +196,12 @@ export default function LaporanPerubahanModalScreen() {
                             <td></td>
                         </tr>
                          <tr>
-                            <td>PIUTANG JB MOBIL</td>
+                            <td>PIUTANG JUAL BELI MOBIL</td>
                             <td class="amount">${formatCurrency(b2)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>PIUTANG PART JB MOBIL</td>
+                            <td>PIUTANG PART JUAL MOBIL</td>
                             <td class="amount">${formatCurrency(b3)}</td>
                             <td></td>
                         </tr>
@@ -225,7 +225,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(b7)}</td>
                         </tr>
                         <tr class="total-bar">
-                            <td colspan="2">LABA & MODAL</td>
+                            <td colspan="2">LABA & MODAL (A-B)</td>
                             <td class="amount">${formatCurrency(b8)}</td>
                         </tr>
                     </table>
@@ -485,15 +485,16 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
                         <Wallet size={18} className="text-blue-600" />
                     </View>
-                    <Typography variant="h4" weight="bold">B. Piutang</Typography>
+                    <Typography variant="h4" weight="bold">B. PIUTANG</Typography>
                 </View>
 
                 <View className="space-y-3">
-                    <Row label="Piutang Lainnya" value={data.piutang_lainnya} />
-                    <Row label="Piutang Jual Beli Mobil" value={data.piutang_mobil} />
-                    <Row label="Piutang Sparepart & Servis" value={data.piutang_bengkel} />
-                    <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} />
-                    <Row label="Piutang Karyawan" value={data.piutang_karyawan} />
+                    <Row label="PIUTANG LAINNYA" value={data.piutang_lainnya} />
+                    <Row label="PIUTANG JUAL BELI MOBIL" value={data.piutang_mobil} />
+                    <Row label="PIUTANG PART JUAL MOBIL" value={data.piutang_part_mobil} />
+                    <Row label="PIUTANG SUPIR JASA ANGKUT" value={data.piutang_jasa_angkut} />
+                    <Row label="PIUTANG KARYAWAN" value={data.piutang_karyawan} />
+                    <Row label="PIUTANG USAHA" value={data.piutang_usaha} />
 
                     <View className="h-[1px] bg-gray-200 my-2" />
                     <Row label="Total Piutang" value={data.total_b} bold large color="text-blue-600" />

@@ -221,7 +221,7 @@ export default function JasaAngkutScreen() {
                         </View>
                         <Badge
                             label={trip.status_bayar.toUpperCase()}
-                            variant={trip.status_bayar === 'Lunas' ? 'success' : 'warning'}
+                            variant={trip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
                         />
                     </View>
 
@@ -280,6 +280,19 @@ export default function JasaAngkutScreen() {
                                 )}
                             </Typography>
                         </View>
+
+                        {/* Biaya Bengkel dari Riwayat Bengkel Terkait */}
+                        {(trip.part_services && trip.part_services.length > 0) && (
+                            <View className="flex-row justify-between mb-3">
+                                <Typography variant="body2" className="text-textGray">Biaya Bengkel (Sparepart & Servis)</Typography>
+                                <Typography weight="bold" className="text-rose-500">
+                                    -{formatCurrency(
+                                        (trip.part_services || []).reduce((acc: number, ps: any) => acc + Number(ps.total), 0)
+                                    )}
+                                </Typography>
+                            </View>
+                        )}
+
                         <View className="h-[1px] bg-gray-100 my-4" />
                         <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl">
                             <Typography variant="body2" weight="bold" className="text-primary">Laba TPM ({trip.persentase_tpm}%)</Typography>
@@ -299,14 +312,14 @@ export default function JasaAngkutScreen() {
                             className="rounded-2xl h-14"
                             icon={<Edit size={20} color="#023C69" />}
                         />
-                        {trip.status_bayar !== 'Lunas' && (
+                        {trip.status_bayar !== 'LUNAS' && (
                             <Button
                                 title="Konfirmasi Pelunasan"
                                 onPress={() => handleMarkPaid(trip.id)}
                                 className="rounded-2xl h-14"
                             />
                         )}
-                        {trip.status_bayar !== 'Lunas' && (
+                        {trip.status_bayar !== 'LUNAS' && (
                             <Button
                                 variant="outline-danger"
                                 title="Hapus Data Muatan"
@@ -457,8 +470,8 @@ export default function JasaAngkutScreen() {
                                             {trip.tujuan}
                                         </Typography>
                                     </View>
-                                    <View className={trip.status_bayar === 'Lunas' ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-amber-50 px-2 py-1 rounded-lg"}>
-                                        <Typography weight="bold" className={trip.status_bayar === 'Lunas' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
+                                    <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-amber-50 px-2 py-1 rounded-lg"}>
+                                        <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
                                             {trip.status_bayar.toUpperCase()}
                                         </Typography>
                                     </View>
@@ -570,14 +583,14 @@ export default function JasaAngkutScreen() {
                         title="Bayar via Tunai"
                         variant="primary"
                         loading={actionLoading}
-                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'tunai'); }}
+                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'TUNAI'); }}
                         className="h-14 shadow-lg shadow-primary/20"
                     />
                     <Button
                         title="Bayar via Transfer"
                         variant="outline"
                         loading={actionLoading}
-                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'transfer'); }}
+                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'TRANSFER'); }}
                         className="h-14"
                     />
                     <Button

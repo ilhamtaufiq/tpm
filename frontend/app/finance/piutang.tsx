@@ -28,16 +28,16 @@ import { EmptyState } from '../../components/ui/EmptyState';
 
 const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
     { label: 'Semua', value: 'all' },
-    { label: 'Belum Lunas', value: 'belum_lunas' },
-    { label: 'Sebagian', value: 'sebagian' },
-    { label: 'Lunas', value: 'lunas' },
+    { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
+    { label: 'Sebagian', value: 'SEBAGIAN' },
+    { label: 'Lunas', value: 'LUNAS' },
     { label: 'Jatuh Tempo', value: 'overdue' },
 ];
 
 const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = {
-    belum_lunas: 'warning',
-    sebagian: 'info',
-    lunas: 'success',
+    BELUM_LUNAS: 'warning',
+    SEBAGIAN: 'info',
+    LUNAS: 'success',
 };
 
 const SUMBER_LABEL: Record<string, string> = {
@@ -118,15 +118,15 @@ export default function PiutangUsahaScreen() {
     // Payment form
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNote, setPaymentNote] = useState('');
-    const [payMetode, setPayMetode] = useState('tunai');
+    const [payMetode, setPayMetode] = useState('TUNAI');
 
     // Create form state
-    const [createSource, setCreateSource] = useState('lainnya');
+    const [createSource, setCreateSource] = useState('LAINNYA');
     const [createName, setCreateName] = useState('');
     const [createAmount, setCreateAmount] = useState('');
     const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
     const [createNote, setCreateNote] = useState('');
-    const [createMethod, setCreateMethod] = useState<'tunai' | 'transfer' | undefined>(undefined);
+    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
 
     const [createVisible, setCreateVisible] = useState(false);
     const [detailVisible, setDetailVisible] = useState(false);
@@ -148,7 +148,7 @@ export default function PiutangUsahaScreen() {
         if (!selectedPiutang) return;
         setPaymentAmount(formatNumber(selectedPiutang.sisa_piutang.toString()));
         setPaymentNote('');
-        setPayMetode('tunai');
+        setPayMetode('TUNAI');
         if (Platform.OS === 'web') {
             setDetailVisible(false);
             setPaymentVisible(true);
@@ -164,7 +164,7 @@ export default function PiutangUsahaScreen() {
 
     const handleOpenCreate = () => {
         console.log('Opening Create Sheet');
-        setCreateSource('lainnya');
+        setCreateSource('LAINNYA');
         setCreateName('');
         setCreateAmount('');
         setCreateNote('');
@@ -294,17 +294,17 @@ export default function PiutangUsahaScreen() {
                     >
                         <Typography className={!createMethod ? 'text-gray-800' : 'text-gray-500'}>Tidak Ada</Typography>
                     </TouchableOpacity>
-                    {['tunai', 'transfer'].map((m) => (
+                    {['TUNAI', 'TRANSFER'].map((m) => (
                         <TouchableOpacity
                             key={m}
-                            onPress={() => setCreateMethod(m as 'tunai' | 'transfer')}
+                            onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
                             className={`flex-1 py-3 items-center rounded-xl border ${createMethod === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
                         >
                             <Typography
                                 className={createMethod === m ? 'text-primary' : 'text-gray-500'}
                                 weight={createMethod === m ? 'semibold' : 'normal'}
                             >
-                                {m.charAt(0).toUpperCase() + m.slice(1)}
+                                {m}
                             </Typography>
                         </TouchableOpacity>
                     ))}
@@ -350,7 +350,7 @@ export default function PiutangUsahaScreen() {
                         <Typography variant="caption" className="text-gray-400">{selectedPiutang.nomor_piutang}</Typography>
                     </View>
                     <Badge
-                        label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : selectedPiutang.status === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                        label={selectedPiutang.is_overdue ? 'Jatuh Tempo' : selectedPiutang.status === 'LUNAS' ? 'Lunas' : 'Belum Lunas'}
                         variant={selectedPiutang.is_overdue ? 'error' : STATUS_BADGE_MAP[selectedPiutang.status]}
                     />
                 </View>
@@ -398,7 +398,7 @@ export default function PiutangUsahaScreen() {
                             }
                         }}
                     />
-                    {selectedPiutang.status !== 'lunas' && (
+                    {selectedPiutang.status !== 'LUNAS' && (
                         <Button
                             title="Catat Pembayaran"
                             onPress={handleOpenPayment}
@@ -432,7 +432,7 @@ export default function PiutangUsahaScreen() {
             <View className="mb-4">
                 <Typography className="mb-2 text-gray-600 font-medium">Metode Pembayaran</Typography>
                 <View className="flex-row space-x-2">
-                    {['tunai', 'transfer'].map((m) => (
+                    {['TUNAI', 'TRANSFER'].map((m) => (
                         <TouchableOpacity
                             key={m}
                             onPress={() => setPayMetode(m)}
@@ -442,7 +442,7 @@ export default function PiutangUsahaScreen() {
                                 className={payMetode === m ? 'text-primary' : 'text-gray-500'}
                                 weight={payMetode === m ? 'semibold' : 'normal'}
                             >
-                                {m.charAt(0).toUpperCase() + m.slice(1)}
+                                {m}
                             </Typography>
                         </TouchableOpacity>
                     ))}
@@ -496,7 +496,7 @@ export default function PiutangUsahaScreen() {
                         </View>
                         <View className="items-end">
                             <Badge
-                                label={item.is_overdue ? 'Jatuh Tempo' : item.status === 'lunas' ? 'Lunas' : item.status === 'sebagian' ? 'Sebagian' : 'Belum Lunas'}
+                                label={item.is_overdue ? 'Jatuh Tempo' : item.status === 'LUNAS' ? 'Lunas' : item.status === 'SEBAGIAN' ? 'Sebagian' : 'Belum Lunas'}
                                 variant={item.is_overdue ? 'error' : STATUS_BADGE_MAP[item.status]}
                             />
                         </View>
@@ -650,8 +650,8 @@ export default function PiutangUsahaScreen() {
                                         {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
                                     </Typography>
                                 </View>
-                                <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'lunas' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>
-                                    <Typography weight="bold" className={isOverdue ? "text-rose-600 text-[10px]" : item.status === 'lunas' ? "text-emerald-600 text-[10px]" : "text-blue-600 text-[10px]"}>
+                                <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'LUNAS' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>
+                                    <Typography weight="bold" className={isOverdue ? "text-rose-600 text-[10px]" : item.status === 'LUNAS' ? "text-emerald-600 text-[10px]" : "text-blue-600 text-[10px]"}>
                                         {isOverdue ? 'JATUH TEMPO' : item.status.toUpperCase()}
                                     </Typography>
                                 </View>
@@ -711,8 +711,8 @@ export default function PiutangUsahaScreen() {
                     isLoadingList ? null : (
                         <View className="mt-10">
                             <EmptyState
-                                title={selectedFilter === 'lunas' ? 'Semua Piutang Lunas' : 'Tidak Ada Piutang'}
-                                description={selectedFilter === 'lunas' ? 'Belum ada riwayat piutang yang sudah lunas.' : 'Belum ada data piutang untuk filter ini.'}
+                                title={selectedFilter === 'LUNAS' ? 'Semua Piutang Lunas' : 'Tidak Ada Piutang'}
+                                description={selectedFilter === 'LUNAS' ? 'Belum ada riwayat piutang yang sudah lunas.' : 'Belum ada data piutang untuk filter ini.'}
                                 icon={CheckCircle2}
                             />
                         </View>

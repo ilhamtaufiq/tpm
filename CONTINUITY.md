@@ -27,24 +27,23 @@ Refactor Bengkel (Workshop) feature to add a **kategori** (category) field with 
 - Remove bengkel section from jasa angkut detail view  
 
 ## State
-- Done: Analysis of existing codebase
-- Now: Implementing changes
-- Next: Testing
+- Done: 
+  - Implementation of conditional visibility in `BengkelForm.tsx`.
+  - Backend updates for muatan relationship in Bengkel transactions.
+  - Frontend display updates for transport transaction number in Bengkel details.
+  - Updated `RelatedBengkelTransactions.tsx` to show service/part details.
+  - Fixed Rp.0,00 total in Bengkel card header by ensuring proper API serialization.
+  - Fixed 0 Operational Cost on Jasa Angkut trips by including workshop maintenance costs in profit calculation.
+- Now: Verifying final changes.
+- Next: Final check.
 
 ## Open Questions
-- Backend database migration for new columns (manual step?)
+- None.
 
 ## Working Set
-### Backend
-- `backend/app/models/bengkel.py` - Add kategori, muatan_id, mobil_id
-- `backend/app/schemas/bengkel.py` - Update create/response schemas
-- `backend/app/services/bengkel_service.py` - Update service logic
-
-### Frontend  
-- `frontend/services/bengkel.ts` - Update interfaces
-- `frontend/hooks/useBengkel.ts` - Add hooks for muatan/mobil selection
-- `frontend/components/BengkelForm.tsx` - Add category selector + muatan/mobil picker
-- `frontend/app/bengkel/index.tsx` - Show category badge on transactions
-- `frontend/app/jasa-angkut/index.tsx` - Remove bengkel integration
-- `frontend/services/mobil.ts` - Remove addBengkelTransaction (later)
-- `frontend/hooks/useMobil.ts` - Remove useAddBengkelTransaction (later)
+- `frontend/components/BengkelForm.tsx`
+- `frontend/app/bengkel/index.tsx`
+- `frontend/components/RelatedBengkelTransactions.tsx`
+- `backend/app/Models/bengkel.py`
+- `backend/app/schemas/bengkel.py`
+- `backend/app/services/transaksi_bengkel_service.py`

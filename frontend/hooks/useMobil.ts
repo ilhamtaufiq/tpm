@@ -104,6 +104,17 @@ export const useDeleteMedia = () => {
         },
     });
 };
+export const useUpdateMobil = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => mobilService.updateMobil(id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['mobils', variables.id] });
+        },
+    });
+};
+
 export const useDeleteMobil = () => {
     const queryClient = useQueryClient();
     return useMutation({

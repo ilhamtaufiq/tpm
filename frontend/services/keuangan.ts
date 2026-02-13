@@ -2,12 +2,12 @@ import api from '../utils/api';
 
 // --- Enums matching backend ---
 
-export type PiutangStatus = 'belum_lunas' | 'lunas' | 'sebagian';
-export type PiutangSource = 'bengkel' | 'jual_beli_mobil' | 'jasa_angkut' | 'kasbon_karyawan' | 'lainnya';
-export type KasBankJenis = 'cash' | 'bank_bca' | 'bank_mandiri' | 'bank_bri' | 'bank_lainnya';
-export type KasBankType = 'masuk' | 'keluar';
-export type KasBankSource = 'bengkel' | 'jual_beli_mobil' | 'jasa_angkut' | 'pembelian_part' | 'pembelian_mobil' | 'pengeluaran' | 'gaji' | 'kasbon' | 'piutang' | 'modal' | 'prive' | 'lainnya';
-export type PaymentMethod = 'tunai' | 'transfer' | 'kredit' | 'debit';
+export type PiutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
+export type PiutangSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'KASBON_KARYAWAN' | 'LAINNYA';
+export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA';
+export type KasBankType = 'MASUK' | 'KELUAR';
+export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
+export type PaymentMethod = 'TUNAI' | 'TRANSFER' | 'KREDIT' | 'DEBIT' | 'SPLIT';
 
 // --- Piutang Interfaces ---
 

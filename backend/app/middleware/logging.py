@@ -11,6 +11,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+# Suppress SQLAlchemy engine logs
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
 logger = logging.getLogger("tpm_api")
 
 

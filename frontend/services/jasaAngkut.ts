@@ -1,4 +1,5 @@
 import api from '../utils/api';
+import { PaymentMethod } from './keuangan';
 
 // --- Interfaces ---
 
@@ -49,9 +50,11 @@ export interface Muatan {
     persentase_tpm: number;
     laba_tpm: number;
     laba_supir: number;
-    status_bayar: 'Lunas' | 'Belum Lunas';
+    status_bayar: 'LUNAS' | 'BELUM_LUNAS';
+    metode_bayar?: PaymentMethod;
     tanggal_bayar?: string;
     biaya_tambahan?: BiayaLainnya[];
+    part_services?: PartService[];
     catatan?: string;
     created_at: string;
 }
@@ -70,6 +73,8 @@ export interface MuatanCreate {
     biaya_parkir?: number;
     biaya_lainnya?: number;
     persentase_tpm?: number; // Default 50
+    status_bayar?: 'LUNAS' | 'BELUM_LUNAS';
+    metode_bayar?: PaymentMethod;
     catatan?: string;
 }
 
@@ -79,6 +84,17 @@ export interface BiayaLainnya {
     kategori: string;
     deskripsi: string;
     jumlah: number;
+    catatan?: string;
+}
+
+export interface PartService {
+    id: number;
+    tanggal: string;
+    tipe: 'part' | 'service';
+    deskripsi: string;
+    qty: number;
+    harga_satuan: number;
+    total: number;
     catatan?: string;
 }
 

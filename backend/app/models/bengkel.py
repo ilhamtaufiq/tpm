@@ -21,6 +21,8 @@ from app.utils.constants import PaymentStatus, PaymentMethod, ExpenseCategory, W
 if TYPE_CHECKING:
     from app.models.supplier import Supplier
     from app.models.customer import Customer
+    from app.models.jasa_angkut import MuatanJasaAngkut
+    from app.models.mobil import Mobil
 
 
 class SparePart(Base, TimestampMixin, SoftDeleteMixin):
@@ -152,7 +154,7 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
     # Category: umum (default), jasa_angkut, jual_beli_mobil
     kategori: Mapped[str] = mapped_column(String(30), default="umum", server_default="umum")
     muatan_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("muatan.id", ondelete="SET NULL"),
+        ForeignKey("muatan_jasa_angkut.id", ondelete="SET NULL"),
         nullable=True,
     )
     mobil_id: Mapped[Optional[int]] = mapped_column(
@@ -208,6 +210,33 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
         back_populates="transaksi",
         cascade="all, delete-orphan",
     )
+    muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship()
+    mobil: Mapped[Optional["Mobil"]] = relationship(back_populates="bengkel_perbaikan")
+
+    @property
+    def muatan_nomor(self) -> Optional[str]:
+        """Get nomor_transaksi of linked transport service."""
+        return self.muatan.nomor_transaksi if self.muatan else None
+
+    @property
+    def total_biaya(self) -> Decimal:
+        """Alias for grand_total for frontend compatibility."""
+        return self.grand_total
+
+    @property
+    def total_part(self) -> Decimal:
+        """Alias for total_parts for frontend compatibility."""
+        return self.total_parts
+
+    @property
+    def customer_nama(self) -> Optional[str]:
+        """Alias for nama_customer for frontend compatibility."""
+        return self.nama_customer
+
+    @property
+    def plat_nomor(self) -> Optional[str]:
+        """Alias for nomor_plat for frontend compatibility."""
+        return self.nomor_plat
 
     def __repr__(self) -> str:
         return f"<TransaksiBengkel(id={self.id}, nomor='{self.nomor_transaksi}', total={self.grand_total})>"

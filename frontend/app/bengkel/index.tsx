@@ -352,8 +352,8 @@ export default function BengkelScreen() {
                     {/* Category Info */}
                     {selectedItem.kategori && selectedItem.kategori !== 'umum' && (
                         <View className={`flex-row items-center mb-4 px-4 py-2.5 rounded-2xl border ${selectedItem.kategori === 'jasa_angkut'
-                                ? 'bg-emerald-50 border-emerald-200'
-                                : 'bg-blue-50 border-blue-200'
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : 'bg-blue-50 border-blue-200'
                             }`}>
                             {selectedItem.kategori === 'jasa_angkut' ? (
                                 <Truck size={16} color="#10B981" />
@@ -366,7 +366,7 @@ export default function BengkelScreen() {
                             </Typography>
                             {selectedItem.muatan_id && (
                                 <Typography className="text-emerald-500 text-[10px] ml-2">
-                                    Muatan #{selectedItem.muatan_id}
+                                    Muatan {selectedItem.muatan_nomor ? `#${selectedItem.muatan_nomor}` : `ID #${selectedItem.muatan_id}`}
                                 </Typography>
                             )}
                             {selectedItem.mobil_id && (
@@ -434,7 +434,17 @@ export default function BengkelScreen() {
                         <View className="flex-row justify-between items-center">
                             <View>
                                 <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
-                                {selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) ? (
+                                {selectedItem.metode_bayar === 'INTERNAL' ? (
+                                    selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas' ? (
+                                        <Typography variant="caption" className="text-emerald-600 font-bold">
+                                            Lunas — Potong Laba TPM
+                                        </Typography>
+                                    ) : (
+                                        <Typography variant="caption" className="text-amber-600 font-bold">
+                                            Menunggu Pelunasan Jasa Angkut
+                                        </Typography>
+                                    )
+                                ) : selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) ? (
                                     <Typography variant="caption" className="text-rose-600 font-bold">
                                         Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
                                     </Typography>
@@ -486,8 +496,8 @@ export default function BengkelScreen() {
                             </>
                         )}
 
-                        {/* Settlement Button for Unpaid Orders */}
-                        {selectedItem.status_bayar !== 'lunas' ? (
+                        {/* Settlement Button — hide for INTERNAL (jasa_angkut) payments */}
+                        {selectedItem.status_bayar !== 'lunas' && selectedItem.metode_bayar !== 'INTERNAL' ? (
                             <Button
                                 variant="secondary"
                                 title="Pelunasan Piutang"
@@ -773,10 +783,16 @@ export default function BengkelScreen() {
                                                 <Typography weight="bold" className="text-blue-600 text-[7px] uppercase tracking-tighter ml-0.5">MOBIL</Typography>
                                             </View>
                                         )}
-                                        {item.status_bayar !== 'lunas' ? (
-                                            <View className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100">
-                                                <Typography weight="bold" className="text-rose-500 text-[7px] uppercase tracking-tighter">BELUM LUNAS</Typography>
-                                            </View>
+                                        {item.status_bayar !== 'lunas' && item.status_bayar !== 'LUNAS' ? (
+                                            item.metode_bayar === 'INTERNAL' || item.metode_bayar === 'internal' ? (
+                                                <View className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-100">
+                                                    <Typography weight="bold" className="text-amber-600 text-[7px] uppercase tracking-tighter">IKUT ANGKUT</Typography>
+                                                </View>
+                                            ) : (
+                                                <View className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100">
+                                                    <Typography weight="bold" className="text-rose-500 text-[7px] uppercase tracking-tighter">BELUM LUNAS</Typography>
+                                                </View>
+                                            )
                                         ) : null}
                                         <View className={`px-2.5 py-1 rounded-full ${item.status_pengerjaan === 'proses' ? 'bg-blue-50' :
                                             item.status_pengerjaan === 'selesai' ? 'bg-emerald-50' : 'bg-amber-50'

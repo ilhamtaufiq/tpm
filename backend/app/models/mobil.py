@@ -18,6 +18,7 @@ from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, Payment
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
+    from app.models.bengkel import TransaksiPenjualanBengkel
 
 
 class Mobil(Base, TimestampMixin, SoftDeleteMixin):
@@ -88,6 +89,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="mobil",
         uselist=False,
     )
+    bengkel_perbaikan: Mapped[List["TransaksiPenjualanBengkel"]] = relationship(
+        back_populates="mobil",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def total_biaya(self) -> Decimal:
@@ -96,8 +101,22 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
 
     @property
     def total_part_service(self) -> Decimal:
-        """Calculate total part/service costs."""
-        return sum(p.total for p in self.part_services) if self.part_services else Decimal(0)
+        """Calculate total part/service costs from both MobilPartService and TransaksiPenjualanBengkel.
+        Avoids double counting by excluding MobilPartService records that originated from a workshop transaction.
+        """
+        # Manual entries (those that don't have a "Trans Bengkel:" prefix in notes)
+        manual_total = sum(
+            p.total for p in self.part_services 
+            if not p.catatan or "Trans Bengkel:" not in p.catatan
+        ) if self.part_services else Decimal(0)
+        
+        # Workshop transactions specifically categorized for car sales
+        bengkel_total = sum(
+            t.grand_total for t in self.bengkel_perbaikan 
+            if t.kategori == 'jual_beli_mobil'
+        ) if self.bengkel_perbaikan else Decimal(0)
+        
+        return manual_total + bengkel_total
 
     @property
     def total_modal(self) -> Decimal:

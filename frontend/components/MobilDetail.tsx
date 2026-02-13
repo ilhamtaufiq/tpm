@@ -31,9 +31,10 @@ interface MobilDetailProps {
     unit: any;
     onClose: () => void;
     onEdit?: () => void;
+    onSell?: (unit: any) => void;
 }
 
-export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailProps) => {
+export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: MobilDetailProps) => {
     const { data: unit, isLoading: isRefetching } = useMobilDetail(initialUnit?.id);
     const uploadMediaAction = useUploadMedia();
     const deleteMediaAction = useDeleteMedia();
@@ -100,7 +101,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailP
     };
 
     const renderMediaItem = (item: any) => {
-        const fullUrl = `${FILE_URL}/uploads/${item.file_path}`;
+        // Construct URL safely, avoiding double slashes
+        const baseUrl = FILE_URL || '';
+        const filePath = item.file_path.startsWith('/') ? item.file_path.substring(1) : item.file_path;
+        const fullUrl = baseUrl.endsWith('/')
+            ? `${baseUrl}uploads/${filePath}?t=${Date.now()}`
+            : `${baseUrl}/uploads/${filePath}?t=${Date.now()}`;
+
+        console.log('[MobilDetail] Rendering media:', item.id, fullUrl);
 
         return (
             <TouchableOpacity
@@ -294,14 +302,26 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit }: MobilDetailP
                     )}
 
                     {/* Primary Support Action */}
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={onEdit}
-                        className="bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 mb-10"
-                    >
-                        <Edit size={20} color="white" className="mr-3" />
-                        <Typography weight="bold" className="text-white text-lg ml-2">Edit Data Unit</Typography>
-                    </TouchableOpacity>
+                    <View className="flex-row space-x-3 mb-6">
+                        {(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') && (
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => onSell?.(activeUnit)}
+                                className="flex-1 bg-emerald-600 flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-emerald-900/20"
+                            >
+                                <CircleDollarSign size={20} color="white" />
+                                <Typography weight="bold" className="text-white text-lg ml-3">Jual Unit</Typography>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={onEdit}
+                            className={`flex-1 bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 ${!(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') ? 'w-full' : ''}`}
+                        >
+                            <Edit size={20} color="white" />
+                            <Typography weight="bold" className="text-white text-lg ml-3">Edit Data</Typography>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Extra Bottom Padding */}
                     <View className="h-10" />

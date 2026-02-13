@@ -38,6 +38,7 @@ class MobilCreate(MobilBase):
     nominal_investor: Decimal = Field(default=Decimal("0"), ge=0)
     harga_jual: Optional[Decimal] = Field(None, ge=0)
     tanggal_masuk: date
+    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
 
 
 class MobilUpdate(BaseModel):

@@ -103,6 +103,19 @@ class BiayaTambahanResponse(BaseModel):
     jumlah: Decimal
     model_config = {"from_attributes": True}
 
+
+class PartServiceResponse(BaseModel):
+    """Schema for part/service cost response (from linked bengkel transactions)."""
+    id: int
+    tanggal: date
+    tipe: str  # 'part' or 'service'
+    deskripsi: str
+    qty: int
+    harga_satuan: Decimal
+    total: Decimal
+    catatan: Optional[str] = None
+    model_config = {"from_attributes": True}
+
 class MuatanCreate(BaseModel):
     """Schema for creating transport load."""
 
@@ -208,6 +221,7 @@ class MuatanResponse(BaseModel):
     status_bayar: PaymentStatus
     tanggal_bayar: Optional[date] = None
     biaya_tambahan: List[BiayaTambahanResponse] = []
+    part_services: List[PartServiceResponse] = []
     catatan: Optional[str] = None
     created_at: datetime
 

@@ -125,7 +125,7 @@ class MobilService:
             tipe=KasBankType.KELUAR,
             nominal=data.harga_beli,
             sumber=KasBankSource.PEMBELIAN_MOBIL,
-            metode_bayar=PaymentMethod.TRANSFER, # Default for legacy/init, or add to schema
+            metode_bayar=data.metode_bayar,
             referensi_id=mobil.id,
             nomor_referensi=mobil.kode,
             keterangan=f"Pembelian Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
@@ -145,6 +145,7 @@ class MobilService:
                 joinedload(Mobil.media),
                 joinedload(Mobil.biaya_lainnya),
                 joinedload(Mobil.part_services),
+                joinedload(Mobil.bengkel_perbaikan),
             )
             .filter(
                 Mobil.id == mobil_id,
@@ -202,6 +203,7 @@ class MobilService:
                 joinedload(Mobil.media),
                 joinedload(Mobil.biaya_lainnya),
                 joinedload(Mobil.part_services),
+                joinedload(Mobil.bengkel_perbaikan),
             )
             .filter(Mobil.deleted_at.is_(None))
         )

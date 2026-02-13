@@ -117,7 +117,12 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     )
 
     def calculate_profit(self) -> None:
-        """Calculate profit split between TPM and driver."""
+        """Calculate profit split between TPM and driver.
+        
+        Logic: Operational costs are charged to TPM, not Driver.
+        Driver Share = Gross Revenue * (100 - TPM%) / 100
+        TPM Share = Gross Revenue - Driver Share - Total Costs
+        """
         # Calculate revenue from trading
         self.pendapatan_kotor = self.harga_jual - self.harga_beli
 
@@ -127,11 +132,17 @@ class MuatanJasaAngkut(Base, TimestampMixin):
             self.biaya_makan +
             self.biaya_parkir +
             self.biaya_lainnya +
-            sum(b.jumlah for b in self.biaya_tambahan)
+            sum(b.jumlah for b in self.biaya_tambahan) +
+            sum(ps.total for ps in self.part_services)
         )
         self.laba_kotor = self.pendapatan_kotor - self.total_biaya
-        self.laba_tpm = self.laba_kotor * (self.persentase_tpm / 100)
-        self.laba_supir = self.laba_kotor - self.laba_tpm
+        
+        # Driver share from GROSS revenue (driver is NOT affected by costs)
+        persentase_supir = Decimal("100") - self.persentase_tpm
+        self.laba_supir = (self.pendapatan_kotor * persentase_supir / 100).quantize(Decimal("0.01"))
+        
+        # TPM absorbs all costs
+        self.laba_tpm = self.pendapatan_kotor - self.laba_supir - self.total_biaya
 
     def __repr__(self) -> str:
         return f"<MuatanJasaAngkut(id={self.id}, nomor='{self.nomor_transaksi}', tujuan='{self.tujuan}')>"

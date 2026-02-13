@@ -30,14 +30,15 @@ export interface TransaksiBengkel {
     kilometer?: number;
     kategori: 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
     muatan_id?: number;
+    muatan_nomor?: string;
     mobil_id?: number;
     total_jasa: number;
     total_part: number;
     total_biaya: number;
     total_bayar: number;
     kembalian: number;
-    status_pengerjaan: 'Antre' | 'Proses' | 'Selesai' | 'Batal';
-    status_bayar: 'Lunas' | 'Belum Lunas';
+    status_pengerjaan: 'ANTRE' | 'PROSES' | 'SELESAI' | 'BATAL';
+    status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'CICILAN';
     catatan?: string;
     created_at: string;
 }
@@ -49,7 +50,7 @@ export interface PembelianPart {
     supplier_id: number;
     supplier_nama?: string;
     total_biaya: number;
-    status_bayar: 'Lunas' | 'Belum Lunas';
+    status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'CICILAN';
     catatan?: string;
     created_at: string;
 }

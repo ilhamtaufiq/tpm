@@ -4,140 +4,286 @@ from enum import Enum
 class UserRole(str, Enum):
     """User roles in the system."""
 
-    ADMIN = "admin"
-    MANAGER = "manager"
-    STAFF = "staff"
-    VIEWER = "viewer"
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    STAFF = "STAFF"
+    VIEWER = "VIEWER"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "UserRole | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class TransactionType(str, Enum):
     """Types of transactions."""
 
-    PEMBELIAN = "pembelian"
-    PENJUALAN = "penjualan"
-    RETUR = "retur"
-    ADJUSTMENT = "adjustment"
+    PEMBELIAN = "PEMBELIAN"
+    PENJUALAN = "PENJUALAN"
+    RETUR = "RETUR"
+    ADJUSTMENT = "ADJUSTMENT"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "TransactionType | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class WorkshopStatus(str, Enum):
     """Workshop transaction/queue status."""
 
-    ANTRE = "antre"
-    PROSES = "proses"
-    SELESAI = "selesai"
-    BATAL = "batal"
+    ANTRE = "ANTRE"
+    PROSES = "PROSES"
+    SELESAI = "SELESAI"
+    BATAL = "BATAL"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "WorkshopStatus | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class PaymentStatus(str, Enum):
     """Payment status for transactions."""
 
-    LUNAS = "lunas"
-    BELUM_LUNAS = "belum_lunas"
-    CICILAN = "cicilan"
+    LUNAS = "LUNAS"
+    BELUM_LUNAS = "BELUM_LUNAS"
+    CICILAN = "CICILAN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "PaymentStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class PaymentMethod(str, Enum):
     """Payment methods."""
 
-    TUNAI = "tunai"
-    TRANSFER = "transfer"
-    KREDIT = "kredit"
-    DEBIT = "debit"
-    SPLIT = "split"
+    TUNAI = "TUNAI"
+    TRANSFER = "TRANSFER"
+    KREDIT = "KREDIT"
+    DEBIT = "DEBIT"
+    SPLIT = "SPLIT"
+    INTERNAL = "INTERNAL"
+    OTHER = "OTHER"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "PaymentMethod | None":
+        """Allow case-insensitive lookup so frontend can send lowercase values."""
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class AttendanceStatus(str, Enum):
     """Employee attendance status."""
 
-    HADIR = "hadir"
-    IZIN = "izin"
-    SAKIT = "sakit"
-    ALPHA = "alpha"
-    CUTI = "cuti"
+    HADIR = "HADIR"
+    IZIN = "IZIN"
+    SAKIT = "SAKIT"
+    ALPHA = "ALPHA"
+    CUTI = "CUTI"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "AttendanceStatus | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class EmployeeStatus(str, Enum):
     """Employee employment status."""
 
-    AKTIF = "aktif"
-    TIDAK_AKTIF = "tidak_aktif"
-    RESIGN = "resign"
+    AKTIF = "AKTIF"
+    TIDAK_AKTIF = "TIDAK_AKTIF"
+    RESIGN = "RESIGN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "EmployeeStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class CarStatus(str, Enum):
     """Car inventory status."""
 
-    TERSEDIA = "tersedia"
-    TERJUAL = "terjual"
-    DALAM_PERBAIKAN = "dalam_perbaikan"
-    BOOKING = "booking"
+    TERSEDIA = "TERSEDIA"
+    TERJUAL = "TERJUAL"
+    DALAM_PERBAIKAN = "DALAM_PERBAIKAN"
+    BOOKING = "BOOKING"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "CarStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class OwnershipType(str, Enum):
     """Car ownership type."""
 
-    TPM = "tpm"
-    INVESTOR = "investor"
+    TPM = "TPM"
+    INVESTOR = "INVESTOR"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "OwnershipType | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class PiutangStatus(str, Enum):
     """Receivable (piutang) status."""
 
-    BELUM_LUNAS = "belum_lunas"
-    LUNAS = "lunas"
-    SEBAGIAN = "sebagian"
+    BELUM_LUNAS = "BELUM_LUNAS"
+    LUNAS = "LUNAS"
+    SEBAGIAN = "SEBAGIAN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "PiutangStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class KasBankType(str, Enum):
     """Cash/Bank transaction type."""
 
-    MASUK = "masuk"
-    KELUAR = "keluar"
+    MASUK = "MASUK"
+    KELUAR = "KELUAR"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "KasBankType | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class ExpenseCategory(str, Enum):
     """Expense categories for workshop."""
 
-    BIAYA_OPERASIONAL = "biaya_operasional"
-    BIAYA_LAINNYA = "biaya_lainnya"
-    PRIVE = "prive"
+    BIAYA_OPERASIONAL = "BIAYA_OPERASIONAL"
+    BIAYA_LAINNYA = "BIAYA_LAINNYA"
+    PRIVE = "PRIVE"
+    # Old values from initial schema if needed
+    OPERASIONAL = "BIAYA_OPERASIONAL"
+    PEMELIHARAAN = "BIAYA_LAINNYA"
+    GAJI = "GAJI"
+    UTILITAS = "OPERASIONAL"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "ExpenseCategory | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+            # Map old ones if they exist in DB
+            if upper == "OPERASIONAL": return cls.BIAYA_OPERASIONAL
+            if upper == "PEMELIHARAAN": return cls.BIAYA_LAINNYA
+        return None
 
 
 class PiutangSource(str, Enum):
     """Source of piutang (receivable)."""
 
-    BENGKEL = "bengkel"
-    JUAL_BELI_MOBIL = "jual_beli_mobil"
-    JASA_ANGKUT = "jasa_angkut"
-    KASBON_KARYAWAN = "kasbon_karyawan"
-    LAINNYA = "lainnya"
+    BENGKEL = "BENGKEL"
+    JUAL_BELI_MOBIL = "JUAL_BELI_MOBIL"
+    JASA_ANGKUT = "JASA_ANGKUT"
+    KASBON_KARYAWAN = "KASBON_KARYAWAN"
+    LAINNYA = "LAINNYA"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "PiutangSource | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class KasBankSource(str, Enum):
     """Source of kas/bank transaction."""
 
-    BENGKEL = "bengkel"
-    JUAL_BELI_MOBIL = "jual_beli_mobil"
-    JASA_ANGKUT = "jasa_angkut"
-    PEMBELIAN_PART = "pembelian_part"
-    PEMBELIAN_MOBIL = "pembelian_mobil"
-    PENGELUARAN = "pengeluaran"
-    GAJI = "gaji"
-    KASBON = "kasbon"
-    PIUTANG = "piutang"
-    MODAL = "modal"
-    PRIVE = "prive"
-    LAINNYA = "lainnya"
+    BENGKEL = "BENGKEL"
+    JUAL_BELI_MOBIL = "JUAL_BELI_MOBIL"
+    JASA_ANGKUT = "JASA_ANGKUT"
+    PEMBELIAN_PART = "PEMBELIAN_PART"
+    PEMBELIAN_MOBIL = "PEMBELIAN_MOBIL"
+    PENGELUARAN = "PENGELUARAN"
+    GAJI = "GAJI"
+    KASBON = "KASBON"
+    PIUTANG = "PIUTANG"
+    MODAL = "MODAL"
+    PRIVE = "PRIVE"
+    LAINNYA = "LAINNYA"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "KasBankSource | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 class KasBankJenis(str, Enum):
     """Type of kas/bank account."""
 
-    CASH = "cash"
-    BANK_BCA = "bank_bca"
-    BANK_MANDIRI = "bank_mandiri"
-    BANK_BRI = "bank_bri"
-    BANK_LAINNYA = "bank_lainnya"
+    CASH = "CASH"
+    BANK_BCA = "BANK_BCA"
+    BANK_MANDIRI = "BANK_MANDIRI"
+    BANK_BRI = "BANK_BRI"
+    BANK_LAINNYA = "BANK_LAINNYA"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "KasBankJenis | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
 
 
 # Transaction number prefixes

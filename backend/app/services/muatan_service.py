@@ -8,7 +8,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 from fastapi import HTTPException, status
 
-from app.models.jasa_angkut import Supir, MuatanJasaAngkut, JasaAngkutBiayaLainnya
+from app.models.jasa_angkut import Supir, MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.bengkel import SparePart
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang
 from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate
@@ -310,6 +310,7 @@ class MuatanService:
             .options(
                 joinedload(MuatanJasaAngkut.supir),
                 joinedload(MuatanJasaAngkut.biaya_tambahan),
+                selectinload(MuatanJasaAngkut.part_services),
             )
             .filter(MuatanJasaAngkut.id == muatan_id)
             .first()
@@ -346,6 +347,7 @@ class MuatanService:
         query = self.db.query(MuatanJasaAngkut).options(
             joinedload(MuatanJasaAngkut.supir),
             selectinload(MuatanJasaAngkut.biaya_tambahan),
+            selectinload(MuatanJasaAngkut.part_services),
         )
 
         # Search filter
@@ -545,6 +547,20 @@ class MuatanService:
              )
 
 
+        # Also mark linked bengkel transactions (INTERNAL) as paid
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        linked_bengkel = (
+            self.db.query(TransaksiPenjualanBengkel)
+            .filter(
+                TransaksiPenjualanBengkel.muatan_id == muatan.id,
+                TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.INTERNAL,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
+            )
+            .all()
+        )
+        for tb in linked_bengkel:
+            tb.status_bayar = PaymentStatus.LUNAS
+            tb.jumlah_bayar = tb.grand_total
 
         self.db.commit()
         self.db.refresh(muatan)
@@ -707,6 +723,19 @@ class MuatanService:
                 biaya_bengkel += (total or Decimal("0"))
             else:
                 biaya_lainnya += (total or Decimal("0"))
+
+        # 3b. Also include JasaAngkutPartService costs (parts & services from linked bengkel transactions)
+        ps_cost_query = (
+            self.db.query(func.sum(JasaAngkutPartService.total))
+            .join(MuatanJasaAngkut)
+        )
+        if tanggal_dari:
+            ps_cost_query = ps_cost_query.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            ps_cost_query = ps_cost_query.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        
+        ps_cost_total = ps_cost_query.scalar() or Decimal("0")
+        biaya_bengkel += ps_cost_total
 
         total_pendapatan = float(aggregates.total_pendapatan or 0)
         total_laba_supir = float(aggregates.total_laba_supir or 0)

@@ -6,37 +6,45 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Info, User, DollarSign, Calendar, Car, ShieldCheck, Trash2 } from 'lucide-react-native';
-import { useCreateMobil } from '../hooks/useMobil';
+import { useCreateMobil, useUpdateMobil } from '../hooks/useMobil';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
-
-interface MobilFormProps {
-    onSuccess?: () => void;
-}
 import { formatNumber, parseNumber } from '../utils/format';
 
-export const MobilForm = ({ onSuccess }: MobilFormProps) => {
-    const { mutate, isPending } = useCreateMobil();
+interface MobilFormProps {
+    initialData?: any;
+    onSuccess?: () => void;
+}
+
+
+export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
+    const isEdit = !!initialData;
+    const createMutation = useCreateMobil();
+    const updateMutation = useUpdateMobil();
+
+    const mutation = isEdit ? updateMutation : createMutation;
+    const isPending = mutation.isPending;
 
     // Basic Info
-    const [merek, setMerek] = useState('');
-    const [model, setModel] = useState('');
-    const [tahun, setTahun] = useState('');
-    const [nomorPlat, setNomorPlat] = useState('');
-    const [warna, setWarna] = useState('');
+    const [merek, setMerek] = useState(initialData?.merek || '');
+    const [model, setModel] = useState(initialData?.model || '');
+    const [tahun, setTahun] = useState(String(initialData?.tahun || ''));
+    const [nomorPlat, setNomorPlat] = useState(initialData?.nomor_plat || '');
+    const [warna, setWarna] = useState(initialData?.warna || '');
 
     // Technical Info
-    const [nomorRangka, setNomorRangka] = useState('');
-    const [nomorMesin, setNomorMesin] = useState('');
-    const [transmisi, setTransmisi] = useState('AT');
-    const [kilometer, setKilometer] = useState('');
+    const [nomorRangka, setNomorRangka] = useState(initialData?.nomor_rangka || '');
+    const [nomorMesin, setNomorMesin] = useState(initialData?.nomor_mesin || '');
+    const [transmisi, setTransmisi] = useState(initialData?.transmisi || 'AT');
+    const [kilometer, setKilometer] = useState(formatNumber(String(initialData?.kilometer || '')));
 
     // Financial & Ownership
-    const [hargaBeli, setHargaBeli] = useState('');
-    const [namaInvestor, setNamaInvestor] = useState('');
-    const [nominalInvestor, setNominalInvestor] = useState('');
-    const [persentaseInvestor, setPersentaseInvestor] = useState('0');
+    const [hargaBeli, setHargaBeli] = useState(formatNumber(String(initialData?.harga_beli || '')));
+    const [namaInvestor, setNamaInvestor] = useState(initialData?.nama_investor || '');
+    const [nominalInvestor, setNominalInvestor] = useState(formatNumber(String(initialData?.nominal_investor || '')));
+    const [persentaseInvestor, setPersentaseInvestor] = useState(String(initialData?.persentase_investor || '0'));
+    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar || 'TUNAI');
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -61,7 +69,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             return;
         }
 
-        const payload = {
+        const payload: any = {
             merek,
             model,
             tahun: parseInt(tahun) || 0,
@@ -71,20 +79,24 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             nomor_mesin: nomorMesin,
             transmisi,
             kilometer: parseNumber(kilometer) || 0,
-            harga_beli: parseNumber(hargaBeli),
             tipe_kepemilikan: namaInvestor ? 'investor' : 'tpm',
             nama_investor: namaInvestor || null,
             nominal_investor: parseNumber(nominalInvestor) || 0,
             persentase_investor: parseFloat(persentaseInvestor) || 0,
-            tanggal_masuk: new Date().toISOString().split('T')[0] // Default to today
         };
 
-        mutate(payload, {
+        if (!isEdit) {
+            payload.harga_beli = parseNumber(hargaBeli);
+            payload.metode_bayar = metodeBayar;
+            payload.tanggal_masuk = new Date().toISOString().split('T')[0];
+        }
+
+        const mutateOptions = {
             onSuccess: () => {
                 setDialogConfig({
                     visible: true,
                     title: 'Sukses',
-                    message: 'Data mobil berhasil disimpan',
+                    message: isEdit ? 'Data mobil berhasil diperbarui' : 'Data mobil berhasil disimpan',
                     variant: 'success'
                 });
                 setTimeout(() => {
@@ -94,12 +106,18 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             onError: (err: any) => {
                 setDialogConfig({
                     visible: true,
-                    title: 'Gagal Menyimpan',
-                    message: getErrorMessage(err, 'Gagal menyimpan data'),
+                    title: isEdit ? 'Gagal Memperbarui' : 'Gagal Menyimpan',
+                    message: getErrorMessage(err, isEdit ? 'Gagal memperbarui data' : 'Gagal menyimpan data'),
                     variant: 'error'
                 });
             }
-        });
+        };
+
+        if (isEdit) {
+            updateMutation.mutate({ id: initialData.id, data: payload }, mutateOptions);
+        } else {
+            createMutation.mutate(payload, mutateOptions);
+        }
     };
 
     const renderFormContent = () => (
@@ -160,7 +178,27 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
                     <Typography weight="bold" className="ml-2 text-primary">KEPEMILIKAN & HARGA</Typography>
                 </View>
 
-                <Input label="Harga Beli (Rp)" placeholder="0" keyboardType="numeric" value={hargaBeli} onChangeText={(v) => setHargaBeli(formatNumber(v))} />
+                {!isEdit && (
+                    <View className="flex-row space-x-3 mb-1">
+                        <Input label="Harga Beli (Rp)" placeholder="0" containerClassName="flex-[1.5]" keyboardType="numeric" value={hargaBeli} onChangeText={(v) => setHargaBeli(formatNumber(v))} />
+                        <View className="flex-1">
+                            <Typography variant="body2" className="text-textGray mb-1 font-medium">Metode Bayar</Typography>
+                            <View className="flex-row bg-gray-100 rounded-xl p-1">
+                                {['TUNAI', 'TRANSFER'].map((m) => (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => setMetodeBayar(m)}
+                                        className={`flex-1 py-2 rounded-lg items-center ${metodeBayar === m ? 'bg-white shadow-sm' : ''}`}
+                                    >
+                                        <Typography variant="caption" weight={metodeBayar === m ? 'bold' : 'medium'} className={metodeBayar === m ? 'text-primary' : 'text-gray-400'}>
+                                            {m === 'TUNAI' ? 'Cash' : 'Transfer'}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 <View className="mt-4">
                     <Typography weight="bold" className="text-primary mb-4">DATA INVESTOR (OPSIONAL)</Typography>
@@ -199,7 +237,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
             </View>
 
             <Button
-                title={isPending ? "Menyimpan..." : "Simpan Unit"}
+                title={isPending ? (isEdit ? "Memperbarui..." : "Menyimpan...") : (isEdit ? "Perbarui Data" : "Simpan Unit")}
                 variant="primary"
                 size="lg"
                 onPress={handleSubmit}
@@ -220,7 +258,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
         return (
             <View style={styles.webContainer}>
                 <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">Tambah Unit Baru</Typography>
+                    <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
                     <Typography variant="caption" className="text-gray-400">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
                 </View>
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
@@ -238,7 +276,7 @@ export const MobilForm = ({ onSuccess }: MobilFormProps) => {
         >
             <View style={styles.mobileContainer}>
                 <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">Tambah Unit Baru</Typography>
+                    <Typography variant="h3" weight="bold">{isEdit ? 'Edit Data Unit' : 'Tambah Unit Baru'}</Typography>
                     <Typography variant="caption" className="text-gray-400">Pastikan data unit sesuai dengan STNK/BPKB</Typography>
                 </View>
                 <BottomSheetScrollView

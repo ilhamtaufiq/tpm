@@ -89,6 +89,9 @@ export default function MobilInventoryScreen() {
     // Bottom Sheet Logic (Costs)
     const costBottomSheetModalRef = useRef<BottomSheetModal>(null);
 
+    // Bottom Sheet Logic (Edit)
+    const editBottomSheetModalRef = useRef<BottomSheetModal>(null);
+
     // Bottom Sheet Logic (Detail)
     const detailBottomSheetModalRef = useRef<BottomSheetModal>(null);
 
@@ -99,7 +102,8 @@ export default function MobilInventoryScreen() {
         return mobils.find((m: any) => m.id === selectedUnit.id) || selectedUnit;
     }, [selectedUnit, mobils]);
 
-    const [webModal, setWebModal] = useState<'new' | 'sales' | 'cost' | 'detail' | null>(null);
+    const [webModal, setWebModal] = useState<'new' | 'edit' | 'sales' | 'cost' | 'detail' | null>(null);
+    const [editingUnit, setEditingUnit] = useState<any>(null);
 
     const handlePresentModalPress = useCallback(() => {
         if (Platform.OS === 'web') {
@@ -135,6 +139,15 @@ export default function MobilInventoryScreen() {
             detailBottomSheetModalRef.current?.present();
         }
     }, [detailBottomSheetModalRef]);
+
+    const handlePresentEditModal = useCallback((unit: any) => {
+        setEditingUnit(unit);
+        if (Platform.OS === 'web') {
+            setWebModal('edit');
+        } else {
+            editBottomSheetModalRef.current?.present();
+        }
+    }, [editBottomSheetModalRef]);
 
     const handleDeleteMobil = (unit: any) => {
         setDialogConfig({
@@ -351,12 +364,12 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                             </View>
                                             <View className="flex-row items-center space-x-3">
-                                                {item.status === 'tersedia' && (
+                                                {(item.status === 'tersedia' || item.status === 'booking') && (
                                                     <TouchableOpacity
                                                         className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center border border-emerald-100"
                                                         onPress={() => handlePresentSalesModal(item)}
                                                     >
-                                                        <Calculator size={18} color="#10B981" />
+                                                        <CircleDollarSign size={18} color="#10B981" />
                                                     </TouchableOpacity>
                                                 )}
                                                 <TouchableOpacity
@@ -398,9 +411,10 @@ export default function MobilInventoryScreen() {
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
                                 {webModal === 'new' && <MobilForm onSuccess={() => { setWebModal(null); refetch(); }} />}
+                                {webModal === 'edit' && editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { setWebModal(null); refetch(); }} />}
                                 {webModal === 'sales' && selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
                                 {webModal === 'cost' && selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
-                                {webModal === 'detail' && selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => setWebModal(null)} onEdit={() => { }} />}
+                                {webModal === 'detail' && selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => setWebModal(null)} onSell={(u) => { setWebModal('sales'); setSelectedUnit(u); }} onEdit={() => { setWebModal('edit'); setEditingUnit(selectedDetailUnit); }} />}
                             </View>
                         </View>
                     </Modal>
@@ -423,7 +437,12 @@ export default function MobilInventoryScreen() {
                         </BottomSheetModal>
                         <BottomSheetModal ref={detailBottomSheetModalRef} index={0} snapPoints={detailSnapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
                             <View className="flex-1">
-                                {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onEdit={() => console.log('Edit', selectedDetailUnit.id)} />}
+                                {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
+                            </View>
+                        </BottomSheetModal>
+                        <BottomSheetModal ref={editBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                            <View className="flex-1">
+                                {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
                     </>

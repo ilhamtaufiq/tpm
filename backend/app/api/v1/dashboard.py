@@ -13,11 +13,11 @@ from app.services.kas_bank_service import KasBankService
 from app.services.karyawan_service import KaryawanService
 from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource
-from app.models.keuangan import KasBank
-from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya
+from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya
-from app.models.bengkel import PembelianSparePart
+from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus
+from app.models.keuangan import KasBank
 from sqlalchemy import func
 
 
@@ -380,7 +380,8 @@ def get_capital_report(
     p_bengkel_pure = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
     
     # Integrated bengkel piutang (from Unpaid Jasa Angkut)
-    q_integrated = (
+    # 1. Biaya Lainnya (Older records)
+    q_integrated_old = (
         db.query(func.sum(JasaAngkutBiayaLainnya.jumlah))
         .join(MuatanJasaAngkut)
         .filter(
@@ -388,11 +389,19 @@ def get_capital_report(
             MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS
         )
     )
-    if tanggal_dari: q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai: q_integrated = q_integrated.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+    if tanggal_dari: q_integrated_old = q_integrated_old.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_integrated_old = q_integrated_old.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+    
+    # 2. Part Service (Newer linked records)
+    q_integrated_new = (
+        db.query(func.sum(JasaAngkutPartService.total))
+        .join(MuatanJasaAngkut)
+        .filter(MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS)
+    )
+    if tanggal_dari: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
-    p_bengkel_integrated = float(q_integrated.scalar() or 0)
-    p_bengkel_total = p_bengkel_pure + p_bengkel_integrated
+    p_bengkel_integrated = float((q_integrated_old.scalar() or 0) + (q_integrated_new.scalar() or 0))
 
     # Piutang Jasa Angkut (Laba TPM part)
     q_ja_tpm = (
@@ -403,16 +412,36 @@ def get_capital_report(
     if tanggal_sampai: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
     p_jasa_angkut_tpm = float(q_ja_tpm.scalar() or 0)
-    p_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
     
-    total_b = p_lainnya + p_mobil + p_bengkel_total + p_jasa_angkut_tpm + p_karyawan
+    # Combined: PIUTANG SUPIR JASA ANGKUT
+    p_supir_ja = p_jasa_angkut_tpm + p_bengkel_integrated
+
+    # PIUTANG PART JUAL MOBIL (Bengkel costs for unsold cars)
+    q_part_mobil = (
+        db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
+        .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
+        .filter(
+            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+            Mobil.status == CarStatus.TERSEDIA
+        )
+    )
+    # Note: Using car's status to determine if it's still unpaid modal. 
+    # Not using date filter for balance sheet style piutang usually, but let's follow the app style.
+    
+    p_part_jual_mobil = float(q_part_mobil.scalar() or 0)
+
+    p_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
+    p_usaha = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
+    
+    total_b = p_lainnya + p_mobil + p_part_jual_mobil + p_supir_ja + p_karyawan + p_usaha
 
     section_b = {
         "piutang_lainnya": p_lainnya,
         "piutang_mobil": p_mobil,
-        "piutang_bengkel": p_bengkel_total,
-        "piutang_jasa_angkut": p_jasa_angkut_tpm,
+        "piutang_part_mobil": p_part_jual_mobil,
+        "piutang_jasa_angkut": p_supir_ja,
         "piutang_karyawan": p_karyawan,
+        "piutang_usaha": p_usaha,
         "total_b": total_b
     }
 

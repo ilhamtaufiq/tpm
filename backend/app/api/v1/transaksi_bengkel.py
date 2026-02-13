@@ -8,6 +8,7 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.bengkel import (
     TransaksiBengkelCreate,
     TransaksiBengkelResponse,
+    TransaksiBengkelList,
     PaymentUpdate,
 )
 from app.services.transaksi_bengkel_service import TransaksiBengkelService
@@ -28,7 +29,7 @@ def create_transaksi(
     return service.create(data, current_user.id)
 
 
-@router.get("")
+@router.get("", response_model=TransaksiBengkelList)
 def list_transaksi(
     db: DBSession,
     current_user: CurrentUser,
@@ -36,6 +37,8 @@ def list_transaksi(
     limit: int = Query(20, ge=1, le=100),
     search: Optional[str] = None,
     customer_id: Optional[int] = None,
+    mobil_id: Optional[int] = None,
+    muatan_id: Optional[int] = None,
     status_bayar: Optional[PaymentStatus] = None,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
@@ -49,6 +52,8 @@ def list_transaksi(
         limit=limit,
         search=search,
         customer_id=customer_id,
+        mobil_id=mobil_id,
+        muatan_id=muatan_id,
         status_bayar=status_bayar,
         tanggal_dari=tanggal_dari,
         tanggal_sampai=tanggal_sampai,
