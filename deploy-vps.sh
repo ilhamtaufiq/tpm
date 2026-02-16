@@ -49,17 +49,32 @@ if [ ! -d "$BACKEND_DIR" ]; then
     error "Direktori backend tidak ditemukan di: $BACKEND_DIR"
 fi
 
+# Pastikan permission folder project milik user asli (agar tidak perlu sudo untuk tulis file)
+chown -R $REAL_USER:$REAL_GROUP "$PROJECT_ROOT"
+
 # Buat Virtual Environment jika belum ada
 if [ ! -d "$BACKEND_DIR/venv" ]; then
     log "Membuat Python virtual environment..."
-    sudo -u $REAL_USERpython3 -m venv "$BACKEND_DIR/venv"
+    # Pastikan python3-venv terinstall
+    if ! dpkg -s python3-venv >/dev/null 2>&1; then
+        warn "python3-venv belum terinstall. Menginstall..."
+        apt-get update && apt-get install -y python3-venv
+    fi
+    sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || error "Gagal membuat venv. Pastikan python3-venv terinstall."
 fi
 
 # Install dependencies
 log "Install dependencies backend..."
-sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/pip" install --upgrade pip
-sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
-sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/pip" install gunicorn uvicorn
+VENV_PIP="$BACKEND_DIR/venv/bin/pip"
+VENV_ALEMBIC="$BACKEND_DIR/venv/bin/alembic"
+
+if [ ! -f "$VENV_PIP" ]; then
+    error "Pip tidak ditemukan di $VENV_PIP. Setup venv gagal."
+fi
+
+sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip
+sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt"
+sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn
 
 # Cek .env
 if [ ! -f "$BACKEND_DIR/.env" ]; then
@@ -78,7 +93,11 @@ fi
 log "Menjalankan migrasi database..."
 cd "$BACKEND_DIR" || error "Gagal masuk direktori backend"
 export PYTHONPATH=$BACKEND_DIR
-sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/alembic" upgrade head
+# Cek apakah alembic terinstall
+if [ ! -f "$VENV_ALEMBIC" ]; then
+    error "Alembic tidak ditemukan. Install dependencies gagal?"
+fi
+sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head || error "Migrasi database gagal."
 
 # Buat Systemd Service untuk Backend
 log "Membuat service systemd..."
@@ -91,7 +110,7 @@ After=network.target
 User=$REAL_USER
 Group=$REAL_GROUP
 WorkingDirectory=$BACKEND_DIR
-Environment="PATH=$BACKEND_DIR/venv/bin"
+Environment="PATH=$BACKEND_DIR/venv/bin:/usr/bin:/usr/local/bin"
 ExecStart=$BACKEND_DIR/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 3
 
 [Install]
@@ -108,13 +127,30 @@ log "Backend service berhasil disetup."
 log "Setup Frontend..."
 cd "$FRONTEND_DIR" || error "Direktori frontend tidak ditemukan"
 
+# Cek Node.js & NPM
+if ! command -v npm &> /dev/null; then
+    warn "npm tidak ditemukan path root. Mencoba mencari di user path..."
+    # Coba cari npm di path user jika pakai NVM atau instalasi custom
+    NPM_PATH=$(runuser -l $REAL_USER -c 'which npm')
+    NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
+    
+    if [ -z "$NPM_PATH" ]; then
+         error "NPM tidak ditemukan. Harap install Node.js (v18+) terlebih dahulu."
+    fi
+else
+    NPM_PATH=$(which npm)
+    NPX_PATH=$(which npx)
+fi
+
+log "Menggunakan NPM: $NPM_PATH"
+
 # Install Node dependencies
 log "Install dependencies frontend..."
-sudo -u $REAL_USER npm install
+sudo -u $REAL_USER "$NPM_PATH" install || error "Gagal install npm dependencies."
 
 # Build untuk Web
 log "Building frontend (Expo Web)..."
-sudo -u $REAL_USER npx expo export -p web
+sudo -u $REAL_USER "$NPX_PATH" expo export -p web || error "Gagal build frontend."
 
 WEB_BUILD_DIR="$FRONTEND_DIR/dist"
 if [ ! -d "$WEB_BUILD_DIR" ]; then
@@ -125,7 +161,10 @@ fi
 DEPLOY_DIR="/var/www/tpm-frontend"
 log "Menyalin build ke $DEPLOY_DIR..."
 mkdir -p "$DEPLOY_DIR"
-cp -r "$WEB_BUILD_DIR"/* "$DEPLOY_DIR"
+# Hapus isi lama jika ada
+rm -rf "$DEPLOY_DIR"/*
+# Copy isi baru
+cp -r "$WEB_BUILD_DIR"/* "$DEPLOY_DIR" || error "Gagal menyalin file build."
 chown -R www-data:www-data "$DEPLOY_DIR"
 chmod -R 755 "$DEPLOY_DIR"
 
