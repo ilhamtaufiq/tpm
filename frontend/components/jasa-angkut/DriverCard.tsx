@@ -42,6 +42,24 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                     </View>
                 </View>
 
+                {(supir.nopol_kendaraan || supir.info_kendaraan) && (
+                    <View className="mt-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                        <View className="flex-row items-center">
+                            <View className="bg-blue-500/10 px-2 py-0.5 rounded mr-2">
+                                <Typography variant="caption" weight="bold" className="text-blue-600 text-[10px]">ARMADA</Typography>
+                            </View>
+                            <Typography variant="caption" weight="bold" className="text-gray-800">
+                                {supir.nopol_kendaraan || 'No Plat'}
+                            </Typography>
+                        </View>
+                        {supir.info_kendaraan && (
+                            <Typography variant="caption" className="text-gray-500 mt-0.5 ml-0.5">
+                                {supir.info_kendaraan}
+                            </Typography>
+                        )}
+                    </View>
+                )}
+
                 <View className="flex-row mt-4 pt-4 border-t border-gray-100">
                     <View className="flex-row items-center mr-4">
                         <Phone size={14} color="#6B7280" />

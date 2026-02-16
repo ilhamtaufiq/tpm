@@ -1,0 +1,95 @@
+from typing import Optional, List
+from datetime import date
+
+from fastapi import APIRouter, Query, status
+
+from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.schemas.keuangan import (
+    HutangResponse,
+    HutangList,
+    HutangSummary,
+    PembayaranHutangCreate,
+    PembayaranHutangResponse,
+    PembayaranHutangSplit,
+)
+from app.services.hutang_service import HutangService
+from app.utils.constants import HutangStatus, HutangSource
+
+
+router = APIRouter(prefix="/hutang", tags=["Keuangan - Hutang Usaha"])
+
+
+@router.get("", response_model=HutangList)
+def list_hutang(
+    db: DBSession,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    supplier_id: Optional[int] = None,
+    sumber: Optional[HutangSource] = None,
+    status: Optional[HutangStatus] = None,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+    sort_by: str = "tanggal",
+    sort_order: str = "desc",
+):
+    """Get list of payables with pagination and filters."""
+    service = HutangService(db)
+    return service.get_list(
+        skip=skip,
+        limit=limit,
+        search=search,
+        supplier_id=supplier_id,
+        sumber=sumber,
+        status=status,
+        tanggal_dari=tanggal_dari,
+        tanggal_sampai=tanggal_sampai,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+
+@router.get("/summary", response_model=HutangSummary)
+def get_hutang_summary(
+    db: DBSession,
+    current_user: ManagerUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+):
+    """Get payables summary statistics."""
+    service = HutangService(db)
+    return service.get_summary(tanggal_dari, tanggal_sampai)
+
+
+@router.get("/{hutang_id}", response_model=HutangResponse)
+def get_hutang(
+    hutang_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get payable by ID."""
+    service = HutangService(db)
+    return service.get_by_id(hutang_id)
+
+
+@router.post("/pembayaran", response_model=PembayaranHutangResponse)
+def create_pembayaran(
+    data: PembayaranHutangCreate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process payment for a payable."""
+    service = HutangService(db)
+    return service.process_payment(data, current_user.id)
+
+
+@router.post("/pembayaran-split", response_model=List[PembayaranHutangResponse])
+def create_pembayaran_split(
+    data: PembayaranHutangSplit,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process multiple payments for a payable at once."""
+    service = HutangService(db)
+    return service.process_payment_split(data, current_user.id)

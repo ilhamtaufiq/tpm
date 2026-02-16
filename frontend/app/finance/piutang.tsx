@@ -16,22 +16,23 @@ import {
     ChevronRight,
     CreditCard,
     Plus,
+    Trash2,
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
-import { usePiutangList, usePiutangSummary, useProcessPayment, useCreatePiutang } from '../../hooks/useKeuangan';
+import { usePiutangList, usePiutangSummary, useProcessPayment, useProcessPaymentSplit, useCreatePiutang } from '../../hooks/useKeuangan';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
-    { label: 'Semua', value: 'all' },
     { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
     { label: 'Sebagian', value: 'SEBAGIAN' },
-    { label: 'Lunas', value: 'LUNAS' },
     { label: 'Jatuh Tempo', value: 'overdue' },
+    { label: 'Semua', value: 'all' },
+    { label: 'Lunas', value: 'LUNAS' },
 ];
 
 const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = {
@@ -49,7 +50,7 @@ const SUMBER_LABEL: Record<string, string> = {
 };
 
 export default function PiutangUsahaScreen() {
-    const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('all');
+    const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
@@ -62,7 +63,7 @@ export default function PiutangUsahaScreen() {
         overdue_only: selectedFilter === 'overdue',
     });
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary();
-    const paymentMutation = useProcessPayment();
+    const paymentMutation = useProcessPaymentSplit();
     const createMutation = useCreatePiutang();
 
     const createSheetRef = useRef<BottomSheet>(null);
@@ -116,9 +117,11 @@ export default function PiutangUsahaScreen() {
     };
 
     // Payment form
-    const [paymentAmount, setPaymentAmount] = useState('');
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
+        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
+    ]);
     const [paymentNote, setPaymentNote] = useState('');
-    const [payMetode, setPayMetode] = useState('TUNAI');
 
     // Create form state
     const [createSource, setCreateSource] = useState('LAINNYA');
@@ -146,9 +149,14 @@ export default function PiutangUsahaScreen() {
 
     const handleOpenPayment = () => {
         if (!selectedPiutang) return;
-        setPaymentAmount(formatNumber(selectedPiutang.sisa_piutang.toString()));
+        setPayments([{
+            id: Date.now(),
+            metode: 'TUNAI',
+            nominal: formatNumber(selectedPiutang.sisa_piutang.toString()),
+            catatan: ''
+        }]);
         setPaymentNote('');
-        setPayMetode('TUNAI');
+        setIsSplitPayment(false);
         if (Platform.OS === 'web') {
             setDetailVisible(false);
             setPaymentVisible(true);
@@ -181,11 +189,24 @@ export default function PiutangUsahaScreen() {
     };
 
     const handleSubmitPayment = async () => {
-        if (!selectedPiutang || !paymentAmount) return;
+        if (!selectedPiutang || payments.length === 0) return;
 
-        const amount = parseNumber(paymentAmount);
-        if (amount <= 0 || amount > selectedPiutang.sisa_piutang) {
-            showAlert('Error', 'Nominal pembayaran tidak valid', 'error');
+        const validatedPayments = payments
+            .map(p => ({
+                metode: p.metode as any,
+                nominal: parseNumber(p.nominal),
+                catatan: p.catatan || undefined
+            }))
+            .filter(p => p.nominal > 0);
+
+        if (validatedPayments.length === 0) {
+            showAlert('Validasi', 'Minimal satu pembayaran dengan nominal > 0', 'warning');
+            return;
+        }
+
+        const totalInternal = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
+        if (totalInternal > selectedPiutang.sisa_piutang) {
+            showAlert('Validasi', `Total pembayaran (${formatCurrency(totalInternal)}) melebihi sisa piutang (${formatCurrency(selectedPiutang.sisa_piutang)})`, 'warning');
             return;
         }
 
@@ -193,9 +214,8 @@ export default function PiutangUsahaScreen() {
             await paymentMutation.mutateAsync({
                 piutang_id: selectedPiutang.id,
                 tanggal: new Date().toISOString().split('T')[0],
-                nominal: amount,
-                metode_bayar: payMetode,
-                catatan: paymentNote,
+                payments: validatedPayments,
+                catatan: paymentNote || undefined,
             });
             showAlert('Sukses', 'Pembayaran berhasil dicatat', 'success');
             if (Platform.OS === 'web') {
@@ -376,9 +396,14 @@ export default function PiutangUsahaScreen() {
                     <View className="mb-4">
                         <Typography variant="caption" weight="bold" className="text-gray-500 mb-2">RIWAYAT PEMBAYARAN</Typography>
                         {selectedPiutang.pembayaran.map((p: PembayaranPiutang) => (
-                            <View key={p.id} className="flex-row justify-between py-2 border-b border-gray-50">
-                                <Typography variant="caption">{formatDate(p.tanggal)}</Typography>
-                                <Typography variant="caption" weight="medium" className="text-green-600">+{formatCurrency(p.nominal)}</Typography>
+                            <View key={p.id} className="flex-row justify-between py-2.5 border-b border-gray-50 items-center">
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-textMain">{formatDate(p.tanggal)}</Typography>
+                                    <View className="bg-gray-100 px-1.5 py-0.5 rounded-md self-start mt-0.5">
+                                        <Typography className="text-[8px] font-bold text-gray-500 tracking-tighter">{p.metode_bayar}</Typography>
+                                    </View>
+                                </View>
+                                <Typography variant="caption" weight="bold" className="text-green-600">+{formatCurrency(p.nominal)}</Typography>
                             </View>
                         ))}
                     </View>
@@ -410,75 +435,168 @@ export default function PiutangUsahaScreen() {
         )
     );
 
-    const renderPaymentContent = () => (
-        <View className="p-6">
-            <Typography variant="h2" weight="bold" className="mb-4">Catat Pembayaran</Typography>
+    const renderPaymentContent = () => {
+        const totalBayar = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+        const sisaPiutang = selectedPiutang?.sisa_piutang || 0;
+        const sisaSetelahBayar = sisaPiutang - totalBayar;
 
-            {selectedPiutang && (
-                <Card variant="outlined" className="p-3 mb-4 border-gray-100 flex-row justify-between">
-                    <Typography variant="caption" className="text-gray-500">Sisa Piutang</Typography>
-                    <Typography variant="body2" weight="bold" className="text-red-600">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
-                </Card>
-            )}
+        const addPayment = () => {
+            setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+            setIsSplitPayment(true);
+        };
 
-            <Input
-                label="Nominal Bayar (Rp)"
-                keyboardType="numeric"
-                placeholder="0"
-                value={paymentAmount}
-                onChangeText={(t) => setPaymentAmount(formatNumber(t))}
-            />
+        const removePayment = (id: number) => {
+            const newPayments = payments.filter(p => p.id !== id);
+            setPayments(newPayments);
+            if (newPayments.length <= 1) setIsSplitPayment(false);
+        };
 
-            <View className="mb-4">
-                <Typography className="mb-2 text-gray-600 font-medium">Metode Pembayaran</Typography>
-                <View className="flex-row space-x-2">
-                    {['TUNAI', 'TRANSFER'].map((m) => (
-                        <TouchableOpacity
-                            key={m}
-                            onPress={() => setPayMetode(m)}
-                            className={`flex-1 py-3 items-center rounded-xl border ${payMetode === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
-                        >
-                            <Typography
-                                className={payMetode === m ? 'text-primary' : 'text-gray-500'}
-                                weight={payMetode === m ? 'semibold' : 'normal'}
-                            >
-                                {m}
+        const updatePayment = (id: number, field: string, value: any) => {
+            setPayments(payments.map(p => p.id === id ? { ...p, [field]: value } : p));
+        };
+
+        return (
+            <View className="p-8">
+                <View className="flex-row justify-between items-center mb-6">
+                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Catat Pembayaran</Typography>
+                    <TouchableOpacity
+                        onPress={() => setIsSplitPayment(!isSplitPayment)}
+                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                    >
+                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                        </Typography>
+                    </TouchableOpacity>
+                </View>
+
+                {selectedPiutang && (
+                    <Card variant="outlined" className="p-6 mb-8 border-primary/10 bg-primary/5 rounded-[32px]">
+                        <View className="flex-row justify-between mb-2">
+                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Sisa Piutang</Typography>
+                            <Typography variant="body2" weight="bold" className="text-rose-600 font-bold">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between">
+                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Sisa Setelah Bayar</Typography>
+                            <Typography variant="body2" weight="bold" className={sisaSetelahBayar < 0 ? "text-rose-600" : "text-primary"}>
+                                {formatCurrency(Math.max(0, sisaSetelahBayar))}
                             </Typography>
-                        </TouchableOpacity>
+                        </View>
+                        {totalBayar > 0 && (
+                            <View className="mt-4 pt-4 border-t border-primary/10">
+                                <View className="flex-row justify-between">
+                                    <Typography variant="body2" weight="bold" className="text-primary">Total Dibayar</Typography>
+                                    <Typography variant="body1" weight="bold" className="text-primary">{formatCurrency(totalBayar)}</Typography>
+                                </View>
+                            </View>
+                        )}
+                    </Card>
+                )}
+
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-center mb-4">
+                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Daftar Pembayaran</Typography>
+                        {isSplitPayment && (
+                            <TouchableOpacity onPress={addPayment} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10">
+                                <Plus size={14} color="#023C69" />
+                                <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {payments.map((p, idx) => (
+                        <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                            <View className="flex-row items-center justify-between mb-4">
+                                <Typography variant="caption" weight="bold" className="text-primary">Pembayaran #{idx + 1}</Typography>
+                                {payments.length > 1 && (
+                                    <TouchableOpacity onPress={() => removePayment(p.id)} className="w-8 h-8 items-center justify-center bg-rose-50 rounded-xl">
+                                        <Trash2 size={16} color="#EF4444" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            <View className="flex-row space-x-2 mb-4">
+                                {['TUNAI', 'TRANSFER'].map((m) => (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => updatePayment(p.id, 'metode', m)}
+                                        className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                    >
+                                        <Typography
+                                            className={p.metode === m ? 'text-white text-xs font-bold' : 'text-textGray text-xs'}
+                                        >
+                                            {m}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Input
+                                label="Nominal (Rp)"
+                                keyboardType="numeric"
+                                placeholder="0"
+                                value={p.nominal}
+                                onChangeText={(t) => updatePayment(p.id, 'nominal', formatNumber(t))}
+                                containerClassName="mb-4"
+                            />
+
+                            {isSplitPayment && (
+                                <Input
+                                    label="Catatan Pembayaran (Opsional)"
+                                    placeholder="Keterangan untuk bagian ini"
+                                    value={p.catatan}
+                                    onChangeText={(t) => updatePayment(p.id, 'catatan', t)}
+                                    containerClassName="mb-0"
+                                />
+                            )}
+                        </Card>
                     ))}
+
+                    {!isSplitPayment && (
+                        <TouchableOpacity
+                            onPress={addPayment}
+                            className="w-full h-14 border-2 border-dashed border-gray-200 rounded-2xl items-center justify-center flex-row"
+                        >
+                            <Plus size={20} color="#9CA3AF" />
+                            <Typography className="text-gray-400 font-bold ml-2">Tambah Metode Pembayaran Lain</Typography>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <Input
+                    label="Catatan Global (Opsional)"
+                    placeholder="Contoh: Pembayaran tagihan bulan ini"
+                    value={paymentNote}
+                    onChangeText={setPaymentNote}
+                    multiline
+                    numberOfLines={2}
+                    containerClassName="mb-8"
+                />
+
+                <View className="flex-row space-x-3">
+                    <Button
+                        title="Batal"
+                        variant="outline"
+                        onPress={() => {
+                            if (Platform.OS === 'web') {
+                                setPaymentVisible(false);
+                                setIsSheetOpen(false);
+                            } else {
+                                paymentSheetRef.current?.close();
+                            }
+                        }}
+                        className="flex-1 rounded-2xl h-14"
+                    />
+                    <Button
+                        title={paymentMutation.isPending ? 'Memproses...' : 'Simpan Pembayaran'}
+                        onPress={handleSubmitPayment}
+                        disabled={paymentMutation.isPending || totalBayar <= 0}
+                        loading={paymentMutation.isPending}
+                        className="flex-[1.5] rounded-2xl h-14 shadow-lg shadow-primary/20"
+                    />
                 </View>
             </View>
-
-            <Input
-                label="Catatan (Opsional)"
-                placeholder="Contoh: Pembayaran via transfer"
-                value={paymentNote}
-                onChangeText={setPaymentNote}
-            />
-
-            <View className="flex-row justify-end mt-4 gap-2">
-                <Button
-                    title="Batal"
-                    variant="outline"
-                    onPress={() => {
-                        if (Platform.OS === 'web') {
-                            setPaymentVisible(false);
-                            setIsSheetOpen(false);
-                        } else {
-                            paymentSheetRef.current?.close();
-                        }
-                    }}
-                />
-                <Button
-                    title={paymentMutation.isPending ? 'Memproses...' : 'Simpan Pembayaran'}
-                    onPress={handleSubmitPayment}
-                    disabled={paymentMutation.isPending || !paymentAmount}
-                    loading={paymentMutation.isPending}
-                    className="flex-1"
-                />
-            </View>
-        </View>
-    );
+        );
+    };
 
     const renderPiutangItem = ({ item }: { item: Piutang }) => {
         const progressPercent = item.persentase_terbayar;
@@ -673,7 +791,7 @@ export default function PiutangUsahaScreen() {
                             <View className="mb-4">
                                 <View className="flex-row justify-between items-center mb-1.5">
                                     <Typography className="text-textGray/40 text-[9px] font-bold uppercase tracking-widest">Progress Pelunasan</Typography>
-                                    <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent)}%</Typography>
+                                    <Typography className="text-primary text-[10px] font-bold">{Math.round(progressPercent || 0)}%</Typography>
                                 </View>
                                 <View className="h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/20">
                                     <View

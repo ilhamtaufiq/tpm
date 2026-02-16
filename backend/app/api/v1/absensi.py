@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import date, time
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status as http_status
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.karyawan import (
@@ -16,7 +16,7 @@ from app.utils.constants import AttendanceStatus
 router = APIRouter(prefix="/absensi", tags=["Absensi (Attendance)"])
 
 
-@router.post("", response_model=AbsensiResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AbsensiResponse, status_code=http_status.HTTP_201_CREATED)
 def create_absensi(
     data: AbsensiCreate,
     db: DBSession,
@@ -145,10 +145,11 @@ def clock_in(
     current_user: CurrentUser,
     tanggal: Optional[date] = None,
     jam: Optional[time] = None,
+    status: AttendanceStatus = AttendanceStatus.HADIR,
 ):
     """Record employee clock in."""
     service = AbsensiService(db)
-    return service.clock_in(karyawan_id, tanggal, jam)
+    return service.clock_in(karyawan_id, tanggal, jam, status)
 
 
 @router.post("/clock-out", response_model=AbsensiResponse)

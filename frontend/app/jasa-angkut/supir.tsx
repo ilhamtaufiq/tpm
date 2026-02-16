@@ -12,7 +12,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function SupirScreen() {
-    const router = useRouter();    const [filterActive, setFilterActive] = useState<boolean | undefined>(true);
+    const router = useRouter(); const [filterActive, setFilterActive] = useState<boolean | undefined>(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -24,7 +24,7 @@ export default function SupirScreen() {
         sort_order: 'asc'
     });
 
-    const drivers = supirData || [];
+    const drivers = supirData?.data || [];
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

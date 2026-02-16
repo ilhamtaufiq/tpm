@@ -102,6 +102,32 @@ class MuatanService:
             )
         return supir
 
+    def _validate_armada(self, armada_id: Optional[int]) -> Optional[Any]:
+        """Validate armada exists and is active."""
+        if not armada_id:
+            return None
+
+        from app.models.jasa_angkut import ArmadaJasaAngkut
+        armada = (
+            self.db.query(ArmadaJasaAngkut)
+            .filter(
+                ArmadaJasaAngkut.id == armada_id,
+                ArmadaJasaAngkut.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if not armada:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Armada tidak ditemukan",
+            )
+        if not armada.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Armada tidak aktif",
+            )
+        return armada
+
     def _calculate_profit(
         self,
         pendapatan_kotor: Decimal,
@@ -140,8 +166,9 @@ class MuatanService:
     ) -> MuatanJasaAngkut:
         """Create a new transport load record."""
         # ... existing validation and generation ...
-        # Validate driver
+        # Validate driver and armada
         supir = self._validate_supir(data.supir_id)
+        armada = self._validate_armada(data.armada_id)
 
         # Generate transaction number
         nomor_transaksi = self._generate_nomor_transaksi()
@@ -155,7 +182,9 @@ class MuatanService:
             tanggal=data.tanggal,
             supir_id=data.supir_id,
             supir_nama_manual=data.supir_nama,
-            nopol=data.nopol,
+            armada_id=data.armada_id,
+            nopol=data.nopol or (armada.nopol if armada else None),
+            info_kendaraan=data.info_kendaraan or (armada.nama if armada else None),
             asal=data.asal,
             tujuan=data.tujuan,
             jenis_muatan=data.jenis_muatan,
@@ -246,6 +275,9 @@ class MuatanService:
             # If we receive `harga_jual`, we cover the `harga_beli`.
             # I'll use `muatan.harga_jual` for Kas Masuk as it's the real money coming in.
             
+            # TPM portion only for receivable (excluding Driver Share)
+            tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
+            
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
@@ -256,11 +288,11 @@ class MuatanService:
                 nama_debitur=debtor_name,
                 telepon_debitur=supir.telepon if supir else None,
                 alamat_debitur=supir.alamat if supir else None,
-                nominal_piutang=muatan.pendapatan_kotor, # Maintaining existing logic
+                nominal_piutang=tpm_gross_portion,
                 total_dibayar=Decimal("0"),
-                sisa_piutang=muatan.pendapatan_kotor,
+                sisa_piutang=tpm_gross_portion,
                 status=PiutangStatus.BELUM_LUNAS,
-                catatan=f"Piutang Jasa Angkut {muatan.nomor_transaksi}",
+                catatan=f"Piutang Jasa Angkut {muatan.nomor_transaksi} (Bagian TPM)",
                 created_by=user_id,
             )
             self.db.add(piutang)
@@ -286,16 +318,19 @@ class MuatanService:
              # Or, we update the schema?
              # Let's check if 'metode_bayar' is in MuatanCreate in a separate step or just assume TUNAI.
              # To be safe, I will use PaymentMethod.TUNAI.
+             # Record ONLY TPM Portion to Kas/Bank
+             tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
+             
              create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
                 tipe=KasBankType.MASUK,
-                nominal=muatan.harga_jual, # Full amount received
+                nominal=tpm_gross_portion,
                 sumber=KasBankSource.JASA_ANGKUT,
                 metode_bayar=data.metode_bayar or PaymentMethod.TUNAI, # Use provided method
                 referensi_id=muatan.id,
                 nomor_referensi=muatan.nomor_transaksi,
-                keterangan=f"Pemasukan Jasa Angkut {muatan.nomor_transaksi}",
+                keterangan=f"Pemasukan Jasa Angkut {muatan.nomor_transaksi} (Net TPM)",
                 user_id=user_id,
              )
 
@@ -309,6 +344,7 @@ class MuatanService:
             self.db.query(MuatanJasaAngkut)
             .options(
                 joinedload(MuatanJasaAngkut.supir),
+                joinedload(MuatanJasaAngkut.armada),
                 joinedload(MuatanJasaAngkut.biaya_tambahan),
                 selectinload(MuatanJasaAngkut.part_services),
             )
@@ -326,7 +362,10 @@ class MuatanService:
         """Get transport load by transaction number."""
         return (
             self.db.query(MuatanJasaAngkut)
-            .options(joinedload(MuatanJasaAngkut.supir))
+            .options(
+                joinedload(MuatanJasaAngkut.supir),
+                joinedload(MuatanJasaAngkut.armada)
+            )
             .filter(MuatanJasaAngkut.nomor_transaksi == nomor_transaksi)
             .first()
         )
@@ -346,6 +385,7 @@ class MuatanService:
         """Get list of transport loads with pagination and filters."""
         query = self.db.query(MuatanJasaAngkut).options(
             joinedload(MuatanJasaAngkut.supir),
+            joinedload(MuatanJasaAngkut.armada),
             selectinload(MuatanJasaAngkut.biaya_tambahan),
             selectinload(MuatanJasaAngkut.part_services),
         )
@@ -418,6 +458,9 @@ class MuatanService:
         #     )
 
         update_data = data.model_dump(exclude_unset=True)
+
+        if "armada_id" in update_data:
+            self._validate_armada(update_data["armada_id"])
 
         # Map supir_nama to supir_nama_manual
         if "supir_nama" in update_data:
@@ -669,19 +712,21 @@ class MuatanService:
         if tanggal_sampai:
             base_query = base_query.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
 
-        # 1. Paid Transactions (For Report)
-        paid_query = base_query.filter(MuatanJasaAngkut.status_bayar == PaymentStatus.LUNAS)
+        # 1. All Transactions in period (For Report - Accrual Basis)
+        # Point 3: Include unpaid in P&L
+        summary_query = base_query
         
         # Total transactions (Paid only)
-        total_count = paid_query.count()
+        total_count = summary_query.count()
 
         # Aggregate values (Paid only)
-        aggregates = paid_query.with_entities(
-            func.sum(MuatanJasaAngkut.pendapatan_kotor).label("total_pendapatan"),
+        # Note: 'total_pendapatan' per user request should exclude 'laba_supir'
+        aggregates = summary_query.with_entities(
+            func.sum(MuatanJasaAngkut.pendapatan_kotor - MuatanJasaAngkut.laba_supir).label("total_pendapatan"),
             func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya"),
             func.sum(MuatanJasaAngkut.laba_kotor).label("total_laba_kotor"),
             func.sum(MuatanJasaAngkut.laba_tpm).label("total_laba_tpm"),
-            func.sum(MuatanJasaAngkut.laba_supir).label("total_laba_supir"),
+            func.sum(0).label("total_laba_supir"), # Hidden per request
         ).first()
 
         # 2. Unpaid Transactions (For separate stats)
@@ -691,7 +736,7 @@ class MuatanService:
         unpaid_count = unpaid_query.count()
         unpaid_value = (
             unpaid_query.with_entities(
-                func.sum(MuatanJasaAngkut.laba_supir)
+                func.sum(MuatanJasaAngkut.pendapatan_kotor - MuatanJasaAngkut.laba_supir) # Unpaid share TPM
             ).scalar()
             or Decimal("0")
         )
@@ -711,7 +756,7 @@ class MuatanService:
         if tanggal_sampai:
             cost_query = cost_query.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
             
-        cost_query = cost_query.filter(MuatanJasaAngkut.status_bayar == PaymentStatus.LUNAS)
+        # Summary includes all transactions in period (Accrual)
             
         cost_results = cost_query.group_by(JasaAngkutBiayaLainnya.kategori).all()
         
@@ -750,9 +795,9 @@ class MuatanService:
             "total_biaya": float(aggregates.total_biaya or 0),
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": laba_tpm_net,
-            "laba_supir": total_laba_supir,
+            "laba_supir": 0, # Hidden in reports as requested
             "hutang_supir_count": unpaid_count,
-            "hutang_supir_nilai": float(unpaid_value),
+            "hutang_supir_nilai": float(unpaid_value), # Now refers to unpaid TPM portion
             "details": {
                 "gross_share_tpm": gross_share_tpm,
                 "biaya_bengkel": float(biaya_bengkel),

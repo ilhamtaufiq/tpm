@@ -3,10 +3,12 @@ import api from '../utils/api';
 // --- Enums matching backend ---
 
 export type PiutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
+export type HutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
 export type PiutangSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'KASBON_KARYAWAN' | 'LAINNYA';
+export type HutangSource = 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'LAINNYA';
 export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA';
 export type KasBankType = 'MASUK' | 'KELUAR';
-export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
+export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'HUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
 export type PaymentMethod = 'TUNAI' | 'TRANSFER' | 'KREDIT' | 'DEBIT' | 'SPLIT';
 
 // --- Piutang Interfaces ---
@@ -62,6 +64,62 @@ export interface PiutangListResponse {
     size: number;
     pages: number;
     total_piutang: number;
+    total_terbayar: number;
+    total_sisa: number;
+}
+
+
+// --- Hutang Interfaces ---
+
+export interface Hutang {
+    id: number;
+    nomor_hutang: string;
+    tanggal: string;
+    sumber: HutangSource;
+    referensi_id?: number;
+    nomor_referensi?: string;
+    supplier_id?: number;
+    nama_kreditur: string;
+    telepon_kreditur?: string;
+    alamat_kreditur?: string;
+    nominal_hutang: number;
+    total_dibayar: number;
+    sisa_hutang: number;
+    persentase_terbayar: number;
+    tanggal_jatuh_tempo?: string;
+    tanggal_lunas?: string;
+    status: HutangStatus;
+    catatan?: string;
+    pembayaran: PembayaranHutang[];
+    created_at: string;
+}
+
+export interface PembayaranHutang {
+    id: number;
+    hutang_id: number;
+    tanggal: string;
+    nominal: number;
+    metode_bayar: PaymentMethod;
+    catatan?: string;
+    created_at: string;
+}
+
+export interface HutangSummary {
+    total_hutang: number;
+    total_terbayar: number;
+    total_sisa: number;
+    jumlah_lunas: number;
+    jumlah_belum_lunas: number;
+    by_sumber: Record<string, { count: number; sisa_hutang: number }>;
+}
+
+export interface HutangListResponse {
+    data: Hutang[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+    total_hutang: number;
     total_terbayar: number;
     total_sisa: number;
 }
@@ -194,6 +252,20 @@ export const keuanganService = {
         return response.data;
     },
 
+    processPaymentSplit: async (data: {
+        piutang_id: number;
+        tanggal: string;
+        payments: {
+            metode: PaymentMethod;
+            nominal: number;
+            catatan?: string;
+        }[];
+        catatan?: string;
+    }): Promise<PembayaranPiutang[]> => {
+        const response = await api.post('/piutang/payment/split', data);
+        return response.data;
+    },
+
     createPiutang: async (data: {
         tanggal: string;
         sumber: PiutangSource;
@@ -203,6 +275,64 @@ export const keuanganService = {
         catatan?: string;
     }): Promise<Piutang> => {
         const response = await api.post('/piutang', data);
+        return response.data;
+    },
+
+    // ============================================
+    // HUTANG METHODS
+    // ============================================
+
+    getHutangList: async (params?: {
+        skip?: number;
+        limit?: number;
+        search?: string;
+        supplier_id?: number;
+        sumber?: HutangSource;
+        status?: HutangStatus;
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+        sort_by?: string;
+        sort_order?: 'asc' | 'desc';
+    }): Promise<HutangListResponse> => {
+        const response = await api.get('/hutang', { params });
+        return response.data;
+    },
+
+    getHutangSummary: async (params?: {
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }): Promise<HutangSummary> => {
+        const response = await api.get('/hutang/summary', { params });
+        return response.data;
+    },
+
+    getHutang: async (id: number): Promise<Hutang> => {
+        const response = await api.get(`/hutang/${id}`);
+        return response.data;
+    },
+
+    processHutangPayment: async (data: {
+        hutang_id: number;
+        tanggal: string;
+        nominal: number;
+        metode_bayar?: PaymentMethod;
+        catatan?: string;
+    }): Promise<PembayaranHutang> => {
+        const response = await api.post('/hutang/pembayaran', data);
+        return response.data;
+    },
+
+    processHutangPaymentSplit: async (data: {
+        hutang_id: number;
+        tanggal: string;
+        payments: {
+            metode: PaymentMethod;
+            nominal: number;
+            catatan?: string;
+        }[];
+        catatan?: string;
+    }): Promise<PembayaranHutang[]> => {
+        const response = await api.post('/hutang/pembayaran-split', data);
         return response.data;
     },
 

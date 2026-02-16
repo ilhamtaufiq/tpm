@@ -141,7 +141,7 @@ class SlipGaji(Base, TimestampMixin):
     tanggal_akhir: Mapped[date] = mapped_column(Date)  # End of week
 
     # Attendance summary
-    jumlah_hadir: Mapped[int] = mapped_column(Integer, default=0)
+    jumlah_hadir: Mapped[Decimal] = mapped_column(Numeric(5, 1), default=0)
 
     # Salary components (weekly)
     gaji_pokok: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
@@ -218,6 +218,11 @@ class KasbonKaryawan(Base, TimestampMixin):
         """Mark kasbon as paid."""
         self.status = PaymentStatus.LUNAS
         self.tanggal_lunas = tanggal
+
+    @property
+    def karyawan_nama(self) -> Optional[str]:
+        """Get employee name."""
+        return self.karyawan.nama if self.karyawan else None
 
     def __repr__(self) -> str:
         return f"<KasbonKaryawan(id={self.id}, karyawan_id={self.karyawan_id}, nominal={self.nominal})>"

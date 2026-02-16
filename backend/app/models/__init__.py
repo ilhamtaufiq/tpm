@@ -32,6 +32,8 @@ from app.models.karyawan import (
 from app.models.keuangan import (
     PiutangUsaha,
     PembayaranPiutang,
+    HutangUsaha,
+    PembayaranHutang,
     KasBank,
 )
 
@@ -61,5 +63,7 @@ __all__ = [
     "KasbonKaryawan",
     "PiutangUsaha",
     "PembayaranPiutang",
+    "HutangUsaha",
+    "PembayaranHutang",
     "KasBank",
 ]

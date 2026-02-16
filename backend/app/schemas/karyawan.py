@@ -1,6 +1,6 @@
 from datetime import date, time, datetime
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, Field
 
@@ -156,7 +156,8 @@ class AbsensiSummary(BaseModel):
     periode_bulan: int
     periode_tahun: int
     total_hari_kerja: int
-    jumlah_hadir: int
+    jumlah_hadir: float
+    jumlah_setengah_hari: int = 0
     jumlah_izin: int
     jumlah_sakit: int
     jumlah_alpha: int
@@ -194,7 +195,7 @@ class SlipGajiResponse(BaseModel):
     periode_tahun: int
     tanggal_mulai: date
     tanggal_akhir: date
-    jumlah_hadir: int
+    jumlah_hadir: float
     gaji_pokok: Decimal
     potongan_kasbon: Decimal
     gaji_bersih: Decimal
@@ -236,6 +237,7 @@ class SlipGajiWeeklySummary(BaseModel):
 # KASBON KARYAWAN SCHEMAS
 # ============================================
 
+
 class KasbonCreate(BaseModel):
     """Schema for creating employee advance."""
 
@@ -245,6 +247,14 @@ class KasbonCreate(BaseModel):
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     keterangan: Optional[str] = None
     catatan: Optional[str] = None
+
+
+class KasbonPaymentSplit(BaseModel):
+    """Schema for split payment of kasbon."""
+
+    payments: List[Dict[str, Any]] # List of {metode: PaymentMethod, nominal: Decimal, catatan: str}
+    catatan: Optional[str] = None
+
 
 
 class KasbonResponse(BaseModel):
@@ -263,3 +273,13 @@ class KasbonResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class KasbonList(BaseModel):
+    """Schema for paginated kasbon list."""
+
+    data: List[KasbonResponse]
+    total: int
+    page: int
+    size: int
+    pages: int

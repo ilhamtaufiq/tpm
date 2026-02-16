@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import {
     ChevronLeft,
     Plus,
@@ -15,6 +16,7 @@ import {
     X,
     AlertTriangle,
     RefreshCw,
+    Trash2,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -30,14 +32,15 @@ const STATUS_FILTERS = [
 ];
 
 export default function KasbonScreen() {
-    const router = useRouter(); const [loading, setLoading] = useState(true);
+    const router = useRouter();
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [kasbonList, setKasbonList] = useState<Kasbon[]>([]);
     const [summary, setSummary] = useState<KasbonSummary | null>(null);
     const [selectedFilter, setSelectedFilter] = useState<PaymentStatus | 'all'>('all');
     const [karyawanList, setKaryawanList] = useState<Karyawan[]>([]);
 
-    // Form state
+    // Form state (New Kasbon)
     const [formData, setFormData] = useState({
         karyawan_id: 0,
         karyawan_nama: '',
@@ -46,7 +49,15 @@ export default function KasbonScreen() {
         keterangan: '',
     });
     const [showKaryawanPicker, setShowKaryawanPicker] = useState(false);
-    const [sheetIndex, setSheetIndex] = useState(-1);
+
+    // Payment Form state
+    const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([]);
+    const [paymentNote, setPaymentNote] = useState('');
+
+    // Sheet State
+    const [activeSheet, setActiveSheet] = useState<'none' | 'create' | 'payment'>('none');
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -62,8 +73,10 @@ export default function KasbonScreen() {
         type: 'alert'
     });
 
-    const bottomSheetRef = useRef<BottomSheet>(null);
-    const snapPoints = useMemo(() => ['60%', '80%'], []);
+    const createSheetRef = useRef<BottomSheet>(null);
+    const paymentSheetRef = useRef<BottomSheet>(null);
+
+    const snapPoints = useMemo(() => ['60%', '85%'], []);
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -106,10 +119,37 @@ export default function KasbonScreen() {
 
     const openAddForm = () => {
         setFormData({ karyawan_id: 0, karyawan_nama: '', jumlah: '', metode_bayar: 'tunai', keterangan: '' });
-        bottomSheetRef.current?.expand();
+        if (Platform.OS === 'web') {
+            setActiveSheet('create');
+        } else {
+            createSheetRef.current?.expand();
+        }
     };
 
-    const handleSubmit = async () => {
+    const openPaymentForm = (kasbon: Kasbon) => {
+        setSelectedKasbon(kasbon);
+        setPayments([{
+            id: Date.now(),
+            metode: 'TUNAI',
+            nominal: formatNumber(kasbon.nominal.toString()),
+            catatan: ''
+        }]);
+        setPaymentNote('');
+
+        if (Platform.OS === 'web') {
+            setActiveSheet('payment');
+        } else {
+            paymentSheetRef.current?.expand();
+        }
+    };
+
+    const closeSheets = () => {
+        setActiveSheet('none');
+        createSheetRef.current?.close();
+        paymentSheetRef.current?.close();
+    };
+
+    const handleSubmitCreate = async () => {
         if (!formData.karyawan_id || !formData.jumlah) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Karyawan dan Jumlah wajib diisi', variant: 'warning' });
             return;
@@ -124,7 +164,7 @@ export default function KasbonScreen() {
                 keterangan: formData.keterangan || undefined,
             });
             setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil ditambahkan', variant: 'success' });
-            bottomSheetRef.current?.close();
+            closeSheets();
             loadData();
         } catch (error) {
             console.error('Failed to create kasbon:', error);
@@ -132,77 +172,274 @@ export default function KasbonScreen() {
         }
     };
 
-    const handleMarkPaid = async (kasbon: Kasbon) => {
+    const handleSubmitPayment = async () => {
+        if (!selectedKasbon || payments.length === 0) return;
+
+        const validatedPayments = payments
+            .map(p => ({
+                metode: p.metode,
+                nominal: parseNumber(p.nominal),
+                catatan: p.catatan || undefined
+            }))
+            .filter(p => p.nominal > 0);
+
+        if (validatedPayments.length === 0) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Minimal satu pembayaran dengan nominal > 0', variant: 'warning' });
+            return;
+        }
+
+        const totalBayar = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
+        if (totalBayar !== selectedKasbon.nominal) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: `Total pembayaran (${formatCurrency(totalBayar)}) harus sama dengan nominal kasbon (${formatCurrency(selectedKasbon.nominal)})`, variant: 'warning' });
+            return;
+        }
+
+        try {
+            await sdmService.payKasbonSplit(selectedKasbon.id, {
+                payments: validatedPayments,
+                catatan: paymentNote || undefined,
+            });
+            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pelunasan kasbon berhasil dicatat', variant: 'success' });
+            closeSheets();
+            loadData();
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat memproses pembayaran';
+            setDialogConfig({ visible: true, title: 'Gagal', message: errorMessage, variant: 'error' });
+            console.error(error);
+        }
+    };
+
+    const handleDelete = async (kasbon: Kasbon) => {
         setDialogConfig({
             visible: true,
-            title: 'Konfirmasi',
-            message: `Tandai kasbon ${kasbon.karyawan_nama} sebesar ${formatCurrency(kasbon.nominal)} sebagai LUNAS?`,
-            variant: 'info',
+            title: 'Hapus Kasbon',
+            message: `Yakin ingin menghapus kasbon ${kasbon.karyawan_nama} senilai ${formatCurrency(kasbon.nominal)}? Data tidak dapat dikembalikan.`,
+            variant: 'warning',
             type: 'confirm',
             onConfirm: async () => {
                 try {
-                    await sdmService.markKasbonPaid(kasbon.id);
-                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil dilunaskan', variant: 'success' });
+                    await sdmService.deleteKasbon(kasbon.id);
+                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil dihapus', variant: 'success' });
                     loadData();
                 } catch (error) {
-                    console.error('Failed to mark paid:', error);
-                    setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal melunaskan kasbon'), variant: 'error' });
+                    console.error('Failed to delete kasbon:', error);
+                    setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menghapus kasbon'), variant: 'error' });
                 }
             }
         });
     };
 
-    const renderKasbonItem = ({ item }: { item: Kasbon }) => {
-        const isLunas = item.status?.toUpperCase() === 'LUNAS';
-        return (
-            <Card className="mb-3 p-4 border border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                        <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${isLunas ? 'bg-green-100' : 'bg-amber-100'}`}>
-                            <Wallet size={20} color={isLunas ? '#16A34A' : '#F59E0B'} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="semibold">{item.karyawan_nama}</Typography>
-                            <Typography variant="caption" className="text-gray-500">
-                                {formatDate(item.tanggal)}
+    // ... render methods ...
+    const renderCreateForm = () => (
+        <View className="pb-10">
+            <View className="flex-row justify-between items-center mb-10">
+                <View className="flex-row items-center">
+                    <View className="w-1 h-6 bg-primary rounded-full mr-3" />
+                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Voucher Kasbon</Typography>
+                </View>
+                <TouchableOpacity onPress={closeSheets} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <X size={20} color="#6B7280" />
+                </TouchableOpacity>
+            </View>
+
+            <View className="space-y-6">
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Karyawan Penerima *</Typography>
+                    <TouchableOpacity
+                        onPress={() => setShowKaryawanPicker(!showKaryawanPicker)}
+                        className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center justify-between"
+                    >
+                        <View className="flex-row items-center">
+                            <User size={18} color={formData.karyawan_nama ? "#023C69" : "#9CA3AF"} />
+                            <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray/40'}`}>
+                                {formData.karyawan_nama || 'Pilih Karyawan'}
                             </Typography>
-                            {item.keterangan && (
-                                <Typography variant="caption" className="text-gray-400">
-                                    {item.keterangan}
-                                </Typography>
-                            )}
                         </View>
-                    </View>
-                    <View className="items-end">
-                        <Typography weight="bold" className={isLunas ? 'text-green-600' : 'text-amber-600'}>
-                            {formatCurrency(item.nominal)}
-                        </Typography>
-                        <Badge
-                            label={isLunas ? 'Lunas' : 'Belum Lunas'}
-                            variant={isLunas ? 'success' : 'warning'}
+                        <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: showKaryawanPicker ? '90deg' : '270deg' }] }} />
+                    </TouchableOpacity>
+
+                    {showKaryawanPicker && (
+                        <View className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-lg max-h-48 overflow-hidden">
+                            <ScrollView nestedScrollEnabled>
+                                {karyawanList.map((k) => (
+                                    <TouchableOpacity
+                                        key={k.id}
+                                        onPress={() => {
+                                            setFormData({ ...formData, karyawan_id: k.id, karyawan_nama: k.nama });
+                                            setShowKaryawanPicker(false);
+                                        }}
+                                        className="px-5 py-4 border-b border-gray-50 flex-row items-center"
+                                    >
+                                        <View className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center mr-3">
+                                            <Typography className="text-primary font-bold text-[10px]">{k.nama.charAt(0)}</Typography>
+                                        </View>
+                                        <View>
+                                            <Typography weight="bold" className="text-textMain text-sm">{k.nama}</Typography>
+                                            <Typography className="text-textGray text-[9px] uppercase tracking-tighter">{k.jabatan}</Typography>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+                </View>
+
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nominal Pinjaman *</Typography>
+                    <View className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center">
+                        <Typography className="text-textGray font-bold mr-2 text-lg">Rp</Typography>
+                        <TextInput
+                            className="flex-1 text-textMain font-bold text-lg"
+                            placeholder="0"
+                            placeholderTextColor="#9CA3AF"
+                            value={formData.jumlah}
+                            onChangeText={(text) => setFormData({ ...formData, jumlah: formatNumber(text) })}
+                            keyboardType="numeric"
                         />
-                        {!isLunas && (
-                            <TouchableOpacity
-                                onPress={() => handleMarkPaid(item)}
-                                className="mt-2 bg-green-500 px-3 py-1 rounded-lg"
-                            >
-                                <Typography className="text-white text-xs">Lunaskan</Typography>
-                            </TouchableOpacity>
-                        )}
                     </View>
                 </View>
-            </Card>
-        );
-    };
 
-    if (loading) {
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Sumber Dana *</Typography>
+                    <View className="flex-row space-x-3 gap-2">
+                        {['tunai', 'transfer'].map((m) => (
+                            <TouchableOpacity
+                                key={m}
+                                onPress={() => setFormData({ ...formData, metode_bayar: m })}
+                                className={`flex-1 py-4 items-center rounded-2xl border ${formData.metode_bayar === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
+                            >
+                                <Typography
+                                    className={formData.metode_bayar === m ? 'text-white' : 'text-textGray'}
+                                    weight="bold"
+                                >
+                                    {m.toUpperCase()}
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Alasan / Keterangan</Typography>
+                    <TextInput
+                        className="bg-gray-50 rounded-[32px] border border-gray-100 px-6 py-4 text-textMain font-medium h-24"
+                        placeholder="Tulis alasan kasbon..."
+                        placeholderTextColor="#9CA3AF"
+                        value={formData.keterangan}
+                        onChangeText={(text) => setFormData({ ...formData, keterangan: text })}
+                        multiline
+                    />
+                </View>
+
+                <TouchableOpacity
+                    onPress={handleSubmitCreate}
+                    className="bg-primary h-16 rounded-2xl items-center justify-center shadow-xl shadow-primary/30 mt-4"
+                >
+                    <Typography weight="bold" className="text-white text-lg">Konfirmasi Pinjaman</Typography>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
+    const renderPaymentForm = () => {
+        const totalBayar = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+        const sisa = (selectedKasbon?.nominal || 0) - totalBayar;
+
         return (
-            <View className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#023C69" />
+            <View className="pb-10">
+                <View className="flex-row justify-between items-center mb-6">
+                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Pelunasan Kasbon</Typography>
+                    <TouchableOpacity onPress={closeSheets} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <X size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                </View>
+
+                {selectedKasbon && (
+                    <Card variant="outlined" className="p-6 mb-8 border-rose-100 bg-rose-50 rounded-[32px]">
+                        <View className="flex-row justify-between mb-2">
+                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Total Tagihan</Typography>
+                            <Typography variant="body2" weight="bold" className="text-rose-600 font-bold">{formatCurrency(selectedKasbon.nominal)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between">
+                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Sisa Belum Tercover</Typography>
+                            <Typography variant="body2" weight="bold" className="text-primary">
+                                {formatCurrency(Math.max(0, sisa))}
+                            </Typography>
+                        </View>
+                    </Card>
+                )}
+
+                <View className="mb-6">
+                    {payments.map((p, idx) => (
+                        <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                            <View className="flex-row justify-between items-center mb-4">
+                                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">
+                                    Pembayaran #{idx + 1}
+                                </Typography>
+                                {payments.length > 1 && (
+                                    <TouchableOpacity
+                                        onPress={() => setPayments(prev => prev.filter(item => item.id !== p.id))}
+                                        className="bg-rose-50 p-2 rounded-full"
+                                    >
+                                        <Trash2 size={16} color="#E11D48" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            <View className="flex-row space-x-2 mb-4 gap-2">
+                                {['TUNAI', 'TRANSFER'].map((m) => (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, metode: m } : item))}
+                                        className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                    >
+                                        <Typography
+                                            className={p.metode === m ? 'text-white text-xs font-bold' : 'text-textGray text-xs'}
+                                        >
+                                            {m}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Input
+                                label="Nominal (Rp)"
+                                keyboardType="numeric"
+                                placeholder="0"
+                                value={p.nominal}
+                                onChangeText={(t) => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                containerClassName="mb-0"
+                            />
+                        </Card>
+                    ))}
+
+                    <TouchableOpacity
+                        onPress={() => setPayments(prev => [...prev, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
+                        className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-gray-50/50 active:bg-gray-100"
+                    >
+                        <Plus size={20} color="#64748B" className="mr-2" />
+                        <Typography weight="bold" className="text-gray-500">Tambah Metode Pembayaran</Typography>
+                    </TouchableOpacity>
+                </View>
+
+                <Input
+                    label="Catatan (Opsional)"
+                    placeholder="Contoh: Potong gaji bulan ini"
+                    value={paymentNote}
+                    onChangeText={setPaymentNote}
+                    multiline
+                    numberOfLines={2}
+                    containerClassName="mb-8"
+                />
+
+                <Button
+                    title="Simpan Pelunasan"
+                    onPress={handleSubmitPayment}
+                    className="h-16 rounded-2xl shadow-xl shadow-primary/30"
+                />
             </View>
         );
     }
-
 
     return (
         <View className="flex-1 bg-surface">
@@ -316,13 +553,21 @@ export default function KasbonScreen() {
                             )}
 
                             {!isLunas && (
-                                <TouchableOpacity
-                                    onPress={() => handleMarkPaid(item)}
-                                    className="bg-emerald-50 border border-emerald-100 h-12 rounded-2xl items-center justify-center flex-row"
-                                >
-                                    <Check size={16} color="#059669" className="mr-2" />
-                                    <Typography weight="bold" className="text-emerald-700 text-xs">Konfirmasi Pelunasan</Typography>
-                                </TouchableOpacity>
+                                <View className="flex-row gap-2 mt-2">
+                                    <TouchableOpacity
+                                        onPress={() => handleDelete(item)}
+                                        className="bg-rose-50 border border-rose-100 h-10 w-10 rounded-xl items-center justify-center"
+                                    >
+                                        <Trash2 size={16} color="#E11D48" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => openPaymentForm(item)}
+                                        className="flex-1 bg-emerald-50 border border-emerald-100 h-10 rounded-xl items-center justify-center flex-row"
+                                    >
+                                        <Check size={16} color="#059669" className="mr-2" />
+                                        <Typography weight="bold" className="text-emerald-700 text-xs">Bayar / Lunasi</Typography>
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         </View>
                     );
@@ -351,29 +596,59 @@ export default function KasbonScreen() {
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
-                <Modal visible={sheetIndex !== -1} transparent animationType="slide" onRequestClose={() => setSheetIndex(-1)}>
-                    <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={() => setSheetIndex(-1)} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView className="px-8 flex-1">
-                                {renderFormContent()}
-                            </ScrollView>
+                <>
+                    <Modal visible={activeSheet == 'create'} transparent animationType="slide" onRequestClose={closeSheets}>
+                        <View className="flex-1 justify-end bg-black/40">
+                            <TouchableOpacity className="absolute inset-0" onPress={closeSheets} />
+                            <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
+                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <ScrollView className="px-8 flex-1">
+                                    {renderCreateForm()}
+                                </ScrollView>
+                            </View>
                         </View>
-                    </View>
-                </Modal>
+                    </Modal>
+
+                    <Modal visible={activeSheet == 'payment'} transparent animationType="slide" onRequestClose={closeSheets}>
+                        <View className="flex-1 justify-end bg-black/40">
+                            <TouchableOpacity className="absolute inset-0" onPress={closeSheets} />
+                            <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
+                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                <ScrollView className="px-8 flex-1">
+                                    {renderPaymentForm()}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </Modal>
+                </>
             ) : (
-                <BottomSheet
-                    ref={bottomSheetRef}
-                    index={-1}
-                    snapPoints={snapPoints}
-                    enablePanDownToClose
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
-                >
-                    <BottomSheetScrollView className="px-8">
-                        {renderFormContent()}
-                    </BottomSheetScrollView>
-                </BottomSheet>
+                <>
+                    <BottomSheet
+                        ref={createSheetRef}
+                        index={-1}
+                        snapPoints={snapPoints}
+                        enablePanDownToClose
+                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        onClose={() => setActiveSheet('none')}
+                    >
+                        <BottomSheetScrollView className="px-8">
+                            {renderCreateForm()}
+                        </BottomSheetScrollView>
+                    </BottomSheet>
+
+                    <BottomSheet
+                        ref={paymentSheetRef}
+                        index={-1}
+                        snapPoints={['50%', '85%']}
+                        enablePanDownToClose
+                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        onClose={() => setActiveSheet('none')}
+                    >
+                        <BottomSheetScrollView className="px-8">
+                            {renderPaymentForm()}
+                        </BottomSheetScrollView>
+                    </BottomSheet>
+                </>
             )}
 
             <AlertDialog
@@ -387,117 +662,4 @@ export default function KasbonScreen() {
             />
         </View>
     );
-
-    function renderFormContent() {
-        return (
-            <View className="pb-10">
-                <View className="flex-row justify-between items-center mb-10">
-                    <View className="flex-row items-center">
-                        <View className="w-1 h-6 bg-primary rounded-full mr-3" />
-                        <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Voucher Kasbon</Typography>
-                    </View>
-                    <TouchableOpacity onPress={() => Platform.OS === 'web' ? setSheetIndex(-1) : bottomSheetRef.current?.close()} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
-                        <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                </View>
-
-                <View className="space-y-6">
-                    <View>
-                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Karyawan Penerima *</Typography>
-                        <TouchableOpacity
-                            onPress={() => setShowKaryawanPicker(!showKaryawanPicker)}
-                            className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center justify-between"
-                        >
-                            <View className="flex-row items-center">
-                                <User size={18} color={formData.karyawan_nama ? "#023C69" : "#9CA3AF"} />
-                                <Typography className={`ml-3 font-medium ${formData.karyawan_nama ? 'text-textMain' : 'text-textGray/40'}`}>
-                                    {formData.karyawan_nama || 'Pilih Karyawan'}
-                                </Typography>
-                            </View>
-                            <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: showKaryawanPicker ? '90deg' : '270deg' }] }} />
-                        </TouchableOpacity>
-
-                        {showKaryawanPicker && (
-                            <View className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-lg max-h-48 overflow-hidden">
-                                <ScrollView nestedScrollEnabled>
-                                    {karyawanList.map((k) => (
-                                        <TouchableOpacity
-                                            key={k.id}
-                                            onPress={() => {
-                                                setFormData({ ...formData, karyawan_id: k.id, karyawan_nama: k.nama });
-                                                setShowKaryawanPicker(false);
-                                            }}
-                                            className="px-5 py-4 border-b border-gray-50 flex-row items-center"
-                                        >
-                                            <View className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center mr-3">
-                                                <Typography className="text-primary font-bold text-[10px]">{k.nama.charAt(0)}</Typography>
-                                            </View>
-                                            <View>
-                                                <Typography weight="bold" className="text-textMain text-sm">{k.nama}</Typography>
-                                                <Typography className="text-textGray text-[9px] uppercase tracking-tighter">{k.jabatan}</Typography>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </View>
-                        )}
-                    </View>
-
-                    <View>
-                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nominal Pinjaman *</Typography>
-                        <View className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center">
-                            <Typography className="text-textGray font-bold mr-2 text-lg">Rp</Typography>
-                            <TextInput
-                                className="flex-1 text-textMain font-bold text-lg"
-                                placeholder="0"
-                                placeholderTextColor="#9CA3AF"
-                                value={formData.jumlah}
-                                onChangeText={(text) => setFormData({ ...formData, jumlah: formatNumber(text) })}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                    </View>
-
-                    <View>
-                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Sumber Dana *</Typography>
-                        <View className="flex-row space-x-3">
-                            {['tunai', 'transfer'].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setFormData({ ...formData, metode_bayar: m })}
-                                    className={`flex-1 py-4 items-center rounded-2xl border ${formData.metode_bayar === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
-                                >
-                                    <Typography
-                                        className={formData.metode_bayar === m ? 'text-white' : 'text-textGray'}
-                                        weight="bold"
-                                    >
-                                        {m.toUpperCase()}
-                                    </Typography>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    <View>
-                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Alasan / Keterangan</Typography>
-                        <TextInput
-                            className="bg-gray-50 rounded-[32px] border border-gray-100 px-6 py-4 text-textMain font-medium h-24"
-                            placeholder="Tulis alasan kasbon..."
-                            placeholderTextColor="#9CA3AF"
-                            value={formData.keterangan}
-                            onChangeText={(text) => setFormData({ ...formData, keterangan: text })}
-                            multiline
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        onPress={handleSubmit}
-                        className="bg-primary h-16 rounded-2xl items-center justify-center shadow-xl shadow-primary/30 mt-4"
-                    >
-                        <Typography weight="bold" className="text-white text-lg">Konfirmasi Pinjaman</Typography>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    }
 }

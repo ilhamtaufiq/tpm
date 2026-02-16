@@ -67,6 +67,21 @@ export const useProcessPayment = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+        },
+    });
+};
+
+export const useProcessPaymentSplit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: any) => keuanganService.processPaymentSplit(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
         },
@@ -80,6 +95,51 @@ export const useCreatePiutang = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+        },
+    });
+};
+
+// =============================================
+// HUTANG
+// =============================================
+export const useHutangList = (params?: any) => {
+    return useQuery({
+        queryKey: ['hutang_list', params],
+        queryFn: () => keuanganService.getHutangList(params),
+    });
+};
+
+export const useHutangSummary = (params?: any) => {
+    return useQuery({
+        queryKey: ['hutang_summary', params],
+        queryFn: () => keuanganService.getHutangSummary(params),
+    });
+};
+
+export const useProcessHutangPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: any) => keuanganService.processHutangPayment(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+        },
+    });
+};
+
+export const useProcessHutangPaymentSplit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: any) => keuanganService.processHutangPaymentSplit(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
         },
     });

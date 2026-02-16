@@ -13,7 +13,8 @@ from app.config import settings
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService
 from app.models.bengkel import SparePart
 from app.schemas.mobil import MobilCreate, MobilUpdate
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, HutangSource, HutangStatus
+from app.models.keuangan import HutangUsaha, HutangStatus
 from app.services.kas_bank_integration import create_kas_entry
 
 
@@ -38,6 +39,27 @@ class MobilService:
 
         if last:
             last_num = int(last.kode[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _generate_nomor_hutang(self) -> str:
+        """Generate unique hutang transaction number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["hutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(HutangUsaha)
+            .filter(HutangUsaha.nomor_hutang.like(f"{prefix}{date_str}%"))
+            .order_by(HutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_hutang[-4:])
             new_num = last_num + 1
         else:
             new_num = 1
@@ -113,24 +135,51 @@ class MobilService:
             tanggal_masuk=data.tanggal_masuk,
             catatan=data.catatan,
             created_by=user_id,
+            # New fields for purchase tracking
+            status_bayar_beli=data.status_bayar,
+            metode_bayar_beli=data.metode_bayar,
+            dp_beli=data.dp,
         )
 
         self.db.add(mobil)
         self.db.flush()
 
-        # Record purchase to KasBank (money going out)
-        create_kas_entry(
-            db=self.db,
-            tanggal=data.tanggal_masuk,
-            tipe=KasBankType.KELUAR,
-            nominal=data.harga_beli,
-            sumber=KasBankSource.PEMBELIAN_MOBIL,
-            metode_bayar=data.metode_bayar,
-            referensi_id=mobil.id,
-            nomor_referensi=mobil.kode,
-            keterangan=f"Pembelian Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
-            user_id=user_id,
-        )
+        # Record purchase payment to KasBank (money going out)
+        # Only record if DP > 0 or Status LUNAS
+        jumlah_bayar = data.dp if data.status_bayar != PaymentStatus.LUNAS else data.harga_beli
+        
+        if jumlah_bayar > 0:
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal_masuk,
+                tipe=KasBankType.KELUAR,
+                nominal=jumlah_bayar,
+                sumber=KasBankSource.PEMBELIAN_MOBIL,
+                metode_bayar=data.metode_bayar,
+                referensi_id=mobil.id,
+                nomor_referensi=mobil.kode,
+                keterangan=f"Pembelian Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                user_id=user_id,
+            )
+
+        # Record Hutang (Payable) if not fully paid
+        if data.status_bayar != PaymentStatus.LUNAS:
+            sisa_hutang = data.harga_beli - data.dp
+            hutang = HutangUsaha(
+                nomor_hutang=self._generate_nomor_hutang(),
+                tanggal=data.tanggal_masuk,
+                supplier_id=None, # Buying from individual/other source
+                nama_kreditur=f"Pembelian Mobil {mobil.nomor_plat}",
+                sumber=HutangSource.PEMBELIAN_MOBIL,
+                referensi_id=mobil.id,
+                nomor_referensi=mobil.kode,
+                nominal_hutang=data.harga_beli,
+                sisa_hutang=sisa_hutang,
+                status=HutangStatus.BELUM_LUNAS if data.dp == 0 else HutangStatus.SEBAGIAN,
+                catatan=f"Hutang pembelian mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                created_by=user_id,
+            )
+            self.db.add(hutang)
 
         self.db.commit()
         self.db.refresh(mobil)

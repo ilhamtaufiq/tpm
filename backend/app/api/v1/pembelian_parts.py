@@ -7,6 +7,7 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.bengkel import (
     PembelianSparePartCreate,
     PembelianSparePartResponse,
+    PembelianSparePartList,
 )
 from app.services.pembelian_part_service import PembelianPartService
 from app.utils.constants import PaymentStatus, PaymentMethod
@@ -26,7 +27,7 @@ def create_pembelian(
     return service.create(data, current_user.id)
 
 
-@router.get("")
+@router.get("", response_model=PembelianSparePartList)
 def list_pembelian(
     db: DBSession,
     current_user: CurrentUser,

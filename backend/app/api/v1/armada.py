@@ -1,0 +1,82 @@
+from typing import Optional, List
+from fastapi import APIRouter, Query, status
+
+from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.schemas.jasa_angkut import (
+    ArmadaCreate,
+    ArmadaUpdate,
+    ArmadaResponse,
+    ArmadaList,
+)
+from app.services.armada_service import ArmadaService
+
+router = APIRouter(prefix="/armada", tags=["Armada (Fleet)"])
+
+@router.post("", response_model=ArmadaResponse, status_code=status.HTTP_201_CREATED)
+def create_armada(
+    data: ArmadaCreate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Create a new armada."""
+    service = ArmadaService(db)
+    return service.create(data)
+
+@router.get("", response_model=ArmadaList)
+def list_armada(
+    db: DBSession,
+    current_user: CurrentUser,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    is_active: Optional[bool] = None,
+):
+    """Get list of armada with pagination and filters."""
+    service = ArmadaService(db)
+    return service.get_list(
+        skip=skip,
+        limit=limit,
+        search=search,
+        is_active=is_active,
+    )
+
+@router.get("/active", response_model=List[ArmadaResponse])
+def get_active_armada(
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get all active armada for dropdown selection."""
+    service = ArmadaService(db)
+    return service.get_active_armada()
+
+@router.get("/{armada_id}", response_model=ArmadaResponse)
+def get_armada(
+    armada_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get armada by ID."""
+    service = ArmadaService(db)
+    return service.get_by_id(armada_id)
+
+@router.put("/{armada_id}", response_model=ArmadaResponse)
+def update_armada(
+    armada_id: int,
+    data: ArmadaUpdate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Update armada information."""
+    service = ArmadaService(db)
+    return service.update(armada_id, data)
+
+@router.delete("/{armada_id}")
+def delete_armada(
+    armada_id: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Soft delete armada."""
+    service = ArmadaService(db)
+    service.delete(armada_id)
+    return {"message": "Armada berhasil dihapus"}

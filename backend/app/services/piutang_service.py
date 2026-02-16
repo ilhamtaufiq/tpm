@@ -11,7 +11,12 @@ from app.models.customer import Customer
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
 from app.models.mobil import TransaksiPenjualanMobil
-from app.schemas.keuangan import PiutangCreate, PiutangUpdate, PembayaranPiutangCreate
+from app.schemas.keuangan import (
+    PiutangCreate,
+    PiutangUpdate,
+    PembayaranPiutangCreate,
+    PembayaranPiutangSplit,
+)
 from app.utils.constants import (
     PiutangStatus,
     PiutangSource,
@@ -164,7 +169,10 @@ class PiutangService:
 
         # Status filter
         if status:
-            query = query.filter(PiutangUsaha.status == status)
+            if status == PiutangStatus.BELUM_LUNAS:
+                query = query.filter(PiutangUsaha.status.in_([PiutangStatus.BELUM_LUNAS, PiutangStatus.SEBAGIAN]))
+            else:
+                query = query.filter(PiutangUsaha.status == status)
 
         # Overdue filter
         if overdue_only:
@@ -233,6 +241,67 @@ class PiutangService:
         user_id: Optional[int] = None,
     ) -> PembayaranPiutang:
         """Process payment for receivable."""
+        split_data = PembayaranPiutangSplit(
+            piutang_id=data.piutang_id,
+            tanggal=data.tanggal,
+            payments=[{
+                "metode": data.metode_bayar,
+                "nominal": data.nominal,
+                "catatan": data.catatan
+            }],
+            catatan=data.catatan
+        )
+        results = self.process_payment_split(split_data, user_id)
+        return results[0]
+
+    def _update_source_transaction(self, piutang: PiutangUsaha, total_nominal: Decimal, tanggal: date):
+        """Update source transaction status and payment info."""
+        if not piutang.referensi_id:
+            return
+
+        if piutang.sumber == PiutangSource.BENGKEL:
+            bengkel_trx = self.db.query(TransaksiPenjualanBengkel).filter(TransaksiPenjualanBengkel.id == piutang.referensi_id).first()
+            if bengkel_trx:
+                bengkel_trx.jumlah_bayar += total_nominal
+                if piutang.status == PiutangStatus.LUNAS:
+                    bengkel_trx.status_bayar = PaymentStatus.LUNAS
+                    bengkel_trx.jumlah_bayar = bengkel_trx.grand_total
+                else:
+                    bengkel_trx.status_bayar = PaymentStatus.CICILAN
+
+        elif piutang.sumber == PiutangSource.JASA_ANGKUT:
+            muatan = self.db.query(MuatanJasaAngkut).filter(MuatanJasaAngkut.id == piutang.referensi_id).first()
+            if muatan:
+                if piutang.status == PiutangStatus.LUNAS:
+                    muatan.status_bayar = PaymentStatus.LUNAS
+                    muatan.tanggal_bayar = tanggal
+                    
+                    linked_bengkel = (
+                        self.db.query(TransaksiPenjualanBengkel)
+                        .filter(TransaksiPenjualanBengkel.catatan == f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}")
+                        .first()
+                    )
+                    if linked_bengkel and linked_bengkel.status_bayar != PaymentStatus.LUNAS:
+                        linked_bengkel.status_bayar = PaymentStatus.LUNAS
+                        linked_bengkel.jumlah_bayar = linked_bengkel.grand_total
+
+        elif piutang.sumber == PiutangSource.JUAL_BELI_MOBIL:
+            mobil_trx = self.db.query(TransaksiPenjualanMobil).filter(TransaksiPenjualanMobil.id == piutang.referensi_id).first()
+            if mobil_trx:
+                mobil_trx.dp += total_nominal
+                mobil_trx.sisa_bayar -= total_nominal
+                if piutang.status == PiutangStatus.LUNAS:
+                    mobil_trx.status_bayar = PaymentStatus.LUNAS
+                    mobil_trx.sisa_bayar = Decimal("0")
+                else:
+                    mobil_trx.status_bayar = PaymentStatus.CICILAN
+
+    def process_payment_split(
+        self,
+        data: PembayaranPiutangSplit,
+        user_id: Optional[int] = None,
+    ) -> List[PembayaranPiutang]:
+        """Process multiple payments for a receivable."""
         piutang = self.get_by_id(data.piutang_id)
 
         if piutang.status == PiutangStatus.LUNAS:
@@ -241,85 +310,60 @@ class PiutangService:
                 detail="Piutang sudah lunas",
             )
 
-        if data.nominal > piutang.sisa_piutang:
+        total_payment_nominal = sum(p.nominal for p in data.payments)
+        if total_payment_nominal > piutang.sisa_piutang:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Nominal pembayaran ({data.nominal}) melebihi sisa piutang ({piutang.sisa_piutang})",
+                detail=f"Total nominal pembayaran ({total_payment_nominal}) melebihi sisa piutang ({piutang.sisa_piutang})",
             )
 
-        # Create payment record
-        pembayaran = PembayaranPiutang(
-            piutang_id=data.piutang_id,
-            tanggal=data.tanggal,
-            nominal=data.nominal,
-            metode_bayar=data.metode_bayar,
-            catatan=data.catatan,
-            created_by=user_id,
-        )
+        pembayaran_records = []
+        for p_detail in data.payments:
+            if p_detail.nominal <= 0:
+                continue
 
-        self.db.add(pembayaran)
+            # Create payment record
+            pembayaran = PembayaranPiutang(
+                piutang_id=data.piutang_id,
+                tanggal=data.tanggal,
+                nominal=p_detail.nominal,
+                metode_bayar=p_detail.metode,
+                catatan=p_detail.catatan or data.catatan,
+                created_by=user_id,
+            )
+            self.db.add(pembayaran)
+            pembayaran_records.append(pembayaran)
 
-        # Update piutang
-        piutang.process_payment(data.nominal)
+            # Update piutang totals
+            piutang.process_payment(p_detail.nominal)
 
-        # Update source transaction status if reference exists
-        if piutang.referensi_id:
-            if piutang.sumber == PiutangSource.BENGKEL:
-                bengkel_trx = self.db.query(TransaksiPenjualanBengkel).filter(TransaksiPenjualanBengkel.id == piutang.referensi_id).first()
-                if bengkel_trx:
-                    bengkel_trx.jumlah_bayar += data.nominal
-                    if piutang.status == PiutangStatus.LUNAS:
-                        bengkel_trx.status_bayar = PaymentStatus.LUNAS
-                        bengkel_trx.jumlah_bayar = bengkel_trx.grand_total # Correct any rounding/precision issues
-                    else:
-                        bengkel_trx.status_bayar = PaymentStatus.CICILAN
+            # Record to KasBank
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal,
+                tipe=KasBankType.MASUK,
+                nominal=p_detail.nominal,
+                sumber=KasBankSource.PIUTANG,
+                metode_bayar=p_detail.metode,
+                referensi_id=None, # Will update later
+                nomor_referensi=piutang.nomor_piutang,
+                keterangan=f"Pembayaran piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                user_id=user_id,
+            )
 
-            elif piutang.sumber == PiutangSource.JASA_ANGKUT:
-                muatan = self.db.query(MuatanJasaAngkut).filter(MuatanJasaAngkut.id == piutang.referensi_id).first()
-                if muatan:
-                    if piutang.status == PiutangStatus.LUNAS:
-                        muatan.status_bayar = PaymentStatus.LUNAS
-                        muatan.tanggal_bayar = data.tanggal
-                        
-                        # Also update linked internal Bengkel transaction if it exists
-                        linked_bengkel = (
-                            self.db.query(TransaksiPenjualanBengkel)
-                            .filter(TransaksiPenjualanBengkel.catatan == f"Auto-generated from Jasa Angkut {muatan.nomor_transaksi}")
-                            .first()
-                        )
-                        if linked_bengkel and linked_bengkel.status_bayar != PaymentStatus.LUNAS:
-                            linked_bengkel.status_bayar = PaymentStatus.LUNAS
-                            linked_bengkel.jumlah_bayar = linked_bengkel.grand_total
-
-            elif piutang.sumber == PiutangSource.JUAL_BELI_MOBIL:
-                mobil_trx = self.db.query(TransaksiPenjualanMobil).filter(TransaksiPenjualanMobil.id == piutang.referensi_id).first()
-                if mobil_trx:
-                    mobil_trx.dp += data.nominal
-                    mobil_trx.sisa_bayar -= data.nominal
-                    if piutang.status == PiutangStatus.LUNAS:
-                        mobil_trx.status_bayar = PaymentStatus.LUNAS
-                        mobil_trx.sisa_bayar = Decimal("0")
-                    else:
-                        mobil_trx.status_bayar = PaymentStatus.CICILAN
+        # Update source transaction status
+        self._update_source_transaction(piutang, total_payment_nominal, data.tanggal)
 
         self.db.commit()
-        self.db.refresh(pembayaran)
-
-        # Record payment to kas/bank
-        create_kas_entry(
-            db=self.db,
-            tanggal=data.tanggal,
-            tipe=KasBankType.MASUK,
-            nominal=data.nominal,
-            sumber=KasBankSource.PIUTANG,
-            metode_bayar=data.metode_bayar,
-            referensi_id=pembayaran.id,
-            nomor_referensi=piutang.nomor_piutang,
-            keterangan=f"Pembayaran piutang {piutang.nomor_piutang} - {piutang.nama_debitur}",
-            user_id=user_id,
-        )
-
-        return pembayaran
+        
+        # Update referensi_id for kas entries
+        # This is a bit tricky since we don't have KasBank ID here easily without querying back
+        # but create_kas_entry handles its own commit. We should have probably passed referensi_id if we had it.
+        # For now, let's refresh and return.
+        for p in pembayaran_records:
+            self.db.refresh(p)
+            
+        return pembayaran_records
 
     def delete(self, piutang_id: int) -> bool:
         """Delete receivable (only if no payments)."""

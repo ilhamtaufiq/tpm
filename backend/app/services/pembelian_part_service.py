@@ -19,7 +19,10 @@ from app.utils.constants import (
     TRANSACTION_PREFIXES,
     KasBankType,
     KasBankSource,
+    HutangSource,
+    HutangStatus,
 )
+from app.models.keuangan import HutangUsaha
 from app.services.kas_bank_integration import create_kas_entry
 
 
@@ -44,6 +47,27 @@ class PembelianPartService:
 
         if last:
             last_num = int(last.nomor_transaksi[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _generate_nomor_hutang(self) -> str:
+        """Generate unique hutang transaction number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["hutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(HutangUsaha)
+            .filter(HutangUsaha.nomor_hutang.like(f"{prefix}{date_str}%"))
+            .order_by(HutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_hutang[-4:])
             new_num = last_num + 1
         else:
             new_num = 1
@@ -131,7 +155,21 @@ class PembelianPartService:
         status_bayar = PaymentStatus.BELUM_LUNAS
         tanggal_bayar = None
 
-        if data.metode_bayar and data.metode_bayar != PaymentMethod.KREDIT:
+        # Logic: If method is explicitly non-credit (Tunai/Transfer), mark as LUNAS
+        # If method is Kredit or None/Other, keep as BELUM_LUNAS
+        pay_now_methods = [
+            PaymentMethod.TUNAI, 
+            PaymentMethod.TRANSFER, 
+            PaymentMethod.DEBIT, 
+            PaymentMethod.SPLIT,
+            PaymentMethod.OTHER
+        ]
+        
+        is_pay_now = False
+        if data.metode_bayar in pay_now_methods:
+            is_pay_now = True
+
+        if is_pay_now:
             status_bayar = PaymentStatus.LUNAS
             tanggal_bayar = data.tanggal
 
@@ -177,6 +215,26 @@ class PembelianPartService:
                 keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
                 user_id=user_id,
             )
+        else:
+            # Record Hutang (Payable)
+            supplier = self.db.query(Supplier).get(data.supplier_id)
+            hutang = HutangUsaha(
+                nomor_hutang=self._generate_nomor_hutang(),
+                tanggal=data.tanggal,
+                supplier_id=data.supplier_id,
+                nama_kreditur=supplier.nama if supplier else "Supplier Umum",
+                telepon_kreditur=supplier.telepon if supplier else None,
+                alamat_kreditur=supplier.alamat if supplier else None,
+                sumber=HutangSource.PEMBELIAN_PART,
+                referensi_id=pembelian.id,
+                nomor_referensi=pembelian.nomor_transaksi,
+                nominal_hutang=grand_total,
+                sisa_hutang=grand_total,
+                status=HutangStatus.BELUM_LUNAS,
+                catatan=f"Hutang pembelian spare part - {pembelian.nomor_transaksi}",
+                created_by=user_id,
+            )
+            self.db.add(hutang)
 
         self.db.commit()
         self.db.refresh(pembelian)
@@ -300,25 +358,55 @@ class PembelianPartService:
                 detail="Transaksi sudah lunas",
             )
 
+        # Update purchase status
         pembelian.status_bayar = PaymentStatus.LUNAS
         pembelian.metode_bayar = metode_bayar
         pembelian.tanggal_bayar = tanggal_bayar or date.today()
 
-        # Record purchase payment to kas/bank (money going out)
-        # This will check balance and raise HTTPException if insufficient.
-        # Since it's in the same session, failing here will prevent status update from being committed.
-        create_kas_entry(
-            db=self.db,
-            tanggal=pembelian.tanggal_bayar,
-            tipe=KasBankType.KELUAR,
-            nominal=pembelian.grand_total,
-            sumber=KasBankSource.PEMBELIAN_PART,
-            metode_bayar=metode_bayar,
-            referensi_id=pembelian.id,
-            nomor_referensi=pembelian.nomor_transaksi,
-            keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi}",
-            user_id=user_id,
+        # Check if there's a linked Hutang record
+        hutang = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
+                HutangUsaha.referensi_id == pembelian.id,
+                HutangUsaha.status != HutangStatus.LUNAS,
+            )
+            .first()
         )
+
+        if hutang:
+            # Update hutang
+            nominal_to_pay = hutang.sisa_hutang
+            hutang.process_payment(nominal_to_pay)
+            
+            # Record to KasBank (via Hutang source)
+            create_kas_entry(
+                db=self.db,
+                tanggal=pembelian.tanggal_bayar,
+                tipe=KasBankType.KELUAR,
+                nominal=nominal_to_pay,
+                sumber=KasBankSource.HUTANG,
+                metode_bayar=metode_bayar,
+                referensi_id=None,
+                nomor_referensi=hutang.nomor_hutang,
+                keterangan=f"Pelunasan hutang {hutang.nomor_hutang} (Pembelian Part: {pembelian.nomor_transaksi})",
+                user_id=user_id,
+            )
+        else:
+            # No hutang record found (maybe it was deleted or never created)
+            # Record directly to KasBank
+            create_kas_entry(
+                db=self.db,
+                tanggal=pembelian.tanggal_bayar,
+                tipe=KasBankType.KELUAR,
+                nominal=pembelian.grand_total,
+                sumber=KasBankSource.PEMBELIAN_PART,
+                metode_bayar=metode_bayar,
+                referensi_id=pembelian.id,
+                nomor_referensi=pembelian.nomor_transaksi,
+                keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi}",
+                user_id=user_id,
+            )
 
         self.db.commit()
         self.db.refresh(pembelian)

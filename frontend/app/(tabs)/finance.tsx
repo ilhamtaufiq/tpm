@@ -19,7 +19,7 @@ import {
 import { useRouter, router } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
-import { useDashboardSummary, usePiutangSummary } from '../../hooks/useKeuangan';
+import { useDashboardSummary, usePiutangSummary, useHutangSummary } from '../../hooks/useKeuangan';
 import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 
@@ -29,6 +29,7 @@ export default function FinanceTab() {
     // API Hooks
     const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary();
     const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary();
+    const { data: hutangSummary, isLoading: isLoadingHutang, refetch: refetchHutang } = useHutangSummary();
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -40,9 +41,9 @@ export default function FinanceTab() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchDashboard(), refetchPiutang()]);
+        await Promise.all([refetchDashboard(), refetchPiutang(), refetchHutang()]);
         setRefreshing(false);
-    }, [refetchDashboard, refetchPiutang]);
+    }, [refetchDashboard, refetchPiutang, refetchHutang]);
 
     // Calculate totals
     const totalPendapatan = dashboard ? (
@@ -135,13 +136,13 @@ export default function FinanceTab() {
                                 </View>
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Cash</Typography>
                             </View>
-                            <Typography weight="bold" className="text-emerald-600 text-base tracking-tight">
-                                {formatCurrency(dashboard?.kas_bank?.cash?.saldo || 0)}
+                            <Typography weight="bold" className="text-emerald-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
+                                {formatCurrency(dashboard?.kas_bank?.CASH?.saldo || 0)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#10B981" />
                                 <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.cash?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(dashboard?.kas_bank?.CASH?.total_masuk_bulan_ini || 0)}
                                 </Typography>
                             </View>
                         </View>
@@ -153,32 +154,37 @@ export default function FinanceTab() {
                                 </View>
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank BCA</Typography>
                             </View>
-                            <Typography weight="bold" className="text-blue-600 text-base tracking-tight">
-                                {formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}
+                            <Typography weight="bold" className="text-blue-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
+                                {formatCurrency(dashboard?.kas_bank?.BANK_BCA?.saldo || 0)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#3B82F6" />
                                 <Typography className="text-blue-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.bank_bca?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(dashboard?.kas_bank?.BANK_BCA?.total_masuk_bulan_ini || 0)}
                                 </Typography>
                             </View>
                         </View>
                     </View>
 
-                    {/* Total Saldo & Piutang Row */}
-                    <View className="flex-row justify-between">
-                        <View className="w-[48%] bg-gradient-to-br from-primary/5 to-emerald-50 p-4 rounded-[24px] border border-primary/10 shadow-sm">
-                            <View className="flex-row items-center mb-3">
-                                <View className="w-9 h-9 bg-primary/10 rounded-xl items-center justify-center mr-2.5">
-                                    <BarChart3 size={18} color="#023C69" />
+                    {/* Total Saldo (Full Width) */}
+                    <View className="w-full bg-gradient-to-br from-primary/5 to-emerald-50 p-5 rounded-[24px] border border-primary/10 shadow-sm mb-3">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-row items-center">
+                                <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
+                                    <BarChart3 size={20} color="#023C69" />
                                 </View>
-                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Total Saldo</Typography>
+                                <View>
+                                    <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Total Kas & Bank</Typography>
+                                    <Typography weight="bold" className="text-primary text-xl tracking-tight">
+                                        {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
+                                    </Typography>
+                                </View>
                             </View>
-                            <Typography weight="bold" className="text-primary text-base tracking-tight">
-                                {formatCurrency(dashboard?.kas_bank?.total_saldo || 0)}
-                            </Typography>
                         </View>
+                    </View>
 
+                    {/* Piutang & Hutang Row */}
+                    <View className="flex-row justify-between">
                         <TouchableOpacity
                             onPress={() => router.push('/finance/piutang')}
                             className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
@@ -190,12 +196,33 @@ export default function FinanceTab() {
                                 </View>
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Piutang</Typography>
                             </View>
-                            <Typography weight="bold" className="text-amber-600 text-base tracking-tight">
+                            <Typography weight="bold" className="text-amber-600 text-sm tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(piutangSummary?.total_sisa || 0)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <Typography className="text-rose-500 text-[9px] font-bold">
-                                    {piutangSummary?.jumlah_belum_lunas || 0} belum lunas
+                                    {piutangSummary?.jumlah_belum_lunas || 0} akun
+                                </Typography>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.push('/finance/hutang')}
+                            className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
+                            activeOpacity={0.8}
+                        >
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-9 h-9 bg-rose-50 rounded-xl items-center justify-center mr-2.5">
+                                    <CircleDollarSign size={18} color="#E11D48" />
+                                </View>
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Hutang</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-rose-600 text-sm tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
+                                {formatCurrency(hutangSummary?.total_sisa || dashboard?.hutang?.total_sisa || 0)}
+                            </Typography>
+                            <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
+                                <Typography className="text-rose-500 text-[9px] font-bold">
+                                    {hutangSummary?.jumlah_belum_lunas || dashboard?.hutang?.jumlah_belum_lunas || 0} akun
                                 </Typography>
                             </View>
                         </TouchableOpacity>
@@ -229,10 +256,9 @@ export default function FinanceTab() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
                         {[
                             { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
-                            { label: 'Piutang', icon: CircleDollarSign, color: '#EF4444', path: '/finance/piutang' },
-                            { label: 'Setoran', icon: PlusCircle, color: '#10B981', path: '/finance/mutasi' },
-                            { label: 'Transfer', icon: ArrowRightLeft, color: '#8B5CF6', path: '/finance/mutasi' },
-                            { label: 'Laporan', icon: BarChart3, color: '#F59E0B', path: '/laporan' },
+                            { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
+                            { label: 'Hutang', icon: CircleDollarSign, color: '#E11D48', path: '/finance/hutang' },
+                            { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
                         ].map((action, idx) => (
                             <TouchableOpacity
                                 key={idx}

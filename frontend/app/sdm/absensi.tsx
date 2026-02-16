@@ -21,6 +21,8 @@ import { sdmService, Karyawan } from '../../services/sdm';
 import { useActiveKaryawan, useBulkClockIn } from '../../hooks/useSDM';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { BaseModal } from '../../components/ui/BaseModal';
+import { Input } from '../../components/ui/Input';
 
 export default function AbsensiScreen() {
     const router = useRouter();
@@ -31,6 +33,10 @@ export default function AbsensiScreen() {
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
+    const [timeModalVisible, setTimeModalVisible] = useState(false);
+    const [tempDate, setTempDate] = useState('');
+    const [jamMasuk, setJamMasuk] = useState('08:00');
+    const [jamKeluar, setJamKeluar] = useState('17:00');
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -70,11 +76,15 @@ export default function AbsensiScreen() {
                 if (response && Array.isArray(response.data)) {
                     response.data.forEach((abs: any) => {
                         const dateStr = abs.tanggal.split('T')[0];
+                        const isHalf = abs.status === 'SETENGAH_HARI';
                         attendanceMap[dateStr] = {
                             selected: true,
                             marked: true,
-                            selectedColor: '#023C69',
-                            textColor: 'white'
+                            selectedColor: isHalf ? '#F59E0B' : '#023C69',
+                            textColor: 'white',
+                            status: abs.status,
+                            jam_masuk: abs.jam_masuk?.substring(0, 5) || '08:00',
+                            jam_keluar: abs.jam_keluar?.substring(0, 5) || '17:00'
                         };
                     });
                 }
@@ -101,20 +111,55 @@ export default function AbsensiScreen() {
 
     const handleDayPress = (day: any) => {
         const dateString = day.dateString;
+        const existing = selectedDates[dateString];
+
+        setTempDate(dateString);
+        if (existing) {
+            setJamMasuk(existing.jam_masuk || '08:00');
+            setJamKeluar(existing.jam_keluar || '17:00');
+        } else {
+            setJamMasuk('08:00');
+            setJamKeluar('17:00');
+        }
+        setTimeModalVisible(true);
+    };
+
+    const calculateStatus = (outTime: string): 'HADIR' | 'SETENGAH_HARI' => {
+        // "kalo keluar antara jam 12 sampai jam 2 siang berarti setengah hari"
+        const [hour, minute] = outTime.split(':').map(Number);
+        const timeVal = hour + minute / 60;
+
+        if (timeVal >= 12 && timeVal <= 14) {
+            return 'SETENGAH_HARI';
+        }
+        return 'HADIR';
+    };
+
+    const handleConfirmTime = () => {
+        const status = calculateStatus(jamKeluar);
+
+        setSelectedDates(prev => ({
+            ...prev,
+            [tempDate]: {
+                selected: true,
+                marked: true,
+                selectedColor: status === 'SETENGAH_HARI' ? '#F59E0B' : '#023C69',
+                textColor: 'white',
+                status,
+                jam_masuk: jamMasuk,
+                jam_keluar: jamKeluar
+            }
+        }));
+        setTimeModalVisible(false);
+    };
+
+    const handleRemoveAttendance = () => {
         setSelectedDates(prev => {
             const next = { ...prev };
-            if (next[dateString]) {
-                delete next[dateString];
-            } else {
-                next[dateString] = {
-                    selected: true,
-                    marked: true,
-                    selectedColor: '#023C69',
-                    textColor: 'white'
-                };
-            }
+            delete next[tempDate];
             return next;
         });
+        setTimeModalVisible(false);
     };
 
     const handleMonthChange = (month: any) => {
@@ -139,14 +184,21 @@ export default function AbsensiScreen() {
         }
 
         try {
+            const attendanceRecords = Object.entries(selectedDates).map(([date, info]: [string, any]) => ({
+                date,
+                status: info.status || 'HADIR',
+                jam_masuk: info.jam_masuk,
+                jam_keluar: info.jam_keluar
+            }));
+
             await bulkClockInMutation.mutateAsync({
                 karyawanId: selectedKaryawan.id,
-                dates: dates
+                dates: attendanceRecords as any // type cast for now as hook might need update or handles it
             });
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
-                message: `Berhasil mencatat absensi untuk ${dates.length} hari`,
+                message: `Berhasil mencatat absensi untuk ${attendanceRecords.length} hari`,
                 variant: 'success'
             });
             setSelectedKaryawan(null);
@@ -312,7 +364,7 @@ export default function AbsensiScreen() {
                         <View className="bg-amber-50 p-6 rounded-[32px] border border-amber-100 mb-6">
                             <Typography className="text-amber-700/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Petunjuk</Typography>
                             <Typography className="text-amber-900 text-xs leading-relaxed">
-                                Klik pada tanggal di kalender untuk menandai kehadiran. Tanggal yang berwarna hijau artinya karyawan tercatat masuk.
+                                Klik pada tanggal di kalender. Sekali untuk HADIR (Biru), dua kali untuk SETENGAH HARI (Oranye), dan tiga kali untuk membatalkan.
                             </Typography>
                         </View>
 
@@ -350,6 +402,49 @@ export default function AbsensiScreen() {
                 variant={dialogConfig.variant}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
+
+            {/* Time Picker Modal */}
+            <BaseModal
+                visible={timeModalVisible}
+                onClose={() => setTimeModalVisible(false)}
+                title={`Input Jam: ${tempDate}`}
+            >
+                <View className="space-y-4">
+                    <Input
+                        label="Jam Masuk"
+                        value={jamMasuk}
+                        onChangeText={setJamMasuk}
+                        placeholder="08:00"
+                    />
+                    <Input
+                        label="Jam Keluar"
+                        value={jamKeluar}
+                        onChangeText={setJamKeluar}
+                        placeholder="17:00"
+                    />
+
+                    <Typography className="text-gray-500 text-xs italic mt-2">
+                        * Keluar antara 12:00 - 14:00 otomatis Setengah Hari
+                    </Typography>
+
+                    <View className="flex-row space-x-3 mt-6">
+                        {selectedDates[tempDate] && (
+                            <TouchableOpacity
+                                onPress={handleRemoveAttendance}
+                                className="flex-1 bg-red-50 h-14 rounded-2xl items-center justify-center border border-red-100"
+                            >
+                                <Typography weight="bold" className="text-red-600">Hapus</Typography>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            onPress={handleConfirmTime}
+                            className="flex-[2] bg-primary h-14 rounded-2xl items-center justify-center shadow-lg"
+                        >
+                            <Typography weight="bold" className="text-white">Simpan</Typography>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </BaseModal>
         </View>
     );
 }

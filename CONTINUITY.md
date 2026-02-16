@@ -1,7 +1,9 @@
 # Continuity Ledger
 
 ## Goal
-Refactor Bengkel (Workshop) feature to add a **kategori** (category) field with two values: "Jasa Angkut" and "Jual Beli Mobil". When creating a bengkel transaction, user first selects category (Jasa Angkut or Jual Beli Mobil), then picks the relevant transport transaction or car. Remove bengkel integration from Jasa Angkut and Mobil screens but keep transaction detail showing in the respective category.
+1. Refactor Bengkel (Workshop) feature to add a **kategori** (category) field.
+2. Refine Jasa Angkut profitability to correctly reflect TPM's profit (pendapatan_kotor - laba_supir) and report on an accrual basis.
+3. Implement centralized Hutang (Payables) tracking for spare parts and car purchases on credit.
 
 ### Success Criteria
 - Bengkel transactions have a `kategori` field (jasa_angkut / jual_beli_mobil / umum)
@@ -34,8 +36,35 @@ Refactor Bengkel (Workshop) feature to add a **kategori** (category) field with 
   - Updated `RelatedBengkelTransactions.tsx` to show service/part details.
   - Fixed Rp.0,00 total in Bengkel card header by ensuring proper API serialization.
   - Fixed 0 Operational Cost on Jasa Angkut trips by including workshop maintenance costs in profit calculation.
-- Now: Verifying final changes.
-- Next: Final check.
+  - **Absensi & Gaji Improvements (Item 7):**
+    - Added `SETENGAH_HARI` status to attendance.
+    - Implemented pro-rated salary formula: `(Gaji Pokok / 25) * Hadir`.
+    - Updated backend services and frontend UI (Absensi toggle, Payroll input) to support float attendance values.
+  - **Jasa Angkut & Hutang Refinement & Reports:**
+    - Modified `MuatanService.get_summary` to report on an accrual basis (including unpaid) and exclude `laba_supir` from company revenue.
+    - Implemented `HutangUsaha` and `PembayaranHutang` models and services.
+    - Integrated credit purchases in `PembelianPartService` and `MobilService` with automatic Hutang record creation.
+    - Added Hutang API endpoints for tracking and settling liabilities.
+    - Added `HutangUsahaScreen` to the frontend for managing payables.
+    - Integrated Hutang into Dashboard summaries and Finance hub.
+    - Fixed TypeScript errors in `hutang.tsx` and `perubahan-modal.tsx`  - Now:
+    - Responding to user request to change grouping format to "Nama Kendaraan - Jenis/Tipe" (per-unit grouping).
+  - Fixed:
+    - Jasa Angkut grouping showing "Armada Luar" for registered fleets by adding `joinedload(MuatanJasaAngkut.armada)` in backend service.
+    - Implemented grouping of Jasa Angkut transactions by **Armada Type** (Jenis) instead of individual vehicles.
+    - Updated Jasa Angkut screen to show type-based headers (e.g., "Armada Truk", "Armada Colt").
+    - Renamed "Armada Luar / Manual" group to "Armada Luar" for clarity.
+    - Included total group revenue in the header.
+    - Added 'Hutang' (Credit) payment option in `Pembelian Part` form, enabling credit purchases that automatically generate `HutangUsaha` records.
+    - **Fixed:** Backend logic in `PembelianPartService` now correctly identifies credit purchases by explicitly checking against pay-now methods (Tunai/Transfer), ensuring `HutangUsaha` records are created even if `metode_bayar` case varies or is new.
+    - Added "E. HUTANG / KEWAJIBAN" section to the Capital Change Report (Laporan Perubahan Modal) to display unpaid payables (Part, Mobil, Investor, Lainnya) which effectively increases cash on hand availability relative to expenses booked.
+    - **Fixed:** Finance Hub dashboard now correctly displays Cash and Bank BCA balances by using uppercase keys (`CASH`, `BANK_BCA`) to match backend enums, and improved the layout of Total Saldo, Piutang, and Hutang cards to prevent text clipping.
+    - Added Split Payment feature for Hutang Usaha, allowing users to pay a single debt using multiple payment methods (e.g., partial Tunai and partial Transfer) simultaneously.
+    - Updated Kasbon list card to show employee name more prominently and added a delete button for unpaid kasbon records, enhancing data management flexibility.
+- Now:
+  - Next:
+    - Verify "Armada Luar" bug is resolved (Backend fix applied).
+- Next: Final user verification.
 
 ## Open Questions
 - None.

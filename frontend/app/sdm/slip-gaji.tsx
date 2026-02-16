@@ -171,7 +171,7 @@ export default function SlipGajiScreen() {
     }, [refetchList, refetchSummary, refetchPreview]);
 
     const handleUpdateAttendance = (karyawanId: number, value: string) => {
-        const numValue = parseInt(value) || 0;
+        const numValue = parseFloat(value) || 0;
         setAttendanceEdits(prev => ({
             ...prev,
             [karyawanId]: numValue

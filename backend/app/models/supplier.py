@@ -7,6 +7,7 @@ from app.database.base import Base, TimestampMixin, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.bengkel import PembelianSparePart
+    from app.models.keuangan import HutangUsaha
 
 
 class Supplier(Base, TimestampMixin, SoftDeleteMixin):
@@ -29,6 +30,10 @@ class Supplier(Base, TimestampMixin, SoftDeleteMixin):
 
     # Relationships
     pembelian: Mapped[List["PembelianSparePart"]] = relationship(
+        back_populates="supplier",
+        lazy="dynamic",
+    )
+    hutang: Mapped[List["HutangUsaha"]] = relationship(
         back_populates="supplier",
         lazy="dynamic",
     )

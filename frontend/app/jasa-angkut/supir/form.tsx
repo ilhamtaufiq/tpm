@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { Typography } from '../../../components/ui/Typography';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
@@ -24,8 +25,14 @@ export default function SupirFormScreen() {
         nomor_sim: '',
         jenis_sim: 'B1',
         tanggal_bergabung: new Date().toISOString().split('T')[0],
+        armada_default_id: '',
+        nopol_kendaraan: '',
+        info_kendaraan: '',
         catatan: ''
     });
+
+    const [activeArmada, setActiveArmada] = useState<any[]>([]);
+    const [loadingArmada, setLoadingArmada] = useState(true);
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -41,6 +48,7 @@ export default function SupirFormScreen() {
     });
 
     useEffect(() => {
+        loadArmada();
         if (isEditing) {
             loadSupir();
         }
@@ -58,6 +66,9 @@ export default function SupirFormScreen() {
                 nomor_sim: supir.nomor_sim || '',
                 jenis_sim: supir.jenis_sim || 'B1',
                 tanggal_bergabung: supir.tanggal_bergabung?.split('T')[0] || '',
+                armada_default_id: supir.armada_default_id?.toString() || '',
+                nopol_kendaraan: supir.nopol_kendaraan || '',
+                info_kendaraan: supir.info_kendaraan || '',
                 catatan: supir.catatan || ''
             });
         } catch (error) {
@@ -68,8 +79,29 @@ export default function SupirFormScreen() {
         }
     };
 
+    const loadArmada = async () => {
+        try {
+            const data = await jasaAngkutService.getActiveArmada();
+            setActiveArmada(data);
+        } catch (e) {
+            console.error('Failed to load armada:', e);
+        } finally {
+            setLoadingArmada(false);
+        }
+    };
+
     const updateField = (key: string, value: string) => {
-        setFormData(prev => ({ ...prev, [key]: value }));
+        if (key === 'armada_default_id') {
+            const selected = activeArmada.find(a => a.id.toString() === value);
+            setFormData(prev => ({
+                ...prev,
+                [key]: value,
+                nopol_kendaraan: selected?.nopol || prev.nopol_kendaraan,
+                info_kendaraan: selected?.nama || prev.info_kendaraan
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [key]: value }));
+        }
     };
 
     const handleSubmit = async () => {
@@ -80,8 +112,12 @@ export default function SupirFormScreen() {
 
         try {
             setSubmitting(true);
+            const payload = {
+                ...formData,
+                armada_default_id: formData.armada_default_id ? parseInt(formData.armada_default_id) : undefined
+            };
             if (isEditing) {
-                await jasaAngkutService.updateSupir(parseInt(id!), formData);
+                await jasaAngkutService.updateSupir(parseInt(id!), payload);
                 setDialogConfig({
                     visible: true,
                     title: 'Sukses',
@@ -90,7 +126,7 @@ export default function SupirFormScreen() {
                     onConfirm: () => router.back()
                 });
             } else {
-                await jasaAngkutService.createSupir(formData);
+                await jasaAngkutService.createSupir(payload);
                 setDialogConfig({
                     visible: true,
                     title: 'Sukses',
@@ -181,6 +217,68 @@ export default function SupirFormScreen() {
                             />
                         ))}
                     </View>
+                </Card>
+
+                {/* Section: Vehicle Info */}
+                <Card className="mb-4">
+                    <Text className="font-bold text-gray-900 mb-4">Informasi Armada / Kendaraan Bawaan</Text>
+
+                    <Text className="text-textGray text-sm mb-1 font-medium">Pilih Armada Terdaftar</Text>
+                    {loadingArmada ? (
+                        <ActivityIndicator className="my-2" />
+                    ) : (
+                        <View className="flex-row flex-wrap mb-4">
+                            {activeArmada.map(a => (
+                                <TouchableOpacity
+                                    key={a.id}
+                                    onPress={() => updateField('armada_default_id', a.id.toString())}
+                                    className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${formData.armada_default_id === a.id.toString()
+                                        ? 'bg-primary border-primary'
+                                        : 'bg-white border-gray-200'
+                                        }`}
+                                >
+                                    <View className="flex-row items-center">
+                                        <Typography
+                                            variant="caption"
+                                            weight={formData.armada_default_id === a.id.toString() ? 'bold' : 'medium'}
+                                            className={formData.armada_default_id === a.id.toString() ? 'text-white' : 'text-gray-600'}
+                                        >
+                                            {a.nama}
+                                        </Typography>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity
+                                onPress={() => updateField('armada_default_id', '')}
+                                className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${!formData.armada_default_id
+                                    ? 'bg-gray-600 border-gray-600'
+                                    : 'bg-white border-gray-200'
+                                    }`}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    weight={!formData.armada_default_id ? 'bold' : 'medium'}
+                                    className={!formData.armada_default_id ? 'text-white' : 'text-gray-600'}
+                                >
+                                    Tidak Ada
+                                </Typography>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    <Input
+                        label="Plat Nomor (Input Manual/Auto)"
+                        placeholder="Contoh: B 1234 ABC"
+                        value={formData.nopol_kendaraan}
+                        onChangeText={v => updateField('nopol_kendaraan', v)}
+                    />
+
+                    <Input
+                        label="Informasi Kendaraan (Input Manual/Auto)"
+                        placeholder="Contoh: Truck Isuzu Elf Giga Putih"
+                        value={formData.info_kendaraan}
+                        onChangeText={v => updateField('info_kendaraan', v)}
+                    />
                 </Card>
 
                 {/* Section: Employment */}

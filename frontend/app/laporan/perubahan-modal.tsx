@@ -2,7 +2,7 @@
 import { View, ScrollView, TouchableOpacity, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, GestureResponderEvent, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
-import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, DollarSign, Wallet, Download, Eye, Share2, X } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, DollarSign, Wallet, Download, Eye, Share2, X, AlertTriangle } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import * as Print from 'expo-print';
@@ -114,7 +114,11 @@ export default function LaporanPerubahanModalScreen() {
             const c_prive = report.section_c.prive || 0;
 
             const c4 = report.section_c.total_c || 0; // Total C from Backend (includes all)
-            const c5 = report.section_d.theoretical_modal || 0; // Modal Berjalan (A - B - C) from Backend
+
+            // E. Hutang
+            const e1 = report.section_e.total_e || 0;
+
+            const c5 = report.section_d.theoretical_modal || 0; // Modal Berjalan (A - B - C + E) from Backend
 
             // Final Balances
             const finalCash = report.section_d.cash || 0;
@@ -302,7 +306,25 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c4)}</td>
                         </tr>
                          <tr class="total-bar">
-                            <td colspan="2">LABA & MODAL</td>
+                            <td colspan="2">LABA & MODAL (A-B-C)</td>
+                            <td class="amount">${formatCurrency(b8 - c4)}</td>
+                        </tr>
+                    </table>
+
+                    <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
+
+                    <!-- SECTION E -->
+                    <table cellspacing="0">
+                        <tr>
+                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #fee2e2;">E. HUTANG / KEWAJIBAN:</td>
+                        </tr>
+                        <tr>
+                            <td>TOTAL HUTANG USAHA (UNPAID)</td>
+                            <td class="amount">${formatCurrency(e1)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="total-bar" style="background-color: #be123c;">
+                            <td colspan="2">TOTAL REKONSILIASI (A-B-C+E)</td>
                             <td class="amount">${formatCurrency(c5)}</td>
                         </tr>
                     </table>
@@ -550,6 +572,36 @@ export default function LaporanPerubahanModalScreen() {
         );
     };
 
+    const renderSectionE = () => {
+        const data = report?.section_e || {};
+        return (
+            <Card className="mb-6 p-4 border-rose-100 bg-rose-50/10">
+                <View className="flex-row items-center mb-4">
+                    <View className="w-8 h-8 rounded-full bg-rose-100 items-center justify-center mr-3">
+                        <AlertTriangle size={18} className="text-rose-600" />
+                    </View>
+                    <Typography variant="h4" weight="bold" className="text-rose-900">E. HUTANG / KEWAJIBAN</Typography>
+                </View>
+
+                <View className="space-y-3">
+                    <Row label="Hutang Pembelian Part" value={data.hutang_part} />
+                    <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} />
+                    <Row label="Hutang Investor" value={data.hutang_investor} />
+                    <Row label="Hutang Lainnya" value={data.hutang_lainnya} />
+
+                    <View className="h-[1px] bg-rose-200 my-2" />
+                    <Row label="Total Hutang Belum Lunas" value={data.total_e} color="text-rose-600" bold large />
+
+                    <View className="mt-2 pt-2 border-t border-dashed border-rose-200">
+                        <Typography variant="caption" className="text-rose-400 italic text-xs">
+                            *Hutang adalah kewajiban yang belum dibayar tunai, sehingga uang kas masih ada di tangan (POSISI KREDIT MENAMBAH KAS).
+                        </Typography>
+                    </View>
+                </View>
+            </Card>
+        );
+    };
+
     const renderSectionD = () => {
         const data = report?.section_d || {};
         return (
@@ -562,7 +614,7 @@ export default function LaporanPerubahanModalScreen() {
                         <DollarSign size={20} className="text-yellow-400" />
                     </View>
                     <View>
-                        <Typography variant="h4" weight="bold" className="text-white">D. Sisa Laba dan Modal</Typography>
+                        <Typography variant="h4" weight="bold" className="text-white">F. Sisa Laba dan Modal</Typography>
                         <Typography variant="caption" className="text-slate-400">Posisi Kas & Rekonsiliasi Akhir</Typography>
                     </View>
                 </View>
@@ -584,11 +636,11 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="caption" weight="bold" className="text-slate-300 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
                         </View>
 
-                        <Row label="Modal Berjalan (A - B - C)" value={data.theoretical_modal} bold large color="text-yellow-400" isDark />
+                        <Row label="Modal Berjalan (A - B - C + E)" value={data.theoretical_modal} bold large color="text-yellow-400" isDark />
 
                         <View className="mt-3 pt-3 border-t border-slate-700/50">
                             <Typography variant="caption" className="text-slate-500 italic leading-4">
-                                *Angka ini merupakan akumulasi Laba Kotor dikurangi Piutang, Biaya & Pengembalian Modal. Idealnya saldo Kas + Transfer cocok dengan angka ini.
+                                *Angka ini merupakan akumulasi Laba Kotor dikurangi Piutang & Pengeluaran Terbayar, ditambah Hutang. Idealnya saldo Kas + Transfer cocok dengan angka ini.
                             </Typography>
                         </View>
                     </View>
@@ -618,6 +670,7 @@ export default function LaporanPerubahanModalScreen() {
                         {renderSectionA()}
                         {renderSectionB()}
                         {renderSectionC()}
+                        {renderSectionE()}
                         {renderSectionD()}
                     </>
                 )}

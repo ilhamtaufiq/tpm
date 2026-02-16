@@ -176,17 +176,21 @@ export default function PurchaseScreen() {
                 <View className="mb-6">
                     <Typography variant="body2" className="text-textGray text-sm mb-2 font-medium">Metode Pembayaran *</Typography>
                     <View className="flex-row space-x-2">
-                        {['tunai', 'transfer'].map((m) => (
+                        {[
+                            { id: 'tunai', label: 'Tunai' },
+                            { id: 'transfer', label: 'Transfer' },
+                            { id: 'kredit', label: 'Hutang' }
+                        ].map((m) => (
                             <TouchableOpacity
-                                key={m}
-                                onPress={() => setMetodeBayar(m)}
-                                className={`flex-1 py-3 items-center rounded-xl border-2 ${metodeBayar === m ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
+                                key={m.id}
+                                onPress={() => setMetodeBayar(m.id)}
+                                className={`flex-1 py-3 items-center rounded-xl border-2 ${metodeBayar === m.id ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
                             >
                                 <Typography
-                                    className={metodeBayar === m ? 'text-primary' : 'text-gray-400'}
-                                    weight={metodeBayar === m ? 'bold' : 'medium'}
+                                    className={metodeBayar === m.id ? 'text-primary' : 'text-gray-400'}
+                                    weight={metodeBayar === m.id ? 'bold' : 'medium'}
                                 >
-                                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                                    {m.label}
                                 </Typography>
                             </TouchableOpacity>
                         ))}

@@ -9,6 +9,7 @@ from app.schemas.keuangan import (
     PiutangUpdate,
     PiutangResponse,
     PembayaranPiutangCreate,
+    PembayaranPiutangSplit,
     PembayaranPiutangResponse,
 )
 from app.services.piutang_service import PiutangService
@@ -151,6 +152,17 @@ def process_payment(
     """Process payment for receivable."""
     service = PiutangService(db)
     return service.process_payment(data, current_user.id)
+
+
+@router.post("/payment/split", status_code=status.HTTP_201_CREATED)
+def process_payment_split(
+    data: PembayaranPiutangSplit,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process multiple payments for a receivable."""
+    service = PiutangService(db)
+    return service.process_payment_split(data, current_user.id)
 
 
 @router.delete("/{piutang_id}")

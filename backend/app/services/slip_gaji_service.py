@@ -91,19 +91,27 @@ class SlipGajiService:
         karyawan_id: int,
         tanggal_mulai: date,
         tanggal_akhir: date,
-    ) -> int:
-        """Get attendance count for a week."""
-        count = (
+    ) -> Decimal:
+        """Get attendance count for a week (half-days count as 0.5)."""
+        absences = (
             self.db.query(Absensi)
             .filter(
                 Absensi.karyawan_id == karyawan_id,
                 Absensi.tanggal >= tanggal_mulai,
                 Absensi.tanggal <= tanggal_akhir,
-                Absensi.status == AttendanceStatus.HADIR,
+                Absensi.status.in_([AttendanceStatus.HADIR, AttendanceStatus.SETENGAH_HARI]),
             )
-            .count()
+            .all()
         )
-        return count
+        
+        total = Decimal("0")
+        for a in absences:
+            if a.status == AttendanceStatus.HADIR:
+                total += Decimal("1.0")
+            elif a.status == AttendanceStatus.SETENGAH_HARI:
+                total += Decimal("0.5")
+                
+        return total
 
     def _get_kasbon_total(self, karyawan_id: int) -> Decimal:
         """Get total unpaid kasbon for employee."""
@@ -170,6 +178,10 @@ class SlipGajiService:
         # Generate slip number
         nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
 
+        # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
+        daily_rate = karyawan.gaji_pokok / Decimal("7")
+        gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+
         # Create slip
         slip = SlipGaji(
             nomor_slip=nomor_slip,
@@ -179,7 +191,7 @@ class SlipGajiService:
             tanggal_mulai=tanggal_mulai,
             tanggal_akhir=tanggal_akhir,
             jumlah_hadir=jumlah_hadir,
-            gaji_pokok=karyawan.gaji_pokok,
+            gaji_pokok=gaji_pokok_pro_rated,
             potongan_kasbon=kasbon_total,
             status=PaymentStatus.BELUM_LUNAS,
             created_by=user_id,
@@ -234,14 +246,19 @@ class SlipGajiService:
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
 
+            # Pro-rated formula: (Gaji Pokok / 7) * jumlah_hadir
+            daily_rate = emp.gaji_pokok / Decimal("7")
+            gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+            gaji_bersih = gaji_pokok_pro_rated - kasbon_total
+
             items.append({
                 "karyawan_id": emp.id,
                 "karyawan_nama": emp.nama,
                 "karyawan_kode": emp.kode,
-                "gaji_pokok": float(emp.gaji_pokok),
-                "jumlah_hadir": jumlah_hadir,
+                "gaji_pokok": float(gaji_pokok_pro_rated),
+                "jumlah_hadir": float(jumlah_hadir),
                 "potongan_kasbon": float(kasbon_total),
-                "gaji_bersih": float(emp.gaji_pokok - kasbon_total),
+                "gaji_bersih": float(gaji_bersih),
             })
 
         return {
@@ -277,14 +294,19 @@ class SlipGajiService:
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
 
+            # Pro-rated formula: (Gaji Pokok / 7) * jumlah_hadir
+            daily_rate = emp.gaji_pokok / Decimal("7")
+            gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+            gaji_bersih = gaji_pokok_pro_rated - kasbon_total
+
             items.append({
                 "karyawan_id": emp.id,
                 "karyawan_nama": emp.nama,
                 "karyawan_kode": emp.kode,
-                "gaji_pokok": float(emp.gaji_pokok),
-                "jumlah_hadir": jumlah_hadir,
+                "gaji_pokok": float(gaji_pokok_pro_rated),
+                "jumlah_hadir": float(jumlah_hadir),
                 "potongan_kasbon": float(kasbon_total),
-                "gaji_bersih": float(emp.gaji_pokok - kasbon_total),
+                "gaji_bersih": float(gaji_bersih),
             })
 
         return {
@@ -346,6 +368,12 @@ class SlipGajiService:
                 # Generate slip number
                 nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
+                # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
+                # Note: item.get("jumlah_hadir") might be float now
+                hadir_val = Decimal(str(jumlah_hadir))
+                daily_rate = karyawan.gaji_pokok / Decimal("7")
+                gaji_pokok_pro_rated = daily_rate * hadir_val
+
                 # Create slip with overridden attendance
                 slip = SlipGaji(
                     nomor_slip=nomor_slip,
@@ -354,8 +382,8 @@ class SlipGajiService:
                     periode_tahun=tahun,
                     tanggal_mulai=tanggal_mulai,
                     tanggal_akhir=tanggal_akhir,
-                    jumlah_hadir=jumlah_hadir,
-                    gaji_pokok=karyawan.gaji_pokok,
+                    jumlah_hadir=hadir_val,
+                    gaji_pokok=gaji_pokok_pro_rated,
                     potongan_kasbon=kasbon_total,
                     status=PaymentStatus.BELUM_LUNAS,
                     created_by=user_id,
@@ -418,6 +446,11 @@ class SlipGajiService:
             # Generate slip number
             nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
+            # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
+            hadir_val = Decimal(str(jumlah_hadir))
+            daily_rate = karyawan.gaji_pokok / Decimal("7")
+            gaji_pokok_pro_rated = daily_rate * hadir_val
+
             # Create slip with range dates
             slip = SlipGaji(
                 nomor_slip=nomor_slip,
@@ -426,8 +459,8 @@ class SlipGajiService:
                 periode_tahun=tahun,
                 tanggal_mulai=tanggal_mulai,
                 tanggal_akhir=tanggal_akhir,
-                jumlah_hadir=jumlah_hadir,
-                gaji_pokok=karyawan.gaji_pokok,
+                jumlah_hadir=hadir_val,
+                gaji_pokok=gaji_pokok_pro_rated,
                 potongan_kasbon=kasbon_total,
                 status=PaymentStatus.BELUM_LUNAS,
                 created_by=user_id,

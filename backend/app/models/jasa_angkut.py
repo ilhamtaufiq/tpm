@@ -32,6 +32,8 @@ class Supir(Base, TimestampMixin, SoftDeleteMixin):
     nomor_sim: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     jenis_sim: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)  # A, B1, B2, etc
     tanggal_bergabung: Mapped[date] = mapped_column(Date)
+    nopol_kendaraan: Mapped[Optional[str]] = mapped_column(String(20), nullable=True) # Default vehicle plate
+    info_kendaraan: Mapped[Optional[str]] = mapped_column(String(255), nullable=True) # e.g. "Colt Diesel Biru"
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -40,9 +42,33 @@ class Supir(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="supir",
         lazy="dynamic",
     )
+    armada_default_id: Mapped[Optional[int]] = mapped_column(ForeignKey("armada_jasa_angkut.id"), nullable=True)
+    armada_default: Mapped[Optional["ArmadaJasaAngkut"]] = relationship()
 
     def __repr__(self) -> str:
         return f"<Supir(id={self.id}, kode='{self.kode}', nama='{self.nama}')>"
+
+
+class ArmadaJasaAngkut(Base, TimestampMixin, SoftDeleteMixin):
+    """Vehicle/Fleet model for transportation service."""
+
+    __tablename__ = "armada_jasa_angkut"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nama: Mapped[str] = mapped_column(String(100), index=True)  # e.g. "Truk 01", "Fuso Biru"
+    nopol: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    jenis: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g. "Dump Truck", "Colt Diesel"
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    muatan: Mapped[List["MuatanJasaAngkut"]] = relationship(
+        back_populates="armada",
+        lazy="dynamic",
+    )
+
+    def __repr__(self) -> str:
+        return f"<Armada(id={self.id}, nopol='{self.nopol}', nama='{self.nama}')>"
 
 
 class MuatanJasaAngkut(Base, TimestampMixin):
@@ -55,7 +81,10 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     tanggal: Mapped[date] = mapped_column(Date, index=True)
     supir_id: Mapped[Optional[int]] = mapped_column(ForeignKey("supir.id"), nullable=True)
     supir_nama_manual: Mapped[Optional[str]] = mapped_column("supir_nama", String(100), nullable=True)
+    
+    armada_id: Mapped[Optional[int]] = mapped_column(ForeignKey("armada_jasa_angkut.id"), nullable=True)
     nopol: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    info_kendaraan: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     @property
     def supir_nama(self) -> Optional[str]:
@@ -107,6 +136,7 @@ class MuatanJasaAngkut(Base, TimestampMixin):
 
     # Relationships
     supir: Mapped[Optional["Supir"]] = relationship(back_populates="muatan")
+    armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship(back_populates="muatan")
     biaya_tambahan: Mapped[List["JasaAngkutBiayaLainnya"]] = relationship(
         back_populates="muatan",
         cascade="all, delete-orphan",

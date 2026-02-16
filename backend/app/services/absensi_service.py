@@ -5,7 +5,7 @@ from calendar import monthrange
 
 from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import Session, joinedload
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status as http_status
 
 from app.models.karyawan import Karyawan, Absensi
 from app.schemas.karyawan import AbsensiCreate, AbsensiUpdate
@@ -30,12 +30,12 @@ class AbsensiService:
         )
         if not karyawan:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Karyawan tidak ditemukan",
             )
         if karyawan.status != EmployeeStatus.AKTIF:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Karyawan tidak aktif",
             )
         return karyawan
@@ -56,7 +56,7 @@ class AbsensiService:
         )
         if existing:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Absensi untuk tanggal {data.tanggal} sudah ada",
             )
 
@@ -94,6 +94,10 @@ class AbsensiService:
                 .first()
             )
             if existing:
+                # Update status if different
+                if item.status and existing.status != item.status:
+                    existing.status = item.status
+                results.append(existing)
                 continue
 
             absensi = Absensi(
@@ -124,7 +128,7 @@ class AbsensiService:
         )
         if not absensi:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Absensi tidak ditemukan",
             )
         return absensi
@@ -228,7 +232,7 @@ class AbsensiService:
 
         # Build records list
         records = []
-        summary = {"hadir": 0, "izin": 0, "sakit": 0, "alpha": 0, "cuti": 0, "libur": 0}
+        summary = {"hadir": 0, "setengah_hari": 0, "izin": 0, "sakit": 0, "alpha": 0, "cuti": 0, "libur": 0}
 
         for emp in employees:
             absensi = absensi_map.get(emp.id)
@@ -275,7 +279,7 @@ class AbsensiService:
         )
         if not karyawan:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Karyawan tidak ditemukan",
             )
 
@@ -313,8 +317,10 @@ class AbsensiService:
         for row in by_status:
             status_counts[row.status.value] = row.count
 
-        hadir = status_counts.get("hadir", 0)
-        persentase = (hadir / total_hari_kerja * 100) if total_hari_kerja > 0 else 0
+        hadir = status_counts.get("HADIR", 0)
+        setengah_hari = status_counts.get("SETENGAH_HARI", 0)
+        total_hadir_efektif = Decimal(str(hadir)) + (Decimal(str(setengah_hari)) * Decimal("0.5"))
+        persentase = (float(total_hadir_efektif) / total_hari_kerja * 100) if total_hari_kerja > 0 else 0
 
         return {
             "karyawan_id": karyawan_id,
@@ -322,11 +328,13 @@ class AbsensiService:
             "periode_bulan": bulan,
             "periode_tahun": tahun,
             "total_hari_kerja": total_hari_kerja,
-            "jumlah_hadir": status_counts.get("hadir", 0),
-            "jumlah_izin": status_counts.get("izin", 0),
-            "jumlah_sakit": status_counts.get("sakit", 0),
-            "jumlah_alpha": status_counts.get("alpha", 0),
-            "jumlah_cuti": status_counts.get("cuti", 0),
+            "jumlah_hadir": status_counts.get("HADIR", 0),
+            "jumlah_setengah_hari": status_counts.get("SETENGAH_HARI", 0),
+            "total_hadir_efektif": float(total_hadir_efektif),
+            "jumlah_izin": status_counts.get("IZIN", 0),
+            "jumlah_sakit": status_counts.get("SAKIT", 0),
+            "jumlah_alpha": status_counts.get("ALPHA", 0),
+            "jumlah_cuti": status_counts.get("CUTI", 0),
             "persentase_kehadiran": round(persentase, 2),
         }
 
@@ -358,6 +366,7 @@ class AbsensiService:
         karyawan_id: int,
         tanggal: Optional[date] = None,
         jam: Optional[time] = None,
+        status: AttendanceStatus = AttendanceStatus.HADIR,
     ) -> Absensi:
         """Record employee clock in."""
         self._validate_karyawan(karyawan_id)
@@ -376,12 +385,11 @@ class AbsensiService:
         )
 
         if existing:
-            if existing.jam_masuk:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Sudah melakukan clock in hari ini",
-                )
-            existing.jam_masuk = jam
+            # Update status if provided and different
+            if status and existing.status != status:
+                existing.status = status
+            if jam:
+                existing.jam_masuk = jam
             self.db.commit()
             self.db.refresh(existing)
             return existing
@@ -389,7 +397,7 @@ class AbsensiService:
         absensi = Absensi(
             karyawan_id=karyawan_id,
             tanggal=tanggal,
-            status=AttendanceStatus.HADIR,
+            status=status,
             jam_masuk=jam,
         )
 
@@ -423,13 +431,13 @@ class AbsensiService:
 
         if not absensi:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Belum melakukan clock in",
             )
 
         if absensi.jam_keluar:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail="Sudah melakukan clock out hari ini",
             )
 

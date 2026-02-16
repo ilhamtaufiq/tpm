@@ -17,11 +17,13 @@ from app.api.v1 import (
     slip_gaji,
     kasbon,
     piutang,
+    hutang,
     kas_bank,
     dashboard,
     maintenance,
     jasa_servis,
     public_receipt,
+    armada,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -44,9 +46,11 @@ api_router.include_router(absensi.router)
 api_router.include_router(slip_gaji.router)
 api_router.include_router(kasbon.router)
 api_router.include_router(piutang.router)
+api_router.include_router(hutang.router)
 api_router.include_router(kas_bank.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(maintenance.router)
+api_router.include_router(armada.router)
 
 # Public endpoints (no auth required) - mount outside /api/v1
 from fastapi import FastAPI

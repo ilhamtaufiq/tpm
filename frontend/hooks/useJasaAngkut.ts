@@ -51,6 +51,57 @@ export const useDeleteSupir = () => {
 };
 
 // =============================================
+// ARMADA
+// =============================================
+export const useArmadaList = (params?: any) => {
+    return useQuery({
+        queryKey: ['armada', params],
+        queryFn: () => jasaAngkutService.getArmadaList(params),
+    });
+};
+
+export const useActiveArmada = () => {
+    return useQuery({
+        queryKey: ['armada_active'],
+        queryFn: () => jasaAngkutService.getActiveArmada(),
+    });
+};
+
+export const useCreateArmada = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: jasaAngkutService.createArmada,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['armada'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_active'] });
+        },
+    });
+};
+
+export const useUpdateArmada = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) =>
+            jasaAngkutService.updateArmada(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['armada'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_active'] });
+        },
+    });
+};
+
+export const useDeleteArmada = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => jasaAngkutService.deleteArmada(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['armada'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_active'] });
+        },
+    });
+};
+
+// =============================================
 // MUATAN
 // =============================================
 export const useMuatanList = (params?: any) => {

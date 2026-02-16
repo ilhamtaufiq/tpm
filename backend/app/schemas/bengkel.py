@@ -5,6 +5,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from app.utils.constants import PaymentStatus, PaymentMethod, ExpenseCategory, WorkshopStatus
+from app.schemas.master import SupplierResponse
 
 
 # ============================================
@@ -172,6 +173,7 @@ class PembelianSparePartResponse(BaseModel):
     tanggal: date
     supplier_id: int
     supplier_nama: Optional[str] = None
+    supplier: Optional[SupplierResponse] = None
     nomor_faktur: Optional[str] = None
     total: Decimal
     diskon: Decimal
@@ -184,6 +186,15 @@ class PembelianSparePartResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class PembelianSparePartList(BaseModel):
+    """Schema for paginated purchase list."""
+    data: List[PembelianSparePartResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 
 # ============================================

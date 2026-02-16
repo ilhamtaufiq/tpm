@@ -13,10 +13,11 @@ from app.services.kas_bank_service import KasBankService
 from app.services.karyawan_service import KaryawanService
 from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
+from app.services.hutang_service import HutangService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource
 from app.models.keuangan import KasBank
 from sqlalchemy import func
 
@@ -51,6 +52,9 @@ def get_dashboard_summary(
     # Receivables
     piutang_service = PiutangService(db)
     piutang_summary = piutang_service.get_summary(tanggal_dari, tanggal_sampai)
+    # Payables
+    hutang_service = HutangService(db)
+    hutang_summary = hutang_service.get_summary(tanggal_dari, tanggal_sampai)
 
     # Salary summary
     slip_gaji_service = SlipGajiService(db)
@@ -89,6 +93,11 @@ def get_dashboard_summary(
             "total_piutang": piutang_summary["total_piutang"],
             "total_sisa": piutang_summary["total_sisa"],
             "jumlah_overdue": piutang_summary["jumlah_overdue"],
+        },
+        "hutang": {
+            "total_hutang": hutang_summary["total_hutang"],
+            "total_sisa": hutang_summary["total_sisa"],
+            "jumlah_belum_lunas": hutang_summary["jumlah_belum_lunas"],
         },
         "kas_bank": kas_bank_summary,
     }
@@ -329,6 +338,7 @@ def get_capital_report(
     kas_service = KasBankService(db)
     pengeluaran_service = PengeluaranService(db)
     slip_gaji_service = SlipGajiService(db)
+    hutang_service = HutangService(db)
 
     # Pre-fetch summaries for expense calculations
     pengeluaran = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -516,14 +526,32 @@ def get_capital_report(
         "theoretical_modal": section_a["total_a"] - section_b["total_b"] - section_c["total_c"]
     }
 
+    # --- E. Hutang / Kewajiban ---
+    # Fetch current payable balances
+    hutang_summ = hutang_service.get_summary(tanggal_dari, tanggal_sampai)
+    h_by_sumber = hutang_summ.get("by_sumber", {})
+    
+    h_part = h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0)
+    h_mobil = h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0)
+    h_investor = h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0) # e.g. investor funds waiting to be paid back
+    h_lainnya = h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0)
+    
+    total_e = h_part + h_mobil + h_investor + h_lainnya
+    
+    section_e = {
+        "hutang_part": h_part,
+        "hutang_mobil": h_mobil,
+        "hutang_investor": h_investor,
+        "hutang_lainnya": h_lainnya,
+        "total_e": total_e
+    }
+
     return {
         "section_a": section_a,
         "section_b": section_b,
         "section_c": section_c,
         "section_d": section_d,
-        "grand_total": (section_a["total_a"] - section_c["total_c"]) # Ideally should match Total Assets (D + B) roughly? 
-        # Accounting equation: Assets (Cash + Piutang) = Equity + Liabilities.
-        # Here: (Sisa Modal + Laba) ~ (Cash + Receivables - Payables).
-        # We'll just return the sections as requested.
+        "section_e": section_e,
+        "grand_total": (section_a["total_a"] - section_c["total_c"]) 
     }
 

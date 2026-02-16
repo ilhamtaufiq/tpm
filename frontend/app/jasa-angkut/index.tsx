@@ -36,12 +36,70 @@ import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTrans
 export default function JasaAngkutScreen() {
 
     // API Hooks
-    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 10 });
+    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 50 });
     const { data: summaryData } = useMuatanSummary();
 
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
     const [view, setView] = useState<'form' | 'detail'>('form');
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+    const recentTrips = muatanData?.data || [];
+
+    // Group trips by armada type (jenis)
+    const groupedByArmada = useMemo(() => {
+        if (!recentTrips.length) return [];
+
+        const map = new Map<string, {
+            key: string;
+            title: string;
+            trips: any[];
+            totalRitase: number;
+            totalPendapatanTPM: number;
+        }>();
+
+        for (const trip of recentTrips) {
+            let key = 'lainnya';
+            let title = 'Armada Lainnya';
+
+            if (trip.armada) {
+                // Group by specific armada unit: "Nama Kendaraan - Jenis/Tipe"
+                const jenis = trip.armada.jenis || 'Umum';
+                key = `armada-${trip.armada.id}`;
+                title = `${trip.armada.nama} - ${jenis}`;
+            } else {
+                key = 'manual';
+                title = 'Armada Luar';
+            }
+
+            if (!map.has(key)) {
+                map.set(key, {
+                    key,
+                    title,
+                    trips: [], // We will sort these by date later if needed, currently they come sorted from API
+                    totalRitase: 0,
+                    totalPendapatanTPM: 0,
+                });
+            }
+
+            const group = map.get(key)!;
+            group.trips.push(trip);
+            group.totalRitase += Number(trip.ritase || 1);
+            group.totalPendapatanTPM += Number(trip.pendapatan_kotor || 0) - Number(trip.laba_supir || 0);
+        }
+
+        // Sort by most trips first
+        return Array.from(map.values()).sort((a, b) => b.trips.length - a.trips.length);
+    }, [recentTrips]);
+
+    const toggleGroupCollapse = useCallback((key: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    }, []);
 
     // Dialog State
     const [dialogConfig, setDialogConfig] = useState<{
@@ -58,6 +116,7 @@ export default function JasaAngkutScreen() {
         variant: 'info',
         type: 'alert'
     });
+
     const [actionLoading, setActionLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -66,7 +125,7 @@ export default function JasaAngkutScreen() {
     const [paymentItemId, setPaymentItemId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Muatan | null>(null);
 
-    const recentTrips = muatanData?.data || [];
+
     const backendStats = summaryData || {};
     const stats = {
         total: backendStats.total_transaksi || 0,
@@ -263,8 +322,8 @@ export default function JasaAngkutScreen() {
                     <Card variant="outlined" className="p-6 border-gray-100 mb-8 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Analisa Laba Rugi</Typography>
                         <View className="flex-row justify-between mb-3">
-                            <Typography variant="body2" className="text-textGray">Pendapatan Kotor</Typography>
-                            <Typography weight="bold" className="text-textMain">{formatCurrency(trip.pendapatan_kotor)}</Typography>
+                            <Typography variant="body2" className="text-textGray">Pendapatan TPM (Gross)</Typography>
+                            <Typography weight="bold" className="text-textMain">{formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}</Typography>
                         </View>
 
                         <View className="flex-row justify-between mb-3">
@@ -295,12 +354,14 @@ export default function JasaAngkutScreen() {
 
                         <View className="h-[1px] bg-gray-100 my-4" />
                         <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl">
-                            <Typography variant="body2" weight="bold" className="text-primary">Laba TPM ({trip.persentase_tpm}%)</Typography>
+                            <Typography variant="body2" weight="bold" className="text-primary text-[11px]">PENDAPATAN TPM (NET)</Typography>
                             <Typography weight="bold" className="text-primary">{formatCurrency(trip.laba_tpm)}</Typography>
                         </View>
-                        <View className="flex-row justify-between p-3">
-                            <Typography variant="body2" className="text-textGray">Jatah Mandor/Supir</Typography>
-                            <Typography weight="bold" className="text-blue-600">{formatCurrency(trip.laba_supir)}</Typography>
+
+                        {/* Driver share shown but secondary, as requested 'boleh di form' assuming detail is close to form context */}
+                        <View className="flex-row justify-between px-3 py-1">
+                            <Typography variant="caption" className="text-textGray/60">Hak Driver (Tidak Dicatat Kas)</Typography>
+                            <Typography variant="caption" weight="bold" className="text-textGray/40">{formatCurrency(trip.laba_supir)}</Typography>
                         </View>
                     </Card>
 
@@ -358,12 +419,20 @@ export default function JasaAngkutScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => router.push('/jasa-angkut/supir')}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        <Users size={22} color="white" />
-                    </TouchableOpacity>
+                    <View className="flex-row">
+                        <TouchableOpacity
+                            onPress={() => router.push('/jasa-angkut/armada')}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
+                        >
+                            <Truck size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.push('/jasa-angkut/supir')}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            <Users size={22} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Main Insight Card (Glassmorphism) */}
@@ -434,7 +503,7 @@ export default function JasaAngkutScreen() {
                     <Badge variant="neutral" label="TERBARU" />
                 </View>
 
-                {/* Trip List */}
+                {/* Trip List Grouped by Armada */}
                 {isLoading ? (
                     <View className="space-y-6">
                         <SkeletonCard className="rounded-[32px] h-32" />
@@ -450,53 +519,95 @@ export default function JasaAngkutScreen() {
                         />
                     </View>
                 ) : (
-                    recentTrips.map((trip: any) => (
-                        <TouchableOpacity
-                            key={trip.id}
-                            onPress={() => handlePresentModal('detail', trip)}
-                            activeOpacity={0.9}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
-                        >
-                            {/* Visual ID Slot */}
-                            <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
-                                <Truck size={28} color="#10B981" strokeWidth={2} />
-                            </View>
-
-                            <View className="flex-1">
-                                {/* Main Info + Status */}
-                                <View className="flex-row items-center justify-between mb-2">
-                                    <View className="flex-1 mr-2">
-                                        <Typography variant="body1" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
-                                            {trip.tujuan}
-                                        </Typography>
-                                    </View>
-                                    <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-1 rounded-lg" : "bg-amber-50 px-2 py-1 rounded-lg"}>
-                                        <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
-                                            {trip.status_bayar.toUpperCase()}
-                                        </Typography>
-                                    </View>
-                                </View>
-
-                                {/* Trip Details */}
-                                <Typography variant="caption" className="text-textGray mb-3">
-                                    {trip.supir_nama} • {trip.asal} <ArrowRight size={10} color="#9CA3AF" /> {trip.tujuan}
-                                </Typography>
-
-                                {/* Footer Row */}
-                                <View className="flex-row items-center justify-between pt-3 border-t border-gray-50">
+                    groupedByArmada.map((group) => {
+                        const isCollapsed = collapsedGroups.has(group.key);
+                        return (
+                            <View key={group.key} className="mb-6">
+                                {/* Group Header */}
+                                <TouchableOpacity
+                                    onPress={() => toggleGroupCollapse(group.key)}
+                                    activeOpacity={0.7}
+                                    className="flex-row items-center justify-between mb-3 px-2"
+                                >
                                     <View className="flex-row items-center">
-                                        <Clock size={12} color="#9CA3AF" />
-                                        <Typography className="text-textGray/60 text-[10px] ml-1.5 font-bold uppercase tracking-widest">
-                                            {formatDate(trip.tanggal)}
-                                        </Typography>
+                                        <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3 border border-primary/5">
+                                            <Truck size={18} color="#023C69" />
+                                        </View>
+                                        <View>
+                                            <Typography weight="bold" className="text-textMain text-base">
+                                                {group.title}
+                                            </Typography>
+                                            <Typography variant="caption" className="text-textGray">
+                                                {formatCurrency(group.totalPendapatanTPM)} • {group.trips.length} Transaksi
+                                            </Typography>
+                                        </View>
                                     </View>
-                                    <Typography weight="bold" className="text-primary text-sm">
-                                        {formatCurrency(trip.pendapatan_kotor)}
-                                    </Typography>
-                                </View>
+                                    <View className="flex-row items-center">
+                                        <Badge variant="neutral" label={`${group.trips.length}`} className="mr-2" />
+                                        <ChevronLeft
+                                            size={20}
+                                            color="#9CA3AF"
+                                            fill="#9CA3AF"
+                                            style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '-270deg' }] }}
+                                        />
+                                    </View>
+                                </TouchableOpacity>
+
+                                {/* Group Content (Trips) */}
+                                {!isCollapsed && (
+                                    <View className="space-y-4 pl-2">
+                                        {group.trips.map((trip: any) => (
+                                            <TouchableOpacity
+                                                key={trip.id}
+                                                onPress={() => handlePresentModal('detail', trip)}
+                                                activeOpacity={0.9}
+                                                className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
+                                            >
+                                                {/* Visual ID Slot - Smaller for nested items */}
+                                                <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
+                                                    <MapPin size={20} color="#6B7280" />
+                                                </View>
+
+                                                <View className="flex-1">
+                                                    {/* Main Info + Status */}
+                                                    <View className="flex-row items-center justify-between mb-1">
+                                                        <View className="flex-1 mr-2">
+                                                            <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
+                                                                {trip.tujuan}
+                                                            </Typography>
+                                                        </View>
+                                                        <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
+                                                            <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
+                                                                {trip.status_bayar.toUpperCase()}
+                                                            </Typography>
+                                                        </View>
+                                                    </View>
+
+                                                    {/* Trip Details */}
+                                                    <Typography variant="caption" className="text-textGray mb-2 text-xs">
+                                                        {trip.armada?.nopol || trip.nopol || '-'} • {trip.supir_nama || trip.supir_nama_manual}
+                                                    </Typography>
+
+                                                    {/* Footer Row */}
+                                                    <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
+                                                        <View className="flex-row items-center">
+                                                            <Clock size={10} color="#9CA3AF" />
+                                                            <Typography className="text-textGray/60 text-[9px] ml-1 font-bold uppercase tracking-widest">
+                                                                {formatDate(trip.tanggal)}
+                                                            </Typography>
+                                                        </View>
+                                                        <Typography weight="bold" className="text-primary text-xs">
+                                                            {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
+                                                        </Typography>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
-                        </TouchableOpacity>
-                    ))
+                        );
+                    })
                 )}
                 <View className="h-32" />
             </ScrollView>

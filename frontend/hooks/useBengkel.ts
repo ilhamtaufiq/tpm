@@ -145,6 +145,10 @@ export const useCreatePembelianParts = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pembelian_parts'] });
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
         },
     });
 };

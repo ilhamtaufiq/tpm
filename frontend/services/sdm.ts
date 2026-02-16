@@ -2,7 +2,7 @@ import api from '../utils/api';
 
 // --- Enums ---
 export type EmployeeStatus = 'AKTIF' | 'CUTI' | 'RESIGN' | 'TIDAK_AKTIF';
-export type AttendanceStatus = 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPHA' | 'LIBUR' | 'CUTI';
+export type AttendanceStatus = 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPHA' | 'LIBUR' | 'CUTI' | 'SETENGAH_HARI';
 export type PaymentStatus = 'BELUM_LUNAS' | 'LUNAS';
 
 // --- Karyawan Interfaces ---
@@ -250,20 +250,25 @@ export const sdmService = {
         return response.data;
     },
 
-    clockIn: async (karyawanId: number, tanggal?: string, jam?: string): Promise<Absensi> => {
-        const params: any = { karyawan_id: karyawanId };
+    clockIn: async (karyawanId: number, tanggal?: string, jam?: string, status: AttendanceStatus = 'HADIR'): Promise<Absensi> => {
+        const params: any = { karyawan_id: karyawanId, status };
         if (tanggal) params.tanggal = tanggal;
         if (jam) params.jam = jam;
         const response = await api.post('/absensi/clock-in', null, { params });
         return response.data;
     },
 
-    bulkClockIn: async (karyawanId: number, dates: string[]): Promise<any> => {
-        // 1. Get current month records to compare
-        // We take the first date as a reference to determine the month
-        if (dates.length === 0) return [];
+    bulkClockIn: async (karyawanId: number, attendanceRecords: Array<{
+        date: string;
+        status: AttendanceStatus;
+        jam_masuk?: string;
+        jam_keluar?: string;
+    }>): Promise<any> => {
+        if (attendanceRecords.length === 0) {
+            return [];
+        }
 
-        const refDate = new Date(dates[0]);
+        const refDate = new Date(attendanceRecords[0].date);
         const year = refDate.getFullYear();
         const month = refDate.getMonth() + 1;
         const lastDay = new Date(year, month, 0).getDate();
@@ -275,41 +280,57 @@ export const sdmService = {
             limit: 100
         });
 
-        const existingMap = new Map();
+        const existingMap = new Map<string, any>();
         if (existing && Array.isArray(existing.data)) {
             existing.data.forEach((abs: any) => {
-                existingMap.set(abs.tanggal.split('T')[0], abs.id);
+                existingMap.set(abs.tanggal.split('T')[0], abs);
             });
         }
 
-        const datesToCreate = dates.filter(d => !existingMap.has(d));
-        const idsToDelete = [];
-        const selectedDatesSet = new Set(dates);
-
-        for (const [date, id] of existingMap.entries()) {
-            if (!selectedDatesSet.has(date)) {
-                idsToDelete.push(id);
-            }
-        }
-
         const results = [];
+        const recordsToProcessMap = new Map(attendanceRecords.map(r => [r.date, r]));
 
-        // Delete removals
-        for (const id of idsToDelete) {
-            try {
-                await sdmService.deleteAbsensi(id);
-            } catch (err) {
-                console.error(`Failed to delete attendance ${id}:`, err);
+        // 1. Delete what's no longer selected
+        for (const [date, info] of existingMap.entries()) {
+            if (!recordsToProcessMap.has(date)) {
+                try {
+                    await sdmService.deleteAbsensi(info.id);
+                } catch (err) {
+                    console.error(`Failed to delete attendance ${info.id}:`, err);
+                }
             }
         }
 
-        // Create additions
-        for (const date of datesToCreate) {
-            try {
-                const res = await sdmService.clockIn(karyawanId, date);
-                results.push(res);
-            } catch (error) {
-                console.error(`Failed to clock in for ${date}:`, error);
+        // 2. Create or Update what's selected
+        for (const record of attendanceRecords) {
+            const existingInfo = existingMap.get(record.date);
+
+            if (!existingInfo) {
+                // Create new
+                try {
+                    const res = await sdmService.createAbsensi({
+                        karyawan_id: karyawanId,
+                        tanggal: record.date,
+                        status: record.status,
+                        jam_masuk: record.jam_masuk,
+                        jam_keluar: record.jam_keluar
+                    });
+                    results.push(res);
+                } catch (error) {
+                    console.error(`Failed to create attendance for ${record.date}:`, error);
+                }
+            } else {
+                // Always update to ensure times are synced if changed
+                try {
+                    const res = await sdmService.updateAbsensi(existingInfo.id, {
+                        status: record.status,
+                        jam_masuk: record.jam_masuk,
+                        jam_keluar: record.jam_keluar
+                    });
+                    results.push(res);
+                } catch (error) {
+                    console.error(`Failed to update attendance for ${record.date}:`, error);
+                }
             }
         }
 
@@ -377,6 +398,11 @@ export const sdmService = {
     markKasbonPaid: async (id: number, tanggalLunas?: string): Promise<Kasbon> => {
         const params = tanggalLunas ? { tanggal_lunas: tanggalLunas } : {};
         const response = await api.patch(`/kasbon/${id}/paid`, null, { params });
+        return response.data;
+    },
+
+    payKasbonSplit: async (id: number, data: { payments: Array<{ metode: string; nominal: number; catatan?: string }>; catatan?: string }): Promise<Kasbon> => {
+        const response = await api.post(`/kasbon/${id}/pay-split`, data);
         return response.data;
     },
 

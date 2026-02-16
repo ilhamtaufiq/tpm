@@ -8,7 +8,7 @@ import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
 import { jasaAngkutService, Supir } from '../../services/jasaAngkut';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, Truck } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -29,7 +29,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         tanggal: new Date().toISOString().split('T')[0],
         supir_id: '',
         supir_nama: '', // Manual name
+        armada_id: '',
         nopol: '',
+        info_kendaraan: '',
         asal: '',
         tujuan: '',
         jenis_muatan: '',
@@ -57,8 +59,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         variant: 'info'
     });
 
+    const [activeArmada, setActiveArmada] = useState<any[]>([]);
+    const [loadingArmada, setLoadingArmada] = useState(true);
+    const [armadaMode, setArmadaMode] = useState<'registered' | 'manual'>('registered');
+
     useEffect(() => {
         loadDrivers();
+        loadArmada();
     }, []);
 
     // Initialize form with edit data
@@ -68,7 +75,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 tanggal: initialData.tanggal?.split('T')[0] || new Date().toISOString().split('T')[0],
                 supir_id: initialData.supir_id?.toString() || '',
                 supir_nama: initialData.supir_nama || initialData.supir_nama_manual || '',
+                armada_id: initialData.armada_id?.toString() || '',
                 nopol: initialData.nopol || '',
+                info_kendaraan: initialData.info_kendaraan || '',
                 asal: initialData.asal || '',
                 tujuan: initialData.tujuan || '',
                 jenis_muatan: initialData.jenis_muatan || '',
@@ -83,8 +92,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             // Set driver mode based on whether supir_id exists
             if (initialData.supir_id) {
                 setDriverMode('registered');
-            } else if (initialData.supir_nama || initialData.supir_nama_manual) {
+            } else {
                 setDriverMode('manual');
+            }
+
+            if (initialData.armada_id) {
+                setArmadaMode('registered');
+            } else {
+                setArmadaMode('manual');
             }
 
             // Initialize operational costs
@@ -131,9 +146,38 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         }
     };
 
+    const loadArmada = async () => {
+        try {
+            const data = await jasaAngkutService.getActiveArmada();
+            setActiveArmada(data);
+        } catch (e) {
+            console.error('Failed to load armada:', e);
+        } finally {
+            setLoadingArmada(false);
+        }
+    };
+
     const updateField = (key: string, value: string) => {
         if (['harga_beli', 'harga_jual'].includes(key)) {
             setFormData(prev => ({ ...prev, [key]: formatNumber(value) }));
+        } else if (key === 'supir_id') {
+            const selectedSupir = activeDrivers.find(d => d.id.toString() === value);
+            setFormData(prev => ({
+                ...prev,
+                [key]: value,
+                // Only auto-fill if not already edited or if supir has default armada
+                armada_id: selectedSupir?.armada_default_id?.toString() || prev.armada_id,
+                nopol: selectedSupir?.nopol_kendaraan || prev.nopol,
+                info_kendaraan: selectedSupir?.info_kendaraan || prev.info_kendaraan
+            }));
+        } else if (key === 'armada_id') {
+            const selectedArmada = activeArmada.find(a => a.id.toString() === value);
+            setFormData(prev => ({
+                ...prev,
+                [key]: value,
+                nopol: selectedArmada?.nopol || prev.nopol,
+                info_kendaraan: selectedArmada?.nama || prev.info_kendaraan
+            }));
         } else {
             setFormData(prev => ({ ...prev, [key]: value }));
         }
@@ -202,6 +246,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 metode_bayar: formData.metode_bayar?.toUpperCase(),
                 supir_id: driverMode === 'registered' ? parseInt(formData.supir_id) : undefined,
                 supir_nama: driverMode === 'manual' ? formData.supir_nama : undefined,
+                armada_id: armadaMode === 'registered' ? parseInt(formData.armada_id) : undefined,
                 ritase: parseInt(formData.ritase) || 1,
                 harga_beli: parseNumber(formData.harga_beli),
                 harga_jual: parseNumber(formData.harga_jual),
@@ -301,12 +346,91 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 />
             )}
 
-            <Input
-                label="Nomor Polisi (Plat)"
-                placeholder="Contoh: B 1234 AB"
-                value={formData.nopol}
-                onChangeText={v => updateField('nopol', v)}
-            />
+            {/* Armada Section */}
+            <View className="flex-row items-center justify-between mb-2 mt-4">
+                <Typography variant="caption" weight="medium">Armada / Armada *</Typography>
+                <View className="flex-row bg-gray-100 rounded-lg p-1">
+                    <TouchableOpacity
+                        onPress={() => setArmadaMode('registered')}
+                        className={`px-3 py-1 rounded-md ${armadaMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
+                    >
+                        <Typography variant="caption" weight={armadaMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setArmadaMode('manual')}
+                        className={`px-3 py-1 rounded-md ${armadaMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
+                    >
+                        <Typography variant="caption" weight={armadaMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {armadaMode === 'registered' ? (
+                loadingArmada ? (
+                    <ActivityIndicator className="my-4" />
+                ) : (
+                    <View className="flex-row flex-wrap mb-4">
+                        {activeArmada.map(a => (
+                            <TouchableOpacity
+                                key={a.id}
+                                onPress={() => updateField('armada_id', a.id.toString())}
+                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${formData.armada_id === a.id.toString()
+                                    ? 'bg-blue-600 border-blue-600'
+                                    : 'bg-white border-gray-200'
+                                    }`}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    weight={formData.armada_id === a.id.toString() ? 'bold' : 'medium'}
+                                    className={formData.armada_id === a.id.toString() ? 'text-white' : 'text-gray-600'}
+                                >
+                                    {a.nama} ({a.nopol})
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )
+            ) : (
+                <View className="flex-row space-x-2">
+                    <View className="flex-1">
+                        <Input
+                            label="Nomor Polisi"
+                            placeholder="Plat nomor"
+                            value={formData.nopol}
+                            onChangeText={v => updateField('nopol', v)}
+                        />
+                    </View>
+                    <View className="flex-[2]">
+                        <Input
+                            label="Info Armada"
+                            placeholder="Contoh: CD Biru"
+                            value={formData.info_kendaraan}
+                            onChangeText={v => updateField('info_kendaraan', v)}
+                        />
+                    </View>
+                </View>
+            )}
+
+            {armadaMode === 'registered' && (
+                <View className="flex-row space-x-2">
+                    <View className="flex-1">
+                        <Input
+                            label="Nomor Polisi"
+                            value={formData.nopol}
+                            editable={false}
+                            className="bg-gray-50 text-gray-500"
+                        />
+                    </View>
+                    <View className="flex-[2]">
+                        <Input
+                            label="Info Armada"
+                            value={formData.info_kendaraan}
+                            editable={false}
+                            className="bg-gray-50 text-gray-500"
+                        />
+                    </View>
+                </View>
+            )}
 
             <View className="h-[1px] bg-gray-100 my-4" />
 

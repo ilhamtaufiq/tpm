@@ -102,6 +102,7 @@ class AttendanceStatus(str, Enum):
     SAKIT = "SAKIT"
     ALPHA = "ALPHA"
     CUTI = "CUTI"
+    SETENGAH_HARI = "SETENGAH_HARI"
 
     @classmethod
     def _missing_(cls, value: object) -> "AttendanceStatus | None":
@@ -181,6 +182,23 @@ class PiutangStatus(str, Enum):
         return None
 
 
+class HutangStatus(str, Enum):
+    """Payable (hutang) status."""
+
+    BELUM_LUNAS = "BELUM_LUNAS"
+    LUNAS = "LUNAS"
+    SEBAGIAN = "SEBAGIAN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "HutangStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
 class KasBankType(str, Enum):
     """Cash/Bank transaction type."""
 
@@ -241,6 +259,24 @@ class PiutangSource(str, Enum):
         return None
 
 
+class HutangSource(str, Enum):
+    """Source of hutang (payable)."""
+
+    PEMBELIAN_PART = "PEMBELIAN_PART"
+    PEMBELIAN_MOBIL = "PEMBELIAN_MOBIL"
+    JUAL_BELI_MOBIL = "JUAL_BELI_MOBIL"
+    LAINNYA = "LAINNYA"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "HutangSource | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
 class KasBankSource(str, Enum):
     """Source of kas/bank transaction."""
 
@@ -253,6 +289,7 @@ class KasBankSource(str, Enum):
     GAJI = "GAJI"
     KASBON = "KASBON"
     PIUTANG = "PIUTANG"
+    HUTANG = "HUTANG"
     MODAL = "MODAL"
     PRIVE = "PRIVE"
     LAINNYA = "LAINNYA"
@@ -294,6 +331,7 @@ TRANSACTION_PREFIXES = {
     "pembelian": "PBL",
     "pengeluaran": "PGL",
     "piutang": "PTG",
+    "hutang": "HTG",
     "kas_bank": "KAS",
     "slip_gaji": "GJI",
     "karyawan": "KRY",

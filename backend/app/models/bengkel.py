@@ -112,6 +112,11 @@ class PembelianSparePart(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def supplier_nama(self) -> Optional[str]:
+        """Get supplier name for frontend compatibility."""
+        return self.supplier.nama if self.supplier else None
+
     def __repr__(self) -> str:
         return f"<PembelianSparePart(id={self.id}, nomor='{self.nomor_transaksi}', total={self.grand_total})>"
 
@@ -230,7 +235,9 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
 
     @property
     def customer_nama(self) -> Optional[str]:
-        """Alias for nama_customer for frontend compatibility."""
+        """Get customer name, fallback to manual entry."""
+        if self.customer:
+            return self.customer.nama
         return self.nama_customer
 
     @property

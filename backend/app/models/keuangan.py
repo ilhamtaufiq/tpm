@@ -15,15 +15,18 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base, TimestampMixin
 from app.utils.constants import (
     PiutangStatus,
+    HutangStatus,
     PaymentMethod,
     KasBankType,
     PiutangSource,
+    HutangSource,
     KasBankSource,
     KasBankJenis,
 )
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
+    from app.models.supplier import Supplier
 
 
 class PiutangUsaha(Base, TimestampMixin):
@@ -138,6 +141,111 @@ class PembayaranPiutang(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<PembayaranPiutang(id={self.id}, piutang_id={self.piutang_id}, nominal={self.nominal})>"
+
+
+class HutangUsaha(Base, TimestampMixin):
+    """Accounts payable model."""
+
+    __tablename__ = "hutang_usaha"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nomor_hutang: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    tanggal: Mapped[date] = mapped_column(Date, index=True)
+
+    # Source reference
+    sumber: Mapped[HutangSource] = mapped_column(
+        SQLEnum(HutangSource),
+        default=HutangSource.PEMBELIAN_PART,
+    )
+    referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    # Supplier info
+    supplier_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("suppliers.id"),
+        nullable=True,
+        index=True,
+    )
+    nama_kreditur: Mapped[str] = mapped_column(String(100))
+    telepon_kreditur: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    alamat_kreditur: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Amount
+    nominal_hutang: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    total_dibayar: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    sisa_hutang: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+
+    # Dates
+    tanggal_jatuh_tempo: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    tanggal_lunas: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    status: Mapped[HutangStatus] = mapped_column(
+        SQLEnum(HutangStatus),
+        default=HutangStatus.BELUM_LUNAS,
+    )
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # Relationships
+    supplier: Mapped[Optional["Supplier"]] = relationship(
+        back_populates="hutang"
+    )
+    pembayaran: Mapped[List["PembayaranHutang"]] = relationship(
+        back_populates="hutang",
+        cascade="all, delete-orphan",
+    )
+
+    @property
+    def persentase_terbayar(self) -> float:
+        if self.nominal_hutang > 0:
+            return float(self.total_dibayar / self.nominal_hutang * 100)
+        return 0.0
+
+    def process_payment(self, amount: Decimal) -> None:
+        self.total_dibayar += amount
+        self.sisa_hutang = self.nominal_hutang - self.total_dibayar
+
+        if self.sisa_hutang <= 0:
+            self.sisa_hutang = Decimal("0")
+            self.status = HutangStatus.LUNAS
+            self.tanggal_lunas = date.today()
+        elif self.total_dibayar > 0:
+            self.status = HutangStatus.SEBAGIAN
+
+    def __repr__(self) -> str:
+        return f"<HutangUsaha(id={self.id}, nomor='{self.nomor_hutang}', sisa={self.sisa_hutang})>"
+
+
+class PembayaranHutang(Base, TimestampMixin):
+    """Payment of payable model."""
+
+    __tablename__ = "pembayaran_hutang"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    hutang_id: Mapped[int] = mapped_column(
+        ForeignKey("hutang_usaha.id", ondelete="CASCADE"),
+        index=True,
+    )
+    tanggal: Mapped[date] = mapped_column(Date, index=True)
+    nominal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    metode_bayar: Mapped[PaymentMethod] = mapped_column(
+        SQLEnum(PaymentMethod),
+        default=PaymentMethod.TUNAI,
+    )
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # Relationships
+    hutang: Mapped["HutangUsaha"] = relationship(back_populates="pembayaran")
+
+    def __repr__(self) -> str:
+        return f"<PembayaranHutang(id={self.id}, hutang_id={self.hutang_id}, nominal={self.nominal})>"
 
 
 class KasBank(Base, TimestampMixin):

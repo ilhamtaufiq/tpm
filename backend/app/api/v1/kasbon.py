@@ -7,6 +7,8 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.karyawan import (
     KasbonCreate,
     KasbonResponse,
+    KasbonPaymentSplit,
+    KasbonList,
 )
 from app.services.kasbon_service import KasbonService
 from app.utils.constants import PaymentStatus
@@ -26,7 +28,7 @@ def create_kasbon(
     return service.create(data, current_user.id)
 
 
-@router.get("")
+@router.get("", response_model=KasbonList)
 def list_kasbon(
     db: DBSession,
     current_user: CurrentUser,
@@ -121,6 +123,18 @@ def mark_paid(
     """Mark kasbon as paid."""
     service = KasbonService(db)
     return service.mark_paid(kasbon_id, tanggal_lunas)
+
+
+@router.post("/{kasbon_id}/pay-split", response_model=KasbonResponse)
+def process_payment_split(
+    kasbon_id: int,
+    data: KasbonPaymentSplit,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process split payment for kasbon."""
+    service = KasbonService(db)
+    return service.process_payment_split(kasbon_id, data.payments, data.catatan, current_user.id)
 
 
 @router.delete("/{kasbon_id}")

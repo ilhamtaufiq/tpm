@@ -233,12 +233,85 @@ class KasbonService:
             "pages": pages,
         }
 
+    
+    def process_payment_split(
+        self,
+        kasbon_id: int,
+        payments: List[Dict[str, Any]],
+        notes: Optional[str] = None,
+        user_id: Optional[int] = None,
+    ) -> KasbonKaryawan:
+        """Process kasbon repayment with split payments."""
+        kasbon = self.get_by_id(kasbon_id)
+
+        if kasbon.status == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Kasbon sudah lunas",
+            )
+
+        total_payment = sum(Decimal(str(p.get("nominal", 0))) for p in payments)
+        
+        # Ensure total payment matches kasbon nominal
+        if total_payment != kasbon.nominal:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Total pembayaran ({total_payment}) tidak sesuai dengan nominal kasbon ({kasbon.nominal})",
+            )
+
+        today = date.today()
+        kasbon.status = PaymentStatus.LUNAS
+        kasbon.tanggal_lunas = today
+        if notes:
+            kasbon.catatan = notes
+
+        # Update related piutang
+        piutang = (
+            self.db.query(PiutangUsaha)
+            .filter(
+                PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
+            )
+            .first()
+        )
+        if piutang:
+            piutang.sisa_piutang = Decimal("0")
+            piutang.status = PiutangStatus.LUNAS
+            piutang.total_dibayar = kasbon.nominal # Update total paid
+
+        # Record KasBank entries (Money IN)
+        for p in payments:
+            nominal = Decimal(str(p.get("nominal", 0)))
+            if nominal <= 0:
+                continue
+                
+            metode = p.get("metode", PaymentMethod.TUNAI)
+            catatan = p.get("catatan") or notes
+            
+            create_kas_entry(
+                db=self.db,
+                tanggal=today,
+                tipe=KasBankType.MASUK,
+                nominal=nominal,
+                sumber=KasBankSource.KASBON,
+                metode_bayar=metode,
+                referensi_id=kasbon.id,
+                nomor_referensi=kasbon.nomor_kasbon,
+                keterangan=f"Pelunasan kasbon {kasbon.nomor_kasbon} - {kasbon.karyawan_nama} ({metode})",
+                user_id=user_id,
+            )
+
+        self.db.commit()
+        self.db.refresh(kasbon)
+
+        return kasbon
+
     def mark_paid(
         self,
         kasbon_id: int,
         tanggal_lunas: Optional[date] = None,
     ) -> KasbonKaryawan:
-        """Mark kasbon as paid."""
+        """Mark kasbon as paid (legacy single payment)."""
         kasbon = self.get_by_id(kasbon_id)
 
         if kasbon.status == PaymentStatus.LUNAS:
@@ -262,6 +335,21 @@ class KasbonService:
         if piutang:
             piutang.sisa_piutang = Decimal("0")
             piutang.status = PiutangStatus.LUNAS
+            
+        # Also record SINGLE KasBank entry (assuming TUNAI for legacy method)
+        # This fixes the missing money-in tracking for simple mark-paid
+        create_kas_entry(
+            db=self.db,
+            tanggal=kasbon.tanggal_lunas,
+            tipe=KasBankType.MASUK,
+            nominal=kasbon.nominal,
+            sumber=KasBankSource.KASBON,
+            metode_bayar=PaymentMethod.TUNAI,
+            referensi_id=kasbon.id,
+            nomor_referensi=kasbon.nomor_kasbon,
+            keterangan=f"Pelunasan kasbon {kasbon.nomor_kasbon} - {kasbon.karyawan_nama} (Manual)",
+            user_id=None,
+        )
 
         self.db.commit()
         self.db.refresh(kasbon)

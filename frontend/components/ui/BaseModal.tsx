@@ -83,8 +83,9 @@ export const BaseModal = ({
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
                             maxHeight: maxHeight,
+                            backgroundColor: 'white', // Ensure it is not transparent
                         }}
-                        className="w-full max-w-sm bg-white rounded-[48px] shadow-2xl overflow-hidden border border-gray-100"
+                        className="w-full max-w-sm rounded-[48px] shadow-2xl overflow-hidden border border-gray-100"
                     >
                         {/* Header */}
                         {(title || showCloseButton) && (

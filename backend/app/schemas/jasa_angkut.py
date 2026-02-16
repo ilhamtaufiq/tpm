@@ -8,6 +8,55 @@ from app.utils.constants import PaymentStatus, PaymentMethod
 
 
 # ============================================
+# ARMADA (VEHICLE) SCHEMAS
+# ============================================
+
+class ArmadaBase(BaseModel):
+    """Base armada schema."""
+
+    nama: str = Field(..., min_length=2, max_length=100)
+    nopol: str = Field(..., min_length=2, max_length=20)
+    jenis: Optional[str] = Field(None, max_length=50)
+    is_active: bool = True
+    catatan: Optional[str] = None
+
+
+class ArmadaCreate(ArmadaBase):
+    """Schema for creating armada."""
+    pass
+
+
+class ArmadaUpdate(BaseModel):
+    """Schema for updating armada."""
+
+    nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    nopol: Optional[str] = Field(None, min_length=2, max_length=20)
+    jenis: Optional[str] = Field(None, max_length=50)
+    is_active: Optional[bool] = None
+    catatan: Optional[str] = None
+
+
+class ArmadaResponse(ArmadaBase):
+    """Schema for armada response."""
+
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ArmadaList(BaseModel):
+    """Schema for paginated armada list."""
+
+    data: List[ArmadaResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+# ============================================
 # SUPIR (DRIVER) SCHEMAS
 # ============================================
 
@@ -20,6 +69,8 @@ class SupirBase(BaseModel):
     telepon: Optional[str] = Field(None, max_length=20)
     nomor_sim: Optional[str] = Field(None, max_length=30)
     jenis_sim: Optional[str] = Field(None, max_length=10)
+    nopol_kendaraan: Optional[str] = Field(None, max_length=20)
+    info_kendaraan: Optional[str] = Field(None, max_length=255)
     catatan: Optional[str] = None
 
 
@@ -28,6 +79,7 @@ class SupirCreate(SupirBase):
 
     kode: Optional[str] = Field(None, max_length=20)
     tanggal_bergabung: date
+    armada_default_id: Optional[int] = None
 
 
 class SupirUpdate(BaseModel):
@@ -39,6 +91,8 @@ class SupirUpdate(BaseModel):
     telepon: Optional[str] = Field(None, max_length=20)
     nomor_sim: Optional[str] = Field(None, max_length=30)
     jenis_sim: Optional[str] = Field(None, max_length=10)
+    nopol_kendaraan: Optional[str] = Field(None, max_length=20)
+    info_kendaraan: Optional[str] = Field(None, max_length=255)
     is_active: Optional[bool] = None
     catatan: Optional[str] = None
 
@@ -54,6 +108,10 @@ class SupirResponse(BaseModel):
     telepon: Optional[str] = None
     nomor_sim: Optional[str] = None
     jenis_sim: Optional[str] = None
+    nopol_kendaraan: Optional[str] = None
+    info_kendaraan: Optional[str] = None
+    armada_default_id: Optional[int] = None
+    armada_default: Optional[ArmadaResponse] = None
     tanggal_bergabung: date
     is_active: bool
     catatan: Optional[str] = None
@@ -72,14 +130,6 @@ class SupirList(BaseModel):
     size: int
     pages: int
 
-
-class SupirSummary(BaseModel):
-    """Schema for driver summary with statistics."""
-
-    supir: SupirResponse
-    total_muatan: int = 0
-    total_pendapatan: Decimal = Decimal("0")
-    total_laba_tpm: Decimal = Decimal("0")
     total_piutang: Decimal = Decimal("0")
 
 
@@ -92,7 +142,6 @@ class BiayaItem(BaseModel):
     id: Optional[int] = None # For updates
     deskripsi: str = Field(..., min_length=1, max_length=255)
     jumlah: Decimal = Field(..., ge=0)
-
 
 
 class BiayaTambahanResponse(BaseModel):
@@ -122,7 +171,9 @@ class MuatanCreate(BaseModel):
     tanggal: date
     supir_id: Optional[int] = None
     supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
+    info_kendaraan: Optional[str] = Field(None, max_length=255)
     asal: str = Field(..., min_length=2, max_length=100)
     tujuan: str = Field(..., min_length=2, max_length=100)
     jenis_muatan: Optional[str] = Field(None, max_length=100)
@@ -139,8 +190,6 @@ class MuatanCreate(BaseModel):
     # Dynamic operational costs
     biaya_operasional: List[BiayaItem] = []
     
-
-
     # Legacy fields (kept for backward compatibility but default to 0)
     biaya_bbm: Decimal = Field(default=Decimal("0"), ge=0)
     biaya_tol: Decimal = Field(default=Decimal("0"), ge=0)
@@ -160,7 +209,9 @@ class MuatanUpdate(BaseModel):
     tanggal: Optional[date] = None
     supir_id: Optional[int] = None
     supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
+    info_kendaraan: Optional[str] = Field(None, max_length=255)
     asal: Optional[str] = Field(None, min_length=2, max_length=100)
     tujuan: Optional[str] = Field(None, min_length=2, max_length=100)
     jenis_muatan: Optional[str] = Field(None, max_length=100)
@@ -174,8 +225,6 @@ class MuatanUpdate(BaseModel):
     # Dynamic operational costs
     biaya_operasional: Optional[List[BiayaItem]] = None
     
-
-
     # Legacy fields
     biaya_bbm: Optional[Decimal] = Field(None, ge=0)
     biaya_tol: Optional[Decimal] = Field(None, ge=0)
@@ -194,10 +243,13 @@ class MuatanResponse(BaseModel):
     nomor_transaksi: str
     tanggal: date
     supir_id: Optional[int] = None
-    supir: Optional["SupirResponse"] = None # Full driver object
+    supir: Optional[SupirResponse] = None # Full driver object
     supir_nama: Optional[str] = None
     supir_nama_manual: Optional[str] = None
+    armada_id: Optional[int] = None
+    armada: Optional[ArmadaResponse] = None
     nopol: Optional[str] = None
+    info_kendaraan: Optional[str] = None
     asal: str
     tujuan: str
     jenis_muatan: Optional[str] = None

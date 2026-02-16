@@ -353,7 +353,7 @@ export default function PenjualanBengkelReportScreen() {
                                 <View>
                                     <View className="flex-row items-center mb-1">
                                         <User size={12} color="#9CA3AF" className="mr-1.5" />
-                                        <Typography variant="caption" className="text-textGray font-medium">Customer: {item.customer_nama || 'Umum'}</Typography>
+                                        <Typography variant="caption" className="text-textGray font-medium">Customer: {item.customer_nama}</Typography>
                                     </View>
                                     <Typography variant="caption" className="text-emerald-600 font-bold">
                                         Margin: {formatCurrency(item.laba_kotor || 0)}
@@ -408,7 +408,7 @@ export default function PenjualanBengkelReportScreen() {
                                 <View className="flex-row justify-between mb-4">
                                     <View>
                                         <Typography className="text-gray-400 text-[10px] font-bold uppercase mb-1">Customer</Typography>
-                                        <Typography weight="bold" className="text-lg">{selectedTransaction.customer_nama || selectedTransaction.nama_customer || 'Umum'}</Typography>
+                                        <Typography weight="bold" className="text-lg">{selectedTransaction.customer_nama}</Typography>
                                         <Typography className="text-gray-500 text-xs font-semibold">{selectedTransaction.nomor_plat || selectedTransaction.plat_nomor}</Typography>
                                     </View>
                                     <View className="items-end">

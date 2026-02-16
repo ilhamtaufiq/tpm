@@ -12,6 +12,10 @@ export interface Supir {
     telepon?: string;
     nomor_sim?: string;
     jenis_sim?: string;
+    armada_default_id?: number;
+    armada_default?: Armada;
+    nopol_kendaraan?: string;
+    info_kendaraan?: string;
     tanggal_bergabung: string;
     is_active: boolean;
     catatan?: string;
@@ -27,6 +31,17 @@ export interface SupirSummary {
     total_piutang: number;
 }
 
+export interface Armada {
+    id: number;
+    nama: string;
+    nopol: string;
+    jenis?: string;
+    is_active: boolean;
+    catatan?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface Muatan {
     id: number;
     nomor_transaksi: string;
@@ -39,6 +54,13 @@ export interface Muatan {
     tujuan: string;
     jenis_muatan?: string;
     berat_muatan?: string;
+    armada_id?: number;
+    armada?: Armada;
+    nopol?: string;
+    info_kendaraan?: string;
+    ritase?: number;
+    harga_beli?: number;
+    harga_jual?: number;
     pendapatan_kotor: number;
     biaya_bbm: number;
     biaya_tol: number;
@@ -141,6 +163,42 @@ export const jasaAngkutService = {
 
     getSupirSummary: async (id: number) => {
         const response = await api.get(`/supir/${id}/summary`);
+        return response.data;
+    },
+
+    // Armada Methods
+    getArmadaList: async (params?: {
+        skip?: number;
+        limit?: number;
+        search?: string;
+        is_active?: boolean;
+    }) => {
+        const response = await api.get('/armada', { params });
+        return response.data;
+    },
+
+    getActiveArmada: async () => {
+        const response = await api.get('/armada/active');
+        return response.data;
+    },
+
+    getArmada: async (id: number) => {
+        const response = await api.get(`/armada/${id}`);
+        return response.data;
+    },
+
+    createArmada: async (data: any) => {
+        const response = await api.post('/armada', data);
+        return response.data;
+    },
+
+    updateArmada: async (id: number, data: any) => {
+        const response = await api.put(`/armada/${id}`, data);
+        return response.data;
+    },
+
+    deleteArmada: async (id: number) => {
+        const response = await api.delete(`/armada/${id}`);
         return response.data;
     },
 

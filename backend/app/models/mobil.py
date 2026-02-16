@@ -43,6 +43,17 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     harga_jual: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2), nullable=True)
 
+    # Purchase Payment (Tracking debt for car purchase)
+    status_bayar_beli: Mapped[PaymentStatus] = mapped_column(
+        SQLEnum(PaymentStatus),
+        default=PaymentStatus.LUNAS,
+    )
+    metode_bayar_beli: Mapped[PaymentMethod] = mapped_column(
+        SQLEnum(PaymentMethod),
+        default=PaymentMethod.TUNAI,
+    )
+    dp_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+
     # Ownership
     tipe_kepemilikan: Mapped[OwnershipType] = mapped_column(
         SQLEnum(OwnershipType),
