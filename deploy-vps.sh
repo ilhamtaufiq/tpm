@@ -130,9 +130,10 @@ chown -R www-data:www-data "$DEPLOY_DIR"
 chmod -R 755 "$DEPLOY_DIR"
 
 # 4. Setup Apache
-read -p "Masukkan nama domain (contoh: tpm.cianjur.space): " DOMAIN_NAME
+read -p "Masukkan nama domain LOKAL untuk di VPS (contoh: tpm.test): " DOMAIN_NAME
 if [ -z "$DOMAIN_NAME" ]; then
-    error "Nama domain diperlukan."
+    DOMAIN_NAME="tpm.test"
+    log "Menggunakan default domain: $DOMAIN_NAME"
 fi
 
 APACHE_CONF="/etc/apache2/sites-available/$APP_NAME.conf"
@@ -145,7 +146,7 @@ fi
 log "Mengaktifkan module Apache yang dibutuhkan..."
 a2enmod rewrite proxy proxy_http headers
 
-log "Membuat konfigurasi VirtualHost Apache..."
+log "Membuat konfigurasi VirtualHost Apache untuk $DOMAIN_NAME..."
 cat > "$APACHE_CONF" <<EOL
 <VirtualHost *:80>
     ServerName $DOMAIN_NAME
@@ -182,6 +183,12 @@ cat > "$APACHE_CONF" <<EOL
 </VirtualHost>
 EOL
 
+# Tambahkan host lokal ke /etc/hosts agar VPS mengenali tpm.test
+if ! grep -q "$DOMAIN_NAME" /etc/hosts; then
+    log "Menambahkan $DOMAIN_NAME ke /etc/hosts..."
+    echo "127.0.0.1 $DOMAIN_NAME" >> /etc/hosts
+fi
+
 # Enable Site
 log "Mengaktifkan situs..."
 a2ensite "$APP_NAME.conf"
@@ -190,19 +197,25 @@ a2ensite "$APP_NAME.conf"
 apache2ctl configtest
 if [ $? -eq 0 ]; then
     systemctl reload apache2
-    log "Apache berhasil disetup. Aplikasi live di: http://$DOMAIN_NAME"
+    log "Apache berhasil disetup. Aplikasi internal live di: http://$DOMAIN_NAME"
 else
     error "Konfigurasi Apache tidak valid."
 fi
 
-# 5. SSL (Opsional)
-read -p "Apakah ingin setup SSL dengan Certbot? (y/n): " SSL_CHOICE
-if [[ "$SSL_CHOICE" == "y" || "$SSL_CHOICE" == "Y" ]]; then
-    if command -v certbot &> /dev/null; then
-        certbot --apache -d "$DOMAIN_NAME"
-    else
-        warn "Certbot tidak ditemukan. Lewati setup SSL."
+# 5. SSL (Skip for .test)
+if [[ "$DOMAIN_NAME" == *".test" ]]; then
+    log "Skipping Certbot SSL setup karena domain .test tidak didukung Let's Encrypt."
+else
+    read -p "Apakah ingin setup SSL dengan Certbot? (y/n): " SSL_CHOICE
+    if [[ "$SSL_CHOICE" == "y" || "$SSL_CHOICE" == "Y" ]]; then
+        if command -v certbot &> /dev/null; then
+            certbot --apache -d "$DOMAIN_NAME"
+        else
+            warn "Certbot tidak ditemukan. Lewati setup SSL."
+        fi
     fi
 fi
+
+
 
 log "Deployment Selesai!"

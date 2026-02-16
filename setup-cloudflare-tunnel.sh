@@ -56,11 +56,14 @@ TUNNEL_ID=$(jq -r .TunnelID < "$CREDS_FILE")
 log "Tunnel ID: $TUNNEL_ID"
 
 # 3. Configure Tunnel (Ingress Rules)
-read -p "Enter the domain/hostname to route (e.g., tpm.cianjur.space): " DOMAIN_NAME
-if [ -z "$DOMAIN_NAME" ]; then error "Domain name required"; fi
+read -p "Enter the PUBLIC domain/hostname to route (e.g., tpm.cianjur.space): " PUBLIC_DOMAIN
+if [ -z "$PUBLIC_DOMAIN" ]; then error "Public domain name required"; fi
 
-log "Routing DNS $DOMAIN_NAME to this tunnel..."
-cloudflared tunnel route dns "$TUNNEL_NAME" "$DOMAIN_NAME"
+read -p "Enter the LOCAL domain configured in Apache (default: tpm.test): " LOCAL_DOMAIN
+if [ -z "$LOCAL_DOMAIN" ]; then LOCAL_DOMAIN="tpm.test"; fi
+
+log "Routing Public $PUBLIC_DOMAIN -> Local $LOCAL_DOMAIN (via Tunnel)..."
+cloudflared tunnel route dns "$TUNNEL_NAME" "$PUBLIC_DOMAIN"
 
 CONFIG_DIR="/etc/cloudflared"
 mkdir -p "$CONFIG_DIR"
@@ -71,8 +74,10 @@ tunnel: $TUNNEL_ID
 credentials-file: $CREDS_FILE
 
 ingress:
-  - hostname: $DOMAIN_NAME
+  - hostname: $PUBLIC_DOMAIN
     service: http://localhost:80
+    originRequest:
+      httpHostHeader: $LOCAL_DOMAIN
   - service: http_status:404
 EOL
 
