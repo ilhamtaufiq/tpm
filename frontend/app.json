@@ -28,7 +28,8 @@
       "package": "com.olobor.tpmsuperapp"
     },
     "web": {
-      "favicon": "./assets/favicon2.png"
+      "favicon": "./assets/favicon2.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-font",
