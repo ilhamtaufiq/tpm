@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script Deploy TPM App di VPS (Tanpa Docker)
-# Pastikan sudah install: Python 3.10+, Node.js 18+, Nginx, MySQL Server, Certbot (opsional)
+# Pastikan sudah install: Python 3.10+, Node.js 18+, Nginx/Apache, MySQL Server
 
 # Set variable
 APP_NAME="tpm-app"
@@ -74,11 +74,11 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
     VENV_PIP="$BACKEND_DIR/venv/bin/pip"
     VENV_ALEMBIC="$BACKEND_DIR/venv/bin/alembic"
     
-    # Install pip packages
-    echo -e "${GREEN}$prefix${NC} Installing pip packages..."
-    sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip >/dev/null
-    sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null
-    sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn >/dev/null
+    # Install pip packages (COMMENTED OUT AS REQUESTED)
+    echo -e "${GREEN}$prefix${NC} Installing pip packages... (SKIPPED)"
+    # sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip >/dev/null
+    # sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null
+    # sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn >/dev/null
 
     # Setup .env
     if [ ! -f "$BACKEND_DIR/.env" ] && [ -f "$BACKEND_DIR/.env.example" ]; then
@@ -260,7 +260,5 @@ else
         fi
     fi
 fi
-
-
 
 log "Deployment Selesai!"
