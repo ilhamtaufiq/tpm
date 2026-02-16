@@ -42,71 +42,58 @@ log "Memulai deployment untuk $APP_NAME..."
 log "User sistem: $REAL_USER"
 log "Root Project: $PROJECT_ROOT"
 
-# 2. Setup Backend
-log "Setup Backend..."
+# ==========================================
+# PARALLEL EXECUTION: BACKEND & FRONTEND
+# ==========================================
 
-if [ ! -d "$BACKEND_DIR" ]; then
-    error "Direktori backend tidak ditemukan di: $BACKEND_DIR"
-fi
+log "Memulai proses instalasi Backend & Frontend secara paralel..."
 
-# Pastikan permission folder project milik user asli (agar tidak perlu sudo untuk tulis file)
-chown -R $REAL_USER:$REAL_GROUP "$PROJECT_ROOT"
+(
+    prefix="[BACKEND]"
+    echo -e "${GREEN}$prefix${NC} Memulai setup backend..."
+    
+    # Permission fix
+    chown -R $REAL_USER:$REAL_GROUP "$BACKEND_DIR"
 
-# Buat Virtual Environment jika belum ada atau rusak
-if [ -d "$BACKEND_DIR/venv" ]; then
-    log "Menghapus venv lama untuk memastikan instalasi bersih..."
-    rm -rf "$BACKEND_DIR/venv"
-fi
-
-log "Membuat Python virtual environment..."
-# Pastikan python3-venv terinstall
-if ! dpkg -s python3-venv >/dev/null 2>&1; then
-    warn "python3-venv belum terinstall. Menginstall..."
-    apt-get update && apt-get install -y python3-venv
-fi
-
-# Create venv as REAL_USER
-sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || error "Gagal membuat venv. Cek apakah 'python3-venv' terinstall dengan benar."
-
-# Install dependencies
-log "Install dependencies backend..."
-VENV_PIP="$BACKEND_DIR/venv/bin/pip"
-VENV_ALEMBIC="$BACKEND_DIR/venv/bin/alembic"
-
-if [ ! -f "$VENV_PIP" ]; then
-    error "Pip tidak ditemukan di $VENV_PIP. Setup venv gagal."
-fi
-
-sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip
-sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt"
-sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn
-
-# Cek .env
-if [ ! -f "$BACKEND_DIR/.env" ]; then
-    warn "File .env backend tidak ditemukan!"
-    if [ -f "$BACKEND_DIR/.env.example" ]; then
-        log "Menyalin .env.example ke .env..."
-        sudo -u $REAL_USER cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
-        warn "SILAHKAN EDIT FILE '$BACKEND_DIR/.env' SEKARANG DENGAN KREDENSIAL DATABASE ANDA."
-        read -p "Tekan Enter setelah Anda mengedit file .env..."
-    else
-        error "Tidak ada file .env atau .env.example di direktori backend."
+    # Buat Virtual Environment jika belum ada/rusak
+    if [ -d "$BACKEND_DIR/venv" ]; then
+        echo -e "${GREEN}$prefix${NC} Menghapus venv lama..."
+        rm -rf "$BACKEND_DIR/venv"
     fi
-fi
 
-# Jalankan Migrasi Database
-log "Menjalankan migrasi database..."
-cd "$BACKEND_DIR" || error "Gagal masuk direktori backend"
-export PYTHONPATH=$BACKEND_DIR
-# Cek apakah alembic terinstall
-if [ ! -f "$VENV_ALEMBIC" ]; then
-    error "Alembic tidak ditemukan. Install dependencies gagal?"
-fi
-sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head || error "Migrasi database gagal."
+    # Cek dependency sistem
+    if ! dpkg -s python3-venv pkg-config default-libmysqlclient-dev >/dev/null 2>&1; then
+        echo -e "${YELLOW}$prefix${NC} Menginstall system dependencies..."
+        apt-get update -qq && apt-get install -y python3-venv python3-dev pkg-config default-libmysqlclient-dev build-essential
+    fi
 
-# Buat Systemd Service untuk Backend
-log "Membuat service systemd..."
-cat > "$SERVICE_FILE" <<EOL
+    # Create venv
+    sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || { echo -e "${RED}$prefix ERROR${NC} Gagal buat venv"; exit 1; }
+
+    # Variables
+    VENV_PIP="$BACKEND_DIR/venv/bin/pip"
+    VENV_ALEMBIC="$BACKEND_DIR/venv/bin/alembic"
+    
+    # Install pip packages
+    echo -e "${GREEN}$prefix${NC} Installing pip packages..."
+    sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip >/dev/null
+    sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null
+    sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn >/dev/null
+
+    # Setup .env
+    if [ ! -f "$BACKEND_DIR/.env" ] && [ -f "$BACKEND_DIR/.env.example" ]; then
+        echo -e "${GREEN}$prefix${NC} Membuat .env dari example..."
+        sudo -u $REAL_USER cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
+    fi
+
+    # Migrasi DB
+    echo -e "${GREEN}$prefix${NC} Menjalankan migrasi database..."
+    export PYTHONPATH=$BACKEND_DIR
+    sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Migrasi DB gagal"; exit 1; }
+
+    # Setup Systemd
+    echo -e "${GREEN}$prefix${NC} Membuat service systemd..."
+    cat > "$SERVICE_FILE" <<EOL
 [Unit]
 Description=Gunicorn instance to serve $APP_NAME Backend
 After=network.target
@@ -121,57 +108,71 @@ ExecStart=$BACKEND_DIR/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 
 [Install]
 WantedBy=multi-user.target
 EOL
+    systemctl daemon-reload
+    systemctl enable "${APP_NAME}-backend"
+    systemctl restart "${APP_NAME}-backend"
+    echo -e "${GREEN}$prefix${NC} Selesai!"
+) &
+PID_BACKEND=$!
 
-# Reload dan Start Service
-systemctl daemon-reload
-systemctl enable "${APP_NAME}-backend"
-systemctl restart "${APP_NAME}-backend"
-log "Backend service berhasil disetup."
+(
+    prefix="[FRONTEND]"
+    echo -e "${GREEN}$prefix${NC} Memulai setup frontend..."
 
-# 3. Setup Frontend
-log "Setup Frontend..."
-cd "$FRONTEND_DIR" || error "Direktori frontend tidak ditemukan"
+    if [ ! -d "$FRONTEND_DIR" ]; then echo -e "${RED}$prefix ERROR${NC} Dir frontend tidak ada"; exit 1; fi
+    cd "$FRONTEND_DIR"
 
-# Cek Node.js & NPM
-if ! command -v npm &> /dev/null; then
-    warn "npm tidak ditemukan path root. Mencoba mencari di user path..."
-    # Coba cari npm di path user jika pakai NVM atau instalasi custom
-    NPM_PATH=$(runuser -l $REAL_USER -c 'which npm')
-    NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
-    
-    if [ -z "$NPM_PATH" ]; then
-         error "NPM tidak ditemukan. Harap install Node.js (v18+) terlebih dahulu."
+    # Cari NPM
+    if command -v npm &> /dev/null; then
+        NPM_PATH=$(which npm)
+        NPX_PATH=$(which npx)
+    else
+        NPM_PATH=$(runuser -l $REAL_USER -c 'which npm')
+        NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
     fi
-else
-    NPM_PATH=$(which npm)
-    NPX_PATH=$(which npx)
+
+    if [ -z "$NPM_PATH" ]; then
+         echo -e "${RED}$prefix ERROR${NC} NPM tidak ditemukan"; exit 1;
+    fi
+
+    echo -e "${GREEN}$prefix${NC} npm install..."
+    sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} npm install failed"; exit 1; }
+
+    echo -e "${GREEN}$prefix${NC} Building Expo Web..."
+    sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
+
+    # Copy Dist
+    WEB_BUILD_DIR="$FRONTEND_DIR/dist"
+    DEPLOY_DIR="/var/www/tpm-frontend"
+    
+    if [ -d "$WEB_BUILD_DIR" ]; then
+        echo -e "${GREEN}$prefix${NC} Menyalin build ke $DEPLOY_DIR..."
+        mkdir -p "$DEPLOY_DIR"
+        rm -rf "$DEPLOY_DIR"/*
+        cp -r "$WEB_BUILD_DIR"/* "$DEPLOY_DIR"
+        chown -R www-data:www-data "$DEPLOY_DIR"
+        chmod -R 755 "$DEPLOY_DIR"
+    else
+        echo -e "${RED}$prefix ERROR${NC} Folder dist tidak ditemukan"; exit 1;
+    fi
+    echo -e "${GREEN}$prefix${NC} Selesai!"
+) &
+PID_FRONTEND=$!
+
+# Tunggu kedua proses selesai
+wait $PID_BACKEND
+BACKEND_STATUS=$?
+wait $PID_FRONTEND
+FRONTEND_STATUS=$?
+
+if [ $BACKEND_STATUS -ne 0 ] || [ $FRONTEND_STATUS -ne 0 ]; then
+    error "Salah satu proses (Backend/Frontend) gagal. Cek log di atas."
 fi
 
-log "Menggunakan NPM: $NPM_PATH"
+log "Backend & Frontend setup selesai."
 
-# Install Node dependencies
-log "Install dependencies frontend..."
-sudo -u $REAL_USER "$NPM_PATH" install || error "Gagal install npm dependencies."
-
-# Build untuk Web
-log "Building frontend (Expo Web)..."
-sudo -u $REAL_USER "$NPX_PATH" expo export -p web || error "Gagal build frontend."
-
-WEB_BUILD_DIR="$FRONTEND_DIR/dist"
-if [ ! -d "$WEB_BUILD_DIR" ]; then
-    error "Build frontend gagal. Folder 'dist' tidak ditemukan."
-fi
-
-# Pindahkan build ke /var/www/tpm-frontend untuk menghindari masalah permission
+# Definisi ulang DEPLOY_DIR untuk script utama (karena subshell tidak mengekspor variabel)
 DEPLOY_DIR="/var/www/tpm-frontend"
-log "Menyalin build ke $DEPLOY_DIR..."
-mkdir -p "$DEPLOY_DIR"
-# Hapus isi lama jika ada
-rm -rf "$DEPLOY_DIR"/*
-# Copy isi baru
-cp -r "$WEB_BUILD_DIR"/* "$DEPLOY_DIR" || error "Gagal menyalin file build."
-chown -R www-data:www-data "$DEPLOY_DIR"
-chmod -R 755 "$DEPLOY_DIR"
 
 # 4. Setup Apache
 read -p "Masukkan nama domain LOKAL untuk di VPS (contoh: tpm.test): " DOMAIN_NAME
