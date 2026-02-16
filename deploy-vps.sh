@@ -52,16 +52,21 @@ fi
 # Pastikan permission folder project milik user asli (agar tidak perlu sudo untuk tulis file)
 chown -R $REAL_USER:$REAL_GROUP "$PROJECT_ROOT"
 
-# Buat Virtual Environment jika belum ada
-if [ ! -d "$BACKEND_DIR/venv" ]; then
-    log "Membuat Python virtual environment..."
-    # Pastikan python3-venv terinstall
-    if ! dpkg -s python3-venv >/dev/null 2>&1; then
-        warn "python3-venv belum terinstall. Menginstall..."
-        apt-get update && apt-get install -y python3-venv
-    fi
-    sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || error "Gagal membuat venv. Pastikan python3-venv terinstall."
+# Buat Virtual Environment jika belum ada atau rusak
+if [ -d "$BACKEND_DIR/venv" ]; then
+    log "Menghapus venv lama untuk memastikan instalasi bersih..."
+    rm -rf "$BACKEND_DIR/venv"
 fi
+
+log "Membuat Python virtual environment..."
+# Pastikan python3-venv terinstall
+if ! dpkg -s python3-venv >/dev/null 2>&1; then
+    warn "python3-venv belum terinstall. Menginstall..."
+    apt-get update && apt-get install -y python3-venv
+fi
+
+# Create venv as REAL_USER
+sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || error "Gagal membuat venv. Cek apakah 'python3-venv' terinstall dengan benar."
 
 # Install dependencies
 log "Install dependencies backend..."
