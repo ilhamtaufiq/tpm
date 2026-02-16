@@ -55,20 +55,19 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
     # Permission fix
     chown -R $REAL_USER:$REAL_GROUP "$BACKEND_DIR"
 
-    # Buat Virtual Environment jika belum ada/rusak
+    # Buat Virtual Environment jika belum ada
     if [ -d "$BACKEND_DIR/venv" ]; then
-        echo -e "${GREEN}$prefix${NC} Menghapus venv lama..."
-        rm -rf "$BACKEND_DIR/venv"
+        echo -e "${GREEN}$prefix${NC} Menggunakan venv yang sudah ada..."
+    else
+        # Cek dependency sistem
+        if ! dpkg -s python3-venv pkg-config default-libmysqlclient-dev >/dev/null 2>&1; then
+            echo -e "${YELLOW}$prefix${NC} Menginstall system dependencies..."
+            apt-get update -qq && apt-get install -y python3-venv python3-dev pkg-config default-libmysqlclient-dev build-essential
+        fi
+        
+        # Create venv
+        sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || { echo -e "${RED}$prefix ERROR${NC} Gagal buat venv"; exit 1; }
     fi
-
-    # Cek dependency sistem
-    if ! dpkg -s python3-venv pkg-config default-libmysqlclient-dev >/dev/null 2>&1; then
-        echo -e "${YELLOW}$prefix${NC} Menginstall system dependencies..."
-        apt-get update -qq && apt-get install -y python3-venv python3-dev pkg-config default-libmysqlclient-dev build-essential
-    fi
-
-    # Create venv
-    sudo -u $REAL_USER python3 -m venv "$BACKEND_DIR/venv" || { echo -e "${RED}$prefix ERROR${NC} Gagal buat venv"; exit 1; }
 
     # Variables
     VENV_PIP="$BACKEND_DIR/venv/bin/pip"
