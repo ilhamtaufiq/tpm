@@ -42,15 +42,16 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
 (
     prefix="[BACKEND]"
     echo -e "${GREEN}$prefix${NC} Memproses update backend..."
+    cd "$BACKEND_DIR"
     
     # Update Python dependencies
     echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
-    sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
+    sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/pip" install -r "requirements.txt" || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
 
-    # Jalankan Migrasi DB
+    # Jalankan Migrasi DB (Pindah ke folder backend agar alembic.ini terbaca)
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
-    export PYTHONPATH=$BACKEND_DIR
-    sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
+    export PYTHONPATH="$BACKEND_DIR"
+    sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic upgrade head || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
 
     # Restart Service Backend
     echo -e "${GREEN}$prefix${NC} Restarting Gunicorn Service..."
