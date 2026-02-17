@@ -33,29 +33,7 @@ log "User: $REAL_USER | Root: $PROJECT_ROOT"
 
 # 1. Pull Kode Terbaru dari Git
 log "Menarik kode terbaru dari Git..."
-OLD_HEAD=$(git rev-parse HEAD)
 sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
-NEW_HEAD=$(git rev-parse HEAD)
-
-if [ "$OLD_HEAD" == "$NEW_HEAD" ]; then
-    log "Tidak ada perubahan (Already up-to-date)."
-    exit 0
-fi
-
-# Cek perubahan file antara commit lama dan baru
-CHANGED_FILES=$(git diff --name-only $OLD_HEAD $NEW_HEAD)
-
-
-HAS_BACKEND_CHANGE=$(echo "$CHANGED_FILES" | grep "backend/" && echo "yes" || echo "no")
-HAS_FRONTEND_CHANGE=$(echo "$CHANGED_FILES" | grep "frontend/" && echo "yes" || echo "no")
-HAS_MIGRATION=$(echo "$CHANGED_FILES" | grep "backend/alembic/versions/" && echo "yes" || echo "no")
-HAS_REQUIREMENTS=$(echo "$CHANGED_FILES" | grep "backend/requirements.txt" && echo "yes" || echo "no")
-HAS_PACKAGE_JSON=$(echo "$CHANGED_FILES" | grep "frontend/package.json" && echo "yes" || echo "no")
-
-log "Deteksi Perubahan:"
-if [ "$HAS_BACKEND_CHANGE" == "yes" ]; then echo "  - Backend: YA"; else echo "  - Backend: TIDAK"; fi
-if [ "$HAS_FRONTEND_CHANGE" == "yes" ]; then echo "  - Frontend: YA"; else echo "  - Frontend: TIDAK"; fi
-if [ "$HAS_MIGRATION" == "yes" ]; then echo "  - Migrasi DB: YA"; fi
 
 # ============================
 # PARALLEL UPDATE PROCESS
@@ -65,13 +43,11 @@ if [ "$HAS_MIGRATION" == "yes" ]; then echo "  - Migrasi DB: YA"; fi
     prefix="[BACKEND]"
     echo -e "${GREEN}$prefix${NC} Memproses update backend..."
     
-    # Install Pip Requirements jika berubah
-    if [ "$HAS_REQUIREMENTS" == "yes" ]; then
-        echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
-        sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
-    fi
+    # Update Python dependencies
+    echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
+    sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
 
-    # SELALU Jalankan Migrasi DB
+    # Jalankan Migrasi DB
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
     export PYTHONPATH=$BACKEND_DIR
     sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
@@ -95,13 +71,11 @@ PID_BACKEND=$!
          NPM_PATH=$(runuser -l $REAL_USER -c 'which npm'); NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
     fi
 
-    # Install NPM jika package.json berubah (SKIPPED AS REQUESTED)
-    if [ "$HAS_PACKAGE_JSON" == "yes" ]; then
-        echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies... (SKIPPED)"
-        # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
-    fi
+    # Update NPM dependencies (SKIPPED AS REQUESTED)
+    # echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies..."
+    # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
 
-    # SELALU Rebuild Expo Web
+    # Rebuild Expo Web
     echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web..."
     sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
 
