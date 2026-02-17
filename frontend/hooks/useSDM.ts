@@ -97,7 +97,7 @@ export const useClockOut = () => {
 export const useBulkClockIn = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ karyawanId, dates }: { karyawanId: number; dates: string[] }) =>
+        mutationFn: ({ karyawanId, dates }: { karyawanId: number; dates: Array<{ date: string; status: any; jam_masuk?: string; jam_keluar?: string }> }) =>
             sdmService.bulkClockIn(karyawanId, dates),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['absensi_harian'] });
@@ -216,6 +216,28 @@ export const useProcessSlipGajiPayment = () => {
     });
 };
 
+export const useVoidSlipGajiPayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => sdmService.voidSlipGajiPayment(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_weekly'] });
+        },
+    });
+};
+
+export const useDeleteSlipGaji = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => sdmService.deleteSlipGaji(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji'] });
+            queryClient.invalidateQueries({ queryKey: ['slip_gaji_weekly'] });
+        },
+    });
+};
+
 // =============================================
 // PAYROLL ALIASES (for slip-gaji.tsx compatibility)
 // =============================================
@@ -223,3 +245,4 @@ export const usePayrollList = useSlipGajiList;
 export const usePayrollSummary = useSlipGajiWeeklySummary;
 export const useCreatePayroll = useCreateBulkSlipGajiRange;
 export const useProcessPayrollPayment = useProcessSlipGajiPayment;
+export const useDeletePayroll = useDeleteSlipGaji;

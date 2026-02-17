@@ -1,0 +1,9 @@
+# Root gitignore
+frontend/.expo/
+frontend/node_modules/
+frontend/android/
+frontend/ios/
+frontend/dist/
+frontend/web-build/
+.env
+*.log

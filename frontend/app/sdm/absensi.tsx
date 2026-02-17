@@ -193,7 +193,7 @@ export default function AbsensiScreen() {
 
             await bulkClockInMutation.mutateAsync({
                 karyawanId: selectedKaryawan.id,
-                dates: attendanceRecords as any // type cast for now as hook might need update or handles it
+                dates: attendanceRecords
             });
             setDialogConfig({
                 visible: true,

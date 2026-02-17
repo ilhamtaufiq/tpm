@@ -173,6 +173,17 @@ def process_payment(
     return service.process_payment(slip_id, data, current_user.id)
 
 
+@router.post("/{slip_id}/void", response_model=SlipGajiResponse)
+def void_payment(
+    slip_id: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Void/cancel salary payment."""
+    service = SlipGajiService(db)
+    return service.void_payment(slip_id, current_user.id)
+
+
 @router.delete("/{slip_id}")
 def delete_slip_gaji(
     slip_id: int,

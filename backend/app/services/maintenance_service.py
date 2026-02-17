@@ -9,7 +9,7 @@ from app.models.bengkel import (
     PengeluaranBengkel,
     SparePart
 )
-from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
+from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank, HutangUsaha, PembayaranHutang
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.karyawan import Absensi, SlipGaji, KasbonKaryawan
 from app.models.mobil import (
@@ -35,7 +35,7 @@ class MaintenanceService:
         2. Delete all spare part purchases.
         3. Delete all freight (jasa angkut) transactions.
         4. Delete all car sales transactions.
-        5. Delete all receivables (piutang) and payments.
+        5. Delete all receivables (piutang), payables (hutang), and payments.
         6. Delete all workshop expenses.
         7. Delete all employee transactions (Absensi, Kasbon, Slip Gaji).
         8. Delete all cash/bank journal entries (KasBank) - LAST.
@@ -69,10 +69,12 @@ class MaintenanceService:
             print("RESET: Deleting expenses and payments...")
             self.db.query(PengeluaranBengkel).delete()
             self.db.query(PembayaranPiutang).delete()
-            
-            # 4. Receivables (Piutang)
-            print("RESET: Deleting receivables...")
+            self.db.query(PembayaranHutang).delete()
+
+            # 4. Receivables (Piutang) & Payables (Hutang)
+            print("RESET: Deleting receivables and payables...")
             self.db.query(PiutangUsaha).delete()
+            self.db.query(HutangUsaha).delete()
 
             # 5. Ledger (KasBank) - Must be last as it is often referenced or parent
             print("RESET: Deleting ledger (KasBank)...")

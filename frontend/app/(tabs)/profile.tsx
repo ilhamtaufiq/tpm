@@ -31,7 +31,7 @@ export default function ProfileScreen() {
         setDialogConfig({
             visible: true,
             title: "Hapus Transaksi?",
-            message: "Tindakan ini akan menghapus SELURUH riwayat transaksi. Data master tidak akan terhapus. Tindakan ini tidak dapat dibatalkan!",
+            message: "Tindakan ini akan menghapus SELURUH riwayat transaksi (Bengkel, Mobil, Jasa Angkut, Hutang & Piutang). Data master tidak akan terhapus. Tindakan ini tidak dapat dibatalkan!",
             variant: 'error',
             type: 'confirm',
             onConfirm: () => {

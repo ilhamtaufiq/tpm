@@ -266,7 +266,15 @@ def get_recent_activity(
         sort_order="desc"
     )["data"]
 
-    # 3. Normalize and Merge
+    # 3. Fetch recent transport loads (Jasa Angkut)
+    muatan_service = MuatanService(db)
+    muatan_data = muatan_service.get_list(
+        limit=limit,
+        sort_by="created_at",
+        sort_order="desc"
+    )["data"]
+
+    # 4. Normalize and Merge
     activities = []
 
     for item in kas_data:
@@ -299,7 +307,24 @@ def get_recent_activity(
             "ref_number": item.nomor_transaksi,
         })
 
-    # 4. Sort and Slice
+    for item in muatan_data:
+        # Include driver name in subtitle and route in title
+        driver_name = item.supir_nama or item.supir_nama_manual or "Driver"
+        activities.append({
+            "type": "workshop", # Using workshop type for UI consistency if needed, or better, source below
+            "id": f"muatan_{item.id}",
+            "original_id": item.id,
+            "title": f"{item.asal} → {item.tujuan}",
+            "subtitle": f"{item.info_kendaraan or 'Armada'} • {driver_name}",
+            "amount": float(item.pendapatan_kotor - item.laba_supir), # TPM Margin
+            "is_incoming": True,
+            "status": item.status_bayar.value if hasattr(item.status_bayar, 'value') else str(item.status_bayar),
+            "timestamp": item.created_at.isoformat(),
+            "source": "jasa_angkut",
+            "ref_number": item.nomor_transaksi,
+        })
+
+    # 5. Sort and Slice
     activities.sort(key=lambda x: x["timestamp"], reverse=True)
     return activities[:limit]
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -42,41 +42,74 @@ export default function JasaAngkutScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
     const [view, setView] = useState<'form' | 'detail'>('form');
+    const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
+    const [searchQuery, setSearchQuery] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
-    const recentTrips = muatanData?.data || [];
+    const recentTrips = useMemo(() => {
+        let trips = muatanData?.data || [];
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            trips = trips.filter((t: any) =>
+                t.asal?.toLowerCase().includes(query) ||
+                t.tujuan?.toLowerCase().includes(query) ||
+                t.supir_nama?.toLowerCase().includes(query) ||
+                t.supir?.nama?.toLowerCase().includes(query) ||
+                t.armada?.nama?.toLowerCase().includes(query) ||
+                t.nopol?.toLowerCase().includes(query)
+            );
+        }
+        return trips;
+    }, [muatanData, searchQuery]);
 
-    // Group trips by armada type (jenis)
-    const groupedByArmada = useMemo(() => {
+    // Group trips by armada type OR driver
+    const groupedTrips = useMemo(() => {
         if (!recentTrips.length) return [];
 
         const map = new Map<string, {
             key: string;
             title: string;
+            subtitle?: string;
             trips: any[];
             totalRitase: number;
             totalPendapatanTPM: number;
         }>();
 
         for (const trip of recentTrips) {
-            let key = 'lainnya';
-            let title = 'Armada Lainnya';
+            let key = '';
+            let title = '';
+            let subtitle = '';
 
-            if (trip.armada) {
-                // Group by specific armada unit: "Nama Kendaraan - Jenis/Tipe"
-                const jenis = trip.armada.jenis || 'Umum';
-                key = `armada-${trip.armada.id}`;
-                title = `${trip.armada.nama} - ${jenis}`;
+            if (groupBy === 'armada') {
+                if (trip.armada) {
+                    key = `armada-${trip.armada.id}`;
+                    title = trip.armada.nama;
+                    subtitle = trip.armada.nopol || trip.armada.jenis;
+                } else {
+                    key = 'manual-armada';
+                    title = 'Armada Luar';
+                    subtitle = trip.nopol || 'Tanpa Nopol';
+                }
             } else {
-                key = 'manual';
-                title = 'Armada Luar';
+                // Group by Supir
+                if (trip.supir_id || trip.supir) {
+                    const supir = trip.supir;
+                    key = `supir-${trip.supir_id}`;
+                    title = supir?.nama || trip.supir_nama || 'Supir Terdaftar';
+                    subtitle = supir?.kode || 'Staff';
+                } else {
+                    key = 'manual-supir';
+                    title = trip.supir_nama || trip.supir_nama_manual || 'Supir Lepas';
+                    subtitle = 'Manual';
+                }
             }
 
             if (!map.has(key)) {
                 map.set(key, {
                     key,
                     title,
-                    trips: [], // We will sort these by date later if needed, currently they come sorted from API
+                    subtitle,
+                    trips: [],
                     totalRitase: 0,
                     totalPendapatanTPM: 0,
                 });
@@ -88,9 +121,8 @@ export default function JasaAngkutScreen() {
             group.totalPendapatanTPM += Number(trip.pendapatan_kotor || 0) - Number(trip.laba_supir || 0);
         }
 
-        // Sort by most trips first
         return Array.from(map.values()).sort((a, b) => b.trips.length - a.trips.length);
-    }, [recentTrips]);
+    }, [recentTrips, groupBy]);
 
     const toggleGroupCollapse = useCallback((key: string) => {
         setCollapsedGroups(prev => {
@@ -419,7 +451,7 @@ export default function JasaAngkutScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
                         </View>
                     </View>
-                    <View className="flex-row">
+                    <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={() => router.push('/jasa-angkut/armada')}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
@@ -428,9 +460,15 @@ export default function JasaAngkutScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => router.push('/jasa-angkut/supir')}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
                         >
                             <Users size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => onRefresh()}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            <RefreshCw size={20} color="white" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -477,14 +515,48 @@ export default function JasaAngkutScreen() {
             {/* Floating Search & Filter Overlay */}
             {(!isFormOpen && !isDetailOpen && sheetIndex === -1) && (
                 <View className="px-6 -mt-8 z-10">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <Typography className="ml-3 text-sm text-gray-400 font-medium">Cari riwayat ritase...</Typography>
+                    <View className="bg-white p-3 rounded-[32px] shadow-2xl space-y-3 border border-gray-100">
+                        {/* Search Input */}
+                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-[20px] border border-gray-100">
+                            <Search size={20} color="#6B7280" />
+                            <TextInput
+                                className="flex-1 ml-3 text-textMain text-sm font-medium h-full"
+                                placeholder="Cari rute, supir, armada..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor="#9CA3AF"
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                    <Clock size={16} color="#9CA3AF" />
+                                </TouchableOpacity>
+                            )}
                         </View>
-                        <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <RefreshCw size={20} color="#023C69" />
-                        </TouchableOpacity>
+
+                        {/* Filter & Group Controls */}
+                        <View className="flex-row items-center justify-between px-1">
+                            <View className="flex-row bg-gray-100 p-1 rounded-2xl">
+                                <TouchableOpacity
+                                    onPress={() => setGroupBy('armada')}
+                                    className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}
+                                >
+                                    <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
+                                    <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => setGroupBy('supir')}
+                                    className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}
+                                >
+                                    <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
+                                    <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity className="flex-row items-center bg-gray-50 border border-gray-100 px-4 py-2 rounded-xl">
+                                <Plus size={16} color="#023C69" />
+                                <Typography variant="caption" weight="bold" className="ml-2 text-primary">Filter</Typography>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             )}
@@ -519,7 +591,7 @@ export default function JasaAngkutScreen() {
                         />
                     </View>
                 ) : (
-                    groupedByArmada.map((group) => {
+                    groupedTrips.map((group) => {
                         const isCollapsed = collapsedGroups.has(group.key);
                         return (
                             <View key={group.key} className="mb-6">
@@ -530,15 +602,15 @@ export default function JasaAngkutScreen() {
                                     className="flex-row items-center justify-between mb-3 px-2"
                                 >
                                     <View className="flex-row items-center">
-                                        <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3 border border-primary/5">
-                                            <Truck size={18} color="#023C69" />
+                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 border ${groupBy === 'armada' ? 'bg-primary/10 border-primary/5' : 'bg-orange-100 border-orange-200'}`}>
+                                            {groupBy === 'armada' ? <Truck size={18} color="#023C69" /> : <Users size={18} color="#C2410C" />}
                                         </View>
                                         <View>
                                             <Typography weight="bold" className="text-textMain text-base">
                                                 {group.title}
                                             </Typography>
                                             <Typography variant="caption" className="text-textGray">
-                                                {formatCurrency(group.totalPendapatanTPM)} • {group.trips.length} Transaksi
+                                                {group.subtitle ? `${group.subtitle} • ` : ''}{group.trips.length} Transaksi
                                             </Typography>
                                         </View>
                                     </View>
@@ -571,9 +643,13 @@ export default function JasaAngkutScreen() {
                                                 <View className="flex-1">
                                                     {/* Main Info + Status */}
                                                     <View className="flex-row items-center justify-between mb-1">
-                                                        <View className="flex-1 mr-2">
+                                                        <View className="flex-1 mr-2 flex-row items-center">
                                                             <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
-                                                                {trip.tujuan}
+                                                                {trip.asal} → {trip.tujuan}
+                                                            </Typography>
+                                                            <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                            <Typography variant="caption" weight="bold" className="text-primary italic">
+                                                                {trip.supir_nama || trip.supir?.nama || trip.supir_nama_manual || '-'}
                                                             </Typography>
                                                         </View>
                                                         <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>

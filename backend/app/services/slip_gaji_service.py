@@ -178,8 +178,8 @@ class SlipGajiService:
         # Generate slip number
         nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
 
-        # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
-        daily_rate = karyawan.gaji_pokok / Decimal("7")
+        # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
+        daily_rate = karyawan.gaji_pokok / Decimal("6")
         gaji_pokok_pro_rated = daily_rate * jumlah_hadir
 
         # Create slip
@@ -246,8 +246,8 @@ class SlipGajiService:
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
 
-            # Pro-rated formula: (Gaji Pokok / 7) * jumlah_hadir
-            daily_rate = emp.gaji_pokok / Decimal("7")
+            # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
+            daily_rate = emp.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = daily_rate * jumlah_hadir
             gaji_bersih = gaji_pokok_pro_rated - kasbon_total
 
@@ -255,6 +255,7 @@ class SlipGajiService:
                 "karyawan_id": emp.id,
                 "karyawan_nama": emp.nama,
                 "karyawan_kode": emp.kode,
+                "gaji_pokok_dasar": float(emp.gaji_pokok),
                 "gaji_pokok": float(gaji_pokok_pro_rated),
                 "jumlah_hadir": float(jumlah_hadir),
                 "potongan_kasbon": float(kasbon_total),
@@ -294,8 +295,8 @@ class SlipGajiService:
             # Get kasbon
             kasbon_total = self._get_kasbon_total(emp.id)
 
-            # Pro-rated formula: (Gaji Pokok / 7) * jumlah_hadir
-            daily_rate = emp.gaji_pokok / Decimal("7")
+            # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
+            daily_rate = emp.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = daily_rate * jumlah_hadir
             gaji_bersih = gaji_pokok_pro_rated - kasbon_total
 
@@ -303,6 +304,7 @@ class SlipGajiService:
                 "karyawan_id": emp.id,
                 "karyawan_nama": emp.nama,
                 "karyawan_kode": emp.kode,
+                "gaji_pokok_dasar": float(emp.gaji_pokok),
                 "gaji_pokok": float(gaji_pokok_pro_rated),
                 "jumlah_hadir": float(jumlah_hadir),
                 "potongan_kasbon": float(kasbon_total),
@@ -368,10 +370,10 @@ class SlipGajiService:
                 # Generate slip number
                 nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
-                # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
+                # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
                 # Note: item.get("jumlah_hadir") might be float now
                 hadir_val = Decimal(str(jumlah_hadir))
-                daily_rate = karyawan.gaji_pokok / Decimal("7")
+                daily_rate = karyawan.gaji_pokok / Decimal("6")
                 gaji_pokok_pro_rated = daily_rate * hadir_val
 
                 # Create slip with overridden attendance
@@ -446,9 +448,9 @@ class SlipGajiService:
             # Generate slip number
             nomor_slip = self._generate_nomor_slip(minggu, tahun)
 
-            # Calculate pro-rated salary: (Gaji Pokok / 7) * jumlah_hadir
+            # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
             hadir_val = Decimal(str(jumlah_hadir))
-            daily_rate = karyawan.gaji_pokok / Decimal("7")
+            daily_rate = karyawan.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = daily_rate * hadir_val
 
             # Create slip with range dates
@@ -644,6 +646,45 @@ class SlipGajiService:
             keterangan=f"Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
             user_id=user_id,
         )
+
+        return slip
+    
+    def void_payment(
+        self,
+        slip_id: int,
+        user_id: Optional[int] = None,
+    ) -> SlipGaji:
+        """Void/cancel salary payment."""
+        slip = self.get_by_id(slip_id)
+
+        if slip.status != PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hanya slip gaji yang sudah lunas yang dapat dibatalkan pembayarannya",
+            )
+
+        # Record reversing entry to kas/bank (money coming back in)
+        karyawan_nama = slip.karyawan.nama if slip.karyawan else "Unknown"
+        create_kas_entry(
+            db=self.db,
+            tanggal=date.today(),
+            tipe=KasBankType.MASUK,
+            nominal=slip.gaji_bersih,
+            sumber=KasBankSource.GAJI,
+            metode_bayar=slip.metode_bayar,
+            referensi_id=slip.id,
+            nomor_referensi=slip.nomor_slip,
+            keterangan=f"PEMBATALAN: Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
+            user_id=user_id,
+        )
+
+        # Reset slip payment status
+        slip.status = PaymentStatus.BELUM_LUNAS
+        slip.metode_bayar = None
+        slip.tanggal_bayar = None
+        
+        self.db.commit()
+        self.db.refresh(slip)
 
         return slip
 

@@ -138,6 +138,7 @@ export interface SlipGajiPreviewItem {
     karyawan_id: number;
     karyawan_nama: string;
     karyawan_kode: string;
+    gaji_pokok_dasar: number;
     gaji_pokok: number;
     jumlah_hadir: number;
     potongan_kasbon: number;
@@ -474,6 +475,11 @@ export const sdmService = {
 
     processSlipGajiPayment: async (id: number, data: { metode_bayar: string; catatan?: string }): Promise<SlipGaji> => {
         const response = await api.post(`/slip-gaji/${id}/pay`, data);
+        return response.data;
+    },
+
+    voidSlipGajiPayment: async (id: number): Promise<SlipGaji> => {
+        const response = await api.post(`/slip-gaji/${id}/void`);
         return response.data;
     },
 

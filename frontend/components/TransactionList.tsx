@@ -89,9 +89,16 @@ export const TransactionList = () => {
                                 <Typography variant="body2" weight="bold" className="text-text mb-0.5" numberOfLines={1}>
                                     {item.title}
                                 </Typography>
-                                <Typography variant="caption" className="text-textGray text-[11px]">
-                                    {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: localeID })}
-                                </Typography>
+                                <View className="flex-row items-center">
+                                    {item.subtitle ? (
+                                        <Typography variant="caption" className="text-primary/70 text-[10px] font-bold mr-2">
+                                            {item.subtitle}
+                                        </Typography>
+                                    ) : null}
+                                    <Typography variant="caption" className="text-textGray text-[10px]">
+                                        {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: localeID })}
+                                    </Typography>
+                                </View>
                             </View>
 
                             <View className="items-end ml-2">

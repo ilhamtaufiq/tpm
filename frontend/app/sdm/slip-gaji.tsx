@@ -18,13 +18,14 @@ import {
     Clock,
     ArrowRight,
     TrendingUp,
+    Trash,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate } from '../../utils/format';
-import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange } from '../../hooks/useSDM';
+import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -63,11 +64,11 @@ export default function SlipGajiScreen() {
         const day = d.getDay() || 7;
         const monday = new Date(d);
         monday.setDate(d.getDate() - day + 1);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
+        const saturday = new Date(monday);
+        saturday.setDate(monday.getDate() + 5);
         return {
             start: monday.toISOString().split('T')[0],
-            end: sunday.toISOString().split('T')[0]
+            end: saturday.toISOString().split('T')[0]
         };
     };
 
@@ -125,6 +126,8 @@ export default function SlipGajiScreen() {
 
     const createBulkMutation = useCreatePayroll();
     const processPaymentMutation = useProcessPayrollPayment();
+    const voidPaymentMutation = useVoidSlipGajiPayment();
+    const deleteMutation = useDeletePayroll();
 
     const slipHistory = listData?.data || [];
     const pendingEmployees = previewData?.items || [];
@@ -280,9 +283,62 @@ export default function SlipGajiScreen() {
         }
     };
 
+    const handleVoidPayment = async () => {
+        if (!selectedSlip) return;
+        setDialogConfig({
+            visible: true,
+            title: 'Batalkan Pembayaran',
+            message: `Yakin ingin membatalkan pembayaran untuk ${selectedSlip.karyawan_nama}? Tindakan ini akan mengembalikan saldo kas/bank.`,
+            variant: 'warning',
+            type: 'confirm',
+            onConfirm: executeVoidPayment
+        });
+    };
+
+    const executeVoidPayment = async () => {
+        if (!selectedSlip) return;
+        try {
+            await voidPaymentMutation.mutateAsync(selectedSlip.id);
+            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran dibatalkan', variant: 'success' });
+            if (Platform.OS === 'web') setSelectedSlip(null);
+            else bottomSheetRef.current?.close();
+            onRefresh();
+        } catch (error: any) {
+            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal membatalkan pembayaran'), variant: 'error' });
+        }
+    };
+
+    const handleDeleteSlip = async () => {
+        if (!selectedSlip) return;
+        setDialogConfig({
+            visible: true,
+            title: 'Hapus Slip Payroll',
+            message: `Yakin ingin menghapus slip payroll ${selectedSlip.karyawan_nama}? Data yang dihapus tidak dapat dikembalikan.`,
+            variant: 'warning',
+            type: 'confirm',
+            onConfirm: executeDeleteSlip
+        });
+    };
+
+    const executeDeleteSlip = async () => {
+        if (!selectedSlip) return;
+        try {
+            await deleteMutation.mutateAsync(selectedSlip.id);
+            setDialogConfig({ visible: true, title: 'Sukses', message: 'Slip payroll berhasil dihapus', variant: 'success' });
+            if (Platform.OS === 'web') setSelectedSlip(null);
+            else bottomSheetRef.current?.close();
+            onRefresh();
+        } catch (error: any) {
+            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menghapus slip'), variant: 'error' });
+        }
+    };
+
     const renderPendingItem = ({ item }: { item: SlipGajiPreviewItem }) => {
         const isGenerating = generatingId === item.karyawan_id;
         const currentAttendance = getAttendanceValue(item);
+
+        // Dynamic calculation: (Base / 6) * Current Attendance
+        const currentGajiPokok = (item.gaji_pokok_dasar / 6) * currentAttendance;
 
         return (
             <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
@@ -298,9 +354,13 @@ export default function SlipGajiScreen() {
 
                         <View className="flex-row items-center space-x-3">
                             <View className="bg-gray-50 px-2 py-1.5 rounded-xl border border-gray-100 flex-row items-center">
-                                <Typography className="text-[10px] text-gray-400 font-bold uppercase mr-1">Pokok:</Typography>
-                                <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok)}</Typography>
+                                <Typography className="text-[10px] text-gray-400 font-bold uppercase mr-1">Base:</Typography>
+                                <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok_dasar)}</Typography>
                             </View>
+                            {/* <View className="bg-primary/5 px-2 py-1.5 rounded-xl border border-primary/10 flex-row items-center">
+                                <Typography className="text-[10px] text-primary/60 font-bold uppercase mr-1">Pro-rated:</Typography>
+                                <Typography weight="bold" className="text-[11px] text-primary">{formatCurrency(currentGajiPokok)}</Typography>
+                            </View> */}
                             {item.potongan_kasbon > 0 && (
                                 <View className="bg-rose-50 px-2 py-1.5 rounded-xl border border-rose-100 flex-row items-center">
                                     <Typography className="text-[10px] text-rose-400 font-bold uppercase mr-1">Kasbon:</Typography>
@@ -718,6 +778,19 @@ export default function SlipGajiScreen() {
                         </View>
 
                         <TouchableOpacity
+                            onPress={handleDeleteSlip}
+                            disabled={deleteMutation.isPending}
+                            className="bg-rose-50 h-14 rounded-2xl items-center justify-center flex-row border border-rose-100 mt-4"
+                        >
+                            {deleteMutation.isPending ? <ActivityIndicator color="#E11D48" /> : (
+                                <>
+                                    <Typography weight="bold" className="text-rose-600 mr-2 text-xs uppercase">Hapus Slip Payroll</Typography>
+                                    <Trash size={14} color="#E11D48" />
+                                </>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
                             onPress={handleProcessPayment}
                             disabled={processPaymentMutation.isPending}
                             className="bg-primary h-20 rounded-[32px] items-center justify-center shadow-2xl shadow-primary/40 mt-6 border border-white/20"
@@ -730,14 +803,29 @@ export default function SlipGajiScreen() {
                 )}
 
                 {isLunas && selectedSlip.tanggal_bayar && (
-                    <View className="bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 flex-row items-center">
-                        <View className="w-14 h-14 bg-emerald-100 rounded-2xl items-center justify-center mr-5">
-                            <Calendar size={28} color="#059669" />
+                    <View>
+                        <View className="bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 flex-row items-center mb-6">
+                            <View className="w-14 h-14 bg-emerald-100 rounded-2xl items-center justify-center mr-5">
+                                <Calendar size={28} color="#059669" />
+                            </View>
+                            <View>
+                                <Typography className="text-emerald-900 font-bold text-lg">Dana Terkirim</Typography>
+                                <Typography className="text-emerald-600/60 font-medium text-sm">Pada {formatDate(selectedSlip.tanggal_bayar)}</Typography>
+                            </View>
                         </View>
-                        <View>
-                            <Typography className="text-emerald-900 font-bold text-lg">Dana Terkirim</Typography>
-                            <Typography className="text-emerald-600/60 font-medium text-sm">Pada {formatDate(selectedSlip.tanggal_bayar)}</Typography>
-                        </View>
+
+                        <TouchableOpacity
+                            onPress={handleVoidPayment}
+                            disabled={voidPaymentMutation.isPending}
+                            className="bg-rose-50 h-16 rounded-[24px] items-center justify-center flex-row border border-rose-100 mt-2"
+                        >
+                            {voidPaymentMutation.isPending ? <ActivityIndicator color="#E11D48" /> : (
+                                <>
+                                    <Typography weight="bold" className="text-rose-600 mr-2 text-sm">BATALKAN PEMBAYARAN</Typography>
+                                    <X size={16} color="#E11D48" />
+                                </>
+                            )}
+                        </TouchableOpacity>
                     </View>
                 )}
             </View>

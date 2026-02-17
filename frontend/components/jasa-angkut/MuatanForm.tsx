@@ -63,6 +63,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const [loadingArmada, setLoadingArmada] = useState(true);
     const [armadaMode, setArmadaMode] = useState<'registered' | 'manual'>('registered');
 
+    const [driverSearch, setDriverSearch] = useState('');
+    const [armadaSearch, setArmadaSearch] = useState('');
+
     useEffect(() => {
         loadDrivers();
         loadArmada();
@@ -217,7 +220,25 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         }, 0);
 
         return { revenue, totalCosts, beli, jual, bengkelTotal: 0 };
-    }, [formData, operationalCosts]);
+    }, [formData.harga_beli, formData.harga_jual, operationalCosts]);
+
+    const filteredDrivers = useMemo(() => {
+        if (!driverSearch) return activeDrivers;
+        const query = driverSearch.toLowerCase();
+        return activeDrivers.filter(d =>
+            d.nama.toLowerCase().includes(query) ||
+            (d.kode && d.kode.toLowerCase().includes(query))
+        );
+    }, [activeDrivers, driverSearch]);
+
+    const filteredArmada = useMemo(() => {
+        if (!armadaSearch) return activeArmada;
+        const query = armadaSearch.toLowerCase();
+        return activeArmada.filter(a =>
+            a.nama.toLowerCase().includes(query) ||
+            a.nopol.toLowerCase().includes(query)
+        );
+    }, [activeArmada, armadaSearch]);
 
     const handleSubmit = async () => {
         if (driverMode === 'registered' && !formData.supir_id) {
@@ -316,25 +337,71 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 loadingDrivers ? (
                     <ActivityIndicator className="my-4" />
                 ) : (
-                    <View className="flex-row flex-wrap mb-4">
-                        {activeDrivers.map(d => (
-                            <TouchableOpacity
-                                key={d.id}
-                                onPress={() => updateField('supir_id', d.id.toString())}
-                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${formData.supir_id === d.id.toString()
-                                    ? 'bg-primary border-primary'
-                                    : 'bg-white border-gray-200'
-                                    }`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight={formData.supir_id === d.id.toString() ? 'bold' : 'medium'}
-                                    className={formData.supir_id === d.id.toString() ? 'text-white' : 'text-gray-600'}
+                    <View>
+                        {formData.supir_id ? (
+                            <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
+                                <View className="flex-row items-center">
+                                    <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
+                                        <Typography weight="bold" className="text-primary">{activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
+                                    </View>
+                                    <View>
+                                        <Typography weight="bold" className="text-textMain">
+                                            {activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama}
+                                        </Typography>
+                                        <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        updateField('supir_id', '');
+                                        setDriverSearch('');
+                                    }}
+                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100"
                                 >
-                                    {d.nama}
-                                </Typography>
-                            </TouchableOpacity>
-                        ))}
+                                    <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View>
+                                <Input
+                                    placeholder="Ketik nama supir..."
+                                    value={driverSearch}
+                                    onChangeText={setDriverSearch}
+                                    containerClassName="mb-3"
+                                    className="h-11 shadow-sm"
+                                    startIcon={<Truck size={18} color="#94A3B8" />}
+                                />
+                                {driverSearch.length > 0 && (
+                                    <View className="flex-row flex-wrap mb-4">
+                                        {filteredDrivers.length > 0 ? (
+                                            filteredDrivers.map(d => (
+                                                <TouchableOpacity
+                                                    key={d.id}
+                                                    onPress={() => {
+                                                        updateField('supir_id', d.id.toString());
+                                                        setDriverSearch('');
+                                                    }}
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50 flex-row items-center"
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        weight="bold"
+                                                        className="text-gray-700"
+                                                    >
+                                                        {d.nama}
+                                                    </Typography>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Supir '{driverSearch}' tidak ditemukan</Typography>
+                                        )}
+                                    </View>
+                                )}
+                                {driverSearch.length === 0 && (
+                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari supir dari database...</Typography>
+                                )}
+                            </View>
+                        )}
                     </View>
                 )
             ) : (
@@ -369,25 +436,80 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 loadingArmada ? (
                     <ActivityIndicator className="my-4" />
                 ) : (
-                    <View className="flex-row flex-wrap mb-4">
-                        {activeArmada.map(a => (
-                            <TouchableOpacity
-                                key={a.id}
-                                onPress={() => updateField('armada_id', a.id.toString())}
-                                className={`px-4 py-2 rounded-full mr-2 mb-2 border ${formData.armada_id === a.id.toString()
-                                    ? 'bg-blue-600 border-blue-600'
-                                    : 'bg-white border-gray-200'
-                                    }`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight={formData.armada_id === a.id.toString() ? 'bold' : 'medium'}
-                                    className={formData.armada_id === a.id.toString() ? 'text-white' : 'text-gray-600'}
-                                >
-                                    {a.nama} ({a.nopol})
-                                </Typography>
-                            </TouchableOpacity>
-                        ))}
+                    <View>
+                        {formData.armada_id ? (
+                            <View className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-4">
+                                <View className="flex-row justify-between items-center mb-3">
+                                    <View>
+                                        <Typography weight="bold" className="text-blue-900">
+                                            {activeArmada.find(a => a.id.toString() === formData.armada_id)?.nama}
+                                        </Typography>
+                                        <Typography variant="caption" className="text-blue-700 font-bold">
+                                            {activeArmada.find(a => a.id.toString() === formData.armada_id)?.nopol}
+                                        </Typography>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            updateField('armada_id', '');
+                                            setArmadaSearch('');
+                                        }}
+                                        className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-blue-100"
+                                    >
+                                        <Typography variant="caption" weight="bold" className="text-blue-600">Ganti Armada</Typography>
+                                    </TouchableOpacity>
+                                </View>
+                                <View className="flex-row space-x-2">
+                                    <View className="flex-1">
+                                        <Typography variant="caption" className="text-gray-400 uppercase font-bold mb-1 text-[9px]">Nopol</Typography>
+                                        <Typography variant="caption" weight="bold">{formData.nopol}</Typography>
+                                    </View>
+                                    <View className="flex-1">
+                                        <Typography variant="caption" className="text-gray-400 uppercase font-bold mb-1 text-[9px]">Info</Typography>
+                                        <Typography variant="caption" weight="bold">{formData.info_kendaraan}</Typography>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : (
+                            <View>
+                                <Input
+                                    placeholder="Cari armada (nama atau nopol)..."
+                                    value={armadaSearch}
+                                    onChangeText={setArmadaSearch}
+                                    containerClassName="mb-3"
+                                    className="h-11 shadow-sm"
+                                    startIcon={<Truck size={18} color="#94A3B8" />}
+                                />
+                                {armadaSearch.length > 0 && (
+                                    <View className="flex-row flex-wrap mb-4">
+                                        {filteredArmada.length > 0 ? (
+                                            filteredArmada.map(a => (
+                                                <TouchableOpacity
+                                                    key={a.id}
+                                                    onPress={() => {
+                                                        updateField('armada_id', a.id.toString());
+                                                        setArmadaSearch('');
+                                                    }}
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50"
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        weight="bold"
+                                                        className="text-gray-700"
+                                                    >
+                                                        {a.nama} ({a.nopol})
+                                                    </Typography>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Armada '{armadaSearch}' tidak ditemukan</Typography>
+                                        )}
+                                    </View>
+                                )}
+                                {armadaSearch.length === 0 && (
+                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari armada dari database...</Typography>
+                                )}
+                            </View>
+                        )}
                     </View>
                 )
             ) : (
@@ -411,26 +533,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 </View>
             )}
 
-            {armadaMode === 'registered' && (
-                <View className="flex-row space-x-2">
-                    <View className="flex-1">
-                        <Input
-                            label="Nomor Polisi"
-                            value={formData.nopol}
-                            editable={false}
-                            className="bg-gray-50 text-gray-500"
-                        />
-                    </View>
-                    <View className="flex-[2]">
-                        <Input
-                            label="Info Armada"
-                            value={formData.info_kendaraan}
-                            editable={false}
-                            className="bg-gray-50 text-gray-500"
-                        />
-                    </View>
-                </View>
-            )}
+            {/* Manual inputs hidden when registered + selected */}
 
             <View className="h-[1px] bg-gray-100 my-4" />
 
