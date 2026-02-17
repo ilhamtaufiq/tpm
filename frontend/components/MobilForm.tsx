@@ -183,12 +183,20 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 </View>
 
                 {!isEdit && (
-                    <View>
-                        <View className="flex-row space-x-3 mb-1">
-                            <Input label="Harga Beli (Rp)" placeholder="0" containerClassName="flex-[1.5]" keyboardType="numeric" value={hargaBeli} onChangeText={(v) => setHargaBeli(formatNumber(v))} />
+                    <View className="space-y-6">
+                        {/* Harga & Status Row */}
+                        <View className="flex-row space-x-3">
+                            <Input
+                                label="Harga Beli Unit (Rp)"
+                                placeholder="0"
+                                containerClassName="flex-[1.5]"
+                                keyboardType="numeric"
+                                value={hargaBeli}
+                                onChangeText={(v) => setHargaBeli(formatNumber(v))}
+                            />
                             <View className="flex-1">
-                                <Typography variant="body2" className="text-textGray mb-1 font-medium">Status Bayar</Typography>
-                                <View className="flex-row bg-gray-100 rounded-xl p-1">
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Status Bayar</Typography>
+                                <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
                                     {[
                                         { label: 'Lunas', value: 'LUNAS' },
                                         { label: 'Hutang', value: 'BELUM_LUNAS' }
@@ -196,9 +204,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         <TouchableOpacity
                                             key={s.value}
                                             onPress={() => setStatusBayar(s.value)}
-                                            className={`flex-1 py-2 rounded-lg items-center ${statusBayar === s.value ? 'bg-white shadow-sm' : ''}`}
+                                            className={`flex-1 py-2 rounded-xl items-center justify-center ${statusBayar === s.value ? 'bg-white shadow-sm' : ''}`}
                                         >
-                                            <Typography variant="caption" weight={statusBayar === s.value ? 'bold' : 'medium'} className={statusBayar === s.value ? 'text-primary' : 'text-gray-400'}>
+                                            <Typography variant="caption" weight="bold" className={`text-center ${statusBayar === s.value ? 'text-primary' : 'text-gray-400'}`}>
                                                 {s.label}
                                             </Typography>
                                         </TouchableOpacity>
@@ -207,10 +215,11 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             </View>
                         </View>
 
-                        <View className="flex-row space-x-3 mt-2">
-                            <View className="flex-1">
-                                <Typography variant="body2" className="text-textGray mb-1 font-medium">Metode Bayar</Typography>
-                                <View className="flex-row bg-gray-100 rounded-xl p-1">
+                        {/* Payment Method & Optional DP Row */}
+                        <View className="flex-row space-x-3 items-end mt-4">
+                            <View className="flex-[1.5]">
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Metode Pembayaran</Typography>
+                                <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
                                     {[
                                         { label: 'Cash', value: 'TUNAI' },
                                         { label: 'Transfer', value: 'TRANSFER' },
@@ -219,9 +228,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         <TouchableOpacity
                                             key={m.value}
                                             onPress={() => setMetodeBayar(m.value)}
-                                            className={`flex-1 py-1.5 rounded-lg items-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
+                                            className={`flex-1 py-2 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
                                         >
-                                            <Typography variant="caption" weight={metodeBayar === m.value ? 'bold' : 'medium'} className={metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}>
+                                            <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
                                                 {m.label}
                                             </Typography>
                                         </TouchableOpacity>
@@ -229,15 +238,19 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                 </View>
                             </View>
 
-                            {statusBayar !== 'LUNAS' && (
+                            {statusBayar !== 'LUNAS' ? (
                                 <Input
-                                    label="DP / Uang Muka (Rp)"
+                                    label="Uang Muka / DP (Rp)"
                                     placeholder="0"
-                                    containerClassName="flex-1"
+                                    containerClassName="flex-1 mb-0"
                                     keyboardType="numeric"
                                     value={dp}
                                     onChangeText={(v) => setDp(formatNumber(v))}
                                 />
+                            ) : (
+                                <View className="flex-1 items-center justify-center p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                    <Typography variant="caption" weight="bold" className="text-emerald-600 text-[10px] uppercase">Lunas Terbayar</Typography>
+                                </View>
                             )}
                         </View>
                     </View>
