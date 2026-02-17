@@ -102,11 +102,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const renderMediaItem = (item: any) => {
         // Construct URL safely, avoiding double slashes
-        const baseUrl = FILE_URL || '';
-        const filePath = item.file_path.startsWith('/') ? item.file_path.substring(1) : item.file_path;
-        const fullUrl = baseUrl.endsWith('/')
-            ? `${baseUrl}uploads/${filePath}?t=${Date.now()}`
-            : `${baseUrl}/uploads/${filePath}?t=${Date.now()}`;
+        const baseUrl = (FILE_URL || '').replace(/\/$/, '');
+        const filePath = item.file_path.replace(/^\//, '');
+        const fullUrl = `${baseUrl}/uploads/${filePath}?t=${Date.now()}`;
 
         console.log('[MobilDetail] Rendering media:', item.id, fullUrl);
 

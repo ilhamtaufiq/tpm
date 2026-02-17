@@ -8,7 +8,6 @@ import { formatCurrency, formatDate } from '../../utils/format';
 import {
     Truck,
     Calendar,
-    Tool,
     ArrowUpRight,
     MapPin,
     Clock,
@@ -63,7 +62,15 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         );
     }
 
-    const { armada, stats, muatan_history, perbaikan_history } = detailData;
+    const { armada, stats, muatan_history = [], perbaikan_history = [] } = detailData || {};
+
+    if (!armada || !stats) {
+        return (
+            <View className="p-10 items-center justify-center">
+                <Typography className="text-gray-400">Data armada tidak lengkap</Typography>
+            </View>
+        );
+    }
 
     return (
         <ScrollView
@@ -239,7 +246,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     <View className="flex-row justify-between mb-3">
                                         <View className="flex-row items-center">
                                             <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
-                                                <Tool size={16} color="#EF4444" />
+                                                <Wrench size={16} color="#EF4444" />
                                             </View>
                                             <Typography weight="bold" className="text-textMain">{item.nomor_transaksi}</Typography>
                                         </View>

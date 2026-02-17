@@ -307,7 +307,9 @@ export default function MobilInventoryScreen() {
                                     <View className="h-56 bg-gray-100">
                                         {item.media && item.media.length > 0 ? (
                                             <Image
-                                                source={{ uri: `${FILE_URL}/uploads/${item.media[0].file_path}` }}
+                                                source={{
+                                                    uri: `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${item.media[0].file_path.replace(/^\//, '')}?t=${Date.now()}`
+                                                }}
                                                 className="w-full h-full"
                                                 resizeMode="cover"
                                             />

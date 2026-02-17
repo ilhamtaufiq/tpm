@@ -44,7 +44,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     const [namaInvestor, setNamaInvestor] = useState(initialData?.nama_investor || '');
     const [nominalInvestor, setNominalInvestor] = useState(formatNumber(String(initialData?.nominal_investor || '')));
     const [persentaseInvestor, setPersentaseInvestor] = useState(String(initialData?.persentase_investor || '0'));
-    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar || 'TUNAI');
+    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar_beli || 'TUNAI');
+    const [statusBayar, setStatusBayar] = useState(initialData?.status_bayar_beli || 'LUNAS');
+    const [dp, setDp] = useState(formatNumber(String(initialData?.dp_beli || '0')));
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -88,6 +90,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         if (!isEdit) {
             payload.harga_beli = parseNumber(hargaBeli);
             payload.metode_bayar = metodeBayar;
+            payload.status_bayar = statusBayar;
+            payload.dp = parseNumber(dp) || 0;
             payload.tanggal_masuk = new Date().toISOString().split('T')[0];
         }
 
@@ -179,23 +183,62 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 </View>
 
                 {!isEdit && (
-                    <View className="flex-row space-x-3 mb-1">
-                        <Input label="Harga Beli (Rp)" placeholder="0" containerClassName="flex-[1.5]" keyboardType="numeric" value={hargaBeli} onChangeText={(v) => setHargaBeli(formatNumber(v))} />
-                        <View className="flex-1">
-                            <Typography variant="body2" className="text-textGray mb-1 font-medium">Metode Bayar</Typography>
-                            <View className="flex-row bg-gray-100 rounded-xl p-1">
-                                {['TUNAI', 'TRANSFER'].map((m) => (
-                                    <TouchableOpacity
-                                        key={m}
-                                        onPress={() => setMetodeBayar(m)}
-                                        className={`flex-1 py-2 rounded-lg items-center ${metodeBayar === m ? 'bg-white shadow-sm' : ''}`}
-                                    >
-                                        <Typography variant="caption" weight={metodeBayar === m ? 'bold' : 'medium'} className={metodeBayar === m ? 'text-primary' : 'text-gray-400'}>
-                                            {m === 'TUNAI' ? 'Cash' : 'Transfer'}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
+                    <View>
+                        <View className="flex-row space-x-3 mb-1">
+                            <Input label="Harga Beli (Rp)" placeholder="0" containerClassName="flex-[1.5]" keyboardType="numeric" value={hargaBeli} onChangeText={(v) => setHargaBeli(formatNumber(v))} />
+                            <View className="flex-1">
+                                <Typography variant="body2" className="text-textGray mb-1 font-medium">Status Bayar</Typography>
+                                <View className="flex-row bg-gray-100 rounded-xl p-1">
+                                    {[
+                                        { label: 'Lunas', value: 'LUNAS' },
+                                        { label: 'Hutang', value: 'BELUM_LUNAS' }
+                                    ].map((s) => (
+                                        <TouchableOpacity
+                                            key={s.value}
+                                            onPress={() => setStatusBayar(s.value)}
+                                            className={`flex-1 py-2 rounded-lg items-center ${statusBayar === s.value ? 'bg-white shadow-sm' : ''}`}
+                                        >
+                                            <Typography variant="caption" weight={statusBayar === s.value ? 'bold' : 'medium'} className={statusBayar === s.value ? 'text-primary' : 'text-gray-400'}>
+                                                {s.label}
+                                            </Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
                             </View>
+                        </View>
+
+                        <View className="flex-row space-x-3 mt-2">
+                            <View className="flex-1">
+                                <Typography variant="body2" className="text-textGray mb-1 font-medium">Metode Bayar</Typography>
+                                <View className="flex-row bg-gray-100 rounded-xl p-1">
+                                    {[
+                                        { label: 'Cash', value: 'TUNAI' },
+                                        { label: 'Transfer', value: 'TRANSFER' },
+                                        { label: 'Split', value: 'SPLIT' }
+                                    ].map((m) => (
+                                        <TouchableOpacity
+                                            key={m.value}
+                                            onPress={() => setMetodeBayar(m.value)}
+                                            className={`flex-1 py-1.5 rounded-lg items-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
+                                        >
+                                            <Typography variant="caption" weight={metodeBayar === m.value ? 'bold' : 'medium'} className={metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}>
+                                                {m.label}
+                                            </Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {statusBayar !== 'LUNAS' && (
+                                <Input
+                                    label="DP / Uang Muka (Rp)"
+                                    placeholder="0"
+                                    containerClassName="flex-1"
+                                    keyboardType="numeric"
+                                    value={dp}
+                                    onChangeText={(v) => setDp(formatNumber(v))}
+                                />
+                            )}
                         </View>
                     </View>
                 )}
