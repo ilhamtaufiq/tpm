@@ -15,6 +15,7 @@ import { useMobilList } from '../hooks/useMobil';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { SparePartSelector } from './ui/SparePartSelector';
 import { JasaSelector } from './ui/JasaSelector';
+import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
@@ -32,6 +33,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
+    const [selectedArmada, setSelectedArmada] = useState<any>(null);
 
     // Search modal states
     const [muatanSearchOpen, setMuatanSearchOpen] = useState(false);
@@ -70,16 +72,24 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
 
     // Filtered lists for search
     const filteredMuatan = useMemo(() => {
-        if (!muatanSearchQuery.trim()) return muatanList;
+        let list = muatanList;
+
+        // Stage 1: Filter by selected armada if exists
+        if (selectedArmada) {
+            list = list.filter((m: any) => m.armada_id === selectedArmada.id || m.nopol === selectedArmada.nopol);
+        }
+
+        // Stage 2: Filter by global search query
+        if (!muatanSearchQuery.trim()) return list;
         const q = muatanSearchQuery.toLowerCase();
-        return muatanList.filter((m: any) =>
+        return list.filter((m: any) =>
             (m.tujuan || '').toLowerCase().includes(q) ||
             (m.asal || '').toLowerCase().includes(q) ||
             (m.supir_nama || '').toLowerCase().includes(q) ||
             (m.nomor_transaksi || '').toLowerCase().includes(q) ||
             (m.nopol || '').toLowerCase().includes(q)
         );
-    }, [muatanList, muatanSearchQuery]);
+    }, [muatanList, muatanSearchQuery, selectedArmada]);
 
     const muatanSections = useMemo(() => {
         const groups: { [key: string]: any[] } = {};
@@ -259,7 +269,10 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                             key={cat.key}
                             onPress={() => {
                                 setKategori(cat.key);
-                                if (cat.key !== 'jasa_angkut') setSelectedMuatan(null);
+                                if (cat.key !== 'jasa_angkut') {
+                                    setSelectedMuatan(null);
+                                    setSelectedArmada(null);
+                                }
                                 if (cat.key !== 'jual_beli_mobil') setSelectedMobil(null);
                             }}
                             className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.key
@@ -283,41 +296,64 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             {kategori === 'jasa_angkut' && (
                 <View className="mb-6">
                     <Typography variant="body2" weight="semibold" className="mb-3 text-emerald-600">
-                        Pilih Transaksi Muatan
+                        Informasi Armada & Muatan
                     </Typography>
 
-                    {/* Search Trigger Button */}
-                    <TouchableOpacity onPress={() => { setMuatanSearchQuery(''); setMuatanSearchOpen(true); }}>
-                        <View className={`rounded-2xl px-4 py-3 border-2 flex-row items-center ${selectedMuatan ? 'bg-emerald-50 border-emerald-300' : 'bg-gray-50 border-transparent'
-                            }`}>
-                            {selectedMuatan ? (
-                                <Truck size={20} color="#10B981" />
-                            ) : (
-                                <Search size={20} color="#9CA3AF" />
-                            )}
-                            <View className="flex-1 ml-3">
+                    {/* Step 1: Select Armada */}
+                    <ArmadaSelector
+                        label="Pilih Armada"
+                        value={selectedArmada}
+                        onSelect={(armada) => {
+                            setSelectedArmada(armada);
+                            setSelectedMuatan(null); // Reset muatan if armada changes
+                        }}
+                    />
+
+                    {/* Step 2: Select Muatan (only if armada selected) */}
+                    <View className={`mt-2 ${!selectedArmada ? 'opacity-50' : ''}`}>
+                        <Typography variant="caption" weight="bold" className="mb-2 text-emerald-700/60 uppercase">
+                            Daftar Transaksi Muatan
+                        </Typography>
+                        <TouchableOpacity
+                            disabled={!selectedArmada}
+                            onPress={() => {
+                                setMuatanSearchQuery('');
+                                setMuatanSearchOpen(true);
+                            }}
+                        >
+                            <View className={`rounded-2xl px-4 py-3 border-2 flex-row items-center ${selectedMuatan ? 'bg-emerald-50 border-emerald-300' : 'bg-gray-50 border-transparent'
+                                }`}>
                                 {selectedMuatan ? (
-                                    <>
-                                        <Typography weight="bold" className="text-emerald-700 text-sm">
-                                            {selectedMuatan.asal} → {selectedMuatan.tujuan}
-                                        </Typography>
-                                        <Typography variant="caption" className="text-emerald-600/70">
-                                            {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency(selectedMuatan.pendapatan_kotor || 0)}
-                                        </Typography>
-                                    </>
+                                    <Truck size={20} color="#10B981" />
                                 ) : (
-                                    <Typography className="text-gray-400 text-sm">Cari transaksi muatan...</Typography>
+                                    <Search size={20} color={selectedArmada ? "#10B981" : "#9CA3AF"} />
+                                )}
+                                <View className="flex-1 ml-3">
+                                    {selectedMuatan ? (
+                                        <>
+                                            <Typography weight="bold" className="text-emerald-700 text-sm">
+                                                {selectedMuatan.asal} → {selectedMuatan.tujuan}
+                                            </Typography>
+                                            <Typography variant="caption" className="text-emerald-600/70">
+                                                {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency(selectedMuatan.pendapatan_kotor || 0)}
+                                            </Typography>
+                                        </>
+                                    ) : (
+                                        <Typography className="text-gray-400 text-sm">
+                                            {selectedArmada ? `Pilih muatan untuk ${selectedArmada.nama}...` : 'Pilih armada terlebih dahulu'}
+                                        </Typography>
+                                    )}
+                                </View>
+                                {selectedMuatan ? (
+                                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedMuatan(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                        <X size={18} color="#EF4444" />
+                                    </TouchableOpacity>
+                                ) : (
+                                    <ChevronRight size={18} color="#9CA3AF" />
                                 )}
                             </View>
-                            {selectedMuatan ? (
-                                <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedMuatan(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                    <X size={18} color="#EF4444" />
-                                </TouchableOpacity>
-                            ) : (
-                                <ChevronRight size={18} color="#9CA3AF" />
-                            )}
-                        </View>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Search Modal */}
                     <Modal visible={muatanSearchOpen} transparent animationType="slide" onRequestClose={() => setMuatanSearchOpen(false)} statusBarTranslucent>
