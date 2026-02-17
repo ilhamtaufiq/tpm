@@ -63,69 +63,59 @@ if [ "$HAS_MIGRATION" == "yes" ]; then echo "  - Migrasi DB: YA"; fi
 
 (
     prefix="[BACKEND]"
-    if [ "$HAS_BACKEND_CHANGE" == "yes" ]; then
-        echo -e "${GREEN}$prefix${NC} Memproses update backend..."
-        
-        # Install Pip Requirements jika berubah
-        if [ "$HAS_REQUIREMENTS" == "yes" ]; then
-            echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
-            sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
-        fi
-
-        # Jalankan Migrasi DB jika ada file versi baru
-        if [ "$HAS_MIGRATION" == "yes" ]; then
-            echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
-            export PYTHONPATH=$BACKEND_DIR
-            sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
-        fi
-
-        # Restart Service Backend
-        echo -e "${GREEN}$prefix${NC} Restarting Gunicorn Service..."
-        systemctl restart "${APP_NAME}-backend"
-        echo -e "${GREEN}$prefix${NC} Backend updated & restarted."
-    else
-        echo -e "${YELLOW}$prefix${NC} Tidak ada perubahan backend signifikan."
+    echo -e "${GREEN}$prefix${NC} Memproses update backend..."
+    
+    # Install Pip Requirements jika berubah
+    if [ "$HAS_REQUIREMENTS" == "yes" ]; then
+        echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
+        sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
     fi
+
+    # SELALU Jalankan Migrasi DB
+    echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
+    export PYTHONPATH=$BACKEND_DIR
+    sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
+
+    # Restart Service Backend
+    echo -e "${GREEN}$prefix${NC} Restarting Gunicorn Service..."
+    systemctl restart "${APP_NAME}-backend"
+    echo -e "${GREEN}$prefix${NC} Backend updated & restarted."
 ) &
 PID_BACKEND=$!
 
 (
     prefix="[FRONTEND]"
-    if [ "$HAS_FRONTEND_CHANGE" == "yes" ]; then
-        echo -e "${GREEN}$prefix${NC} Memproses update frontend..."
-        cd "$FRONTEND_DIR"
-        
-        # Cari executable NPM/NPX
-        if command -v npm &> /dev/null; then
-             NPM_PATH=$(which npm); NPX_PATH=$(which npx)
-        else
-             NPM_PATH=$(runuser -l $REAL_USER -c 'which npm'); NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
-        fi
-
-        # Install NPM jika package.json berubah (SKIPPED AS REQUESTED)
-        if [ "$HAS_PACKAGE_JSON" == "yes" ]; then
-            echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies... (SKIPPED)"
-            # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
-        fi
-
-        # Rebuild Expo Web (wajib jika ada perubahan frontend apapun)
-        echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web..."
-        sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
-
-        # Deploy
-        echo -e "${GREEN}$prefix${NC} Deploying to web server..."
-        mkdir -p "$DEPLOY_DIR"
-        # Hapus isi lama
-        rm -rf "$DEPLOY_DIR"/*
-        # Copy isi baru
-        cp -r "$FRONTEND_DIR/dist"/* "$DEPLOY_DIR"
-        chown -R www-data:www-data "$DEPLOY_DIR"
-        chmod -R 755 "$DEPLOY_DIR"
-        
-        echo -e "${GREEN}$prefix${NC} Frontend updated & deployed."
+    echo -e "${GREEN}$prefix${NC} Memproses update frontend..."
+    cd "$FRONTEND_DIR"
+    
+    # Cari executable NPM/NPX
+    if command -v npm &> /dev/null; then
+         NPM_PATH=$(which npm); NPX_PATH=$(which npx)
     else
-        echo -e "${YELLOW}$prefix${NC} Tidak ada perubahan frontend."
+         NPM_PATH=$(runuser -l $REAL_USER -c 'which npm'); NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
     fi
+
+    # Install NPM jika package.json berubah (SKIPPED AS REQUESTED)
+    if [ "$HAS_PACKAGE_JSON" == "yes" ]; then
+        echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies... (SKIPPED)"
+        # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
+    fi
+
+    # SELALU Rebuild Expo Web
+    echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web..."
+    sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
+
+    # Deploy
+    echo -e "${GREEN}$prefix${NC} Deploying to web server..."
+    mkdir -p "$DEPLOY_DIR"
+    # Hapus isi lama
+    rm -rf "$DEPLOY_DIR"/*
+    # Copy isi baru
+    cp -r "$FRONTEND_DIR/dist"/* "$DEPLOY_DIR"
+    chown -R www-data:www-data "$DEPLOY_DIR"
+    chmod -R 755 "$DEPLOY_DIR"
+    
+    echo -e "${GREEN}$prefix${NC} Frontend updated & deployed."
 ) &
 PID_FRONTEND=$!
 
