@@ -61,6 +61,9 @@
     - **Fixed:** Finance Hub dashboard now correctly displays Cash and Bank BCA balances by using uppercase keys (`CASH`, `BANK_BCA`) to match backend enums, and improved the layout of Total Saldo, Piutang, and Hutang cards to prevent text clipping.
     - Added Split Payment feature for Hutang Usaha, allowing users to pay a single debt using multiple payment methods (e.g., partial Tunai and partial Transfer) simultaneously.
     - Updated Kasbon list card to show employee name more prominently and added a delete button for unpaid kasbon records, enhancing data management flexibility.
+  - **UI/UX Polish:**
+    - Redesigned "Biaya Operasional" page with Premium Bento UI, including a dark premium header and monthly summary stats.
+    - Implemented currency formatting (thousand separators) and "Rp" prefix for the expense amount input.
 - Now:
   - Adding 'reset hutang' (reset debt) to the 'reset transaksi' (reset transaction) feature.
   - Updating `MaintenanceService` in the backend to clear `HutangUsaha` and `PembayaranHutang` tables.

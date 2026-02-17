@@ -211,20 +211,8 @@ class TransaksiBengkelService:
             and getattr(data, 'mobil_id', None)
         )
         
-        if is_internal_jasa_angkut:
-            # Fetch the muatan's current status
-            from app.models.jasa_angkut import MuatanJasaAngkut
-            muatan_record = self.db.query(MuatanJasaAngkut).filter(
-                MuatanJasaAngkut.id == getattr(data, 'muatan_id')
-            ).first()
-            
-            if muatan_record and muatan_record.status_bayar == PaymentStatus.LUNAS:
-                total_pembayaran = grand_total
-            else:
-                total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.INTERNAL
-        elif is_internal_mobil:
-            # Mobil bengkel is always paid (cost goes into HPP)
+        if is_internal_jasa_angkut or is_internal_mobil:
+            # Internal transactions (jasa_angkut / jual_beli_mobil) are always considered paid
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
         elif data.payments:
@@ -290,14 +278,14 @@ class TransaksiBengkelService:
             sp.stok -= item.qty
 
         # Create piutang if not fully paid
-        if status_bayar != PaymentStatus.LUNAS and customer:
+        if status_bayar != PaymentStatus.LUNAS:
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
-                customer_id=customer.id,
-                nama_debitur=customer.nama,
-                telepon_debitur=customer.telepon,
-                alamat_debitur=customer.alamat,
+                customer_id=customer.id if customer else None,
+                nama_debitur=customer.nama if customer else (nama_customer or "Guest"),
+                telepon_debitur=customer.telepon if customer else None,
+                alamat_debitur=customer.alamat if customer else None,
                 sumber=PiutangSource.BENGKEL,
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
@@ -308,6 +296,7 @@ class TransaksiBengkelService:
                 created_by=user_id,
             )
             self.db.add(piutang)
+
 
         self.db.commit()
         self.db.refresh(transaksi)

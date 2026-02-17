@@ -9,6 +9,7 @@ from app.schemas.mobil import (
     TransaksiMobilCreate,
     TransaksiMobilResponse,
 )
+from app.schemas.bengkel import PaymentUpdate
 from app.services.penjualan_mobil_service import PenjualanMobilService
 from app.utils.constants import PaymentStatus, OwnershipType, PaymentMethod
 
@@ -97,11 +98,11 @@ def get_transaksi(
 @router.patch("/{transaksi_id}/payment", response_model=TransaksiMobilResponse)
 def update_payment(
     transaksi_id: int,
-    jumlah_bayar: Decimal,
+    data: PaymentUpdate,
     db: DBSession,
     current_user: ManagerUser,
-    metode_bayar: PaymentMethod = PaymentMethod.TUNAI,
 ):
     """Process payment for transaction."""
     service = PenjualanMobilService(db)
-    return service.update_payment(transaksi_id, jumlah_bayar, metode_bayar, current_user.id)
+    return service.update_payment(transaksi_id, data.jumlah_bayar, data.metode_bayar or PaymentMethod.TUNAI, current_user.id)
+
