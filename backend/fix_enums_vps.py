@@ -3,50 +3,55 @@ from app.database import SessionLocal
 
 def fix_enums():
     db = SessionLocal()
-    print("Mulai perbaikan enum di database (Metode Paksa/Binary)...")
-    
-    # Daftar nilai yang bermasalah (tambah jika ada yang lain)
-    mapping = {
-        'transfer': 'TRANSFER',
-        'tunai': 'TUNAI',
-        'kredit': 'KREDIT',
-        'debit': 'DEBIT',
-        'split': 'SPLIT',
-        'internal': 'INTERNAL'
-    }
+    print("Mulai perbaikan enum (Versi Auto-Uppercase)...")
     
     try:
         inspector = inspect(db.get_bind())
         tables = inspector.get_table_names()
         
+        # Kolom-kolom yang biasanya bertipe Enum
+        enum_columns = [
+            'metode_bayar', 'metode_bayar_beli', 'metode', 
+            'kategori', 'sumber', 'status', 'tipe', 'jenis',
+            'status_bayar', 'status_pengerjaan'
+        ]
+        
         for table in tables:
             columns = [c['name'] for c in inspector.get_columns(table)]
-            target_cols = [c for c in columns if c in ['metode_bayar', 'metode_bayar_beli', 'metode']]
+            target_cols = [c for c in columns if c in enum_columns]
             
             for column in target_cols:
-                for old_val, new_val in mapping.items():
-                    # Gunakan BINARY agar MySQL membedakan huruf besar dan kecil saat update
-                    sql = text(f"UPDATE {table} SET {column} = :new WHERE BINARY {column} = :old")
-                    result = db.execute(sql, {"new": new_val, "old": old_val})
-                    if result.rowcount > 0:
-                        print(f"[{table}.{column}] Berhasil paksa '{old_val}' -> '{new_val}' ({result.rowcount} baris)")
+                # Cari nilai yang mengandung huruf kecil (a-z) menggunakan REGEXP BINARY
+                # Lalu paksa semuanya menjadi UPPER dan TRIM (hapus spasi)
+                sql = text(f"""
+                    UPDATE {table} 
+                    SET {column} = UPPER(TRIM({column})) 
+                    WHERE BINARY {column} REGEXP '[a-z]'
+                """)
+                result = db.execute(sql)
+                if result.rowcount > 0:
+                    print(f"[{table}.{column}] Berhasil mengeperkas {result.rowcount} baris yang mengandung huruf kecil.")
             
         db.commit()
+        
         print("\n--- Verifikasi Akhir ---")
+        found_any = False
         for table in tables:
             columns = [c['name'] for c in inspector.get_columns(table)]
-            if 'metode_bayar' in columns:
-                # Cek apakah masih ada string dengan huruf kecil manapun
-                sql = text(f"SELECT {column} FROM {table} WHERE BINARY {column} REGEXP '[a-z]'")
-                results = db.execute(sql).fetchall()
-                if results:
-                    print(f"PERINGATAN: Masih ada {len(results)} baris mengandung huruf kecil di {table}!")
-                else:
-                    print(f"{table} BERSIH (OK)")
+            target_cols = [c for c in columns if c in enum_columns]
+            for column in target_cols:
+                check_sql = text(f"SELECT {column} FROM {table} WHERE BINARY {column} REGEXP '[a-z]' LIMIT 5")
+                offenders = db.execute(check_sql).fetchall()
+                if offenders:
+                    found_any = True
+                    print(f"PERINGATAN: Di {table}.{column} masih ada: {[r[0] for r in offenders]}")
+        
+        if not found_any:
+            print("DATABASE BERSIH! Semua nilai Enum sudah huruf besar.")
 
     except Exception as e:
         db.rollback()
-        print(f"\nTerjadi kesalahan fatal: {e}")
+        print(f"\nTerjadi kesalahan: {e}")
     finally:
         db.close()
 
