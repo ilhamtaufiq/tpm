@@ -102,10 +102,10 @@ PID_BACKEND=$!
              NPM_PATH=$(runuser -l $REAL_USER -c 'which npm'); NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
         fi
 
-        # Install NPM jika package.json berubah
+        # Install NPM jika package.json berubah (SKIPPED AS REQUESTED)
         if [ "$HAS_PACKAGE_JSON" == "yes" ]; then
-            echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies..."
-            sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
+            echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies... (SKIPPED)"
+            # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
         fi
 
         # Rebuild Expo Web (wajib jika ada perubahan frontend apapun)

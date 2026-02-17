@@ -62,9 +62,10 @@
     - Added Split Payment feature for Hutang Usaha, allowing users to pay a single debt using multiple payment methods (e.g., partial Tunai and partial Transfer) simultaneously.
     - Updated Kasbon list card to show employee name more prominently and added a delete button for unpaid kasbon records, enhancing data management flexibility.
 - Now:
-  - Next:
-    - Verify "Armada Luar" bug is resolved (Backend fix applied).
-- Next: Final user verification.
+  - Configuring VPS deployment scripts (`deploy-vps.sh`, `update-app.sh`) to bypass `npm install`.
+- Next:
+  - Verify "Armada Luar" bug is resolved (Backend fix applied).
+  - Final user verification.
 
 ## Open Questions
 - None.

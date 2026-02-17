@@ -134,8 +134,8 @@ PID_BACKEND=$!
          echo -e "${RED}$prefix ERROR${NC} NPM tidak ditemukan"; exit 1;
     fi
 
-    echo -e "${GREEN}$prefix${NC} npm install..."
-    sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} npm install failed"; exit 1; }
+    echo -e "${GREEN}$prefix${NC} npm install... (SKIPPED)"
+    # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} npm install failed"; exit 1; }
 
     echo -e "${GREEN}$prefix${NC} Building Expo Web..."
     sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
