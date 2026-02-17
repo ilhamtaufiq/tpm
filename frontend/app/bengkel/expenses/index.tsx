@@ -18,16 +18,18 @@ import {
     Info,
     Calendar,
     TrendingDown,
-    Search
+    Search,
+    Split,
+    Trash2
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 
 const CATEGORIES = [
-    { label: 'Biaya Operasional', value: 'biaya_operasional', icon: Wrench, color: '#023C69' },
-    { label: 'Belanja Stok', value: 'belanja_stok', icon: Package, color: '#3B82F6' },
-    { label: 'Biaya Lainnya', value: 'biaya_lainnya', icon: Info, color: '#6B7280' },
+    { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
+    { label: 'Biaya Operasional', value: 'BIAYA_OPERASIONAL', icon: Wrench, color: '#023C69' },
+    { label: 'Biaya Lainnya', value: 'BIAYA_LAINNYA', icon: Info, color: '#6B7280' },
 ];
 
 export default function ExpensesScreen() {
@@ -36,10 +38,14 @@ export default function ExpensesScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     // Form State
-    const [kategori, setKategori] = useState('biaya_operasional');
+    const [kategori, setKategori] = useState('BIAYA_OPERASIONAL');
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [payMetode, setPayMetode] = useState('TUNAI');
+    const [splitPayments, setSplitPayments] = useState([
+        { metode: 'TUNAI', jumlah: '' },
+        { metode: 'TRANSFER', jumlah: '' },
+    ]);
 
     // API Hooks
     const { data: expensesData, isLoading, refetch } = usePengeluaranList();
@@ -68,17 +74,42 @@ export default function ExpensesScreen() {
             return;
         }
 
+        const totalAmount = parseNumber(jumlah);
+
+        const payload: any = {
+            tanggal: new Date().toISOString().split('T')[0],
+            kategori,
+            jumlah: totalAmount,
+            deskripsi,
+            metode_bayar: payMetode,
+        };
+
+        if (payMetode === 'SPLIT') {
+            const totalSplit = splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0);
+            if (totalSplit !== totalAmount) {
+                Alert.alert(
+                    'Validasi Split Payment',
+                    `Total pembayaran split (${formatCurrency(totalSplit)}) harus sama dengan total pengeluaran (${formatCurrency(totalAmount)}).\n\nSelisih: ${formatCurrency(totalAmount - totalSplit)}`
+                );
+                return;
+            }
+            // Filter out empty amounts if needed, or strictly require them. Currently strictly checking sum.
+            payload.payments = splitPayments.map(p => ({
+                metode: p.metode,
+                jumlah: parseNumber(p.jumlah)
+            }));
+        }
+
         try {
-            await createExpenseMutation.mutateAsync({
-                tanggal: new Date().toISOString().split('T')[0],
-                kategori,
-                jumlah: parseNumber(jumlah),
-                deskripsi,
-                metode_bayar: payMetode,
-            });
+            await createExpenseMutation.mutateAsync(payload);
             setShowForm(false);
             setJumlah('');
             setDeskripsi('');
+            setPayMetode('TUNAI');
+            setSplitPayments([
+                { metode: 'TUNAI', jumlah: '' },
+                { metode: 'TRANSFER', jumlah: '' },
+            ]);
             Alert.alert('Sukses', 'Pengeluaran berhasil dicatat');
         } catch (error: any) {
             console.error('Failed to save expense:', error);
@@ -199,29 +230,94 @@ export default function ExpensesScreen() {
                                         {[
                                             { id: 'TUNAI', label: 'TUNAI', icon: Wallet },
                                             { id: 'TRANSFER', label: 'TRANSFER', icon: ArrowRightLeft },
+                                            { id: 'SPLIT', label: 'SPLIT', icon: Split },
                                         ].map((method) => (
                                             <TouchableOpacity
                                                 key={method.id}
                                                 onPress={() => setPayMetode(method.id as any)}
-                                                className={`flex-1 flex-row items-center justify-center py-5 rounded-3xl border ${payMetode === method.id
+                                                className={`flex-1 flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === method.id
                                                     ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
                                                     : 'bg-gray-50 border-gray-100'
                                                     }`}
                                             >
-                                                <method.icon size={14} color={payMetode === method.id ? 'white' : '#9CA3AF'} className="mr-3" />
-                                                <Typography weight="bold" className={payMetode === method.id ? 'text-white text-xs' : 'text-textGray text-xs'}>{method.label}</Typography>
+                                                <method.icon size={14} color={payMetode === method.id ? 'white' : '#9CA3AF'} className="mr-2" />
+                                                <Typography weight="bold" className={payMetode === method.id ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>{method.label}</Typography>
                                             </TouchableOpacity>
                                         ))}
                                     </View>
                                 </View>
 
+                                {payMetode === 'SPLIT' && (
+                                    <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-3">
+                                        <View className="flex-row justify-between items-center mb-1">
+                                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
+                                            <TouchableOpacity
+                                                onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '' }])}
+                                                className="bg-white border border-gray-200 p-2 rounded-xl"
+                                            >
+                                                <Plus size={14} color="#023C69" />
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {splitPayments.map((split, index) => (
+                                            <View key={index} className="flex-row space-x-2 items-center">
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        const newSplits = [...splitPayments];
+                                                        newSplits[index].metode = newSplits[index].metode === 'TUNAI' ? 'TRANSFER' : 'TUNAI';
+                                                        setSplitPayments(newSplits);
+                                                    }}
+                                                    className="w-28 h-12 bg-white border border-gray-200 rounded-2xl flex-row items-center justify-center px-2"
+                                                >
+                                                    {split.metode === 'TUNAI' ? <Wallet size={12} color="#023C69" className="mr-2" /> : <ArrowRightLeft size={12} color="#023C69" className="mr-2" />}
+                                                    <Typography className="text-[10px] font-bold text-primary">{split.metode}</Typography>
+                                                </TouchableOpacity>
+
+                                                <Input
+                                                    placeholder="0"
+                                                    value={split.jumlah}
+                                                    onChangeText={(text) => {
+                                                        const newSplits = [...splitPayments];
+                                                        newSplits[index].jumlah = formatNumber(text);
+                                                        setSplitPayments(newSplits);
+                                                    }}
+                                                    keyboardType="numeric"
+                                                    containerClassName="flex-1 mb-0"
+                                                    className="h-12 text-sm font-bold"
+                                                />
+
+                                                {splitPayments.length > 2 && (
+                                                    <TouchableOpacity
+                                                        onPress={() => {
+                                                            const newSplits = splitPayments.filter((_, i) => i !== index);
+                                                            setSplitPayments(newSplits);
+                                                        }}
+                                                        className="w-10 h-10 items-center justify-center bg-red-50 rounded-xl border border-red-100"
+                                                    >
+                                                        <Trash2 size={14} color="#EF4444" />
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        ))}
+
+                                        <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-gray-200 border-dashed">
+                                            <Typography className="text-xs text-textGray">Total Terinput:</Typography>
+                                            <Typography weight="bold" className={`text-sm ${splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0) === parseNumber(jumlah)
+                                                    ? 'text-green-600'
+                                                    : 'text-orange-500'
+                                                }`}>
+                                                {formatCurrency(splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0))}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                )}
+
                                 <Button
+                                    title="Catat Pengeluaran"
                                     onPress={handleSave}
                                     loading={createExpenseMutation.isPending}
                                     className="h-16 rounded-[28px] shadow-2xl shadow-primary/40"
-                                >
-                                    Catat Pengeluaran
-                                </Button>
+                                />
                             </View>
                         </Card>
                     </View>

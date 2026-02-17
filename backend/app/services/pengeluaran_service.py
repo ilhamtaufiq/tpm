@@ -53,23 +53,59 @@ class PengeluaranService:
         """Create a new expense record."""
         nomor_transaksi = self._generate_nomor_transaksi()
 
+        metode_bayar_enum = data.metode_bayar if isinstance(data.metode_bayar, PaymentMethod) else PaymentMethod(str(data.metode_bayar).upper())
+
+        # If SPLIT, validate payments sum up to total
+        if metode_bayar_enum == PaymentMethod.SPLIT:
+            if not data.payments:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Detail pembayaran split wajib diisi",
+                )
+            total_split = sum(p.jumlah for p in data.payments)
+            if total_split != data.jumlah:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Total pembayaran split ({total_split}) tidak sama dengan jumlah pengeluaran ({data.jumlah})",
+                )
+
         pengeluaran = PengeluaranBengkel(
             nomor_transaksi=nomor_transaksi,
             tanggal=data.tanggal,
             kategori=data.kategori,
             deskripsi=data.deskripsi,
             jumlah=data.jumlah,
-            metode_bayar=data.metode_bayar,
+            metode_bayar=metode_bayar_enum,
             catatan=data.catatan,
             created_by=user_id,
         )
 
         self.db.add(pengeluaran)
         self.db.flush()  # Flush to get ID for referensi_id
+        self.db.refresh(pengeluaran)
 
         # Record expense to kas/bank (money going out)
         # Skip if payment method is KREDIT (debt)
-        if data.metode_bayar != PaymentMethod.KREDIT:
+        if metode_bayar_enum == PaymentMethod.SPLIT:
+            # Determine source based on category
+            kas_source = KasBankSource.PENGELUARAN
+            if data.kategori == ExpenseCategory.PRIVE:
+                kas_source = KasBankSource.PRIVE
+
+            for p in data.payments:
+                 create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=p.jumlah,
+                    sumber=kas_source,
+                    metode_bayar=p.metode,
+                    referensi_id=pengeluaran.id,
+                    nomor_referensi=pengeluaran.nomor_transaksi,
+                    keterangan=f"Pengeluaran {data.kategori.value} (Split {p.metode.value}): {data.deskripsi}",
+                    user_id=user_id,
+                )
+        elif metode_bayar_enum != PaymentMethod.KREDIT:
             # Determine source based on category
             kas_source = KasBankSource.PENGELUARAN
             if data.kategori == ExpenseCategory.PRIVE:
@@ -81,7 +117,7 @@ class PengeluaranService:
                 tipe=KasBankType.KELUAR,
                 nominal=data.jumlah,
                 sumber=kas_source,
-                metode_bayar=data.metode_bayar,
+                metode_bayar=metode_bayar_enum,
                 referensi_id=pengeluaran.id,
                 nomor_referensi=pengeluaran.nomor_transaksi,
                 keterangan=f"Pengeluaran {data.kategori.value}: {data.deskripsi}",

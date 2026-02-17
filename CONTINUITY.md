@@ -65,6 +65,10 @@
   - **UI/UX Polish:**
     - Completely redesigned "Biaya Operasional" page with Premium Design System (Stitch UI). Features a `bg-primary` header with `rounded-b-[56px]`, floating summary stats, and overlapping white card layout.
     - Standardized currency handling with `formatNumber` and `parseNumber` across workshop expenses.
+  - **Fixed:**
+    - "Biaya Operasional" saving issue by aligning frontend category values with backend `ExpenseCategory` Enum (using uppercase `BIAYA_OPERASIONAL`, `PRIVE`, `BIAYA_LAINNYA`).
+    - Updated Expense Categories options to: "Prive", "Biaya Operasional", "Biaya Lainnya" as requested.
+    - **Fixed:** Enum case sensitivity issues in `Pengeluaran`, `Pembelian`, `Penjualan`, and `KasBank` tables by migrating all Enum columns to Uppercase in the database.
 - Now:
   - Adding 'reset hutang' (reset debt) to the 'reset transaksi' (reset transaction) feature.
   - Updating `MaintenanceService` in the backend to clear `HutangUsaha` and `PembayaranHutang` tables.

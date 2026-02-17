@@ -335,6 +335,7 @@ class PengeluaranBengkelCreate(BaseModel):
     deskripsi: str = Field(..., min_length=2, max_length=255)
     jumlah: Decimal = Field(..., gt=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    payments: List[PaymentItem] = []
     catatan: Optional[str] = None
 
 
