@@ -1,65 +1,57 @@
 from sqlalchemy import text, inspect
 from app.database import SessionLocal
 
-def inspect_and_fix():
+def super_fix():
     db = SessionLocal()
-    print("Inspeksi Mendalam & Perbaikan Enum...")
+    print("Mulai JURUS PAMUNGKAS (Alter Column Type)...")
     
-    try:
-        inspector = inspect(db.get_bind())
-        tables = inspector.get_table_names()
-        
-        # Kolom target
-        enum_cols = ['metode_bayar', 'metode_bayar_beli', 'metode']
-        
-        for table in tables:
-            columns = [c['name'] for c in inspector.get_columns(table)]
-            # Cari kolom yang cocok
-            found_cols = [c for c in columns if c in enum_cols]
-            
-            if not found_cols:
-                continue
-                
-            # Ambil Primary Key
-            pk_cols = inspector.get_pk_constraint(table)['constrained_columns']
-            if not pk_cols:
-                print(f"Peringatan: Tabel {table} tidak punya Primary Key. Mencoba cari kolom 'id'...")
-                if 'id' in columns:
-                    pk_col = 'id'
-                else:
-                    print(f"Skipping {table} karena tidak ada PK.")
-                    continue
-            else:
-                pk_col = pk_cols[0]
+    # Mapping kolom dan pilihan ENUM barunya (HURUF BESAR)
+    targets = {
+        "kas_bank": ["metode_bayar"],
+        "pembayaran_piutang": ["metode_bayar"],
+        "pembayaran_hutang": ["metode_bayar"],
+        "transaksi_penjualan_bengkel": ["metode_bayar"],
+        "pembelian_spare_parts": ["metode_bayar"],
+        "pengeluaran_bengkel": ["metode_bayar"],
+        "mobil": ["metode_bayar_beli"],
+        "transaksi_penjualan_mobil": ["metode_bayar"],
+        "slip_gaji": ["metode_bayar"]
+    }
+    
+    new_enum_values = "'TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','OTHER'"
 
-            for column in found_cols:
-                print(f"Memproses {table}.{column}...")
+    try:
+        for table, cols in targets:
+            # Cek apakah tabel ada
+            check = db.execute(text(f"SHOW TABLES LIKE '{table}'")).fetchone()
+            if not check: continue
+
+            for col in cols:
+                print(f"Memproses {table}.{col}...")
                 
-                # Gunakan query paling dasar untuk mencari data yang mengandung huruf kecil
-                # Kita ambil data mentahnya
-                raw_sql = text(f"SELECT {pk_col}, {column} FROM {table}")
-                rows = db.execute(raw_sql).fetchall()
+                # 1. Ubah ke VARCHAR supaya bisa menampung apapun
+                db.execute(text(f"ALTER TABLE {table} MODIFY COLUMN {col} VARCHAR(255)"))
                 
-                updated_count = 0
-                for pk_val, val in rows:
-                    if val and any(c.islower() for c in str(val)):
-                        new_val = str(val).upper().strip()
-                        # Update secara langsung menggunakan string mentah untuk menghindari masalah Enum MySQL
-                        update_sql = text(f"UPDATE {table} SET {column} = :new WHERE {pk_col} = :id")
-                        db.execute(update_sql, {"new": new_val, "id": pk_val})
-                        updated_count += 1
+                # 2. Paksa jadi UPPERCASE dan hapus spasi
+                db.execute(text(f"UPDATE {table} SET {col} = UPPER(TRIM({col})) WHERE {col} IS NOT NULL"))
                 
-                if updated_count > 0:
-                    print(f"  -> Berhasil paksa {updated_count} baris di {table}.{column} menjadi UPPERCASE.")
-                
+                # 3. Kembalikan ke ENUM dengan pilihan huruf BESAR
+                try:
+                    db.execute(text(f"ALTER TABLE {table} MODIFY COLUMN {col} ENUM({new_enum_values})"))
+                except Exception as e:
+                    print(f"  Peringatan saat mengembalikan ke ENUM di {table}.{col}: {e}")
+                    print("  Dibiarkan tetap VARCHAR agar aplikasi tidak crash.")
+            
         db.commit()
-        print("\nFix Selesai. Mohon jalankan 'sudo systemctl restart tpm-app-backend' sekarang.")
+        print("\n--- SELESAI ---")
+        print("Data sudah dikonversi secara paksa di level database.")
+        print("Mohon jalankan: sudo systemctl restart tpm-app-backend")
 
     except Exception as e:
         db.rollback()
-        print(f"Kesalahan: {e}")
+        print(f"Gagal Total: {e}")
     finally:
         db.close()
 
 if __name__ == "__main__":
-    inspect_and_fix()
+    super_fix()
