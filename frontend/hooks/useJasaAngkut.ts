@@ -101,6 +101,14 @@ export const useDeleteArmada = () => {
     });
 };
 
+export const useArmadaDetail = (id: number) => {
+    return useQuery({
+        queryKey: ['armada_detail', id],
+        queryFn: () => jasaAngkutService.getArmadaDetail(id),
+        enabled: !!id,
+    });
+};
+
 // =============================================
 // MUATAN
 // =============================================

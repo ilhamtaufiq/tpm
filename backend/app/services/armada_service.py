@@ -4,7 +4,9 @@ from sqlalchemy import or_
 from fastapi import HTTPException, status
 
 from app.models.jasa_angkut import ArmadaJasaAngkut, MuatanJasaAngkut
-from app.schemas.jasa_angkut import ArmadaCreate, ArmadaUpdate
+from app.models.bengkel import TransaksiPenjualanBengkel
+from app.schemas.jasa_angkut import ArmadaCreate, ArmadaUpdate, ArmadaDetailResponse, ArmadaStats
+from decimal import Decimal
 
 class ArmadaService:
     """Service for armada management."""
@@ -126,3 +128,40 @@ class ArmadaService:
             ArmadaJasaAngkut.deleted_at.is_(None),
             ArmadaJasaAngkut.is_active == True
         ).order_by(ArmadaJasaAngkut.nama.asc()).all()
+
+    def get_detail(self, armada_id: int) -> Dict[str, Any]:
+        """Get exhaustive detail for an armada."""
+        armada = self.get_by_id(armada_id)
+        
+        # 1. Muatan history
+        muatan_history = self.db.query(MuatanJasaAngkut).filter(
+            MuatanJasaAngkut.armada_id == armada_id
+        ).order_by(MuatanJasaAngkut.tanggal.desc()).limit(50).all()
+        
+        # 2. Workshop repairs history (by nopol or by muatan link)
+        muatan_ids = [m.id for m in muatan_history]
+        perbaikan_history = self.db.query(TransaksiPenjualanBengkel).filter(
+            or_(
+                TransaksiPenjualanBengkel.nomor_plat == armada.nopol,
+                TransaksiPenjualanBengkel.muatan_id.in_(muatan_ids) if muatan_ids else False
+            )
+        ).order_by(TransaksiPenjualanBengkel.tanggal.desc()).limit(50).all()
+        
+        # 3. Calculate Stats
+        stats = ArmadaStats()
+        stats.total_muatan = len(muatan_history)
+        for m in muatan_history:
+            stats.total_ritase += m.ritase or 0
+            stats.total_pendapatan_kotor += m.pendapatan_kotor or 0
+            stats.total_biaya_operasional += m.total_biaya or 0
+            stats.total_laba_tpm += m.laba_tpm or 0
+            
+        for p in perbaikan_history:
+            stats.total_perbaikan_bengkel += p.grand_total or 0
+            
+        return {
+            "armada": armada,
+            "stats": stats,
+            "muatan_history": muatan_history,
+            "perbaikan_history": perbaikan_history
+        }

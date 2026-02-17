@@ -93,7 +93,7 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     # Route info
     asal: Mapped[str] = mapped_column(String(100))
     tujuan: Mapped[str] = mapped_column(String(100))
-    jenis_muatan: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    jenis_muatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ritase: Mapped[int] = mapped_column(Integer, default=1)
     berat_muatan: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)  # kg
 

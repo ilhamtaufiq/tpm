@@ -202,6 +202,11 @@ export const jasaAngkutService = {
         return response.data;
     },
 
+    getArmadaDetail: async (id: number) => {
+        const response = await api.get(`/armada/${id}/detail`);
+        return response.data;
+    },
+
     // Muatan Methods
     getMuatanList: async (params?: {
         skip?: number;

@@ -7,6 +7,7 @@ from app.schemas.jasa_angkut import (
     ArmadaUpdate,
     ArmadaResponse,
     ArmadaList,
+    ArmadaDetailResponse,
 )
 from app.services.armada_service import ArmadaService
 
@@ -58,6 +59,16 @@ def get_armada(
     """Get armada by ID."""
     service = ArmadaService(db)
     return service.get_by_id(armada_id)
+
+@router.get("/{armada_id}/detail", response_model=ArmadaDetailResponse)
+def get_armada_detail(
+    armada_id: int,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get exhaustive detail for an armada."""
+    service = ArmadaService(db)
+    return service.get_detail(armada_id)
 
 @router.put("/{armada_id}", response_model=ArmadaResponse)
 def update_armada(

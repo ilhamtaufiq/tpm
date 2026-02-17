@@ -8,6 +8,7 @@
 ### Success Criteria
 - Bengkel transactions have a `kategori` field (jasa_angkut / jual_beli_mobil / umum)
 - BengkelForm allows selecting category and linking to relevant muatan/mobil
+- Jasa Angkut flow updated: Fleet-first view, history on click, reordered form, multiple cargo support.
 - The integration flow from Jasa Angkut and Mobil TO bengkel is removed
 - Transaction detail in bengkel still shows category info
 - Financial flow remains unchanged
@@ -62,8 +63,8 @@
     - Added Split Payment feature for Hutang Usaha, allowing users to pay a single debt using multiple payment methods (e.g., partial Tunai and partial Transfer) simultaneously.
     - Updated Kasbon list card to show employee name more prominently and added a delete button for unpaid kasbon records, enhancing data management flexibility.
   - **UI/UX Polish:**
-    - Redesigned "Biaya Operasional" page with Premium Bento UI, including a dark premium header and monthly summary stats.
-    - Implemented currency formatting (thousand separators) and "Rp" prefix for the expense amount input.
+    - Completely redesigned "Biaya Operasional" page with Premium Design System (Stitch UI). Features a `bg-primary` header with `rounded-b-[56px]`, floating summary stats, and overlapping white card layout.
+    - Standardized currency handling with `formatNumber` and `parseNumber` across workshop expenses.
 - Now:
   - Adding 'reset hutang' (reset debt) to the 'reset transaksi' (reset transaction) feature.
   - Updating `MaintenanceService` in the backend to clear `HutangUsaha` and `PembayaranHutang` tables.

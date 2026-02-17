@@ -25,7 +25,8 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
-import { useMuatanList, useMuatanSummary } from '../../hooks/useJasaAngkut';
+import { ArmadaDetail } from '../../components/jasa-angkut/ArmadaDetail';
+import { useMuatanList, useMuatanSummary, useActiveArmada } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -36,8 +37,9 @@ import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTrans
 export default function JasaAngkutScreen() {
 
     // API Hooks
-    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 50 });
+    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
     const { data: summaryData } = useMuatanSummary();
+    const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
 
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
@@ -45,6 +47,7 @@ export default function JasaAngkutScreen() {
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
     const [searchQuery, setSearchQuery] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [selectedArmadaId, setSelectedArmadaId] = useState<number | null>(null);
 
     const recentTrips = useMemo(() => {
         let trips = muatanData?.data || [];
@@ -64,16 +67,31 @@ export default function JasaAngkutScreen() {
 
     // Group trips by armada type OR driver
     const groupedTrips = useMemo(() => {
-        if (!recentTrips.length) return [];
-
         const map = new Map<string, {
             key: string;
+            id?: number;
             title: string;
             subtitle?: string;
             trips: any[];
             totalRitase: number;
             totalPendapatanTPM: number;
         }>();
+
+        // Initialize with all Armadas if grouping by armada
+        if (groupBy === 'armada' && armadaData) {
+            for (const armada of armadaData) {
+                const key = `armada-${armada.id}`;
+                map.set(key, {
+                    key,
+                    id: armada.id,
+                    title: armada.nama,
+                    subtitle: armada.nopol || armada.jenis,
+                    trips: [],
+                    totalRitase: 0,
+                    totalPendapatanTPM: 0,
+                });
+            }
+        }
 
         for (const trip of recentTrips) {
             let key = '';
@@ -107,6 +125,7 @@ export default function JasaAngkutScreen() {
             if (!map.has(key)) {
                 map.set(key, {
                     key,
+                    id: groupBy === 'armada' ? trip.armada?.id : trip.supir_id,
                     title,
                     subtitle,
                     trips: [],
@@ -121,8 +140,19 @@ export default function JasaAngkutScreen() {
             group.totalPendapatanTPM += Number(trip.pendapatan_kotor || 0) - Number(trip.laba_supir || 0);
         }
 
-        return Array.from(map.values()).sort((a, b) => b.trips.length - a.trips.length);
-    }, [recentTrips, groupBy]);
+        const result = Array.from(map.values());
+
+        // If searching, only return groups with trips (unless group title matches search)
+        if (searchQuery) {
+            return result.filter(g => g.trips.length > 0 || g.title.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+
+        return result.sort((a, b) => {
+            // Priority: groups with trips, then sorted by name
+            if (a.trips.length !== b.trips.length) return b.trips.length - a.trips.length;
+            return a.title.localeCompare(b.title);
+        });
+    }, [recentTrips, groupBy, armadaData, searchQuery]);
 
     const toggleGroupCollapse = useCallback((key: string) => {
         setCollapsedGroups(prev => {
@@ -156,6 +186,7 @@ export default function JasaAngkutScreen() {
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [paymentItemId, setPaymentItemId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Muatan | null>(null);
+    const [isArmadaDetailOpen, setIsArmadaDetailOpen] = useState(false);
 
 
     const backendStats = summaryData || {};
@@ -189,15 +220,18 @@ export default function JasaAngkutScreen() {
         refetch();
     };
 
-    const handlePresentModal = (type: 'form' | 'detail', item?: Muatan) => {
-        setView(type);
-        if (type === 'form') setEditData(null); // Reset edit data when manually opening form
-        if (item) setSelectedTrip(item);
+    const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail', item?: any) => {
+        setView(type === 'armada_detail' ? 'detail' : type); // Map armada_detail to detail view category if needed, but we handle content separately
+        if (type === 'form') setEditData(null);
+        if (type === 'detail') setSelectedTrip(item);
+        if (type === 'armada_detail') setSelectedArmadaId(item.id);
 
         if (Platform.OS === 'web') {
             if (type === 'form') setIsFormOpen(true);
-            else setIsDetailOpen(true);
+            else if (type === 'detail') setIsDetailOpen(true);
+            else if (type === 'armada_detail') setIsArmadaDetailOpen(true);
         } else {
+            setSheetIndex(0);
             bottomSheetRef.current?.expand();
         }
     };
@@ -206,13 +240,16 @@ export default function JasaAngkutScreen() {
         if (Platform.OS === 'web') {
             setIsFormOpen(false);
             setIsDetailOpen(false);
+            setIsArmadaDetailOpen(false);
         } else {
             bottomSheetRef.current?.close();
+            setSheetIndex(-1);
         }
         setIsPaymentModalOpen(false);
         setSelectedTrip(null);
         setPaymentItemId(null);
         setEditData(null);
+        setSelectedArmadaId(null);
     }, []);
 
     const handleEdit = (item: Muatan) => {
@@ -576,13 +613,13 @@ export default function JasaAngkutScreen() {
                 </View>
 
                 {/* Trip List Grouped by Armada */}
-                {isLoading ? (
+                {isLoading || isLoadingArmada ? (
                     <View className="space-y-6">
                         <SkeletonCard className="rounded-[32px] h-32" />
                         <SkeletonCard className="rounded-[32px] h-32" />
                         <SkeletonCard className="rounded-[32px] h-32" />
                     </View>
-                ) : recentTrips.length === 0 ? (
+                ) : groupedTrips.length === 0 ? (
                     <View className="mt-10">
                         <EmptyState
                             title="Belum ada data"
@@ -592,21 +629,21 @@ export default function JasaAngkutScreen() {
                     </View>
                 ) : (
                     groupedTrips.map((group) => {
-                        const isCollapsed = collapsedGroups.has(group.key);
+                        const isCollapsed = !collapsedGroups.has(group.key); // Changed logic to be collapsed by default
                         return (
                             <View key={group.key} className="mb-6">
-                                {/* Group Header */}
+                                {/* Group Header - Enhanced Card style */}
                                 <TouchableOpacity
                                     onPress={() => toggleGroupCollapse(group.key)}
                                     activeOpacity={0.7}
-                                    className="flex-row items-center justify-between mb-3 px-2"
+                                    className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
                                 >
-                                    <View className="flex-row items-center">
-                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 border ${groupBy === 'armada' ? 'bg-primary/10 border-primary/5' : 'bg-orange-100 border-orange-200'}`}>
-                                            {groupBy === 'armada' ? <Truck size={18} color="#023C69" /> : <Users size={18} color="#C2410C" />}
+                                    <View className="flex-row items-center flex-1">
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-gray-50 border-gray-100') : 'bg-orange-100 border-orange-200'}`}>
+                                            {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
                                         </View>
-                                        <View>
-                                            <Typography weight="bold" className="text-textMain text-base">
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
                                                 {group.title}
                                             </Typography>
                                             <Typography variant="caption" className="text-textGray">
@@ -615,70 +652,89 @@ export default function JasaAngkutScreen() {
                                         </View>
                                     </View>
                                     <View className="flex-row items-center">
-                                        <Badge variant="neutral" label={`${group.trips.length}`} className="mr-2" />
+                                        {group.trips.length > 0 && (
+                                            <View className="bg-primary/5 px-3 py-1.5 rounded-full mr-3 border border-primary/5">
+                                                <Typography variant="caption" weight="bold" className="text-primary text-[10px]">
+                                                    {formatCurrency(group.totalPendapatanTPM)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                        {groupBy === 'armada' && group.id && (
+                                            <TouchableOpacity
+                                                onPress={() => handlePresentModal('armada_detail', { id: group.id })}
+                                                className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-2 border border-gray-100"
+                                            >
+                                                <ArrowUpRight size={18} color="#023C69" />
+                                            </TouchableOpacity>
+                                        )}
                                         <ChevronLeft
                                             size={20}
-                                            color="#9CA3AF"
-                                            fill="#9CA3AF"
-                                            style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '-270deg' }] }}
+                                            color={!isCollapsed ? "#023C69" : "#9CA3AF"}
+                                            style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
                                         />
                                     </View>
                                 </TouchableOpacity>
 
                                 {/* Group Content (Trips) */}
                                 {!isCollapsed && (
-                                    <View className="space-y-4 pl-2">
-                                        {group.trips.map((trip: any) => (
-                                            <TouchableOpacity
-                                                key={trip.id}
-                                                onPress={() => handlePresentModal('detail', trip)}
-                                                activeOpacity={0.9}
-                                                className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
-                                            >
-                                                {/* Visual ID Slot - Smaller for nested items */}
-                                                <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
-                                                    <MapPin size={20} color="#6B7280" />
-                                                </View>
-
-                                                <View className="flex-1">
-                                                    {/* Main Info + Status */}
-                                                    <View className="flex-row items-center justify-between mb-1">
-                                                        <View className="flex-1 mr-2 flex-row items-center">
-                                                            <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
-                                                                {trip.asal} → {trip.tujuan}
-                                                            </Typography>
-                                                            <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
-                                                            <Typography variant="caption" weight="bold" className="text-primary italic">
-                                                                {trip.supir_nama || trip.supir?.nama || trip.supir_nama_manual || '-'}
-                                                            </Typography>
-                                                        </View>
-                                                        <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
-                                                            <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
-                                                                {trip.status_bayar.toUpperCase()}
-                                                            </Typography>
-                                                        </View>
+                                    <View className="space-y-4 pt-4 px-2">
+                                        {group.trips.length === 0 ? (
+                                            <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 ml-4">
+                                                <Typography variant="caption" className="text-gray-400 italic">Belum ada aktivitas transaksi</Typography>
+                                            </View>
+                                        ) : (
+                                            group.trips.map((trip: any) => (
+                                                <TouchableOpacity
+                                                    key={trip.id}
+                                                    onPress={() => handlePresentModal('detail', trip)}
+                                                    activeOpacity={0.9}
+                                                    className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
+                                                >
+                                                    {/* Visual ID Slot - Smaller for nested items */}
+                                                    <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
+                                                        <MapPin size={20} color="#6B7280" />
                                                     </View>
 
-                                                    {/* Trip Details */}
-                                                    <Typography variant="caption" className="text-textGray mb-2 text-xs">
-                                                        {trip.armada?.nopol || trip.nopol || '-'} • {trip.supir_nama || trip.supir_nama_manual}
-                                                    </Typography>
-
-                                                    {/* Footer Row */}
-                                                    <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
-                                                        <View className="flex-row items-center">
-                                                            <Clock size={10} color="#9CA3AF" />
-                                                            <Typography className="text-textGray/60 text-[9px] ml-1 font-bold uppercase tracking-widest">
-                                                                {formatDate(trip.tanggal)}
-                                                            </Typography>
+                                                    <View className="flex-1">
+                                                        {/* Main Info + Status */}
+                                                        <View className="flex-row items-center justify-between mb-1">
+                                                            <View className="flex-1 mr-2 flex-row items-center">
+                                                                <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
+                                                                    {trip.asal} → {trip.tujuan}
+                                                                </Typography>
+                                                                <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                                <Typography variant="caption" weight="bold" className="text-primary italic">
+                                                                    {trip.ritase} Rit
+                                                                </Typography>
+                                                            </View>
+                                                            <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
+                                                                <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
+                                                                    {trip.status_bayar.toUpperCase()}
+                                                                </Typography>
+                                                            </View>
                                                         </View>
-                                                        <Typography weight="bold" className="text-primary text-xs">
-                                                            {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
+
+                                                        {/* Trip Details */}
+                                                        <Typography variant="caption" className="text-textGray mb-2 text-xs">
+                                                            {trip.supir_nama || trip.supir_nama_manual} • {trip.jenis_muatan || 'Muatan Umum'}
                                                         </Typography>
+
+                                                        {/* Footer Row */}
+                                                        <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
+                                                            <View className="flex-row items-center">
+                                                                <Clock size={10} color="#9CA3AF" />
+                                                                <Typography className="text-textGray/60 text-[9px] ml-1 font-bold uppercase tracking-widest">
+                                                                    {formatDate(trip.tanggal)}
+                                                                </Typography>
+                                                            </View>
+                                                            <Typography weight="bold" className="text-primary text-xs">
+                                                                {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
+                                                            </Typography>
+                                                        </View>
                                                     </View>
-                                                </View>
-                                            </TouchableOpacity>
-                                        ))}
+                                                </TouchableOpacity>
+                                            ))
+                                        )}
                                     </View>
                                 )}
                             </View>
@@ -733,12 +789,25 @@ export default function JasaAngkutScreen() {
                     <View style={{ flex: 1 }}>
                         {view === 'form' ? (
                             <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
+                        ) : selectedArmadaId ? (
+                            <ArmadaDetail id={selectedArmadaId} onClose={handleCloseSheet} />
                         ) : selectedTrip ? (
                             renderDetailContent(selectedTrip)
                         ) : null}
                     </View>
                 </BottomSheet>
             )}
+
+            {/* Web Modal for Armada Detail */}
+            <Modal visible={isArmadaDetailOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
+                <View className="flex-1 justify-end bg-black/40">
+                    <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                    <View className="bg-white rounded-t-[48px] w-full max-w-[800px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                        {selectedArmadaId && <ArmadaDetail id={selectedArmadaId} onClose={handleCloseSheet} />}
+                    </View>
+                </View>
+            </Modal>
 
             <AlertDialog
                 visible={dialogConfig.visible}

@@ -34,7 +34,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         info_kendaraan: '',
         asal: '',
         tujuan: '',
-        jenis_muatan: '',
+        jenis_muatan_list: [''], // Multiple load types
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
@@ -83,7 +83,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 info_kendaraan: initialData.info_kendaraan || '',
                 asal: initialData.asal || '',
                 tujuan: initialData.tujuan || '',
-                jenis_muatan: initialData.jenis_muatan || '',
+                jenis_muatan_list: initialData.jenis_muatan ? initialData.jenis_muatan.split(', ') : [''],
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
@@ -240,7 +240,27 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }, [activeArmada, armadaSearch]);
 
+    const updateJenisMuatan = (index: number, value: string) => {
+        const newList = [...formData.jenis_muatan_list];
+        newList[index] = value;
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
+    };
+
+    const addJenisMuatan = () => {
+        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, ''] }));
+    };
+
+    const removeJenisMuatan = (index: number) => {
+        const newList = [...formData.jenis_muatan_list];
+        newList.splice(index, 1);
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [''] }));
+    };
+
     const handleSubmit = async () => {
+        if (armadaMode === 'registered' && !formData.armada_id) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih armada terlebih dahulu', variant: 'warning' });
+            return;
+        }
         if (driverMode === 'registered' && !formData.supir_id) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih supir terlebih dahulu', variant: 'warning' });
             return;
@@ -263,6 +283,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             const payload: any = {
                 ...formData,
+                jenis_muatan: formData.jenis_muatan_list.filter(item => item.trim() !== '').join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
                 metode_bayar: formData.metode_bayar?.toUpperCase(),
                 supir_id: driverMode === 'registered' ? parseInt(formData.supir_id) : undefined,
@@ -314,108 +335,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         <View className="p-6 pb-24">
             <Typography variant="h2" weight="bold" className="mb-6">{isEditMode ? 'Edit Muatan' : 'Input Muatan Baru'}</Typography>
 
-            {/* Driver Section */}
-            <View className="flex-row items-center justify-between mb-2">
-                <Typography variant="caption" weight="medium">Identitas Supir *</Typography>
-                <View className="flex-row bg-gray-100 rounded-lg p-1">
-                    <TouchableOpacity
-                        onPress={() => setDriverMode('registered')}
-                        className={`px-3 py-1 rounded-md ${driverMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={driverMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => setDriverMode('manual')}
-                        className={`px-3 py-1 rounded-md ${driverMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={driverMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {driverMode === 'registered' ? (
-                loadingDrivers ? (
-                    <ActivityIndicator className="my-4" />
-                ) : (
-                    <View>
-                        {formData.supir_id ? (
-                            <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
-                                <View className="flex-row items-center">
-                                    <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
-                                        <Typography weight="bold" className="text-primary">{activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
-                                    </View>
-                                    <View>
-                                        <Typography weight="bold" className="text-textMain">
-                                            {activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama}
-                                        </Typography>
-                                        <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
-                                    </View>
-                                </View>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        updateField('supir_id', '');
-                                        setDriverSearch('');
-                                    }}
-                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100"
-                                >
-                                    <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View>
-                                <Input
-                                    placeholder="Ketik nama supir..."
-                                    value={driverSearch}
-                                    onChangeText={setDriverSearch}
-                                    containerClassName="mb-3"
-                                    className="h-11 shadow-sm"
-                                    startIcon={<Truck size={18} color="#94A3B8" />}
-                                />
-                                {driverSearch.length > 0 && (
-                                    <View className="flex-row flex-wrap mb-4">
-                                        {filteredDrivers.length > 0 ? (
-                                            filteredDrivers.map(d => (
-                                                <TouchableOpacity
-                                                    key={d.id}
-                                                    onPress={() => {
-                                                        updateField('supir_id', d.id.toString());
-                                                        setDriverSearch('');
-                                                    }}
-                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50 flex-row items-center"
-                                                >
-                                                    <Typography
-                                                        variant="caption"
-                                                        weight="bold"
-                                                        className="text-gray-700"
-                                                    >
-                                                        {d.nama}
-                                                    </Typography>
-                                                </TouchableOpacity>
-                                            ))
-                                        ) : (
-                                            <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Supir '{driverSearch}' tidak ditemukan</Typography>
-                                        )}
-                                    </View>
-                                )}
-                                {driverSearch.length === 0 && (
-                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari supir dari database...</Typography>
-                                )}
-                            </View>
-                        )}
-                    </View>
-                )
-            ) : (
-                <Input
-                    label="Nama Supir"
-                    placeholder="Masukkan nama supir"
-                    value={formData.supir_nama}
-                    onChangeText={v => updateField('supir_nama', v)}
-                />
-            )}
-
-            {/* Armada Section */}
+            {/* Armada Section (Moved to First) */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="medium">Armada / Armada *</Typography>
+                <Typography variant="caption" weight="medium">Identitas Armada *</Typography>
                 <View className="flex-row bg-gray-100 rounded-lg p-1">
                     <TouchableOpacity
                         onPress={() => setArmadaMode('registered')}
@@ -533,12 +455,109 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 </View>
             )}
 
-            {/* Manual inputs hidden when registered + selected */}
+            {/* Driver Section (Moved to Second) */}
+            <View className="flex-row items-center justify-between mb-2 mt-4">
+                <Typography variant="caption" weight="medium">Pilih Supir Handal *</Typography>
+                <View className="flex-row bg-gray-100 rounded-lg p-1">
+                    <TouchableOpacity
+                        onPress={() => setDriverMode('registered')}
+                        className={`px-3 py-1 rounded-md ${driverMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
+                    >
+                        <Typography variant="caption" weight={driverMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setDriverMode('manual')}
+                        className={`px-3 py-1 rounded-md ${driverMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
+                    >
+                        <Typography variant="caption" weight={driverMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {driverMode === 'registered' ? (
+                loadingDrivers ? (
+                    <ActivityIndicator className="my-4" />
+                ) : (
+                    <View>
+                        {formData.supir_id ? (
+                            <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
+                                <View className="flex-row items-center">
+                                    <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
+                                        <Typography weight="bold" className="text-primary">{activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
+                                    </View>
+                                    <View>
+                                        <Typography weight="bold" className="text-textMain">
+                                            {activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama}
+                                        </Typography>
+                                        <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        updateField('supir_id', '');
+                                        setDriverSearch('');
+                                    }}
+                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100"
+                                >
+                                    <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View>
+                                <Input
+                                    placeholder="Ketik nama supir..."
+                                    value={driverSearch}
+                                    onChangeText={setDriverSearch}
+                                    containerClassName="mb-3"
+                                    className="h-11 shadow-sm"
+                                    startIcon={<Truck size={18} color="#94A3B8" />}
+                                />
+                                {driverSearch.length > 0 && (
+                                    <View className="flex-row flex-wrap mb-4">
+                                        {filteredDrivers.length > 0 ? (
+                                            filteredDrivers.map(d => (
+                                                <TouchableOpacity
+                                                    key={d.id}
+                                                    onPress={() => {
+                                                        updateField('supir_id', d.id.toString());
+                                                        setDriverSearch('');
+                                                    }}
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50 flex-row items-center"
+                                                >
+                                                    <Typography
+                                                        variant="caption"
+                                                        weight="bold"
+                                                        className="text-gray-700"
+                                                    >
+                                                        {d.nama}
+                                                    </Typography>
+                                                </TouchableOpacity>
+                                            ))
+                                        ) : (
+                                            <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Supir '{driverSearch}' tidak ditemukan</Typography>
+                                        )}
+                                    </View>
+                                )}
+                                {driverSearch.length === 0 && (
+                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari supir dari database...</Typography>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                )
+            ) : (
+                <Input
+                    label="Nama Supir"
+                    placeholder="Masukkan nama supir"
+                    value={formData.supir_nama}
+                    onChangeText={v => updateField('supir_nama', v)}
+                />
+            )}
 
             <View className="h-[1px] bg-gray-100 my-4" />
 
             <Input
-                label="Tanggal"
+                label="Tanggal Transaksi"
                 value={formData.tanggal}
                 onChangeText={v => updateField('tanggal', v)}
             />
@@ -562,15 +581,39 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 </View>
             </View>
 
+            {/* Multiple Load Types UI */}
+            <View className="flex-row justify-between items-center mb-2 mt-2">
+                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Jenis Muatan (Load Types)</Typography>
+                <TouchableOpacity onPress={addJenisMuatan}>
+                    <Typography variant="caption" weight="bold" className="text-primary">+ Tambah</Typography>
+                </TouchableOpacity>
+            </View>
+
+            <View className="space-y-3 mb-4">
+                {formData.jenis_muatan_list.map((item, index) => (
+                    <View key={index} className="flex-row items-center space-x-2">
+                        <View className="flex-1">
+                            <Input
+                                placeholder="Contoh: Pasir, Semen, Besi"
+                                value={item}
+                                onChangeText={v => updateJenisMuatan(index, v)}
+                                containerClassName="mb-0"
+                                className="h-11"
+                            />
+                        </View>
+                        {formData.jenis_muatan_list.length > 1 && (
+                            <TouchableOpacity
+                                onPress={() => removeJenisMuatan(index)}
+                                className="w-11 h-11 items-center justify-center bg-red-50 rounded-xl"
+                            >
+                                <Trash2 size={18} color="#EF4444" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                ))}
+            </View>
+
             <View className="flex-row space-x-2">
-                <View className="flex-[2]">
-                    <Input
-                        label="Jenis Muatan"
-                        placeholder="Contoh: Pasir"
-                        value={formData.jenis_muatan}
-                        onChangeText={v => updateField('jenis_muatan', v)}
-                    />
-                </View>
                 <View className="flex-1">
                     <Input
                         label="Ritase"
@@ -578,6 +621,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         value={formData.ritase}
                         onChangeText={v => updateField('ritase', v)}
                     />
+                </View>
+                <View className="flex-1">
+                    {/* Empty placeholder or other field */}
                 </View>
             </View>
 

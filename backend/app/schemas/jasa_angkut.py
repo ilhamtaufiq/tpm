@@ -288,3 +288,24 @@ class MuatanList(BaseModel):
     page: int
     size: int
     pages: int
+from app.schemas.bengkel import TransaksiBengkelResponse
+
+
+class ArmadaStats(BaseModel):
+    """Aggregated stats for armada."""
+    total_muatan: int = 0
+    total_ritase: int = 0
+    total_pendapatan_kotor: Decimal = Decimal("0")
+    total_biaya_operasional: Decimal = Decimal("0")
+    total_perbaikan_bengkel: Decimal = Decimal("0")
+    total_laba_tpm: Decimal = Decimal("0")
+
+
+class ArmadaDetailResponse(BaseModel):
+    """Detailed response for armada including history and stats."""
+    armada: ArmadaResponse
+    stats: ArmadaStats
+    muatan_history: List[MuatanResponse]
+    perbaikan_history: List[TransaksiBengkelResponse]
+
+    model_config = {"from_attributes": True}

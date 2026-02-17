@@ -1,38 +1,45 @@
-import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
+import { Badge } from '../../../components/ui/Badge';
 import {
     ChevronLeft,
     Receipt,
-    Plus
+    Plus,
+    X,
+    Wallet,
+    ArrowRightLeft,
+    Wrench,
+    Package,
+    Info,
+    Calendar,
+    TrendingDown,
+    Search
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
-import { SkeletonCard } from '../../../components/ui/Skeleton';
-import { EmptyState } from '../../../components/ui/EmptyState';
-import { format } from 'date-fns';
-import { id as localeID } from 'date-fns/locale';
-import { formatNumber, parseNumber } from '../../../utils/format';
+import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 
 const CATEGORIES = [
-    { label: 'Biaya Operasional', value: 'biaya_operasional' },
-    { label: 'Biaya Lainnya', value: 'biaya_lainnya' },
-    { label: 'Prive', value: 'prive' },
+    { label: 'Biaya Operasional', value: 'biaya_operasional', icon: Wrench, color: '#023C69' },
+    { label: 'Belanja Stok', value: 'belanja_stok', icon: Package, color: '#3B82F6' },
+    { label: 'Biaya Lainnya', value: 'biaya_lainnya', icon: Info, color: '#6B7280' },
 ];
 
 export default function ExpensesScreen() {
-    const router = useRouter(); const [showForm, setShowForm] = useState(false);
+    const router = useRouter();
+    const [showForm, setShowForm] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
     // Form State
     const [kategori, setKategori] = useState('biaya_operasional');
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
-    const [payMetode, setPayMetode] = useState('tunai');
+    const [payMetode, setPayMetode] = useState('TUNAI');
 
     // API Hooks
     const { data: expensesData, isLoading, refetch } = usePengeluaranList();
@@ -49,14 +56,17 @@ export default function ExpensesScreen() {
         }
     };
 
-    const onRefresh = React.useCallback(async () => {
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await refetch();
+        await Promise.all([refetch()]);
         setRefreshing(false);
     }, [refetch]);
 
     const handleSave = async () => {
-        if (!jumlah || !deskripsi) return;
+        if (!jumlah || !deskripsi) {
+            Alert.alert('Validasi', 'Mohon isi jumlah dan keterangan');
+            return;
+        }
 
         try {
             await createExpenseMutation.mutateAsync({
@@ -69,6 +79,7 @@ export default function ExpensesScreen() {
             setShowForm(false);
             setJumlah('');
             setDeskripsi('');
+            Alert.alert('Sukses', 'Pengeluaran berhasil dicatat');
         } catch (error: any) {
             console.error('Failed to save expense:', error);
             Alert.alert(
@@ -79,172 +90,203 @@ export default function ExpensesScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#F8F9FA]" edges={['bottom', 'left', 'right']}>
+        <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Header */}
-            <View className="bg-[#121212] pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl mb-6">
+            {/* Premium Header (TPM Style) */}
+            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity onPress={handleBack} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5">
+                        <TouchableOpacity
+                            onPress={handleBack}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                        >
                             <ChevronLeft size={24} color="white" />
                         </TouchableOpacity>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Biaya Operasional</Typography>
-                            <Typography className="text-white/50 text-[10px] uppercase font-bold tracking-widest mt-0.5">Kelola Pengeluaran Bengkel</Typography>
+                            <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Workshop Expenses Control</Typography>
                         </View>
                     </View>
+
                     <TouchableOpacity
                         onPress={() => setShowForm(!showForm)}
-                        className={`px-4 py-2.5 rounded-2xl flex-row items-center border ${showForm ? 'bg-white/10 border-white/20' : 'bg-secondary border-secondary shadow-lg shadow-secondary/50'}`}
+                        className={`w-11 h-11 rounded-2xl items-center justify-center border ${showForm ? 'bg-white border-white' : 'bg-white/10 border-white/5'}`}
                     >
-                        <Plus size={16} color="white" />
-                        <Typography weight="bold" className="text-white text-xs ml-1.5">{showForm ? 'Tutup' : 'Input'}</Typography>
+                        {showForm ? <X size={20} color="#023C69" /> : <Plus size={24} color="white" />}
                     </TouchableOpacity>
                 </View>
 
-                {/* Summary Stat */}
-                <View className="bg-white/10 p-5 rounded-[24px] border border-white/5">
-                    <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1 tracking-wider">Total Pengeluaran Bulan Ini</Typography>
-                    <View className="flex-row items-baseline">
-                        <Typography weight="bold" className="text-white/60 text-sm mr-1">Rp</Typography>
-                        <Typography weight="bold" className="text-white text-3xl tracking-tighter">
-                            {formatNumber(summaryData?.total_jumlah || 0)}
+                {/* Main Summary Stat Overlay Card */}
+                <View className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center">
+                    <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
+                        <TrendingDown size={28} color="#023C69" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
+                        <Typography variant="h2" weight="bold" className="text-textMain font-bold text-2xl tracking-tighter">
+                            {formatCurrency(summaryData?.total_jumlah || 0)}
                         </Typography>
+                    </View>
+                    <View className="bg-primary/10 px-3 py-1.5 rounded-full items-center">
+                        <Typography className="text-primary text-[10px] font-black">{summaryData?.count || 0}</Typography>
+                        <Typography className="text-primary text-[8px] font-bold uppercase">Trans</Typography>
                     </View>
                 </View>
             </View>
 
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+            <ScrollView
+                className="flex-1 mt-4 z-20"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+            >
                 {showForm && (
-                    <Card className="mb-6 p-5 border border-secondary/10 bg-secondary/5">
-                        <Typography variant="body2" weight="bold" className="mb-6 text-secondary tracking-widest">TAMBAH BIAYA BARU</Typography>
+                    <View className="px-6 mb-8">
+                        <Card className="p-8 rounded-[48px] shadow-2xl border border-gray-100 bg-white">
+                            <Typography variant="h3" weight="bold" className="mb-6 tracking-tight text-primary">Input Pengeluaran Baru</Typography>
 
-                        <View className="mb-4">
-                            <Typography variant="caption" className="text-textGray mb-2 px-1">KATEGORI PENGELUARAN</Typography>
-                            <View className="flex-row space-x-2">
-                                {CATEGORIES.map((c) => (
-                                    <TouchableOpacity
-                                        key={c.value}
-                                        onPress={() => setKategori(c.value)}
-                                        className={`flex-1 py-3 px-1 items-center rounded-xl border ${kategori === c.value ? 'border-secondary bg-secondary/10' : 'border-gray-100 bg-gray-50'}`}
-                                    >
-                                        <Typography
-                                            className={kategori === c.value ? 'text-secondary text-[10px]' : 'text-gray-400 text-[10px]'}
-                                            weight="bold"
-                                        >
-                                            {c.label.toUpperCase()}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
+                            <View className="space-y-6">
+                                {/* Kategori Selection */}
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Kategori</Typography>
+                                    <View className="flex-row space-x-2">
+                                        {CATEGORIES.map((cat) => (
+                                            <TouchableOpacity
+                                                key={cat.value}
+                                                onPress={() => setKategori(cat.value)}
+                                                className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.value
+                                                    ? 'bg-primary/5 border-primary shadow-sm'
+                                                    : 'bg-gray-50 border-gray-100'
+                                                    }`}
+                                            >
+                                                <cat.icon size={18} color={kategori === cat.value ? '#023C69' : '#9CA3AF'} />
+                                                <Typography
+                                                    weight={kategori === cat.value ? 'bold' : 'medium'}
+                                                    className={`text-[9px] mt-2 tracking-tighter ${kategori === cat.value ? 'text-primary' : 'text-textGray'}`}
+                                                    numberOfLines={1}
+                                                >
+                                                    {cat.label.split(' ')[1] || cat.label}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
 
-                        <View className="flex-row space-x-3 mb-4">
-                            <View className="flex-1">
                                 <Input
-                                    label="Jumlah"
+                                    label="Keterangan Pengeluaran"
+                                    placeholder="Contoh: Listrik, Sparepart, dll"
+                                    value={deskripsi}
+                                    onChangeText={setDeskripsi}
+                                    containerClassName="mb-0"
+                                />
+
+                                <Input
+                                    label="Jumlah Nominal (Rp)"
                                     placeholder="0"
                                     keyboardType="numeric"
-                                    startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
                                     value={jumlah}
                                     onChangeText={(val) => setJumlah(formatNumber(val))}
-                                    className="font-bold text-lg"
+                                    startIcon={<Typography weight="bold" className="text-primary/40 mr-1">Rp</Typography>}
+                                    className="font-bold text-xl text-primary"
+                                    containerClassName="mb-0"
                                 />
-                            </View>
-                        </View>
 
-                        <View className="mb-6">
-                            <Typography variant="caption" className="text-textGray mb-2 px-1">METODE PEMBAYARAN</Typography>
-                            <View className="flex-row space-x-2">
-                                {['tunai', 'transfer'].map((m) => (
-                                    <TouchableOpacity
-                                        key={m}
-                                        onPress={() => setPayMetode(m)}
-                                        className={`flex-1 py-3 items-center rounded-xl border ${payMetode === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50'}`}
-                                    >
-                                        <Typography
-                                            className={payMetode === m ? 'text-primary text-[10px]' : 'text-gray-400 text-[10px]'}
-                                            weight="bold"
-                                        >
-                                            {m.toUpperCase()}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-
-                        <Input
-                            label="Keterangan"
-                            placeholder="Contoh: Bayar sewa ruko"
-                            containerClassName="mb-6"
-                            value={deskripsi}
-                            onChangeText={setDeskripsi}
-                        />
-
-                        <View className="flex-row space-x-3">
-                            <Button
-                                title="Batal"
-                                variant="ghost"
-                                onPress={() => setShowForm(false)}
-                                className="flex-1"
-                            />
-                            <Button
-                                title="Simpan"
-                                variant="danger"
-                                onPress={handleSave}
-                                className="flex-1"
-                                loading={createExpenseMutation.isPending}
-                            />
-                        </View>
-                    </Card>
-                )}
-
-                <Typography variant="h3" weight="bold" className="mb-4">Riwayat Pengeluaran</Typography>
-
-                {isLoading ? (
-                    <>
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                    </>
-                ) : expenses.length === 0 ? (
-                    <EmptyState
-                        title="Belum ada data"
-                        description="Belum ada riwayat pengeluaran operasional."
-                        icon={Receipt}
-                    />
-                ) : (
-                    expenses.map((item: any) => (
-                        <TouchableOpacity key={item.id} activeOpacity={0.7} className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
-                            <View className="w-14 h-14 bg-secondary/5 rounded-2xl items-center justify-center mr-4 border border-secondary/5">
-                                <Receipt size={24} color="#EE2737" />
-                            </View>
-
-                            <View className="flex-1">
-                                <View className="flex-row items-center justify-between mb-1">
-                                    <Typography variant="body2" weight="bold">
-                                        {CATEGORIES.find(c => c.value === item.kategori || c.label === item.kategori)?.label || item.kategori}
-                                    </Typography>
-                                    <Typography variant="body2" weight="bold" className="text-secondary">
-                                        -Rp {formatNumber(item.jumlah)}
-                                    </Typography>
-                                </View>
-                                <Typography variant="caption" className="text-textGray opacity-60 mb-2">
-                                    {format(new Date(item.tanggal), 'dd MMM yyyy', { locale: localeID })}
-                                </Typography>
-                                <View className="flex-row items-center">
-                                    <View className="bg-gray-100 px-2 py-0.5 rounded-md mr-2">
-                                        <Typography className="text-[8px] text-gray-500 font-bold uppercase tracking-widest">{item.metode_bayar || 'Tunai'}</Typography>
+                                {/* Metode Pembayaran */}
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Metode Bayar</Typography>
+                                    <View className="flex-row space-x-4">
+                                        {[
+                                            { id: 'TUNAI', label: 'TUNAI', icon: Wallet },
+                                            { id: 'TRANSFER', label: 'TRANSFER', icon: ArrowRightLeft },
+                                        ].map((method) => (
+                                            <TouchableOpacity
+                                                key={method.id}
+                                                onPress={() => setPayMetode(method.id as any)}
+                                                className={`flex-1 flex-row items-center justify-center py-5 rounded-3xl border ${payMetode === method.id
+                                                    ? 'bg-primary border-primary shadow-2xl shadow-primary/20'
+                                                    : 'bg-gray-50 border-gray-100'
+                                                    }`}
+                                            >
+                                                <method.icon size={14} color={payMetode === method.id ? 'white' : '#9CA3AF'} className="mr-3" />
+                                                <Typography weight="bold" className={payMetode === method.id ? 'text-white text-xs' : 'text-textGray text-xs'}>{method.label}</Typography>
+                                            </TouchableOpacity>
+                                        ))}
                                     </View>
-                                    <Typography variant="caption" className="text-textGray flex-1" numberOfLines={1}>{item.deskripsi}</Typography>
                                 </View>
+
+                                <Button
+                                    onPress={handleSave}
+                                    loading={createExpenseMutation.isPending}
+                                    className="h-16 rounded-[28px] shadow-2xl shadow-primary/40"
+                                >
+                                    Catat Pengeluaran
+                                </Button>
                             </View>
-                        </TouchableOpacity>
-                    ))
+                        </Card>
+                    </View>
                 )}
-                <View className="h-10" />
+
+                {/* List Section Area */}
+                <View className="mx-6 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px]">
+                    <View className="p-6 border-b border-gray-50 flex-row items-center justify-between">
+                        <View>
+                            <Typography variant="h3" weight="bold" className="tracking-tighter">Riwayat Aktivitas</Typography>
+                            <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Transaksi Terbaru</Typography>
+                        </View>
+                        <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
+                            <Search size={20} color="#D1D5DB" />
+                        </View>
+                    </View>
+
+                    <View className="p-4">
+                        {isLoading ? (
+                            <View className="py-20 flex-row justify-center items-center">
+                                <ActivityIndicator size="large" color="#023C69" />
+                            </View>
+                        ) : expenses.length === 0 ? (
+                            <View className="py-20 items-center">
+                                <View className="w-16 h-16 bg-gray-50 rounded-[28px] items-center justify-center mb-6">
+                                    <Receipt size={32} color="#D1D5DB" />
+                                </View>
+                                <Typography className="text-gray-400 font-bold text-center">Belum ada aktivitas</Typography>
+                                <Typography className="text-gray-300 text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
+                            </View>
+                        ) : (
+                            expenses.map((item: any) => {
+                                const catInfo = CATEGORIES.find(c => c.value === item.kategori) || CATEGORIES[2];
+                                return (
+                                    <Card key={item.id} className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px]">
+                                        <View className="flex-row items-center justify-between">
+                                            <View className="flex-row items-center flex-1 mr-4">
+                                                <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-gray-50">
+                                                    <catInfo.icon size={20} color={catInfo.color} />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Typography weight="bold" className="text-textMain text-sm mb-0.5" numberOfLines={1}>{item.deskripsi || item.nama}</Typography>
+                                                    <View className="flex-row items-center">
+                                                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest">{catInfo.label}</Typography>
+                                                        <Typography className="text-textGray/20 text-[9px] mx-1.5">•</Typography>
+                                                        <Typography className="text-textGray/40 text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                            <View className="items-end">
+                                                <Typography weight="bold" className="text-primary text-sm tracking-tight mb-1">-{formatNumber(item.jumlah)}</Typography>
+                                                <Badge
+                                                    label={item.metode_bayar || 'TUNAI'}
+                                                    variant={item.metode_bayar?.toUpperCase() === 'TUNAI' ? 'warning' : 'info'}
+                                                    className="px-2 py-0"
+                                                />
+                                            </View>
+                                        </View>
+                                    </Card>
+                                );
+                            })
+                        )}
+                    </View>
+                </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
