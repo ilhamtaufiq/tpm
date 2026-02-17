@@ -27,6 +27,12 @@ class MobilBase(BaseModel):
     catatan: Optional[str] = None
 
 
+class PaymentItem(BaseModel):
+    """Schema for split payment item."""
+    metode: PaymentMethod
+    jumlah: Decimal = Field(..., ge=0)
+
+
 class MobilCreate(MobilBase):
     """Schema for creating car."""
 
@@ -41,6 +47,7 @@ class MobilCreate(MobilBase):
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     dp: Decimal = Field(default=Decimal("0"), ge=0)
     status_bayar: PaymentStatus = PaymentStatus.LUNAS
+    payments: List[PaymentItem] = [] # For split payments
 
 
 class MobilUpdate(BaseModel):

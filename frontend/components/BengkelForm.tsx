@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, TouchableOpacity, Modal, TextInput, FlatList } from 'react-native';
+import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, TouchableOpacity, Modal, TextInput, FlatList, SectionList } from 'react-native';
 // import { TouchableOpacity } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { Typography } from './ui/Typography';
@@ -80,6 +80,22 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             (m.nopol || '').toLowerCase().includes(q)
         );
     }, [muatanList, muatanSearchQuery]);
+
+    const muatanSections = useMemo(() => {
+        const groups: { [key: string]: any[] } = {};
+        filteredMuatan.forEach((m: any) => {
+            const armadaName = m.armada?.nama || m.nopol || 'Armada Luar / Lainnya';
+            if (!groups[armadaName]) {
+                groups[armadaName] = [];
+            }
+            groups[armadaName].push(m);
+        });
+
+        return Object.keys(groups).sort().map(name => ({
+            title: name,
+            data: groups[name]
+        }));
+    }, [filteredMuatan]);
 
     const filteredMobil = useMemo(() => {
         if (!mobilSearchQuery.trim()) return mobilList;
@@ -283,10 +299,10 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                 {selectedMuatan ? (
                                     <>
                                         <Typography weight="bold" className="text-emerald-700 text-sm">
-                                            {selectedMuatan.tujuan || selectedMuatan.asal}
+                                            {selectedMuatan.asal} → {selectedMuatan.tujuan}
                                         </Typography>
                                         <Typography variant="caption" className="text-emerald-600/70">
-                                            {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nomor_transaksi} • {formatCurrency(selectedMuatan.pendapatan_kotor || 0)}
+                                            {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency(selectedMuatan.pendapatan_kotor || 0)}
                                         </Typography>
                                     </>
                                 ) : (
@@ -334,32 +350,60 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                             <Typography className="text-gray-400 italic">Tidak ada data muatan</Typography>
                                         </View>
                                     ) : (
-                                        <FlatList
-                                            data={filteredMuatan}
+                                        <SectionList
+                                            sections={muatanSections}
                                             keyExtractor={(item: any) => item.id.toString()}
                                             showsVerticalScrollIndicator={false}
+                                            stickySectionHeadersEnabled={true}
+                                            renderSectionHeader={({ section: { title } }) => (
+                                                <View className="bg-white py-2 mb-1 border-b border-gray-100 flex-row items-center">
+                                                    <View className="w-1 h-4 bg-emerald-500 rounded-full mr-2" />
+                                                    <Typography weight="bold" className="text-emerald-700 uppercase tracking-wider text-[10px]">
+                                                        {title}
+                                                    </Typography>
+                                                </View>
+                                            )}
                                             renderItem={({ item }: { item: any }) => (
                                                 <TouchableOpacity
                                                     onPress={() => {
                                                         setSelectedMuatan(item);
                                                         setMuatanSearchOpen(false);
                                                     }}
+                                                    className="mb-3"
                                                 >
-                                                    <Card className={`mb-3 p-4 border flex-row items-center justify-between ${selectedMuatan?.id === item.id ? 'border-emerald-400 bg-emerald-50' : 'border-gray-100'
+                                                    <Card className={`p-4 border flex-row items-center justify-between ${selectedMuatan?.id === item.id ? 'border-emerald-400 bg-emerald-50' : 'border-gray-50 bg-white'
                                                         }`}>
                                                         <View className="flex-1">
-                                                            <Typography weight="bold" className="text-sm">
-                                                                {item.tujuan || item.asal}
-                                                            </Typography>
-                                                            <Typography variant="caption" className="text-gray-500 mt-0.5">
-                                                                {item.supir_nama || '-'} • {item.nomor_transaksi}
-                                                            </Typography>
-                                                            <Typography weight="bold" className="text-xs text-emerald-600 mt-1">
-                                                                {formatCurrency(item.pendapatan_kotor || 0)}
-                                                            </Typography>
+                                                            <View className="flex-row justify-between items-start mb-1">
+                                                                <Typography weight="bold" className="text-sm text-textMain flex-1 mr-2">
+                                                                    {item.asal} → {item.tujuan}
+                                                                </Typography>
+                                                                <Typography variant="caption" weight="bold" className="text-emerald-600">
+                                                                    {formatCurrency(item.pendapatan_kotor || 0)}
+                                                                </Typography>
+                                                            </View>
+
+                                                            <View className="flex-row items-center mb-1">
+                                                                <Typography variant="caption" className="text-gray-500">
+                                                                    Supir: <Typography variant="caption" weight="semibold" className="text-textGray">{item.supir_nama || '-'}</Typography>
+                                                                </Typography>
+                                                                <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                                <Typography variant="caption" className="text-gray-400">
+                                                                    {item.nomor_transaksi}
+                                                                </Typography>
+                                                            </View>
+
+                                                            {item.nopol && (
+                                                                <View className="flex-row items-center mt-1">
+                                                                    <Truck size={12} color="#9CA3AF" />
+                                                                    <Typography className="text-gray-400 text-[10px] ml-1">
+                                                                        {item.nopol} {item.armada?.nama ? `(${item.armada.nama})` : ''}
+                                                                    </Typography>
+                                                                </View>
+                                                            )}
                                                         </View>
                                                         {selectedMuatan?.id === item.id && (
-                                                            <View className="bg-emerald-500 rounded-full p-1">
+                                                            <View className="bg-emerald-500 rounded-full p-1 ml-3">
                                                                 <Info size={14} color="#fff" />
                                                             </View>
                                                         )}

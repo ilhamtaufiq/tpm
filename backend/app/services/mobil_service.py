@@ -113,6 +113,23 @@ class MobilService:
                     detail="Persentase atau Nominal investor harus diisi",
                 )
 
+        # Calculate summary of payments
+        total_pembayaran = Decimal("0")
+        metode_utama = data.metode_bayar
+        
+        if data.payments:
+            total_pembayaran = sum(p.jumlah for p in data.payments)
+            # If multiple methods used, set main method as SPLIT
+            metodes = list(set(p.metode for p in data.payments if p.jumlah > 0))
+            if len(metodes) > 1:
+                metode_utama = PaymentMethod.SPLIT
+            elif len(metodes) == 1:
+                metode_utama = metodes[0]
+        else:
+            # Traditional behavior (single payment)
+            total_pembayaran = data.dp if data.status_bayar != PaymentStatus.LUNAS else data.harga_beli
+            metode_utama = data.metode_bayar
+
         mobil = Mobil(
             kode=kode,
             merek=data.merek,
@@ -137,25 +154,37 @@ class MobilService:
             created_by=user_id,
             # New fields for purchase tracking
             status_bayar_beli=data.status_bayar,
-            metode_bayar_beli=data.metode_bayar,
-            dp_beli=data.dp,
+            metode_bayar_beli=metode_utama,
+            dp_beli=total_pembayaran if data.status_bayar != PaymentStatus.LUNAS else Decimal("0"),
         )
 
         self.db.add(mobil)
         self.db.flush()
 
         # Record purchase payment to KasBank (money going out)
-        # Only record if DP > 0 or Status LUNAS
-        jumlah_bayar = data.dp if data.status_bayar != PaymentStatus.LUNAS else data.harga_beli
-        
-        if jumlah_bayar > 0:
+        if data.payments:
+            for p in data.payments:
+                if p.jumlah > 0:
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=data.tanggal_masuk,
+                        tipe=KasBankType.KELUAR,
+                        nominal=p.jumlah,
+                        sumber=KasBankSource.PEMBELIAN_MOBIL,
+                        metode_bayar=p.metode,
+                        referensi_id=mobil.id,
+                        nomor_referensi=mobil.kode,
+                        keterangan=f"Pembelian Unit ({p.metode.upper()}): {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                        user_id=user_id,
+                    )
+        elif total_pembayaran > 0:
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal_masuk,
                 tipe=KasBankType.KELUAR,
-                nominal=jumlah_bayar,
+                nominal=total_pembayaran,
                 sumber=KasBankSource.PEMBELIAN_MOBIL,
-                metode_bayar=data.metode_bayar,
+                metode_bayar=metode_utama,
                 referensi_id=mobil.id,
                 nomor_referensi=mobil.kode,
                 keterangan=f"Pembelian Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
@@ -164,7 +193,7 @@ class MobilService:
 
         # Record Hutang (Payable) if not fully paid
         if data.status_bayar != PaymentStatus.LUNAS:
-            sisa_hutang = data.harga_beli - data.dp
+            sisa_hutang = data.harga_beli - total_pembayaran
             hutang = HutangUsaha(
                 nomor_hutang=self._generate_nomor_hutang(),
                 tanggal=data.tanggal_masuk,
