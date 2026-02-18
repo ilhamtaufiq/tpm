@@ -5,6 +5,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from app.utils.constants import PaymentStatus, PaymentMethod
+from app.schemas.keuangan import PaymentDetail
 
 
 # ============================================
@@ -278,6 +279,14 @@ class MuatanResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MuatanPaymentSplit(BaseModel):
+    """Schema for split payment of transport load."""
+    muatan_id: int
+    tanggal: date
+    payments: List[PaymentDetail]
+    catatan: Optional[str] = None
 
 
 class MuatanList(BaseModel):

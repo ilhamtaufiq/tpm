@@ -9,6 +9,7 @@ from app.schemas.jasa_angkut import (
     MuatanCreate,
     MuatanUpdate,
     MuatanResponse,
+    MuatanPaymentSplit,
 )
 from app.services.muatan_service import MuatanService
 from app.utils.constants import PaymentStatus, PaymentMethod
@@ -128,6 +129,20 @@ def mark_paid(
     """Mark transport load as paid."""
     service = MuatanService(db)
     return service.mark_paid(muatan_id, metode_bayar, tanggal_bayar, current_user.id)
+
+
+@router.post("/{muatan_id}/paid-split", response_model=MuatanResponse)
+def mark_paid_split(
+    muatan_id: int,
+    data: MuatanPaymentSplit,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Mark transport load as paid with multiple payment methods."""
+    service = MuatanService(db)
+    # Ensure ID matches
+    data.muatan_id = muatan_id
+    return service.mark_paid_split(data, current_user.id)
 
 
 @router.delete("/{muatan_id}")

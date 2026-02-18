@@ -253,8 +253,13 @@ export const jasaAngkutService = {
 
     markPaid: async (id: number, metode_bayar: string = 'tunai') => {
         const response = await api.patch(`/muatan/${id}/paid`, null, {
-            params: { metode_bayar }
+            params: { metode_bayar: metode_bayar.toUpperCase() }
         });
+        return response.data;
+    },
+
+    payMuatanSplit: async (data: { muatan_id: number; tanggal: string; payments: { metode: string; nominal: number; catatan?: string }[]; catatan?: string }) => {
+        const response = await api.post(`/muatan/${data.muatan_id}/paid-split`, data);
         return response.data;
     },
 };

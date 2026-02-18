@@ -26,13 +26,14 @@ import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
 import { ArmadaDetail } from '../../components/jasa-angkut/ArmadaDetail';
-import { useMuatanList, useMuatanSummary, useActiveArmada } from '../../hooks/useJasaAngkut';
+import { useMuatanList, useMuatanSummary, useActiveArmada, usePayMuatanSplit } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { BaseModal } from '../../components/ui/BaseModal';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
+import { Trash2 } from 'lucide-react-native';
+import { formatNumber, parseNumber } from '../../utils/format';
 
 export default function JasaAngkutScreen() {
 
@@ -40,10 +41,11 @@ export default function JasaAngkutScreen() {
     const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
     const { data: summaryData } = useMuatanSummary();
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
+    const paySplitMutation = usePayMuatanSplit();
 
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
-    const [view, setView] = useState<'form' | 'detail'>('form');
+    const [view, setView] = useState<'form' | 'detail' | 'payment'>('form');
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
     const [searchQuery, setSearchQuery] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -183,10 +185,11 @@ export default function JasaAngkutScreen() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [sheetIndex, setSheetIndex] = useState(-1);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [paymentItemId, setPaymentItemId] = useState<number | null>(null);
     const [editData, setEditData] = useState<Muatan | null>(null);
     const [isArmadaDetailOpen, setIsArmadaDetailOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [splitPayments, setSplitPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([]);
+    const [paymentNote, setPaymentNote] = useState('');
 
 
     const backendStats = summaryData || {};
@@ -220,16 +223,23 @@ export default function JasaAngkutScreen() {
         refetch();
     };
 
-    const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail', item?: any) => {
-        setView(type === 'armada_detail' ? 'detail' : type); // Map armada_detail to detail view category if needed, but we handle content separately
+    const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail' | 'payment', item?: any) => {
+        if (type === 'armada_detail') {
+            setView('detail');
+        } else {
+            setView(type);
+        }
+
         if (type === 'form') setEditData(null);
         if (type === 'detail') setSelectedTrip(item);
         if (type === 'armada_detail') setSelectedArmadaId(item.id);
+        if (type === 'payment') setSelectedTrip(item);
 
         if (Platform.OS === 'web') {
             if (type === 'form') setIsFormOpen(true);
             else if (type === 'detail') setIsDetailOpen(true);
             else if (type === 'armada_detail') setIsArmadaDetailOpen(true);
+            else if (type === 'payment') setIsPaymentModalOpen(true);
         } else {
             setSheetIndex(0);
             bottomSheetRef.current?.expand();
@@ -247,7 +257,6 @@ export default function JasaAngkutScreen() {
         }
         setIsPaymentModalOpen(false);
         setSelectedTrip(null);
-        setPaymentItemId(null);
         setEditData(null);
         setSelectedArmadaId(null);
     }, []);
@@ -265,40 +274,19 @@ export default function JasaAngkutScreen() {
         }
     };
 
-    const handleMarkPaid = (id: number) => {
-        setPaymentItemId(id);
-        setIsPaymentModalOpen(true);
+    const handleMarkPaid = (item: Muatan) => {
+        setSelectedTrip(item);
+        setSplitPayments([{
+            id: Date.now(),
+            metode: 'TUNAI',
+            nominal: formatNumber((Number(item.pendapatan_kotor) - Number(item.laba_supir)).toString()),
+            catatan: ''
+        }]);
+        setPaymentNote('');
+        handlePresentModal('payment', item);
     };
 
-    const processPayment = async (id: number, metode: string) => {
-        try {
-            setActionLoading(true);
-            await jasaAngkutService.markPaid(id, metode);
-            handleCloseSheet();
-            refetch();
-
-            setActionLoading(false);
-            setDialogConfig({
-                visible: true,
-                title: "Sukses",
-                message: `Transaksi berhasil dilunasi via ${metode.toUpperCase()}`,
-                variant: 'success',
-                type: 'alert'
-            });
-        } catch (error) {
-            console.error("Gagal melunasi:", error);
-            setActionLoading(false);
-            setDialogConfig({
-                visible: true,
-                title: "Gagal",
-                message: getErrorMessage(error, "Gagal memperbarui status pembayaran"),
-                variant: 'error',
-                type: 'alert'
-            });
-        }
-    };
-
-    const handleDeleteTrip = (id: number) => {
+    const handleDelete = (item: Muatan) => {
         setDialogConfig({
             visible: true,
             title: "Hapus Muatan",
@@ -308,7 +296,7 @@ export default function JasaAngkutScreen() {
             onConfirm: async () => {
                 try {
                     setActionLoading(true);
-                    await jasaAngkutService.deleteMuatan(id);
+                    await jasaAngkutService.deleteMuatan(item.id);
                     handleCloseSheet();
                     refetch();
                     closeDialog();
@@ -445,7 +433,7 @@ export default function JasaAngkutScreen() {
                         {trip.status_bayar !== 'LUNAS' && (
                             <Button
                                 title="Konfirmasi Pelunasan"
-                                onPress={() => handleMarkPaid(trip.id)}
+                                onPress={() => handleMarkPaid(trip)}
                                 className="rounded-2xl h-14"
                             />
                         )}
@@ -453,7 +441,7 @@ export default function JasaAngkutScreen() {
                             <Button
                                 variant="outline-danger"
                                 title="Hapus Data Muatan"
-                                onPress={() => handleDeleteTrip(trip.id)}
+                                onPress={() => handleDelete(trip)}
                                 className="rounded-2xl h-14"
                             />
                         )}
@@ -464,6 +452,183 @@ export default function JasaAngkutScreen() {
                             className="rounded-2xl h-12"
                         />
                     </View>
+                </View>
+            </ScrollContainer>
+        );
+    }
+
+    const handleSplitPaymentSubmit = async () => {
+        if (!selectedTrip || splitPayments.length === 0) return;
+
+        const validatedPayments = splitPayments
+            .map(p => ({
+                metode: p.metode,
+                nominal: parseNumber(p.nominal),
+                catatan: p.catatan || undefined
+            }))
+            .filter(p => p.nominal > 0);
+
+        if (validatedPayments.length === 0) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Minimal satu pembayaran dengan nominal > 0', variant: 'warning', type: 'alert' });
+            return;
+        }
+
+        const totalBayar = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
+        const totalTagihan = Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir);
+
+        if (Math.abs(totalBayar - totalTagihan) > 0.01) {
+            setDialogConfig({
+                visible: true,
+                title: 'Validasi',
+                message: `Total pembayaran (${formatCurrency(totalBayar)}) harus sama dengan total tagihan (${formatCurrency(totalTagihan)})`,
+                variant: 'warning',
+                type: 'alert'
+            });
+            return;
+        }
+
+        try {
+            await paySplitMutation.mutateAsync({
+                muatan_id: selectedTrip.id,
+                tanggal: new Date().toISOString().split('T')[0],
+                payments: validatedPayments,
+                catatan: paymentNote || undefined,
+            });
+
+            handleCloseSheet();
+            refetch();
+
+            setDialogConfig({
+                visible: true,
+                title: "Sukses",
+                message: "Pelunasan muatan berhasil dicatat",
+                variant: 'success',
+                type: 'alert'
+            });
+        } catch (error) {
+            console.error("Gagal melunasi split:", error);
+            setDialogConfig({
+                visible: true,
+                title: "Gagal",
+                message: getErrorMessage(error, "Gagal memproses pembayaran split"),
+                variant: 'error',
+                type: 'alert'
+            });
+        }
+    };
+
+    function renderPaymentContent(trip: Muatan) {
+        const totalBayar = splitPayments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+        const totalTagihan = Number(trip.pendapatan_kotor) - Number(trip.laba_supir);
+        const sisa = totalTagihan - totalBayar;
+        const ScrollContainer = Platform.OS === 'web' ? ScrollView : BottomSheetScrollView;
+
+        return (
+            <ScrollContainer style={{ flex: 1 }}>
+                <View className="p-8">
+                    <View className="flex-row justify-between items-center mb-6">
+                        <View>
+                            <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Pelunasan Split</Typography>
+                            <Typography className="text-gray-400 text-xs mt-1">Multi metode pembayaran</Typography>
+                        </View>
+                        <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                            <X size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
+                        <View className="flex-row justify-between mb-2">
+                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Total Tagihan</Typography>
+                            <Typography variant="body2" weight="bold" className="text-primary font-bold">{formatCurrency(totalTagihan)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between">
+                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Sisa Belum Tercover</Typography>
+                            <Typography variant="body2" weight="bold" className={sisa > 0 ? "text-rose-500" : "text-emerald-500"}>
+                                {formatCurrency(sisa)}
+                            </Typography>
+                        </View>
+                    </Card>
+
+                    <View className="mb-6">
+                        {splitPayments.map((p, idx) => (
+                            <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                <View className="flex-row justify-between items-center mb-4">
+                                    <View className="flex-row items-center">
+                                        <View className="w-6 h-6 bg-gray-100 rounded-full items-center justify-center mr-2">
+                                            <Typography className="text-[10px] font-bold text-gray-500">{idx + 1}</Typography>
+                                        </View>
+                                        <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">
+                                            Metode Bayar
+                                        </Typography>
+                                    </View>
+                                    {splitPayments.length > 1 && (
+                                        <TouchableOpacity
+                                            onPress={() => setSplitPayments(prev => prev.filter(item => item.id !== p.id))}
+                                            className="bg-rose-50 p-2 rounded-full"
+                                        >
+                                            <Trash2 size={16} color="#E11D48" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <View className="flex-row space-x-2 mb-4 gap-2">
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => setSplitPayments(prev => prev.map(item => item.id === p.id ? { ...item, metode: m } : item))}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                        >
+                                            <Typography
+                                                className={p.metode === m ? 'text-white text-[10px] font-bold' : 'text-textGray text-[10px]'}
+                                            >
+                                                {m}
+                                            </Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <View>
+                                    <Typography className="mb-1 text-gray-400 text-[10px] font-bold uppercase tracking-widest ml-1">Nominal (Rp)</Typography>
+                                    <View className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3 flex-row items-center">
+                                        <Typography className="text-gray-400 font-bold mr-2">Rp</Typography>
+                                        <TextInput
+                                            className="flex-1 text-textMain font-bold"
+                                            placeholder="0"
+                                            value={p.nominal}
+                                            onChangeText={(t) => setSplitPayments(prev => prev.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                            keyboardType="numeric"
+                                        />
+                                    </View>
+                                </View>
+                            </Card>
+                        ))}
+
+                        <TouchableOpacity
+                            onPress={() => setSplitPayments(prev => [...prev, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
+                            className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-gray-50/50 active:bg-gray-100"
+                        >
+                            <Plus size={20} color="#64748B" className="mr-2" />
+                            <Typography variant="body2" weight="bold" className="text-gray-500">Tambah Metode Pembayaran</Typography>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="mb-8">
+                        <Typography className="mb-2 text-gray-400 text-[10px] font-bold uppercase tracking-widest ml-1">Catatan Tambahan</Typography>
+                        <TextInput
+                            className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 text-textMain font-medium h-20"
+                            placeholder="Opsional..."
+                            value={paymentNote}
+                            onChangeText={setPaymentNote}
+                            multiline
+                        />
+                    </View>
+
+                    <Button
+                        title="Proses Pelunasan"
+                        onPress={handleSplitPaymentSubmit}
+                        loading={paySplitMutation.isPending}
+                        className="h-16 rounded-2xl shadow-xl shadow-primary/30"
+                    />
                 </View>
             </ScrollContainer>
         );
@@ -775,6 +940,16 @@ export default function JasaAngkutScreen() {
                             </View>
                         </View>
                     </Modal>
+
+                    <Modal visible={isPaymentModalOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
+                        <View className="flex-1 justify-end bg-black/40">
+                            <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                            <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                                {selectedTrip && renderPaymentContent(selectedTrip)}
+                            </View>
+                        </View>
+                    </Modal>
                 </>
             ) : (
                 <BottomSheet
@@ -791,6 +966,8 @@ export default function JasaAngkutScreen() {
                             <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
                         ) : selectedArmadaId ? (
                             <ArmadaDetail id={selectedArmadaId} onClose={handleCloseSheet} />
+                        ) : view === 'payment' && selectedTrip ? (
+                            renderPaymentContent(selectedTrip)
                         ) : selectedTrip ? (
                             renderDetailContent(selectedTrip)
                         ) : null}
@@ -820,44 +997,6 @@ export default function JasaAngkutScreen() {
                 loading={actionLoading}
             />
 
-            {/* Payment Method Selection Modal */}
-            <BaseModal
-                visible={isPaymentModalOpen}
-                onClose={() => setIsPaymentModalOpen(false)}
-                showCloseButton={false}
-            >
-                <View className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-[32px] items-center justify-center self-center mb-6">
-                    <Wallet size={32} color="#10B981" />
-                </View>
-                <Typography variant="h2" weight="bold" className="text-center mb-2 text-2xl tracking-tighter">Konfirmasi Pelunasan</Typography>
-                <Typography className="text-center text-gray-500 mb-8 leading-relaxed font-medium">
-                    Pilih metode pembayaran untuk mencatat pelunasan muatan ini ke Kas & Bank:
-                </Typography>
-
-                <View style={{ gap: 12 }}>
-                    <Button
-                        title="Bayar via Tunai"
-                        variant="primary"
-                        loading={actionLoading}
-                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'TUNAI'); }}
-                        className="h-14 shadow-lg shadow-primary/20"
-                    />
-                    <Button
-                        title="Bayar via Transfer"
-                        variant="outline"
-                        loading={actionLoading}
-                        onPress={() => { if (paymentItemId) processPayment(paymentItemId, 'TRANSFER'); }}
-                        className="h-14"
-                    />
-                    <Button
-                        title="Nanti Saja"
-                        variant="ghost"
-                        disabled={actionLoading}
-                        onPress={() => setIsPaymentModalOpen(false)}
-                        className="h-12"
-                    />
-                </View>
-            </BaseModal>
         </View>
     );
 }

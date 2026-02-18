@@ -148,10 +148,23 @@ export const useCreateMuatan = () => {
 export const useMarkMuatanPaid = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (id: number) => jasaAngkutService.markMuatanPaid(id),
+        mutationFn: (id: number) => jasaAngkutService.markPaid(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['muatan'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
+        },
+    });
+};
+
+export const usePayMuatanSplit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: jasaAngkutService.payMuatanSplit,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['muatan'] });
+            queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_detail'] });
         },
     });
 };

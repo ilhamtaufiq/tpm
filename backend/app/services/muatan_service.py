@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from app.models.jasa_angkut import Supir, MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.bengkel import SparePart
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang
-from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate
+from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate, MuatanPaymentSplit
 from app.utils.constants import (
     PaymentStatus,
     PiutangStatus,
@@ -589,6 +589,74 @@ class MuatanService:
                  user_id=user_id,
              )
 
+
+        # Also mark linked bengkel transactions (INTERNAL) as paid
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        linked_bengkel = (
+            self.db.query(TransaksiPenjualanBengkel)
+            .filter(
+                TransaksiPenjualanBengkel.muatan_id == muatan.id,
+                TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.INTERNAL,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
+            )
+            .all()
+        )
+        for tb in linked_bengkel:
+            tb.status_bayar = PaymentStatus.LUNAS
+            tb.jumlah_bayar = tb.grand_total
+
+        self.db.commit()
+        self.db.refresh(muatan)
+
+        return muatan
+
+    def mark_paid_split(
+        self,
+        data: MuatanPaymentSplit,
+        user_id: Optional[int] = None,
+    ) -> MuatanJasaAngkut:
+        """Mark transport load as paid with multiple payment methods."""
+        muatan = self.get_by_id(data.muatan_id)
+
+        if muatan.status_bayar == PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi sudah lunas",
+            )
+
+        # Update linked Piutang if exists
+        piutang = (
+            self.db.query(PiutangUsaha)
+            .filter(
+                PiutangUsaha.referensi_id == muatan.id,
+                PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+            )
+            .first()
+        )
+        
+        if piutang and piutang.status != PiutangStatus.LUNAS:
+            from app.services.piutang_service import PiutangService
+            from app.schemas.keuangan import PembayaranPiutangSplit
+            
+            piutang_service = PiutangService(self.db)
+            split_data = PembayaranPiutangSplit(
+                piutang_id=piutang.id,
+                tanggal=data.tanggal,
+                payments=data.payments,
+                catatan=data.catatan or "Pelunasan Split dari Jasa Angkut"
+            )
+            piutang_service.process_payment_split(split_data, user_id)
+            
+            # Check if piutang is now lunas to update muatan
+            self.db.refresh(piutang)
+            if piutang.status == PiutangStatus.LUNAS:
+                muatan.status_bayar = PaymentStatus.LUNAS
+                muatan.tanggal_bayar = data.tanggal
+        else:
+            # Fallback if no piutang found (should not happen if credit)
+            # but if it was somehow partially paid or something else
+            muatan.status_bayar = PaymentStatus.LUNAS
+            muatan.tanggal_bayar = data.tanggal
 
         # Also mark linked bengkel transactions (INTERNAL) as paid
         from app.models.bengkel import TransaksiPenjualanBengkel
