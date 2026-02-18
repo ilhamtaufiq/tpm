@@ -133,8 +133,11 @@ class ArmadaService:
         """Get exhaustive detail for an armada."""
         armada = self.get_by_id(armada_id)
         
-        # 1. Muatan history
-        muatan_history = self.db.query(MuatanJasaAngkut).filter(
+        from sqlalchemy.orm import selectinload
+        muatan_history = self.db.query(MuatanJasaAngkut).options(
+            selectinload(MuatanJasaAngkut.biaya_tambahan),
+            selectinload(MuatanJasaAngkut.part_services)
+        ).filter(
             MuatanJasaAngkut.armada_id == armada_id
         ).order_by(MuatanJasaAngkut.tanggal.desc()).limit(50).all()
         
@@ -152,8 +155,22 @@ class ArmadaService:
         stats.total_muatan = len(muatan_history)
         for m in muatan_history:
             stats.total_ritase += m.ritase or 0
-            stats.total_pendapatan_kotor += m.pendapatan_kotor or 0
-            stats.total_biaya_operasional += m.total_biaya or 0
+            
+            # Pendapatan: Share TPM saja (Pendapatan Kotor - Laba Supir)
+            share_supir = m.laba_supir or Decimal("0")
+            pendapatan_kotor = m.pendapatan_kotor or Decimal("0")
+            stats.total_pendapatan_kotor += (pendapatan_kotor - share_supir)
+            
+            # Biaya Ops: Hanya biaya operasional dinamis, keluarkan maintenance/parts muatan
+            # Juga keluarkan biaya tambahan dengan kategori 'Perawatan Bengkel'
+            maintenance_in_muatan = sum(ps.total for ps in m.part_services) if m.part_services else Decimal("0")
+            bengkel_cat_costs = sum(b.jumlah for b in m.biaya_tambahan if b.kategori == "Perawatan Bengkel") if m.biaya_tambahan else Decimal("0")
+            
+            stats.total_biaya_operasional += (m.total_biaya - maintenance_in_muatan - bengkel_cat_costs) if m.total_biaya else Decimal("0")
+            
+            # Masukkan maintenance dari muatan ke total perbaikan
+            stats.total_perbaikan_bengkel += (maintenance_in_muatan + bengkel_cat_costs)
+            
             stats.total_laba_tpm += m.laba_tpm or 0
             
         for p in perbaikan_history:

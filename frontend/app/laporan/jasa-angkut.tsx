@@ -201,7 +201,7 @@ export default function JasaAngkutReportScreen() {
                             <View className="w-5 h-5 bg-blue-500/20 rounded-md items-center justify-center mr-2">
                                 <TrendingUp size={12} color="#3B82F6" />
                             </View>
-                            <Typography className="text-white/40 text-[9px] uppercase font-bold">Omset Kotor</Typography>
+                            <Typography className="text-white/40 text-[9px] uppercase font-bold">Pendapatan TPM</Typography>
                         </View>
                         <Typography weight="bold" className="text-white text-sm">
                             {formatCurrency(summary?.total_pendapatan || 0)}
@@ -365,9 +365,9 @@ export default function JasaAngkutReportScreen() {
                                     </Typography>
                                 </View>
                                 <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Omset Kotor</Typography>
+                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Pendapatan TPM</Typography>
                                     <Typography variant="h3" weight="bold" className="text-primary tracking-tighter">
-                                        {formatCurrency(item.pendapatan_kotor || 0)}
+                                        {formatCurrency((item.pendapatan_kotor || 0) - (item.laba_supir || 0))}
                                     </Typography>
                                 </View>
                             </View>
@@ -544,8 +544,8 @@ export default function JasaAngkutReportScreen() {
                             <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-8">
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
-                                        <Typography className="text-gray-500 text-xs">Pendapatan Kotor</Typography>
-                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency(selectedTrip.pendapatan_kotor || 0)}</Typography>
+                                        <Typography className="text-gray-500 text-xs">Pemasukan TPM</Typography>
+                                        <Typography weight="bold" className="text-gray-700 text-sm">{formatCurrency((selectedTrip.pendapatan_kotor || 0) - (selectedTrip.laba_supir || 0))}</Typography>
                                     </View>
                                     <View className="flex-row justify-between">
                                         <Typography className="text-red-500 text-xs">Total Biaya</Typography>
@@ -553,9 +553,9 @@ export default function JasaAngkutReportScreen() {
                                     </View>
                                 </View>
                                 <View className="flex-row justify-between items-center pt-3 border-t border-primary/10">
-                                    <Typography weight="bold" className="text-lg text-primary">Laba Bersih</Typography>
+                                    <Typography weight="bold" className="text-lg text-primary">Laba TPM</Typography>
                                     <Typography variant="h2" weight="bold" className="text-primary text-2xl">
-                                        {formatCurrency(selectedTrip.laba_kotor || 0)}
+                                        {formatCurrency(selectedTrip.laba_tpm || 0)}
                                     </Typography>
                                 </View>
                             </View>

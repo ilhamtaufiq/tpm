@@ -223,7 +223,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </Typography>
                                         <View className="flex-row justify-between items-center pt-2 border-t border-gray-50">
                                             <View className="flex-row space-x-2">
-                                                <Badge label={formatCurrency(trip.pendapatan_kotor)} variant="info" className="scale-75 origin-left" />
+                                                <Badge label={formatCurrency(trip.pendapatan_kotor - trip.laba_supir)} variant="info" className="scale-75 origin-left" />
                                             </View>
                                             <Typography weight="bold" className="text-primary text-xs">
                                                 +{formatCurrency(trip.laba_tpm)}
