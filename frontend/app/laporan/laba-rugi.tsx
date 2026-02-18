@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useUIStore } from '../../store/useUIStore';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { keuanganService } from '../../services/keuangan';
@@ -15,7 +16,7 @@ const ReportRow = ({ label, value, isNegative = false, isBold = false, isHeader 
     return (
         <View className={`flex-row justify-between items-center py-2 ${isHeader ? 'border-b border-gray-100 mb-2 pb-2' : ''}`}>
             <View>
-                <Typography variant={isHeader ? "h3" : "body2"} weight={isBold || isHeader ? "bold" : "normal"} className="text-gray-800">
+                <Typography variant={isHeader ? "h3" : "body2"} weight={isBold || isHeader ? "bold" : "normal"} className="text-text">
                     {label}
                 </Typography>
                 {children}
@@ -23,7 +24,7 @@ const ReportRow = ({ label, value, isNegative = false, isBold = false, isHeader 
             <Typography
                 variant={isHeader ? "h3" : "body2"}
                 weight={isBold || isHeader ? "bold" : "normal"}
-                className={isNegative ? "text-error" : isHeader ? "text-primary" : "text-gray-800"}
+                className={isNegative ? "text-error" : isHeader ? "text-primary" : "text-text"}
             >
                 {isNegative ? `(${formatCurrency(value)})` : formatCurrency(value)}
             </Typography>
@@ -33,10 +34,10 @@ const ReportRow = ({ label, value, isNegative = false, isBold = false, isHeader 
 
 const SubItemRow = ({ label, value, isNegative = false }: any) => (
     <View className="flex-row justify-between items-center py-1 pl-4">
-        <Typography variant="caption" className="text-gray-500">
+        <Typography variant="caption" className="text-textGray">
             {label}
         </Typography>
-        <Typography variant="caption" className={isNegative ? "text-error" : "text-gray-600"}>
+        <Typography variant="caption" className={isNegative ? "text-error" : "text-text/70"}>
             {isNegative ? `(${formatCurrency(value)})` : formatCurrency(value)}
         </Typography>
     </View>
@@ -48,6 +49,7 @@ export default function LabaRugiScreen() {
     const router = useRouter();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
+    const { themeColors } = useUIStore();
 
     // Date Manipulation
     const handlePrev = () => {
@@ -158,7 +160,7 @@ export default function LabaRugiScreen() {
                     </View>
 
                     {/* Period Badge */}
-                    <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/10">
+                    <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5">
                         <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
                             {getHeaderDate()}
                         </Typography>
@@ -219,35 +221,35 @@ export default function LabaRugiScreen() {
 
             {/* Date Navigator Overlay */}
             <View className="px-6 -mt-6 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
+                <View className="bg-surface p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
                     <TouchableOpacity
                         onPress={handlePrev}
-                        className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
                         activeOpacity={0.7}
                     >
-                        <ChevronLeft size={20} color="#374151" />
+                        <ChevronLeft size={20} color={themeColors.text} />
                     </TouchableOpacity>
 
                     <View className="flex-1 flex-row items-center justify-center">
-                        <Calendar size={18} color="#023C69" className="mr-2" />
-                        <Typography variant="body2" weight="bold" className="text-textMain capitalize tracking-tight">
+                        <Calendar size={18} color={themeColors.primary} className="mr-2" />
+                        <Typography variant="body2" weight="bold" className="text-text capitalize tracking-tight">
                             {getFormattedDate()}
                         </Typography>
                     </View>
 
                     <TouchableOpacity
                         onPress={handleNext}
-                        className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
                         activeOpacity={0.7}
                     >
-                        <ChevronRight size={20} color="#374151" />
+                        <ChevronRight size={20} color={themeColors.text} />
                     </TouchableOpacity>
                 </View>
             </View>
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center p-12">
-                    <ActivityIndicator size="large" color="#023C69" />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                     <Typography className="mt-4 text-textGray font-bold uppercase text-[10px] tracking-widest">Mengolah Data Finansial...</Typography>
                 </View>
             ) : (
@@ -256,10 +258,10 @@ export default function LabaRugiScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {/* SECTION 1: BENGKEL */}
-                    <View className="mb-8 bg-white rounded-[32px] p-6 border border-gray-50 shadow-sm">
+                    <View className="mb-8 bg-surface rounded-[32px] p-6 border border-gray-50 shadow-sm">
                         <View className="flex-row items-center mb-6 px-1">
-                            <View className="w-1.5 h-6 bg-blue-500 rounded-full mr-3" />
-                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Unit Bengkel</Typography>
+                            <View className="w-1.5 h-6 bg-primary rounded-full mr-3" />
+                            <Typography variant="h3" weight="bold" className="text-text tracking-tight">Unit Bengkel</Typography>
                         </View>
 
                         <View className="space-y-1">
@@ -296,10 +298,10 @@ export default function LabaRugiScreen() {
                     </View>
 
                     {/* SECTION 2: JASA ANGKUT */}
-                    <View className="mb-8 bg-white rounded-[32px] p-6 border border-gray-50 shadow-sm">
+                    <View className="mb-8 bg-surface rounded-[32px] p-6 border border-gray-50 shadow-sm">
                         <View className="flex-row items-center mb-6 px-1">
-                            <View className="w-1.5 h-6 bg-orange-500 rounded-full mr-3" />
-                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Unit Jasa Angkut</Typography>
+                            <View className="w-1.5 h-6 bg-secondary rounded-full mr-3" />
+                            <Typography variant="h3" weight="bold" className="text-text tracking-tight">Unit Jasa Angkut</Typography>
                         </View>
 
                         <View className="space-y-1">
@@ -322,10 +324,10 @@ export default function LabaRugiScreen() {
                     </View>
 
                     {/* SECTION 3: JUAL BELI MOBIL */}
-                    <View className="mb-8 bg-white rounded-[32px] p-6 border border-gray-50 shadow-sm">
+                    <View className="mb-8 bg-surface rounded-[32px] p-6 border border-gray-50 shadow-sm">
                         <View className="flex-row items-center mb-6 px-1">
-                            <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
-                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Unit Jual Beli Mobil</Typography>
+                            <View className="w-1.5 h-6 bg-primary rounded-full mr-3 opacity-60" />
+                            <Typography variant="h3" weight="bold" className="text-text tracking-tight">Unit Jual Beli Mobil</Typography>
                         </View>
 
                         <View className="space-y-1">
@@ -349,7 +351,7 @@ export default function LabaRugiScreen() {
                     {/* OTHER SECTIONS (Bento Small Grid) */}
                     <View className="flex-row flex-wrap justify-between mb-8">
                         {/* Pemasukkan Lainnya */}
-                        <View className="w-[48%] bg-white p-5 rounded-[32px] mb-4 border border-teal-50 shadow-sm">
+                        <View className="w-[48%] bg-surface p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm">
                             <View className="w-10 h-10 bg-teal-50 rounded-2xl items-center justify-center mb-4">
                                 <ArrowUpRight size={20} color="#14B8A6" />
                             </View>
@@ -358,7 +360,7 @@ export default function LabaRugiScreen() {
                         </View>
 
                         {/* Pengeluaran Lainnya */}
-                        <View className="w-[48%] bg-white p-5 rounded-[32px] mb-4 border border-rose-50 shadow-sm">
+                        <View className="w-[48%] bg-surface p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm">
                             <View className="w-10 h-10 bg-rose-50 rounded-2xl items-center justify-center mb-4">
                                 <TrendingDown size={20} color="#EF4444" />
                             </View>
@@ -367,18 +369,18 @@ export default function LabaRugiScreen() {
                         </View>
 
                         {/* Prive */}
-                        <View className="w-full bg-white p-6 rounded-[32px] border border-purple-50 shadow-sm flex-row items-center justify-between">
+                        <View className="w-full bg-surface p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between">
                             <View className="flex-row items-center">
-                                <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4">
-                                    <Wallet size={24} color="#A855F7" />
+                                <View className="w-12 h-12 bg-secondary/10 rounded-2xl items-center justify-center mr-4">
+                                    <Wallet size={24} color={themeColors.secondary} />
                                 </View>
                                 <View>
                                     <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Prive Pemilik</Typography>
-                                    <Typography variant="body1" weight="bold" className="text-purple-600">{formatCurrency(priveTotal)}</Typography>
+                                    <Typography variant="body1" weight="bold" className="text-text">{formatCurrency(priveTotal)}</Typography>
                                 </View>
                             </View>
-                            <View className="bg-purple-100/50 px-3 py-1 rounded-lg">
-                                <Typography weight="bold" className="text-purple-600 text-[10px]">PENARIKAN</Typography>
+                            <View className="bg-secondary/10 px-3 py-1 rounded-lg">
+                                <Typography weight="bold" className="text-secondary text-[10px]">PENARIKAN</Typography>
                             </View>
                         </View>
                     </View>
@@ -423,3 +425,4 @@ export default function LabaRugiScreen() {
         </View>
     );
 }
+

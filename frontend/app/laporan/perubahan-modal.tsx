@@ -10,6 +10,7 @@ import * as Sharing from 'expo-sharing';
 import { id as localeID } from 'date-fns/locale';
 
 import { Typography } from '../../components/ui/Typography';
+import { useUIStore } from '../../store/useUIStore';
 import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
 import { useCapitalReport } from '../../hooks/useKeuangan';
@@ -22,6 +23,7 @@ export default function LaporanPerubahanModalScreen() {
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [showExportMenu, setShowExportMenu] = useState(false);
+    const { themeColors } = useUIStore();
 
     // Date Navigation helpers
     const handlePrev = () => {
@@ -405,17 +407,17 @@ export default function LaporanPerubahanModalScreen() {
     };
 
     const renderHeader = () => (
-        <View className="bg-white border-b border-gray-100">
+        <View className="bg-surface border-b border-gray-100">
             {/* Rule 2: Custom Header */}
             <View className="px-6 py-4 flex-row items-center justify-between">
                 <View className="flex-row items-center">
                     <TouchableOpacity onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
+                        <ChevronLeft size={24} color={themeColors.text} />
                     </TouchableOpacity>
                     <Typography variant="h2" weight="bold">Sisa Laba & Modal Di Tangan TPM</Typography>
                 </View>
                 <TouchableOpacity onPress={() => setShowExportMenu(true)} disabled={isExporting}>
-                    <Download size={24} color={isExporting ? "#9ca3af" : "#0F172A"} />
+                    <Download size={24} color={isExporting ? themeColors.textGray : themeColors.text} />
                 </TouchableOpacity>
             </View>
 
@@ -427,7 +429,7 @@ export default function LaporanPerubahanModalScreen() {
                         <TouchableOpacity
                             key={type}
                             onPress={() => setFilterType(type)}
-                            className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-white shadow-sm' : ''}`}
+                            className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-surface shadow-sm' : ''}`}
                         >
                             <Typography
                                 variant="caption"
@@ -441,7 +443,7 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
 
                 {/* Navigator */}
-                <View className="flex-row justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+                <View className="flex-row justify-between items-center bg-background px-4 py-3 rounded-xl border border-gray-100">
                     <TouchableOpacity onPress={handlePrev} className="p-1">
                         <ChevronLeft size={20} color="#64748B" />
                     </TouchableOpacity>
@@ -465,8 +467,8 @@ export default function LaporanPerubahanModalScreen() {
         return (
             <Card className="mb-6 p-4">
                 <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center mr-3">
-                        <ArrowUpRight size={18} className="text-green-600" />
+                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
+                        <ArrowUpRight size={18} color={themeColors.primary} />
                     </View>
                     <Typography variant="h4" weight="bold">A. Laba dan Modal Awal</Typography>
                 </View>
@@ -476,7 +478,7 @@ export default function LaporanPerubahanModalScreen() {
                     <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
                     <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
 
-                    <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-gray-50/50 p-3 rounded-r-xl">
+                    <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
                         <Typography variant="caption" weight="bold" className="mb-2 text-primary uppercase tracking-tighter">Rincian Laba Unit</Typography>
                         <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
 
@@ -493,7 +495,7 @@ export default function LaporanPerubahanModalScreen() {
                     </View>
 
                     <View className="h-[1px] bg-gray-200 my-2" />
-                    <Row label="Total Laba dan Modal" value={data.total_a} bold large color="text-green-600" />
+                    <Row label="Total Laba dan Modal" value={data.total_a} bold large color="text-primary" />
                 </View>
             </Card>
         );
@@ -504,8 +506,8 @@ export default function LaporanPerubahanModalScreen() {
         return (
             <Card className="mb-6 p-4">
                 <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
-                        <Wallet size={18} className="text-blue-600" />
+                    <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center mr-3">
+                        <Wallet size={18} color={themeColors.secondary} />
                     </View>
                     <Typography variant="h4" weight="bold">B. PIUTANG</Typography>
                 </View>
@@ -518,8 +520,8 @@ export default function LaporanPerubahanModalScreen() {
                     <Row label="PIUTANG KARYAWAN" value={data.piutang_karyawan} />
                     <Row label="PIUTANG USAHA" value={data.piutang_usaha} />
 
-                    <View className="h-[1px] bg-gray-200 my-2" />
-                    <Row label="Total Piutang" value={data.total_b} bold large color="text-blue-600" />
+                    <View className="h-[1px] bg-gray-100 my-2" />
+                    <Row label="Total Piutang" value={data.total_b} bold large color="text-secondary" />
                 </View>
             </Card>
         );
@@ -605,41 +607,41 @@ export default function LaporanPerubahanModalScreen() {
     const renderSectionD = () => {
         const data = report?.section_d || {};
         return (
-            <Card className="mb-24 p-5 bg-green-900 border-0 shadow-2xl relative overflow-hidden">
+            <Card className="mb-24 p-5 bg-primary border-0 shadow-2xl relative overflow-hidden">
                 {/* Decorative element */}
-                <View className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-400/5 rounded-full" />
+                <View className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full" />
 
                 <View className="flex-row items-center mb-6">
-                    <View className="w-10 h-10 rounded-2xl bg-yellow-400/20 items-center justify-center mr-4">
-                        <DollarSign size={20} className="text-yellow-400" />
+                    <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center mr-4">
+                        <DollarSign size={20} color="white" />
                     </View>
                     <View>
                         <Typography variant="h4" weight="bold" className="text-white">F. Sisa Laba dan Modal</Typography>
-                        <Typography variant="caption" className="text-slate-400">Posisi Kas & Rekonsiliasi Akhir</Typography>
+                        <Typography variant="caption" className="text-white/60">Posisi Kas & Rekonsiliasi Akhir</Typography>
                     </View>
                 </View>
 
                 <View className="space-y-4">
-                    <Row label="Saldo Kas (Tunai)" value={data.cash} small isDark />
-                    <Row label="Saldo Transfer / Bank" value={data.transfer} small isDark />
+                    <Row label="Saldo Kas (Tunai)" value={data.cash} small isDark themeColors={themeColors} />
+                    <Row label="Saldo Transfer / Bank" value={data.transfer} small isDark themeColors={themeColors} />
 
-                    <View className="h-[1px] bg-slate-800 my-2" />
+                    <View className="h-[1px] bg-white/10 my-2" />
 
                     <View className="flex-row justify-between items-center px-1">
-                        <Typography className="text-slate-400" variant="body2">Total Saldo Kas & Bank</Typography>
+                        <Typography className="text-white/60" variant="body2">Total Saldo Kas & Bank</Typography>
                         <Typography weight="bold" className="text-white" variant="h4">{formatCurrency(data.total_d || 0)}</Typography>
                     </View>
 
-                    <View className="mt-4 p-4 bg-slate-800/50 rounded-2xl border border-slate-700/50">
+                    <View className="mt-4 p-4 bg-black/10 rounded-2xl border border-white/10">
                         <View className="flex-row items-center mb-3">
-                            <View className="w-1.5 h-4 bg-yellow-400 rounded-full mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-slate-300 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
+                            <View className="w-1.5 h-4 bg-secondary rounded-full mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-white/80 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
                         </View>
 
-                        <Row label="Modal Berjalan (A - B - C + E)" value={data.theoretical_modal} bold large color="text-yellow-400" isDark />
+                        <Row label="Modal Berjalan (A - B - C + E)" value={data.theoretical_modal} bold large color="text-white" isDark themeColors={themeColors} />
 
-                        <View className="mt-3 pt-3 border-t border-slate-700/50">
-                            <Typography variant="caption" className="text-slate-500 italic leading-4">
+                        <View className="mt-3 pt-3 border-t border-white/5">
+                            <Typography variant="caption" className="text-white/40 italic leading-4">
                                 *Angka ini merupakan akumulasi Laba Kotor dikurangi Piutang & Pengeluaran Terbayar, ditambah Hutang. Idealnya saldo Kas + Transfer cocok dengan angka ini.
                             </Typography>
                         </View>
@@ -663,7 +665,7 @@ export default function LaporanPerubahanModalScreen() {
             >
                 {isLoading ? (
                     <View className="py-20">
-                        <ActivityIndicator size="large" color="#0F172A" />
+                        <ActivityIndicator size="large" color={themeColors.primary} />
                     </View>
                 ) : (
                     <>
@@ -688,14 +690,14 @@ export default function LaporanPerubahanModalScreen() {
                     activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
-                    <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
                         <View className="flex-row justify-between items-center mb-8">
                             <View>
                                 <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
                                 <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                             </View>
-                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-gray-100 p-2 rounded-full">
-                                <X size={20} color="#64748B" />
+                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                                <X size={20} color={themeColors.textGray} />
                             </TouchableOpacity>
                         </View>
 
@@ -744,7 +746,8 @@ const Row = ({
     large,
     color,
     isNegative,
-    isDark
+    isDark,
+    themeColors
 }: {
     label: string,
     value: number,
@@ -753,19 +756,20 @@ const Row = ({
     large?: boolean,
     color?: string,
     isNegative?: boolean,
-    isDark?: boolean
+    isDark?: boolean,
+    themeColors?: any
 }) => (
     <View className="flex-row justify-between items-center">
         <Typography
             variant={small ? 'caption' : 'body2'}
-            className={`${isDark ? 'text-slate-400' : small ? 'text-gray-500' : 'text-gray-700'}`}
+            className={`${isDark ? 'text-white/60' : small ? 'text-textGray' : 'text-text'}`}
         >
             {label}
         </Typography>
         <Typography
             variant={large ? 'h3' : small ? 'caption' : 'body2'}
             weight={bold ? 'bold' : 'medium'}
-            className={color || (isDark ? 'text-white' : 'text-gray-900')}
+            className={color || (isDark ? 'text-white' : 'text-text')}
         >
             {isNegative && value > 0 ? `(${formatCurrency(value)})` : formatCurrency(value || 0)}
         </Typography>

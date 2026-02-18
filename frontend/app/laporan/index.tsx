@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useUIStore } from '../../store/useUIStore';
 
 interface ReportItem {
     title: string;
@@ -20,43 +21,45 @@ interface ReportGroup {
 }
 
 // Categories for Bento Layout
-const GROUPS: ReportGroup[] = [
-    {
-        name: "Persediaan",
-        accent: "#F59E0B",
-        reports: [
-            { title: "Stock Sparepart", icon: Package, path: "/laporan/stock-sparepart", size: 'small' },
-            { title: "Pembelian Part", icon: ShoppingCart, path: "/laporan/pembelian-sparepart", size: 'small' },
-        ]
-    },
-    {
-        name: "Unit Mobil",
-        accent: "#3B82F6",
-        reports: [
-            { title: "Beli Mobil", icon: Car, path: "/laporan/pembelian-mobil", size: 'small' },
-            { title: "Jual Mobil", icon: TrendingUp, path: "/laporan/penjualan-mobil", size: 'small' },
-        ]
-    },
-    {
-        name: "Operasional & Jasa",
-        accent: "#10B981",
-        reports: [
-            { title: "Penjualan Bengkel", icon: Wrench, path: "/laporan/penjualan-bengkel", size: 'large' },
-            { title: "Laporan Jasa Angkut", icon: Truck, path: "/laporan/jasa-angkut", size: 'large' },
-        ]
-    },
-    {
-        name: "Keuangan Akhir",
-        accent: "#EF4444",
-        reports: [
-            { title: "Laba Rugi", icon: BarChart3, path: "/laporan/laba-rugi", size: 'full', desc: 'Analisa performa keuangan bulanan' },
-            { title: "Perubahan Modal", icon: Wallet, path: "/laporan/perubahan-modal", size: 'full', desc: 'Mutasi modal & posisi kas' },
-        ]
-    }
-];
-
 export default function ReportsScreen() {
     const router = useRouter();
+    const { themeColors } = useUIStore();
+
+    // Categories for Bento Layout
+    const GROUPS: ReportGroup[] = [
+        {
+            name: "Persediaan",
+            accent: themeColors.primary,
+            reports: [
+                { title: "Stock Sparepart", icon: Package, path: "/laporan/stock-sparepart", size: 'small' },
+                { title: "Pembelian Part", icon: ShoppingCart, path: "/laporan/pembelian-sparepart", size: 'small' },
+            ]
+        },
+        {
+            name: "Unit Mobil",
+            accent: themeColors.primary,
+            reports: [
+                { title: "Beli Mobil", icon: Car, path: "/laporan/pembelian-mobil", size: 'small' },
+                { title: "Jual Mobil", icon: TrendingUp, path: "/laporan/penjualan-mobil", size: 'small' },
+            ]
+        },
+        {
+            name: "Operasional & Jasa",
+            accent: themeColors.primary,
+            reports: [
+                { title: "Penjualan Bengkel", icon: Wrench, path: "/laporan/penjualan-bengkel", size: 'large' },
+                { title: "Laporan Jasa Angkut", icon: Truck, path: "/laporan/jasa-angkut", size: 'large' },
+            ]
+        },
+        {
+            name: "Keuangan Akhir",
+            accent: themeColors.secondary,
+            reports: [
+                { title: "Laba Rugi", icon: BarChart3, path: "/laporan/laba-rugi", size: 'full', desc: 'Analisa performa keuangan bulanan' },
+                { title: "Perubahan Modal", icon: Wallet, path: "/laporan/perubahan-modal", size: 'full', desc: 'Mutasi modal & posisi kas' },
+            ]
+        }
+    ];
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -113,7 +116,7 @@ export default function ReportsScreen() {
                         {/* Section Header */}
                         <View className="flex-row items-center mb-6 px-1">
                             <View style={{ backgroundColor: group.accent }} className="w-1.5 h-6 rounded-full mr-3" />
-                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">{group.name}</Typography>
+                            <Typography variant="h3" weight="bold" className="text-text tracking-tight">{group.name}</Typography>
                         </View>
 
                         <View className="flex-row flex-wrap justify-between">
@@ -122,7 +125,7 @@ export default function ReportsScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={rIdx}
-                                        className={isFull ? "w-full bg-white p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm" : "w-[48%] bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"}
+                                        className={isFull ? "w-full bg-surface p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm" : "w-[48%] bg-surface p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"}
                                         onPress={() => router.push(report.path as any)}
                                         activeOpacity={0.9}
                                     >
@@ -140,7 +143,7 @@ export default function ReportsScreen() {
                                             )}
                                         </View>
 
-                                        <Typography variant={isFull ? "h3" : "body1"} weight="bold" className="text-textMain tracking-tight">
+                                        <Typography variant={isFull ? "h3" : "body1"} weight="bold" className="text-text tracking-tight">
                                             {report.title}
                                         </Typography>
 
