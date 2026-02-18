@@ -1,21 +1,24 @@
 # Continuity Ledger
 
-- Goal: Resolve `PermissionError` and `FileNotFoundError` during uploads by implementing a robust symlink structure.
-- Constraints/Assumptions:
-  - Backend project root: `/var/www/html/tpm/backend`.
-  - Frontend deployment dir: `/var/www/tpm-frontend`.
-  - Symlink at `backend/uploads` points to `/var/www/tpm-frontend/uploads`.
-- Key decisions:
-  - Refactored Python code to use `os.path.realpath` for all upload operations. This ensures `os.makedirs` acts on the physical destination, bypassing broken symlink issues.
-  - Updated `update-app.sh` to ensure the symlink target is created and permissions are strictly set to `775` with `www-data` group participation.
-- State:
-  - Done: Absolute path refactoring + `realpath` integration.
-  - Now: Ready for final verification on VPS.
-  - Next: User to run `./update-app.sh` and test.
-- Open questions (UNCONFIRMED):
-  - Is `olobor` a member of the `www-data` group? (Added command to ensure this in the response).
-- Working set:
-  - `backend/app/main.py`
-  - `backend/app/services/mobil_service.py`
-  - `update-app.sh`
-  - `deploy-vps.sh`
+## Goal
+- Modify the display of "muatan" (cargo/shipment) search results in the `BengkelForm` for the "jasa_angkut" (transport service) category.
+- Requirement: Display only the TPM share nominal (Gross TPM share), excluding the driver's share.
+
+## Constraints/Assumptions
+- Nominal share TPM is calculated as `pendapatan_kotor - laba_supir`.
+- `laba_supir` is usually 50% of `pendapatan_kotor` based on `JASA_ANGKUT_PROFIT_SPLIT = 0.5`.
+- The user wants this specifically in the search list and the selected state within `BengkelForm`.
+
+## Key decisions
+- Updated `BengkelForm.tsx` to use `(Number(item.pendapatan_kotor) || 0) - (Number(item.laba_supir) || 0)` instead of `item.pendapatan_kotor`.
+
+## State
+- Done: Updated `BengkelForm.tsx` in two locations (search list rendering and selected state rendering).
+- Now: Verifying the changes.
+- Next: Inform user about the completion.
+
+## Open questions
+- None.
+
+## Working set
+- `frontend/components/BengkelForm.tsx`

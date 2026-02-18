@@ -335,7 +335,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                                 {selectedMuatan.asal} → {selectedMuatan.tujuan}
                                             </Typography>
                                             <Typography variant="caption" className="text-emerald-600/70">
-                                                {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency(selectedMuatan.pendapatan_kotor || 0)}
+                                                {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency((Number(selectedMuatan.pendapatan_kotor) || 0) - (Number(selectedMuatan.laba_supir) || 0))}
                                             </Typography>
                                         </>
                                     ) : (
@@ -415,7 +415,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                                                     {item.asal} → {item.tujuan}
                                                                 </Typography>
                                                                 <Typography variant="caption" weight="bold" className="text-emerald-600">
-                                                                    {formatCurrency(item.pendapatan_kotor || 0)}
+                                                                    {formatCurrency((Number(item.pendapatan_kotor) || 0) - (Number(item.laba_supir) || 0))}
                                                                 </Typography>
                                                             </View>
 
