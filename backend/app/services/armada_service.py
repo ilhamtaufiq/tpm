@@ -153,6 +153,10 @@ class ArmadaService:
         # 3. Calculate Stats
         stats = ArmadaStats()
         stats.total_muatan = len(muatan_history)
+        
+        # Track linked muatans to avoid double counting perbaikan
+        linked_muatan_ids = {p.muatan_id for p in perbaikan_history if p.muatan_id}
+        
         for m in muatan_history:
             stats.total_ritase += m.ritase or 0
             
@@ -166,10 +170,13 @@ class ArmadaService:
             maintenance_in_muatan = sum(ps.total for ps in m.part_services) if m.part_services else Decimal("0")
             bengkel_cat_costs = sum(b.jumlah for b in m.biaya_tambahan if b.kategori == "Perawatan Bengkel") if m.biaya_tambahan else Decimal("0")
             
-            stats.total_biaya_operasional += (m.total_biaya - maintenance_in_muatan - bengkel_cat_costs) if m.total_biaya else Decimal("0")
+            m_perbaikan = maintenance_in_muatan + bengkel_cat_costs
+            stats.total_biaya_operasional += (m.total_biaya - m_perbaikan) if m.total_biaya else Decimal("0")
             
-            # Masukkan maintenance dari muatan ke total perbaikan
-            stats.total_perbaikan_bengkel += (maintenance_in_muatan + bengkel_cat_costs)
+            # Masukkan ke total perbaikan HANYA jika muatan ini tidak terhubung ke transaksi bengkel di perbaikan_history
+            # (untuk menghindari double counting karena transaksi bengkel akan dihitung di loop berikutnya)
+            if m.id not in linked_muatan_ids:
+                stats.total_perbaikan_bengkel += m_perbaikan
             
             stats.total_laba_tpm += m.laba_tpm or 0
             
