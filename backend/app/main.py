@@ -53,8 +53,8 @@ def create_app() -> FastAPI:
     setup_exception_handlers(app)
 
     # Ensure upload directory exists
-    # uploads is at backend/uploads, main.py is at backend/app/main.py
-    upload_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", settings.upload_dir))
+    # settings.upload_full_path is absolute (e.g., /var/www/html/tpm/backend/uploads)
+    upload_path = settings.upload_full_path
     if not os.path.exists(upload_path):
         os.makedirs(upload_path)
 

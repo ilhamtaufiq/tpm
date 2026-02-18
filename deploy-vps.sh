@@ -52,7 +52,19 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
     prefix="[BACKEND]"
     echo -e "${GREEN}$prefix${NC} Memulai setup backend..."
     
-    # Permission fix
+    # Symlink uploads fix
+    UPLOADS_DEST="/var/www/tpm-frontend/uploads"
+    mkdir -p "$UPLOADS_DEST"
+    chown -R $REAL_USER:www-data "$UPLOADS_DEST"
+    chmod -R 775 "$UPLOADS_DEST"
+
+    # Buat symlink di backend
+    if [ ! -L "$BACKEND_DIR/uploads" ]; then
+        rm -rf "$BACKEND_DIR/uploads"
+        ln -sfn "$UPLOADS_DEST" "$BACKEND_DIR/uploads"
+        chown -h $REAL_USER:$REAL_GROUP "$BACKEND_DIR/uploads"
+    fi
+
     chown -R $REAL_USER:$REAL_GROUP "$BACKEND_DIR"
 
     # Buat Virtual Environment jika belum ada

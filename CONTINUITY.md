@@ -1,17 +1,22 @@
 # Continuity Ledger
 
-- Goal: Fix `update-app.sh` to always run `alembic upgrade head` and `npx expo export -p web` during update.
+- Goal: Resolve `PermissionError` by implementing a symlink for the `uploads` directory.
 - Constraints/Assumptions:
-  - Running on a VPS (Linux/Ubuntu).
-  - Script uses parallel subshells.
+  - Backend project root: `/var/www/html/tpm/backend`.
+  - Frontend deployment dir: `/var/www/tpm-frontend`.
+  - Backend needs to write to the uploads folder.
+  - Apache/Webserver needs to serve these files from the frontend directory.
 - Key decisions:
-  - Removed conditional `if` checks for the core migration and build steps.
-  - Kept detection logic for `requirements.txt` and `package.json` to avoid unnecessary installs (though npm is currently skipped).
+  - Create a physical folder at `/var/www/tpm-frontend/uploads`.
+  - Create a symlink at `backend/uploads` pointing to `/var/www/tpm-frontend/uploads`.
+  - Set ownership to `$REAL_USER:www-data` and permissions to `775`.
 - State:
-  - Done: Modified `update-app.sh` to bypass change detection for core steps.
-  - Now: Explaining properties of Alembic migrations (data safety).
-  - Next: User verification/further tasks.
+  - Done: Absolute path refactoring in Python code.
+  - Now: Updating `update-app.sh` and `deploy-vps.sh` with symlink logic.
+  - Next: User to run the updated script on VPS.
 - Open questions (UNCONFIRMED):
   - None.
 - Working set:
-  - `c:\laragon\www\tpm\update-app.sh`
+  - `update-app.sh`
+  - `deploy-vps.sh`
+  - `CONTINUITY.md`

@@ -56,6 +56,27 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     # Restart Service Backend
     echo -e "${GREEN}$prefix${NC} Restarting Gunicorn Service..."
     systemctl restart "${APP_NAME}-backend"
+    
+    # Permission & Symlink fix for uploads
+    echo -e "${YELLOW}$prefix${NC} Setting up uploads symlink to /var/www/tpm-frontend/uploads..."
+    UPLOADS_DEST="/var/www/tpm-frontend/uploads"
+    
+    # Buat folder fisik di frontend deployment jika belum ada
+    mkdir -p "$UPLOADS_DEST"
+    chown -R $REAL_USER:www-data "$UPLOADS_DEST"
+    chmod -R 775 "$UPLOADS_DEST"
+
+    # Jika folder uploads di backend adalah folder asli (bukan symlink), pindahkan isinya dan ganti jadi symlink
+    if [ -d "$BACKEND_DIR/uploads" ] && [ ! -L "$BACKEND_DIR/uploads" ]; then
+        echo -e "${YELLOW}$prefix${NC} Moving existing uploads to $UPLOADS_DEST..."
+        cp -rn "$BACKEND_DIR/uploads"/. "$UPLOADS_DEST/" 2>/dev/null
+        rm -rf "$BACKEND_DIR/uploads"
+    fi
+
+    # Buat symlink
+    ln -sfn "$UPLOADS_DEST" "$BACKEND_DIR/uploads"
+    chown -h $REAL_USER:$REAL_GROUP "$BACKEND_DIR/uploads"
+    
     echo -e "${GREEN}$prefix${NC} Backend updated & restarted."
 ) &
 PID_BACKEND=$!

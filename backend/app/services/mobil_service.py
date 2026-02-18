@@ -652,8 +652,8 @@ class MobilService:
         """Upload images/videos for a car."""
         mobil = self.get_by_id(mobil_id)
         
-        # Ensure upload directory exists
-        media_dir = os.path.join(settings.upload_dir, "mobil", str(mobil_id))
+        # Ensure upload directory exists - using absolute path from settings
+        media_dir = os.path.join(settings.upload_full_path, "mobil", str(mobil_id))
         os.makedirs(media_dir, exist_ok=True)
         
         results = []
@@ -667,7 +667,7 @@ class MobilService:
             file_path = f"mobil/{mobil_id}/{new_filename}"
             
             # Use platform-specific separator for filesystem operations
-            full_path = os.path.join(settings.upload_dir, "mobil", str(mobil_id), new_filename)
+            full_path = os.path.join(settings.upload_full_path, "mobil", str(mobil_id), new_filename)
             
             # Save file
             with open(full_path, "wb") as buffer:
@@ -704,10 +704,12 @@ class MobilService:
         if not media:
             raise HTTPException(status_code=404, detail="Media tidak ditemukan")
             
-        # Delete file
-        # Normalize slashes for the current OS
+        # Normalize slashes for the current OS and use absolute path
         normalized_path = media.file_path.replace("/", os.sep)
-        full_path = os.path.join(settings.upload_dir, normalized_path)
+        full_path = os.path.join(settings.upload_full_path, "..", normalized_path)
+        # Note: file_path is 'mobil/{id}/{filename}', upload_full_path is '.../backend/uploads'
+        # so we join them carefully. Actually file_path already starts from 'mobil'.
+        full_path = os.path.join(settings.upload_full_path, normalized_path)
         if os.path.exists(full_path):
             os.remove(full_path)
             

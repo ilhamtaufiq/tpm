@@ -43,6 +43,18 @@ class Settings(BaseSettings):
     max_file_size: int = 5242880  # 5MB
 
     @property
+    def base_dir(self) -> str:
+        """Get absolute path to backend root directory."""
+        import os
+        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    @property
+    def upload_full_path(self) -> str:
+        """Get absolute path to upload directory."""
+        import os
+        return os.path.join(self.base_dir, self.upload_dir)
+
+    @property
     def database_url(self) -> str:
         """Construct database URL for SQLAlchemy."""
         return (
