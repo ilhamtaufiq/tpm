@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, ScrollView, Alert, TouchableOpacity, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
+import { useUIStore } from '../../store/useUIStore';
 import { useResetTransactions } from '../../hooks/useMaintenance';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -11,6 +12,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
+    const { themeColors } = useUIStore();
     const { mutate: resetTransactions, isPending: isResetting } = useResetTransactions();
     const [dialogConfig, setDialogConfig] = React.useState<{
         visible: boolean;
@@ -73,7 +75,7 @@ export default function ProfileScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background">
             {/* Pattern 1: Adaptive Premium Header - Ultra Compact */}
             <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[48px] shadow-xl overflow-hidden z-10">
                 {/* Decorative Glass Effect */}
@@ -87,7 +89,7 @@ export default function ProfileScreen() {
                             {user?.profile_picture ? (
                                 <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
                             ) : (
-                                <CircleUser size={28} color="#023C69" />
+                                <CircleUser size={28} color={themeColors.primary} />
                             )}
                         </View>
                         <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-primary" />
@@ -119,7 +121,7 @@ export default function ProfileScreen() {
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-4">
                     <TouchableOpacity
-                        className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/profile')}
                     >
                         <View className="w-10 h-10 bg-blue-50 rounded-[14px] items-center justify-center mb-3">
@@ -132,7 +134,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/password')}
                     >
                         <View className="w-10 h-10 bg-amber-50 rounded-[14px] items-center justify-center mb-3">
@@ -148,7 +150,7 @@ export default function ProfileScreen() {
                 {/* ACCESSIBILITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-6">
                     <TouchableOpacity
-                        className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/print')}
                     >
                         <View className="w-10 h-10 bg-emerald-50 rounded-[14px] items-center justify-center mb-3">
@@ -161,7 +163,7 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/bluetooth')}
                     >
                         <View className="w-10 h-10 bg-blue-50 rounded-[14px] items-center justify-center mb-3">
@@ -174,11 +176,29 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/* THEME SETTINGS - NEW SECTION */}
+                <View className="flex-row gap-4 mb-6">
+                    <TouchableOpacity
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        onPress={() => router.push('/settings/theme')}
+                    >
+                        <View className="w-10 h-10 bg-purple-50 rounded-[14px] items-center justify-center mb-3">
+                            <Palette size={20} color="#8B5CF6" />
+                        </View>
+                        <View>
+                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Tampilan</Typography>
+                            <Typography variant="caption" className="text-text/40 text-[10px]">Tema & Warna</Typography>
+                        </View>
+                    </TouchableOpacity>
+
+                    <View className="flex-1" />
+                </View>
+
                 {/* DANGER ZONE & SESSION */}
                 <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>
 
                 <TouchableOpacity
-                    className="bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-4"
+                    className="bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-4"
                     onPress={handleReset}
                     disabled={isResetting}
                 >
@@ -195,7 +215,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    className="bg-white/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-8"
+                    className="bg-surface/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-8"
                     onPress={handleLogout}
                 >
                     <View className="w-12 h-12 bg-gray-100 rounded-[18px] items-center justify-center mr-4">

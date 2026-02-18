@@ -12,12 +12,12 @@ module.exports = {
                 "outfit-bold": ["Outfit_700Bold"],
             },
             colors: {
-                primary: "#023C69", // TPM Blue
-                secondary: "#EE2737",
-                background: "#F9F9F9",
-                surface: "#FFFFFF",
-                text: "#1C1C1C",
-                textGray: "#767676",
+                primary: "var(--color-primary)",
+                secondary: "var(--color-secondary)",
+                background: "var(--color-background)",
+                surface: "var(--color-surface)",
+                text: "var(--color-text)",
+                textGray: "var(--color-text-gray)",
                 gopayBlue: "#00ADEF",
             },
             borderRadius: {

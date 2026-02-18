@@ -11,6 +11,8 @@ import {
     Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 import { useAuthStore } from '../store/useAuthStore';
+import { vars } from 'nativewind';
+import { useUIStore } from '../store/useUIStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import '../global.css';
@@ -31,6 +33,16 @@ export default function RootLayout() {
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const themeColors = useUIStore(state => state.themeColors);
+
+    const theme = vars({
+        '--color-primary': themeColors.primary,
+        '--color-secondary': themeColors.secondary,
+        '--color-background': themeColors.background,
+        '--color-surface': themeColors.surface,
+        '--color-text': themeColors.text,
+        '--color-text-gray': themeColors.textGray,
+    });
 
     useEffect(() => {
         console.log('LAYOUT: Fonts loaded:', loaded, 'Error:', error);
@@ -94,7 +106,7 @@ export default function RootLayout() {
     }
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
             <ErrorBoundary>
                 <QueryClientProvider client={queryClient}>
                     <BottomSheetModalProvider>

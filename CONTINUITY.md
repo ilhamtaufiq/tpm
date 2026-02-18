@@ -1,24 +1,42 @@
 # Continuity Ledger
 
 ## Goal
-- Modify the display of "muatan" (cargo/shipment) search results in the `BengkelForm` for the "jasa_angkut" (transport service) category.
-- Requirement: Display only the TPM share nominal (Gross TPM share), excluding the driver's share.
+- Implement theme appearance settings in the profile page.
+- Requirements:
+    - Settings for primary, secondary colors, etc.
+    - No hardcoded colors in the UI (use dynamic theme).
+    - Use color picker (implemented via presets and hex input).
 
 ## Constraints/Assumptions
-- Nominal share TPM is calculated as `pendapatan_kotor - laba_supir`.
-- `laba_supir` is usually 50% of `pendapatan_kotor` based on `JASA_ANGKUT_PROFIT_SPLIT = 0.5`.
-- The user wants this specifically in the search list and the selected state within `BengkelForm`.
+- Project uses NativeWind v4 (Tailwind for React Native).
+- Persist theme settings using Zustand and AsyncStorage.
+- Use CSS variables for dynamic colors.
 
 ## Key decisions
-- Updated `BengkelForm.tsx` to use `(Number(item.pendapatan_kotor) || 0) - (Number(item.laba_supir) || 0)` instead of `item.pendapatan_kotor`.
+- Created `useUIStore` with `themeColors` persistence.
+- Updated `tailwind.config.js` to use CSS variables: `--color-primary`, `--color-secondary`, etc.
+- Updated `app/_layout.tsx` to inject dynamic theme variables using `vars` from `nativewind`.
+- Created `app/settings/theme.tsx` as the theme customization screen.
+- Updated `app/(tabs)/profile.tsx` to include "Tampilan" settings card and use dynamic theme colors.
 
 ## State
-- Done: Updated `BengkelForm.tsx` in two locations (search list rendering and selected state rendering).
-- Now: Verifying the changes.
-- Next: Inform user about the completion.
+- Done: 
+    - Updated `store/useUIStore.ts`.
+    - Updated `tailwind.config.js` and `global.css`.
+    - Updated `app/_layout.tsx` for dynamic injection.
+    - Created `app/settings/theme.tsx`.
+    - Updated `app/(tabs)/profile.tsx`.
+    - Created `.vscode/settings.json` to silence "Unknown at rule @tailwind" IDE warnings.
+- Now: Verifying implementation and ensuring no hardcoded colors remain in key UI elements.
+- Next: Final check of the UI and inform the user.
 
 ## Open questions
 - None.
 
 ## Working set
-- `frontend/components/BengkelForm.tsx`
+- `frontend/store/useUIStore.ts`
+- `frontend/tailwind.config.js`
+- `frontend/global.css`
+- `frontend/app/_layout.tsx`
+- `frontend/app/settings/theme.tsx`
+- `frontend/app/(tabs)/profile.tsx`
