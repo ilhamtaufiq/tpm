@@ -652,8 +652,9 @@ class MobilService:
         """Upload images/videos for a car."""
         mobil = self.get_by_id(mobil_id)
         
-        # Ensure upload directory exists - using absolute path from settings
-        media_dir = os.path.join(settings.upload_full_path, "mobil", str(mobil_id))
+        # Ensure upload directory exists - resolve symlink first
+        resolved_path = os.path.realpath(settings.upload_full_path)
+        media_dir = os.path.join(resolved_path, "mobil", str(mobil_id))
         os.makedirs(media_dir, exist_ok=True)
         
         results = []
@@ -667,7 +668,9 @@ class MobilService:
             file_path = f"mobil/{mobil_id}/{new_filename}"
             
             # Use platform-specific separator for filesystem operations
-            full_path = os.path.join(settings.upload_full_path, "mobil", str(mobil_id), new_filename)
+            # Resolve path to ensure we use the physical location
+            resolved_base = os.path.realpath(settings.upload_full_path)
+            full_path = os.path.join(resolved_base, "mobil", str(mobil_id), new_filename)
             
             # Save file
             with open(full_path, "wb") as buffer:

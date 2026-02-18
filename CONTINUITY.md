@@ -1,22 +1,21 @@
 # Continuity Ledger
 
-- Goal: Resolve `PermissionError` by implementing a symlink for the `uploads` directory.
+- Goal: Resolve `PermissionError` and `FileNotFoundError` during uploads by implementing a robust symlink structure.
 - Constraints/Assumptions:
   - Backend project root: `/var/www/html/tpm/backend`.
   - Frontend deployment dir: `/var/www/tpm-frontend`.
-  - Backend needs to write to the uploads folder.
-  - Apache/Webserver needs to serve these files from the frontend directory.
+  - Symlink at `backend/uploads` points to `/var/www/tpm-frontend/uploads`.
 - Key decisions:
-  - Create a physical folder at `/var/www/tpm-frontend/uploads`.
-  - Create a symlink at `backend/uploads` pointing to `/var/www/tpm-frontend/uploads`.
-  - Set ownership to `$REAL_USER:www-data` and permissions to `775`.
+  - Refactored Python code to use `os.path.realpath` for all upload operations. This ensures `os.makedirs` acts on the physical destination, bypassing broken symlink issues.
+  - Updated `update-app.sh` to ensure the symlink target is created and permissions are strictly set to `775` with `www-data` group participation.
 - State:
-  - Done: Absolute path refactoring in Python code.
-  - Now: Updating `update-app.sh` and `deploy-vps.sh` with symlink logic.
-  - Next: User to run the updated script on VPS.
+  - Done: Absolute path refactoring + `realpath` integration.
+  - Now: Ready for final verification on VPS.
+  - Next: User to run `./update-app.sh` and test.
 - Open questions (UNCONFIRMED):
-  - None.
+  - Is `olobor` a member of the `www-data` group? (Added command to ensure this in the response).
 - Working set:
+  - `backend/app/main.py`
+  - `backend/app/services/mobil_service.py`
   - `update-app.sh`
   - `deploy-vps.sh`
-  - `CONTINUITY.md`

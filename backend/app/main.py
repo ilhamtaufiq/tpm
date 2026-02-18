@@ -53,10 +53,10 @@ def create_app() -> FastAPI:
     setup_exception_handlers(app)
 
     # Ensure upload directory exists
-    # settings.upload_full_path is absolute (e.g., /var/www/html/tpm/backend/uploads)
-    upload_path = settings.upload_full_path
+    # Use realpath to resolve symlinks (points to /var/www/tpm-frontend/uploads)
+    upload_path = os.path.realpath(settings.upload_full_path)
     if not os.path.exists(upload_path):
-        os.makedirs(upload_path)
+        os.makedirs(upload_path, exist_ok=True)
 
     # Mount static files for uploads
     app.mount(f"/{settings.upload_dir}", StaticFiles(directory=upload_path), name="uploads")
