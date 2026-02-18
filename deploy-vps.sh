@@ -159,10 +159,17 @@ PID_BACKEND=$!
     if [ -d "$WEB_BUILD_DIR" ]; then
         echo -e "${GREEN}$prefix${NC} Menyalin build ke $DEPLOY_DIR..."
         mkdir -p "$DEPLOY_DIR"
-        rm -rf "$DEPLOY_DIR"/*
+        mkdir -p "$DEPLOY_DIR/uploads"
+
+        # Hapus file lama kecuali uploads
+        find "$DEPLOY_DIR" -mindepth 1 -maxdepth 1 ! -name 'uploads' -exec rm -rf {} +
+        
         cp -r "$WEB_BUILD_DIR"/* "$DEPLOY_DIR"
+        
         chown -R www-data:www-data "$DEPLOY_DIR"
+        chown -R $REAL_USER:www-data "$DEPLOY_DIR/uploads"
         chmod -R 755 "$DEPLOY_DIR"
+        chmod -R 775 "$DEPLOY_DIR/uploads"
     else
         echo -e "${RED}$prefix ERROR${NC} Folder dist tidak ditemukan"; exit 1;
     fi

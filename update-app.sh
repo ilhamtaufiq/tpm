@@ -104,12 +104,20 @@ PID_BACKEND=$!
     # Deploy
     echo -e "${GREEN}$prefix${NC} Deploying to web server..."
     mkdir -p "$DEPLOY_DIR"
-    # Hapus isi lama
-    rm -rf "$DEPLOY_DIR"/*
+    mkdir -p "$DEPLOY_DIR/uploads" # Pastikan uploads ada
+
+    # Hapus isi lama KECUALI folder uploads agar foto tidak hilang
+    echo -e "${YELLOW}$prefix${NC} Cleaning old files (preserving uploads)..."
+    find "$DEPLOY_DIR" -mindepth 1 -maxdepth 1 ! -name 'uploads' -exec rm -rf {} +
+    
     # Copy isi baru
     cp -r "$FRONTEND_DIR/dist"/* "$DEPLOY_DIR"
+    
+    # Atur izin: Folder umum untuk www-data, folder uploads untuk backend user
     chown -R www-data:www-data "$DEPLOY_DIR"
+    chown -R $REAL_USER:www-data "$DEPLOY_DIR/uploads"
     chmod -R 755 "$DEPLOY_DIR"
+    chmod -R 775 "$DEPLOY_DIR/uploads"
     
     echo -e "${GREEN}$prefix${NC} Frontend updated & deployed."
 ) &
