@@ -18,7 +18,9 @@ import {
     MapPin,
     ArrowRight,
     RefreshCw,
-    Edit
+    Edit,
+    X,
+    Trash2
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -32,7 +34,6 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
-import { Trash2 } from 'lucide-react-native';
 import { formatNumber, parseNumber } from '../../utils/format';
 
 export default function JasaAngkutScreen() {

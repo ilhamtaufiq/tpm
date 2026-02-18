@@ -166,6 +166,11 @@ export const jasaAngkutService = {
         return response.data;
     },
 
+    deleteSupir: async (id: number) => {
+        const response = await api.delete(`/supir/${id}`);
+        return response.data;
+    },
+
     // Armada Methods
     getArmadaList: async (params?: {
         skip?: number;
@@ -251,6 +256,11 @@ export const jasaAngkutService = {
         return response.data;
     },
 
+    getMuatanBySupir: async (supirId: number) => {
+        const response = await api.get(`/muatan/supir/${supirId}`);
+        return response.data;
+    },
+
     markPaid: async (id: number, metode_bayar: string = 'tunai') => {
         const response = await api.patch(`/muatan/${id}/paid`, null, {
             params: { metode_bayar: metode_bayar.toUpperCase() }
@@ -260,6 +270,11 @@ export const jasaAngkutService = {
 
     payMuatanSplit: async (data: { muatan_id: number; tanggal: string; payments: { metode: string; nominal: number; catatan?: string }[]; catatan?: string }) => {
         const response = await api.post(`/muatan/${data.muatan_id}/paid-split`, data);
+        return response.data;
+    },
+
+    addMuatanCost: async (muatanId: number, data: any) => {
+        const response = await api.post(`/muatan/${muatanId}/costs`, data);
         return response.data;
     },
 };
