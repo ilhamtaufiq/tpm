@@ -24,7 +24,10 @@ import {
     Utensils,
     ParkingSquare,
     MoreHorizontal,
-    Percent
+    Percent,
+    Users,
+    ChevronDown,
+    Plus
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -32,6 +35,9 @@ import { id as localeID } from 'date-fns/locale';
 import { jasaAngkutService } from '../../services/jasaAngkut';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import { useActiveArmada } from '../../hooks/useJasaAngkut';
+import { SkeletonCard } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -45,6 +51,112 @@ export default function JasaAngkutReportScreen() {
 
     const [summary, setSummary] = useState<any>(null);
     const [trips, setTrips] = useState<any[]>([]);
+
+    const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
+
+    // Group trips by armada type OR driver
+    const groupedTrips = useMemo(() => {
+        const map = new Map<string, {
+            key: string;
+            id?: number;
+            title: string;
+            subtitle?: string;
+            trips: any[];
+            totalRitase: number;
+            totalPendapatanTPM: number;
+        }>();
+
+        // Initialize with all Armadas if grouping by armada
+        if (groupBy === 'armada' && armadaData) {
+            for (const armada of armadaData) {
+                const key = `armada-${armada.id}`;
+                map.set(key, {
+                    key,
+                    id: armada.id,
+                    title: armada.nama,
+                    subtitle: armada.nopol || armada.jenis,
+                    trips: [],
+                    totalRitase: 0,
+                    totalPendapatanTPM: 0,
+                });
+            }
+        }
+
+        for (const trip of trips) {
+            let key = '';
+            let title = '';
+            let subtitle = '';
+
+            if (groupBy === 'armada') {
+                if (trip.armada) {
+                    key = `armada-${trip.armada.id}`;
+                    title = trip.armada.nama;
+                    subtitle = trip.armada.nopol || trip.armada.jenis;
+                } else if (trip.armada_id) {
+                    key = `armada-${trip.armada_id}`;
+                    title = trip.armada_nama || 'Armada Terdaftar';
+                    subtitle = trip.nopol || '';
+                } else {
+                    key = 'manual-armada';
+                    title = 'Armada Luar';
+                    subtitle = trip.nopol || 'Tanpa Nopol';
+                }
+            } else {
+                // Group by Supir
+                if (trip.supir_id || trip.supir) {
+                    const supir = trip.supir;
+                    key = `supir-${trip.supir_id}`;
+                    title = supir?.nama || trip.supir_nama || 'Supir Terdaftar';
+                    subtitle = supir?.kode || 'Staff';
+                } else {
+                    key = 'manual-supir';
+                    title = (trip.supir_nama || trip.supir_nama_manual) || 'Supir Lepas';
+                    subtitle = 'Manual';
+                }
+            }
+
+            if (!map.has(key)) {
+                map.set(key, {
+                    key,
+                    id: groupBy === 'armada' ? (trip.armada?.id || trip.armada_id) : trip.supir_id,
+                    title,
+                    subtitle,
+                    trips: [],
+                    totalRitase: 0,
+                    totalPendapatanTPM: 0,
+                });
+            }
+
+            const group = map.get(key)!;
+            group.trips.push(trip);
+            group.totalRitase += Number(trip.ritase || 1);
+            group.totalPendapatanTPM += Number(trip.pendapatan_kotor || 0) - Number(trip.laba_supir || 0);
+        }
+
+        const result = Array.from(map.values());
+
+        // If searching, only return groups with trips (unless group title matches search)
+        if (search) {
+            return result.filter(g => g.trips.length > 0 || g.title.toLowerCase().includes(search.toLowerCase()));
+        }
+
+        return result.sort((a, b) => {
+            // Priority: groups with trips, then sorted by name
+            if (a.trips.length !== b.trips.length) return b.trips.length - a.trips.length;
+            return a.title.localeCompare(b.title);
+        });
+    }, [trips, groupBy, armadaData, search]);
+
+    const toggleGroupCollapse = (key: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
 
     // Detail Modal State
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -245,7 +357,7 @@ export default function JasaAngkutReportScreen() {
                         ))}
                     </View>
 
-                    <View className="flex-row justify-between items-center px-2">
+                    <View className="flex-row justify-between items-center px-2 mb-4">
                         <TouchableOpacity
                             onPress={handlePrev}
                             className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
@@ -269,14 +381,34 @@ export default function JasaAngkutReportScreen() {
                     </View>
 
                     {/* Search Field */}
-                    <View className="mt-4 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                    <View className="flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100 mb-3">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput
-                            placeholder="Cari rute, supir, atau muatan..."
+                            placeholder="Cari rute, supir, muatan..."
                             className="flex-1 ml-3 text-sm font-medium"
                             value={search}
                             onChangeText={setSearch}
                         />
+                    </View>
+
+                    {/* Group Controls (Added to match list) */}
+                    <View className="flex-row items-center justify-between px-1">
+                        <View className="flex-row bg-gray-100 p-1 rounded-2xl flex-1">
+                            <TouchableOpacity
+                                onPress={() => setGroupBy('armada')}
+                                className={`flex-1 py-2 rounded-xl flex-row items-center justify-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}
+                            >
+                                <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
+                                <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setGroupBy('supir')}
+                                className={`flex-1 py-2 rounded-xl flex-row items-center justify-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}
+                            >
+                                <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
+                                <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </View>
@@ -299,80 +431,129 @@ export default function JasaAngkutReportScreen() {
                     </View>
                 </View>
 
-                {isLoading ? (
-                    <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENGAMBIL DATA...</Typography>
+                {isLoading || isLoadingArmada ? (
+                    <View className="space-y-6">
+                        <SkeletonCard className="rounded-[32px] h-32" />
+                        <SkeletonCard className="rounded-[32px] h-32" />
+                        <SkeletonCard className="rounded-[32px] h-32" />
                     </View>
-                ) : trips.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
-                        <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
-                            <Truck size={40} color="#9CA3AF" />
-                        </View>
-                        <Typography className="text-textGray font-bold uppercase tracking-[6px]">Data Kosong</Typography>
-                        <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ada transaksi ritase ditemukan</Typography>
+                ) : groupedTrips.length === 0 ? (
+                    <View className="mt-10">
+                        <EmptyState
+                            title="Data Kosong"
+                            description="Tidak ada transaksi ritase ditemukan pada periode ini."
+                            icon={Truck}
+                        />
                     </View>
                 ) : (
-                    trips.map((item, index) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            activeOpacity={0.7}
-                            onPress={() => handlePressTrip(item)}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
-                        >
-                            <View className="flex-row items-center mb-4">
-                                <View className="w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-4">
-                                    <Truck size={24} color="#10B981" />
-                                </View>
-                                <View className="flex-1">
-                                    <View className="flex-row items-center justify-between">
-                                        <Typography variant="body1" weight="bold" className="text-textMain" numberOfLines={1}>
-                                            {item.tujuan}
-                                        </Typography>
-                                        <View className={`px-2.5 py-1 rounded-full ${item.status_bayar === 'Lunas' ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                                            <Typography className={`text-[8px] font-bold uppercase ${item.status_bayar === 'Lunas' ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {item.status_bayar}
+                    groupedTrips.map((group) => {
+                        const isCollapsed = !collapsedGroups.has(group.key);
+                        return (
+                            <View key={group.key} className="mb-6">
+                                {/* Group Header */}
+                                <TouchableOpacity
+                                    onPress={() => toggleGroupCollapse(group.key)}
+                                    activeOpacity={0.7}
+                                    className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
+                                >
+                                    <View className="flex-row items-center flex-1">
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-gray-50 border-gray-100') : 'bg-orange-100 border-orange-200'}`}>
+                                            {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
+                                                {group.title}
+                                            </Typography>
+                                            <Typography variant="caption" className="text-textGray">
+                                                {group.subtitle ? `${group.subtitle} • ` : ''}{group.trips.length} Transaksi
                                             </Typography>
                                         </View>
                                     </View>
-                                    <Typography variant="caption" className="text-textGray/60 mt-0.5" numberOfLines={1}>
-                                        {formatDate(item.tanggal)} • {item.nomor_transaksi}
-                                    </Typography>
-                                </View>
-                            </View>
-
-                            {/* Triple Detail Row */}
-                            <View className="flex-row items-center mb-4 px-1">
-                                <View className="flex-row items-center flex-1">
-                                    <View className="w-8 h-8 bg-gray-50 rounded-lg items-center justify-center mr-2">
-                                        <User size={14} color="#9CA3AF" />
+                                    <View className="flex-row items-center">
+                                        {group.trips.length > 0 && (
+                                            <View className="bg-primary/5 px-3 py-1.5 rounded-full mr-3 border border-primary/5">
+                                                <Typography variant="caption" weight="bold" className="text-primary text-[10px]">
+                                                    {formatCurrency(group.totalPendapatanTPM)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                        <ChevronLeft
+                                            size={20}
+                                            color={!isCollapsed ? "#023C69" : "#9CA3AF"}
+                                            style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
+                                        />
                                     </View>
-                                    <Typography variant="caption" weight="medium" className="text-textGray" numberOfLines={1}>{item.supir_nama}</Typography>
-                                </View>
-                                <View className="flex-row items-center flex-1">
-                                    <View className="w-8 h-8 bg-gray-50 rounded-lg items-center justify-center mr-2">
-                                        <MapPin size={14} color="#9CA3AF" />
-                                    </View>
-                                    <Typography variant="caption" weight="medium" className="text-textGray" numberOfLines={1}>{item.asal}</Typography>
-                                </View>
-                            </View>
+                                </TouchableOpacity>
 
-                            <View className="flex-row justify-between items-end pt-4 border-t border-gray-50/50">
-                                <View>
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Laba TPM</Typography>
-                                    <Typography variant="body1" weight="bold" className="text-emerald-600">
-                                        {formatCurrency(item.laba_tpm || 0)}
-                                    </Typography>
-                                </View>
-                                <View className="items-end">
-                                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold mb-0.5">Pendapatan TPM</Typography>
-                                    <Typography variant="h3" weight="bold" className="text-primary tracking-tighter">
-                                        {formatCurrency((item.pendapatan_kotor || 0) - (item.laba_supir || 0))}
-                                    </Typography>
-                                </View>
+                                {/* Group Content (Trips) */}
+                                {!isCollapsed && (
+                                    <View className="space-y-4 pt-4 px-2">
+                                        {group.trips.length === 0 ? (
+                                            <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 ml-4">
+                                                <Typography variant="caption" className="text-gray-400 italic">Belum ada aktivitas transaksi</Typography>
+                                            </View>
+                                        ) : (
+                                            group.trips.map((item: any) => (
+                                                <TouchableOpacity
+                                                    key={item.id}
+                                                    activeOpacity={0.7}
+                                                    onPress={() => handlePressTrip(item)}
+                                                    className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm ml-4 mb-4"
+                                                >
+                                                    <View className="flex-row items-center mb-3">
+                                                        <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3">
+                                                            <Truck size={20} color="#10B981" />
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <View className="flex-row items-center justify-between">
+                                                                <Typography variant="body2" weight="bold" className="text-textMain flex-1" numberOfLines={1}>
+                                                                    {item.tujuan}
+                                                                </Typography>
+                                                                <View className={`px-2 py-0.5 rounded-lg ${item.status_bayar === 'Lunas' ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                                                                    <Typography className={`text-[8px] font-bold uppercase ${item.status_bayar === 'Lunas' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                                        {item.status_bayar}
+                                                                    </Typography>
+                                                                </View>
+                                                            </View>
+                                                            <Typography variant="caption" className="text-textGray/60 text-[10px]" numberOfLines={1}>
+                                                                {formatDate(item.tanggal)} • {item.nomor_transaksi}
+                                                            </Typography>
+                                                        </View>
+                                                    </View>
+
+                                                    <View className="flex-row items-center mb-3 px-1">
+                                                        <View className="flex-row items-center flex-1">
+                                                            <User size={12} color="#9CA3AF" />
+                                                            <Typography variant="caption" weight="medium" className="text-textGray ml-1 text-[11px]" numberOfLines={1}>{item.supir_nama}</Typography>
+                                                        </View>
+                                                        <View className="flex-row items-center flex-1">
+                                                            <MapPin size={12} color="#9CA3AF" />
+                                                            <Typography variant="caption" weight="medium" className="text-textGray ml-1 text-[11px]" numberOfLines={1}>{item.asal}</Typography>
+                                                        </View>
+                                                    </View>
+
+                                                    <View className="flex-row justify-between items-end pt-2 border-t border-gray-50/50">
+                                                        <View>
+                                                            <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Laba TPM</Typography>
+                                                            <Typography variant="caption" weight="bold" className="text-emerald-600">
+                                                                {formatCurrency(item.laba_tpm || 0)}
+                                                            </Typography>
+                                                        </View>
+                                                        <View className="items-end">
+                                                            <Typography className="text-textGray/40 text-[8px] uppercase font-bold">In TPM</Typography>
+                                                            <Typography variant="body2" weight="bold" className="text-primary tracking-tighter">
+                                                                {formatCurrency((item.pendapatan_kotor || 0) - (item.laba_supir || 0))}
+                                                            </Typography>
+                                                        </View>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            ))
+                                        )}
+                                    </View>
+                                )}
                             </View>
-                        </TouchableOpacity>
-                    ))
+                        );
+                    })
                 )
                 }
 
