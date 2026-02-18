@@ -4,6 +4,7 @@ import { ChevronLeft, Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 }
 import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 export default function ProfileSettingsScreen() {
     const router = useRouter();
     const { user, setAuth, token } = useAuthStore();
+    const { themeColors } = useUIStore();
 
     // Form States
     const [name, setName] = useState(user?.name || 'Admin TPM');
@@ -96,7 +98,7 @@ export default function ProfileSettingsScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" />
 
             {/* Pattern 1: Premium Curved Header */}
@@ -126,7 +128,7 @@ export default function ProfileSettingsScreen() {
                             {image ? (
                                 <Image source={{ uri: image }} className="w-full h-full" />
                             ) : (
-                                <User size={60} color="#023C69" strokeWidth={1.5} />
+                                <User size={60} color={themeColors.primary} strokeWidth={1.5} />
                             )}
                             {isPicking && (
                                 <View className="absolute inset-0 bg-black/20 items-center justify-center">
@@ -158,13 +160,13 @@ export default function ProfileSettingsScreen() {
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
 
                         {/* Section: Personal Info */}
-                        <View className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-50">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-gray-50">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-6">Informasi Personal</Typography>
 
                             {/* Name Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nama Lengkap</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
                                     <User size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -178,7 +180,7 @@ export default function ProfileSettingsScreen() {
                             {/* Email Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Alamat Email</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
                                     <Mail size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -194,7 +196,7 @@ export default function ProfileSettingsScreen() {
                             {/* Phone Input */}
                             <View className="mb-5">
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Nomor Telepon</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
                                     <Phone size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -209,7 +211,7 @@ export default function ProfileSettingsScreen() {
                             {/* Role Input */}
                             <View>
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Jabatan / Divisi</Typography>
-                                <View className="flex-row items-center bg-gray-50 h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
                                     <Briefcase size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
@@ -222,7 +224,7 @@ export default function ProfileSettingsScreen() {
                         </View>
 
                         {/* Additional Info / Settings Card */}
-                        <View className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-50">
+                        <View className="bg-surface p-6 rounded-[32px] shadow-sm border border-gray-50">
                             <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] mb-4">Informasi Tambahan</Typography>
                             <View className="flex-row items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                                 <View className="flex-row items-center">

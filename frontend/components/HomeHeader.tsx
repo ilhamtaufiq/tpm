@@ -5,6 +5,7 @@ import { TouchableOpacity, View, Modal, TextInput, ScrollView, Dimensions, Image
 import { APP_ROUTES, AppRoute } from '../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
+import { useUIStore } from '../store/useUIStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -15,6 +16,7 @@ interface HomeHeaderProps {
 
 export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) => {
     const { user } = useAuthStore();
+    const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -39,7 +41,29 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
         <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
             {/* Decorative Ambient Glass */}
             <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
-            <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-secondary/20 rounded-full blur-[60px]" />
+            <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
+
+            {/* User Greeting & Profile Photo */}
+            <View className="flex-row items-center justify-between mb-6 z-10 px-1">
+                <View>
+                    <Typography className="text-white/60 text-[10px] uppercase tracking-[3px] font-bold mb-1">Selamat Datang 👋</Typography>
+                    <Typography variant="h3" weight="bold" className="text-white leading-tight">
+                        {user?.name || 'Admin TPM'}
+                    </Typography>
+                </View>
+                <TouchableOpacity
+                    onPress={() => router.push('/(tabs)/profile')}
+                    className="w-12 h-12 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden"
+                >
+                    <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                        {user?.profile_picture ? (
+                            <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
+                        ) : (
+                            <User size={24} color={themeColors.primary} strokeWidth={2.5} />
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </View>
 
             {/* Combined Row: Search (Expandable) + Icons */}
             <View className="flex-row items-center gap-3 z-10 mt-2">
@@ -76,8 +100,8 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                 <View className="flex-1 bg-white">
                     {/* Modal Header */}
                     <View className="pt-14 pb-4 px-6 border-b border-gray-100 flex-row items-center">
-                        <View className="flex-1 bg-gray-50 h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
-                            <Search size={20} color="#023C69" />
+                        <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
+                            <Search size={20} color={themeColors.primary} />
                             <TextInput
                                 autoFocus
                                 placeholder="Ketik rute, layanan, atau laporan..."
@@ -116,11 +140,11 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                         <TouchableOpacity
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
-                                            className="flex-row items-center py-5 bg-white mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
+                                            className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
                                             activeOpacity={0.7}
                                         >
-                                            <View className="bg-emerald-50 w-14 h-14 rounded-2xl items-center justify-center mr-4">
-                                                <Icon size={24} color="#023C69" />
+                                            <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
+                                                <Icon size={24} color={themeColors.primary} />
                                             </View>
                                             <View className="flex-1">
                                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">{route.label}</Typography>
