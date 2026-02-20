@@ -4,7 +4,7 @@ import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { useArmadaDetail } from '../../hooks/useJasaAngkut';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import {
     Truck,
     Calendar,
@@ -51,7 +51,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
             setSubmittingExpense(true);
             await jasaAngkutService.addArmadaExpense(id, {
                 ...expenseForm,
-                jumlah: parseFloat(expenseForm.jumlah)
+                jumlah: parseNumber(expenseForm.jumlah)
             });
             setShowExpenseModal(false);
             setExpenseForm({
@@ -401,8 +401,9 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                             <Input
                                 label="Jumlah (Rp)"
                                 keyboardType="numeric"
+                                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
                                 value={expenseForm.jumlah}
-                                onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: v }))}
+                                onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(v) }))}
                             />
                             <Input
                                 label="Tanggal (YYYY-MM-DD)"
