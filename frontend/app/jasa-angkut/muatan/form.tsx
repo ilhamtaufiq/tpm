@@ -7,7 +7,20 @@ import { Card } from '../../../components/ui/Card';
 import { ProfitSplitCard } from '../../../components/jasa-angkut/ProfitSplitCard';
 import { jasaAngkutService, Supir } from '../../../services/jasaAngkut';
 import { AlertDialog } from '../../../components/ui/AlertDialog';
+import { Typography } from '../../../components/ui/Typography';
 import { getErrorMessage } from '../../../utils/error';
+import { PaymentMethod } from '../../../services/keuangan';
+
+interface MuatanFormState {
+    tanggal: string;
+    supir_id: string;
+    asal: string;
+    tujuan: string;
+    jenis_muatan: string;
+    pendapatan_kotor: string;
+    metode_bayar: PaymentMethod;
+    catatan: string;
+}
 
 export default function MuatanFormScreen() {
     const router = useRouter();
@@ -18,19 +31,14 @@ export default function MuatanFormScreen() {
     const [loadingDrivers, setLoadingDrivers] = useState(true);
 
     // Form State
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<MuatanFormState>({
         tanggal: new Date().toISOString().split('T')[0],
         supir_id: '',
         asal: '',
         tujuan: '',
         jenis_muatan: '',
         pendapatan_kotor: '',
-        biaya_bbm: '',
-        biaya_tol: '',
-        biaya_makan: '',
-        biaya_parkir: '',
-        biaya_lainnya: '',
-        metode_bayar: 'tunai',
+        metode_bayar: 'TUNAI',
         catatan: ''
     });
 
@@ -69,14 +77,7 @@ export default function MuatanFormScreen() {
     // Calculations
     const calculations = useMemo(() => {
         const revenue = parseFloat(formData.pendapatan_kotor) || 0;
-        const bbm = parseFloat(formData.biaya_bbm) || 0;
-        const tol = parseFloat(formData.biaya_tol) || 0;
-        const makan = parseFloat(formData.biaya_makan) || 0;
-        const parkir = parseFloat(formData.biaya_parkir) || 0;
-        const lain = parseFloat(formData.biaya_lainnya) || 0;
-
-        const totalCosts = bbm + tol + makan + parkir + lain;
-        return { revenue, totalCosts };
+        return { revenue, totalCosts: 0 };
     }, [formData]);
 
     const handleSubmit = async () => {
@@ -91,11 +92,7 @@ export default function MuatanFormScreen() {
                 ...formData,
                 supir_id: parseInt(formData.supir_id),
                 pendapatan_kotor: parseFloat(formData.pendapatan_kotor),
-                biaya_bbm: parseFloat(formData.biaya_bbm) || 0,
-                biaya_tol: parseFloat(formData.biaya_tol) || 0,
-                biaya_makan: parseFloat(formData.biaya_makan) || 0,
-                biaya_parkir: parseFloat(formData.biaya_parkir) || 0,
-                biaya_lainnya: parseFloat(formData.biaya_lainnya) || 0,
+                biaya_operasional: []
             });
 
             setDialogConfig({
@@ -186,38 +183,21 @@ export default function MuatanFormScreen() {
                         className="bg-green-50 border-green-200 text-green-800 font-bold"
                     />
 
-                    <Text className="text-gray-500 text-xs font-medium mt-4 mb-2">Metode Pembayaran</Text>
                     <View className="flex-row space-x-2">
-                        {['tunai', 'transfer'].map((m) => (
+                        {(['TUNAI', 'TRANSFER'] as PaymentMethod[]).map((m) => (
                             <TouchableOpacity
                                 key={m}
                                 onPress={() => updateField('metode_bayar', m)}
                                 className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
                             >
                                 <Text className={formData.metode_bayar === m ? 'text-sky-700 font-bold' : 'text-gray-500'}>
-                                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                                    {m === 'TUNAI' ? 'Tunai' : 'Transfer'}
                                 </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
 
-                    <Text className="text-gray-500 text-sm font-medium mt-2 mb-2">Biaya Operasional</Text>
-                    <View className="flex-row space-x-2">
-                        <View className="flex-1">
-                            <Input label="BBM" keyboardType="numeric" value={formData.biaya_bbm} onChangeText={v => updateField('biaya_bbm', v)} />
-                        </View>
-                        <View className="flex-1">
-                            <Input label="Tol" keyboardType="numeric" value={formData.biaya_tol} onChangeText={v => updateField('biaya_tol', v)} />
-                        </View>
-                    </View>
-                    <View className="flex-row space-x-2">
-                        <View className="flex-1">
-                            <Input label="Uang Makan" keyboardType="numeric" value={formData.biaya_makan} onChangeText={v => updateField('biaya_makan', v)} />
-                        </View>
-                        <View className="flex-1">
-                            <Input label="Parkir/Lainnya" keyboardType="numeric" value={formData.biaya_parkir} onChangeText={v => updateField('biaya_parkir', v)} />
-                        </View>
-                    </View>
+                    <Typography variant="caption" className="text-gray-400 mt-4 italic">Biaya operasional sekarang diinput melalui menu Detail Armada.</Typography>
                 </Card>
 
                 {/* Live Simulation */}

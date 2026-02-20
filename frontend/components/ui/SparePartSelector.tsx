@@ -64,7 +64,7 @@ export const SparePartSelector = ({
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Sparepart..."}</Typography>
+                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Sparepart"}</Typography>
                         )}
                     </View>
 

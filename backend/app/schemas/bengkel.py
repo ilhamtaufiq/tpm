@@ -233,6 +233,7 @@ class TransaksiBengkelCreate(BaseModel):
     jenis_kendaraan: Optional[str] = Field(None, max_length=50)
     kategori: str = Field(default="umum", pattern="^(umum|jasa_angkut|jual_beli_mobil)$")
     muatan_id: Optional[int] = None
+    armada_id: Optional[int] = None
     mobil_id: Optional[int] = None
     detail_parts: List[DetailPartCreate] = []
     detail_services: List[DetailServiceCreate] = []
@@ -283,6 +284,7 @@ class TransaksiBengkelResponse(BaseModel):
     kategori: str = "umum"
     muatan_id: Optional[int] = None
     muatan_nomor: Optional[str] = None
+    armada_id: Optional[int] = None
     mobil_id: Optional[int] = None
     total_parts: Decimal
     total_jasa: Decimal

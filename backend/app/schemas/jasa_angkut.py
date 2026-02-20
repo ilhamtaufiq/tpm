@@ -27,6 +27,17 @@ class ArmadaCreate(ArmadaBase):
     pass
 
 
+class ArmadaExpenseCreate(BaseModel):
+    """Schema for adding an expense to an armada."""
+    tanggal: date
+    kategori: str = "Operasional"
+    deskripsi: str = Field(..., min_length=1, max_length=255)
+    jumlah: Decimal = Field(..., ge=0)
+    catatan: Optional[str] = None
+    metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+
+
+
 class ArmadaUpdate(BaseModel):
     """Schema for updating armada."""
 
@@ -316,5 +327,7 @@ class ArmadaDetailResponse(BaseModel):
     stats: ArmadaStats
     muatan_history: List[MuatanResponse]
     perbaikan_history: List[TransaksiBengkelResponse]
+    general_expenses: List[BiayaTambahanResponse] = []
+
 
     model_config = {"from_attributes": True}

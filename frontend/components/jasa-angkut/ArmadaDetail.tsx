@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -17,9 +17,15 @@ import {
     TrendingDown,
     Activity,
     ChevronRight,
-    Search
+    Search,
+    Plus,
+    DollarSign,
+    X as CloseIcon
 } from 'lucide-react-native';
 import { SkeletonCard } from '../ui/Skeleton';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { jasaAngkutService } from '../../services/jasaAngkut';
 
 interface ArmadaDetailProps {
     id: number;
@@ -28,8 +34,39 @@ interface ArmadaDetailProps {
 
 export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     const { data: detailData, isLoading, refetch } = useArmadaDetail(id);
-    const [activeTab, setActiveTab] = useState<'trips' | 'repairs'>('trips');
+    const [activeTab, setActiveTab] = useState<'trips' | 'repairs' | 'expenses'>('trips');
     const [refreshing, setRefreshing] = useState(false);
+    const [showExpenseModal, setShowExpenseModal] = useState(false);
+    const [submittingExpense, setSubmittingExpense] = useState(false);
+    const [expenseForm, setExpenseForm] = useState({
+        tanggal: new Date().toISOString().split('T')[0],
+        deskripsi: '',
+        jumlah: '',
+        catatan: ''
+    });
+
+    const handleAddExpense = async () => {
+        if (!expenseForm.deskripsi || !expenseForm.jumlah) return;
+        try {
+            setSubmittingExpense(true);
+            await jasaAngkutService.addArmadaExpense(id, {
+                ...expenseForm,
+                jumlah: parseFloat(expenseForm.jumlah)
+            });
+            setShowExpenseModal(false);
+            setExpenseForm({
+                tanggal: new Date().toISOString().split('T')[0],
+                deskripsi: '',
+                jumlah: '',
+                catatan: ''
+            });
+            refetch();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSubmittingExpense(false);
+        }
+    };
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -62,7 +99,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         );
     }
 
-    const { armada, stats, muatan_history = [], perbaikan_history = [] } = detailData || {};
+    const { armada, stats, muatan_history = [], perbaikan_history = [], general_expenses = [] } = detailData || {};
 
     if (!armada || !stats) {
         return (
@@ -188,105 +225,207 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         <Typography weight={activeTab === 'repairs' ? 'bold' : 'medium'} className={activeTab === 'repairs' ? 'text-primary' : 'text-gray-400'}>
                             Perbaikan
                         </Typography>
-                        {perbaikan_history.length > 0 && (
-                            <View className="bg-red-100 px-1.5 py-0.5 rounded-md ml-1">
-                                <Typography className="text-red-600 text-[10px] font-bold">{perbaikan_history.length}</Typography>
-                            </View>
-                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setActiveTab('expenses')}
+                        className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'expenses' ? 'bg-white shadow-sm' : ''}`}
+                    >
+                        <DollarSign size={16} color={activeTab === 'expenses' ? '#023C69' : '#94A3B8'} />
+                        <Typography weight={activeTab === 'expenses' ? 'bold' : 'medium'} className={activeTab === 'expenses' ? 'text-primary' : 'text-gray-400'}>
+                            Biaya Ops
+                        </Typography>
                     </TouchableOpacity>
                 </View>
 
-                {/* List Content */}
-                {activeTab === 'trips' ? (
-                    <View className="space-y-4 pb-10">
-                        {muatan_history.length === 0 ? (
-                            <View className="py-20 items-center">
-                                <Typography className="text-gray-400 italic">Belum ada riwayat trip</Typography>
-                            </View>
-                        ) : (
-                            muatan_history.map((trip: any) => (
-                                <View key={trip.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
-                                    <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4">
-                                        <MapPin size={22} color="#3B82F6" />
-                                    </View>
-                                    <View className="flex-1">
-                                        <View className="flex-row justify-between mb-1">
-                                            <Typography weight="bold" className="text-textMain flex-1 mr-2" numberOfLines={1}>
-                                                {trip.asal} → {trip.tujuan}
-                                            </Typography>
-                                            <Typography variant="caption" weight="bold" className="text-primary italic">
-                                                {trip.ritase} Rit
-                                            </Typography>
+                {(() => {
+                    switch (activeTab) {
+                        case 'trips':
+                            return (
+                                <View className="space-y-4 pb-10">
+                                    {muatan_history.length === 0 ? (
+                                        <View className="py-20 items-center">
+                                            <Typography className="text-gray-400 italic">Belum ada riwayat trip</Typography>
                                         </View>
-                                        <Typography variant="caption" className="text-textGray mb-2">
-                                            {formatDate(trip.tanggal)} • {trip.jenis_muatan || 'Muatan Umum'}
-                                        </Typography>
-                                        <View className="flex-row justify-between items-center pt-2 border-t border-gray-50">
-                                            <View className="flex-row space-x-2">
-                                                <Badge label={formatCurrency(trip.pendapatan_kotor - trip.laba_supir)} variant="info" className="scale-75 origin-left" />
+                                    ) : (
+                                        muatan_history.map((trip: any) => (
+                                            <View key={trip.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
+                                                <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4">
+                                                    <MapPin size={22} color="#3B82F6" />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <View className="flex-row justify-between mb-1">
+                                                        <Typography weight="bold" className="text-textMain flex-1 mr-2" numberOfLines={1}>
+                                                            {trip.asal} → {trip.tujuan}
+                                                        </Typography>
+                                                        <Typography variant="caption" weight="bold" className="text-primary italic">
+                                                            {trip.ritase} Rit
+                                                        </Typography>
+                                                    </View>
+                                                    <Typography variant="caption" className="text-textGray mb-2">
+                                                        {formatDate(trip.tanggal)} • {trip.supir_nama || 'Supir'} • {trip.jenis_muatan || 'Muatan Umum'}
+                                                    </Typography>
+                                                    <View className="flex-row justify-between items-center pt-2 border-t border-gray-50">
+                                                        <View className="flex-row space-x-2">
+                                                            <Badge label={formatCurrency(trip.pendapatan_kotor - trip.laba_supir)} variant="info" className="scale-75 origin-left" />
+                                                        </View>
+                                                        <Typography weight="bold" className="text-primary text-xs">
+                                                            +{formatCurrency(trip.laba_tpm)}
+                                                        </Typography>
+                                                    </View>
+                                                </View>
                                             </View>
-                                            <Typography weight="bold" className="text-primary text-xs">
-                                                +{formatCurrency(trip.laba_tpm)}
-                                            </Typography>
-                                        </View>
-                                    </View>
-                                </View>
-                            ))
-                        )}
-                    </View>
-                ) : (
-                    <View className="space-y-4 pb-10">
-                        {perbaikan_history.length === 0 ? (
-                            <View className="py-20 items-center">
-                                <Typography className="text-gray-400 italic">Belum ada riwayat perbaikan</Typography>
-                            </View>
-                        ) : (
-                            perbaikan_history.map((item: any) => (
-                                <View key={item.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm">
-                                    <View className="flex-row justify-between mb-3">
-                                        <View className="flex-row items-center">
-                                            <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
-                                                <Wrench size={16} color="#EF4444" />
-                                            </View>
-                                            <Typography weight="bold" className="text-textMain">{item.nomor_transaksi}</Typography>
-                                        </View>
-                                        <Typography variant="caption" className="text-textGray">{formatDate(item.tanggal)}</Typography>
-                                    </View>
-
-                                    <View className="space-y-2 mb-3">
-                                        {item.detail_services?.map((s: any, idx: number) => (
-                                            <View key={idx} className="flex-row justify-between">
-                                                <Typography variant="caption" className="text-textGray flex-1 mr-2">• {s.nama_jasa}</Typography>
-                                                <Typography variant="caption" weight="medium">{formatCurrency(s.subtotal)}</Typography>
-                                            </View>
-                                        ))}
-                                        {item.detail_parts?.map((p: any, idx: number) => (
-                                            <View key={idx} className="flex-row justify-between">
-                                                <Typography variant="caption" className="text-textGray flex-1 mr-2">• {p.spare_part_nama} (x{p.qty})</Typography>
-                                                <Typography variant="caption" weight="medium">{formatCurrency(p.subtotal)}</Typography>
-                                            </View>
-                                        ))}
-                                    </View>
-
-                                    <View className="flex-row justify-between items-center pt-3 border-t border-gray-50">
-                                        <Typography variant="caption" weight="bold" className="text-textGray">Total Biaya Perbaikan</Typography>
-                                        <Typography weight="bold" className="text-red-600">
-                                            {formatCurrency(item.grand_total)}
-                                        </Typography>
-                                    </View>
-
-                                    {item.muatan_nomor && (
-                                        <View className="mt-2 bg-blue-50 px-3 py-1.5 rounded-lg flex-row items-center self-start">
-                                            <TrendingDown size={12} color="#3B82F6" />
-                                            <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Dibebankan ke: {item.muatan_nomor}</Typography>
-                                        </View>
+                                        ))
                                     )}
                                 </View>
-                            ))
-                        )}
-                    </View>
-                )}
+                            );
+                        case 'repairs':
+                            return (
+                                <View className="space-y-4 pb-10">
+                                    {perbaikan_history.length === 0 ? (
+                                        <View className="py-20 items-center">
+                                            <Typography className="text-gray-400 italic">Belum ada riwayat perbaikan</Typography>
+                                        </View>
+                                    ) : (
+                                        perbaikan_history.map((item: any) => (
+                                            <View key={item.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm">
+                                                <View className="flex-row justify-between mb-3">
+                                                    <View className="flex-row items-center">
+                                                        <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
+                                                            <Wrench size={16} color="#EF4444" />
+                                                        </View>
+                                                        <Typography weight="bold" className="text-textMain">{item.nomor_transaksi}</Typography>
+                                                    </View>
+                                                    <Typography variant="caption" className="text-textGray">{formatDate(item.tanggal)}</Typography>
+                                                </View>
+
+                                                <View className="space-y-2 mb-3">
+                                                    {item.detail_services?.map((s: any, idx: number) => (
+                                                        <View key={idx} className="flex-row justify-between">
+                                                            <Typography variant="caption" className="text-textGray flex-1 mr-2">• {s.nama_jasa}</Typography>
+                                                            <Typography variant="caption" weight="medium">{formatCurrency(s.subtotal)}</Typography>
+                                                        </View>
+                                                    ))}
+                                                    {item.detail_parts?.map((p: any, idx: number) => (
+                                                        <View key={idx} className="flex-row justify-between">
+                                                            <Typography variant="caption" className="text-textGray flex-1 mr-2">• {p.spare_part_nama} (x{p.qty})</Typography>
+                                                            <Typography variant="caption" weight="medium">{formatCurrency(p.subtotal)}</Typography>
+                                                        </View>
+                                                    ))}
+                                                </View>
+
+                                                <View className="flex-row justify-between items-center pt-3 border-t border-gray-50">
+                                                    <Typography variant="caption" weight="bold" className="text-textGray">Total Biaya Perbaikan</Typography>
+                                                    <Typography weight="bold" className="text-red-600">
+                                                        {formatCurrency(item.grand_total)}
+                                                    </Typography>
+                                                </View>
+
+                                                {item.muatan_nomor && (
+                                                    <View className="mt-2 bg-blue-50 px-3 py-1.5 rounded-lg flex-row items-center self-start">
+                                                        <TrendingDown size={12} color="#3B82F6" />
+                                                        <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Dibebankan ke: {item.muatan_nomor}</Typography>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        ))
+                                    )}
+                                </View>
+                            );
+                        case 'expenses':
+                            return (
+                                <View className="space-y-4 pb-10">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Typography weight="bold" className="text-gray-500">Daftar Biaya Operasional</Typography>
+                                        <TouchableOpacity
+                                            onPress={() => setShowExpenseModal(true)}
+                                            className="bg-primary px-3 py-1.5 rounded-xl flex-row items-center"
+                                        >
+                                            <Plus size={14} color="white" />
+                                            <Typography variant="caption" weight="bold" className="text-white ml-1.5">Tambah</Typography>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {general_expenses.length === 0 ? (
+                                        <View className="py-20 items-center">
+                                            <Typography className="text-gray-400 italic">Belum ada biaya operasional tercatat</Typography>
+                                        </View>
+                                    ) : (
+                                        general_expenses.map((expense: any) => (
+                                            <View key={expense.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
+                                                <View className="w-10 h-10 bg-orange-50 rounded-xl items-center justify-center mr-4">
+                                                    <TrendingDown size={20} color="#F59E0B" />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <View className="flex-row justify-between items-start">
+                                                        <Typography weight="bold" className="text-textMain flex-1 mr-2">{expense.deskripsi}</Typography>
+                                                        <Typography weight="bold" className="text-orange-600">{formatCurrency(expense.jumlah)}</Typography>
+                                                    </View>
+                                                    <Typography variant="caption" className="text-textGray mt-0.5">
+                                                        {formatDate(expense.created_at)}
+                                                    </Typography>
+                                                </View>
+                                            </View>
+                                        ))
+                                    )}
+                                </View>
+                            );
+                        default:
+                            return null;
+                    }
+                })()}
             </View>
+
+            {/* Modal Tambah Biaya */}
+            <Modal
+                visible={showExpenseModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowExpenseModal(false)}
+            >
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white rounded-t-[32px] p-6 pb-12">
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Typography variant="h3" weight="bold">Input Biaya Operasional</Typography>
+                            <TouchableOpacity onPress={() => setShowExpenseModal(false)}>
+                                <CloseIcon size={24} color="#000" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="space-y-4">
+                            <Input
+                                label="Deskripsi"
+                                placeholder="Contoh: Ganti Oli, Pajak, Cuci Mobil"
+                                value={expenseForm.deskripsi}
+                                onChangeText={v => setExpenseForm(prev => ({ ...prev, deskripsi: v }))}
+                            />
+                            <Input
+                                label="Jumlah (Rp)"
+                                keyboardType="numeric"
+                                value={expenseForm.jumlah}
+                                onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: v }))}
+                            />
+                            <Input
+                                label="Tanggal (YYYY-MM-DD)"
+                                value={expenseForm.tanggal}
+                                onChangeText={v => setExpenseForm(prev => ({ ...prev, tanggal: v }))}
+                            />
+                            <Input
+                                label="Catatan (Opsional)"
+                                multiline
+                                value={expenseForm.catatan}
+                                onChangeText={v => setExpenseForm(prev => ({ ...prev, catatan: v }))}
+                            />
+
+                            <Button
+                                title={submittingExpense ? "Menyimpan..." : "Simpan Biaya"}
+                                onPress={handleAddExpense}
+                                disabled={submittingExpense || !expenseForm.deskripsi || !expenseForm.jumlah}
+                                className="mt-4"
+                            />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 };

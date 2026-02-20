@@ -27,7 +27,6 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
-import { ArmadaDetail } from '../../components/jasa-angkut/ArmadaDetail';
 import { useMuatanList, useMuatanSummary, useActiveArmada, usePayMuatanSplit } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -50,7 +49,6 @@ export default function JasaAngkutScreen() {
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
     const [searchQuery, setSearchQuery] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-    const [selectedArmadaId, setSelectedArmadaId] = useState<number | null>(null);
 
     const recentTrips = useMemo(() => {
         let trips = muatanData?.data || [];
@@ -187,7 +185,6 @@ export default function JasaAngkutScreen() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [sheetIndex, setSheetIndex] = useState(-1);
     const [editData, setEditData] = useState<Muatan | null>(null);
-    const [isArmadaDetailOpen, setIsArmadaDetailOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [splitPayments, setSplitPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([]);
     const [paymentNote, setPaymentNote] = useState('');
@@ -226,20 +223,18 @@ export default function JasaAngkutScreen() {
 
     const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail' | 'payment', item?: any) => {
         if (type === 'armada_detail') {
-            setView('detail');
-        } else {
-            setView(type);
+            router.push(`/jasa-angkut/armada/detail/${item.id}`);
+            return;
         }
 
+        setView(type);
+
         if (type === 'form') setEditData(null);
-        if (type === 'detail') setSelectedTrip(item);
-        if (type === 'armada_detail') setSelectedArmadaId(item.id);
-        if (type === 'payment') setSelectedTrip(item);
+        if (type === 'detail' || type === 'payment') setSelectedTrip(item);
 
         if (Platform.OS === 'web') {
             if (type === 'form') setIsFormOpen(true);
             else if (type === 'detail') setIsDetailOpen(true);
-            else if (type === 'armada_detail') setIsArmadaDetailOpen(true);
             else if (type === 'payment') setIsPaymentModalOpen(true);
         } else {
             setSheetIndex(0);
@@ -251,7 +246,6 @@ export default function JasaAngkutScreen() {
         if (Platform.OS === 'web') {
             setIsFormOpen(false);
             setIsDetailOpen(false);
-            setIsArmadaDetailOpen(false);
         } else {
             bottomSheetRef.current?.close();
             setSheetIndex(-1);
@@ -259,7 +253,6 @@ export default function JasaAngkutScreen() {
         setIsPaymentModalOpen(false);
         setSelectedTrip(null);
         setEditData(null);
-        setSelectedArmadaId(null);
     }, []);
 
     const handleEdit = (item: Muatan) => {
@@ -724,7 +717,7 @@ export default function JasaAngkutScreen() {
                             <Search size={20} color="#6B7280" />
                             <TextInput
                                 className="flex-1 ml-3 text-textMain text-sm font-medium h-full"
-                                placeholder="Cari rute, supir, armada..."
+                                placeholder="Cari rute, supir, armada"
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                                 placeholderTextColor="#9CA3AF"
@@ -965,8 +958,6 @@ export default function JasaAngkutScreen() {
                     <View style={{ flex: 1 }}>
                         {view === 'form' ? (
                             <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
-                        ) : selectedArmadaId ? (
-                            <ArmadaDetail id={selectedArmadaId} onClose={handleCloseSheet} />
                         ) : view === 'payment' && selectedTrip ? (
                             renderPaymentContent(selectedTrip)
                         ) : selectedTrip ? (
@@ -976,16 +967,6 @@ export default function JasaAngkutScreen() {
                 </BottomSheet>
             )}
 
-            {/* Web Modal for Armada Detail */}
-            <Modal visible={isArmadaDetailOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
-                <View className="flex-1 justify-end bg-black/40">
-                    <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
-                    <View className="bg-white rounded-t-[48px] w-full max-w-[800px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                        {selectedArmadaId && <ArmadaDetail id={selectedArmadaId} onClose={handleCloseSheet} />}
-                    </View>
-                </View>
-            </Modal>
 
             <AlertDialog
                 visible={dialogConfig.visible}

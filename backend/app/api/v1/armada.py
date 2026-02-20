@@ -8,6 +8,7 @@ from app.schemas.jasa_angkut import (
     ArmadaResponse,
     ArmadaList,
     ArmadaDetailResponse,
+    ArmadaExpenseCreate,
 )
 from app.services.armada_service import ArmadaService
 
@@ -91,3 +92,14 @@ def delete_armada(
     service = ArmadaService(db)
     service.delete(armada_id)
     return {"message": "Armada berhasil dihapus"}
+
+@router.post("/{armada_id}/expense", status_code=status.HTTP_201_CREATED)
+def add_armada_expense(
+    armada_id: int,
+    data: ArmadaExpenseCreate,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Add a general operational expense to an armada."""
+    service = ArmadaService(db)
+    return service.add_expense(armada_id, data, user_id=current_user.id)

@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     full_name: str = Field(..., min_length=1, max_length=100)
+    phone: Optional[str] = Field(None, max_length=20)
     role: UserRole = UserRole.STAFF
 
 
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=3, max_length=50)
     email: Optional[EmailStr] = None
     full_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    phone: Optional[str] = Field(None, max_length=20)
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6, max_length=100)
@@ -40,6 +42,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: str
+    phone: Optional[str] = None
     role: UserRole
     is_active: bool
     last_login: Optional[datetime] = None

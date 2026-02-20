@@ -8,6 +8,8 @@ import { useUIStore } from '../../store/useUIStore';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
+import { authService } from '../../services/auth';
+import { getErrorMessage } from '../../utils/error';
 
 export default function ProfileSettingsScreen() {
     const router = useRouter();
@@ -15,7 +17,7 @@ export default function ProfileSettingsScreen() {
     const { themeColors } = useUIStore();
 
     // Form States
-    const [name, setName] = useState(user?.name || 'Admin TPM');
+    const [name, setName] = useState(user?.full_name || user?.name || 'Admin TPM');
     const [email, setEmail] = useState(user?.email || 'admin@tpm.com');
     const [phone, setPhone] = useState(user?.phone || '081234567890');
     const [jabatan, setJabatan] = useState(user?.role || 'Manager');
@@ -72,29 +74,36 @@ export default function ProfileSettingsScreen() {
 
     const handleSave = async () => {
         setIsSaving(true);
-
-        // Simulating API Call
-        setTimeout(() => {
-            // Update local store
-            const updatedUser = {
-                ...user,
-                name,
-                email,
-                phone,
-                role: jabatan,
+        try {
+            const data = {
+                full_name: name,
+                email: email,
+                phone: phone,
                 profile_picture: image
             };
 
+            const updatedUser = await authService.updateMe(data);
+
+            // Update local store
             setAuth(updatedUser, token || '');
 
-            setIsSaving(false);
             setDialogConfig({
                 visible: true,
                 title: "Berhasil!",
-                message: "Profil Anda telah diperbarui secara lokal. (Integrasi backend segera hadir)",
+                message: "Profil Anda telah diperbarui dan disimpan ke server.",
                 variant: 'success'
             });
-        }, 1500);
+        } catch (error) {
+            console.error('Failed to update profile:', error);
+            setDialogConfig({
+                visible: true,
+                title: "Gagal Update",
+                message: getErrorMessage(error, "Terjadi kesalahan saat menyimpan perubahan profil."),
+                variant: 'error'
+            });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (

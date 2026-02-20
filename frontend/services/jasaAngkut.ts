@@ -97,6 +97,7 @@ export interface MuatanCreate {
     persentase_tpm?: number; // Default 50
     status_bayar?: 'LUNAS' | 'BELUM_LUNAS';
     metode_bayar?: PaymentMethod;
+    biaya_operasional?: any[];
     catatan?: string;
 }
 
@@ -209,6 +210,18 @@ export const jasaAngkutService = {
 
     getArmadaDetail: async (id: number) => {
         const response = await api.get(`/armada/${id}/detail`);
+        return response.data;
+    },
+
+    addArmadaExpense: async (id: number, data: {
+        tanggal: string;
+        deskripsi: string;
+        jumlah: number;
+        kategori?: string;
+        catatan?: string;
+        metode_bayar?: string;
+    }) => {
+        const response = await api.post(`/armada/${id}/expense`, data);
         return response.data;
     },
 

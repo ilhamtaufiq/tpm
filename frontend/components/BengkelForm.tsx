@@ -150,10 +150,10 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
         let finalCustomer = selectedCustomer ? selectedCustomer.nama : guestName;
         let finalJenis = jenisKendaraan;
 
-        // Auto-fill from selectedMuatan if category is jasa_angkut
-        if (kategori === 'jasa_angkut' && selectedMuatan) {
-            finalPlat = selectedMuatan.nopol || finalPlat;
-            finalCustomer = selectedMuatan.supir_nama || selectedMuatan.supir?.nama || finalCustomer;
+        // Auto-fill from selectedArmada if category is jasa_angkut
+        if (kategori === 'jasa_angkut' && selectedArmada) {
+            finalPlat = selectedArmada.nopol || finalPlat;
+            finalCustomer = `Armada ${selectedArmada.nama || selectedArmada.nopol}`;
             finalJenis = 'Armada Jasa Angkut';
         }
 
@@ -175,8 +175,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
         }
 
         // Category-specific validation
-        if (kategori === 'jasa_angkut' && !selectedMuatan) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih transaksi muatan untuk kategori Jasa Angkut', variant: 'warning' });
+        if (kategori === 'jasa_angkut' && !selectedArmada) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih Armada untuk kategori Jasa Angkut', variant: 'warning' });
             return;
         }
         if (kategori === 'jual_beli_mobil' && !selectedMobil) {
@@ -188,7 +188,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
         const validatedCustomerName = finalCustomer.substring(0, 100);
 
         // For jasa_angkut or jual_beli_mobil: auto-set internal payment (no cash involved)
-        const isInternalJasaAngkut = (kategori === 'jasa_angkut' && selectedMuatan) || (kategori === 'jual_beli_mobil' && selectedMobil);
+        const isInternalJasaAngkut = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
 
         const payload: any = {
             tanggal: new Date().toISOString().split('T')[0],
@@ -198,6 +198,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             customer_id: selectedCustomer ? selectedCustomer.id : null,
             kategori: kategori,
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
+            armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
             metode_bayar: isInternalJasaAngkut ? 'INTERNAL' : metodeBayar.toUpperCase(),
             detail_services: services
@@ -255,7 +256,6 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     // Form content rendered inside scroll view
     const renderFormContent = () => (
         <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 10 }}>
-
             {/* ===== CATEGORY SELECTOR ===== */}
             <View className="mb-6">
                 <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Kategori Bengkel</Typography>
@@ -292,174 +292,28 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                 </View>
             </View>
 
-            {/* ===== MUATAN PICKER (Jasa Angkut) ===== */}
+            {/* ===== ARMADA PICKER (Jasa Angkut) ===== */}
             {kategori === 'jasa_angkut' && (
                 <View className="mb-6">
                     <Typography variant="body2" weight="semibold" className="mb-3 text-emerald-600">
-                        Informasi Armada & Muatan
+                        Pilih Armada
                     </Typography>
 
-                    {/* Step 1: Select Armada */}
                     <ArmadaSelector
                         label="Pilih Armada"
                         value={selectedArmada}
                         onSelect={(armada) => {
                             setSelectedArmada(armada);
-                            setSelectedMuatan(null); // Reset muatan if armada changes
                         }}
                     />
 
-                    {/* Step 2: Select Muatan (only if armada selected) */}
-                    <View className={`mt-2 ${!selectedArmada ? 'opacity-50' : ''}`}>
-                        <Typography variant="caption" weight="bold" className="mb-2 text-emerald-700/60 uppercase">
-                            Daftar Transaksi Muatan
+                    <View className="mt-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <Typography variant="caption" className="text-emerald-700 italic">
+                            * Transaksi ini akan tercatat sebagai biaya operasional armada dan mengurangi Net Profit (Laba TPM).
                         </Typography>
-                        <TouchableOpacity
-                            disabled={!selectedArmada}
-                            onPress={() => {
-                                setMuatanSearchQuery('');
-                                setMuatanSearchOpen(true);
-                            }}
-                        >
-                            <View className={`rounded-2xl px-4 py-3 border-2 flex-row items-center ${selectedMuatan ? 'bg-emerald-50 border-emerald-300' : 'bg-gray-50 border-transparent'
-                                }`}>
-                                {selectedMuatan ? (
-                                    <Truck size={20} color="#10B981" />
-                                ) : (
-                                    <Search size={20} color={selectedArmada ? "#10B981" : "#9CA3AF"} />
-                                )}
-                                <View className="flex-1 ml-3">
-                                    {selectedMuatan ? (
-                                        <>
-                                            <Typography weight="bold" className="text-emerald-700 text-sm">
-                                                {selectedMuatan.asal} → {selectedMuatan.tujuan}
-                                            </Typography>
-                                            <Typography variant="caption" className="text-emerald-600/70">
-                                                {selectedMuatan.supir_nama || '-'} • {selectedMuatan.nopol} • {formatCurrency((Number(selectedMuatan.pendapatan_kotor) || 0) - (Number(selectedMuatan.laba_supir) || 0))}
-                                            </Typography>
-                                        </>
-                                    ) : (
-                                        <Typography className="text-gray-400 text-sm">
-                                            {selectedArmada ? `Pilih muatan untuk ${selectedArmada.nama}...` : 'Pilih armada terlebih dahulu'}
-                                        </Typography>
-                                    )}
-                                </View>
-                                {selectedMuatan ? (
-                                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedMuatan(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                        <X size={18} color="#EF4444" />
-                                    </TouchableOpacity>
-                                ) : (
-                                    <ChevronRight size={18} color="#9CA3AF" />
-                                )}
-                            </View>
-                        </TouchableOpacity>
                     </View>
-
-                    {/* Search Modal */}
-                    <Modal visible={muatanSearchOpen} transparent animationType="slide" onRequestClose={() => setMuatanSearchOpen(false)} statusBarTranslucent>
-                        <View className="flex-1 justify-end bg-black/50">
-                            <TouchableOpacity style={{ flex: 1 }} onPress={() => setMuatanSearchOpen(false)} activeOpacity={1} />
-                            <View className="bg-white rounded-t-[32px] h-[80%] overflow-hidden">
-                                <View style={{ padding: 24, flex: 1 }}>
-                                    <View className="items-center mb-2">
-                                        <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                                    </View>
-                                    <View className="flex-row justify-between items-center mb-4">
-                                        <Typography variant="h3" weight="bold">Cari Muatan</Typography>
-                                        <TouchableOpacity onPress={() => setMuatanSearchOpen(false)}>
-                                            <X size={24} color="#6B7280" />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                        <Search size={20} color="#9CA3AF" />
-                                        <TextInput
-                                            className="flex-1 ml-3 text-base text-text font-outfit"
-                                            placeholder="Ketik tujuan, supir, atau no. transaksi..."
-                                            value={muatanSearchQuery}
-                                            onChangeText={setMuatanSearchQuery}
-                                            autoFocus
-                                            placeholderTextColor="#9CA3AF"
-                                        />
-                                    </View>
-                                    {muatanList.length === 0 ? (
-                                        <View className="items-center py-8">
-                                            <Typography className="text-gray-400 italic">Tidak ada data muatan</Typography>
-                                        </View>
-                                    ) : (
-                                        <SectionList
-                                            sections={muatanSections}
-                                            keyExtractor={(item: any) => item.id.toString()}
-                                            showsVerticalScrollIndicator={false}
-                                            stickySectionHeadersEnabled={true}
-                                            renderSectionHeader={({ section: { title } }) => (
-                                                <View className="bg-white py-2 mb-1 border-b border-gray-100 flex-row items-center">
-                                                    <View className="w-1 h-4 bg-emerald-500 rounded-full mr-2" />
-                                                    <Typography weight="bold" className="text-emerald-700 uppercase tracking-wider text-[10px]">
-                                                        {title}
-                                                    </Typography>
-                                                </View>
-                                            )}
-                                            renderItem={({ item }: { item: any }) => (
-                                                <TouchableOpacity
-                                                    onPress={() => {
-                                                        setSelectedMuatan(item);
-                                                        setMuatanSearchOpen(false);
-                                                    }}
-                                                    className="mb-3"
-                                                >
-                                                    <Card className={`p-4 border flex-row items-center justify-between ${selectedMuatan?.id === item.id ? 'border-emerald-400 bg-emerald-50' : 'border-gray-50 bg-white'
-                                                        }`}>
-                                                        <View className="flex-1">
-                                                            <View className="flex-row justify-between items-start mb-1">
-                                                                <Typography weight="bold" className="text-sm text-textMain flex-1 mr-2">
-                                                                    {item.asal} → {item.tujuan}
-                                                                </Typography>
-                                                                <Typography variant="caption" weight="bold" className="text-emerald-600">
-                                                                    {formatCurrency((Number(item.pendapatan_kotor) || 0) - (Number(item.laba_supir) || 0))}
-                                                                </Typography>
-                                                            </View>
-
-                                                            <View className="flex-row items-center mb-1">
-                                                                <Typography variant="caption" className="text-gray-500">
-                                                                    Supir: <Typography variant="caption" weight="semibold" className="text-textGray">{item.supir_nama || '-'}</Typography>
-                                                                </Typography>
-                                                                <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
-                                                                <Typography variant="caption" className="text-gray-400">
-                                                                    {item.nomor_transaksi}
-                                                                </Typography>
-                                                            </View>
-
-                                                            {item.nopol && (
-                                                                <View className="flex-row items-center mt-1">
-                                                                    <Truck size={12} color="#9CA3AF" />
-                                                                    <Typography className="text-gray-400 text-[10px] ml-1">
-                                                                        {item.nopol} {item.armada?.nama ? `(${item.armada.nama})` : ''}
-                                                                    </Typography>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                        {selectedMuatan?.id === item.id && (
-                                                            <View className="bg-emerald-500 rounded-full p-1 ml-3">
-                                                                <Info size={14} color="#fff" />
-                                                            </View>
-                                                        )}
-                                                    </Card>
-                                                </TouchableOpacity>
-                                            )}
-                                            ListEmptyComponent={
-                                                muatanSearchQuery.length > 0 ? (
-                                                    <Typography className="text-center text-gray-400 mt-8">Tidak ditemukan</Typography>
-                                                ) : null
-                                            }
-                                        />
-                                    )}
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
                 </View>
             )}
-
             {/* ===== MOBIL PICKER (Jual Beli Mobil) ===== */}
             {kategori === 'jual_beli_mobil' && (
                 <View className="mb-6">
@@ -487,7 +341,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                         </Typography>
                                     </>
                                 ) : (
-                                    <Typography className="text-gray-400 text-sm">Cari mobil (plat, merek, model)...</Typography>
+                                    <Typography className="text-gray-400 text-sm">Cari mobil (plat, merek, model)</Typography>
                                 )}
                             </View>
                             {selectedMobil ? (
@@ -519,7 +373,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                                         <Search size={20} color="#9CA3AF" />
                                         <TextInput
                                             className="flex-1 ml-3 text-base text-text font-outfit"
-                                            placeholder="Ketik plat, merek, atau model..."
+                                            placeholder="Ketik plat, merek, atau model"
                                             value={mobilSearchQuery}
                                             onChangeText={setMobilSearchQuery}
                                             autoFocus
@@ -579,9 +433,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     </Modal>
                 </View>
             )}
-
             {/* Pelanggan — hidden for jasa_angkut & jual_beli_mobil */}
-            {!(kategori === 'jasa_angkut' && selectedMuatan) && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
+            {kategori !== 'jasa_angkut' && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
                 <View className="mb-6">
                     <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Informasi Pelanggan</Typography>
                     <MasterDataSelector
@@ -602,7 +455,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                             }
                         }}
                         allowGuest={true}
-                        placeholder="Pilih Customer atau Ketik Nama..."
+                        placeholder="Pilih Customer atau Ketik Nama"
                         onGuestNameChange={(name) => {
                             setGuestName(name);
                             setSelectedCustomer(null);
@@ -638,9 +491,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     ) : null}
                 </View>
             )}
-
             {/* Kendaraan */}
-            {!(kategori === 'jasa_angkut' && selectedMuatan) && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
+            {kategori !== 'jasa_angkut' && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
                 <View className="mb-6">
                     <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Informasi Kendaraan</Typography>
                     <View className="flex-row space-x-3">
@@ -983,25 +835,29 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     <View className="flex-row justify-between items-center">
                         <View>
                             <Typography variant="body2" weight="bold">Total Akhir</Typography>
-                            {(kategori === 'jasa_angkut' && selectedMuatan) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
+                            {(kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
                                 <Typography variant="caption" className="text-emerald-500 font-medium">{kategori === 'jasa_angkut' ? 'Potong dari Laba TPM' : 'Masuk HPP Mobil'}</Typography>
-                            ) : (() => {
-                                const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0);
-                                if (grandTotal > totalPaid) {
-                                    return (
-                                        <Typography variant="caption" className="text-rose-600 font-bold">
-                                            Sisa: {formatCurrency(grandTotal - totalPaid)}
-                                        </Typography>
-                                    );
-                                } else if (totalPaid > grandTotal) {
-                                    return (
-                                        <Typography variant="caption" className="text-emerald-600 font-bold">
-                                            Kembalian: {formatCurrency(totalPaid - grandTotal)}
-                                        </Typography>
-                                    );
-                                }
-                                return <Typography variant="caption" className="text-emerald-500 font-medium">Pas / Lunas</Typography>;
-                            })()}
+                            ) : (
+                                <View>
+                                    {(() => {
+                                        const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0);
+                                        if (grandTotal > totalPaid) {
+                                            return (
+                                                <Typography variant="caption" className="text-rose-600 font-bold">
+                                                    Sisa: {formatCurrency(grandTotal - totalPaid)}
+                                                </Typography>
+                                            );
+                                        } else if (totalPaid > grandTotal) {
+                                            return (
+                                                <Typography variant="caption" className="text-emerald-600 font-bold">
+                                                    Kembalian: {formatCurrency(totalPaid - grandTotal)}
+                                                </Typography>
+                                            );
+                                        }
+                                        return <Typography variant="caption" className="text-emerald-500 font-medium">Pas / Lunas</Typography>;
+                                    })()}
+                                </View>
+                            )}
                         </View>
                         <Typography variant="h2" weight="bold" className="text-primary text-xl">
                             {formatCurrency(grandTotal)}

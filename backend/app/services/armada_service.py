@@ -5,8 +5,17 @@ from fastapi import HTTPException, status
 
 from app.models.jasa_angkut import ArmadaJasaAngkut, MuatanJasaAngkut
 from app.models.bengkel import TransaksiPenjualanBengkel
-from app.schemas.jasa_angkut import ArmadaCreate, ArmadaUpdate, ArmadaDetailResponse, ArmadaStats
+from app.schemas.jasa_angkut import (
+    ArmadaCreate, 
+    ArmadaUpdate, 
+    ArmadaDetailResponse, 
+    ArmadaStats,
+    ArmadaExpenseCreate
+)
 from decimal import Decimal
+from app.models.jasa_angkut import JasaAngkutBiayaLainnya
+from app.services.kas_bank_integration import create_kas_entry
+from app.utils.constants import KasBankType, KasBankSource, PaymentMethod
 
 class ArmadaService:
     """Service for armada management."""
@@ -141,16 +150,23 @@ class ArmadaService:
             MuatanJasaAngkut.armada_id == armada_id
         ).order_by(MuatanJasaAngkut.tanggal.desc()).limit(50).all()
         
-        # 2. Workshop repairs history (by nopol or by muatan link)
+        # 2. Workshop repairs history (by nopol or by muatan link or by direct armada_id)
         muatan_ids = [m.id for m in muatan_history]
         perbaikan_history = self.db.query(TransaksiPenjualanBengkel).filter(
             or_(
+                TransaksiPenjualanBengkel.armada_id == armada_id,
                 TransaksiPenjualanBengkel.nomor_plat == armada.nopol,
                 TransaksiPenjualanBengkel.muatan_id.in_(muatan_ids) if muatan_ids else False
             )
         ).order_by(TransaksiPenjualanBengkel.tanggal.desc()).limit(50).all()
         
-        # 3. Calculate Stats
+        # 3. General Armada Expenses (not tied to muatan)
+        general_expenses = self.db.query(JasaAngkutBiayaLainnya).filter(
+            JasaAngkutBiayaLainnya.armada_id == armada_id,
+            JasaAngkutBiayaLainnya.muatan_id.is_(None)
+        ).order_by(JasaAngkutBiayaLainnya.created_at.desc()).all()
+
+        # 4. Calculate Stats
         stats = ArmadaStats()
         stats.total_muatan = len(muatan_history)
         
@@ -182,10 +198,53 @@ class ArmadaService:
             
         for p in perbaikan_history:
             stats.total_perbaikan_bengkel += p.grand_total or 0
+            # If not tied to muatan, deduct directly from net profit
+            if not p.muatan_id:
+                stats.total_laba_tpm -= p.grand_total or 0
+        
+        # Add general expenses to total biaya operasional
+        for ge in general_expenses:
+            stats.total_biaya_operasional += ge.jumlah or 0
+            # Since total_laba_tpm was aggregated from muatan, we must deduct general expenses from it
+            stats.total_laba_tpm -= ge.jumlah or 0
             
         return {
             "armada": armada,
             "stats": stats,
             "muatan_history": muatan_history,
-            "perbaikan_history": perbaikan_history
+            "perbaikan_history": perbaikan_history,
+            "general_expenses": general_expenses
         }
+
+    def add_expense(self, armada_id: int, data: ArmadaExpenseCreate, user_id: Optional[int] = None) -> JasaAngkutBiayaLainnya:
+        """Add a general expense to an armada."""
+        armada = self.get_by_id(armada_id)
+        
+        expense = JasaAngkutBiayaLainnya(
+            armada_id=armada_id,
+            kategori=data.kategori,
+            deskripsi=data.deskripsi,
+            jumlah=data.jumlah,
+            catatan=data.catatan
+        )
+        
+        self.db.add(expense)
+        self.db.flush()
+        
+        # Record to Kas/Bank
+        create_kas_entry(
+            db=self.db,
+            tanggal=data.tanggal,
+            tipe=KasBankType.KELUAR,
+            nominal=data.jumlah,
+            sumber=KasBankSource.JASA_ANGKUT,
+            metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
+            referensi_id=expense.id,
+            nomor_referensi=armada.nopol,
+            keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi}",
+            user_id=user_id
+        )
+        
+        self.db.commit()
+        self.db.refresh(expense)
+        return expense

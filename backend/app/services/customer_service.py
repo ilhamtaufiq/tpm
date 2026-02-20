@@ -133,14 +133,15 @@ class CustomerService:
         # Search filter
         if search:
             search_filter = f"%{search}%"
-            query = query.filter(
+            query = query.outerjoin(Customer.vehicles).filter(
                 or_(
                     Customer.nama.ilike(search_filter),
                     Customer.kode.ilike(search_filter),
                     Customer.telepon.ilike(search_filter),
                     Customer.email.ilike(search_filter),
+                    CustomerVehicle.plat_nomor.ilike(search_filter),
                 )
-            )
+            ).distinct()
 
         # Type filter
         if tipe:
@@ -242,13 +243,14 @@ class CustomerService:
 
         if query:
             search_filter = f"%{query}%"
-            db_query = db_query.filter(
+            db_query = db_query.outerjoin(Customer.vehicles).filter(
                 or_(
                     Customer.nama.ilike(search_filter),
                     Customer.kode.ilike(search_filter),
                     Customer.telepon.ilike(search_filter),
+                    CustomerVehicle.plat_nomor.ilike(search_filter),
                 )
-            )
+            ).distinct()
         else:
             # If no query, return latest customers
             db_query = db_query.order_by(Customer.id.desc())

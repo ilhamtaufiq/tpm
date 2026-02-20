@@ -5,6 +5,8 @@ import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { authService } from '../../services/auth';
+import { getErrorMessage } from '../../utils/error';
 
 export default function ChangePasswordScreen() {
     const router = useRouter();
@@ -72,16 +74,26 @@ export default function ChangePasswordScreen() {
 
         setIsSaving(true);
 
-        // Simulating API Call
-        setTimeout(() => {
+        try {
+            await authService.changePassword(currentPassword, newPassword);
+
             setIsSaving(false);
             setDialogConfig({
                 visible: true,
                 title: "Berhasil!",
-                message: "Kata sandi Anda telah berhasil diperbarui.",
+                message: "Kata sandi Anda telah berhasil diperbarui di server.",
                 variant: 'success'
             });
-        }, 1500);
+        } catch (error) {
+            console.error('Failed to change password:', error);
+            setIsSaving(false);
+            setDialogConfig({
+                visible: true,
+                title: "Gagal Ganti Password",
+                message: getErrorMessage(error, "Terjadi kesalahan saat memperbarui kata sandi. Pastikan password lama benar."),
+                variant: 'error'
+            });
+        }
     };
 
     return (

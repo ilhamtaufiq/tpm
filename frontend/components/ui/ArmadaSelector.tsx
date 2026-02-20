@@ -66,7 +66,7 @@ export const ArmadaSelector = ({
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Armada..."}</Typography>
+                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Armada"}</Typography>
                         )}
                     </View>
 

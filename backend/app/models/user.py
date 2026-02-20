@@ -18,6 +18,7 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(100))
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         SQLEnum(UserRole),
         default=UserRole.STAFF,

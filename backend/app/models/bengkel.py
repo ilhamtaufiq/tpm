@@ -162,6 +162,10 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
         ForeignKey("muatan_jasa_angkut.id", ondelete="SET NULL"),
         nullable=True,
     )
+    armada_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("armada_jasa_angkut.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     mobil_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("mobil.id", ondelete="SET NULL"),
         nullable=True,
@@ -216,6 +220,7 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
     muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship()
+    armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship()
     mobil: Mapped[Optional["Mobil"]] = relationship(back_populates="bengkel_perbaikan")
 
     @property

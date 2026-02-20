@@ -98,7 +98,7 @@ export default function ProfileScreen() {
                     {/* Text Info */}
                     <View className="flex-1 justify-center">
                         <Typography className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-0.5">Profil Saya</Typography>
-                        <Typography variant="h3" weight="bold" className="text-white text-lg leading-tight">{user?.name || 'Admin TPM'}</Typography>
+                        <Typography variant="h3" weight="bold" className="text-white text-lg leading-tight">{user?.full_name || user?.name || 'Admin TPM'}</Typography>
                         <Typography className="text-white/80 text-xs">{user?.role || 'Manager'}</Typography>
                     </View>
 

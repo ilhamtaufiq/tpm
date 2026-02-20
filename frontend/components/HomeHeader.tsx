@@ -48,7 +48,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                 <View>
                     <Typography className="text-white/60 text-[10px] uppercase tracking-[3px] font-bold mb-1">Selamat Datang 👋</Typography>
                     <Typography variant="h3" weight="bold" className="text-white leading-tight">
-                        {user?.name || 'Admin TPM'}
+                        {user?.full_name || user?.name || 'Admin TPM'}
                     </Typography>
                 </View>
                 <TouchableOpacity

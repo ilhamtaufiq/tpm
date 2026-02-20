@@ -40,6 +40,7 @@ class AuthService:
             username=user_data.username,
             email=user_data.email,
             full_name=user_data.full_name,
+            phone=user_data.phone,
             hashed_password=hash_password(user_data.password),
             role=user_data.role,
         )

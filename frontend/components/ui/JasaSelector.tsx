@@ -67,7 +67,7 @@ export const JasaSelector = ({
                                 </Typography>
                             </>
                         ) : (
-                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Jasa Servis..."}</Typography>
+                            <Typography className="text-gray-400 text-base">{placeholder || "Pilih Jasa Servis"}</Typography>
                         )}
                     </View>
 

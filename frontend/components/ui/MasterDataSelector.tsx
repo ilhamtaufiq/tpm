@@ -145,7 +145,7 @@ export const MasterDataSelector = ({
                                 <Search size={20} color="#9CA3AF" />
                                 <TextInput
                                     className="flex-1 ml-3 text-base text-text font-outfit"
-                                    placeholder={`Ketik nama ${type}...`}
+                                    placeholder={`Ketik nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
                                     autoFocus
@@ -175,11 +175,22 @@ export const MasterDataSelector = ({
                                     renderItem={({ item }) => (
                                         <TouchableOpacity onPress={() => handleSelect(item)}>
                                             <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
-                                                <View>
+                                                <View className="flex-1 mr-2">
                                                     <Typography weight="semibold">{item.nama}</Typography>
                                                     <Typography variant="caption" className="text-gray-500">
                                                         {item.kota ? `${item.kota} • ` : ''}{item.telepon || '-'}
                                                     </Typography>
+                                                    {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
+                                                        <View className="flex-row flex-wrap mt-1">
+                                                            {item.vehicles.map((v: any, idx: number) => (
+                                                                <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
+                                                                    <Typography className="text-blue-700 text-[10px] font-bold">
+                                                                        {v.plat_nomor}
+                                                                    </Typography>
+                                                                </View>
+                                                            ))}
+                                                        </View>
+                                                    )}
                                                 </View>
                                                 <Badge
                                                     label={type === 'customer' ? item.tipe : 'Vendor'}

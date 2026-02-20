@@ -66,6 +66,10 @@ class ArmadaJasaAngkut(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="armada",
         lazy="dynamic",
     )
+    biaya_tambahan: Mapped[List["JasaAngkutBiayaLainnya"]] = relationship(
+        back_populates="armada",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Armada(id={self.id}, nopol='{self.nopol}', nama='{self.nama}')>"
@@ -184,8 +188,13 @@ class JasaAngkutBiayaLainnya(Base, TimestampMixin):
     __tablename__ = "jasa_angkut_biaya_lainnya"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    muatan_id: Mapped[int] = mapped_column(
-        ForeignKey("muatan_jasa_angkut.id", ondelete="CASCADE")
+    muatan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("muatan_jasa_angkut.id", ondelete="CASCADE"),
+        nullable=True
+    )
+    armada_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("armada_jasa_angkut.id", ondelete="CASCADE"),
+        nullable=True
     )
     kategori: Mapped[str] = mapped_column(String(50))
     deskripsi: Mapped[str] = mapped_column(String(255))
@@ -193,7 +202,8 @@ class JasaAngkutBiayaLainnya(Base, TimestampMixin):
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
-    muatan: Mapped["MuatanJasaAngkut"] = relationship(back_populates="biaya_tambahan")
+    muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship(back_populates="biaya_tambahan")
+    armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship(back_populates="biaya_tambahan")
 
 
 class JasaAngkutPartService(Base, TimestampMixin):

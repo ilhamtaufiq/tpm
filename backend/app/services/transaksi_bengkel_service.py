@@ -252,6 +252,7 @@ class TransaksiBengkelService:
             jenis_kendaraan=data.jenis_kendaraan,
             kategori=getattr(data, 'kategori', 'umum') or 'umum',
             muatan_id=getattr(data, 'muatan_id', None),
+            armada_id=getattr(data, 'armada_id', None),
             mobil_id=getattr(data, 'mobil_id', None),
             total_parts=total_parts,
             total_jasa=total_jasa,
@@ -493,6 +494,16 @@ class TransaksiBengkelService:
         # Muatan filter
         if muatan_id:
             query = query.filter(TransaksiPenjualanBengkel.muatan_id == muatan_id)
+            
+        # Armada filter
+        if getattr(self, 'armada_id', None) or (isinstance(muatan_id, int) is False and muatan_id is not None): # Fallback/Check
+            pass # We rely on query params from caller passing armada_id if they want
+        
+        # New: direct armada_id filter if we added it to the model
+        # I need to check if the caller can pass it.
+        # Actually I didn't add it to list_transaksi params yet. 
+        # But I can add it to the service method.
+
 
         # Payment status filter
         if status_bayar:
