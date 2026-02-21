@@ -52,8 +52,21 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
     export PYTHONPATH="$BACKEND_DIR"
     
+    # Cek jika ada multiple heads dan gabungkan otomatis
+    NUM_HEADS=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -c "(head)")
+    # Fallback jika grep -c (head) tidak akurat (beberapa versi alembic beda format)
+    if [ "$NUM_HEADS" -eq 0 ]; then
+        NUM_HEADS=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -v "INFO" | grep -v "Context" | wc -l)
+    fi
+
+    if [ "$NUM_HEADS" -gt 1 ]; then
+        echo -e "${YELLOW}$prefix WARNING${NC} Terdeteksi multiple heads ($NUM_HEADS). Melakukan merge otomatis..."
+        sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic merge -m "auto merge remote heads" heads || { echo -e "${RED}$prefix ERROR${NC} Auto merge gagal"; exit 1; }
+    fi
+
     MIGRATION_OUT=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic upgrade head 2>&1)
     if [ $? -ne 0 ]; then
+
         echo "$MIGRATION_OUT" > "$BACKEND_DIR/migration_error.log"
         echo -e "${RED}$prefix ERROR${NC} Migrasi gagal!"
         echo -e "${YELLOW}$prefix LOGS:${NC}"
