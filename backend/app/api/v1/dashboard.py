@@ -535,22 +535,6 @@ def get_capital_report(
         "total_c": total_c
     }
 
-    # --- D. Sisa Laba dan Modal (Cash Position) ---
-    balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    posisi_cash = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
-    
-    posisi_transfer = 0
-    for k, v in balances.items():
-        if k != KasBankJenis.CASH.value and isinstance(v, dict):
-            posisi_transfer += v.get("saldo", 0)
-
-    section_d = {
-        "cash": posisi_cash,
-        "transfer": posisi_transfer,
-        "total_d": posisi_cash + posisi_transfer,
-        "theoretical_modal": section_a["total_a"] - section_b["total_b"] - section_c["total_c"]
-    }
-
     # --- E. Hutang / Kewajiban ---
     # Fetch current payable balances
     hutang_summ = hutang_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -571,12 +555,29 @@ def get_capital_report(
         "total_e": total_e
     }
 
+    # --- D. Sisa Laba dan Modal (Cash Position) ---
+    balances = kas_service.get_all_balances(as_of=tanggal_sampai)
+    posisi_cash = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
+    
+    posisi_transfer = 0
+    for k, v in balances.items():
+        if k != KasBankJenis.CASH.value and isinstance(v, dict):
+            posisi_transfer += v.get("saldo", 0)
+
+    section_d = {
+        "cash": posisi_cash,
+        "transfer": posisi_transfer,
+        "total_d": posisi_cash + posisi_transfer,
+        "theoretical_modal": section_a["total_a"] - section_b["total_b"] - section_c["total_c"] + total_e
+    }
+
+    print(f"DEBUG RECON: A={section_a['total_a']}, B={section_b['total_b']}, C={section_c['total_c']}, E={total_e}, theoretical={section_d['theoretical_modal']}, bank={section_d['total_d']}")
     return {
         "section_a": section_a,
         "section_b": section_b,
         "section_c": section_c,
         "section_d": section_d,
         "section_e": section_e,
-        "grand_total": (section_a["total_a"] - section_c["total_c"]) 
+        "grand_total": section_d["theoretical_modal"]
     }
 

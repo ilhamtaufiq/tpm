@@ -216,6 +216,7 @@ class MuatanService:
         for item in data.biaya_operasional:
             biaya = JasaAngkutBiayaLainnya(
                 muatan_id=muatan.id,
+                tanggal=data.tanggal,
                 kategori="Operasional",
                 deskripsi=item.deskripsi,
                 jumlah=item.jumlah,
@@ -485,6 +486,7 @@ class MuatanService:
             for item in data.biaya_operasional:
                 biaya = JasaAngkutBiayaLainnya(
                     muatan_id=muatan.id,
+                    tanggal=muatan.tanggal,
                     kategori="Operasional",
                     deskripsi=item.deskripsi,
                     jumlah=item.jumlah,
@@ -714,6 +716,7 @@ class MuatanService:
 
         biaya = JasaAngkutBiayaLainnya(
             muatan_id=muatan_id,
+            tanggal=muatan.tanggal,
             kategori=kategori,
             deskripsi=deskripsi,
             jumlah=jumlah,
@@ -794,6 +797,13 @@ class MuatanService:
             func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya"),
             func.sum(MuatanJasaAngkut.laba_kotor).label("total_laba_kotor"),
             func.sum(MuatanJasaAngkut.laba_tpm).label("total_laba_tpm"),
+            func.sum(
+                MuatanJasaAngkut.biaya_bbm + 
+                MuatanJasaAngkut.biaya_tol + 
+                MuatanJasaAngkut.biaya_makan + 
+                MuatanJasaAngkut.biaya_parkir + 
+                MuatanJasaAngkut.biaya_lainnya
+            ).label("total_biaya_static"),
             func.sum(0).label("total_laba_supir"), # Hidden per request
         ).first()
 
@@ -809,27 +819,24 @@ class MuatanService:
             or Decimal("0")
         )
 
-        # 3. Cost Breakdown (Paid only)
+        # 3. Cost Breakdown (Accrual)
+        # Includes both tied to muatan and general armada expenses in period
         cost_query = (
             self.db.query(
                 JasaAngkutBiayaLainnya.kategori,
                 func.sum(JasaAngkutBiayaLainnya.jumlah).label("total")
             )
-            .join(MuatanJasaAngkut)
         )
 
-        # Apply same filters as valid transactions
         if tanggal_dari:
-            cost_query = cost_query.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+            cost_query = cost_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
         if tanggal_sampai:
-            cost_query = cost_query.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
-            
-        # Summary includes all transactions in period (Accrual)
+            cost_query = cost_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
             
         cost_results = cost_query.group_by(JasaAngkutBiayaLainnya.kategori).all()
         
         biaya_bengkel = Decimal("0")
-        biaya_lainnya = Decimal("0")
+        biaya_lainnya = aggregates.total_biaya_static or Decimal("0")
         
         for cat, total in cost_results:
             if cat == "Perawatan Bengkel":
@@ -837,25 +844,51 @@ class MuatanService:
             else:
                 biaya_lainnya += (total or Decimal("0"))
 
-        # 3b. Also include JasaAngkutPartService costs (parts & services from linked bengkel transactions)
-        ps_cost_query = (
-            self.db.query(func.sum(JasaAngkutPartService.total))
-            .join(MuatanJasaAngkut)
-        )
+        # 3b. Include JasaAngkutPartService costs
+        ps_cost_query = self.db.query(func.sum(JasaAngkutPartService.total))
         if tanggal_dari:
-            ps_cost_query = ps_cost_query.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+            ps_cost_query = ps_cost_query.filter(JasaAngkutPartService.tanggal >= tanggal_dari)
         if tanggal_sampai:
-            ps_cost_query = ps_cost_query.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+            ps_cost_query = ps_cost_query.filter(JasaAngkutPartService.tanggal <= tanggal_sampai)
         
         ps_cost_total = ps_cost_query.scalar() or Decimal("0")
         biaya_bengkel += ps_cost_total
 
+        # 3c. Include independent workshop transactions for Jasa Angkut fleets
+        # (Where kategori=jasa_angkut but muatan_id is null, or identified by armada nopol)
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.models.jasa_angkut import ArmadaJasaAngkut
+        
+        independent_repair_query = (
+            self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
+            .filter(
+                TransaksiPenjualanBengkel.muatan_id.is_(None),
+                or_(
+                    TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
+                    TransaksiPenjualanBengkel.armada_id.is_not(None),
+                    TransaksiPenjualanBengkel.nomor_plat.in_(
+                        self.db.query(ArmadaJasaAngkut.nopol).filter(ArmadaJasaAngkut.deleted_at.is_(None))
+                    )
+                )
+            )
+        )
+        
+        if tanggal_dari:
+            independent_repair_query = independent_repair_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            independent_repair_query = independent_repair_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+            
+        independent_repair_total = independent_repair_query.scalar() or Decimal("0")
+        biaya_bengkel += independent_repair_total
+
         total_pendapatan = float(aggregates.total_pendapatan or 0)
         total_laba_supir = float(aggregates.total_laba_supir or 0)
-        laba_tpm_net = float(aggregates.total_laba_tpm or 0)
         
         # Gross Share TPM (Revenue - Driver Share)
         gross_share_tpm = total_pendapatan - total_laba_supir
+        
+        # Net Profit = Gross TPM - Total Costs (incl. General Expenses & Independent Repairs)
+        laba_tpm_net = gross_share_tpm - float(biaya_bengkel) - float(biaya_lainnya)
 
         return {
             "total_transaksi": total_count,

@@ -1,36 +1,22 @@
 # Continuity Ledger
 
 ## Goal
-- Implement theme appearance settings in the profile page.
-- Move Armada Detail from modal to separate screen in `jasa-angkut`.
-- Refine `BengkelForm` for `jasa_angkut` category: link directly to Armada and deduct from Net Profit.
+- Fix 0 values for "Unit Jasa Angkut" in sections "2. Biaya Lainnya" and "3. Biaya Sparepart & Servis" within `frontend/app/laporan/laba-rugi.tsx`.
 
 ## Constraints/Assumptions
-- Project uses NativeWind v4 (Tailwind for React Native).
-- Persist theme settings using Zustand and AsyncStorage.
-- Workshop transactions for fleet are deducted from Armada Net Profit if not linked to a specific muatan.
+- The project follows a Next.js/Expo structure (based on `frontend/app/...` and previous conversations mentioning mobile apps).
+- React Native/Expo is likely used for the frontend.
 
 ## Key decisions
-- Added `armada_id` to `TransaksiPenjualanBengkel` model and schemas.
-- Updated `ArmadaService.get_detail` to account for non-muatan workshop repairs in net profit calculation.
-- Streamlined `BengkelForm` to remove muatan selection for `jasa_angkut` category, focusing on Armada selection.
-- Automatic internal payment handling for fleet repairs.
+- Investigate frontend calculation logic first.
 
 ## State
-- Done: 
-    - Updated backend model and schemas for workshop transactions.
-    - Generated and applied alembic migration for `armada_id`.
-    - Updated `BengkelForm` UI and submission logic.
-    - Updated `ArmadaService` stats calculation.
-- Now: Verifying the integration.
-- Next: Final check.
+- Done:
+- Now: Investigating `frontend/app/laporan/laba-rugi.tsx`.
+- Next: Identify data source and check backend API.
 
-## Open questions
-- None.
+## Open questions (UNCONFIRMED if needed)
+- Why specifically Jasa Angkut is showing 0?
 
-## Working set
-- `backend/app/models/bengkel.py`
-- `backend/app/services/armada_service.py`
-- `frontend/components/BengkelForm.tsx`
-- `frontend/app/jasa-angkut/armada/[id].tsx`
-
+## Working set (files/ids/commands)
+- `frontend/app/laporan/laba-rugi.tsx`

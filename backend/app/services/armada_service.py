@@ -222,6 +222,7 @@ class ArmadaService:
         
         expense = JasaAngkutBiayaLainnya(
             armada_id=armada_id,
+            tanggal=data.tanggal,
             kategori=data.kategori,
             deskripsi=data.deskripsi,
             jumlah=data.jumlah,

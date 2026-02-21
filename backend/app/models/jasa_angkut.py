@@ -196,6 +196,7 @@ class JasaAngkutBiayaLainnya(Base, TimestampMixin):
         ForeignKey("armada_jasa_angkut.id", ondelete="CASCADE"),
         nullable=True
     )
+    tanggal: Mapped[date] = mapped_column(Date, index=True, nullable=True)
     kategori: Mapped[str] = mapped_column(String(50))
     deskripsi: Mapped[str] = mapped_column(String(255))
     jumlah: Mapped[Decimal] = mapped_column(Numeric(15, 2))
@@ -204,6 +205,7 @@ class JasaAngkutBiayaLainnya(Base, TimestampMixin):
     # Relationships
     muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship(back_populates="biaya_tambahan")
     armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship(back_populates="biaya_tambahan")
+
 
 
 class JasaAngkutPartService(Base, TimestampMixin):

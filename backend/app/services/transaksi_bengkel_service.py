@@ -381,36 +381,43 @@ class TransaksiBengkelService:
                 piutang_record.referensi_id = transaksi.id
                 self.db.commit()
 
-        # Record payment to kas/bank — SKIP for internal (jasa_angkut / jual_beli_mobil)
-        if not is_internal_jasa_angkut and not is_internal_mobil:
-            if data.payments:
-                for p in data.payments:
-                    if p.jumlah > 0:
-                        create_kas_entry(
-                            db=self.db,
-                            tanggal=data.tanggal,
-                            tipe=KasBankType.MASUK,
-                            nominal=p.jumlah,
-                            sumber=KasBankSource.BENGKEL,
-                            metode_bayar=p.metode,
-                            referensi_id=transaksi.id,
-                            nomor_referensi=transaksi.nomor_transaksi,
-                            keterangan=f"Pembayaran ({p.metode.upper()}) bengkel {transaksi.nomor_transaksi}",
-                            user_id=user_id,
-                        )
-            elif data.jumlah_bayar > 0:
+        # Record payment to kas/bank
+        # Symmetrical entries for internal transactions (Jasa Angkut / Mobil)
+        source_pocket = KasBankSource.BENGKEL
+        if getattr(data, 'kategori', 'umum') == 'jasa_angkut':
+            source_pocket = KasBankSource.JASA_ANGKUT
+        elif getattr(data, 'kategori', 'umum') == 'jual_beli_mobil':
+            source_pocket = KasBankSource.JUAL_BELI_MOBIL
+
+        # Helper to record MASUK and KELUAR
+        def record_bilateral_payment(amount, method, ref_id, ref_num):
+            # MASUK to Workshop
+            create_kas_entry(
+                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method,
+                referensi_id=ref_id, nomor_referensi=ref_num,
+                keterangan=f"Pembayaran ({method.upper()}) bengkel {ref_num}",
+                user_id=user_id,
+            )
+            # KELUAR from Unit (if internal/integrated)
+            if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(
-                    db=self.db,
-                    tanggal=data.tanggal,
-                    tipe=KasBankType.MASUK,
-                    nominal=data.jumlah_bayar,
-                    sumber=KasBankSource.BENGKEL,
-                    metode_bayar=data.metode_bayar,
-                    referensi_id=transaksi.id,
-                    nomor_referensi=transaksi.nomor_transaksi,
-                    keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
+                    db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR,
+                    nominal=amount, sumber=source_pocket, metode_bayar=method,
+                    referensi_id=ref_id, nomor_referensi=ref_num,
+                    keterangan=f"Biaya Repair Internal via Bengkel: {ref_num}",
                     user_id=user_id,
                 )
+
+        if data.payments:
+            for p in data.payments:
+                if p.jumlah > 0:
+                    record_bilateral_payment(p.jumlah, p.metode, transaksi.id, transaksi.nomor_transaksi)
+        elif data.jumlah_bayar > 0:
+            record_bilateral_payment(data.jumlah_bayar, data.metode_bayar, transaksi.id, transaksi.nomor_transaksi)
+        elif is_internal_jasa_angkut or is_internal_mobil:
+            # For purely internal where no payments object provided, use grand_total
+            record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
 
         self.db.commit()
         return transaksi

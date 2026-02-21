@@ -35,16 +35,16 @@ import { getErrorMessage } from '../../utils/error';
 
 const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
     { label: 'Semua', value: 'all' },
-    { label: 'Cash', value: 'cash' },
-    { label: 'BCA', value: 'bank_bca' },
+    { label: 'Cash', value: 'CASH' },
+    { label: 'BCA', value: 'BANK_BCA' },
 ];
 
 const JENIS_LABEL: Record<KasBankJenis, string> = {
-    cash: 'Cash',
-    bank_bca: 'Bank BCA',
-    bank_mandiri: 'Bank Mandiri',
-    bank_bri: 'Bank BRI',
-    bank_lainnya: 'Bank Lainnya',
+    CASH: 'Cash',
+    BANK_BCA: 'Bank BCA',
+    BANK_MANDIRI: 'Bank Mandiri',
+    BANK_BRI: 'Bank BRI',
+    BANK_LAINNYA: 'Bank Lainnya',
 };
 
 export default function MutasiKasScreen() {
@@ -88,14 +88,14 @@ export default function MutasiKasScreen() {
 
     // Form states
     const [transferForm, setTransferForm] = useState({
-        dari: 'cash' as KasBankJenis,
-        ke: 'bank_bca' as KasBankJenis,
+        dari: 'CASH' as KasBankJenis,
+        ke: 'BANK_BCA' as KasBankJenis,
         nominal: '',
         keterangan: '',
     });
 
     const [modalForm, setModalForm] = useState({
-        jenis: 'cash' as KasBankJenis,
+        jenis: 'CASH' as KasBankJenis,
         nominal: '',
         keterangan: 'Setoran Modal',
     });
@@ -156,7 +156,7 @@ export default function MutasiKasScreen() {
                 keterangan: transferForm.keterangan,
             });
             handleCloseSheet();
-            setTransferForm({ dari: 'cash', ke: 'bank_bca', nominal: '', keterangan: '' });
+            setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '' });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -188,7 +188,7 @@ export default function MutasiKasScreen() {
                 keterangan: modalForm.keterangan,
             });
             handleCloseSheet();
-            setModalForm({ jenis: 'cash', nominal: '', keterangan: 'Setoran Modal' });
+            setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal' });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -268,7 +268,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['cash', 'bank_bca'] as KasBankJenis[]).map((jenis) => (
+                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
@@ -287,7 +287,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['cash', 'bank_bca'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
+                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
@@ -333,7 +333,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Simpan ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['cash', 'bank_bca'] as KasBankJenis[]).map((jenis) => (
+                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}
@@ -418,7 +418,7 @@ export default function MutasiKasScreen() {
                     <View className="flex-row items-center justify-between">
                         <View>
                             <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                {formatCurrency((balances?.cash?.saldo || 0) + (balances?.bank_bca?.saldo || 0))}
+                                {formatCurrency(balances?.total_saldo || 0)}
                             </Typography>
                             <Typography className="text-white/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
                         </View>

@@ -114,10 +114,15 @@ export default function LaporanPerubahanModalScreen() {
             const c_op = report.section_c.operasional || 0;
             const c_gaji = report.section_c.gaji || 0;
             const c_prive = report.section_c.prive || 0;
+            const c_prep = report.section_c.biaya_persiapan || 0;
 
             const c4 = report.section_c.total_c || 0; // Total C from Backend (includes all)
 
             // E. Hutang
+            const e_part = report.section_e.hutang_part || 0;
+            const e_mobil = report.section_e.hutang_mobil || 0;
+            const e_investor = report.section_e.hutang_investor || 0;
+            const e_lainnya = report.section_e.hutang_lainnya || 0;
             const e1 = report.section_e.total_e || 0;
 
             const c5 = report.section_d.theoretical_modal || 0; // Modal Berjalan (A - B - C + E) from Backend
@@ -303,6 +308,11 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_prive)}</td>
                             <td></td>
                         </tr>
+                        <tr class="green-row border-bottom">
+                            <td>BIAYA PERSIAPAN MOBIL (STOK)</td>
+                            <td class="amount">${formatCurrency(c_prep)}</td>
+                            <td></td>
+                        </tr>
                          <tr>
                             <td colspan="2"></td>
                             <td class="amount">${formatCurrency(c4)}</td>
@@ -321,9 +331,28 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #fee2e2;">E. HUTANG / KEWAJIBAN:</td>
                         </tr>
                         <tr>
-                            <td>TOTAL HUTANG USAHA (UNPAID)</td>
-                            <td class="amount">${formatCurrency(e1)}</td>
+                            <td>HUTANG PEMBELIAN PART</td>
+                            <td class="amount">${formatCurrency(e_part)}</td>
                             <td></td>
+                        </tr>
+                        <tr>
+                            <td>HUTANG PEMBELIAN MOBIL</td>
+                            <td class="amount">${formatCurrency(e_mobil)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>HUTANG INVESTOR</td>
+                            <td class="amount">${formatCurrency(e_investor)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td>HUTANG LAINNYA</td>
+                            <td class="amount">${formatCurrency(e_lainnya)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td class="amount">${formatCurrency(e1)}</td>
                         </tr>
                         <tr class="total-bar" style="background-color: #be123c;">
                             <td colspan="2">TOTAL REKONSILIASI (A-B-C+E)</td>
@@ -563,6 +592,7 @@ export default function LaporanPerubahanModalScreen() {
                         </View>
                     </View>
 
+                    <Row label="Biaya Persiapan Mobil (Internal/Cash)" value={data.biaya_persiapan} isNegative />
                     <Row label="Beban Operasional Bengkel" value={data.operasional} isNegative />
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
                     <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
