@@ -51,7 +51,16 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     # Jalankan Migrasi DB (Pindah ke folder backend agar alembic.ini terbaca)
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
     export PYTHONPATH="$BACKEND_DIR"
-    sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic upgrade head || { echo -e "${RED}$prefix ERROR${NC} Migrasi gagal"; exit 1; }
+    
+    MIGRATION_OUT=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic upgrade head 2>&1)
+    if [ $? -ne 0 ]; then
+        echo "$MIGRATION_OUT" > "$BACKEND_DIR/migration_error.log"
+        echo -e "${RED}$prefix ERROR${NC} Migrasi gagal!"
+        echo -e "${YELLOW}$prefix LOGS:${NC}"
+        echo "$MIGRATION_OUT" | tail -n 10
+        echo -e "${RED}$prefix${NC} Log lengkap tersimpan di: $BACKEND_DIR/migration_error.log"
+        exit 1
+    fi
 
     # Restart Service Backend
     echo -e "${GREEN}$prefix${NC} Restarting Gunicorn Service..."
