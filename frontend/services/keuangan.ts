@@ -272,6 +272,12 @@ export const keuanganService = {
         nama_debitur: string;
         nominal_piutang: number;
         tanggal_jatuh_tempo?: string;
+        metode_pembayaran?: PaymentMethod;
+        payments?: {
+            metode: PaymentMethod;
+            nominal: number;
+            catatan?: string;
+        }[];
         catatan?: string;
     }): Promise<Piutang> => {
         const response = await api.post('/piutang', data);
@@ -333,6 +339,24 @@ export const keuanganService = {
         catatan?: string;
     }): Promise<PembayaranHutang[]> => {
         const response = await api.post('/hutang/pembayaran-split', data);
+        return response.data;
+    },
+
+    createHutang: async (data: {
+        tanggal: string;
+        sumber: HutangSource;
+        nama_kreditur: string;
+        nominal_hutang: number;
+        tanggal_jatuh_tempo?: string;
+        metode_pembayaran?: PaymentMethod;
+        payments?: {
+            metode: PaymentMethod;
+            nominal: number;
+            catatan?: string;
+        }[];
+        catatan?: string;
+    }): Promise<Hutang> => {
+        const response = await api.post('/hutang', data);
         return response.data;
     },
 

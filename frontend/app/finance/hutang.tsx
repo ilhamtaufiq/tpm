@@ -22,7 +22,7 @@ import { useRouter, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
-import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit } from '../../hooks/useKeuangan';
+import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit, useCreateHutang } from '../../hooks/useKeuangan';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -60,12 +60,28 @@ export default function HutangUsahaScreen() {
     });
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary();
     const paymentMutation = useProcessHutangPaymentSplit();
+    const createMutation = useCreateHutang();
 
     const detailSheetRef = useRef<BottomSheet>(null);
     const paymentSheetRef = useRef<BottomSheet>(null);
+    const createSheetRef = useRef<BottomSheet>(null);
 
     const detailSnapPoints = useMemo(() => ['70%', '85%'], []);
     const paymentSnapPoints = useMemo(() => ['65%', '85%'], []);
+    const createSnapPoints = useMemo(() => ['75%', '90%'], []);
+
+    // Create form states
+    const [createVisible, setCreateVisible] = useState(false);
+    const [createName, setCreateName] = useState('');
+    const [createAmount, setCreateAmount] = useState('');
+    const [createSource, setCreateSource] = useState('LAINNYA');
+    const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
+    const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
+    const [createNote, setCreateNote] = useState('');
+    const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
+    const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
+        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
+    ]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -128,6 +144,79 @@ export default function HutangUsahaScreen() {
         } else {
             detailSheetRef.current?.expand();
             setIsSheetOpen(true);
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setCreateName('');
+        setCreateAmount('');
+        setCreateSource('LAINNYA');
+        setCreateMethod(undefined);
+        setIsCreateSplitPayment(false);
+        setCreatePayments([{ id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+        setCreateNote('');
+        if (Platform.OS === 'web') {
+            setCreateVisible(true);
+            setIsSheetOpen(true);
+        } else {
+            createSheetRef.current?.expand();
+            setIsSheetOpen(true);
+        }
+    };
+
+    const handleSubmitCreate = async () => {
+        if (!createName || !createAmount) {
+            showAlert('Error', 'Nama Kreditur dan Nominal wajib diisi', 'error');
+            return;
+        }
+
+        try {
+            const validatedPayments = createPayments
+                .filter(p => parseNumber(p.nominal) > 0)
+                .map(p => ({
+                    metode: p.metode as any,
+                    nominal: parseNumber(p.nominal),
+                    catatan: p.catatan || undefined
+                }));
+
+            const payload: any = {
+                tanggal: createDate,
+                sumber: createSource as any,
+                nama_kreditur: createName,
+                nominal_hutang: parseNumber(createAmount),
+                catatan: createNote,
+            };
+
+            if (isCreateSplitPayment && validatedPayments.length > 0) {
+                payload.payments = validatedPayments;
+            } else if (createMethod) {
+                payload.metode_pembayaran = createMethod;
+            }
+
+            await createMutation.mutateAsync(payload);
+            showAlert('Sukses', 'Hutang berhasil dibuat', 'success');
+
+            // Reset state
+            setCreateName('');
+            setCreateAmount('');
+            setCreateNote('');
+            setCreateMethod(undefined);
+            setIsCreateSplitPayment(false);
+            setCreatePayments([{ id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+
+            if (Platform.OS === 'web') {
+                setCreateVisible(false);
+                setIsSheetOpen(false);
+            } else {
+                createSheetRef.current?.close();
+                setIsSheetOpen(false);
+            }
+            refetchList();
+            refetchSummary();
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat membuat hutang';
+            showAlert('Gagal', errorMessage, 'error');
+            console.error(error);
         }
     };
 
@@ -201,6 +290,169 @@ export default function HutangUsahaScreen() {
             console.error(error);
         }
     };
+
+    const renderCreateContent = () => (
+        <View className="p-8">
+            <Typography variant="h2" weight="bold" className="mb-6 tracking-tighter">Buat Hutang Baru</Typography>
+
+            <Input
+                label="Nama Kreditur"
+                placeholder="Nama orang/perusahaan"
+                value={createName}
+                onChangeText={setCreateName}
+            />
+
+            <Input
+                label="Nominal (Rp)"
+                keyboardType="numeric"
+                placeholder="0"
+                value={createAmount}
+                onChangeText={(t) => setCreateAmount(formatNumber(t))}
+            />
+
+            <View className="mb-6">
+                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Sumber Hutang</Typography>
+                <View className="flex-row flex-wrap gap-2">
+                    {Object.entries(SUMBER_LABEL).map(([key, label]) => (
+                        <TouchableOpacity
+                            key={key}
+                            onPress={() => setCreateSource(key)}
+                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                        >
+                            <Typography
+                                className={createSource === key ? 'text-primary' : 'text-gray-400'}
+                                weight={createSource === key ? 'bold' : 'medium'}
+                                variant="caption"
+                            >
+                                {label}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
+            <View className="mb-6">
+                <View className="flex-row justify-between items-center mb-3">
+                    <Typography className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
+                    <TouchableOpacity
+                        onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
+                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
+                    >
+                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
+                            {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                        </Typography>
+                    </TouchableOpacity>
+                </View>
+
+                {!isCreateSplitPayment ? (
+                    <View className="flex-row space-x-2 gap-2">
+                        <TouchableOpacity
+                            onPress={() => setCreateMethod(undefined)}
+                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-gray-100' : 'border-gray-100 bg-gray-50/50'}`}
+                        >
+                            <Typography className={!createMethod ? 'text-gray-700 font-bold' : 'text-gray-400'} variant="caption">Tidak Ada</Typography>
+                        </TouchableOpacity>
+                        {['TUNAI', 'TRANSFER'].map((m) => (
+                            <TouchableOpacity
+                                key={m}
+                                onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                            >
+                                <Typography
+                                    className={createMethod === m ? 'text-primary font-bold' : 'text-gray-400'}
+                                    variant="caption"
+                                >
+                                    {m}
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ) : (
+                    <View className="space-y-4">
+                        {createPayments.map((p, idx) => (
+                            <Card key={p.id} variant="outlined" className="p-5 border-gray-100 rounded-[24px] bg-gray-50/30">
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View className="bg-primary/10 px-2 py-1 rounded-lg">
+                                        <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
+                                    </View>
+                                    {createPayments.length > 1 && (
+                                        <TouchableOpacity
+                                            onPress={() => setCreatePayments(createPayments.filter(item => item.id !== p.id))}
+                                            className="w-8 h-8 items-center justify-center bg-rose-50 rounded-xl"
+                                        >
+                                            <Trash2 size={14} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <View className="flex-row space-x-2 mb-4 gap-2">
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-gray-200 bg-white'}`}
+                                        >
+                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Input
+                                    placeholder="Nominal"
+                                    keyboardType="numeric"
+                                    value={p.nominal}
+                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                    containerClassName="mb-0"
+                                />
+                            </Card>
+                        ))}
+
+                        <TouchableOpacity
+                            onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
+                            className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
+                        >
+                            <Plus size={18} color="#64748B" className="mr-2" />
+                            <Typography weight="bold" className="text-gray-500 text-xs">Tambah Metode Penerimaan</Typography>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+
+            <Input
+                label="Catatan (Opsional)"
+                placeholder="Contoh: Pinjaman modal usaha"
+                value={createNote}
+                onChangeText={setCreateNote}
+                multiline
+                numberOfLines={2}
+                containerClassName="mb-8"
+            />
+
+            <View className="flex-row space-x-3 gap-3">
+                <Button
+                    title="Batal"
+                    variant="outline"
+                    onPress={() => {
+                        if (Platform.OS === 'web') {
+                            setCreateVisible(false);
+                            setIsSheetOpen(false);
+                        } else {
+                            createSheetRef.current?.close();
+                            setIsSheetOpen(false);
+                        }
+                    }}
+                    className="flex-1 rounded-[20px] h-14"
+                />
+                <Button
+                    title={createMutation.isPending ? 'Menyimpan...' : 'Simpan Hutang'}
+                    onPress={handleSubmitCreate}
+                    disabled={createMutation.isPending}
+                    loading={createMutation.isPending}
+                    className="flex-[2] rounded-[20px] h-14"
+                />
+            </View>
+        </View>
+    );
 
     const renderDetailContent = () => (
         selectedHutang && (
@@ -419,6 +671,12 @@ export default function HutangUsahaScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Monitoring Kewajiban & Pembayaran</Typography>
                         </View>
                     </View>
+                    <TouchableOpacity
+                        onPress={handleOpenCreate}
+                        className="w-11 h-11 bg-white rounded-2xl items-center justify-center shadow-lg shadow-white/20"
+                    >
+                        <Plus size={20} color="#E11D48" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Summary Card */}
@@ -531,6 +789,13 @@ export default function HutangUsahaScreen() {
                             </View>
                         </View>
                     </Modal>
+                    <Modal visible={createVisible} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.webModalContent}>
+                                <ScrollView>{renderCreateContent()}</ScrollView>
+                            </View>
+                        </View>
+                    </Modal>
                 </>
             ) : (
                 <>
@@ -553,6 +818,16 @@ export default function HutangUsahaScreen() {
                         onClose={() => setIsSheetOpen(false)}
                     >
                         <BottomSheetScrollView>{renderPaymentContent()}</BottomSheetScrollView>
+                    </BottomSheet>
+                    <BottomSheet
+                        ref={createSheetRef}
+                        snapPoints={createSnapPoints}
+                        enablePanDownToClose
+                        index={-1}
+                        backgroundStyle={{ borderRadius: 40 }}
+                        onClose={() => setIsSheetOpen(false)}
+                    >
+                        <BottomSheetScrollView>{renderCreateContent()}</BottomSheetScrollView>
                     </BottomSheet>
                 </>
             )}

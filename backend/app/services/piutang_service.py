@@ -89,7 +89,23 @@ class PiutangService:
         self.db.refresh(piutang)
 
         # If manual piutang creation involves cash outflow (e.g. lending money)
-        if data.metode_pembayaran:
+        if data.payments:
+            for p_detail in data.payments:
+                if p_detail.nominal <= 0:
+                    continue
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=p_detail.nominal,
+                    sumber=KasBankSource.PIUTANG,
+                    metode_bayar=p_detail.metode,
+                    referensi_id=piutang.id,
+                    nomor_referensi=piutang.nomor_piutang,
+                    keterangan=f"Pemberian Piutang/Pinjaman kepada {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                    user_id=user_id,
+                )
+        elif data.metode_pembayaran:
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
@@ -99,7 +115,7 @@ class PiutangService:
                 metode_bayar=data.metode_pembayaran,
                 referensi_id=piutang.id,
                 nomor_referensi=piutang.nomor_piutang,
-                keterangan=f"Pemberian Piutang/Pinjaman kepada {piutang.nama_debitur}",
+                keterangan=f"Pemberian Piutang/Pinjaman kepada {piutang.nama_debitur} ({data.metode_pembayaran.upper()})",
                 user_id=user_id,
             )
 
@@ -332,12 +348,13 @@ class PiutangService:
                 created_by=user_id,
             )
             self.db.add(pembayaran)
+            self.db.flush() # Get ID for KasBank reference
             pembayaran_records.append(pembayaran)
 
             # Update piutang totals
             piutang.process_payment(p_detail.nominal)
 
-            # Record to KasBank
+            # Record to KasBank (Money In)
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
@@ -345,7 +362,7 @@ class PiutangService:
                 nominal=p_detail.nominal,
                 sumber=KasBankSource.PIUTANG,
                 metode_bayar=p_detail.metode,
-                referensi_id=None, # Will update later
+                referensi_id=pembayaran.id,
                 nomor_referensi=piutang.nomor_piutang,
                 keterangan=f"Pembayaran piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
                 user_id=user_id,

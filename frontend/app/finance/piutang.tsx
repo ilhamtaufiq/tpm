@@ -129,6 +129,10 @@ export default function PiutangUsahaScreen() {
     const [createAmount, setCreateAmount] = useState('');
     const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
     const [createNote, setCreateNote] = useState('');
+    const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
+    const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
+        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
+    ]);
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
 
     const [createVisible, setCreateVisible] = useState(false);
@@ -241,15 +245,39 @@ export default function PiutangUsahaScreen() {
         }
 
         try {
-            await createMutation.mutateAsync({
+            const validatedPayments = createPayments
+                .filter(p => parseNumber(p.nominal) > 0)
+                .map(p => ({
+                    metode: p.metode as any,
+                    nominal: parseNumber(p.nominal),
+                    catatan: p.catatan || undefined
+                }));
+
+            const payload: any = {
                 tanggal: createDate,
                 sumber: createSource as any,
                 nama_debitur: createName,
                 nominal_piutang: parseNumber(createAmount),
-                metode_pembayaran: createMethod,
                 catatan: createNote,
-            });
+            };
+
+            if (isCreateSplitPayment && validatedPayments.length > 0) {
+                payload.payments = validatedPayments;
+            } else if (createMethod) {
+                payload.metode_pembayaran = createMethod;
+            }
+
+            await createMutation.mutateAsync(payload);
             showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
+
+            // Reset creation state
+            setCreateName('');
+            setCreateAmount('');
+            setCreateNote('');
+            setCreateMethod(undefined);
+            setIsCreateSplitPayment(false);
+            setCreatePayments([{ id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+
             if (Platform.OS === 'web') {
                 setCreateVisible(false);
                 setIsSheetOpen(false);
@@ -306,31 +334,91 @@ export default function PiutangUsahaScreen() {
             </View>
 
             <View className="mb-4">
-                <Typography className="mb-2 text-gray-600 font-medium">Metode Pencairan (Opsional)</Typography>
-                <View className="flex-row space-x-2">
+                <View className="flex-row justify-between items-center mb-2">
+                    <Typography className="text-gray-600 font-medium">Metode Pencairan (Opsional)</Typography>
                     <TouchableOpacity
-                        onPress={() => setCreateMethod(undefined)}
-                        className={`flex-1 py-3 items-center rounded-xl border ${!createMethod ? 'border-gray-400 bg-gray-100/50' : 'border-gray-200'}`}
+                        onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
+                        className={`px-3 py-1 rounded-full ${isCreateSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                     >
-                        <Typography className={!createMethod ? 'text-gray-800' : 'text-gray-500'}>Tidak Ada</Typography>
+                        <Typography className={`text-[10px] font-bold ${isCreateSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                            {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                        </Typography>
                     </TouchableOpacity>
-                    {['TUNAI', 'TRANSFER'].map((m) => (
-                        <TouchableOpacity
-                            key={m}
-                            onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
-                            className={`flex-1 py-3 items-center rounded-xl border ${createMethod === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
-                        >
-                            <Typography
-                                className={createMethod === m ? 'text-primary' : 'text-gray-500'}
-                                weight={createMethod === m ? 'semibold' : 'normal'}
-                            >
-                                {m}
-                            </Typography>
-                        </TouchableOpacity>
-                    ))}
                 </View>
+
+                {!isCreateSplitPayment ? (
+                    <View className="flex-row space-x-2">
+                        <TouchableOpacity
+                            onPress={() => setCreateMethod(undefined)}
+                            className={`flex-1 py-3 items-center rounded-xl border ${!createMethod ? 'border-gray-400 bg-gray-100/50' : 'border-gray-200'}`}
+                        >
+                            <Typography className={!createMethod ? 'text-gray-800' : 'text-gray-500'} variant="caption">Tidak Ada</Typography>
+                        </TouchableOpacity>
+                        {['TUNAI', 'TRANSFER'].map((m) => (
+                            <TouchableOpacity
+                                key={m}
+                                onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
+                                className={`flex-1 py-3 items-center rounded-xl border ${createMethod === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                            >
+                                <Typography
+                                    className={createMethod === m ? 'text-primary' : 'text-gray-500'}
+                                    weight={createMethod === m ? 'semibold' : 'normal'}
+                                    variant="caption"
+                                >
+                                    {m}
+                                </Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                ) : (
+                    <View className="space-y-3">
+                        {createPayments.map((p, idx) => (
+                            <Card key={p.id} variant="outlined" className="p-3 border-gray-100 rounded-xl bg-gray-50/30">
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
+                                    {createPayments.length > 1 && (
+                                        <TouchableOpacity
+                                            onPress={() => setCreatePayments(createPayments.filter(item => item.id !== p.id))}
+                                            className="w-6 h-6 items-center justify-center bg-rose-50 rounded-lg"
+                                        >
+                                            <Trash2 size={12} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <View className="flex-row space-x-2 mb-2">
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
+                                            className={`flex-1 py-2 items-center rounded-lg border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                        >
+                                            <Typography variant="caption" className={p.metode === m ? 'text-primary' : 'text-gray-500'}>{m}</Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Input
+                                    placeholder="Nominal"
+                                    keyboardType="numeric"
+                                    containerClassName="mb-0"
+                                    className="h-9 text-xs"
+                                    value={p.nominal}
+                                    onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                />
+                            </Card>
+                        ))}
+                        <TouchableOpacity
+                            onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
+                            className="w-full py-2 border border-dashed border-gray-300 rounded-xl items-center flex-row justify-center"
+                        >
+                            <Plus size={14} color="#9CA3AF" />
+                            <Typography className="text-gray-400 font-bold ml-1 text-xs">Tambah Metode</Typography>
+                        </TouchableOpacity>
+                    </View>
+                )}
                 <Typography variant="caption" className="text-gray-400 mt-1">
-                    Pilih jika piutang ini melibatkan pengeluaran uang.
+                    Pilih atau split jika piutang ini melibatkan pengeluaran uang.
                 </Typography>
             </View>
 

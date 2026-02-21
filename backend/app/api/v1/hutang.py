@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, status
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.keuangan import (
+    HutangCreate,
     HutangResponse,
     HutangList,
     HutangSummary,
@@ -93,3 +94,14 @@ def create_pembayaran_split(
     """Process multiple payments for a payable at once."""
     service = HutangService(db)
     return service.process_payment_split(data, current_user.id)
+
+
+@router.post("", response_model=HutangResponse, status_code=status.HTTP_201_CREATED)
+def create_hutang(
+    data: HutangCreate,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Create a new payable record."""
+    service = HutangService(db)
+    return service.create(data, current_user.id)

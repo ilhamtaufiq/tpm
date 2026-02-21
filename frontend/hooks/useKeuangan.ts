@@ -145,6 +145,20 @@ export const useProcessHutangPaymentSplit = () => {
     });
 };
 
+export const useCreateHutang = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: any) => keuanganService.createHutang(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+        },
+    });
+};
+
 // =============================================
 // DASHBOARD & REPORTS
 // =============================================

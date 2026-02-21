@@ -87,6 +87,37 @@ class HutangService:
         self.db.commit()
         self.db.refresh(hutang)
 
+        # If manual hutang creation involves cash inflow (e.g. borrowing money)
+        if data.payments:
+            for p_detail in data.payments:
+                if p_detail.nominal <= 0:
+                    continue
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.MASUK,
+                    nominal=p_detail.nominal,
+                    sumber=KasBankSource.HUTANG,
+                    metode_bayar=p_detail.metode,
+                    referensi_id=hutang.id,
+                    nomor_referensi=hutang.nomor_hutang,
+                    keterangan=f"Penerimaan Pinjaman/Hutang dari {hutang.nama_kreditur} ({p_detail.metode.upper()})",
+                    user_id=user_id,
+                )
+        elif data.metode_pembayaran:
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal,
+                tipe=KasBankType.MASUK,
+                nominal=data.nominal_hutang,
+                sumber=KasBankSource.HUTANG,
+                metode_bayar=data.metode_pembayaran,
+                referensi_id=hutang.id,
+                nomor_referensi=hutang.nomor_hutang,
+                keterangan=f"Penerimaan Pinjaman/Hutang dari {hutang.nama_kreditur} ({data.metode_pembayaran.upper()})",
+                user_id=user_id,
+            )
+
         return hutang
 
     def get_by_id(self, hutang_id: int) -> HutangUsaha:
@@ -263,6 +294,7 @@ class HutangService:
                 created_by=user_id,
             )
             self.db.add(pembayaran)
+            self.db.flush() # Get ID for KasBank reference
             pembayaran_records.append(pembayaran)
 
             # Update hutang totals
@@ -276,7 +308,7 @@ class HutangService:
                 nominal=p_detail.nominal,
                 sumber=KasBankSource.HUTANG,
                 metode_bayar=p_detail.metode,
-                referensi_id=None,
+                referensi_id=pembayaran.id,
                 nomor_referensi=hutang.nomor_hutang,
                 keterangan=f"Pembayaran hutang {hutang.nomor_hutang} - {hutang.nama_kreditur} ({p_detail.metode.upper()})",
                 user_id=user_id,

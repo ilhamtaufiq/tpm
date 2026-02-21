@@ -1,22 +1,27 @@
 # Continuity Ledger
 
-## Goal
-- Fix 0 values for "Unit Jasa Angkut" in sections "2. Biaya Lainnya" and "3. Biaya Sparepart & Servis" within `frontend/app/laporan/laba-rugi.tsx`.
-
-## Constraints/Assumptions
-- The project follows a Next.js/Expo structure (based on `frontend/app/...` and previous conversations mentioning mobile apps).
-- React Native/Expo is likely used for the frontend.
-
-## Key decisions
-- Investigate frontend calculation logic first.
-
-## State
-- Done:
-- Now: Investigating `frontend/app/laporan/laba-rugi.tsx`.
-- Next: Identify data source and check backend API.
-
-## Open questions (UNCONFIRMED if needed)
-- Why specifically Jasa Angkut is showing 0?
-
-## Working set (files/ids/commands)
-- `frontend/app/laporan/laba-rugi.tsx`
+- Goal: Implement split payment functionality for both Piutang (Accounts Receivable) and Hutang (Accounts Payable) in creation and payment flows, and fix API errors.
+- Constraints/Assumptions:
+  - System uses FastAPI (backend) and Expo/React Native (frontend).
+  - Split payment required for creation (outflow for Piutang, inflow for Hutang) and repayment (inflow for Piutang, outflow for Hutang).
+- Key decisions:
+  - Reordered schemas in `keuangan.py` to fix NameError.
+  - Updated both `PiutangService` and `HutangService` to handle `payments` in `create()` method.
+  - Linked `KasBank` entries to `Pembayaran` records via `referensi_id` in split payment processing.
+  - Added `POST /api/v1/hutang` endpoint to `backend/app/api/v1/hutang.py`.
+- State:
+  - Done: 
+    - Fixed schema NameError in `keuangan.py`.
+    - Implemented split payment support in `PiutangService.create` and `HutangService.create`.
+    - Added `create_hutang` endpoint to the FastAPI router (fixed 405 error).
+    - Updated frontend services, hooks, and UI for both Piutang and Hutang modules.
+    - Added "Tambah Hutang" feature with split payment UI in `hutang.tsx`.
+  - Now: Monitoring for any further issues.
+  - Next: Testing with the user.
+- Open questions (UNCONFIRMED):
+  - None at the moment.
+- Working set:
+  - `backend/app/schemas/keuangan.py`
+  - `backend/app/services/hutang_service.py`
+  - `backend/app/api/v1/hutang.py`
+  - `frontend/app/finance/hutang.tsx`

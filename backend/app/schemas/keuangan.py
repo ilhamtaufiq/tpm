@@ -17,6 +17,18 @@ from app.utils.constants import (
 
 
 # ============================================
+# SHARED SCHEMAS
+# ============================================
+
+class PaymentDetail(BaseModel):
+    """Schema for individual payment detail in a split payment."""
+
+    metode: PaymentMethod
+    nominal: Decimal = Field(..., gt=0)
+    catatan: Optional[str] = None
+
+
+# ============================================
 # PIUTANG USAHA (RECEIVABLES) SCHEMAS
 # ============================================
 
@@ -34,6 +46,7 @@ class PiutangCreate(BaseModel):
     nominal_piutang: Decimal = Field(..., gt=0)
     tanggal_jatuh_tempo: Optional[date] = None
     metode_pembayaran: Optional[PaymentMethod] = None
+    payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
 
@@ -115,6 +128,7 @@ class HutangCreate(BaseModel):
     nominal_hutang: Decimal = Field(..., gt=0)
     tanggal_jatuh_tempo: Optional[date] = None
     metode_pembayaran: Optional[PaymentMethod] = None
+    payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
 
@@ -189,13 +203,6 @@ class PembayaranPiutangCreate(BaseModel):
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     catatan: Optional[str] = None
 
-
-class PaymentDetail(BaseModel):
-    """Schema for individual payment detail in a split payment."""
-
-    metode: PaymentMethod
-    nominal: Decimal = Field(..., gt=0)
-    catatan: Optional[str] = None
 
 
 class PembayaranPiutangSplit(BaseModel):
