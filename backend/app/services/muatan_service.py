@@ -821,17 +821,30 @@ class MuatanService:
 
         # 3. Cost Breakdown (Accrual)
         # Includes both tied to muatan and general armada expenses in period
+        # Use LEFT JOIN to MuatanJasaAngkut for date filtering (tanggal column
+        # may not exist on jasa_angkut_biaya_lainnya in older DB schemas)
+        
         cost_query = (
             self.db.query(
                 JasaAngkutBiayaLainnya.kategori,
                 func.sum(JasaAngkutBiayaLainnya.jumlah).label("total")
             )
+            .outerjoin(
+                MuatanJasaAngkut,
+                JasaAngkutBiayaLainnya.muatan_id == MuatanJasaAngkut.id
+            )
         )
 
         if tanggal_dari:
-            cost_query = cost_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+            # For records linked to muatan: use muatan.tanggal
+            # For standalone armada expenses (muatan_id IS NULL): use created_at
+            cost_query = cost_query.filter(
+                func.coalesce(MuatanJasaAngkut.tanggal, func.date(JasaAngkutBiayaLainnya.created_at)) >= tanggal_dari
+            )
         if tanggal_sampai:
-            cost_query = cost_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
+            cost_query = cost_query.filter(
+                func.coalesce(MuatanJasaAngkut.tanggal, func.date(JasaAngkutBiayaLainnya.created_at)) <= tanggal_sampai
+            )
             
         cost_results = cost_query.group_by(JasaAngkutBiayaLainnya.kategori).all()
         
