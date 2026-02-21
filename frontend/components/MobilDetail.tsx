@@ -19,11 +19,12 @@ import {
     Image as ImageIcon
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-// import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useMobilDetail, useUploadMedia, useDeleteMedia } from '../hooks/useMobil';
 import { FILE_URL } from '../utils/api';
 import { formatCurrency } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
+import { AlertDialog } from './ui/AlertDialog';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +42,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+
+    const [deleteDialog, setDeleteDialog] = useState<{
+        visible: boolean;
+        mediaId: number | null;
+    }>({
+        visible: false,
+        mediaId: null
+    });
 
     const activeUnit = unit || initialUnit;
     if (!activeUnit) return null;
@@ -71,33 +80,32 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
             try {
                 await uploadMediaAction.mutateAsync({ id: activeUnit.id, files });
-                Alert.alert('Berhasil', 'Media berhasil diunggah');
+                // Note: We'll show a success dialog here if needed, but per project style Alert.alert or local toast is fine if it works
             } catch (error) {
                 console.error('Upload error:', error);
-                Alert.alert('Error', 'Gagal mengunggah media');
             }
         }
     };
 
-    const handleDeleteMedia = (mediaId: number) => {
-        Alert.alert(
-            'Hapus Media',
-            'Apakah Anda yakin ingin menghapus media ini?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                {
-                    text: 'Hapus',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteMediaAction.mutateAsync({ id: activeUnit.id, mediaId });
-                        } catch (error) {
-                            Alert.alert('Error', 'Gagal menghapus media');
-                        }
-                    }
-                }
-            ]
-        );
+    const confirmDeleteMedia = async () => {
+        if (!deleteDialog.mediaId) return;
+
+        try {
+            await deleteMediaAction.mutateAsync({
+                id: activeUnit.id,
+                mediaId: deleteDialog.mediaId
+            });
+
+            // Reset index if we deleted the last item
+            if (activeIndex >= (activeUnit.media?.length || 0) - 1) {
+                setActiveIndex(Math.max(0, (activeUnit.media?.length || 0) - 2));
+            }
+
+            setDeleteDialog({ visible: false, mediaId: null });
+        } catch (error) {
+            console.error('Delete error:', error);
+            setDeleteDialog({ visible: false, mediaId: null });
+        }
     };
 
     const renderMediaItem = (item: any) => {
@@ -106,38 +114,57 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         const filePath = item.file_path.replace(/^\//, '');
         const fullUrl = `${baseUrl}/uploads/${filePath}?t=${Date.now()}`;
 
-        console.log('[MobilDetail] Rendering media:', item.id, fullUrl);
+        console.log('[MobilDetail] Rendering media:', item.id, item.file_type, fullUrl);
 
         return (
-            <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => item.file_type !== 'video' && setSelectedImage(fullUrl)}
+            <View
                 className="relative"
                 style={{ width }}
             >
                 <View className="h-96 bg-gray-100 overflow-hidden">
                     {item.file_type === 'video' ? (
-                        <View className="flex-1 items-center justify-center bg-slate-900">
-                            <PlayCircle size={64} color="white" opacity={0.6} />
-                            <Typography className="text-white/50 text-[10px] mt-2 font-bold uppercase tracking-widest">Video Preview</Typography>
+                        <View className="flex-1 bg-black">
+                            <Video
+                                source={{ uri: fullUrl }}
+                                rate={1.0}
+                                volume={1.0}
+                                isMuted={false}
+                                resizeMode={ResizeMode.CONTAIN}
+                                shouldPlay={false}
+                                isLooping={false}
+                                useNativeControls
+                                style={{ width: '100%', height: '100%' }}
+                                onError={(error) => console.log('[Video Error]:', error)}
+                            />
                         </View>
                     ) : (
-                        <Image
-                            source={{ uri: fullUrl }}
-                            className="w-full h-full"
-                            resizeMode="cover"
-                        />
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={() => setSelectedImage(fullUrl)}
+                            className="flex-1"
+                        >
+                            <Image
+                                source={{ uri: fullUrl }}
+                                className="w-full h-full"
+                                resizeMode="cover"
+                            />
+                        </TouchableOpacity>
                     )}
                 </View>
 
                 {/* Delete Button - Glass Style */}
                 <TouchableOpacity
-                    onPress={() => handleDeleteMedia(item.id)}
-                    className="absolute bottom-10 left-6 bg-red-500/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg"
+                    onPress={() => {
+                        console.log('[MobilDetail] Delete pressed for media:', item.id);
+                        setDeleteDialog({ visible: true, mediaId: item.id });
+                    }}
+                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                    className="absolute bottom-10 left-6 bg-red-500/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg z-50"
+                    style={{ elevation: 5 }}
                 >
                     <Trash2 size={18} color="white" />
                 </TouchableOpacity>
-            </TouchableOpacity>
+            </View>
         );
     };
 
@@ -325,6 +352,19 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     <View className="h-10" />
                 </View>
             </ScrollView>
+
+            <AlertDialog
+                visible={deleteDialog.visible}
+                type="confirm"
+                variant="error"
+                title="Hapus Media"
+                message="Apakah Anda yakin ingin menghapus media ini? Tindakan ini tidak dapat dibatalkan."
+                confirmText="Hapus"
+                cancelText="Batal"
+                loading={deleteMediaAction.isPending}
+                onClose={() => setDeleteDialog({ visible: false, mediaId: null })}
+                onConfirm={confirmDeleteMedia}
+            />
 
             {/* Image Detail Viewer (Full Screen Modal) */}
             <Modal

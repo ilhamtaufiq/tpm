@@ -708,13 +708,17 @@ class MobilService:
             raise HTTPException(status_code=404, detail="Media tidak ditemukan")
             
         # Normalize slashes for the current OS and use absolute path
+        # Resolve symlinks to ensure we are deleting from the correct physical location
+        resolved_base = os.path.realpath(settings.upload_full_path)
         normalized_path = media.file_path.replace("/", os.sep)
-        full_path = os.path.join(settings.upload_full_path, "..", normalized_path)
-        # Note: file_path is 'mobil/{id}/{filename}', upload_full_path is '.../backend/uploads'
-        # so we join them carefully. Actually file_path already starts from 'mobil'.
-        full_path = os.path.join(settings.upload_full_path, normalized_path)
+        full_path = os.path.join(resolved_base, normalized_path)
+        
         if os.path.exists(full_path):
-            os.remove(full_path)
+            try:
+                os.remove(full_path)
+            except Exception as e:
+                # Log error but continue with DB deletion if file is gone or inaccessible
+                print(f"Error deleting file {full_path}: {e}")
             
         # Delete DB record
         self.db.delete(media)
