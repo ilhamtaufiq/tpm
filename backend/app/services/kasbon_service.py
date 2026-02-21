@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
 from app.models.karyawan import Karyawan, KasbonKaryawan
-from app.models.keuangan import PiutangUsaha
+from app.models.keuangan import PiutangUsaha, PembayaranPiutang
 from app.schemas.karyawan import KasbonCreate
 from app.utils.constants import (
     EmployeeStatus,
@@ -481,3 +481,119 @@ class KasbonService:
                 })
 
         return debtors
+
+    def apply_payment_from_payroll(
+        self,
+        karyawan_id: int,
+        amount: Decimal,
+        slip_id: int,
+        nomor_slip: str,
+        user_id: Optional[int] = None,
+    ) -> None:
+        """Apply a payment from payroll to the employee's outstanding kasbon."""
+        if amount <= 0:
+            return
+
+        # Find all unpaid kasbon for the employee, oldest first
+        kasbons = (
+            self.db.query(KasbonKaryawan)
+            .filter(
+                KasbonKaryawan.karyawan_id == karyawan_id,
+                KasbonKaryawan.status != PaymentStatus.LUNAS,
+            )
+            .order_by(KasbonKaryawan.tanggal.asc())
+            .all()
+        )
+
+        remaining_amount = amount
+        today = date.today()
+
+        for kasbon in kasbons:
+            if remaining_amount <= 0:
+                break
+
+            # Find related piutang
+            piutang = (
+                self.db.query(PiutangUsaha)
+                .filter(
+                    PiutangUsaha.referensi_id == kasbon.id,
+                    PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
+                )
+                .first()
+            )
+
+            if not piutang or piutang.status == PiutangStatus.LUNAS:
+                # If no piutang or already paid, sync kasbon status
+                kasbon.status = PaymentStatus.LUNAS
+                if not kasbon.tanggal_lunas:
+                    kasbon.tanggal_lunas = today
+                continue
+
+            # Calculate amount to pay for this piutang
+            pay_amount = min(remaining_amount, piutang.sisa_piutang)
+            
+            # Process payment in piutang
+            piutang.process_payment(pay_amount)
+            
+            # Create payment record for piutang
+            payment_rec = PembayaranPiutang(
+                piutang_id=piutang.id,
+                tanggal=today,
+                nominal=pay_amount,
+                metode_bayar=PaymentMethod.POTONG_GAJI,
+                catatan=f"Potong gaji dari slip {nomor_slip}",
+                created_by=user_id,
+            )
+            self.db.add(payment_rec)
+
+            # Update kasbon status if fully paid
+            if piutang.status == PiutangStatus.LUNAS:
+                kasbon.status = PaymentStatus.LUNAS
+                kasbon.tanggal_lunas = today
+
+            remaining_amount -= pay_amount
+
+    def void_payroll_payment(
+        self,
+        slip_id: int,
+        nomor_slip: str,
+    ) -> None:
+        """Void kasbon payments associated with a payroll slip."""
+        # Find all PembayaranPiutang associated with this slip
+        payments = (
+            self.db.query(PembayaranPiutang)
+            .filter(
+                PembayaranPiutang.catatan.like(f"%Potong gaji dari slip {nomor_slip}%")
+            )
+            .all()
+        )
+
+        for p in payments:
+            piutang = p.piutang
+            if not piutang:
+                continue
+
+            # Reverse the payment in piutang
+            piutang.total_dibayar -= p.nominal
+            piutang.sisa_piutang = piutang.nominal_piutang - piutang.total_dibayar
+            
+            if piutang.total_dibayar == 0:
+                piutang.status = PiutangStatus.BELUM_LUNAS
+                piutang.tanggal_lunas = None
+            else:
+                piutang.status = PiutangStatus.SEBAGIAN
+                piutang.tanggal_lunas = None
+
+            # Sync with KasbonKaryawan
+            if piutang.sumber == PiutangSource.KASBON_KARYAWAN:
+                kasbon = (
+                    self.db.query(KasbonKaryawan)
+                    .filter(KasbonKaryawan.id == piutang.referensi_id)
+                    .first()
+                )
+                if kasbon:
+                    kasbon.status = PaymentStatus.BELUM_LUNAS
+                    kasbon.tanggal_lunas = None
+
+            # Delete the payment record
+            self.db.delete(p)

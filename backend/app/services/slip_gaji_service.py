@@ -113,13 +113,21 @@ class SlipGajiService:
                 
         return total
 
+        return total
+
     def _get_kasbon_total(self, karyawan_id: int) -> Decimal:
-        """Get total unpaid kasbon for employee."""
+        """Get total unpaid kasbon for employee using PiutangUsaha remaining balance."""
+        from app.models.keuangan import PiutangUsaha
+        from app.utils.constants import PiutangSource, PiutangStatus
+
+        # Joining with KasbonKaryawan to filter by karyawan_id
         result = (
-            self.db.query(func.sum(KasbonKaryawan.nominal))
+            self.db.query(func.sum(PiutangUsaha.sisa_piutang))
+            .join(KasbonKaryawan, KasbonKaryawan.id == PiutangUsaha.referensi_id)
             .filter(
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN,
+                PiutangUsaha.status != PiutangStatus.LUNAS,
                 KasbonKaryawan.karyawan_id == karyawan_id,
-                KasbonKaryawan.status != PaymentStatus.LUNAS,
             )
             .scalar()
         )
@@ -172,8 +180,8 @@ class SlipGajiService:
             tanggal_akhir,
         )
 
-        # Get kasbon total
-        kasbon_total = self._get_kasbon_total(data.karyawan_id)
+        # Get kasbon deduction from data or default to 0 (as per user request: don't cut automatically)
+        potongan_kasbon = data.potongan_kasbon if data.potongan_kasbon is not None else Decimal("0")
 
         # Generate slip number
         nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
@@ -192,7 +200,7 @@ class SlipGajiService:
             tanggal_akhir=tanggal_akhir,
             jumlah_hadir=jumlah_hadir,
             gaji_pokok=gaji_pokok_pro_rated,
-            potongan_kasbon=kasbon_total,
+            potongan_kasbon=potongan_kasbon,
             status=PaymentStatus.BELUM_LUNAS,
             created_by=user_id,
         )
@@ -249,7 +257,7 @@ class SlipGajiService:
             # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
             daily_rate = emp.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = daily_rate * jumlah_hadir
-            gaji_bersih = gaji_pokok_pro_rated - kasbon_total
+            gaji_bersih = gaji_pokok_pro_rated
 
             items.append({
                 "karyawan_id": emp.id,
@@ -258,7 +266,8 @@ class SlipGajiService:
                 "gaji_pokok_dasar": float(emp.gaji_pokok),
                 "gaji_pokok": float(gaji_pokok_pro_rated),
                 "jumlah_hadir": float(jumlah_hadir),
-                "potongan_kasbon": float(kasbon_total),
+                "total_kasbon": float(kasbon_total),
+                "potongan_kasbon": 0,
                 "gaji_bersih": float(gaji_bersih),
             })
 
@@ -307,7 +316,8 @@ class SlipGajiService:
                 "gaji_pokok_dasar": float(emp.gaji_pokok),
                 "gaji_pokok": float(gaji_pokok_pro_rated),
                 "jumlah_hadir": float(jumlah_hadir),
-                "potongan_kasbon": float(kasbon_total),
+                "total_kasbon": float(kasbon_total),
+                "potongan_kasbon": 0,
                 "gaji_bersih": float(gaji_bersih),
             })
 
@@ -364,8 +374,8 @@ class SlipGajiService:
                 if not karyawan:
                     continue
 
-                # Get kasbon
-                kasbon_total = self._get_kasbon_total(karyawan_id)
+                # Get kasbon deduction from item or default to 0
+                potongan_kasbon = Decimal(str(item.get("potongan_kasbon", 0)))
 
                 # Generate slip number
                 nomor_slip = self._generate_nomor_slip(minggu, tahun)
@@ -376,7 +386,7 @@ class SlipGajiService:
                 daily_rate = karyawan.gaji_pokok / Decimal("6")
                 gaji_pokok_pro_rated = daily_rate * hadir_val
 
-                # Create slip with overridden attendance
+                # Create slip with overridden attendance and kasbon
                 slip = SlipGaji(
                     nomor_slip=nomor_slip,
                     karyawan_id=karyawan_id,
@@ -386,7 +396,7 @@ class SlipGajiService:
                     tanggal_akhir=tanggal_akhir,
                     jumlah_hadir=hadir_val,
                     gaji_pokok=gaji_pokok_pro_rated,
-                    potongan_kasbon=kasbon_total,
+                    potongan_kasbon=potongan_kasbon,
                     status=PaymentStatus.BELUM_LUNAS,
                     created_by=user_id,
                 )
@@ -442,8 +452,8 @@ class SlipGajiService:
             if not karyawan:
                 continue
 
-            # Get kasbon
-            kasbon_total = self._get_kasbon_total(karyawan_id)
+            # Get kasbon deduction from item or default to 0
+            potongan_kasbon = Decimal(str(item.get("potongan_kasbon", 0)))
 
             # Generate slip number
             nomor_slip = self._generate_nomor_slip(minggu, tahun)
@@ -453,7 +463,7 @@ class SlipGajiService:
             daily_rate = karyawan.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = daily_rate * hadir_val
 
-            # Create slip with range dates
+            # Create slip with range dates and kasbon
             slip = SlipGaji(
                 nomor_slip=nomor_slip,
                 karyawan_id=karyawan_id,
@@ -463,7 +473,7 @@ class SlipGajiService:
                 tanggal_akhir=tanggal_akhir,
                 jumlah_hadir=hadir_val,
                 gaji_pokok=gaji_pokok_pro_rated,
-                potongan_kasbon=kasbon_total,
+                potongan_kasbon=potongan_kasbon,
                 status=PaymentStatus.BELUM_LUNAS,
                 created_by=user_id,
             )
@@ -647,6 +657,18 @@ class SlipGajiService:
             user_id=user_id,
         )
 
+        # If there's a kasbon deduction, record it in KasbonService
+        if slip.potongan_kasbon > 0:
+            from app.services.kasbon_service import KasbonService
+            kasbon_service = KasbonService(self.db)
+            kasbon_service.apply_payment_from_payroll(
+                karyawan_id=slip.karyawan_id,
+                amount=slip.potongan_kasbon,
+                slip_id=slip.id,
+                nomor_slip=slip.nomor_slip,
+                user_id=user_id,
+            )
+
         return slip
     
     def void_payment(
@@ -677,6 +699,15 @@ class SlipGajiService:
             keterangan=f"PEMBATALAN: Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
             user_id=user_id,
         )
+
+        # If there was a kasbon deduction, void it
+        if slip.potongan_kasbon > 0:
+            from app.services.kasbon_service import KasbonService
+            kasbon_service = KasbonService(self.db)
+            kasbon_service.void_payroll_payment(
+                slip_id=slip.id,
+                nomor_slip=slip.nomor_slip,
+            )
 
         # Reset slip payment status
         slip.status = PaymentStatus.BELUM_LUNAS

@@ -141,6 +141,7 @@ export interface SlipGajiPreviewItem {
     gaji_pokok_dasar: number;
     gaji_pokok: number;
     jumlah_hadir: number;
+    total_kasbon: number;
     potongan_kasbon: number;
     gaji_bersih: number;
 }
@@ -456,7 +457,11 @@ export const sdmService = {
 
     createBulkSlipGaji: async (tahun: number, minggu: number, items?: SlipGajiPreviewItem[], tanggalMulai?: string) => {
         const data = {
-            items: items ? items.map(i => ({ karyawan_id: i.karyawan_id, jumlah_hadir: i.jumlah_hadir })) : undefined,
+            items: items ? items.map(i => ({
+                karyawan_id: i.karyawan_id,
+                jumlah_hadir: i.jumlah_hadir,
+                potongan_kasbon: i.potongan_kasbon
+            })) : undefined,
             tanggal_mulai: tanggalMulai
         };
         const response = await api.post(`/slip-gaji/bulk/${tahun}/${minggu}`, data);
@@ -465,7 +470,11 @@ export const sdmService = {
 
     createBulkSlipGajiRange: async (tanggalDari: string, tanggalSampai: string, items?: SlipGajiPreviewItem[]) => {
         const data = {
-            items: items ? items.map(i => ({ karyawan_id: i.karyawan_id, jumlah_hadir: i.jumlah_hadir })) : undefined,
+            items: items ? items.map(i => ({
+                karyawan_id: i.karyawan_id,
+                jumlah_hadir: i.jumlah_hadir,
+                potongan_kasbon: i.potongan_kasbon
+            })) : undefined,
         };
         const response = await api.post('/slip-gaji/bulk-range', data, {
             params: { tanggal_dari: tanggalDari, tanggal_sampai: tanggalSampai }

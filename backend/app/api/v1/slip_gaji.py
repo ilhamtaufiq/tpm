@@ -21,7 +21,8 @@ router = APIRouter(prefix="/slip-gaji", tags=["Slip Gaji (Weekly Payroll)"])
 class SlipGajiBulkItem(BaseModel):
     """Item for bulk slip gaji creation with attendance override."""
     karyawan_id: int
-    jumlah_hadir: int
+    jumlah_hadir: float
+    potongan_kasbon: float = 0
 
 
 class SlipGajiBulkCreate(BaseModel):

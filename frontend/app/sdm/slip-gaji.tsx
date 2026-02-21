@@ -80,8 +80,9 @@ export default function SlipGajiScreen() {
     // The "Tanggal Slip" user chooses
     const [slipDate, setSlipDate] = useState(now.toISOString().split('T')[0]);
 
-    // Local state for attendance edits
+    // Local state for edits
     const [attendanceEdits, setAttendanceEdits] = useState<Record<number, number>>({});
+    const [kasbonEdits, setKasbonEdits] = useState<Record<number, number>>({});
 
     // Search query
     const [searchQuery, setSearchQuery] = useState('');
@@ -181,21 +182,36 @@ export default function SlipGajiScreen() {
         }));
     };
 
+    const handleUpdateKasbon = (karyawanId: number, value: string) => {
+        const numValue = parseFloat(value.replace(/[^0-9]/g, '')) || 0;
+        setKasbonEdits(prev => ({
+            ...prev,
+            [karyawanId]: numValue
+        }));
+    };
+
     const getAttendanceValue = (item: SlipGajiPreviewItem) => {
         return attendanceEdits[item.karyawan_id] !== undefined
             ? attendanceEdits[item.karyawan_id]
             : item.jumlah_hadir;
     };
 
+    const getKasbonValue = (item: SlipGajiPreviewItem) => {
+        return kasbonEdits[item.karyawan_id] !== undefined
+            ? kasbonEdits[item.karyawan_id]
+            : item.potongan_kasbon;
+    };
+
     const handleGenerateSingle = async (item: SlipGajiPreviewItem) => {
         setGeneratingId(item.karyawan_id);
         const finalAttendance = getAttendanceValue(item);
+        const finalKasbon = getKasbonValue(item);
 
         try {
             await createBulkMutation.mutateAsync({
                 tanggalDari: startDate,
                 tanggalSampai: endDate,
-                items: [{ ...item, jumlah_hadir: finalAttendance }],
+                items: [{ ...item, jumlah_hadir: finalAttendance, potongan_kasbon: finalKasbon }],
             });
             setDialogConfig({
                 visible: true,
@@ -223,7 +239,8 @@ export default function SlipGajiScreen() {
         try {
             const itemsToGenerate = filteredPending.map((item: SlipGajiPreviewItem) => ({
                 ...item,
-                jumlah_hadir: getAttendanceValue(item)
+                jumlah_hadir: getAttendanceValue(item),
+                potongan_kasbon: getKasbonValue(item)
             }));
 
             await createBulkMutation.mutateAsync({
@@ -336,9 +353,11 @@ export default function SlipGajiScreen() {
     const renderPendingItem = ({ item }: { item: SlipGajiPreviewItem }) => {
         const isGenerating = generatingId === item.karyawan_id;
         const currentAttendance = getAttendanceValue(item);
+        const currentKasbon = getKasbonValue(item);
 
-        // Dynamic calculation: (Base / 6) * Current Attendance
+        // Dynamic calculation: (Base / 6) * Current Attendance - Kasbon
         const currentGajiPokok = (item.gaji_pokok_dasar / 6) * currentAttendance;
+        const currentGajiBersih = currentGajiPokok - currentKasbon;
 
         return (
             <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
@@ -352,41 +371,61 @@ export default function SlipGajiScreen() {
                         </View>
                         <Typography variant="caption" className="text-gray-400 mb-3">{item.karyawan_kode}</Typography>
 
-                        <View className="flex-row items-center space-x-3">
+                        <View className="flex-row flex-wrap items-center gap-2">
                             <View className="bg-gray-50 px-2 py-1.5 rounded-xl border border-gray-100 flex-row items-center">
                                 <Typography className="text-[10px] text-gray-400 font-bold uppercase mr-1">Base:</Typography>
                                 <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok_dasar)}</Typography>
                             </View>
-                            {/* <View className="bg-primary/5 px-2 py-1.5 rounded-xl border border-primary/10 flex-row items-center">
-                                <Typography className="text-[10px] text-primary/60 font-bold uppercase mr-1">Pro-rated:</Typography>
+                            <View className="bg-primary/5 px-2 py-1.5 rounded-xl border border-primary/10 flex-row items-center">
+                                <Typography className="text-[10px] text-primary/60 font-bold uppercase mr-1">Gaji:</Typography>
                                 <Typography weight="bold" className="text-[11px] text-primary">{formatCurrency(currentGajiPokok)}</Typography>
-                            </View> */}
-                            {item.potongan_kasbon > 0 && (
+                            </View>
+                            {item.total_kasbon > 0 && (
                                 <View className="bg-rose-50 px-2 py-1.5 rounded-xl border border-rose-100 flex-row items-center">
-                                    <Typography className="text-[10px] text-rose-400 font-bold uppercase mr-1">Kasbon:</Typography>
-                                    <Typography weight="bold" className="text-[11px] text-rose-600">-{formatCurrency(item.potongan_kasbon)}</Typography>
+                                    <Typography className="text-[10px] text-rose-400 font-bold uppercase mr-1">Total Kasbon:</Typography>
+                                    <Typography weight="bold" className="text-[11px] text-rose-600">{formatCurrency(item.total_kasbon)}</Typography>
                                 </View>
                             )}
+                        </View>
+                        <View className="mt-4 pt-3 border-t border-gray-50 flex-row items-center justify-between">
+                            <Typography weight="bold" className="text-xs text-textGray uppercase tracking-widest">Gaji Bersih:</Typography>
+                            <Typography weight="bold" className="text-lg text-emerald-600">{formatCurrency(currentGajiBersih)}</Typography>
                         </View>
                     </View>
 
                     <View className="items-end">
-                        <Typography className="text-[9px] text-gray-400 font-bold uppercase mb-1 tracking-widest">Kehadiran</Typography>
-                        <View className="flex-row items-center bg-white rounded-2xl border border-gray-200 px-3 py-1 mb-3">
-                            <TextInput
-                                className="w-8 text-center text-primary font-bold p-0 text-xl"
-                                keyboardType="numeric"
-                                value={String(currentAttendance)}
-                                onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
-                                selectTextOnFocus
-                            />
-                            <Typography className="text-[10px] text-gray-400 font-bold uppercase ml-1">Hari</Typography>
+                        <View className="mb-3 items-end">
+                            <Typography className="text-[9px] text-gray-400 font-bold uppercase mb-1 tracking-widest">Kehadiran (Hari)</Typography>
+                            <View className="flex-row items-center bg-white rounded-2xl border border-gray-200 px-3 py-1">
+                                <TextInput
+                                    className="w-10 text-center text-primary font-bold p-0 text-lg"
+                                    keyboardType="numeric"
+                                    value={String(currentAttendance)}
+                                    onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
+                                    selectTextOnFocus
+                                />
+                            </View>
+                        </View>
+
+                        <View className="mb-4 items-end">
+                            <Typography className="text-[9px] text-rose-400 font-bold uppercase mb-1 tracking-widest">Potong Kasbon</Typography>
+                            <View className="flex-row items-center bg-rose-50/50 rounded-2xl border border-rose-100 px-3 py-1">
+                                <Typography className="text-rose-400 font-bold text-xs mr-1">Rp</Typography>
+                                <TextInput
+                                    className="w-20 text-right text-rose-600 font-bold p-0 text-base"
+                                    keyboardType="numeric"
+                                    value={String(currentKasbon)}
+                                    onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, v)}
+                                    selectTextOnFocus
+                                    placeholder="0"
+                                />
+                            </View>
                         </View>
 
                         <TouchableOpacity
                             onPress={() => handleGenerateSingle(item)}
                             disabled={isGenerating || !!generatingId}
-                            className={`px-4 py-2 rounded-xl flex-row items-center ${isGenerating ? 'bg-gray-100' : 'bg-primary'}`}
+                            className={`px-4 py-3 rounded-xl flex-row items-center ${isGenerating ? 'bg-gray-100' : 'bg-primary'}`}
                         >
                             {isGenerating ? (
                                 <ActivityIndicator size="small" color="#16A34A" />

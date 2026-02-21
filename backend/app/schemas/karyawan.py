@@ -175,6 +175,7 @@ class SlipGajiCreate(BaseModel):
     karyawan_id: int
     periode_minggu: int = Field(..., ge=1, le=53)
     periode_tahun: int = Field(..., ge=2000, le=2100)
+    potongan_kasbon: Optional[Decimal] = Field(default=Decimal("0"), ge=0)
 
 
 class SlipGajiUpdate(BaseModel):
