@@ -74,6 +74,18 @@ export const mobilService = {
         const response = await api.get('/penjualan-mobil/summary', { params });
         return response.data;
     },
+    getPenjualanMobil: async (id: number) => {
+        const response = await api.get(`/penjualan-mobil/${id}`);
+        return response.data;
+    },
+    payPenjualanMobil: async (id: number, data: { jumlah_bayar: number; metode_bayar?: string; payments?: { metode: string; nominal: number }[] }) => {
+        const response = await api.patch(`/penjualan-mobil/${id}/payment`, data);
+        return response.data;
+    },
+    cancelBookingMobil: async (id: number, data: { penalti: number; metode_refund?: string; refund_payments?: { metode: string; nominal: number }[]; alasan?: string }) => {
+        const response = await api.post(`/penjualan-mobil/${id}/cancel`, data);
+        return response.data;
+    },
 
     uploadMedia: async (id: number, files: any[]) => {
         const formData = new FormData();

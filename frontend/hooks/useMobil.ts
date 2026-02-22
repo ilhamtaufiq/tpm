@@ -74,6 +74,36 @@ export const useCreatePenjualanMobil = () => {
     });
 };
 
+export const usePenjualanMobilList = (params?: any) => {
+    return useQuery({
+        queryKey: ['penjualan_mobil', params],
+        queryFn: () => mobilService.getPenjualanMobils(params),
+    });
+};
+
+export const usePayPenjualanMobil = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { jumlah_bayar: number; metode_bayar?: string; payments?: { metode: string; nominal: number }[] } }) =>
+            mobilService.payPenjualanMobil(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
+            queryClient.invalidateQueries({ queryKey: ['mobils'] });
+        },
+    });
+};
+
+export const useCancelBookingMobil = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { penalti: number; metode_refund?: string; refund_payments?: { metode: string; nominal: number }[]; alasan?: string } }) =>
+            mobilService.cancelBookingMobil(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
+            queryClient.invalidateQueries({ queryKey: ['mobils'] });
+        },
+    });
+};
 
 export const useMobilDetail = (id: number) => {
     return useQuery({

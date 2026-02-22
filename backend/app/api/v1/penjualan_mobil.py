@@ -1,17 +1,38 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Query, status
+from pydantic import BaseModel, Field
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.mobil import (
     TransaksiMobilCreate,
     TransaksiMobilResponse,
 )
-from app.schemas.bengkel import PaymentUpdate
 from app.services.penjualan_mobil_service import PenjualanMobilService
 from app.utils.constants import PaymentStatus, OwnershipType, PaymentMethod
+
+
+class PaymentEntry(BaseModel):
+    """Single payment entry for split payments."""
+    metode: PaymentMethod = PaymentMethod.TUNAI
+    nominal: Decimal = Field(..., gt=0)
+
+
+class SplitPaymentRequest(BaseModel):
+    """Schema for processing payment (supports split)."""
+    jumlah_bayar: Decimal = Field(..., ge=0)
+    metode_bayar: Optional[PaymentMethod] = None
+    payments: List[PaymentEntry] = []
+
+
+class CancelBookingRequest(BaseModel):
+    """Schema for cancelling a booking."""
+    penalti: Decimal = Field(default=Decimal("0"), ge=0, description="Penalty amount to deduct from DP")
+    metode_refund: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    refund_payments: List[PaymentEntry] = []
+    alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
 
 
 router = APIRouter(prefix="/penjualan-mobil", tags=["Penjualan Mobil"])
@@ -98,11 +119,41 @@ def get_transaksi(
 @router.patch("/{transaksi_id}/payment", response_model=TransaksiMobilResponse)
 def update_payment(
     transaksi_id: int,
-    data: PaymentUpdate,
+    data: SplitPaymentRequest,
     db: DBSession,
     current_user: ManagerUser,
 ):
-    """Process payment for transaction."""
+    """Process payment for transaction (supports split payments)."""
     service = PenjualanMobilService(db)
-    return service.update_payment(transaksi_id, data.jumlah_bayar, data.metode_bayar or PaymentMethod.TUNAI, current_user.id)
+    # Build payment entries list
+    if data.payments:
+        payment_entries = [(p.metode, p.nominal) for p in data.payments]
+    else:
+        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.jumlah_bayar)]
+    return service.update_payment(transaksi_id, data.jumlah_bayar, payment_entries, current_user.id)
+
+
+@router.post("/{transaksi_id}/cancel", response_model=TransaksiMobilResponse)
+def cancel_booking(
+    transaksi_id: int,
+    data: CancelBookingRequest,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Cancel a booking and process penalty/refund."""
+    service = PenjualanMobilService(db)
+    # Build refund entries
+    refund_entries = []
+    if data.refund_payments:
+        refund_entries = [(p.metode, p.nominal) for p in data.refund_payments]
+    elif data.metode_refund:
+        refund_entries = [(data.metode_refund, None)]  # None = use calculated refund
+    return service.cancel_booking(
+        transaksi_id=transaksi_id,
+        penalti=data.penalti,
+        refund_entries=refund_entries,
+        alasan=data.alasan or "",
+        user_id=current_user.id,
+    )
+
 

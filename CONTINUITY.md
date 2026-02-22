@@ -1,27 +1,38 @@
 # Continuity Ledger
 
-- Goal: Implement split payment functionality for both Piutang (Accounts Receivable) and Hutang (Accounts Payable) in creation and payment flows, and fix API errors.
-- Constraints/Assumptions:
-  - System uses FastAPI (backend) and Expo/React Native (frontend).
-  - Split payment required for creation (outflow for Piutang, inflow for Hutang) and repayment (inflow for Piutang, outflow for Hutang).
-- Key decisions:
-  - Reordered schemas in `keuangan.py` to fix NameError.
-  - Updated both `PiutangService` and `HutangService` to handle `payments` in `create()` method.
-  - Linked `KasBank` entries to `Pembayaran` records via `referensi_id` in split payment processing.
-  - Added `POST /api/v1/hutang` endpoint to `backend/app/api/v1/hutang.py`.
-- State:
-  - Done: 
-    - Fixed schema NameError in `keuangan.py`.
-    - Implemented split payment support in `PiutangService.create` and `HutangService.create`.
-    - Added `create_hutang` endpoint to the FastAPI router (fixed 405 error).
-    - Updated frontend services, hooks, and UI for both Piutang and Hutang modules.
-    - Added "Tambah Hutang" feature with split payment UI in `hutang.tsx`.
-  - Now: Monitoring for any further issues.
-  - Next: Testing with the user.
-- Open questions (UNCONFIRMED):
-  - None at the moment.
-- Working set:
-  - `backend/app/schemas/keuangan.py`
-  - `backend/app/services/hutang_service.py`
-  - `backend/app/api/v1/hutang.py`
-  - `frontend/app/finance/hutang.tsx`
+## Goal
+Implement booking cancellation with penalty feature for car sales.
+
+## Constraints/Assumptions
+- Car must be in BOOKING status to cancel
+- Penalty cannot exceed the DP already paid
+- Refund = DP - Penalty
+- Penalty recorded as income (KAS MASUK), refund as expense (KAS KELUAR)
+- Piutang is closed on cancellation
+- Car reverts to TERSEDIA on cancellation
+
+## Key decisions
+- Backend: Added `cancel_booking()` method in `PenjualanMobilService` (Supports Split Refund)
+- Backend: Added `POST /penjualan-mobil/{id}/cancel` endpoint (Supports Split Refund)
+- Backend: Updated `update_payment` in `PenjualanMobilService` (Supports Split Payment)
+- Frontend: Added split payment UI in Payment Modal and Cancel Modal with toggle and currency formatting.
+- Previous fix: `piutang_service.py._update_source_transaction()` now also transitions car BOOKING → TERJUAL when piutang is paid via piutang page
+
+## State
+- Done:
+  - Backend `cancel_booking()` in `penjualan_mobil_service.py`
+  - Backend `POST /{id}/cancel` endpoint in `penjualan_mobil.py`
+  - Backend `_update_source_transaction()` fix in `piutang_service.py`
+  - Frontend service `cancelBookingMobil` in `services/mobil.ts`
+  - Frontend hook `useCancelBookingMobil` in `hooks/useMobil.ts`
+  - Frontend cancel modal UI in `components/MobilDetail.tsx`
+- Now: Complete - all files updated
+- Next: Testing
+
+## Working set
+- `backend/app/services/penjualan_mobil_service.py` - cancel_booking() method
+- `backend/app/api/v1/penjualan_mobil.py` - POST cancel endpoint
+- `backend/app/services/piutang_service.py` - _update_source_transaction fix
+- `frontend/services/mobil.ts` - cancelBookingMobil
+- `frontend/hooks/useMobil.ts` - useCancelBookingMobil
+- `frontend/components/MobilDetail.tsx` - cancel modal UI

@@ -309,6 +309,13 @@ class PiutangService:
                 if piutang.status == PiutangStatus.LUNAS:
                     mobil_trx.status_bayar = PaymentStatus.LUNAS
                     mobil_trx.sisa_bayar = Decimal("0")
+                    # Also update car status: BOOKING → TERJUAL
+                    from app.models.mobil import Mobil
+                    from app.utils.constants import CarStatus
+                    mobil = self.db.query(Mobil).filter(Mobil.id == mobil_trx.mobil_id).first()
+                    if mobil and mobil.status == CarStatus.BOOKING:
+                        mobil.status = CarStatus.TERJUAL
+                        mobil.tanggal_terjual = tanggal
                 else:
                     mobil_trx.status_bayar = PaymentStatus.CICILAN
 

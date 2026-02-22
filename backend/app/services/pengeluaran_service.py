@@ -270,15 +270,21 @@ class PengeluaranService:
         )
 
         category_summary = {
-            cat.value: {"count": 0, "total": 0.0} for cat in ExpenseCategory
+            cat.value.lower(): {"count": 0, "total": 0.0} for cat in ExpenseCategory
         }
         for row in by_category:
             if row.kategori:
                 # row.kategori is now a string because we changed the model to String
-                category_summary[row.kategori] = {
-                    "count": row.count,
-                    "total": float(row.total or 0),
-                }
+                # Normalize to lowercase to match frontend expectations
+                key = row.kategori.lower()
+                if key in category_summary:
+                    category_summary[key]["count"] += row.count
+                    category_summary[key]["total"] += float(row.total or 0)
+                else:
+                    category_summary[key] = {
+                        "count": row.count,
+                        "total": float(row.total or 0),
+                    }
 
         return {
             "total_transaksi": total_count,
