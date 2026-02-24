@@ -33,6 +33,7 @@ import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, 
 import { FILE_URL } from '../utils/api';
 import { formatCurrency, parseNumber, formatNumber } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
+import { PaymentModal } from './PaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
 
 const { width } = Dimensions.get('window');
@@ -71,6 +72,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     ]);
     const [cancelAlasan, setCancelAlasan] = useState('');
     const [cancelSuccess, setCancelSuccess] = useState(false);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
     const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
@@ -380,10 +382,19 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeTx.sisa_bayar)}</Typography>
                                     </View>
 
-                                    <View className="bg-white/50 border border-amber-200 py-4 rounded-2xl items-center mb-3">
+                                    <View className="bg-white/50 border border-amber-200 py-4 rounded-2xl items-center mb-6">
                                         <Info size={18} color="#D97706" />
-                                        <Typography weight="bold" className="text-amber-700 text-xs ml-2">Pelunasan dilakukan di menu FINANCE</Typography>
+                                        <Typography weight="bold" className="text-amber-700 text-xs ml-2 text-center px-4">Pastikan nominal yang diterima sesuai dengan sisa pelunasan</Typography>
                                     </View>
+
+                                    {activeTx.piutang_id && (
+                                        <Button
+                                            title="Pelunasan / Bayar Cicilan"
+                                            onPress={() => setPaymentModalVisible(true)}
+                                            className="rounded-2xl h-14 bg-emerald-600 mb-3 shadow-lg shadow-emerald-900/20"
+                                            icon={<TrendingUp size={20} color="white" />}
+                                        />
+                                    )}
 
                                     {/* Cancel Booking Button */}
                                     <TouchableOpacity
@@ -787,6 +798,21 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     </View>
                 </View>
             </Modal>
+
+            {activeTx && activeTx.piutang_id && (
+                <PaymentModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    onSuccess={() => {
+                        setPaymentModalVisible(false);
+                        Alert.alert('Sukses', 'Pembayaran berhasil dicatat');
+                        onClose();
+                    }}
+                    piutangId={activeTx.piutang_id}
+                    initialAmount={Number(activeTx.sisa_bayar)}
+                    title="Pelunasan Unit Mobil"
+                />
+            )}
         </View>
     );
 };

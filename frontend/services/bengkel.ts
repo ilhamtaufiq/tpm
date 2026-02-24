@@ -39,6 +39,7 @@ export interface TransaksiBengkel {
     kembalian: number;
     status_pengerjaan: 'ANTRE' | 'PROSES' | 'SELESAI' | 'BATAL';
     status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'CICILAN';
+    piutang_id?: number;
     catatan?: string;
     created_at: string;
 }
@@ -51,6 +52,7 @@ export interface PembelianPart {
     supplier_nama?: string;
     total_biaya: number;
     status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'CICILAN';
+    piutang_id?: number;
     catatan?: string;
     created_at: string;
 }

@@ -33,6 +33,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
+import { PaymentModal } from '../../components/PaymentModal';
 import { formatNumber, parseNumber } from '../../utils/format';
 
 export default function JasaAngkutScreen() {
@@ -184,6 +185,7 @@ export default function JasaAngkutScreen() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [sheetIndex, setSheetIndex] = useState(-1);
     const [editData, setEditData] = useState<Muatan | null>(null);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
 
     const backendStats = summaryData || {};
@@ -407,12 +409,12 @@ export default function JasaAngkutScreen() {
                             className="rounded-2xl h-14"
                             icon={<Edit size={20} color="#023C69" />}
                         />
-                        {trip.status_bayar !== 'LUNAS' && (
+                        {trip.piutang_id && trip.status_bayar !== 'LUNAS' && (
                             <Button
-                                variant="outline-danger"
-                                title="Hapus Data Muatan"
-                                onPress={() => handleDelete(trip)}
-                                className="rounded-2xl h-14"
+                                title="Pelunasan / Bayar Cicilan"
+                                onPress={() => setPaymentModalVisible(true)}
+                                className="rounded-2xl h-14 bg-emerald-600"
+                                icon={<RefreshCw size={20} color="white" />}
                             />
                         )}
                         <Button
@@ -767,6 +769,27 @@ export default function JasaAngkutScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={actionLoading}
             />
+
+            {selectedTrip && selectedTrip.piutang_id && (
+                <PaymentModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    onSuccess={() => {
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Sukses',
+                            message: 'Pembayaran berhasil dicatat',
+                            variant: 'success',
+                            type: 'alert'
+                        });
+                        refetch();
+                        handleCloseSheet();
+                    }}
+                    piutangId={selectedTrip.piutang_id}
+                    initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
+                    title="Pelunasan Jasa Angkut"
+                />
+            )}
 
         </View>
     );

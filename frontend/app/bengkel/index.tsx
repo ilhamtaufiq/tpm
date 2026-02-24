@@ -27,6 +27,7 @@ import {
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
+import { PaymentModal } from '../../components/PaymentModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -82,6 +83,8 @@ export default function BengkelScreen() {
         onConfirm: undefined,
         loading: false
     });
+
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
     const queue = queueData?.data || [];
 
@@ -447,6 +450,16 @@ export default function BengkelScreen() {
                                 {formatCurrency(selectedItem.grand_total || 0)}
                             </Typography>
                         </View>
+
+                        {selectedItem.piutang_id && selectedItem.status_bayar !== 'LUNAS' && selectedItem.status_bayar !== 'lunas' && (
+                            <TouchableOpacity
+                                onPress={() => setPaymentModalVisible(true)}
+                                className="mt-6 bg-primary/10 py-4 rounded-2xl flex-row items-center justify-center border border-primary/20 shadow-sm"
+                            >
+                                <Banknote size={20} color="#023C69" />
+                                <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
+                            </TouchableOpacity>
+                        )}
                     </Card>
 
                     <View className="space-y-4">
@@ -501,6 +514,26 @@ export default function BengkelScreen() {
                 </View>
             ) : null}
 
+            {selectedItem && selectedItem.piutang_id && (
+                <PaymentModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    onSuccess={() => {
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Sukses',
+                            message: 'Pembayaran berhasil dicatat',
+                            variant: 'success',
+                            type: 'alert'
+                        });
+                        refetch();
+                        refetchSummary();
+                        handleClosePress();
+                    }}
+                    piutangId={selectedItem.piutang_id}
+                    initialAmount={selectedItem.grand_total - (selectedItem.jumlah_bayar || 0)}
+                />
+            )}
         </View>
     );
 

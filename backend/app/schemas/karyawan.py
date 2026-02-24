@@ -270,6 +270,7 @@ class KasbonResponse(BaseModel):
     keterangan: Optional[str] = None
     status: PaymentStatus
     piutang_id: Optional[int] = None
+    jumlah_bayar: Decimal = Decimal("0")
     tanggal_lunas: Optional[date] = None
     catatan: Optional[str] = None
     created_at: datetime

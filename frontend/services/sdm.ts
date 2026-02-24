@@ -87,6 +87,7 @@ export interface Kasbon {
     nominal: number;
     keterangan?: string;
     status: PaymentStatus;
+    piutang_id?: number;
     tanggal_lunas?: string;
     created_at: string;
 }
@@ -115,6 +116,7 @@ export interface SlipGaji {
     potongan_kasbon: number;
     gaji_bersih: number;
     status: PaymentStatus;
+    piutang_id?: number;
     tanggal_bayar?: string;
     metode_bayar?: string;
     catatan?: string;

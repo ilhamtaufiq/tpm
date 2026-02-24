@@ -77,6 +77,8 @@ export interface Muatan {
     tanggal_bayar?: string;
     biaya_tambahan?: BiayaLainnya[];
     part_services?: PartService[];
+    piutang_id?: number;
+    jumlah_bayar?: number;
     catatan?: string;
     created_at: string;
 }

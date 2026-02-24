@@ -24,6 +24,7 @@ import { sdmService, Kasbon, KasbonSummary, PaymentStatus, Karyawan } from '../.
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { PaymentModal } from '../../components/PaymentModal';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -49,6 +50,8 @@ export default function KasbonScreen() {
         keterangan: '',
     });
     const [showKaryawanPicker, setShowKaryawanPicker] = useState(false);
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
 
     // Sheet State
     const [activeSheet, setActiveSheet] = useState<'none' | 'create'>('none');
@@ -401,9 +404,21 @@ export default function KasbonScreen() {
                                     >
                                         <Trash2 size={16} color="#E11D48" />
                                     </TouchableOpacity>
-                                    <View className="flex-1 bg-gray-50 border border-gray-100 h-10 rounded-xl items-center justify-center">
-                                        <Typography className="text-textGray/40 text-[10px] font-bold">SETTLEMENT DI FINANCE</Typography>
-                                    </View>
+                                    {item.piutang_id ? (
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setSelectedKasbon(item);
+                                                setPaymentModalVisible(true);
+                                            }}
+                                            className="flex-1 bg-emerald-600 h-10 rounded-xl items-center justify-center shadow-sm shadow-emerald-900/10"
+                                        >
+                                            <Typography weight="bold" className="text-white text-[10px]">LEBIH MUDAH: BAYAR DI SINI</Typography>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <View className="flex-1 bg-gray-50 border border-gray-100 h-10 rounded-xl items-center justify-center">
+                                            <Typography className="text-textGray/40 text-[10px] font-bold">SETTLEMENT DI FINANCE</Typography>
+                                        </View>
+                                    )}
                                 </View>
                             )}
                         </View>
@@ -474,6 +489,27 @@ export default function KasbonScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
+
+            {selectedKasbon && selectedKasbon.piutang_id && (
+                <PaymentModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    onSuccess={() => {
+                        setPaymentModalVisible(false);
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Sukses',
+                            message: 'Pembayaran kasbon berhasil dicatat',
+                            variant: 'success',
+                            type: 'alert'
+                        });
+                        loadData();
+                    }}
+                    piutangId={selectedKasbon.piutang_id}
+                    initialAmount={Number(selectedKasbon.nominal)}
+                    title={`Pelunasan Kasbon: ${selectedKasbon.karyawan_nama}`}
+                />
+            )}
         </View>
     );
 }

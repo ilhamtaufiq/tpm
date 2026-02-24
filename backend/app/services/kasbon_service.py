@@ -169,9 +169,9 @@ class KasbonService:
                 detail="Kasbon tidak ditemukan",
             )
         
-        # Add piutang_id to the response
+        # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.jumlah_terbayar)
             .filter(
                 PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
                 PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
@@ -180,6 +180,9 @@ class KasbonService:
         )
         if piutang:
             kasbon.piutang_id = piutang.id
+            kasbon.jumlah_bayar = piutang.jumlah_terbayar
+        else:
+            kasbon.jumlah_bayar = kasbon.nominal if kasbon.status == PaymentStatus.LUNAS else 0
 
         return kasbon
 
@@ -235,20 +238,24 @@ class KasbonService:
         # Pagination
         kasbons = query.offset(skip).limit(limit).all()
 
-        # Batch fetch piutang_ids
+        # Batch fetch piutang info
         if kasbons:
             nomor_refs = [k.nomor_kasbon for k in kasbons]
-            piutang_map = {
-                p.nomor_referensi: p.id
-                for p in self.db.query(PiutangUsaha.id, PiutangUsaha.nomor_referensi)
-                .filter(
-                    PiutangUsaha.nomor_referensi.in_(nomor_refs),
-                    PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
-                )
-                .all()
-            }
+            piutang_info = self.db.query(
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.jumlah_terbayar
+            ).filter(
+                PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
+            ).all()
+            
+            piutang_map = {p.nomor_referensi: (p.id, p.jumlah_terbayar) for p in piutang_info}
+            
             for k in kasbons:
-                k.piutang_id = piutang_map.get(k.nomor_kasbon)
+                info = piutang_map.get(k.nomor_kasbon)
+                if info:
+                    k.piutang_id, k.jumlah_bayar = info
+                else:
+                    k.jumlah_bayar = k.nominal if k.status == PaymentStatus.LUNAS else 0
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

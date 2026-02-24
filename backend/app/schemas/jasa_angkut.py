@@ -287,6 +287,7 @@ class MuatanResponse(BaseModel):
     biaya_tambahan: List[BiayaTambahanResponse] = []
     part_services: List[PartServiceResponse] = []
     piutang_id: Optional[int] = None
+    jumlah_bayar: Decimal = Decimal("0")
     catatan: Optional[str] = None
     created_at: datetime
 
