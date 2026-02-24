@@ -234,6 +234,7 @@ class TransaksiMobilResponse(BaseModel):
     metode_bayar: PaymentMethod
     dp: Decimal
     sisa_bayar: Decimal
+    piutang_id: Optional[int] = None
     catatan: Optional[str] = None
     created_at: datetime
 

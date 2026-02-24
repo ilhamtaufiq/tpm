@@ -357,6 +357,19 @@ class MuatanService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Muatan tidak ditemukan",
             )
+        
+        # Add piutang_id to the response
+        piutang = (
+            self.db.query(PiutangUsaha.id)
+            .filter(
+                PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
+                PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+            )
+            .first()
+        )
+        if piutang:
+            muatan.piutang_id = piutang.id
+
         return muatan
 
     def get_by_nomor(self, nomor_transaksi: str) -> Optional[MuatanJasaAngkut]:
@@ -430,6 +443,21 @@ class MuatanService:
 
         # Pagination
         muatans = query.offset(skip).limit(limit).all()
+
+        # Batch fetch piutang_ids
+        if muatans:
+            nomor_refs = [m.nomor_transaksi for m in muatans]
+            piutang_map = {
+                p.nomor_referensi: p.id
+                for p in self.db.query(PiutangUsaha.id, PiutangUsaha.nomor_referensi)
+                .filter(
+                    PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                    PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+                )
+                .all()
+            }
+            for m in muatans:
+                m.piutang_id = piutang_map.get(m.nomor_transaksi)
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

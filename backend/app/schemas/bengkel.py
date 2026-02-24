@@ -306,6 +306,7 @@ class TransaksiBengkelResponse(BaseModel):
     catatan: Optional[str] = None
     detail_parts: List[DetailPartResponse] = []
     detail_services: List[DetailServiceResponse] = []
+    piutang_id: Optional[int] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -168,6 +168,19 @@ class KasbonService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Kasbon tidak ditemukan",
             )
+        
+        # Add piutang_id to the response
+        piutang = (
+            self.db.query(PiutangUsaha.id)
+            .filter(
+                PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
+            )
+            .first()
+        )
+        if piutang:
+            kasbon.piutang_id = piutang.id
+
         return kasbon
 
     def get_by_nomor(self, nomor_kasbon: str) -> Optional[KasbonKaryawan]:
@@ -221,6 +234,21 @@ class KasbonService:
 
         # Pagination
         kasbons = query.offset(skip).limit(limit).all()
+
+        # Batch fetch piutang_ids
+        if kasbons:
+            nomor_refs = [k.nomor_kasbon for k in kasbons]
+            piutang_map = {
+                p.nomor_referensi: p.id
+                for p in self.db.query(PiutangUsaha.id, PiutangUsaha.nomor_referensi)
+                .filter(
+                    PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                    PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
+                )
+                .all()
+            }
+            for k in kasbons:
+                k.piutang_id = piutang_map.get(k.nomor_kasbon)
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

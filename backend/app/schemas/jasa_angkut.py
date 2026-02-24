@@ -286,6 +286,7 @@ class MuatanResponse(BaseModel):
     tanggal_bayar: Optional[date] = None
     biaya_tambahan: List[BiayaTambahanResponse] = []
     part_services: List[PartServiceResponse] = []
+    piutang_id: Optional[int] = None
     catatan: Optional[str] = None
     created_at: datetime
 
