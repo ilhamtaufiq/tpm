@@ -55,12 +55,14 @@ export default function PiutangUsahaScreen() {
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [search, setSearch] = useState('');
 
     // API Hooks
     const { data: listData, isLoading: isLoadingList, refetch: refetchList } = usePiutangList({
         limit: 50,
         status: selectedFilter === 'all' || selectedFilter === 'overdue' ? undefined : selectedFilter,
         overdue_only: selectedFilter === 'overdue',
+        search: search || undefined,
     });
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary();
     const paymentMutation = useProcessPaymentSplit();
@@ -828,7 +830,14 @@ export default function PiutangUsahaScreen() {
 
                         <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
                             <Search size={18} color="#9CA3AF" />
-                            <Typography className="ml-3 text-sm text-gray-400 font-medium">Cari nama debitur atau invoice...</Typography>
+                            <TextInput
+                                className="flex-1 ml-3 text-sm text-textMain font-medium h-full"
+                                placeholder="Cari nama debitur atau invoice..."
+                                value={search}
+                                onChangeText={setSearch}
+                                placeholderTextColor="#9CA3AF"
+                                clearButtonMode="while-editing"
+                            />
                         </View>
                     </View>
                 </View>
