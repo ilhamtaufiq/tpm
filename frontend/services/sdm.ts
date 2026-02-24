@@ -88,6 +88,7 @@ export interface Kasbon {
     keterangan?: string;
     status: PaymentStatus;
     piutang_id?: number;
+    jumlah_bayar?: number;
     tanggal_lunas?: string;
     created_at: string;
 }

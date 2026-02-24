@@ -408,7 +408,7 @@ class PenjualanMobilService:
         
         # Add piutang_id to the response
         piutang = (
-            self.db.query(PiutangUsaha.id)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.sisa_piutang)
             .filter(
                 PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
@@ -417,6 +417,8 @@ class PenjualanMobilService:
         )
         if piutang:
             transaksi.piutang_id = piutang.id
+            # Sync sisa_bayar with latest piutang status
+            transaksi.sisa_bayar = piutang.sisa_piutang
 
         return transaksi
 
@@ -498,20 +500,22 @@ class PenjualanMobilService:
         # Pagination
         transaksis = query.offset(skip).limit(limit).all()
 
-        # Batch fetch piutang_ids
+        # Batch fetch piutang info
         if transaksis:
             nomor_refs = [t.nomor_transaksi for t in transaksis]
-            piutang_map = {
-                p.nomor_referensi: p.id
-                for p in self.db.query(PiutangUsaha.id, PiutangUsaha.nomor_referensi)
-                .filter(
-                    PiutangUsaha.nomor_referensi.in_(nomor_refs),
-                    PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
-                )
-                .all()
-            }
+            piutang_info = self.db.query(
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.sisa_piutang
+            ).filter(
+                PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
+            ).all()
+            
+            piutang_map = {p.nomor_referensi: (p.id, p.sisa_piutang) for p in piutang_info}
+            
             for t in transaksis:
-                t.piutang_id = piutang_map.get(t.nomor_transaksi)
+                info = piutang_map.get(t.nomor_transaksi)
+                if info:
+                    t.piutang_id, t.sisa_bayar = info
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

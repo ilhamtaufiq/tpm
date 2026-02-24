@@ -443,9 +443,9 @@ class TransaksiBengkelService:
                 detail="Transaksi tidak ditemukan",
             )
         
-        # Add piutang_id to the response
+        # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.jumlah_terbayar)
             .filter(
                 PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.BENGKEL
@@ -454,6 +454,9 @@ class TransaksiBengkelService:
         )
         if piutang:
             transaksi.piutang_id = piutang.id
+            transaksi.jumlah_bayar = piutang.jumlah_terbayar
+        else:
+            transaksi.jumlah_bayar = transaksi.total_bayar # If no piutang, total_bayar is what was paid at the time
             
         return transaksi
 
@@ -550,20 +553,24 @@ class TransaksiBengkelService:
         # Pagination
         transaksis = query.offset(skip).limit(limit).all()
 
-        # Batch fetch piutang_ids for the current page
+        # Batch fetch piutang info for the current page
         if transaksis:
             nomor_refs = [t.nomor_transaksi for t in transaksis]
-            piutang_map = {
-                p.nomor_referensi: p.id
-                for p in self.db.query(PiutangUsaha.id, PiutangUsaha.nomor_referensi)
-                .filter(
-                    PiutangUsaha.nomor_referensi.in_(nomor_refs),
-                    PiutangUsaha.sumber == PiutangSource.BENGKEL
-                )
-                .all()
-            }
+            piutang_info = self.db.query(
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.jumlah_terbayar
+            ).filter(
+                PiutangUsaha.nomor_referensi.in_(nomor_refs),
+                PiutangUsaha.sumber == PiutangSource.BENGKEL
+            ).all()
+            
+            piutang_map = {p.nomor_referensi: (p.id, p.jumlah_terbayar) for p in piutang_info}
+            
             for t in transaksis:
-                t.piutang_id = piutang_map.get(t.nomor_transaksi)
+                info = piutang_map.get(t.nomor_transaksi)
+                if info:
+                    t.piutang_id, t.jumlah_bayar = info
+                else:
+                    t.jumlah_bayar = t.total_bayar
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

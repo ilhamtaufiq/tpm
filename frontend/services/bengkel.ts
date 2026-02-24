@@ -40,6 +40,7 @@ export interface TransaksiBengkel {
     status_pengerjaan: 'ANTRE' | 'PROSES' | 'SELESAI' | 'BATAL';
     status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'CICILAN';
     piutang_id?: number;
+    jumlah_bayar?: number;
     catatan?: string;
     created_at: string;
 }
