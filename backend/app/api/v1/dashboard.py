@@ -82,7 +82,7 @@ def get_dashboard_summary(
         "mobil": {
             "total_penjualan": mobil_summary["total_penjualan"],
             "total_transaksi": mobil_summary["total_transaksi"],
-            "laba_kotor": mobil_summary["total_laba_kotor"],
+            "laba_kotor": mobil_summary["laba_tpm"],
             "laba_tpm": mobil_summary["laba_tpm"],
         },
         "jasa_angkut": {
@@ -407,10 +407,10 @@ def get_capital_report(
     
     # Laba (Gross Profit contributions)
     laba_bengkel = bengkel_summ["total_laba_kotor"]
-    laba_mobil_kotor = mobil_summ["total_laba_kotor"]
+    laba_mobil_tpm = mobil_summ["laba_tpm"]
     laba_jasa_angkut_tpm = muatan_summ["laba_tpm"]
     
-    total_laba_kotor = laba_bengkel + laba_mobil_kotor + laba_jasa_angkut_tpm
+    total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut_tpm
 
     # A. Summary
     section_a = {
@@ -420,9 +420,9 @@ def get_capital_report(
         "total_laba": total_laba_kotor,
         "details": {
             "laba_bengkel": laba_bengkel,
-            "laba_kotor_mobil": laba_mobil_kotor,
+            "laba_kotor_mobil": mobil_summ["total_laba_kotor"],
             "laba_investor_mobil": mobil_summ["laba_investor"],
-            "laba_mobil": mobil_summ["laba_tpm"],
+            "laba_mobil_tpm": laba_mobil_tpm,
             "laba_jasa_angkut": laba_jasa_angkut_tpm,
         },
         "total_a": setoran_modal + hpp_bengkel + hpp_mobil + total_laba_kotor

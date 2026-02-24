@@ -16,11 +16,11 @@ Add split payment functionality (multiple payment methods) to the "Manajemen Bia
 
 ## State
 - Done: 
-  - Updated backend schemas for `MobilBiayaCreate` to support split payments.
-  - Implemented logic in `MobilService` to record multiple `KasBank` entries.
-  - Updated API endpoint to handle split payment data.
-  - Redesigned `MobilCostForm.tsx` UI with split payment toggle and dynamic rows.
-  - Fixed lint errors in `MobilCostForm.tsx`.
+  - Updated backend schemas for `MobilBiayaCreate` and `TransaksiMobilCreate` to support split payments.
+  - Implemented logic in `MobilService` and `PenjualanMobilService` to record multiple `KasBank` entries for costs, unit creation, and sales.
+  - Updated API endpoints to handle split payment data.
+  - Redesigned `MobilCostForm.tsx` and `MobilSalesForm.tsx` UI with split payment toggles and dynamic rows.
+  - Fixed lint errors in both forms.
 - Now: Verifying and Abschluss.
 - Next: Done.
 

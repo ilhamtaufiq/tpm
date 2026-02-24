@@ -204,6 +204,7 @@ class TransaksiMobilCreate(BaseModel):
     harga_jual: Decimal = Field(..., ge=0)
     dp: Decimal = Field(default=Decimal("0"), ge=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    payments: List[PaymentItem] = [] # For split payments
     
     # Dynamic operational costs added at sale
     biaya_operasional: List[BiayaItem] = []

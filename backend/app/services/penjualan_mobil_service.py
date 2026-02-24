@@ -374,18 +374,34 @@ class PenjualanMobilService:
 
         # Record DP payment to kas/bank if any
         if data.dp > 0:
-            create_kas_entry(
-                db=self.db,
-                tanggal=data.tanggal,
-                tipe=KasBankType.MASUK,
-                nominal=data.dp,
-                sumber=KasBankSource.JUAL_BELI_MOBIL,
-                metode_bayar=data.metode_bayar,
-                referensi_id=transaksi.id,
-                nomor_referensi=transaksi.nomor_transaksi,
-                keterangan=f"DP penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
-                user_id=user_id,
-            )
+            if hasattr(data, 'payments') and data.payments:
+                for p in data.payments:
+                    if p.jumlah > 0:
+                        create_kas_entry(
+                            db=self.db,
+                            tanggal=data.tanggal,
+                            tipe=KasBankType.MASUK,
+                            nominal=p.jumlah,
+                            sumber=KasBankSource.JUAL_BELI_MOBIL,
+                            metode_bayar=p.metode,
+                            referensi_id=transaksi.id,
+                            nomor_referensi=transaksi.nomor_transaksi,
+                            keterangan=f"DP penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat}) - {p.metode}",
+                            user_id=user_id,
+                        )
+            else:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.MASUK,
+                    nominal=data.dp,
+                    sumber=KasBankSource.JUAL_BELI_MOBIL,
+                    metode_bayar=data.metode_bayar,
+                    referensi_id=transaksi.id,
+                    nomor_referensi=transaksi.nomor_transaksi,
+                    keterangan=f"DP penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                    user_id=user_id,
+                )
 
         return transaksi
 
