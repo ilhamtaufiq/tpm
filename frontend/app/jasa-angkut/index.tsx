@@ -217,7 +217,7 @@ export default function JasaAngkutScreen() {
         refetch();
     };
 
-    const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail' | 'payment', item?: any) => {
+    const handlePresentModal = (type: 'form' | 'detail' | 'armada_detail', item?: any) => {
         if (type === 'armada_detail') {
             router.push(`/jasa-angkut/armada/detail/${item.id}`);
             return;
@@ -226,7 +226,7 @@ export default function JasaAngkutScreen() {
         setView(type);
 
         if (type === 'form') setEditData(null);
-        if (type === 'detail' || type === 'payment') setSelectedTrip(item);
+        if (type === 'detail') setSelectedTrip(item);
 
         if (Platform.OS === 'web') {
             if (type === 'form') setIsFormOpen(true);
