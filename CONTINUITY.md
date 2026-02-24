@@ -21,8 +21,10 @@ Add split payment functionality (multiple payment methods) to the "Manajemen Bia
   - Updated API endpoints to handle split payment data.
   - Redesigned `MobilCostForm.tsx` and `MobilSalesForm.tsx` UI with split payment toggles and dynamic rows.
   - Fixed lint errors in both forms.
-- Now: Verifying and Abschluss.
-- Next: Done.
+  - Fixed investor profit reporting in Dashboard, Laba Rugi, and Capital Change reports to show TPM share.
+  - Implemented search functionality in `PiutangUsahaScreen`.
+- Now: Completed requested tasks.
+- Next: Awaiting user feedback or further requests.
 
 ## Open Questions (UNCONFIRMED)
 None.
