@@ -36,9 +36,20 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
 
     // Form States
-    const [newLainnya, setNewLainnya] = useState({ kategori: '', deskripsi: '', jumlah: '' });
+    const [newLainnya, setNewLainnya] = useState<{
+        kategori: string;
+        deskripsi: string;
+        jumlah: string;
+        metode_bayar: string;
+    }>({
+        kategori: '',
+        deskripsi: '',
+        jumlah: '',
+        metode_bayar: 'TUNAI'
+    });
 
-
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -57,26 +68,64 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
         loading: false
     });
 
+    const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.jumlah), 0);
 
+    const addPaymentRow = () => {
+        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', jumlah: '' }]);
+    };
+
+    const removePaymentRow = (id: number) => {
+        setPayments(payments.filter(p => p.id !== id));
+    };
+
+    const updatePaymentRow = (id: number, field: string, value: string) => {
+        setPayments(payments.map(p => {
+            if (p.id === id) {
+                return { ...p, [field]: field === 'jumlah' ? formatNumber(value) : value };
+            }
+            return p;
+        }));
+    };
+
+    const toggleSplitPayment = () => {
+        if (!isSplitPayment) {
+            // Turning ON: Move current amount to first payment row
+            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar, jumlah: newLainnya.jumlah }]);
+        } else {
+            // Turning OFF: Move sum back to main amount
+            setNewLainnya({ ...newLainnya, jumlah: formatNumber(totalSplitAmount.toString()) });
+        }
+        setIsSplitPayment(!isSplitPayment);
+    };
 
     const handleAddBiaya = () => {
-        const jumlahNum = parseNumber(newLainnya.jumlah);
-        if (isNaN(jumlahNum) || jumlahNum <= 0) {
+        const finalAmount = isSplitPayment ? totalSplitAmount : parseNumber(newLainnya.jumlah);
+
+        if (isNaN(finalAmount) || finalAmount <= 0) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Mohon isi jumlah biaya yang valid', variant: 'warning', type: 'alert' });
             return;
         }
 
-        addBiayaMutation.mutate({
+        const payload: any = {
             id: unit.id,
             data: {
                 kategori: newLainnya.kategori || 'Admin',
                 deskripsi: newLainnya.deskripsi || newLainnya.kategori || 'Biaya Admin & Pajak',
-                jumlah: jumlahNum,
+                jumlah: finalAmount,
                 tanggal: new Date().toISOString().split('T')[0],
+                metode_bayar: newLainnya.metode_bayar,
+                payments: isSplitPayment ? payments.map(p => ({
+                    metode: p.metode,
+                    jumlah: parseNumber(p.jumlah)
+                })).filter(p => p.jumlah > 0) : []
             }
-        }, {
+        };
+
+        addBiayaMutation.mutate(payload, {
             onSuccess: () => {
-                setNewLainnya({ kategori: '', deskripsi: '', jumlah: '' });
+                setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: 'TUNAI' });
+                setPayments([]);
+                setIsSplitPayment(false);
                 setDialogConfig({
                     visible: true,
                     title: 'Sukses',
@@ -106,7 +155,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             type: 'confirm',
             loading: false,
             onConfirm: () => {
-                setDialogConfig(prev => ({ ...prev, loading: true }));
+                setDialogConfig((prev: any) => ({ ...prev, loading: true }));
                 deleteBiayaMutation.mutate({ id: activeUnit.id, biayaId }, {
                     onSuccess: () => {
                         setDialogConfig({ visible: true, title: 'Sukses', message: 'Biaya berhasil dihapus', variant: 'success', type: 'alert', loading: false });
@@ -144,34 +193,107 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const renderFormContent = () => (
         <View className="px-6 pb-4">
             <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm mb-8">
-                <View className="flex-row items-center mb-6">
-                    <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
-                        <Receipt size={16} color="#023C69" />
+                <View className="flex-row items-center justify-between mb-6">
+                    <View className="flex-row items-center">
+                        <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
+                            <Receipt size={16} color="#023C69" />
+                        </View>
+                        <Typography variant="body1" weight="bold" className="text-primary uppercase tracking-wider">Pencatatan Biaya</Typography>
                     </View>
-                    <Typography variant="body1" weight="bold" className="text-primary uppercase tracking-wider">Pencatatan Biaya</Typography>
+                    <TouchableOpacity
+                        onPress={toggleSplitPayment}
+                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                    >
+                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                        </Typography>
+                    </TouchableOpacity>
                 </View>
 
-                <View className="flex-row space-x-4 mb-4">
-                    <View className="flex-1">
-                        <Input
-                            label="Kategori"
-                            placeholder="Pajak / BBN / ADM"
-                            value={newLainnya.kategori}
-                            onChangeText={(val) => setNewLainnya({ ...newLainnya, kategori: val })}
-                            className="font-bold text-primary"
-                        />
-                    </View>
-                    <View className="flex-1">
-                        <Input
-                            label="Jumlah (Rp)"
-                            placeholder="0"
-                            keyboardType="numeric"
-                            value={newLainnya.jumlah}
-                            onChangeText={(val) => setNewLainnya({ ...newLainnya, jumlah: formatNumber(val) })}
-                            className="font-bold text-primary"
-                        />
-                    </View>
+                <View className="mb-4">
+                    <Input
+                        label="Kategori"
+                        placeholder="Pajak / BBN / ADM"
+                        value={newLainnya.kategori}
+                        onChangeText={(val) => setNewLainnya({ ...newLainnya, kategori: val })}
+                        className="font-bold text-primary"
+                    />
                 </View>
+
+                {isSplitPayment ? (
+                    <View className="mb-6">
+                        <View className="flex-row justify-between items-center mb-3">
+                            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest pl-2">Alokasi Pembayaran</Typography>
+                            <TouchableOpacity onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                                <PlusCircle size={14} color="#023C69" />
+                                <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
+                            </TouchableOpacity>
+                        </View>
+
+                        {payments.map((p, idx) => (
+                            <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
+                                <View className="flex-row justify-between items-center mb-3">
+                                    <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
+                                    <TouchableOpacity onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
+                                        <Trash2 size={12} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <View className="flex-row flex-wrap gap-2 mb-3">
+                                    {['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => updatePaymentRow(p.id, 'metode', m)}
+                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                        >
+                                            <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Input
+                                    placeholder="Nominal Rp"
+                                    keyboardType="numeric"
+                                    value={p.jumlah}
+                                    containerClassName="mb-0"
+                                    onChangeText={(t) => updatePaymentRow(p.id, 'jumlah', t)}
+                                />
+                            </View>
+                        ))}
+
+                        <View className="flex-row justify-between items-center p-3 bg-primary/5 rounded-xl mt-2 border border-primary/10">
+                            <Typography variant="caption" weight="bold" className="text-primary">TOTAL BIAYA</Typography>
+                            <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
+                        </View>
+                    </View>
+                ) : (
+                    <View className="flex-row space-x-4 mb-4">
+                        <View className="flex-1">
+                            <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
+                            <View className="flex-row flex-wrap gap-2">
+                                {['TUNAI', 'TRANSFER', 'DEBIT'].map((m) => (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m })}
+                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
+                                    >
+                                        <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                        <View className="flex-1">
+                            <Input
+                                label="Jumlah (Rp)"
+                                placeholder="0"
+                                keyboardType="numeric"
+                                value={newLainnya.jumlah}
+                                onChangeText={(val) => setNewLainnya({ ...newLainnya, jumlah: formatNumber(val) })}
+                                className="font-bold text-primary"
+                            />
+                        </View>
+                    </View>
+                )}
 
                 <Input
                     label="Keterangan / Deskripsi"
@@ -278,7 +400,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     variant={dialogConfig.variant}
                     type={dialogConfig.type}
                     loading={dialogConfig.loading}
-                    onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+                    onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
                     onConfirm={dialogConfig.onConfirm}
                 />
             </View>
@@ -310,7 +432,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 variant={dialogConfig.variant}
                 type={dialogConfig.type}
                 loading={dialogConfig.loading}
-                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+                onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
                 onConfirm={dialogConfig.onConfirm}
             />
         </KeyboardAvoidingView>

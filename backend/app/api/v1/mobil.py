@@ -172,7 +172,10 @@ def add_biaya(
         kategori=data.kategori,
         deskripsi=data.deskripsi,
         jumlah=data.jumlah,
+        metode_bayar=data.metode_bayar,
+        payments=[p.model_dump() for p in data.payments] if data.payments else None,
         catatan=data.catatan,
+        user_id=current_user.id,
     )
 
 

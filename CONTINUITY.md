@@ -1,28 +1,34 @@
-# Continuity Ledger
+# Continuity Ledger - TPM Split Payment in Manajemen Biaya Unit
 
 ## Goal
-Integrate `PaymentModal` for direct settlement of receivables (Piutang) across all relevant modules (Workshop, Transportation, Car Sales, and Kasbon).
+Add split payment functionality (multiple payment methods) to the "Manajemen Biaya Unit" feature, consistent with other parts of the application.
+
+## Constraints/Assumptions
+- Backend uses FastAPI, Pydantic, and SQLAlchemy.
+- Frontend uses React Native (Expo) with Tailwind CSS (nativewind).
+- Split payment implementation should follow existing patterns (e.g., `PenjualanMobilService`).
+- "Manajemen Biaya Unit" refers to adding `MobilBiayaLainnya` to a `Mobil` record.
+
+## Key Decisions
+- Update `MobilBiayaCreate` schema to include `payments` list.
+- Update `MobilService.add_biaya` to iterate through `payments` and create `KasBank` entries for each.
+- Update `MobilCostForm.tsx` UI to allow users to add multiple payment methods and amounts.
 
 ## State
-- Done:
-  - Created reusable `PaymentModal` for split payments and detailed tracking.
-  - Updated backend schemas (`MuatanResponse`, `KasbonResponse`, `TransaksiBengkelResponse`, `TransaksiMobilResponse`) to include `piutang_id` and `jumlah_bayar`/`sisa_bayar`.
-  - Updated backend services to batch fetch and return piutang information.
-  - Integrated `PaymentModal` into `frontend/app/bengkel/index.tsx`.
-  - Integrated `PaymentModal` into `frontend/app/jasa-angkut/index.tsx`.
-  - Integrated `PaymentModal` into `frontend/components/MobilDetail.tsx` for Car Sales.
-  - Integrated `PaymentModal` into `frontend/app/sdm/kasbon.tsx`.
-  - Fixed TypeScript errors in Jasa Angkut screen by updating interfaces in `frontend/services/jasaAngkut.ts`.
-- Now: All modules support direct settlement via the common `PaymentModal`.
-- Next: Final verification and user feedback.
+- Done: 
+  - Updated backend schemas for `MobilBiayaCreate` to support split payments.
+  - Implemented logic in `MobilService` to record multiple `KasBank` entries.
+  - Updated API endpoint to handle split payment data.
+  - Redesigned `MobilCostForm.tsx` UI with split payment toggle and dynamic rows.
+  - Fixed lint errors in `MobilCostForm.tsx`.
+- Now: Verifying and Abschluss.
+- Next: Done.
 
-## Working set
-- `frontend/components/PaymentModal.tsx`
-- `frontend/app/jasa-angkut/index.tsx`
-- `frontend/app/bengkel/index.tsx`
-- `frontend/app/sdm/kasbon.tsx`
-- `frontend/components/MobilDetail.tsx`
-- `backend/app/services/muatan_service.py`
-- `backend/app/services/kasbon_service.py`
-- `backend/app/services/transaksi_bengkel_service.py`
-- `backend/app/services/penjualan_mobil_service.py`
+## Open Questions (UNCONFIRMED)
+None.
+
+## Working Set
+- backend/app/schemas/mobil.py
+- backend/app/services/mobil_service.py
+- backend/app/api/v1/mobil.py
+- frontend/components/MobilCostForm.tsx

@@ -88,6 +88,8 @@ class MobilBiayaCreate(BaseModel):
     kategori: str
     deskripsi: str
     jumlah: Decimal
+    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    payments: List[PaymentItem] = [] # For split payments
     catatan: Optional[str] = None
 
 

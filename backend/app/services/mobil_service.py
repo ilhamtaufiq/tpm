@@ -416,7 +416,10 @@ class MobilService:
         kategori: str,
         deskripsi: str,
         jumlah: Decimal,
+        metode_bayar: PaymentMethod = PaymentMethod.TUNAI,
+        payments: Optional[List[Dict[str, Any]]] = None,
         catatan: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> MobilBiayaLainnya:
         """Add additional cost to car."""
         mobil = self.get_by_id(mobil_id)
@@ -441,17 +444,36 @@ class MobilService:
 
         # Record to KasBank if not internal/bengkel
         if kategori != "Perawatan Bengkel":
-            create_kas_entry(
-                db=self.db,
-                tanggal=tanggal,
-                tipe=KasBankType.KELUAR,
-                nominal=jumlah,
-                sumber=KasBankSource.JUAL_BELI_MOBIL,
-                metode_bayar=PaymentMethod.TUNAI, # Default
-                referensi_id=biaya.id,
-                nomor_referensi=f"BIAYA-{mobil.kode}",
-                keterangan=f"Biaya {kategori} - {mobil.nomor_plat}: {deskripsi}",
-            )
+            if payments:
+                for p in payments:
+                    p_jumlah = Decimal(str(p.get("jumlah", 0)))
+                    p_metode = p.get("metode", PaymentMethod.TUNAI)
+                    if p_jumlah > 0:
+                        create_kas_entry(
+                            db=self.db,
+                            tanggal=tanggal,
+                            tipe=KasBankType.KELUAR,
+                            nominal=p_jumlah,
+                            sumber=KasBankSource.JUAL_BELI_MOBIL,
+                            metode_bayar=p_metode,
+                            referensi_id=biaya.id,
+                            nomor_referensi=f"BIAYA-{mobil.kode}",
+                            keterangan=f"Biaya {kategori} ({p_metode.upper()}) - {mobil.nomor_plat}: {deskripsi}",
+                            user_id=user_id,
+                        )
+            else:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=jumlah,
+                    sumber=KasBankSource.JUAL_BELI_MOBIL,
+                    metode_bayar=metode_bayar,
+                    referensi_id=biaya.id,
+                    nomor_referensi=f"BIAYA-{mobil.kode}",
+                    keterangan=f"Biaya {kategori} - {mobil.nomor_plat}: {deskripsi}",
+                    user_id=user_id,
+                )
 
         self.db.commit()
         self.db.refresh(biaya)
