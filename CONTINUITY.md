@@ -1,23 +1,7 @@
 # Continuity Ledger
 
 ## Goal
-Implement booking cancellation with penalty feature for car sales.
-
-## Constraints/Assumptions
-- Car must be in BOOKING status to cancel
-- Penalty cannot exceed the DP already paid
-- Refund = DP - Penalty
-- Penalty recorded as income (KAS MASUK), refund as expense (KAS KELUAR)
-- Piutang is closed on cancellation
-- Car reverts to TERSEDIA on cancellation
-
-## Key decisions
-- Backend: Added `cancel_booking()` method in `PenjualanMobilService` (Supports Split Refund)
-- Backend: Added `POST /penjualan-mobil/{id}/cancel` endpoint (Supports Split Refund)
-- Backend: Updated `update_payment` in `PenjualanMobilService` (Supports Split Payment)
-- Frontend: Added split payment UI in Payment Modal and Cancel Modal with toggle and currency formatting.
-- Previous fix: `piutang_service.py._update_source_transaction()` now also transitions car BOOKING → TERJUAL when piutang is paid via piutang page
-- Workshop, Jasa Angkut & SDM Kasbon: Settlement/payment for debts/kasbon is now restricted to the `finance/piutang` page only. Module detail/list pages now only show a summary of the debt.
+Centralize all financial settlement functionality (receivables/piutang) to the Finance section.
 
 ## State
 - Done:
@@ -30,7 +14,10 @@ Implement booking cancellation with penalty feature for car sales.
   - Restricted Workshop debt settlement to `finance/piutang` page.
   - Restricted Jasa Angkut debt settlement to `finance/piutang` page.
   - Restricted SDM Kasbon debt settlement to `finance/piutang` page.
-- Now: All requested settlement restrictions implemented and centralized in Finance.
+  - Restricted Jual Beli Mobil (Car Sales) settlement to `finance/piutang` page (removed "Lunasi Pembayaran" from MobilDetail).
+  - Improved `finance/piutang` list to display `nomor_referensi` for better transaction identification.
+  - Fixed missing `Info` icon import in `MobilDetail.tsx`.
+- Now: Completed centralization of all receivable settlements.
 - Next: Final confirmation with user.
 
 ## Working set

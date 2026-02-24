@@ -24,7 +24,8 @@ import {
     Wallet,
     Ban,
     AlertTriangle,
-    ArrowDownLeft
+    ArrowDownLeft,
+    Info
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
@@ -59,15 +60,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         mediaId: null
     });
 
-    // Payment modal state
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentAmount, setPaymentAmount] = useState('');
-    const [useSplitPayment, setUseSplitPayment] = useState(false);
-    const [splitPayments, setSplitPayments] = useState<{ metode: string; nominal: string }[]>([
-        { metode: 'TUNAI', nominal: '' },
-        { metode: 'TRANSFER', nominal: '' }
-    ]);
-    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     // Cancel booking modal state
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -87,7 +79,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const { data: penjualanData } = usePenjualanMobilList(
         isBooking ? { search: activeUnit?.nomor_plat } : undefined
     );
-    const payMutation = usePayPenjualanMobil();
     const cancelMutation = useCancelBookingMobil();
 
     // Find the active transaction for this car
@@ -389,18 +380,10 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeTx.sisa_bayar)}</Typography>
                                     </View>
 
-                                    {/* Pay Button */}
-                                    <TouchableOpacity
-                                        activeOpacity={0.8}
-                                        onPress={() => {
-                                            setPaymentAmount(String(activeTx.sisa_bayar));
-                                            setShowPaymentModal(true);
-                                        }}
-                                        className="bg-emerald-600 flex-row items-center justify-center py-4 rounded-2xl shadow-lg shadow-emerald-900/20 mb-3"
-                                    >
-                                        <Wallet size={20} color="white" />
-                                        <Typography weight="bold" className="text-white text-base ml-2">Lunasi Pembayaran</Typography>
-                                    </TouchableOpacity>
+                                    <View className="bg-white/50 border border-amber-200 py-4 rounded-2xl items-center mb-3">
+                                        <Info size={18} color="#D97706" />
+                                        <Typography weight="bold" className="text-amber-700 text-xs ml-2">Pelunasan dilakukan di menu FINANCE</Typography>
+                                    </View>
 
                                     {/* Cancel Booking Button */}
                                     <TouchableOpacity
@@ -508,238 +491,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 </View>
             </Modal>
 
-            {/* Payment Modal */}
-            <Modal
-                visible={showPaymentModal}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowPaymentModal(false)}
-            >
-                <View className="flex-1 bg-black/60 justify-end">
-                    <View className="bg-white rounded-t-[36px] px-6 pt-8 pb-10">
-                        {/* Modal Header */}
-                        <View className="flex-row justify-between items-center mb-8">
-                            <View>
-                                <Typography variant="h2" weight="bold" className="text-textMain">Pembayaran</Typography>
-                                <Typography variant="caption" className="text-gray-400 mt-1">{activeTx?.nomor_transaksi}</Typography>
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setShowPaymentModal(false);
-                                    setPaymentSuccess(false);
-                                }}
-                                className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
-                            >
-                                <X size={18} color="#6B7280" />
-                            </TouchableOpacity>
-                        </View>
-
-                        {paymentSuccess ? (
-                            <View className="items-center py-8">
-                                <View className="w-20 h-20 bg-emerald-100 rounded-full items-center justify-center mb-4">
-                                    <CheckCircle2 size={40} color="#10B981" />
-                                </View>
-                                <Typography variant="h3" weight="bold" className="text-emerald-600 mb-2">Pembayaran Berhasil!</Typography>
-                                <Typography className="text-gray-400 text-center">Transaksi telah diperbarui</Typography>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setShowPaymentModal(false);
-                                        setPaymentSuccess(false);
-                                    }}
-                                    className="mt-6 bg-emerald-600 px-8 py-4 rounded-2xl"
-                                >
-                                    <Typography weight="bold" className="text-white">Tutup</Typography>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <>
-                                {/* Sisa Bayar Info */}
-                                <View className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100">
-                                    <View className="flex-row justify-between items-center mb-1">
-                                        <Typography variant="caption" className="text-red-400 font-bold uppercase tracking-wider text-[10px]">Sisa yang harus dibayar</Typography>
-                                        <Typography variant="caption" className="text-red-400 font-bold uppercase tracking-wider text-[10px]">Total Bayar: {formatCurrency(paymentAmount || 0)}</Typography>
-                                    </View>
-                                    <Typography variant="h2" weight="bold" className="text-red-500">{formatCurrency(activeTx?.sisa_bayar || 0)}</Typography>
-                                </View>
-
-                                {/* Split Payment Toggle */}
-                                <View className="mb-6 flex-row justify-between items-center bg-gray-50/80 p-5 rounded-[28px] border border-gray-100">
-                                    <View className="flex-row items-center">
-                                        <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                                            <Wallet size={18} color="#023C69" />
-                                        </View>
-                                        <View>
-                                            <Typography weight="bold" className="text-textMain text-sm">Split Payment</Typography>
-                                            <Typography variant="caption" className="text-textGray">Bayar dengan beberapa metode</Typography>
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setUseSplitPayment(!useSplitPayment);
-                                            // Reset to single on toggle off
-                                            if (useSplitPayment) {
-                                                setSplitPayments([{ metode: 'TUNAI', nominal: paymentAmount }]);
-                                            }
-                                        }}
-                                        className={`w-12 h-7 rounded-full px-1 justify-center ${useSplitPayment ? 'bg-primary' : 'bg-gray-300'}`}
-                                    >
-                                        <View className={`w-5 h-5 bg-white rounded-full shadow-sm ${useSplitPayment ? 'self-end' : 'self-start'}`} />
-                                    </TouchableOpacity>
-                                </View>
-
-                                {!useSplitPayment ? (
-                                    <>
-                                        {/* Amount Input */}
-                                        <View className="mb-6">
-                                            <Typography weight="bold" className="text-textMain mb-2">Jumlah Bayar</Typography>
-                                            <TextInput
-                                                className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-lg font-bold text-textMain"
-                                                value={formatNumber(paymentAmount)}
-                                                onChangeText={(val) => {
-                                                    const cleanValue = String(parseNumber(val));
-                                                    setPaymentAmount(cleanValue);
-                                                    setSplitPayments([{ metode: splitPayments[0]?.metode || 'TUNAI', nominal: cleanValue }]);
-                                                }}
-                                                keyboardType="numeric"
-                                                placeholder="0"
-                                            />
-                                        </View>
-
-                                        {/* Payment Method */}
-                                        <View className="mb-8">
-                                            <Typography weight="bold" className="text-textMain mb-3">Metode Bayar</Typography>
-                                            <View className="flex-row space-x-3">
-                                                <TouchableOpacity
-                                                    onPress={() => setSplitPayments([{ metode: 'TUNAI', nominal: paymentAmount }])}
-                                                    className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${splitPayments[0]?.metode === 'TUNAI'
-                                                        ? 'bg-emerald-50 border-emerald-500'
-                                                        : 'bg-gray-50 border-gray-200'
-                                                        }`}
-                                                >
-                                                    <Banknote size={20} color={splitPayments[0]?.metode === 'TUNAI' ? '#10B981' : '#9CA3AF'} />
-                                                    <Typography weight="bold" className={`ml-2 ${splitPayments[0]?.metode === 'TUNAI' ? 'text-emerald-600' : 'text-gray-400'}`}>Tunai</Typography>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => setSplitPayments([{ metode: 'TRANSFER', nominal: paymentAmount }])}
-                                                    className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${splitPayments[0]?.metode === 'TRANSFER'
-                                                        ? 'bg-blue-50 border-blue-500'
-                                                        : 'bg-gray-50 border-gray-200'
-                                                        }`}
-                                                >
-                                                    <CreditCard size={20} color={splitPayments[0]?.metode === 'TRANSFER' ? '#3B82F6' : '#9CA3AF'} />
-                                                    <Typography weight="bold" className={`ml-2 ${splitPayments[0]?.metode === 'TRANSFER' ? 'text-blue-600' : 'text-gray-400'}`}>Transfer</Typography>
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    </>
-                                ) : (
-                                    <View className="mb-8 p-5 bg-gray-50/50 rounded-[32px] border border-gray-100/50">
-                                        <Typography weight="bold" className="text-textMain mb-4">Rincian Split Payment</Typography>
-                                        {splitPayments.map((split, index) => (
-                                            <View key={index} className="mb-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm shadow-black/5">
-                                                <View className="flex-row justify-between items-center mb-3">
-                                                    <View className="flex-row items-center">
-                                                        {split.metode === 'TUNAI' ? <Banknote size={14} color="#10B981" /> : <CreditCard size={14} color="#3B82F6" />}
-                                                        <Typography weight="bold" className="text-textGray text-[10px] ml-1 uppercase">{split.metode}</Typography>
-                                                    </View>
-                                                    <View className="flex-row space-x-1">
-                                                        {['TUNAI', 'TRANSFER'].map((m) => (
-                                                            <TouchableOpacity
-                                                                key={m}
-                                                                onPress={() => {
-                                                                    const next = [...splitPayments];
-                                                                    next[index].metode = m;
-                                                                    setSplitPayments(next);
-                                                                }}
-                                                                className={`px-3 py-1 rounded-full border ${split.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
-                                                            >
-                                                                <Typography className={`text-[9px] font-bold ${split.metode === m ? 'text-white' : 'text-gray-400'}`}>{m}</Typography>
-                                                            </TouchableOpacity>
-                                                        ))}
-                                                    </View>
-                                                </View>
-                                                <TextInput
-                                                    className="bg-gray-50/50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-textMain text-base"
-                                                    value={formatNumber(split.nominal)}
-                                                    onChangeText={(val) => {
-                                                        const cleanVal = String(parseNumber(val));
-                                                        const next = [...splitPayments];
-                                                        next[index].nominal = cleanVal;
-                                                        setSplitPayments(next);
-
-                                                        // Update total amount
-                                                        const total = next.reduce((acc, curr) => acc + parseNumber(curr.nominal), 0);
-                                                        setPaymentAmount(String(total));
-                                                    }}
-                                                    keyboardType="numeric"
-                                                    placeholder="0"
-                                                />
-                                            </View>
-                                        ))}
-                                    </View>
-                                )}
-
-                                {/* Submit Button */}
-                                <TouchableOpacity
-                                    activeOpacity={0.8}
-                                    disabled={payMutation.isPending || parseNumber(paymentAmount) <= 0}
-                                    onPress={() => {
-                                        if (!activeTx) return;
-                                        const totalAmount = parseNumber(paymentAmount);
-                                        const sisa = parseFloat(String(activeTx.sisa_bayar));
-
-                                        if (totalAmount <= 0) {
-                                            Alert.alert('Error', 'Masukkan jumlah pembayaran yang valid');
-                                            return;
-                                        }
-                                        if (totalAmount > sisa) {
-                                            Alert.alert('Error', 'Jumlah melebihi sisa bayar');
-                                            return;
-                                        }
-
-                                        const payments = splitPayments
-                                            .filter(p => parseNumber(p.nominal) > 0)
-                                            .map(p => ({
-                                                metode: p.metode,
-                                                nominal: parseNumber(p.nominal)
-                                            }));
-
-                                        payMutation.mutate(
-                                            {
-                                                id: activeTx.id,
-                                                data: {
-                                                    jumlah_bayar: totalAmount,
-                                                    metode_bayar: useSplitPayment ? undefined : splitPayments[0].metode,
-                                                    payments: useSplitPayment ? payments : undefined
-                                                }
-                                            },
-                                            {
-                                                onSuccess: () => {
-                                                    setPaymentSuccess(true);
-                                                },
-                                                onError: (err: any) => {
-                                                    Alert.alert('Error', err?.response?.data?.detail || 'Gagal memproses pembayaran');
-                                                },
-                                            },
-                                        );
-                                    }}
-                                    className={`flex-row items-center justify-center py-5 rounded-2xl shadow-lg ${payMutation.isPending || parseNumber(paymentAmount) <= 0 ? 'bg-gray-300' : 'bg-emerald-600 shadow-emerald-900/20'
-                                        }`}
-                                >
-                                    {payMutation.isPending ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 size={20} color="white" />
-                                            <Typography weight="bold" className="text-white text-base ml-2">Proses Pembayaran</Typography>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
-                            </>
-                        )}
-                    </View>
-                </View>
-            </Modal>
 
             {/* Cancel Booking Modal */}
             <Modal

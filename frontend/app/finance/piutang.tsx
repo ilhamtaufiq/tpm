@@ -853,7 +853,7 @@ export default function PiutangUsahaScreen() {
                                         {item.nama_debitur}
                                     </Typography>
                                     <Typography variant="caption" className="text-textGray mt-0.5">
-                                        {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}
+                                        {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber} {item.nomor_referensi ? `• ${item.nomor_referensi}` : ''}
                                     </Typography>
                                 </View>
                                 <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'LUNAS' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>
