@@ -14,6 +14,7 @@ from app.services.karyawan_service import KaryawanService
 from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
+from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
@@ -176,6 +177,10 @@ def get_profit_summary(
     muatan_service = MuatanService(db)
     muatan = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
 
+    # Pembelian Part (New)
+    pembelian_service = PembelianPartService(db)
+    pembelian_summ = pembelian_service.get_summary(tanggal_dari, tanggal_sampai)
+
     # Salary summary
     slip_gaji_service = SlipGajiService(db)
     gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
@@ -193,20 +198,36 @@ def get_profit_summary(
         muatan["laba_tpm"]
     )
 
-    # Merge gaji data into pengeluaran details
+    # Merge gaji and pembelian data into pengeluaran details
     pengeluaran_details = pengeluaran["per_kategori"]
+    
+    # Add salaries
     if "gaji" in pengeluaran_details:
         pengeluaran_details["gaji"]["total"] += gaji_summary["total"]
         pengeluaran_details["gaji"]["count"] += gaji_summary["count"]
     else:
         pengeluaran_details["gaji"] = gaji_summary
 
+    # Add Purchases (as requested by user)
+    if "pembelian_part" in pengeluaran_details:
+        pengeluaran_details["pembelian_part"]["total"] += pembelian_summ["total_nilai"]
+        pengeluaran_details["pembelian_part"]["count"] += pembelian_summ["total_transaksi"]
+    else:
+        pengeluaran_details["pembelian_part"] = {
+            "total": pembelian_summ["total_nilai"],
+            "count": pembelian_summ["total_transaksi"]
+        }
+
     prive_total = 0
     if "prive" in pengeluaran_details:
         prive_total = pengeluaran_details["prive"].get("total", 0)
 
-    # Total Pengeluaran (Include Prive and Salaries)
-    total_pengeluaran = pengeluaran["total_pengeluaran"] + gaji_summary["total"]
+    # Total Pengeluaran (Include Prive, Salaries, and Purchases)
+    total_pengeluaran = (
+        pengeluaran["total_pengeluaran"] + 
+        gaji_summary["total"] + 
+        pembelian_summ["total_nilai"]
+    )
     laba_bersih = total_laba_kotor - total_pengeluaran
 
     return {
@@ -357,7 +378,8 @@ def get_capital_report(
 
     # Services
     bengkel_service = TransaksiBengkelService(db)
-    mobil_service = PenjualanMobilService(db)
+    penjualan_mobil_service = PenjualanMobilService(db)
+    mobil_service = MobilService(db)
     muatan_service = MuatanService(db)
     piutang_service = PiutangService(db)
     kas_service = KasBankService(db)
@@ -377,7 +399,7 @@ def get_capital_report(
 
     # 2. Earnings & Basis (HPP, Laba)
     bengkel_summ = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
-    mobil_summ = mobil_service.get_summary(tanggal_dari, tanggal_sampai)
+    mobil_summ = penjualan_mobil_service.get_summary(tanggal_dari, tanggal_sampai)
     muatan_summ = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
 
     hpp_bengkel = bengkel_summ["total_hpp"] # Total HPP Parts
@@ -480,14 +502,14 @@ def get_capital_report(
         "total_b": total_b
     }
 
-    # --- C. Pengurangan Laba dan Modal (Actual Cash Transacted) ---
-    # 1. Total Pembelian Part (From KasBank to ensure sync with cash position)
-    beli_part_cash = get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'cash')
-    beli_part_transfer = get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'transfer')
+    # --- C. Pengurangan Laba dan Modal (Stock & Operational Acquisitions) ---
+    # 1. Total Pembelian Part (Total Nominal Purchase, not just Cash)
+    pembelian_part_summ = PembelianPartService(db).get_summary(tanggal_dari, tanggal_sampai)
+    total_beli_part = pembelian_part_summ["total_nilai"]
 
-    # 2. Total Pembelian Mobil (From KasBank)
-    beli_mobil_cash = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'cash')
-    beli_mobil_transfer = get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'transfer')
+    # 2. Total Pembelian Mobil (Total Nominal Purchase)
+    mobil_inv_summ = mobil_service.get_inventory_summary(tanggal_dari, tanggal_sampai)
+    total_beli_mobil = mobil_inv_summ["total_modal_pembelian"]
 
     # 3. Pengembalian Investor / Share Profit (From KasBank)
     investor_cash = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
@@ -505,8 +527,8 @@ def get_capital_report(
     biaya_persiapan = float(q_prep.scalar() or 0)
 
     total_c = (
-        beli_part_cash + beli_part_transfer +
-        beli_mobil_cash + beli_mobil_transfer +
+        total_beli_part +
+        total_beli_mobil +
         investor_cash + investor_transfer +
         biaya_opr + biaya_gaji + prive + 
         biaya_persiapan
@@ -514,14 +536,14 @@ def get_capital_report(
 
     section_c = {
         "pembelian_part": {
-            "cash": beli_part_cash,
-            "transfer": beli_part_transfer,
-            "total": beli_part_cash + beli_part_transfer
+            "cash": get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'cash'),
+            "transfer": get_kas_sum(KasBankSource.PEMBELIAN_PART, KasBankType.KELUAR, 'transfer'),
+            "total": total_beli_part
         },
         "pembelian_mobil": {
-            "cash": beli_mobil_cash,
-            "transfer": beli_mobil_transfer,
-            "total": beli_mobil_cash + beli_mobil_transfer
+            "cash": get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'cash'),
+            "transfer": get_kas_sum(KasBankSource.PEMBELIAN_MOBIL, KasBankType.KELUAR, 'transfer'),
+            "total": total_beli_mobil
         },
         "pengembalian_investor": {
             "cash": investor_cash,

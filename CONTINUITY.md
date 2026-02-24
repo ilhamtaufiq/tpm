@@ -17,6 +17,7 @@ Implement booking cancellation with penalty feature for car sales.
 - Backend: Updated `update_payment` in `PenjualanMobilService` (Supports Split Payment)
 - Frontend: Added split payment UI in Payment Modal and Cancel Modal with toggle and currency formatting.
 - Previous fix: `piutang_service.py._update_source_transaction()` now also transitions car BOOKING → TERJUAL when piutang is paid via piutang page
+- Workshop, Jasa Angkut & SDM Kasbon: Settlement/payment for debts/kasbon is now restricted to the `finance/piutang` page only. Module detail/list pages now only show a summary of the debt.
 
 ## State
 - Done:
@@ -26,8 +27,11 @@ Implement booking cancellation with penalty feature for car sales.
   - Frontend service `cancelBookingMobil` in `services/mobil.ts`
   - Frontend hook `useCancelBookingMobil` in `hooks/useMobil.ts`
   - Frontend cancel modal UI in `components/MobilDetail.tsx`
-- Now: Complete - all files updated
-- Next: Testing
+  - Restricted Workshop debt settlement to `finance/piutang` page.
+  - Restricted Jasa Angkut debt settlement to `finance/piutang` page.
+  - Restricted SDM Kasbon debt settlement to `finance/piutang` page.
+- Now: All requested settlement restrictions implemented and centralized in Finance.
+- Next: Final confirmation with user.
 
 ## Working set
 - `backend/app/services/penjualan_mobil_service.py` - cancel_booking() method

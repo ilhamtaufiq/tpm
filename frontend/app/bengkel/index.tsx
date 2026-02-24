@@ -56,15 +56,11 @@ export default function BengkelScreen() {
     );
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
-    const updatePaymentMutation = useUpdateTransaksiBengkelPayment();
     const voidMutation = useVoidTransaksiBengkel();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
     const [view, setView] = React.useState<'form' | 'detail'>('form');
-    const [settlementModal, setSettlementModal] = useState(false);
-    const [settlementAmount, setSettlementAmount] = useState('');
-    const [settlementMethod, setSettlementMethod] = useState('Tunai');
     const [refreshing, setRefreshing] = React.useState(false);
     const [sheetIndex, setSheetIndex] = React.useState(-1);
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
@@ -288,50 +284,6 @@ export default function BengkelScreen() {
         }
     };
 
-    const handleSettlement = async () => {
-        if (!selectedItem || !settlementAmount) return;
-
-        try {
-            const amountNum = Number(parseNumber(settlementAmount));
-            if (amountNum <= 0) {
-                setDialogConfig({
-                    visible: true,
-                    title: 'Validasi',
-                    message: 'Jumlah pembayaran harus lebih dari 0',
-                    variant: 'warning',
-                    type: 'alert'
-                });
-                return;
-            }
-
-            await updatePaymentMutation.mutateAsync({
-                id: selectedItem.id,
-                data: {
-                    jumlah_bayar: amountNum,
-                    metode_bayar: settlementMethod.toLowerCase()
-                }
-            });
-
-            setSettlementModal(false);
-            setSettlementAmount('');
-            setDialogConfig({
-                visible: true,
-                title: 'Sukses',
-                message: 'Pembayaran pelunasan berhasil dicatat',
-                variant: 'success',
-                type: 'alert'
-            });
-            handleClosePress();
-        } catch (error) {
-            setDialogConfig({
-                visible: true,
-                title: 'Gagal',
-                message: getErrorMessage(error, 'Gagal mencatat pembayaran'),
-                variant: 'error',
-                type: 'alert'
-            });
-        }
-    };
 
     const handleVoidOrder = async (item: any) => {
         setDialogConfig({
@@ -537,19 +489,6 @@ export default function BengkelScreen() {
                             </>
                         )}
 
-                        {/* Settlement Button — hide for INTERNAL (jasa_angkut) payments */}
-                        {selectedItem.status_bayar !== 'lunas' && selectedItem.metode_bayar !== 'INTERNAL' ? (
-                            <Button
-                                variant="secondary"
-                                title="Pelunasan Piutang"
-                                onPress={() => {
-                                    setSettlementAmount(formatNumber((selectedItem.grand_total - (selectedItem.jumlah_bayar || 0)).toString()));
-                                    setSettlementModal(true);
-                                }}
-                                icon={<Banknote size={20} color="white" />}
-                                className="rounded-2xl h-14"
-                            />
-                        ) : null}
 
                         <Button
                             variant="outline-danger"
@@ -562,68 +501,6 @@ export default function BengkelScreen() {
                 </View>
             ) : null}
 
-            {/* Settlement Modal */}
-            <Modal visible={settlementModal} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <Card className="w-full p-6 rounded-[32px]">
-                        <Typography variant="h3" weight="bold" className="mb-2">Pelunasan Piutang</Typography>
-                        <Typography variant="caption" className="text-textGray mb-6">Mencatat pembayaran tagihan yang tertunda</Typography>
-
-                        <View className="bg-primary/5 p-4 rounded-2xl mb-6">
-                            <View className="flex-row justify-between mb-2">
-                                <Typography variant="caption" className="text-textGray">Total Tagihan</Typography>
-                                <Typography variant="caption" weight="bold">{formatCurrency(selectedItem?.grand_total || 0)}</Typography>
-                            </View>
-                            <View className="flex-row justify-between mb-2">
-                                <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
-                                <Typography variant="caption" weight="bold" className="text-emerald-600">{formatCurrency(selectedItem?.jumlah_bayar || 0)}</Typography>
-                            </View>
-                            <View className="h-[1px] bg-primary/10 my-2" />
-                            <View className="flex-row justify-between">
-                                <Typography variant="body2" weight="bold">Sisa Tagihan</Typography>
-                                <Typography variant="body2" weight="bold" className="text-rose-600">{formatCurrency((selectedItem?.grand_total || 0) - (selectedItem?.jumlah_bayar || 0))}</Typography>
-                            </View>
-                        </View>
-
-                        <Typography variant="caption" weight="bold" className="text-textMain mb-2 ml-1">Metode Pembayaran</Typography>
-                        <View className="flex-row space-x-2 mb-6">
-                            {['Tunai', 'Transfer'].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setSettlementMethod(m)}
-                                    className={`flex-1 py-3 rounded-xl border ${settlementMethod === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
-                                >
-                                    <Typography className={`text-center font-bold ${settlementMethod === m ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        <Typography variant="caption" weight="bold" className="text-textMain mb-2 ml-1">Jumlah Bayar (Rp)</Typography>
-                        <TextInput
-                            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 font-bold text-lg text-primary mb-8"
-                            keyboardType="numeric"
-                            value={settlementAmount}
-                            onChangeText={(val) => setSettlementAmount(formatNumber(val))}
-                            placeholder="0"
-                        />
-
-                        <View className="flex-row space-x-3">
-                            <Button
-                                variant="outline"
-                                title="Batal"
-                                onPress={() => setSettlementModal(false)}
-                                className="flex-1"
-                            />
-                            <Button
-                                title="Simpan"
-                                onPress={handleSettlement}
-                                className="flex-1"
-                                loading={updatePaymentMutation.isPending}
-                            />
-                        </View>
-                    </Card>
-                </View>
-            </Modal>
         </View>
     );
 

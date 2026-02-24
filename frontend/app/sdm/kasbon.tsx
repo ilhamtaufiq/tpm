@@ -50,13 +50,8 @@ export default function KasbonScreen() {
     });
     const [showKaryawanPicker, setShowKaryawanPicker] = useState(false);
 
-    // Payment Form state
-    const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([]);
-    const [paymentNote, setPaymentNote] = useState('');
-
     // Sheet State
-    const [activeSheet, setActiveSheet] = useState<'none' | 'create' | 'payment'>('none');
+    const [activeSheet, setActiveSheet] = useState<'none' | 'create'>('none');
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -74,7 +69,6 @@ export default function KasbonScreen() {
     });
 
     const createSheetRef = useRef<BottomSheet>(null);
-    const paymentSheetRef = useRef<BottomSheet>(null);
 
     const snapPoints = useMemo(() => ['60%', '85%'], []);
 
@@ -126,27 +120,9 @@ export default function KasbonScreen() {
         }
     };
 
-    const openPaymentForm = (kasbon: Kasbon) => {
-        setSelectedKasbon(kasbon);
-        setPayments([{
-            id: Date.now(),
-            metode: 'TUNAI',
-            nominal: formatNumber(kasbon.nominal.toString()),
-            catatan: ''
-        }]);
-        setPaymentNote('');
-
-        if (Platform.OS === 'web') {
-            setActiveSheet('payment');
-        } else {
-            paymentSheetRef.current?.expand();
-        }
-    };
-
     const closeSheets = () => {
         setActiveSheet('none');
         createSheetRef.current?.close();
-        paymentSheetRef.current?.close();
     };
 
     const handleSubmitCreate = async () => {
@@ -172,42 +148,6 @@ export default function KasbonScreen() {
         }
     };
 
-    const handleSubmitPayment = async () => {
-        if (!selectedKasbon || payments.length === 0) return;
-
-        const validatedPayments = payments
-            .map(p => ({
-                metode: p.metode,
-                nominal: parseNumber(p.nominal),
-                catatan: p.catatan || undefined
-            }))
-            .filter(p => p.nominal > 0);
-
-        if (validatedPayments.length === 0) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: 'Minimal satu pembayaran dengan nominal > 0', variant: 'warning' });
-            return;
-        }
-
-        const totalBayar = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
-        if (totalBayar !== selectedKasbon.nominal) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: `Total pembayaran (${formatCurrency(totalBayar)}) harus sama dengan nominal kasbon (${formatCurrency(selectedKasbon.nominal)})`, variant: 'warning' });
-            return;
-        }
-
-        try {
-            await sdmService.payKasbonSplit(selectedKasbon.id, {
-                payments: validatedPayments,
-                catatan: paymentNote || undefined,
-            });
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pelunasan kasbon berhasil dicatat', variant: 'success' });
-            closeSheets();
-            loadData();
-        } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat memproses pembayaran';
-            setDialogConfig({ visible: true, title: 'Gagal', message: errorMessage, variant: 'error' });
-            console.error(error);
-        }
-    };
 
     const handleDelete = async (kasbon: Kasbon) => {
         setDialogConfig({
@@ -341,105 +281,6 @@ export default function KasbonScreen() {
         </View>
     );
 
-    const renderPaymentForm = () => {
-        const totalBayar = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
-        const sisa = (selectedKasbon?.nominal || 0) - totalBayar;
-
-        return (
-            <View className="pb-10">
-                <View className="flex-row justify-between items-center mb-6">
-                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Pelunasan Kasbon</Typography>
-                    <TouchableOpacity onPress={closeSheets} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
-                        <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
-                </View>
-
-                {selectedKasbon && (
-                    <Card variant="outlined" className="p-6 mb-8 border-rose-100 bg-rose-50 rounded-[32px]">
-                        <View className="flex-row justify-between mb-2">
-                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Total Tagihan</Typography>
-                            <Typography variant="body2" weight="bold" className="text-rose-600 font-bold">{formatCurrency(selectedKasbon.nominal)}</Typography>
-                        </View>
-                        <View className="flex-row justify-between">
-                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Sisa Belum Tercover</Typography>
-                            <Typography variant="body2" weight="bold" className="text-primary">
-                                {formatCurrency(Math.max(0, sisa))}
-                            </Typography>
-                        </View>
-                    </Card>
-                )}
-
-                <View className="mb-6">
-                    {payments.map((p, idx) => (
-                        <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">
-                                    Pembayaran #{idx + 1}
-                                </Typography>
-                                {payments.length > 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => setPayments(prev => prev.filter(item => item.id !== p.id))}
-                                        className="bg-rose-50 p-2 rounded-full"
-                                    >
-                                        <Trash2 size={16} color="#E11D48" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            <View className="flex-row space-x-2 mb-4 gap-2">
-                                {['TUNAI', 'TRANSFER'].map((m) => (
-                                    <TouchableOpacity
-                                        key={m}
-                                        onPress={() => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                        className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                                    >
-                                        <Typography
-                                            className={p.metode === m ? 'text-white text-xs font-bold' : 'text-textGray text-xs'}
-                                        >
-                                            {m}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Input
-                                label="Nominal (Rp)"
-                                keyboardType="numeric"
-                                placeholder="0"
-                                value={p.nominal}
-                                onChangeText={(t) => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
-                                containerClassName="mb-0"
-                            />
-                        </Card>
-                    ))}
-
-                    <TouchableOpacity
-                        onPress={() => setPayments(prev => [...prev, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
-                        className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-gray-50/50 active:bg-gray-100"
-                    >
-                        <Plus size={20} color="#64748B" className="mr-2" />
-                        <Typography weight="bold" className="text-gray-500">Tambah Metode Pembayaran</Typography>
-                    </TouchableOpacity>
-                </View>
-
-                <Input
-                    label="Catatan (Opsional)"
-                    placeholder="Contoh: Potong gaji bulan ini"
-                    value={paymentNote}
-                    onChangeText={setPaymentNote}
-                    multiline
-                    numberOfLines={2}
-                    containerClassName="mb-8"
-                />
-
-                <Button
-                    title="Simpan Pelunasan"
-                    onPress={handleSubmitPayment}
-                    className="h-16 rounded-2xl shadow-xl shadow-primary/30"
-                />
-            </View>
-        );
-    }
 
     return (
         <View className="flex-1 bg-surface">
@@ -560,13 +401,9 @@ export default function KasbonScreen() {
                                     >
                                         <Trash2 size={16} color="#E11D48" />
                                     </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => openPaymentForm(item)}
-                                        className="flex-1 bg-emerald-50 border border-emerald-100 h-10 rounded-xl items-center justify-center flex-row"
-                                    >
-                                        <Check size={16} color="#059669" className="mr-2" />
-                                        <Typography weight="bold" className="text-emerald-700 text-xs">Bayar / Lunasi</Typography>
-                                    </TouchableOpacity>
+                                    <View className="flex-1 bg-gray-50 border border-gray-100 h-10 rounded-xl items-center justify-center">
+                                        <Typography className="text-textGray/40 text-[10px] font-bold">SETTLEMENT DI FINANCE</Typography>
+                                    </View>
                                 </View>
                             )}
                         </View>
@@ -609,17 +446,6 @@ export default function KasbonScreen() {
                         </View>
                     </Modal>
 
-                    <Modal visible={activeSheet == 'payment'} transparent animationType="slide" onRequestClose={closeSheets}>
-                        <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={closeSheets} />
-                            <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                                <ScrollView className="px-8 flex-1">
-                                    {renderPaymentForm()}
-                                </ScrollView>
-                            </View>
-                        </View>
-                    </Modal>
                 </>
             ) : (
                 <>
@@ -636,18 +462,6 @@ export default function KasbonScreen() {
                         </BottomSheetScrollView>
                     </BottomSheet>
 
-                    <BottomSheet
-                        ref={paymentSheetRef}
-                        index={-1}
-                        snapPoints={['50%', '85%']}
-                        enablePanDownToClose
-                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
-                        onClose={() => setActiveSheet('none')}
-                    >
-                        <BottomSheetScrollView className="px-8">
-                            {renderPaymentForm()}
-                        </BottomSheetScrollView>
-                    </BottomSheet>
                 </>
             )}
 

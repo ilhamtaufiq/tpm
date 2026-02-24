@@ -47,7 +47,7 @@ const SUMBER_LABEL: Record<string, string> = {
 };
 
 export default function HutangUsahaScreen() {
-    const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('all');
+    const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [selectedHutang, setSelectedHutang] = useState<Hutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
