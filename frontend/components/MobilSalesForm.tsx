@@ -5,7 +5,7 @@ import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { User, CreditCard, Tag, Calculator, TrendingUp, Wallet, Trash2, PlusCircle } from 'lucide-react-native';
+import { User, CreditCard, Tag, Calculator, TrendingUp, Wallet, Trash2, PlusCircle, Info } from 'lucide-react-native';
 import { useCreatePenjualanMobil, useMobilDetail } from '../hooks/useMobil';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
@@ -273,11 +273,11 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 </View>
 
                                 <View className="flex-row flex-wrap gap-2 mb-3">
-                                    {['TUNAI', 'TRANSFER', 'KREDIT', 'DEBIT'].map((m) => (
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
                                         <TouchableOpacity
                                             key={m}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
-                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-1.5 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                         >
                                             <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
                                         </TouchableOpacity>
@@ -294,17 +294,41 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                             </View>
                         ))}
 
-                        <View className="flex-row justify-between items-center p-3 bg-primary/10 rounded-xl mt-2 border border-primary/20">
-                            <Typography variant="caption" weight="bold" className="text-primary">TOTAL DP</Typography>
-                            <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
+                        <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-[24px] border border-primary/10 mt-2">
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-primary text-[10px]">TOTAL DP / TERBAYAR</Typography>
+                                <Typography weight="bold" className="text-primary text-lg">{formatCurrency(totalSplitAmount)}</Typography>
+                            </View>
+                            <View className="items-end">
+                                {sisaBayar > 0 ? (
+                                    <>
+                                        <Typography variant="caption" weight="bold" className="text-amber-600 text-[10px]">SISA PIUTANG</Typography>
+                                        <Typography weight="bold" className="text-amber-600 text-lg">{formatCurrency(sisaBayar)}</Typography>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Typography variant="caption" weight="bold" className="text-emerald-600 text-[10px]">STATUS</Typography>
+                                        <Typography weight="bold" className="text-emerald-600 text-lg">LUNAS</Typography>
+                                    </>
+                                )}
+                            </View>
                         </View>
+
+                        {sisaBayar > 0 && (
+                            <View className="p-4 bg-amber-50 rounded-[24px] border border-amber-100 mt-3 flex-row items-center">
+                                <Info size={16} color="#D97706" />
+                                <Typography className="ml-2 text-amber-700 text-xs font-medium flex-1">
+                                    Sisa {formatCurrency(sisaBayar)} akan otomatis dicatat sebagai <Typography weight="bold">Piutang Usaha</Typography>.
+                                </Typography>
+                            </View>
+                        )}
                     </View>
                 ) : (
                     <>
                         <Input label="DP / Tanda Jadi (Rp)" placeholder="0" keyboardType="numeric" value={dp} onChangeText={(v) => setDp(formatNumber(v))} />
                         <Typography variant="body2" className="text-textGray mb-2 font-medium pl-1">Metode Pembayaran</Typography>
-                        <View className="flex-row space-x-2 mb-6">
-                            {['TUNAI', 'TRANSFER', 'KREDIT'].map((m) => (
+                        <View className="flex-row space-x-2 mb-4">
+                            {['TUNAI', 'TRANSFER'].map((m) => (
                                 <TouchableOpacity
                                     key={m}
                                     onPress={() => setMetodeBayar(m)}
@@ -314,6 +338,15 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 </TouchableOpacity>
                             ))}
                         </View>
+
+                        {sisaBayar > 0 && (
+                            <View className="p-4 bg-amber-50 rounded-[24px] border border-amber-100 mb-6 flex-row items-center">
+                                <Info size={16} color="#D97706" />
+                                <Typography className="ml-2 text-amber-700 text-xs font-medium flex-1">
+                                    Akan dicatat sebagai <Typography weight="bold">Piutang Usaha</Typography> sebesar {formatCurrency(sisaBayar)}.
+                                </Typography>
+                            </View>
+                        )}
                     </>
                 )}
             </View>
@@ -391,16 +424,10 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <Typography variant="body2" className="text-gray-600">Biaya Persiapan (MBU)</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency((activeUnit.total_biaya || 0) + (activeUnit.total_part_service || 0))}</Typography>
                     </View>
-                    <View className="flex-row justify-between bg-gray-50 p-2 rounded-lg">
-                        <Typography variant="body2" className="text-gray-600 font-bold">Total Modal Unit (Awal)</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.total_modal || 0)}</Typography>
+                    <View className="flex-row justify-between border-t border-primary/10 pt-3 mt-1">
+                        <Typography variant="body2" className="text-textMain font-bold">Total Modal Unit (Setelah Biaya)</Typography>
+                        <Typography weight="bold" className="text-textMain">{formatCurrency(activeUnit.total_modal + totalCostsAtSale)}</Typography>
                     </View>
-                    {totalCostsAtSale > 0 && (
-                        <View className="flex-row justify-between">
-                            <Typography variant="body2" className="text-secondary font-medium">Biaya Tambahan Sales</Typography>
-                            <Typography weight="bold" className="text-secondary">{formatCurrency(totalCostsAtSale)}</Typography>
-                        </View>
-                    )}
 
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
 
@@ -410,6 +437,20 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                             {formatCurrency(labaKotor)}
                         </Typography>
                     </View>
+
+                    <View className="h-[1px] bg-primary/10 w-full my-1" />
+
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600">DP / Terbayar</Typography>
+                        <Typography weight="bold" className="text-emerald-600">{formatCurrency(isSplitPayment ? totalSplitAmount : parseNumber(dp))}</Typography>
+                    </View>
+
+                    {sisaBayar > 0 && (
+                        <View className="flex-row justify-between">
+                            <Typography variant="body2" className="text-rose-600 font-bold">Sisa Piutang</Typography>
+                            <Typography weight="bold" className="text-rose-600">{formatCurrency(sisaBayar)}</Typography>
+                        </View>
+                    )}
 
                     {activeUnit.tipe_kepemilikan?.toString().toLowerCase() === 'investor' && (
                         <>
