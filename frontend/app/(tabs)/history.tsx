@@ -26,6 +26,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { ActivityItem } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
+import { TransactionDetailModal } from '../../components/TransactionDetailModal';
 
 const getSourceConfig = (source: string, title?: string) => {
     const s = source?.toLowerCase() || '';
@@ -89,6 +90,8 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 export default function HistoryTab() {
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     // Fetch more items for the history page (limit 100)
     const { data: transactions, isLoading, refetch } = useRecentActivity(100);
@@ -185,6 +188,10 @@ export default function HistoryTab() {
                                 key={item.id}
                                 activeOpacity={0.7}
                                 className="bg-white p-4 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                                onPress={() => {
+                                    setSelectedItem(item);
+                                    setModalVisible(true);
+                                }}
                             >
                                 {/* Left: Source Icon */}
                                 <View
@@ -247,6 +254,12 @@ export default function HistoryTab() {
                 )}
                 <View className="h-40" />
             </ScrollView>
+
+            <TransactionDetailModal
+                item={selectedItem}
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+            />
         </View>
     );
 }

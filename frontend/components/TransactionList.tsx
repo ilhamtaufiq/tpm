@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Wrench, CarFront, Truck, Wallet, Receipt, User, HelpCircle, ArrowRight } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
@@ -9,6 +9,7 @@ import { id as localeID } from 'date-fns/locale';
 import { ActivityItem } from '../services/keuangan';
 import { router } from 'expo-router';
 import { formatCurrency } from '../utils/format';
+import { TransactionDetailModal } from './TransactionDetailModal';
 
 const getSourceConfig = (source: string, title?: string) => {
     const s = source?.toLowerCase() || '';
@@ -71,6 +72,13 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 
 export const TransactionList = () => {
     const { data: transactions, isLoading } = useRecentActivity(5);
+    const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+
+    const handleItemPress = (item: ActivityItem) => {
+        setSelectedItem(item);
+        setModalVisible(true);
+    };
 
     if (isLoading) {
         return (
@@ -106,6 +114,7 @@ export const TransactionList = () => {
                             key={item.id}
                             className="flex-row items-center bg-white p-4 rounded-3xl mb-3 border border-gray-100 shadow-sm"
                             activeOpacity={0.8}
+                            onPress={() => handleItemPress(item)}
                         >
                             <View
                                 style={{ backgroundColor: `${config.color}10` }}
@@ -144,6 +153,12 @@ export const TransactionList = () => {
                     );
                 })
             )}
+
+            <TransactionDetailModal
+                item={selectedItem}
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+            />
         </View>
     );
 };
