@@ -491,7 +491,7 @@ export const sdmService = {
         return response.data;
     },
 
-    processSlipGajiPayment: async (id: number, data: { metode_bayar: string; catatan?: string }): Promise<SlipGaji> => {
+    processSlipGajiPayment: async (id: number, data: { metode_bayar?: string; payments?: Array<{ metode: string; nominal: number; catatan?: string }>; catatan?: string }): Promise<SlipGaji> => {
         const response = await api.post(`/slip-gaji/${id}/pay`, data);
         return response.data;
     },

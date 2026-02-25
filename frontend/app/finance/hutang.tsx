@@ -48,6 +48,7 @@ const SUMBER_LABEL: Record<string, string> = {
 
 export default function HutangUsahaScreen() {
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
+    const [search, setSearch] = useState('');
     const [selectedHutang, setSelectedHutang] = useState<Hutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
     const [refreshing, setRefreshing] = useState(false);
@@ -57,6 +58,7 @@ export default function HutangUsahaScreen() {
     const { data: listData, isLoading: isLoadingList, refetch: refetchList } = useHutangList({
         limit: 50,
         status: selectedFilter === 'all' ? undefined : selectedFilter,
+        search: search || undefined,
     });
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary();
     const paymentMutation = useProcessHutangPaymentSplit();
@@ -701,28 +703,42 @@ export default function HutangUsahaScreen() {
                 </View>
             </View>
 
-            {/* Filters */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50">
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="p-1">
-                        {STATUS_FILTERS.map((filter) => (
-                            <TouchableOpacity
-                                key={filter.value}
-                                onPress={() => setSelectedFilter(filter.value)}
-                                className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-rose-600 border border-white/10' : 'bg-gray-50 border border-gray-100'}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={selectedFilter === filter.value ? 'text-white' : 'text-textGray/60'}
+            {/* Filters & Search */}
+            {!isSheetOpen && (
+                <View className="px-6 -mt-8 z-10">
+                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
+                            {STATUS_FILTERS.map((filter) => (
+                                <TouchableOpacity
+                                    key={filter.value}
+                                    onPress={() => setSelectedFilter(filter.value)}
+                                    className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-rose-600 border border-white/10 shadow-md shadow-rose-600/20' : 'bg-gray-50 border border-gray-100'}`}
                                 >
-                                    {filter.label}
-                                </Typography>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                                    <Typography
+                                        variant="caption"
+                                        weight="bold"
+                                        className={selectedFilter === filter.value ? 'text-white' : 'text-textGray/60'}
+                                    >
+                                        {filter.label}
+                                    </Typography>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+
+                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
+                            <Search size={18} color="#9CA3AF" />
+                            <TextInput
+                                className="flex-1 ml-3 text-sm text-textMain font-medium h-full"
+                                placeholder="Cari nama kreditur atau nomor hutang..."
+                                value={search}
+                                onChangeText={setSearch}
+                                placeholderTextColor="#9CA3AF"
+                                clearButtonMode="while-editing"
+                            />
+                        </View>
+                    </View>
                 </View>
-            </View>
+            )}
 
             {/* List */}
             {isLoadingList ? (

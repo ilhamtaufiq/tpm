@@ -181,7 +181,8 @@ class SlipGajiCreate(BaseModel):
 class SlipGajiUpdate(BaseModel):
     """Schema for updating salary slip payment."""
 
-    metode_bayar: PaymentMethod
+    metode_bayar: Optional[PaymentMethod] = None
+    payments: Optional[List[Dict[str, Any]]] = None # For split payment: {metode: PaymentMethod, nominal: Decimal, catatan: str}
     catatan: Optional[str] = None
 
 

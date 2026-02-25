@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_
@@ -188,7 +188,7 @@ class SlipGajiService:
 
         # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
         daily_rate = karyawan.gaji_pokok / Decimal("6")
-        gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+        gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         # Create slip
         slip = SlipGaji(
@@ -256,7 +256,7 @@ class SlipGajiService:
 
             # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
             daily_rate = emp.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+            gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             gaji_bersih = gaji_pokok_pro_rated
 
             items.append({
@@ -306,7 +306,7 @@ class SlipGajiService:
 
             # Pro-rated formula: (Gaji Pokok / 6) * jumlah_hadir
             daily_rate = emp.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = daily_rate * jumlah_hadir
+            gaji_pokok_pro_rated = (daily_rate * jumlah_hadir).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
             gaji_bersih = gaji_pokok_pro_rated - kasbon_total
 
             items.append({
@@ -384,7 +384,7 @@ class SlipGajiService:
                 # Note: item.get("jumlah_hadir") might be float now
                 hadir_val = Decimal(str(jumlah_hadir))
                 daily_rate = karyawan.gaji_pokok / Decimal("6")
-                gaji_pokok_pro_rated = daily_rate * hadir_val
+                gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
                 # Create slip with overridden attendance and kasbon
                 slip = SlipGaji(
@@ -461,7 +461,7 @@ class SlipGajiService:
             # Calculate pro-rated salary: (Gaji Pokok / 6) * jumlah_hadir
             hadir_val = Decimal(str(jumlah_hadir))
             daily_rate = karyawan.gaji_pokok / Decimal("6")
-            gaji_pokok_pro_rated = daily_rate * hadir_val
+            gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
             # Create slip with range dates and kasbon
             slip = SlipGaji(
@@ -635,27 +635,56 @@ class SlipGajiService:
             )
 
         # Prepare slip update (don't commit yet)
-        slip.metode_bayar = data.metode_bayar
+        if data.payments:
+            slip.metode_bayar = PaymentMethod.SPLIT
+        else:
+            slip.metode_bayar = data.metode_bayar
+            
         slip.tanggal_bayar = date.today()
         slip.status = PaymentStatus.LUNAS
         slip.catatan = data.catatan
 
-        # Record salary payment to kas/bank (money going out)
-        # This function will check balance and raise HTTPException if insufficient.
-        # Since it's in the same session, failing here will prevent slip status update from being committed.
         karyawan_nama = slip.karyawan.nama if slip.karyawan else "Unknown"
-        create_kas_entry(
-            db=self.db,
-            tanggal=date.today(),
-            tipe=KasBankType.KELUAR,
-            nominal=slip.gaji_bersih,
-            sumber=KasBankSource.GAJI,
-            metode_bayar=data.metode_bayar,
-            referensi_id=slip.id,
-            nomor_referensi=slip.nomor_slip,
-            keterangan=f"Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
-            user_id=user_id,
-        )
+
+        # Record salary payment to kas/bank
+        if data.payments:
+            total_pay = sum(Decimal(str(p.get("nominal", 0))) for p in data.payments)
+            if total_pay != slip.gaji_bersih:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Total pembayaran ({total_pay}) tidak sesuai dengan nominal gaji ({slip.gaji_bersih})",
+                )
+            
+            for p in data.payments:
+                p_nominal = Decimal(str(p.get("nominal", 0)))
+                if p_nominal <= 0:
+                    continue
+                p_metode = p.get("metode")
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=date.today(),
+                    tipe=KasBankType.KELUAR,
+                    nominal=p_nominal,
+                    sumber=KasBankSource.GAJI,
+                    metode_bayar=p_metode,
+                    referensi_id=slip.id,
+                    nomor_referensi=slip.nomor_slip,
+                    keterangan=f"Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama} ({str(p_metode).upper()})",
+                    user_id=user_id,
+                )
+        else:
+            create_kas_entry(
+                db=self.db,
+                tanggal=date.today(),
+                tipe=KasBankType.KELUAR,
+                nominal=slip.gaji_bersih,
+                sumber=KasBankSource.GAJI,
+                metode_bayar=data.metode_bayar,
+                referensi_id=slip.id,
+                nomor_referensi=slip.nomor_slip,
+                keterangan=f"Gaji minggu {slip.periode_minggu}/{slip.periode_tahun} - {karyawan_nama}",
+                user_id=user_id,
+            )
 
         # If there's a kasbon deduction, record it in KasbonService
         if slip.potongan_kasbon > 0:

@@ -24,7 +24,7 @@ import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -89,6 +89,8 @@ export default function SlipGajiScreen() {
 
     const [generatingId, setGeneratingId] = useState<number | null>(null);
     const [payMetode, setPayMetode] = useState('transfer');
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan?: string }[]>([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -269,11 +271,27 @@ export default function SlipGajiScreen() {
     const openDetail = (slip: SlipGaji) => {
         setSelectedSlip(slip);
         setPayMetode('transfer');
+        setIsSplitPayment(false);
+        setPayments([]);
         if (Platform.OS !== 'web') bottomSheetRef.current?.expand();
     };
 
     const handleProcessPayment = async () => {
         if (!selectedSlip) return;
+
+        if (isSplitPayment) {
+            const totalSplitAmount = payments.reduce((acc, p) => acc + (parseNumber(p.nominal) || 0), 0);
+            if (Math.round(totalSplitAmount) !== Math.round(Number(selectedSlip.gaji_bersih))) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Validasi',
+                    message: `Total pembayaran (${formatCurrency(totalSplitAmount)}) tidak sesuai dengan nominal gaji (${formatCurrency(selectedSlip.gaji_bersih)})`,
+                    variant: 'warning'
+                });
+                return;
+            }
+        }
+
         setDialogConfig({
             visible: true,
             title: 'Konfirmasi Pembayaran',
@@ -287,10 +305,18 @@ export default function SlipGajiScreen() {
     const executePayment = async () => {
         if (!selectedSlip) return;
         try {
-            await processPaymentMutation.mutateAsync({
+            const payload: any = {
                 id: selectedSlip.id,
-                data: { metode_bayar: payMetode },
-            });
+                data: isSplitPayment ? {
+                    payments: payments.map(p => ({
+                        metode: p.metode.toUpperCase(),
+                        nominal: parseNumber(p.nominal) || 0,
+                        catatan: p.catatan
+                    }))
+                } : { metode_bayar: payMetode.toUpperCase() },
+            };
+
+            await processPaymentMutation.mutateAsync(payload);
             setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran berhasil', variant: 'success' });
             if (Platform.OS === 'web') setSelectedSlip(null);
             else bottomSheetRef.current?.close();
@@ -356,7 +382,7 @@ export default function SlipGajiScreen() {
         const currentKasbon = getKasbonValue(item);
 
         // Dynamic calculation: (Base / 6) * Current Attendance - Kasbon
-        const currentGajiPokok = (item.gaji_pokok_dasar / 6) * currentAttendance;
+        const currentGajiPokok = Math.round((item.gaji_pokok_dasar / 6) * currentAttendance);
         const currentGajiBersih = currentGajiPokok - currentKasbon;
 
         return (
@@ -414,8 +440,8 @@ export default function SlipGajiScreen() {
                                 <TextInput
                                     className="w-20 text-right text-rose-600 font-bold p-0 text-base"
                                     keyboardType="numeric"
-                                    value={String(currentKasbon)}
-                                    onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, v)}
+                                    value={formatNumber(String(currentKasbon))}
+                                    onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, parseNumber(v).toString())}
                                     selectTextOnFocus
                                     placeholder="0"
                                 />
@@ -802,19 +828,87 @@ export default function SlipGajiScreen() {
                 </View>
 
                 {!isLunas && (
-                    <View className="space-y-4">
-                        <Typography className="text-textGray/60 font-black text-[10px] uppercase tracking-[3px] ml-2 mb-2">Pilih Metode Pembayaran</Typography>
-                        <View className="flex-row space-x-4">
-                            {['tunai', 'transfer'].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setPayMetode(m)}
-                                    className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-gray-200 bg-white'}`}
-                                >
-                                    <Typography className={payMetode === m ? 'text-white' : 'text-textGray'} weight="bold">{m.toUpperCase()}</Typography>
-                                </TouchableOpacity>
-                            ))}
+                    <View>
+                        <View className="flex-row justify-between items-center mb-4">
+                            <Typography className="text-textGray/60 font-black text-[10px] uppercase tracking-[3px] ml-2">Metode Pembayaran</Typography>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (!isSplitPayment) {
+                                        setPayments([{ id: Date.now(), metode: payMetode.toUpperCase(), nominal: selectedSlip.gaji_bersih.toString() }]);
+                                    }
+                                    setIsSplitPayment(!isSplitPayment);
+                                }}
+                                className={`px-4 py-2 rounded-full border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                            >
+                                <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
+                                    {isSplitPayment ? 'BATALKAN SPLIT' : 'SPLIT PAYMENT?'}
+                                </Typography>
+                            </TouchableOpacity>
                         </View>
+
+                        {isSplitPayment ? (
+                            <View className="mb-6">
+                                {payments.map((p, idx) => (
+                                    <View key={p.id} className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 mb-4">
+                                        <View className="flex-row justify-between items-center mb-4">
+                                            <Typography weight="bold" className="text-primary text-xs tracking-widest uppercase">POS PEMBAYARAN #{idx + 1}</Typography>
+                                            {payments.length > 1 && (
+                                                <TouchableOpacity onPress={() => setPayments(payments.filter(pay => pay.id !== p.id))} className="w-8 h-8 items-center justify-center bg-rose-100 rounded-full">
+                                                    <X size={14} color="#E11D48" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        <View className="flex-row flex-wrap gap-2 mb-4">
+                                            {['TUNAI', 'TRANSFER'].map((m) => (
+                                                <TouchableOpacity
+                                                    key={m}
+                                                    onPress={() => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, metode: m } : pay))}
+                                                    className={`px-4 py-2 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                                >
+                                                    <Typography className={p.metode === m ? 'text-primary' : 'text-textGray'} weight="bold" variant="caption">{m}</Typography>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+
+                                        <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 flex-row items-center">
+                                            <Typography className="text-gray-400 font-bold mr-2">Rp</Typography>
+                                            <TextInput
+                                                className="flex-1 text-textMain font-bold text-lg"
+                                                keyboardType="numeric"
+                                                placeholder="0"
+                                                value={formatNumber(p.nominal)}
+                                                onChangeText={(v) => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, nominal: formatNumber(v) } : pay))}
+                                            />
+                                        </View>
+                                    </View>
+                                ))}
+
+                                <TouchableOpacity
+                                    onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '0' }])}
+                                    className="flex-row items-center justify-center py-4 rounded-3xl border border-dashed border-gray-300"
+                                >
+                                    <Typography weight="bold" className="text-gray-400 text-xs uppercase">+ TAMBAH METODE</Typography>
+                                </TouchableOpacity>
+
+                                <View className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex-row justify-between items-center">
+                                    <Typography className="text-primary text-[10px] font-black uppercase tracking-widest">Total Dialokasikan</Typography>
+                                    <Typography weight="bold" className="text-primary">{formatCurrency(payments.reduce((acc, p) => acc + (parseNumber(p.nominal) || 0), 0))}</Typography>
+                                </View>
+                            </View>
+                        ) : (
+                            <View className="flex-row space-x-4 mb-6">
+                                {['tunai', 'transfer'].map((m) => (
+                                    <TouchableOpacity
+                                        key={m}
+                                        onPress={() => setPayMetode(m)}
+                                        className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-gray-200 bg-white'}`}
+                                    >
+                                        <Typography className={payMetode === m ? 'text-white' : 'text-textGray'} weight="bold">{m.toUpperCase()}</Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
 
                         <TouchableOpacity
                             onPress={handleDeleteSlip}
