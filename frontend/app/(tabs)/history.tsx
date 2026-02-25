@@ -27,8 +27,29 @@ import { id as localeID } from 'date-fns/locale';
 import { ActivityItem } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
 
-const getSourceConfig = (source: string) => {
-    switch (source) {
+const getSourceConfig = (source: string, title?: string) => {
+    const s = source?.toLowerCase() || '';
+    const t = title?.toLowerCase() || '';
+
+    // Priority 1: Title detection for specific keywords (robust fallback)
+    if (t.includes('spare part') || t.includes('pembelian part') || t.includes('pbl')) {
+        return { icon: Receipt, color: '#6366F1', label: 'Inventory' };
+    }
+    if (t.includes('repair') || t.includes('bengkel') || t.includes('bgl')) {
+        return { icon: Wrench, color: '#3B82F6', label: 'Bengkel' };
+    }
+    if (t.includes('mobil') || t.includes('mbl')) {
+        return { icon: CarFront, color: '#F59E0B', label: 'Mobil' };
+    }
+    if (t.includes('angkut') || t.includes('muatan') || t.includes('jas')) {
+        return { icon: Truck, color: '#10B981', label: 'Logistik' };
+    }
+    if (t.includes('gaji') || t.includes('kantor') || t.includes('sdm')) {
+        return { icon: User, color: '#8B5CF6', label: 'SDM' };
+    }
+
+    // Priority 2: Source-based mapping (normalized)
+    switch (s) {
         case 'bengkel':
             return { icon: Wrench, color: '#3B82F6', label: 'Bengkel' };
         case 'jual_beli_mobil':
@@ -43,6 +64,14 @@ const getSourceConfig = (source: string) => {
         case 'gaji':
         case 'kasbon':
             return { icon: User, color: '#8B5CF6', label: 'SDM' };
+        case 'piutang':
+            return { icon: Receipt, color: '#7C3AED', label: 'Piutang' };
+        case 'hutang':
+            return { icon: Receipt, color: '#EA580C', label: 'Hutang' };
+        case 'modal':
+            return { icon: Wallet, color: '#059669', label: 'Modal' };
+        case 'prive':
+            return { icon: Wallet, color: '#DC2626', label: 'Prive' };
         default:
             return { icon: HelpCircle, color: '#6B7280', label: 'Sistem' };
     }
@@ -147,7 +176,7 @@ export default function HistoryTab() {
                     </View>
                 ) : (
                     filteredList.map((item: ActivityItem) => {
-                        const config = getSourceConfig(item.source);
+                        const config = getSourceConfig(item.source, item.title);
                         const Icon = config.icon;
                         const badge = getStatusBadge(item.status);
 
