@@ -455,8 +455,7 @@ class TransaksiBengkelService:
         if piutang:
             transaksi.piutang_id = piutang.id
             transaksi.jumlah_bayar = piutang.total_dibayar
-        else:
-            transaksi.jumlah_bayar = transaksi.total_bayar # If no piutang, total_bayar is what was paid at the time
+        # No else needed, transaksi.jumlah_bayar already exists on the model
             
         return transaksi
 
@@ -569,8 +568,6 @@ class TransaksiBengkelService:
                 info = piutang_map.get(t.nomor_transaksi)
                 if info:
                     t.piutang_id, t.jumlah_bayar = info
-                else:
-                    t.jumlah_bayar = t.total_bayar
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1

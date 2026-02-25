@@ -222,6 +222,7 @@ export const jasaAngkutService = {
         kategori?: string;
         catatan?: string;
         metode_bayar?: string;
+        payments?: { metode: string; nominal: number; catatan?: string }[];
     }) => {
         const response = await api.post(`/armada/${id}/expense`, data);
         return response.data;

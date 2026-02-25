@@ -28,8 +28,10 @@ Implement search functionality in "Hutang Usaha" (Accounts Payable) page to impr
   - Fixed Kasbon-Finance synchronization: payments in Finance now update Kasbon status (`LUNAS`/`CICILAN`).
   - Implemented Split Disbursement for new Kasbon creation (multiple funding sources).
   - Fixed lint errors in `kasbon.tsx` and updated `sdmService` types to support split payments.
-  - Implemented search functionality in `HutangUsahaScreen` (frontend/app/finance/hutang.tsx), matching the style of Piutang and Kasbon screens.
-- Now: Awaiting user feedback on Hutang Usaha search implementation.
+  - Implemented Split Payment for Armada Operational Expenses in `jasa-angkut/armada/detail`.
+    - Updated `ArmadaExpenseCreate` backend schema and `ArmadaService.add_expense` to support split payments.
+    - Updated `jasaAngkutService` and `ArmadaDetail.tsx` frontend to support multiple payment methods and amounts.
+- Now: Completed split payment implementation for Armada Operational Expenses.
 - Next: Awaiting user feedback or further requests.
 
 ## Open Questions (UNCONFIRMED)

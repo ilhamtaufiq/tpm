@@ -20,7 +20,9 @@ import {
     Search,
     Plus,
     DollarSign,
-    X as CloseIcon
+    X as CloseIcon,
+    Trash2,
+    PlusCircle
 } from 'lucide-react-native';
 import { SkeletonCard } from '../ui/Skeleton';
 import { Input } from '../ui/Input';
@@ -42,24 +44,63 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         tanggal: new Date().toISOString().split('T')[0],
         deskripsi: '',
         jumlah: '',
-        catatan: ''
+        catatan: '',
+        metode_bayar: 'TUNAI'
     });
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([]);
+
+    const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+
+    const addPaymentRow = () => {
+        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
+    };
+
+    const removePaymentRow = (id: number) => {
+        setPayments(payments.filter(p => p.id !== id));
+    };
+
+    const updatePaymentRow = (id: number, field: string, value: string) => {
+        setPayments(payments.map(p => {
+            if (p.id === id) {
+                return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
+            }
+            return p;
+        }));
+    };
+
+    const toggleSplitPayment = () => {
+        if (!isSplitPayment) {
+            setPayments([{ id: Date.now(), metode: expenseForm.metode_bayar, nominal: expenseForm.jumlah }]);
+        } else {
+            setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(totalSplitAmount.toString()) }));
+        }
+        setIsSplitPayment(!isSplitPayment);
+    };
 
     const handleAddExpense = async () => {
         if (!expenseForm.deskripsi || !expenseForm.jumlah) return;
         try {
             setSubmittingExpense(true);
+            const finalAmount = isSplitPayment ? totalSplitAmount : parseNumber(expenseForm.jumlah);
             await jasaAngkutService.addArmadaExpense(id, {
                 ...expenseForm,
-                jumlah: parseNumber(expenseForm.jumlah)
+                jumlah: finalAmount,
+                payments: isSplitPayment ? payments.map(p => ({
+                    metode: p.metode,
+                    nominal: parseNumber(p.nominal)
+                })).filter(p => p.nominal > 0) : []
             });
             setShowExpenseModal(false);
             setExpenseForm({
                 tanggal: new Date().toISOString().split('T')[0],
                 deskripsi: '',
                 jumlah: '',
-                catatan: ''
+                catatan: '',
+                metode_bayar: 'TUNAI'
             });
+            setPayments([]);
+            setIsSplitPayment(false);
             refetch();
         } catch (error) {
             console.error(error);
@@ -386,44 +427,117 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                     <View className="bg-white rounded-t-[32px] p-6 pb-12">
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Input Biaya Operasional</Typography>
-                            <TouchableOpacity onPress={() => setShowExpenseModal(false)}>
-                                <CloseIcon size={24} color="#000" />
+                            <TouchableOpacity
+                                onPress={toggleSplitPayment}
+                                className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                            >
+                                <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                    {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                                </Typography>
                             </TouchableOpacity>
                         </View>
 
-                        <View className="space-y-4">
-                            <Input
-                                label="Deskripsi"
-                                placeholder="Contoh: Ganti Oli, Pajak, Cuci Mobil"
-                                value={expenseForm.deskripsi}
-                                onChangeText={v => setExpenseForm(prev => ({ ...prev, deskripsi: v }))}
-                            />
-                            <Input
-                                label="Jumlah (Rp)"
-                                keyboardType="numeric"
-                                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-                                value={expenseForm.jumlah}
-                                onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(v) }))}
-                            />
-                            <Input
-                                label="Tanggal (YYYY-MM-DD)"
-                                value={expenseForm.tanggal}
-                                onChangeText={v => setExpenseForm(prev => ({ ...prev, tanggal: v }))}
-                            />
-                            <Input
-                                label="Catatan (Opsional)"
-                                multiline
-                                value={expenseForm.catatan}
-                                onChangeText={v => setExpenseForm(prev => ({ ...prev, catatan: v }))}
-                            />
+                        <ScrollView className="max-h-[70vh]" showsVerticalScrollIndicator={false}>
+                            <View className="space-y-4">
+                                <Input
+                                    label="Deskripsi"
+                                    placeholder="Contoh: Ganti Oli, Pajak, Cuci Mobil"
+                                    value={expenseForm.deskripsi}
+                                    onChangeText={v => setExpenseForm(prev => ({ ...prev, deskripsi: v }))}
+                                />
 
-                            <Button
-                                title={submittingExpense ? "Menyimpan..." : "Simpan Biaya"}
-                                onPress={handleAddExpense}
-                                disabled={submittingExpense || !expenseForm.deskripsi || !expenseForm.jumlah}
-                                className="mt-4"
-                            />
-                        </View>
+                                {isSplitPayment ? (
+                                    <View className="mb-4">
+                                        <View className="flex-row justify-between items-center mb-3">
+                                            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest">Alokasi Pembayaran</Typography>
+                                            <TouchableOpacity onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                                                <PlusCircle size={14} color="#023C69" />
+                                                <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {payments.map((p, idx) => (
+                                            <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
+                                                <View className="flex-row justify-between items-center mb-3">
+                                                    <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
+                                                    <TouchableOpacity onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
+                                                        <Trash2 size={12} color="#EF4444" />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                <View className="flex-row flex-wrap gap-2 mb-3">
+                                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                                        <TouchableOpacity
+                                                            key={m}
+                                                            onPress={() => updatePaymentRow(p.id, 'metode', m)}
+                                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                                        >
+                                                            <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+
+                                                <Input
+                                                    placeholder="Nominal Rp"
+                                                    keyboardType="numeric"
+                                                    value={p.nominal}
+                                                    containerClassName="mb-0"
+                                                    onChangeText={(t) => updatePaymentRow(p.id, 'nominal', t)}
+                                                />
+                                            </View>
+                                        ))}
+
+                                        <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-[20px] mt-2 border border-primary/10">
+                                            <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-widest">Total Biaya</Typography>
+                                            <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View className="space-y-4">
+                                        <View>
+                                            <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
+                                            <View className="flex-row flex-wrap gap-2">
+                                                {['TUNAI', 'TRANSFER'].map((m) => (
+                                                    <TouchableOpacity
+                                                        key={m}
+                                                        onPress={() => setExpenseForm(prev => ({ ...prev, metode_bayar: m }))}
+                                                        className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
+                                                    >
+                                                        <Typography variant="caption" weight="bold" className={expenseForm.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </View>
+                                        </View>
+                                        <Input
+                                            label="Jumlah (Rp)"
+                                            keyboardType="numeric"
+                                            startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+                                            value={expenseForm.jumlah}
+                                            onChangeText={v => setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(v) }))}
+                                        />
+                                    </View>
+                                )}
+
+                                <Input
+                                    label="Tanggal (YYYY-MM-DD)"
+                                    value={expenseForm.tanggal}
+                                    onChangeText={v => setExpenseForm(prev => ({ ...prev, tanggal: v }))}
+                                />
+                                <Input
+                                    label="Catatan (Opsional)"
+                                    multiline
+                                    value={expenseForm.catatan}
+                                    onChangeText={v => setExpenseForm(prev => ({ ...prev, catatan: v }))}
+                                />
+
+                                <Button
+                                    title={submittingExpense ? "Menyimpan..." : "Simpan Biaya"}
+                                    onPress={handleAddExpense}
+                                    disabled={submittingExpense || !expenseForm.deskripsi || (isSplitPayment ? totalSplitAmount <= 0 : !expenseForm.jumlah)}
+                                    className="mt-4"
+                                />
+                            </View>
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>

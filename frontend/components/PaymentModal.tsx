@@ -16,6 +16,7 @@ interface PaymentModalProps {
     piutangId: number;
     initialAmount: number;
     title?: string;
+    allowedMethods?: string[];
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -24,7 +25,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     onSuccess,
     piutangId,
     initialAmount,
-    title = 'Catat Pembayaran'
+    title = 'Catat Pembayaran',
+    allowedMethods
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
@@ -146,7 +148,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             </View>
 
                             <View className="flex-row space-x-2 mb-4">
-                                {['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT'].map((m) => (
+                                {(allowedMethods || ['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT']).map((m) => (
                                     <TouchableOpacity
                                         key={m}
                                         onPress={() => updatePayment(p.id, 'metode', m)}

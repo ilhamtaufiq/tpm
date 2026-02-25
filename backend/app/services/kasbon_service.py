@@ -140,7 +140,7 @@ class KasbonService:
                 p_nominal = Decimal(str(p.get("nominal", 0)))
                 if p_nominal <= 0:
                     continue
-                p_metode = p.get("metode") or getattr(data, 'metode_bayar', PaymentMethod.TUNAI)
+                p_metode = p.get("metode") or data.metode_bayar or PaymentMethod.TUNAI
                 create_kas_entry(
                     db=self.db,
                     tanggal=data.tanggal,
@@ -160,7 +160,7 @@ class KasbonService:
                 tipe=KasBankType.KELUAR,
                 nominal=data.nominal,
                 sumber=KasBankSource.KASBON,
-                metode_bayar=getattr(data, 'metode_bayar', PaymentMethod.TUNAI),
+                metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
                 referensi_id=kasbon.id,
                 nomor_referensi=kasbon.nomor_kasbon,
                 keterangan=f"Kasbon karyawan {karyawan.nama} ({kasbon.nomor_kasbon})",

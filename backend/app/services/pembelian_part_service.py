@@ -151,12 +151,7 @@ class PembelianPartService:
 
         grand_total = total - data.diskon
 
-        # Determine payment status
-        status_bayar = PaymentStatus.BELUM_LUNAS
-        tanggal_bayar = None
-
-        # Logic: If method is explicitly non-credit (Tunai/Transfer), mark as LUNAS
-        # If method is Kredit or None/Other, keep as BELUM_LUNAS
+        # Determine if it's an immediate payment
         pay_now_methods = [
             PaymentMethod.TUNAI, 
             PaymentMethod.TRANSFER, 
@@ -164,14 +159,23 @@ class PembelianPartService:
             PaymentMethod.SPLIT,
             PaymentMethod.OTHER
         ]
-        
-        is_pay_now = False
-        if data.metode_bayar in pay_now_methods:
-            is_pay_now = True
+        is_pay_now = data.metode_bayar in pay_now_methods
 
+        # Record payment logic
+        total_paid = Decimal("0")
         if is_pay_now:
+            if data.payments:
+                total_paid = sum(pm.jumlah for pm in data.payments)
+            else:
+                total_paid = grand_total
+
+        # Determine payment status
+        if is_pay_now and total_paid >= grand_total:
             status_bayar = PaymentStatus.LUNAS
-            tanggal_bayar = data.tanggal
+        else:
+            status_bayar = PaymentStatus.BELUM_LUNAS
+        
+        tanggal_bayar = data.tanggal if status_bayar == PaymentStatus.LUNAS else None
 
         # Create purchase record
         pembelian = PembelianSparePart(
@@ -199,24 +203,39 @@ class PembelianPartService:
             spare_part.stok += item.qty
             spare_part.harga_beli = item.harga_satuan  # Update latest purchase price
 
-        # Record purchase payment to kas/bank if paid immediately
-        if status_bayar == PaymentStatus.LUNAS:
-            # This will check balance and raise HTTPException if insufficient.
-            # Failure will prevent purchase and stock update from being committed.
-            create_kas_entry(
-                db=self.db,
-                tanggal=data.tanggal,
-                tipe=KasBankType.KELUAR,
-                nominal=grand_total,
-                sumber=KasBankSource.PEMBELIAN_PART,
-                metode_bayar=data.metode_bayar,
-                referensi_id=pembelian.id,
-                nomor_referensi=pembelian.nomor_transaksi,
-                keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
-                user_id=user_id,
-            )
-        else:
-            # Record Hutang (Payable)
+        # Record purchase payment to kas/bank if paid immediately (including partial)
+        if total_paid > 0:
+            if data.payments:
+                for pm in data.payments:
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=data.tanggal,
+                        tipe=KasBankType.KELUAR,
+                        nominal=pm.jumlah,
+                        sumber=KasBankSource.PEMBELIAN_PART,
+                        metode_bayar=pm.metode,
+                        referensi_id=pembelian.id,
+                        nomor_referensi=pembelian.nomor_transaksi,
+                        keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi} ({pm.metode})",
+                        user_id=user_id,
+                    )
+            else:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=total_paid,
+                    sumber=KasBankSource.PEMBELIAN_PART,
+                    metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
+                    referensi_id=pembelian.id,
+                    nomor_referensi=pembelian.nomor_transaksi,
+                    keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
+                    user_id=user_id,
+                )
+
+        # Record Hutang for the remainder
+        if total_paid < grand_total:
+            sisa_hutang = grand_total - total_paid
             supplier = self.db.query(Supplier).get(data.supplier_id)
             hutang = HutangUsaha(
                 nomor_hutang=self._generate_nomor_hutang(),
@@ -228,10 +247,10 @@ class PembelianPartService:
                 sumber=HutangSource.PEMBELIAN_PART,
                 referensi_id=pembelian.id,
                 nomor_referensi=pembelian.nomor_transaksi,
-                nominal_hutang=grand_total,
-                sisa_hutang=grand_total,
+                nominal_hutang=sisa_hutang,
+                sisa_hutang=sisa_hutang,
                 status=HutangStatus.BELUM_LUNAS,
-                catatan=f"Hutang pembelian spare part - {pembelian.nomor_transaksi}",
+                catatan=f"Hutang sisa pembelian spare part - {pembelian.nomor_transaksi}",
                 created_by=user_id,
             )
             self.db.add(hutang)

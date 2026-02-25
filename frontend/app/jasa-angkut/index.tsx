@@ -788,6 +788,7 @@ export default function JasaAngkutScreen() {
                     piutangId={selectedTrip.piutang_id}
                     initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
                     title="Pelunasan Jasa Angkut"
+                    allowedMethods={['TUNAI', 'TRANSFER']}
                 />
             )}
 

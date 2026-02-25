@@ -32,6 +32,10 @@ export default function PurchaseScreen() {
     const [items, setItems] = useState<any[]>([]);
     const [catatan, setCatatan] = useState('');
     const [metodeBayar, setMetodeBayar] = useState('tunai');
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([
+        { id: Date.now(), metode: 'TUNAI', nominal: '' }
+    ]);
 
     // Modal State
     const [isPartModalOpen, setIsPartModalOpen] = useState(false);
@@ -56,6 +60,10 @@ export default function PurchaseScreen() {
         return items.reduce((acc, item) => acc + (Number(parseNumber(item.price) || 0) * Number(item.qty || 0)), 0);
     }, [items]);
 
+    const totalSplitAmount = useMemo(() => {
+        return payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+    }, [payments]);
+
     const handleAddItem = () => {
         setItems([
             ...items,
@@ -75,6 +83,23 @@ export default function PurchaseScreen() {
             newItems[index] = { ...newItems[index], [field]: value };
         }
         setItems(newItems);
+    };
+
+    const handleAddPaymentRow = () => {
+        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
+    };
+
+    const handleRemovePaymentRow = (id: number) => {
+        setPayments(payments.filter(p => p.id !== id));
+    };
+
+    const handleUpdatePaymentRow = (id: number, field: string, value: string) => {
+        setPayments(payments.map(p => {
+            if (p.id === id) {
+                return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
+            }
+            return p;
+        }));
     };
 
     const handleSelectPart = (part: any) => {
@@ -109,7 +134,11 @@ export default function PurchaseScreen() {
             supplier_id: selectedSupplier.id,
             nomor_faktur: nomorFaktur || '-', // Optional
             catatan: catatan,
-            metode_bayar: metodeBayar,
+            metode_bayar: isSplitPayment ? 'SPLIT' : metodeBayar.toUpperCase(),
+            payments: isSplitPayment ? payments.map(p => ({
+                metode: p.metode,
+                jumlah: parseNumber(p.nominal)
+            })) : [],
             diskon: 0,
             detail: items.map(item => ({
                 spare_part_id: item.spare_part_id,
@@ -120,8 +149,7 @@ export default function PurchaseScreen() {
 
         try {
             await createPembelianMutation.mutateAsync(payload);
-            queryClient.invalidateQueries({ queryKey: ['spare_parts'] }); // Refresh stock
-            router.back();
+            handleBack();
         } catch (error) {
             console.error(error);
             alert('Gagal menyimpan transaksi pembelian');
@@ -174,27 +202,95 @@ export default function PurchaseScreen() {
 
                 {/* Metode Pembayaran */}
                 <View className="mb-6">
-                    <Typography variant="body2" className="text-textGray text-sm mb-2 font-medium">Metode Pembayaran *</Typography>
-                    <View className="flex-row space-x-2">
-                        {[
-                            { id: 'tunai', label: 'Tunai' },
-                            { id: 'transfer', label: 'Transfer' },
-                            { id: 'kredit', label: 'Hutang' }
-                        ].map((m) => (
-                            <TouchableOpacity
-                                key={m.id}
-                                onPress={() => setMetodeBayar(m.id)}
-                                className={`flex-1 py-3 items-center rounded-xl border-2 ${metodeBayar === m.id ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
-                            >
-                                <Typography
-                                    className={metodeBayar === m.id ? 'text-primary' : 'text-gray-400'}
-                                    weight={metodeBayar === m.id ? 'bold' : 'medium'}
-                                >
-                                    {m.label}
-                                </Typography>
-                            </TouchableOpacity>
-                        ))}
+                    <View className="flex-row justify-between items-center mb-2">
+                        <Typography variant="body2" className="text-textGray text-sm font-medium">Metode Pembayaran *</Typography>
+                        <TouchableOpacity
+                            onPress={() => setIsSplitPayment(!isSplitPayment)}
+                            className={`px-3 py-1 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                        >
+                            <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                            </Typography>
+                        </TouchableOpacity>
                     </View>
+
+                    {isSplitPayment ? (
+                        <View className="space-y-3">
+                            {payments.map((p, idx) => (
+                                <Card key={p.id} variant="outlined" className="p-4 border-gray-100 bg-gray-50/50">
+                                    <View className="flex-row justify-between items-center mb-3">
+                                        <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
+                                        {payments.length > 1 && (
+                                            <TouchableOpacity onPress={() => handleRemovePaymentRow(p.id)} className="w-8 h-8 items-center justify-center bg-red-50 rounded-xl">
+                                                <Trash2 size={16} color="#EE2737" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                    <View className="flex-row space-x-2 mb-3">
+                                        {['TUNAI', 'TRANSFER'].map((m) => (
+                                            <TouchableOpacity
+                                                key={m}
+                                                onPress={() => handleUpdatePaymentRow(p.id, 'metode', m)}
+                                                className={`flex-1 py-2.5 items-center rounded-xl border-2 ${p.metode === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
+                                            >
+                                                <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                    <Input
+                                        placeholder="Nominal Rp"
+                                        keyboardType="numeric"
+                                        value={p.nominal}
+                                        containerClassName="mb-0"
+                                        onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
+                                    />
+                                </Card>
+                            ))}
+                            <TouchableOpacity
+                                onPress={handleAddPaymentRow}
+                                className="flex-row items-center justify-center py-3 border-2 border-dashed border-gray-200 rounded-xl"
+                            >
+                                <Plus size={18} color="#023C69" />
+                                <Typography className="ml-2 text-primary font-bold">Tambah Metode</Typography>
+                            </TouchableOpacity>
+
+                            <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/10 mt-2">
+                                <Typography variant="caption" weight="bold" className="text-primary">TOTAL TERBAYAR</Typography>
+                                <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
+                            </View>
+
+                            {totalSplitAmount < total && (
+                                <View className="p-4 bg-amber-50 rounded-xl border border-amber-100 mt-2 flex-row justify-between items-center">
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-amber-700">SISA HUTANG</Typography>
+                                        <Typography variant="body2" className="text-amber-600">Akan dicatat sebagai hutang</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-amber-700">{formatCurrency(total - totalSplitAmount)}</Typography>
+                                </View>
+                            )}
+                        </View>
+                    ) : (
+                        <View className="flex-row space-x-2">
+                            {[
+                                { id: 'tunai', label: 'Tunai' },
+                                { id: 'transfer', label: 'Transfer' },
+                                { id: 'kredit', label: 'Hutang' }
+                            ].map((m) => (
+                                <TouchableOpacity
+                                    key={m.id}
+                                    onPress={() => setMetodeBayar(m.id)}
+                                    className={`flex-1 py-3 items-center rounded-xl border-2 ${metodeBayar === m.id ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
+                                >
+                                    <Typography
+                                        className={metodeBayar === m.id ? 'text-primary' : 'text-gray-400'}
+                                        weight={metodeBayar === m.id ? 'bold' : 'medium'}
+                                    >
+                                        {m.label}
+                                    </Typography>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
                 {/* Items List */}

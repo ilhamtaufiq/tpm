@@ -31,7 +31,13 @@ def get_kas_jenis(metode_bayar: PaymentMethod) -> KasBankJenis:
     Returns:
         KasBankJenis indicating which account to use
     """
-    if metode_bayar == PaymentMethod.TRANSFER:
+    # Ensure it's the Enum member for comparison (handles case-insensitive strings)
+    try:
+        method = PaymentMethod(metode_bayar)
+    except (ValueError, TypeError):
+        method = PaymentMethod.TUNAI
+
+    if method == PaymentMethod.TRANSFER:
         return KasBankJenis.BANK_BCA
     return KasBankJenis.CASH
 

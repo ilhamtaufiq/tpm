@@ -233,18 +233,33 @@ class ArmadaService:
         self.db.flush()
         
         # Record to Kas/Bank
-        create_kas_entry(
-            db=self.db,
-            tanggal=data.tanggal,
-            tipe=KasBankType.KELUAR,
-            nominal=data.jumlah,
-            sumber=KasBankSource.JASA_ANGKUT,
-            metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
-            referensi_id=expense.id,
-            nomor_referensi=armada.nopol,
-            keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi}",
-            user_id=user_id
-        )
+        if data.payments:
+            for payment in data.payments:
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=payment.nominal,
+                    sumber=KasBankSource.JASA_ANGKUT,
+                    metode_bayar=payment.metode,
+                    referensi_id=expense.id,
+                    nomor_referensi=armada.nopol,
+                    keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi} ({payment.metode})",
+                    user_id=user_id
+                )
+        else:
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal,
+                tipe=KasBankType.KELUAR,
+                nominal=data.jumlah,
+                sumber=KasBankSource.JASA_ANGKUT,
+                metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
+                referensi_id=expense.id,
+                nomor_referensi=armada.nopol,
+                keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi}",
+                user_id=user_id
+            )
         
         self.db.commit()
         self.db.refresh(expense)

@@ -247,6 +247,7 @@ class KasbonCreate(BaseModel):
     tanggal: date
     nominal: Decimal = Field(..., gt=0)
     keterangan: Optional[str] = None
+    metode_bayar: Optional[PaymentMethod] = None
     catatan: Optional[str] = None
     payments: Optional[List[Dict[str, Any]]] = None # For split disbursement: {metode: PaymentMethod, nominal: Decimal, catatan: str}
 

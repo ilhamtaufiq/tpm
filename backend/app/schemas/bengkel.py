@@ -128,6 +128,16 @@ class JasaServisList(BaseModel):
 
 
 # ============================================
+# SHARED SCHEMAS
+# ============================================
+
+class PaymentItem(BaseModel):
+    """Schema for split payment item."""
+    metode: PaymentMethod
+    jumlah: Decimal = Field(..., ge=0)
+
+
+# ============================================
 # PEMBELIAN SPARE PART SCHEMAS
 # ============================================
 
@@ -148,6 +158,7 @@ class PembelianSparePartCreate(BaseModel):
     detail: List[DetailPembelianCreate] = Field(..., min_length=1)
     diskon: Decimal = Field(default=Decimal("0"), ge=0)
     metode_bayar: Optional[PaymentMethod] = None
+    payments: List[PaymentItem] = []
     catatan: Optional[str] = None
 
 
@@ -201,10 +212,6 @@ class PembelianSparePartList(BaseModel):
 # TRANSAKSI BENGKEL SCHEMAS
 # ============================================
 
-class PaymentItem(BaseModel):
-    """Schema for split payment item."""
-    metode: PaymentMethod
-    jumlah: Decimal = Field(..., ge=0)
 
 class DetailPartCreate(BaseModel):
     """Schema for transaction part item."""

@@ -177,7 +177,7 @@ export default function KasbonScreen() {
         try {
             const nominalTotal = parseNumber(formData.jumlah);
             const payoutData = isSplitDisbursement
-                ? disbursements.map(d => ({ metode: d.metode, nominal: parseNumber(d.nominal) }))
+                ? disbursements.map(d => ({ metode: d.metode.toUpperCase(), nominal: parseNumber(d.nominal) }))
                 : undefined;
 
             await sdmService.createKasbon({
