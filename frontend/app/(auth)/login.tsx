@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
+import { ShieldCheck, User, Lock, LogIn } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -58,54 +60,87 @@ export default function LoginScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <View className="flex-1 bg-[#F8F9FA]">
+            <StatusBar style="light" />
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 className="flex-1"
             >
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <View className="flex-1 px-6 justify-center">
-                        <View className="items-center mb-10">
-                            <View className="w-20 h-20 bg-primary rounded-3xl items-center justify-center shadow-lg">
-                                <Typography variant="h1" className="text-white font-bold">T</Typography>
-                            </View>
-                            <Typography variant="h1" weight="bold" className="mt-4 text-primary">Tiga Putra Motor</Typography>
-                            <Typography variant="body2" className="text-textGray">Manajemen Bisnis dalam Satu Genggaman</Typography>
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1 }}
+                    bounces={false}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Premium Header - Bento Style Rounding */}
+                    <View className="bg-primary pt-24 pb-32 px-8 rounded-b-[48px] shadow-2xl items-center justify-center relative overflow-hidden">
+                        {/* Decorative Background Elements */}
+                        <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
+                        <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
+
+                        <View className="w-24 h-24 bg-white/10 rounded-[32px] items-center justify-center mb-6 border border-white/20">
+                            <ShieldCheck size={48} color="white" strokeWidth={1.5} />
                         </View>
 
-                        <Card className="p-6">
-                            <Typography variant="h2" weight="bold" className="mb-6">Masuk</Typography>
+                        <Typography variant="h1" weight="bold" className="text-white text-center leading-tight">
+                            TPM
+                        </Typography>
+                        <Typography className="text-white/60 text-sm mt-2 font-medium tracking-wide">
+                            Tiga Putra Motor
+                        </Typography>
+                    </View>
+
+                    {/* Login Card - Bento Style Overlap */}
+                    <View className="px-6 -mt-16 mb-8">
+                        <View className="bg-white p-8 rounded-[40px] shadow-2xl border border-gray-50">
+                            <View className="mb-8">
+                                <Typography variant="h2" weight="bold" className="text-primary">Masuk</Typography>
+                                <Typography variant="body2" className="text-textGray mt-1">
+                                    Akses dashboard manajemen Anda
+                                </Typography>
+                            </View>
 
                             <Input
                                 label="Username"
-                                placeholder="Masukkan username Anda"
+                                placeholder="Masukkan username"
                                 autoCapitalize="none"
                                 value={username}
                                 onChangeText={setUsername}
+                                startIcon={<User size={18} color="#023C69" opacity={0.6} />}
+                                containerClassName="mb-1"
                             />
 
                             <Input
                                 label="Password"
-                                placeholder="Masukkan password Anda"
+                                placeholder="Masukkan password"
                                 secureTextEntry
                                 value={password}
                                 onChangeText={setPassword}
+                                startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                containerClassName="mb-4"
                             />
 
                             <Button
                                 title="Masuk Sekarang"
                                 onPress={handleLogin}
                                 loading={loading}
-                                className="mt-4"
+                                size="lg"
+                                className="mt-4 shadow-lg shadow-primary/30 h-14 rounded-2xl"
+                                icon={<LogIn size={20} color="white" />}
                             />
-                        </Card>
-
-                        <View className="mt-8 items-center">
-                            <Typography variant="caption">Belum punya akun? Hubungi Admin</Typography>
                         </View>
+                    </View>
+
+                    {/* Footer */}
+                    <View className="flex-1 justify-end pb-10 items-center">
+                        <View className="flex-row items-center">
+                            <Typography variant="caption" className="text-textGray">BELUM PUNYA AKUN? </Typography>
+                            <Typography variant="caption" weight="bold" className="text-primary">HUBUNGI ADMIN</Typography>
+                        </View>
+                        <Typography variant="caption" className="text-gray-300 mt-2 text-[10px] tracking-normal">v1.0.0 © 2025 TPM GROUP</Typography>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
     );
 }
+

@@ -18,13 +18,13 @@ export const Typography = ({
         <Text
             className={cn(
                 'text-text',
-                variant === 'h1' && 'text-2xl',
-                variant === 'h2' && 'text-xl',
-                variant === 'h3' && 'text-lg',
-                variant === 'h4' && 'text-base',
+                variant === 'h1' && 'text-3xl tracking-tighter',
+                variant === 'h2' && 'text-2xl tracking-tight',
+                variant === 'h3' && 'text-xl',
+                variant === 'h4' && 'text-lg',
                 variant === 'body1' && 'text-base',
                 variant === 'body2' && 'text-sm',
-                variant === 'caption' && 'text-xs text-textGray',
+                variant === 'caption' && 'text-xs text-textGray tracking-widest',
                 weight === 'normal' && 'font-outfit',
                 weight === 'medium' && 'font-outfit-medium',
                 weight === 'semibold' && 'font-outfit-semibold',
