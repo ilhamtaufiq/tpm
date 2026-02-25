@@ -135,20 +135,37 @@ class KasbonService:
         self.db.add(piutang)
 
         # Record kasbon disbursement to kas/bank (money going out)
-        # This will check balance and raise HTTPException if insufficient.
-        # If it fails, nothing is committed to the database.
-        create_kas_entry(
-            db=self.db,
-            tanggal=data.tanggal,
-            tipe=KasBankType.KELUAR,
-            nominal=data.nominal,
-            sumber=KasBankSource.KASBON,
-            metode_bayar=data.metode_bayar,
-            referensi_id=kasbon.id,
-            nomor_referensi=kasbon.nomor_kasbon,
-            keterangan=f"Kasbon karyawan {karyawan.nama} ({kasbon.nomor_kasbon})",
-            user_id=user_id,
-        )
+        if hasattr(data, 'payments') and data.payments:
+            for p in data.payments:
+                p_nominal = Decimal(str(p.get("nominal", 0)))
+                if p_nominal <= 0:
+                    continue
+                p_metode = p.get("metode") or getattr(data, 'metode_bayar', PaymentMethod.TUNAI)
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=p_nominal,
+                    sumber=KasBankSource.KASBON,
+                    metode_bayar=p_metode,
+                    referensi_id=kasbon.id,
+                    nomor_referensi=kasbon.nomor_kasbon,
+                    keterangan=f"Kasbon karyawan {karyawan.nama} ({kasbon.nomor_kasbon}) - {str(p_metode).upper()}",
+                    user_id=user_id,
+                )
+        else:
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal,
+                tipe=KasBankType.KELUAR,
+                nominal=data.nominal,
+                sumber=KasBankSource.KASBON,
+                metode_bayar=getattr(data, 'metode_bayar', PaymentMethod.TUNAI),
+                referensi_id=kasbon.id,
+                nomor_referensi=kasbon.nomor_kasbon,
+                keterangan=f"Kasbon karyawan {karyawan.nama} ({kasbon.nomor_kasbon})",
+                user_id=user_id,
+            )
         
         self.db.commit()
         self.db.refresh(kasbon)
@@ -171,7 +188,7 @@ class KasbonService:
         
         # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id, PiutangUsaha.jumlah_terbayar)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.total_dibayar)
             .filter(
                 PiutangUsaha.nomor_referensi == kasbon.nomor_kasbon,
                 PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
@@ -180,7 +197,7 @@ class KasbonService:
         )
         if piutang:
             kasbon.piutang_id = piutang.id
-            kasbon.jumlah_bayar = piutang.jumlah_terbayar
+            kasbon.jumlah_bayar = piutang.total_dibayar
         else:
             kasbon.jumlah_bayar = kasbon.nominal if kasbon.status == PaymentStatus.LUNAS else 0
 
@@ -242,13 +259,13 @@ class KasbonService:
         if kasbons:
             nomor_refs = [k.nomor_kasbon for k in kasbons]
             piutang_info = self.db.query(
-                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.jumlah_terbayar
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.total_dibayar
             ).filter(
                 PiutangUsaha.nomor_referensi.in_(nomor_refs),
                 PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
             ).all()
             
-            piutang_map = {p.nomor_referensi: (p.id, p.jumlah_terbayar) for p in piutang_info}
+            piutang_map = {p.nomor_referensi: (p.id, p.total_dibayar) for p in piutang_info}
             
             for k in kasbons:
                 info = piutang_map.get(k.nomor_kasbon)

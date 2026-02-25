@@ -81,6 +81,7 @@ export interface MonthlyAttendanceSummary {
 // --- Kasbon Interfaces ---
 export interface Kasbon {
     id: number;
+    nomor_kasbon: string;
     karyawan_id: number;
     karyawan_nama?: string;
     tanggal: string;
@@ -375,6 +376,11 @@ export const sdmService = {
         return response.data;
     },
 
+    getKasbon: async (id: number): Promise<Kasbon> => {
+        const response = await api.get(`/kasbon/${id}`);
+        return response.data;
+    },
+
     getKasbonSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string }): Promise<KasbonSummary> => {
         const response = await api.get('/kasbon/summary', { params });
         return response.data;
@@ -395,7 +401,7 @@ export const sdmService = {
         return response.data;
     },
 
-    createKasbon: async (data: { karyawan_id: number; tanggal: string; nominal: number; metode_bayar: string; keterangan?: string }): Promise<Kasbon> => {
+    createKasbon: async (data: { karyawan_id: number; tanggal: string; nominal: number; metode_bayar: string; keterangan?: string; payments?: Array<{ metode: string; nominal: number; catatan?: string }> }): Promise<Kasbon> => {
         const response = await api.post('/kasbon', data);
         return response.data;
     },

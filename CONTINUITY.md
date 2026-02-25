@@ -23,7 +23,12 @@ Add split payment functionality (multiple payment methods) to the "Manajemen Bia
   - Fixed lint errors in both forms.
   - Fixed investor profit reporting in Dashboard, Laba Rugi, and Capital Change reports to show TPM share.
   - Implemented search functionality in `PiutangUsahaScreen`.
-- Now: Completed requested tasks.
+  - Fixed critical backend typo (`jumlah_terbayar` -> `total_dibayar`) across `KasbonService`, `MuatanService`, and `TransaksiBengkelService`.
+  - Standardized Kasbon UI in `sdm/kasbon.tsx` with premium Glassmorphism header, search, filters, and detail modals matching the Finance module style.
+  - Fixed Kasbon-Finance synchronization: payments in Finance now update Kasbon status (`LUNAS`/`CICILAN`).
+  - Implemented Split Disbursement for new Kasbon creation (multiple funding sources).
+  - Fixed lint errors in `kasbon.tsx` and updated `sdmService` types to support split payments.
+- Now: Awaiting user feedback on Kasbon enhancements.
 - Next: Awaiting user feedback or further requests.
 
 ## Open Questions (UNCONFIRMED)

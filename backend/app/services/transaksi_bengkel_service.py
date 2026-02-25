@@ -445,7 +445,7 @@ class TransaksiBengkelService:
         
         # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id, PiutangUsaha.jumlah_terbayar)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.total_dibayar)
             .filter(
                 PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.BENGKEL
@@ -454,7 +454,7 @@ class TransaksiBengkelService:
         )
         if piutang:
             transaksi.piutang_id = piutang.id
-            transaksi.jumlah_bayar = piutang.jumlah_terbayar
+            transaksi.jumlah_bayar = piutang.total_dibayar
         else:
             transaksi.jumlah_bayar = transaksi.total_bayar # If no piutang, total_bayar is what was paid at the time
             
@@ -557,13 +557,13 @@ class TransaksiBengkelService:
         if transaksis:
             nomor_refs = [t.nomor_transaksi for t in transaksis]
             piutang_info = self.db.query(
-                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.jumlah_terbayar
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.total_dibayar
             ).filter(
                 PiutangUsaha.nomor_referensi.in_(nomor_refs),
                 PiutangUsaha.sumber == PiutangSource.BENGKEL
             ).all()
             
-            piutang_map = {p.nomor_referensi: (p.id, p.jumlah_terbayar) for p in piutang_info}
+            piutang_map = {p.nomor_referensi: (p.id, p.total_dibayar) for p in piutang_info}
             
             for t in transaksis:
                 info = piutang_map.get(t.nomor_transaksi)

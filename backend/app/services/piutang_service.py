@@ -319,6 +319,16 @@ class PiutangService:
                 else:
                     mobil_trx.status_bayar = PaymentStatus.CICILAN
 
+        elif piutang.sumber == PiutangSource.KASBON_KARYAWAN:
+            from app.models.karyawan import KasbonKaryawan
+            kasbon = self.db.query(KasbonKaryawan).filter(KasbonKaryawan.id == piutang.referensi_id).first()
+            if kasbon:
+                if piutang.status == PiutangStatus.LUNAS:
+                    kasbon.status = PaymentStatus.LUNAS
+                    kasbon.tanggal_lunas = tanggal
+                else:
+                    kasbon.status = PaymentStatus.CICILAN
+
     def process_payment_split(
         self,
         data: PembayaranPiutangSplit,

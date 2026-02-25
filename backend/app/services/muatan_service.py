@@ -360,7 +360,7 @@ class MuatanService:
         
         # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id, PiutangUsaha.jumlah_terbayar)
+            self.db.query(PiutangUsaha.id, PiutangUsaha.total_dibayar)
             .filter(
                 PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
@@ -369,7 +369,7 @@ class MuatanService:
         )
         if piutang:
             muatan.piutang_id = piutang.id
-            muatan.jumlah_bayar = piutang.jumlah_terbayar
+            muatan.jumlah_bayar = piutang.total_dibayar
         else:
             muatan.jumlah_bayar = muatan.pendapatan_kotor - muatan.laba_supir if muatan.status_bayar == PaymentStatus.LUNAS else 0
 
@@ -451,13 +451,13 @@ class MuatanService:
         if muatans:
             nomor_refs = [m.nomor_transaksi for m in muatans]
             piutang_info = self.db.query(
-                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.jumlah_terbayar
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.total_dibayar
             ).filter(
                 PiutangUsaha.nomor_referensi.in_(nomor_refs),
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
             ).all()
             
-            piutang_map = {p.nomor_referensi: (p.id, p.jumlah_terbayar) for p in piutang_info}
+            piutang_map = {p.nomor_referensi: (p.id, p.total_dibayar) for p in piutang_info}
             
             for m in muatans:
                 info = piutang_map.get(m.nomor_transaksi)

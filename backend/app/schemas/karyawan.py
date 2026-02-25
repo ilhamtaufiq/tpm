@@ -245,9 +245,9 @@ class KasbonCreate(BaseModel):
     karyawan_id: int
     tanggal: date
     nominal: Decimal = Field(..., gt=0)
-    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     keterangan: Optional[str] = None
     catatan: Optional[str] = None
+    payments: Optional[List[Dict[str, Any]]] = None # For split disbursement: {metode: PaymentMethod, nominal: Decimal, catatan: str}
 
 
 class KasbonPaymentSplit(BaseModel):
