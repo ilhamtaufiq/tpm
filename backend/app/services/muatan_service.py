@@ -300,41 +300,40 @@ class MuatanService:
         
         elif muatan.status_bayar == PaymentStatus.LUNAS:
              # Record Income to Kas/Bank
-             # assuming 'metode_bayar' is not in MuatanCreate, we might need to add it or default to TUNAI.
-             # In MuatanForm, 'metode_bayar' is in formData. But is it in MuatanCreate schema?
-             # I need to check schemas/jasa_angkut.py or infer.
-             # If it's not in schema, I cannot access data.metode_bayar.
-             # MuatanJasaAngkut model doesn't seem to have 'metode_bayar' column based on Step 16 create().
-             # I'll use default PaymentMethod.TUNAI if not available, or pass it if I can.
-             # Actually, simpler: Use 'TUNAI' as default for now, since schema update is riskier without seeing file.
-             pass 
-
-        self.db.commit()
-        self.db.refresh(muatan)
-
-        # Post-commit Kas Entry (safe)
-        if muatan.status_bayar == PaymentStatus.LUNAS:
-             # We need to know where the money goes.
-             # Since 'metode_bayar' might not be in the model, we use a heuristic or default.
-             # Or, we update the schema?
-             # Let's check if 'metode_bayar' is in MuatanCreate in a separate step or just assume TUNAI.
-             # To be safe, I will use PaymentMethod.TUNAI.
-             # Record ONLY TPM Portion to Kas/Bank
              tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
              
-             create_kas_entry(
-                db=self.db,
-                tanggal=data.tanggal,
-                tipe=KasBankType.MASUK,
-                nominal=tpm_gross_portion,
-                sumber=KasBankSource.JASA_ANGKUT,
-                metode_bayar=data.metode_bayar or PaymentMethod.TUNAI, # Use provided method
-                referensi_id=muatan.id,
-                nomor_referensi=muatan.nomor_transaksi,
-                keterangan=f"Pemasukan Jasa Angkut {muatan.nomor_transaksi} (Net TPM)",
-                user_id=user_id,
-             )
-
+             if data.payments:
+                 for p in data.payments:
+                     if p.jumlah > 0:
+                         create_kas_entry(
+                             db=self.db,
+                             tanggal=data.tanggal,
+                             tipe=KasBankType.MASUK,
+                             nominal=p.jumlah,
+                             sumber=KasBankSource.JASA_ANGKUT,
+                             metode_bayar=p.metode,
+                             referensi_id=muatan.id,
+                             nomor_referensi=muatan.nomor_transaksi,
+                             keterangan=f"Pemasukan Jasa Angkut ({p.metode.upper()}): {muatan.nomor_transaksi} (Net TPM)",
+                             user_id=user_id,
+                         )
+             else:
+                 create_kas_entry(
+                    db=self.db,
+                    tanggal=data.tanggal,
+                    tipe=KasBankType.MASUK,
+                    nominal=tpm_gross_portion,
+                    sumber=KasBankSource.JASA_ANGKUT,
+                    metode_bayar=data.metode_bayar or PaymentMethod.TUNAI, # Use provided method
+                    referensi_id=muatan.id,
+                    nomor_referensi=muatan.nomor_transaksi,
+                    keterangan=f"Pemasukan Jasa Angkut {muatan.nomor_transaksi} (Net TPM)",
+                    user_id=user_id,
+                 )
+ 
+        self.db.commit()
+        self.db.refresh(muatan)
+ 
         return muatan
 
 

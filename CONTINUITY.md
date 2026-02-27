@@ -31,8 +31,15 @@ Implement search functionality in "Hutang Usaha" (Accounts Payable) page to impr
   - Implemented Split Payment for Armada Operational Expenses in `jasa-angkut/armada/detail`.
     - Updated `ArmadaExpenseCreate` backend schema and `ArmadaService.add_expense` to support split payments.
     - Updated `jasaAngkutService` and `ArmadaDetail.tsx` frontend to support multiple payment methods and amounts.
-- Now: Completed split payment implementation for Armada Operational Expenses.
-- Next: Awaiting user feedback or further requests.
+  - Implemented Split Payment for Muatan Revenue in `jasa-angkut/MuatanForm.tsx`.
+    - Updated `MuatanCreate` backend schema and `MuatanService.create` to support split payments.
+    - Removed dynamic operational costs from `MuatanForm.tsx` as requested (now handled at Armada level).
+    - Added split payment UI for muatan revenue collection in `MuatanForm.tsx`.
+- Done: Standardized kasbon UI.
+- Done: Implemented split payment/disbursement for Kasbon.
+- Done: Fixed bug where kasbon deduction from payroll didn't reduce the piutang balance (missing commits and missing PaymentMethod constant).
+- Now: Verifying fixes.
+- Next: Awaiting user feedback.
 
 ## Open Questions (UNCONFIRMED)
 None.

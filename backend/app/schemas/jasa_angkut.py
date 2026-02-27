@@ -213,6 +213,7 @@ class MuatanCreate(BaseModel):
     persentase_tpm: Decimal = Field(default=Decimal("100"), ge=0, le=100)
     status_bayar: Optional[PaymentStatus] = PaymentStatus.BELUM_LUNAS
     metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
 
@@ -246,6 +247,7 @@ class MuatanUpdate(BaseModel):
     biaya_lainnya: Optional[Decimal] = Field(None, ge=0)
     
     persentase_tpm: Optional[Decimal] = Field(None, ge=0, le=100)
+    payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
 

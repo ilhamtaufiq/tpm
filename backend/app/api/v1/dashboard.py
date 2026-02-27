@@ -517,7 +517,7 @@ def get_capital_report(
 
     # 4. Beban Operasional, Gaji, Prive (From KasBank)
     biaya_opr = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
-    biaya_gaji = get_kas_sum(KasBankSource.GAJI, KasBankType.KELUAR)
+    biaya_gaji = gaji_summary["total"]
     prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
     # 5. Biaya Persiapan Mobil (Internal adjust or Cash)

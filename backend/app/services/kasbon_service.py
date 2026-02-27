@@ -604,6 +604,8 @@ class KasbonService:
                 kasbon.tanggal_lunas = today
 
             remaining_amount -= pay_amount
+            
+        self.db.commit()
 
     def void_payroll_payment(
         self,
@@ -649,3 +651,5 @@ class KasbonService:
 
             # Delete the payment record
             self.db.delete(p)
+            
+        self.db.commit()

@@ -81,6 +81,7 @@ class PaymentMethod(str, Enum):
     DEBIT = "DEBIT"
     SPLIT = "SPLIT"
     INTERNAL = "INTERNAL"
+    POTONG_GAJI = "POTONG_GAJI"
     OTHER = "OTHER"
 
     @classmethod

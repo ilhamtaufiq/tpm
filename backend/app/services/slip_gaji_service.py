@@ -697,7 +697,9 @@ class SlipGajiService:
                 nomor_slip=slip.nomor_slip,
                 user_id=user_id,
             )
-
+            
+        self.db.commit()
+        self.db.refresh(slip)
         return slip
     
     def void_payment(
@@ -824,7 +826,7 @@ class SlipGajiService:
 
         result = query.with_entities(
             func.count(SlipGaji.id).label("count"),
-            func.sum(SlipGaji.gaji_bersih).label("total"),
+            func.sum(SlipGaji.gaji_pokok).label("total"),
         ).first()
 
         return {
