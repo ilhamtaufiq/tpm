@@ -107,32 +107,49 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
 
     @property
     def total_biaya(self) -> Decimal:
-        """Calculate total additional costs."""
-        return sum(b.jumlah for b in self.biaya_lainnya) if self.biaya_lainnya else Decimal(0)
+        """Calculate total additional expenses (BBN, pajak, etc.).
+        This contributes to HPP (Harga Pokok Penjualan).
+        """
+        return sum(b.jumlah for b in self.biaya_lainnya if b.kategori != "Perawatan Bengkel") if self.biaya_lainnya else Decimal(0)
 
     @property
     def total_part_service(self) -> Decimal:
         """Calculate total part/service costs from both MobilPartService and TransaksiPenjualanBengkel.
+        This DOES NOT contribute to HPP, but is deducted from final profit.
         Avoids double counting by excluding MobilPartService records that originated from a workshop transaction.
         """
-        # Manual entries (those that don't have a "Trans Bengkel:" prefix in notes)
+        # Manual entries (exclude those synced from Workshop)
         manual_total = sum(
             p.total for p in self.part_services 
             if not p.catatan or "Trans Bengkel:" not in p.catatan
         ) if self.part_services else Decimal(0)
         
         # Workshop transactions specifically categorized for car sales
+        # Also include any MobilBiayaLainnya explicitly marked as "Perawatan Bengkel"
+        biaya_bengkel_total = sum(
+            b.jumlah for b in self.biaya_lainnya if b.kategori == "Perawatan Bengkel"
+        ) if self.biaya_lainnya else Decimal(0)
+
         bengkel_total = sum(
             t.grand_total for t in self.bengkel_perbaikan 
             if t.kategori == 'jual_beli_mobil'
         ) if self.bengkel_perbaikan else Decimal(0)
         
-        return manual_total + bengkel_total
+        return manual_total + bengkel_total + biaya_bengkel_total
+
+    @property
+    def hpp(self) -> Decimal:
+        """Calculate HPP (Harga Pokok Penjualan) = Harga Beli + Pengeluaran (Biaya Lainnya).
+        This is the nominal that will appear in Capital Change report.
+        """
+        return self.harga_beli + self.total_biaya
 
     @property
     def total_modal(self) -> Decimal:
-        """Calculate total capital (purchase + costs + part/services)."""
-        return self.harga_beli + self.total_biaya + self.total_part_service
+        """Calculate total investment = HPP + total_part_service.
+        Used for determining profit split percentage with investors.
+        """
+        return self.hpp + self.total_part_service
 
     def __repr__(self) -> str:
         return f"<Mobil(id={self.id}, kode='{self.kode}', plat='{self.nomor_plat}', status='{self.status}')>"

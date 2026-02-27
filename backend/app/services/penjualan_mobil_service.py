@@ -154,13 +154,20 @@ class PenjualanMobilService:
         total_modal: Decimal = Decimal("0"),
     ) -> tuple[Decimal, Decimal]:
         """Calculate profit split between investor and TPM."""
-        # If nominal investor is provided, calculate percentage based on modal
+        if tipe_kepemilikan == OwnershipType.TPM:
+            return Decimal("0"), laba_kotor
+
+        # If nominal investor is provided, calculate effective percentage based on modal
+        # Example: if baseline is 40% and they fund 100% of (HPP + PartService), they get 40%
+        # If they fund 50%, they get (50/100) * 40% = 20%
         effective_percentage = persentase_investor
         
         if nominal_investor > 0 and total_modal > 0:
-            effective_percentage = (nominal_investor / total_modal) * 100
-        elif tipe_kepemilikan == OwnershipType.TPM:
-            return Decimal("0"), laba_kotor
+            funding_ratio = nominal_investor / total_modal
+            effective_percentage = (persentase_investor * funding_ratio)
+        elif nominal_investor > 0:
+            # Fallback if total_modal is somehow 0 (shouldn't happen with buy price)
+            effective_percentage = persentase_investor
 
         # Investor car: split profit based on percentage
         laba_investor = (laba_kotor * effective_percentage / 100).quantize(Decimal("0.01"))
@@ -262,33 +269,34 @@ class PenjualanMobilService:
             trans_bengkel.jumlah_bayar = trans_bengkel.grand_total
             trans_bengkel.hpp_parts = hpp_parts
             trans_bengkel.laba_kotor = trans_bengkel.grand_total - hpp_parts
+            trans_bengkel.kategori = 'jual_beli_mobil'
+            trans_bengkel.mobil_id = mobil.id
 
-            # Add to Car Costs
-            biaya_bengkel = MobilBiayaLainnya(
-                mobil_id=mobil.id,
-                tanggal=data.tanggal,
-                kategori="Perawatan Bengkel",
-                deskripsi=f"Servis & Sparepart (Ref: {no_trans_bengkel})",
-                jumlah=trans_bengkel.grand_total,
-                catatan=f"Otomatis dari Penjualan {nomor_transaksi}"
-            )
-            self.db.add(biaya_bengkel)
-
-        # Flush costs so they are included in total_modal calculation
+        # Flush costs so they are included in totals calculation
         self.db.flush()
         self.db.refresh(mobil)
 
-        # 3. Calculate totals (Now with updated costs)
-        total_modal = mobil.total_modal
-        laba_kotor = data.harga_jual - total_modal
+        # 3. Calculate totals based on new HPP rules
+        # HPP Accounting = Harga Beli + Pengeluaran (Non-Bengkel)
+        hpp_accounting = mobil.hpp
+        
+        # total_part_service = cumulative Part & Service costs
+        total_part_service = mobil.total_part_service
+        
+        # Real Modal (Investment) for profit split calculations
+        # nominal investor should be compared against this
+        real_total_modal = hpp_accounting + total_part_service
+        
+        # Laba Kotor = Harga Jual - HPP_Accounting - Part_Service
+        laba_kotor = data.harga_jual - hpp_accounting - total_part_service
 
-        # Calculate profit split
+        # Calculate profit split using real_total_modal as base
         laba_investor, laba_tpm = self._calculate_profit_split(
             laba_kotor,
             mobil.tipe_kepemilikan,
             mobil.persentase_investor,
             mobil.nominal_investor,
-            total_modal,
+            real_total_modal, # Use total investment including parts
         )
 
         # Determine payment status
@@ -311,7 +319,7 @@ class PenjualanMobilService:
             telepon_pembeli=data.telepon_pembeli,
             alamat_pembeli=data.alamat_pembeli,
             harga_jual=data.harga_jual,
-            total_modal=total_modal,
+            total_modal=hpp_accounting, # Recording HPP as the modal in transactions table
             laba_kotor=laba_kotor,
             tipe_kepemilikan=mobil.tipe_kepemilikan,
             persentase_investor=mobil.persentase_investor,
@@ -326,6 +334,25 @@ class PenjualanMobilService:
         )
 
         self.db.add(transaksi)
+
+        # 4. Settle Internal Workshop Piutang
+        biaya_part_service = mobil.total_part_service
+        if biaya_part_service > 0:
+            internal_piutangs = (
+                self.db.query(PiutangUsaha)
+                .filter(
+                    PiutangUsaha.nama_debitur == f"JB MOBIL - {mobil.nomor_plat}",
+                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
+                    PiutangUsaha.status != PiutangStatus.LUNAS
+                )
+                .all()
+            )
+            for p in internal_piutangs:
+                p.status = PiutangStatus.LUNAS
+                p.total_dibayar = p.nominal_piutang
+                p.sisa_piutang = Decimal("0")
+                p.tanggal_lunas = data.tanggal
+                p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {nomor_transaksi})"
 
         # Update car status based on payment
         if status_bayar == PaymentStatus.LUNAS:

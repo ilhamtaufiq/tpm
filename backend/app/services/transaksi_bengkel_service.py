@@ -211,10 +211,15 @@ class TransaksiBengkelService:
             and getattr(data, 'mobil_id', None)
         )
         
-        if is_internal_jasa_angkut or is_internal_mobil:
-            # Internal transactions (jasa_angkut / jual_beli_mobil) are always considered paid
+        if is_internal_jasa_angkut:
+            # Internal transactions for jasa_angkut are still considered paid internally
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
+        elif is_internal_mobil:
+            # Internal transactions for JB Mobil are recorded as Piutang to JB Mobil unit
+            # This will be cleared when the car is sold
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.INTERNAL # Or create a specific internal method if needed
         elif data.payments:
             total_pembayaran = sum(p.jumlah for p in data.payments)
             # If multiple methods used, set main method as SPLIT
@@ -280,11 +285,16 @@ class TransaksiBengkelService:
 
         # Create piutang if not fully paid
         if status_bayar != PaymentStatus.LUNAS:
+            # Special debtor name for JB Mobil internal transfers
+            debtor_name = nama_customer or (customer.nama if customer else "Guest")
+            if is_internal_mobil:
+                debtor_name = f"JB MOBIL - {data.nomor_plat}"
+
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
                 customer_id=customer.id if customer else None,
-                nama_debitur=customer.nama if customer else (nama_customer or "Guest"),
+                nama_debitur=debtor_name,
                 telepon_debitur=customer.telepon if customer else None,
                 alamat_debitur=customer.alamat if customer else None,
                 sumber=PiutangSource.BENGKEL,
@@ -293,7 +303,7 @@ class TransaksiBengkelService:
                 nominal_piutang=grand_total,
                 sisa_piutang=max(grand_total - total_pembayaran, Decimal("0")),
                 status=PiutangStatus.BELUM_LUNAS if total_pembayaran == 0 else PiutangStatus.SEBAGIAN,
-                catatan=f"Piutang dari transaksi bengkel {nomor_transaksi}",
+                catatan=f"Piutang Internal JB Mobil dari transaksi bengkel {nomor_transaksi}" if is_internal_mobil else f"Piutang dari transaksi bengkel {nomor_transaksi}",
                 created_by=user_id,
             )
             self.db.add(piutang)

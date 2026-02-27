@@ -1,0 +1,29 @@
+﻿=== SIMULASI JB MOBIL ===
+
+0. Menambah Modal Awal: 100,000,000...
+
+1. Membeli Mobil...
+   Mobil Berhasil dibuat: MBL26020001
+   Harga Beli: 5000000.00
+
+2. Menambah Biaya Pengeluaran (Non-Bengkel): 1,000,000...
+   HPP Saat Ini (Beli + Expense): 6000000.00
+
+3. Menambah Service Bengkel: 500,000...
+   Transaksi Bengkel: BGL2602280001
+   HPP Tetap (Harus 6jt): 6000000.00
+   Total Part & Service: 500000.00
+   Total Investasi (HPP + Servis): 6500000.00
+   Piutang Bengkel Terdeteksi: PTG2602280001 - JB MOBIL - B 1234 ABC - Status: BELUM_LUNAS
+
+4. Menjual Mobil Senilai 8,000,000...
+
+=== HASIL AKHIR ===
+Harga Jual: 8000000.00
+HPP (Yang diakui di Jurnal): 6000000.00
+Laba Kotor (Harga Jual - HPP - Servis): 1500000.00
+Laba Investor: 600000.00
+Laba TPM: 900000.00
+Status Piutang Bengkel (Harus Lunas): LUNAS
+
+Γ£à SIMULASI BERHASIL! Semua aturan bisnis sesuai.
