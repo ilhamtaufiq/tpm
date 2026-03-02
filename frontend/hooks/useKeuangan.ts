@@ -196,3 +196,10 @@ export const useCapitalReport = (params?: any) => {
         queryFn: () => keuanganService.getCapitalReport(params),
     });
 };
+
+export const useNeracaReport = (params?: any) => {
+    return useQuery({
+        queryKey: ['neraca_report', params],
+        queryFn: () => keuanganService.getNeracaReport(params),
+    });
+};

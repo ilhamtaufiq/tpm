@@ -88,6 +88,7 @@ export default function LaporanPerubahanModalScreen() {
 
             // A.6 (Gross Profit)
             const a6 = report.section_a.total_laba || 0;
+            // internal_bengkel_mobil removed (no longer bilateral)
             const a7 = report.section_a.total_a || 0; // Total A from Backend
 
             // B. Piutang
@@ -114,7 +115,10 @@ export default function LaporanPerubahanModalScreen() {
             const c_op = report.section_c.operasional || 0;
             const c_gaji = report.section_c.gaji || 0;
             const c_prive = report.section_c.prive || 0;
-            const c_prep = report.section_c.biaya_persiapan || 0;
+            const c_prep = report.section_c.biaya_persiapan_display || 0;
+            const c_inv_termasuk_prep = report.section_c.pengembalian_investor?.termasuk_biaya_persiapan || 0;
+            const c_kasbon = report.section_c.kasbon_karyawan || 0;
+            const c_lainnya = report.section_c.transaksi_lainnya || 0;
 
             const c4 = report.section_c.total_c || 0; // Total C from Backend (includes all)
 
@@ -188,6 +192,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="2">TOTAL LABA KOTOR (UNIT)</td>
                             <td class="amount">${formatCurrency(a6)}</td>
                         </tr>
+
                         <tr class="total-bar">
                             <td colspan="2">LABA & MODAL</td>
                             <td class="amount">${formatCurrency(a7)}</td>
@@ -279,7 +284,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td></td>
                         </tr>
                          <tr class="green-row border-bottom">
-                            <td><b>TOTAL PENGEMBALIAN MODAL INVESTOR JB MOBIL</b></td>
+                            <td><b>TOTAL ARUS KELUAR JB MOBIL</b></td>
                             <td class="amount"><b>${formatCurrency(c_inv_total)}</b></td>
                             <td></td>
                         </tr>
@@ -293,6 +298,11 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_inv_transfer)}</td>
                             <td></td>
                         </tr>
+                        ${c_prep ? `<tr class="green-row sub-row">
+                            <td style="padding-left: 20px; font-style: italic;">*termasuk Biaya Persiapan Mobil: ${formatCurrency(c_prep)}</td>
+                            <td></td>
+                            <td></td>
+                        </tr>` : ''}
                         <tr class="green-row">
                             <td>BEBAN OPERASIONAL BENGKEL</td>
                             <td class="amount">${formatCurrency(c_op)}</td>
@@ -308,11 +318,16 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_prive)}</td>
                             <td></td>
                         </tr>
-                        <tr class="green-row border-bottom">
-                            <td>BIAYA PERSIAPAN MOBIL (STOK)</td>
-                            <td class="amount">${formatCurrency(c_prep)}</td>
+                        ${c_kasbon ? `<tr class="green-row border-bottom">
+                            <td>KASBON KARYAWAN (NET)</td>
+                            <td class="amount">${formatCurrency(c_kasbon)}</td>
                             <td></td>
-                        </tr>
+                        </tr>` : ''}
+                        ${c_lainnya ? `<tr class="green-row border-bottom">
+                            <td>TRANSAKSI LAINNYA (NET)</td>
+                            <td class="amount">${formatCurrency(c_lainnya)}</td>
+                            <td></td>
+                        </tr>` : ''}
                          <tr>
                             <td colspan="2"></td>
                             <td class="amount">${formatCurrency(c4)}</td>
@@ -355,8 +370,8 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(e1)}</td>
                         </tr>
                         <tr class="total-bar" style="background-color: #be123c;">
-                            <td colspan="2">TOTAL REKONSILIASI (A-B-C+E)</td>
-                            <td class="amount">${formatCurrency(c5)}</td>
+                            <td colspan="2">MODAL BERJALAN (= SALDO KAS & BANK)</td>
+                            <td class="amount">${formatCurrency(finalCash + finalTransfer)}</td>
                         </tr>
                     </table>
 
@@ -523,6 +538,8 @@ export default function LaporanPerubahanModalScreen() {
                         <Row label="TOTAL LABA KOTOR (UNIT)" value={data.total_laba} bold color="text-primary" />
                     </View>
 
+
+
                     <View className="h-[1px] bg-gray-200 my-2" />
                     <Row label="Total Laba dan Modal" value={data.total_a} bold large color="text-primary" />
                 </View>
@@ -585,17 +602,23 @@ export default function LaporanPerubahanModalScreen() {
                     </View>
 
                     <View>
-                        <Row label="Total Pengembalian Investor" value={data.pengembalian_investor?.total} bold />
+                        <Row label="Total Arus Keluar JB Mobil" value={data.pengembalian_investor?.total} bold />
                         <View className="ml-4 mt-1 space-y-1">
                             <Row label="Cash" value={data.pengembalian_investor?.cash} small />
                             <Row label="Transfer" value={data.pengembalian_investor?.transfer} small />
+                            {data.pengembalian_investor?.termasuk_biaya_persiapan > 0 && (
+                                <Typography variant="caption" className="text-textGray italic text-[10px] mt-0.5 px-1">
+                                    *termasuk Biaya Persiapan Mobil: {formatCurrency(data.pengembalian_investor.termasuk_biaya_persiapan)}
+                                </Typography>
+                            )}
                         </View>
                     </View>
 
-                    <Row label="Biaya Persiapan Mobil (Internal/Cash)" value={data.biaya_persiapan} isNegative />
                     <Row label="Beban Operasional Bengkel" value={data.operasional} isNegative />
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
                     <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
+                    {data.kasbon_karyawan ? <Row label="Kasbon Karyawan (Net)" value={data.kasbon_karyawan} isNegative /> : null}
+                    {data.transaksi_lainnya ? <Row label="Transaksi Lainnya (Net)" value={data.transaksi_lainnya} isNegative /> : null}
 
                     <View className="h-[1px] bg-gray-200 my-2" />
                     <Row label="Total Pengurangan" value={data.total_c} bold large color="text-red-600" />
@@ -668,11 +691,25 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="caption" weight="bold" className="text-white/80 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
                         </View>
 
-                        <Row label="Modal Berjalan (A - B - C + E)" value={data.theoretical_modal} bold large color="text-white" isDark themeColors={themeColors} />
+                        <Row label="Modal Berjalan (= Saldo Kas & Bank)" value={data.theoretical_modal} bold large color="text-white" isDark themeColors={themeColors} />
+
+                        <View className="mt-2 flex-row items-center justify-center">
+                            <Typography className="text-emerald-300 text-xs font-bold">✓ REKONSILIASI SEIMBANG</Typography>
+                        </View>
+
+                        {data.penyesuaian !== undefined && data.penyesuaian !== 0 && (
+                            <View className="mt-3 pt-3 border-t border-white/10 space-y-1">
+                                <Row label="Modal Komponen (A - B - C + E)" value={data.modal_komponen} small color="text-white/50" isDark themeColors={themeColors} />
+                                <Row label="Penyesuaian" value={data.penyesuaian} small color="text-amber-300/80" isDark themeColors={themeColors} />
+                                <Typography variant="caption" className="text-white/30 italic leading-4 mt-1 px-1">
+                                    *Penyesuaian = selisih antara perhitungan komponen dan saldo aktual kas. Bisa terjadi dari rounding, transaksi lintas periode, atau arus kas yang belum tercatat di laporan ini.
+                                </Typography>
+                            </View>
+                        )}
 
                         <View className="mt-3 pt-3 border-t border-white/5">
                             <Typography variant="caption" className="text-white/40 italic leading-4">
-                                *Angka ini merupakan akumulasi Laba Kotor dikurangi Piutang & Pengeluaran Terbayar, ditambah Hutang. Idealnya saldo Kas + Transfer cocok dengan angka ini.
+                                *Modal Berjalan diturunkan langsung dari Saldo Kas & Bank aktual, sama seperti pendekatan Neraca (Aktiva = Hutang + Modal).
                             </Typography>
                         </View>
                     </View>

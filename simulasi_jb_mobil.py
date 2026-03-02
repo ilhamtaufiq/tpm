@@ -88,7 +88,7 @@ def run_simulation():
         print(f"   HPP Saat Ini (Beli + Expense): {mobil.hpp}")
 
         # 3. Add Workshop Service: 500,000
-        # This SHOULD NOT increase HPP, but create Internal Piutang
+        # This SHOULD NOT increase HPP, creates Internal Piutang only (NO bilateral KasBank)
         print("\n3. Menambah Service Bengkel: 500,000...")
         bengkel_data = TransaksiBengkelCreate(
             tanggal=date.today(),

@@ -425,9 +425,11 @@ class TransaksiBengkelService:
                     record_bilateral_payment(p.jumlah, p.metode, transaksi.id, transaksi.nomor_transaksi)
         elif data.jumlah_bayar > 0:
             record_bilateral_payment(data.jumlah_bayar, data.metode_bayar, transaksi.id, transaksi.nomor_transaksi)
-        elif is_internal_jasa_angkut or is_internal_mobil:
-            # For purely internal where no payments object provided, use grand_total
+        elif is_internal_jasa_angkut:
+            # For purely internal jasa_angkut where no payments object provided, use grand_total
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
+        # Note: is_internal_mobil does NOT create bilateral KasBank entries.
+        # Cost tracked via Piutang (Bengkel → JB Mobil), settled when car is sold.
 
         self.db.commit()
         return transaksi
@@ -607,12 +609,9 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
-        # Exclude internal jual_beli_mobil where car is still available
-        # as requested: only count in Laba Rugi once car is sold
-        query = query.outerjoin(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
-        query = query.filter(
-            ~((TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil') & (Mobil.status == CarStatus.TERSEDIA))
-        )
+        # Internal jual_beli_mobil transactions ARE included in bengkel summary.
+        # HPP and laba are recognized immediately. The unpaid amount becomes
+        # PIUTANG PART JUAL MOBIL (settled when car is sold).
 
         # Total transactions (All)
         total_count = query.count()
@@ -677,11 +676,7 @@ class TransaksiBengkelService:
             TransaksiPenjualanBengkel.tanggal == tanggal
         )
 
-        # Exclude internal jual_beli_mobil where car is still available
-        query = query.outerjoin(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
-        query = query.filter(
-            ~((TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil') & (Mobil.status == CarStatus.TERSEDIA))
-        )
+        # Internal jual_beli_mobil transactions included (HPP recognized immediately).
 
         count = query.count()
         aggregates = query.with_entities(

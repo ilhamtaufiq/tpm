@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
-import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight } from 'lucide-react-native';
+import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight, Scale } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 
@@ -57,6 +57,7 @@ export default function ReportsScreen() {
             reports: [
                 { title: "Laba Rugi", icon: BarChart3, path: "/laporan/laba-rugi", size: 'full', desc: 'Analisa performa keuangan bulanan' },
                 { title: "Perubahan Modal", icon: Wallet, path: "/laporan/perubahan-modal", size: 'full', desc: 'Mutasi modal & posisi kas' },
+                { title: "Neraca", icon: Scale, path: "/laporan/neraca", size: 'full', desc: 'Posisi keuangan: Aktiva, Hutang & Modal' },
             ]
         }
     ];

@@ -444,6 +444,14 @@ export const keuanganService = {
         return response.data;
     },
 
+    getNeracaReport: async (params?: {
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }) => {
+        const response = await api.get('/dashboard/neraca', { params });
+        return response.data;
+    },
+
     createTransaction: async (data: {
         tanggal: string;
         jenis: KasBankJenis;

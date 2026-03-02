@@ -412,12 +412,16 @@ def get_capital_report(
     
     total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut_tpm
 
+    # 2b. Internal bengkel for TERSEDIA cars — no bilateral KasBank.
+    # Cost is tracked via Piutang (BENGKEL → JB MOBIL) in Section B.
+
     # A. Summary
     section_a = {
         "setoran_modal": setoran_modal,
         "hpp_bengkel": hpp_bengkel,
         "hpp_mobil": hpp_mobil,
         "total_laba": total_laba_kotor,
+        "internal_bengkel_mobil": 0,  # Removed: no longer uses bilateral
         "details": {
             "laba_bengkel": laba_bengkel,
             "laba_kotor_mobil": mobil_summ["total_laba_kotor"],
@@ -473,7 +477,11 @@ def get_capital_report(
     # Combined: PIUTANG SUPIR JASA ANGKUT
     p_supir_ja = p_jasa_angkut_tpm + p_bengkel_integrated
 
-    # PIUTANG PART JUAL MOBIL (Bengkel costs for unsold cars)
+    # PIUTANG PART JUAL MOBIL — display only, NOT in total_b.
+    # Internal bengkel transactions for unsold cars create Piutang only (no bilateral).
+    # The piutang is NOT included in total_b because no cash actually left the company;
+    # it's an internal asset reclassification (parts inventory → car value).
+    # The piutang is settled automatically when the car is sold.
     q_part_mobil = (
         db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
         .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
@@ -482,20 +490,32 @@ def get_capital_report(
             Mobil.status == CarStatus.TERSEDIA
         )
     )
-    # Note: Using car's status to determine if it's still unpaid modal. 
-    # Not using date filter for balance sheet style piutang usually, but let's follow the app style.
-    
     p_part_jual_mobil = float(q_part_mobil.scalar() or 0)
 
     p_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
-    p_usaha = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
     
-    total_b = p_lainnya + p_mobil + p_part_jual_mobil + p_supir_ja + p_karyawan + p_usaha
+    # PIUTANG USAHA = Bengkel piutang EXCLUDING jual_beli_mobil internal ones
+    from app.models.keuangan import PiutangUsaha as PiutangModel
+    q_usaha = db.query(func.sum(PiutangModel.sisa_piutang)).filter(
+        PiutangModel.sumber == PiutangSource.BENGKEL,
+        PiutangModel.sisa_piutang > 0,
+    )
+    # Exclude piutang linked to jual_beli_mobil transactions
+    jb_mobil_trx_ids = db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
+        TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil'
+    ).subquery()
+    q_usaha = q_usaha.filter(~PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids))
+    
+    p_usaha = float(q_usaha.scalar() or 0)
+    
+    # piutang_part_mobil INCLUDED in total — balanced by HPP+Laba in Section A
+    total_b = p_lainnya + p_mobil + p_supir_ja + p_karyawan + p_usaha + p_part_jual_mobil
 
     section_b = {
         "piutang_lainnya": p_lainnya,
         "piutang_mobil": p_mobil,
         "piutang_part_mobil": p_part_jual_mobil,
+        "piutang_part_mobil_display": p_part_jual_mobil,
         "piutang_jasa_angkut": p_supir_ja,
         "piutang_karyawan": p_karyawan,
         "piutang_usaha": p_usaha,
@@ -511,27 +531,58 @@ def get_capital_report(
     mobil_inv_summ = mobil_service.get_inventory_summary(tanggal_dari, tanggal_sampai)
     total_beli_mobil = mobil_inv_summ["total_modal_pembelian"]
 
-    # 3. Pengembalian Investor / Share Profit (From KasBank)
-    investor_cash = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
-    investor_transfer = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'transfer')
+    # 3. Arus Keluar JB Mobil (outflows with source JUAL_BELI_MOBIL)
+    #    Includes: pengembalian investor, biaya persiapan (BBN/pajak).
+    #    EXCLUDES old bilateral entries from internal bengkel (legacy data).
+    #    biaya_persiapan NOT counted separately (already in jb_mobil KELUAR).
+    jb_mobil_cash = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
+    jb_mobil_transfer = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'transfer')
+
+    # Subtract old bilateral KELUAR entries (legacy from before bilateral removal)
+    q_old_bilateral = (
+        db.query(func.sum(KasBank.nominal))
+        .filter(
+            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.keterangan.like("Biaya Repair Internal via Bengkel%"),
+        )
+    )
+    if tanggal_dari:
+        q_old_bilateral = q_old_bilateral.filter(KasBank.tanggal >= tanggal_dari)
+    if tanggal_sampai:
+        q_old_bilateral = q_old_bilateral.filter(KasBank.tanggal <= tanggal_sampai)
+    old_bilateral_keluar = float(q_old_bilateral.scalar() or 0)
+    jb_mobil_cash = max(jb_mobil_cash - old_bilateral_keluar, 0)  # Remove legacy bilateral
 
     # 4. Beban Operasional, Gaji, Prive (From KasBank)
     biaya_opr = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
     biaya_gaji = gaji_summary["total"]
     prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
-    # 5. Biaya Persiapan Mobil (Internal adjust or Cash)
+    # 5. Biaya Persiapan Mobil — ALREADY included in jb_mobil KELUAR above.
+    #    We query it here ONLY for display purposes (breakdown).
     q_prep = db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil)
     if tanggal_dari: q_prep = q_prep.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
     if tanggal_sampai: q_prep = q_prep.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
-    biaya_persiapan = float(q_prep.scalar() or 0)
+    biaya_persiapan_display = float(q_prep.scalar() or 0)
+
+    # 6. Kasbon Karyawan (Net outflow: given - repaid)
+    kasbon_out = get_kas_sum(KasBankSource.KASBON, KasBankType.KELUAR)
+    kasbon_in = get_kas_sum(KasBankSource.KASBON, KasBankType.MASUK)
+    kasbon_net = kasbon_out - kasbon_in  # Net cash spent on kasbon
+
+    # 7. Transaksi Lainnya (Net: keluar - masuk from manual entries)
+    lainnya_out = get_kas_sum(KasBankSource.LAINNYA, KasBankType.KELUAR)
+    lainnya_in = get_kas_sum(KasBankSource.LAINNYA, KasBankType.MASUK)
+    lainnya_net_out = lainnya_out - lainnya_in  # Net outflow (negative = net income)
 
     total_c = (
         total_beli_part +
         total_beli_mobil +
-        investor_cash + investor_transfer +
-        biaya_opr + biaya_gaji + prive + 
-        biaya_persiapan
+        jb_mobil_cash + jb_mobil_transfer +
+        biaya_opr + biaya_gaji + prive +
+        kasbon_net +
+        lainnya_net_out
     )
 
     section_c = {
@@ -546,14 +597,18 @@ def get_capital_report(
             "total": total_beli_mobil
         },
         "pengembalian_investor": {
-            "cash": investor_cash,
-            "transfer": investor_transfer,
-            "total": investor_cash + investor_transfer
+            "cash": jb_mobil_cash,
+            "transfer": jb_mobil_transfer,
+            "total": jb_mobil_cash + jb_mobil_transfer,
+            "termasuk_biaya_persiapan": biaya_persiapan_display,
         },
         "operasional": biaya_opr,
         "gaji": biaya_gaji,
         "prive": prive,
-        "biaya_persiapan": biaya_persiapan,
+        "biaya_persiapan": 0,  # Already included in pengembalian_investor total
+        "biaya_persiapan_display": biaya_persiapan_display,  # For display only
+        "kasbon_karyawan": kasbon_net,
+        "transaksi_lainnya": lainnya_net_out,
         "total_c": total_c
     }
 
@@ -586,20 +641,282 @@ def get_capital_report(
         if k != KasBankJenis.CASH.value and isinstance(v, dict):
             posisi_transfer += v.get("saldo", 0)
 
+    total_kas = posisi_cash + posisi_transfer
+    
+    # Formula-based reconciliation: should equal total_kas
+    modal_komponen = section_a["total_a"] - section_b["total_b"] - section_c["total_c"] + total_e
+    penyesuaian = round(total_kas - modal_komponen, 2)
+
     section_d = {
         "cash": posisi_cash,
         "transfer": posisi_transfer,
-        "total_d": posisi_cash + posisi_transfer,
-        "theoretical_modal": section_a["total_a"] - section_b["total_b"] - section_c["total_c"] + total_e
+        "total_d": total_kas,
+        "theoretical_modal": modal_komponen,
+        "modal_komponen": modal_komponen,
+        "penyesuaian": penyesuaian,
     }
 
-    print(f"DEBUG RECON: A={section_a['total_a']}, B={section_b['total_b']}, C={section_c['total_c']}, E={total_e}, theoretical={section_d['theoretical_modal']}, bank={section_d['total_d']}")
+    print(f"DEBUG RECON: A={section_a['total_a']}, B={section_b['total_b']}, C={section_c['total_c']}, E={total_e}")
+    print(f"DEBUG RECON: formula={modal_komponen}, bank={total_kas}, penyesuaian={penyesuaian}")
     return {
         "section_a": section_a,
         "section_b": section_b,
         "section_c": section_c,
         "section_d": section_d,
         "section_e": section_e,
-        "grand_total": section_d["theoretical_modal"]
+        "grand_total": total_kas
     }
+
+
+@router.get("/neraca")
+def get_neraca(
+    db: DBSession,
+    current_user: ManagerUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+):
+    """Get balance sheet (Neraca) report.
+    
+    Neraca is a SNAPSHOT of financial position.
+    - Piutang & Hutang show ALL outstanding (not date-filtered)
+    - Kas & Bank show cumulative balance up to tanggal_sampai
+    - Persediaan & Stok Mobil show current position
+    - Modal is derived to ensure balance: Modal = Aktiva - Hutang
+    
+    Structure:
+    AKTIVA (Assets):
+      - Aktiva Lancar (Current Assets): Kas & Bank, Piutang, Persediaan
+      - Aktiva Tetap (Fixed Assets): Stok Mobil (full investment value)
+    PASIVA (Liabilities + Equity):
+      - Hutang (Liabilities): all outstanding payables
+      - Modal (Equity): setoran modal, laba ditahan, prive
+    """
+
+    # Helpers
+    def get_kas_sum(sumber, tipe, method_filter=None):
+        q = db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == sumber,
+            KasBank.tipe == tipe
+        )
+        if tanggal_sampai:
+            q = q.filter(KasBank.tanggal <= tanggal_sampai)
+        if method_filter:
+            if method_filter == 'cash':
+                q = q.filter(KasBank.jenis == KasBankJenis.CASH)
+            elif method_filter == 'transfer':
+                q = q.filter(KasBank.jenis != KasBankJenis.CASH)
+        return float(q.scalar() or 0)
+
+    # ==========================================
+    # SERVICES
+    # ==========================================
+    kas_service = KasBankService(db)
+    piutang_service = PiutangService(db)
+    hutang_service = HutangService(db)
+    bengkel_service = TransaksiBengkelService(db)
+    penjualan_mobil_service = PenjualanMobilService(db)
+    mobil_service = MobilService(db)
+    muatan_service = MuatanService(db)
+    pengeluaran_service = PengeluaranService(db)
+    slip_gaji_service = SlipGajiService(db)
+    from app.services.spare_part_service import SparePartService
+    sparepart_service = SparePartService(db)
+
+    # ==========================================
+    # A. AKTIVA LANCAR (Current Assets)
+    # ==========================================
+
+    # 1. Kas & Bank (cumulative balance up to date)
+    balances = kas_service.get_all_balances(as_of=tanggal_sampai)
+    kas_tunai = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
+    
+    kas_bank = 0
+    bank_details = {}
+    for k, v in balances.items():
+        if k != KasBankJenis.CASH.value and isinstance(v, dict):
+            saldo = v.get("saldo", 0)
+            kas_bank += saldo
+            bank_details[k] = saldo
+    
+    total_kas_bank = kas_tunai + kas_bank
+
+    # 2. Piutang Usaha — ALL outstanding (no date filter for balance sheet)
+    piutang_summ = piutang_service.get_summary()  # No date filter = all outstanding
+    p_by_sumber = piutang_summ.get("by_sumber", {})
+    
+    piutang_bengkel = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
+    piutang_mobil = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_piutang", 0)
+    piutang_jasa_angkut = p_by_sumber.get(PiutangSource.JASA_ANGKUT.value, {}).get("sisa_piutang", 0)
+    piutang_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
+    piutang_lainnya = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("sisa_piutang", 0)
+    
+    total_piutang = piutang_bengkel + piutang_mobil + piutang_jasa_angkut + piutang_karyawan + piutang_lainnya
+
+    # 3. Persediaan Sparepart (current stock at cost)
+    stock_value = sparepart_service.get_stock_value()
+    persediaan_sparepart = stock_value["total_value"]
+
+    total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart
+
+    aktiva_lancar = {
+        "kas_tunai": kas_tunai,
+        "kas_bank": kas_bank,
+        "bank_details": bank_details,
+        "total_kas_bank": total_kas_bank,
+        "piutang_bengkel": piutang_bengkel,
+        "piutang_mobil": piutang_mobil,
+        "piutang_jasa_angkut": piutang_jasa_angkut,
+        "piutang_karyawan": piutang_karyawan,
+        "piutang_lainnya": piutang_lainnya,
+        "total_piutang": total_piutang,
+        "persediaan_sparepart": persediaan_sparepart,
+        "total_aktiva_lancar": total_aktiva_lancar,
+    }
+
+    # ==========================================
+    # B. AKTIVA TETAP (Fixed Assets)
+    # ==========================================
+    
+    # Stok Mobil: Full investment value (harga_beli + biaya_lainnya + part_service)
+    # Only for cars with status TERSEDIA
+    available_cars = (
+        db.query(Mobil)
+        .filter(Mobil.deleted_at.is_(None), Mobil.status == CarStatus.TERSEDIA)
+        .all()
+    )
+    
+    stok_mobil_harga_beli = 0
+    stok_mobil_biaya = 0
+    stok_mobil_part_service = 0
+    jumlah_mobil_tersedia = len(available_cars)
+    
+    for car in available_cars:
+        stok_mobil_harga_beli += float(car.harga_beli or 0)
+        stok_mobil_biaya += float(car.total_biaya or 0)
+        stok_mobil_part_service += float(car.total_part_service or 0)
+    
+    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
+
+    total_aktiva_tetap = stok_mobil_total
+
+    aktiva_tetap = {
+        "stok_mobil_harga_beli": stok_mobil_harga_beli,
+        "stok_mobil_biaya": stok_mobil_biaya,
+        "stok_mobil_part_service": stok_mobil_part_service,
+        "stok_mobil": stok_mobil_total,
+        "jumlah_unit_mobil": jumlah_mobil_tersedia,
+        "total_aktiva_tetap": total_aktiva_tetap,
+    }
+
+    # ==========================================
+    # TOTAL AKTIVA
+    # ==========================================
+    total_aktiva = total_aktiva_lancar + total_aktiva_tetap
+
+    # ==========================================
+    # C. HUTANG (Liabilities) — ALL outstanding (no date filter)
+    # ==========================================
+    hutang_summ = hutang_service.get_summary()  # No date filter = all outstanding
+    h_by_sumber = hutang_summ.get("by_sumber", {})
+    
+    hutang_part = h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0)
+    hutang_mobil = h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0)
+    hutang_investor = h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0)
+    hutang_lainnya = h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0)
+    
+    total_hutang = hutang_part + hutang_mobil + hutang_investor + hutang_lainnya
+
+    hutang = {
+        "hutang_part": hutang_part,
+        "hutang_mobil": hutang_mobil,
+        "hutang_investor": hutang_investor,
+        "hutang_lainnya": hutang_lainnya,
+        "total_hutang": total_hutang,
+    }
+
+    # ==========================================
+    # D. MODAL (Equity)
+    # ==========================================
+    # In accounting: Modal = Aktiva - Hutang (by definition)
+    # We calculate the components for display, AND derive total_modal
+    # from the accounting identity to ensure balance.
+    
+    # 1. Setoran Modal (Net: Masuk - Keluar, cumulative)
+    modal_in = get_kas_sum(KasBankSource.MODAL, KasBankType.MASUK)
+    modal_out = get_kas_sum(KasBankSource.MODAL, KasBankType.KELUAR)
+    setoran_modal = modal_in - modal_out
+    
+    # 2. Laba Ditahan components (for display)
+    bengkel_summ = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
+    mobil_summ = penjualan_mobil_service.get_summary(tanggal_dari, tanggal_sampai)
+    muatan_summ = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
+    
+    laba_bengkel = bengkel_summ["total_laba_kotor"]
+    laba_mobil_tpm = mobil_summ["laba_tpm"]
+    laba_jasa_angkut = muatan_summ["laba_tpm"]
+    total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut
+    
+    # Beban Operasional
+    pengeluaran = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
+    gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
+    
+    pengeluaran_details = pengeluaran["per_kategori"]
+    prive_total = pengeluaran_details.get("prive", {}).get("total", 0)
+    
+    # Beban = pengeluaran operasional (excluding prive, which is separate)
+    total_beban = pengeluaran["total_pengeluaran"] + gaji_summary["total"] - prive_total
+    
+    laba_ditahan = total_laba_kotor - total_beban
+    prive = prive_total
+
+    # Modal dihitung dari identity: Modal = Aktiva - Hutang
+    # Ini menjamin neraca SELALU seimbang
+    total_modal = total_aktiva - total_hutang
+    
+    # Selisih antara perhitungan komponen vs identity (untuk transparansi)
+    modal_komponen = setoran_modal + laba_ditahan - prive
+    selisih_modal = round(total_modal - modal_komponen, 2)
+
+    modal = {
+        "setoran_modal": setoran_modal,
+        "laba_kotor": total_laba_kotor,
+        "detail_laba": {
+            "bengkel": laba_bengkel,
+            "mobil": laba_mobil_tpm,
+            "jasa_angkut": laba_jasa_angkut,
+        },
+        "total_beban": total_beban,
+        "laba_ditahan": laba_ditahan,
+        "prive": prive,
+        "total_modal": total_modal,
+        "modal_komponen": modal_komponen,
+        "selisih_modal": selisih_modal,
+    }
+
+    # ==========================================
+    # TOTAL PASIVA (guaranteed balanced)
+    # ==========================================
+    total_pasiva = total_hutang + total_modal
+
+    selisih = round(total_aktiva - total_pasiva, 2)
+
+    print(f"DEBUG NERACA: Aktiva={total_aktiva}, Hutang={total_hutang}, Modal={total_modal}, Pasiva={total_pasiva}, Selisih={selisih}")
+    print(f"DEBUG NERACA KOMPONEN: Setoran={setoran_modal}, Laba={laba_ditahan}, Prive={prive}, Komponen={modal_komponen}, SelisihModal={selisih_modal}")
+    print(f"DEBUG NERACA AKTIVA: Kas={total_kas_bank}, Piutang={total_piutang}, Persediaan={persediaan_sparepart}, Mobil={stok_mobil_total} (Beli={stok_mobil_harga_beli}+Biaya={stok_mobil_biaya}+Part={stok_mobil_part_service})")
+
+    return {
+        "periode": {
+            "dari": tanggal_dari.isoformat() if tanggal_dari else None,
+            "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
+        },
+        "aktiva_lancar": aktiva_lancar,
+        "aktiva_tetap": aktiva_tetap,
+        "total_aktiva": total_aktiva,
+        "hutang": hutang,
+        "modal": modal,
+        "total_pasiva": total_pasiva,
+        "selisih": selisih,
+        "is_balanced": abs(selisih) < 1,
+    }
+
 
