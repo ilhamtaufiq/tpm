@@ -13,6 +13,8 @@ from app.utils.constants import (
     HutangSource,
     KasBankSource,
     KasBankJenis,
+    AssetCategory,
+    AssetStatus,
 )
 
 
@@ -336,6 +338,66 @@ class KasBankAllSummary(BaseModel):
     bank_mandiri: Optional[KasBankSummary] = None
     bank_bri: Optional[KasBankSummary] = None
     total_saldo: Decimal
+
+
+# ============================================
+# ASSET (ASET) SCHEMAS
+# ============================================
+
+class AssetCreate(BaseModel):
+    """Schema for creating asset."""
+
+    tanggal_beli: date
+    nama: str = Field(..., min_length=2, max_length=100)
+    kategori: AssetCategory = AssetCategory.PERALATAN
+    harga_beli: Decimal = Field(..., gt=0)
+    nilai_residu: Decimal = Field(0, ge=0)
+    umur_ekonomis: int = Field(4, ge=1)
+    status: AssetStatus = AssetStatus.AKTIF
+    lokasi: Optional[str] = Field(None, max_length=100)
+    catatan: Optional[str] = None
+
+
+class AssetUpdate(BaseModel):
+    """Schema for updating asset."""
+
+    nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    kategori: Optional[AssetCategory] = None
+    status: Optional[AssetStatus] = None
+    lokasi: Optional[str] = Field(None, max_length=100)
+    catatan: Optional[str] = None
+    nilai_residu: Optional[Decimal] = Field(None, ge=0)
+    umur_ekonomis: Optional[int] = Field(None, ge=1)
+
+
+class AssetResponse(BaseModel):
+    """Schema for asset response."""
+
+    id: int
+    kode: str
+    nama: str
+    kategori: AssetCategory
+    tanggal_beli: date
+    harga_beli: Decimal
+    nilai_residu: Decimal
+    umur_ekonomis: int
+    status: AssetStatus
+    lokasi: Optional[str] = None
+    catatan: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AssetList(BaseModel):
+    """Schema for paginated asset list."""
+
+    data: List[AssetResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+    total_value: Decimal = Decimal("0")
 
 
 # Update forward references

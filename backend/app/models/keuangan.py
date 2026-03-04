@@ -5,6 +5,7 @@ from typing import Optional, List, TYPE_CHECKING
 from sqlalchemy import (
     String,
     Text,
+    Integer,
     Numeric,
     Date,
     ForeignKey,
@@ -22,6 +23,8 @@ from app.utils.constants import (
     HutangSource,
     KasBankSource,
     KasBankJenis,
+    AssetCategory,
+    AssetStatus,
 )
 
 if TYPE_CHECKING:
@@ -327,3 +330,37 @@ class KasBank(Base, TimestampMixin):
             f"<KasBank(id={self.id}, jenis={self.jenis.value}, "
             f"tipe={self.tipe.value}, nominal={self.nominal})>"
         )
+
+
+class Aset(Base, TimestampMixin):
+    """Fixed assets (Aktiva Tetap) model."""
+
+    __tablename__ = "aset"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    kode: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    nama: Mapped[str] = mapped_column(String(100), index=True)
+    kategori: Mapped[AssetCategory] = mapped_column(
+        SQLEnum(AssetCategory),
+        default=AssetCategory.PERALATAN,
+    )
+    tanggal_beli: Mapped[date] = mapped_column(Date)
+    harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    
+    # Depresiasi context (simplistic for now)
+    nilai_residu: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    umur_ekonomis: Mapped[int] = mapped_column(Integer, default=4)  # in years
+    
+    status: Mapped[AssetStatus] = mapped_column(
+        SQLEnum(AssetStatus),
+        default=AssetStatus.AKTIF,
+    )
+    lokasi: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    def __repr__(self) -> str:
+        return f"<Aset(id={self.id}, nama='{self.nama}', harga={self.harga_beli})>"

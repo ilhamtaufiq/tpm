@@ -18,7 +18,7 @@ from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus
 from app.models.keuangan import KasBank
 from sqlalchemy import func
 
@@ -721,6 +721,8 @@ def get_neraca(
     slip_gaji_service = SlipGajiService(db)
     from app.services.spare_part_service import SparePartService
     sparepart_service = SparePartService(db)
+    from app.services.asset_service import AssetService
+    asset_service = AssetService(db)
 
     # ==========================================
     # A. AKTIVA LANCAR (Current Assets)
@@ -752,11 +754,27 @@ def get_neraca(
     
     total_piutang = piutang_bengkel + piutang_mobil + piutang_jasa_angkut + piutang_karyawan + piutang_lainnya
 
-    # 3. Persediaan Sparepart (current stock at cost)
-    stock_value = sparepart_service.get_stock_value()
-    persediaan_sparepart = stock_value["total_value"]
+    # 3. Persediaan Sparepart
+    sparepart_summary = sparepart_service.get_stock_value()
+    persediaan_sparepart = sparepart_summary.get("total_value", 0)
 
-    total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart
+    # 4. Stok Mobil (Inventory - formerly in Fixed Assets)
+    available_cars = (
+        db.query(Mobil)
+        .filter(Mobil.deleted_at.is_(None), Mobil.status == CarStatus.TERSEDIA)
+        .all()
+    )
+    stok_mobil_harga_beli = 0
+    stok_mobil_biaya = 0
+    stok_mobil_part_service = 0
+    for car in available_cars:
+        stok_mobil_harga_beli += float(car.hpp)
+        stok_mobil_biaya += float(car.total_biaya - car.hpp) if hasattr(car, 'total_biaya') else 0
+        stok_mobil_part_service += float(car.total_part_service)
+    
+    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
+    
+    total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart + stok_mobil_total
 
     aktiva_lancar = {
         "kas_tunai": kas_tunai,
@@ -770,42 +788,35 @@ def get_neraca(
         "piutang_lainnya": piutang_lainnya,
         "total_piutang": total_piutang,
         "persediaan_sparepart": persediaan_sparepart,
+        "stok_mobil": stok_mobil_total,
         "total_aktiva_lancar": total_aktiva_lancar,
     }
 
-    # ==========================================
-    # B. AKTIVA TETAP (Fixed Assets)
-    # ==========================================
+    # Fixed Assets (Aktiva Tetap)
+    # Using the new Aset model
+    from app.models.keuangan import Aset
+    fixed_assets = db.query(Aset).filter(Aset.status == AssetStatus.AKTIF).all()
     
-    # Stok Mobil: Full investment value (harga_beli + biaya_lainnya + part_service)
-    # Only for cars with status TERSEDIA
-    available_cars = (
-        db.query(Mobil)
-        .filter(Mobil.deleted_at.is_(None), Mobil.status == CarStatus.TERSEDIA)
-        .all()
-    )
+    nilai_perolehan = 0
+    for asset in fixed_assets:
+        nilai_perolehan += float(asset.harga_beli)
     
-    stok_mobil_harga_beli = 0
-    stok_mobil_biaya = 0
-    stok_mobil_part_service = 0
-    jumlah_mobil_tersedia = len(available_cars)
-    
-    for car in available_cars:
-        stok_mobil_harga_beli += float(car.harga_beli or 0)
-        stok_mobil_biaya += float(car.total_biaya or 0)
-        stok_mobil_part_service += float(car.total_part_service or 0)
-    
-    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
-
-    total_aktiva_tetap = stok_mobil_total
+    total_aktiva_tetap = nilai_perolehan
 
     aktiva_tetap = {
-        "stok_mobil_harga_beli": stok_mobil_harga_beli,
-        "stok_mobil_biaya": stok_mobil_biaya,
-        "stok_mobil_part_service": stok_mobil_part_service,
-        "stok_mobil": stok_mobil_total,
-        "jumlah_unit_mobil": jumlah_mobil_tersedia,
+        "nilai_perolehan": nilai_perolehan,
+        "akumulasi_depresiasi": 0, # Not implemented yet
+        "nilai_buku": nilai_perolehan,
         "total_aktiva_tetap": total_aktiva_tetap,
+        "details": [
+            {
+                "id": a.id,
+                "kode": a.kode,
+                "nama": a.nama,
+                "kategori": a.kategori.value,
+                "harga": float(a.harga_beli)
+            } for a in fixed_assets
+        ]
     }
 
     # ==========================================

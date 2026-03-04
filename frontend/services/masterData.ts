@@ -48,6 +48,22 @@ export interface Supplier {
     updated_at: string;
 }
 
+// --- Asset Interfaces ---
+export interface Asset {
+    id: number;
+    kode: string;
+    nama: string;
+    kategori: string;
+    tanggal_beli: string;
+    harga_beli: number;
+    nilai_residu: number;
+    umur_ekonomis: number;
+    status: string;
+    lokasi?: string;
+    catatan?: string;
+    created_at: string;
+}
+
 // --- Service ---
 export const masterDataService = {
     // =============================================
@@ -153,6 +169,45 @@ export const masterDataService = {
 
     deleteSupplier: async (id: number) => {
         const response = await api.delete(`/suppliers/${id}`);
+        return response.data;
+    },
+
+    // =============================================
+    // ASSET METHODS
+    // =============================================
+    getAssetList: async (params?: {
+        page?: number;
+        size?: number;
+        search?: string;
+        kategori?: string;
+        status?: string;
+    }) => {
+        const response = await api.get('/assets', { params });
+        return response.data;
+    },
+
+    getAsset: async (id: number): Promise<Asset> => {
+        const response = await api.get(`/assets/${id}`);
+        return response.data;
+    },
+
+    createAsset: async (data: Partial<Asset>): Promise<Asset> => {
+        const response = await api.post('/assets', data);
+        return response.data;
+    },
+
+    updateAsset: async (id: number, data: Partial<Asset>): Promise<Asset> => {
+        const response = await api.put(`/assets/${id}`, data);
+        return response.data;
+    },
+
+    deleteAsset: async (id: number) => {
+        const response = await api.delete(`/assets/${id}`);
+        return response.data;
+    },
+
+    getAssetStats: async () => {
+        const response = await api.get('/assets/summary/stats');
         return response.data;
     },
 };

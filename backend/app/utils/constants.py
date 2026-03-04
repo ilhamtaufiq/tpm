@@ -216,6 +216,44 @@ class KasBankType(str, Enum):
         return None
 
 
+class AssetCategory(str, Enum):
+    """Categories of fixed assets."""
+
+    KENDARAAN = "KENDARAAN"
+    PERALATAN = "PERALATAN"
+    BANGUNAN = "BANGUNAN"
+    TANAH = "TANAH"
+    ELECTRONIC = "ELECTRONIC"
+    LAINNYA = "LAINNYA"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "AssetCategory | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
+class AssetStatus(str, Enum):
+    """Status of physical assets."""
+
+    AKTIF = "AKTIF"
+    RUSAK = "RUSAK"
+    DIJUAL = "DIJUAL"
+    HILANG = "HILANG"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "AssetStatus | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
 class ExpenseCategory(str, Enum):
     """Expense categories for workshop."""
 
@@ -293,6 +331,7 @@ class KasBankSource(str, Enum):
     HUTANG = "HUTANG"
     MODAL = "MODAL"
     PRIVE = "PRIVE"
+    ASET = "ASET"
     LAINNYA = "LAINNYA"
 
     @classmethod
@@ -338,6 +377,7 @@ TRANSACTION_PREFIXES = {
     "karyawan": "KRY",
     "kasbon": "KSB",
     "absensi": "ABS",
+    "aset": "AST",
 }
 
 # Default profit split for Jasa Angkut (50% to TPM)

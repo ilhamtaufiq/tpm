@@ -5,7 +5,7 @@ import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
     ChevronLeft, ChevronRight, Calendar, Wallet, Building2,
     Car, CreditCard, Landmark, TrendingUp, ArrowUpRight,
-    ArrowDownLeft, DollarSign, Scale, CheckCircle, AlertTriangle, Banknote, Package
+    ArrowDownLeft, DollarSign, Scale, CheckCircle, AlertTriangle, Banknote, Package, Box
 } from 'lucide-react-native';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -172,11 +172,12 @@ export default function NeracaScreen() {
                     <View className="flex-row items-center mb-2">
                         <View className="w-1 h-4 bg-amber-500 rounded-full mr-2" />
                         <Typography variant="caption" weight="bold" className="text-amber-700 uppercase tracking-widest text-[10px]">
-                            Persediaan
+                            Persediaan & Stok
                         </Typography>
                     </View>
                     <View className="bg-amber-50/50 rounded-2xl p-3 border border-amber-100/50">
                         <Row label="Persediaan Sparepart" value={data.persediaan_sparepart} small />
+                        <Row label="Stok Mobil (Inventory)" value={data.stok_mobil} small />
                     </View>
                 </View>
             </Card>
@@ -189,11 +190,11 @@ export default function NeracaScreen() {
             <Card className="mb-5 p-5">
                 <View className="flex-row items-center mb-5">
                     <View className="w-9 h-9 rounded-2xl bg-indigo-100 items-center justify-center mr-3">
-                        <Car size={18} color="#4338CA" />
+                        <Box size={18} color="#4338CA" />
                     </View>
                     <View className="flex-1">
                         <Typography variant="body1" weight="bold" className="text-text">Aktiva Tetap</Typography>
-                        <Typography variant="caption" className="text-textGray">Fixed Assets</Typography>
+                        <Typography variant="caption" className="text-textGray">Fixed Assets / Perusahaan</Typography>
                     </View>
                     <View className="bg-indigo-50 px-3 py-1 rounded-xl">
                         <Typography variant="caption" weight="bold" className="text-indigo-700">
@@ -203,12 +204,18 @@ export default function NeracaScreen() {
                 </View>
 
                 <View className="bg-indigo-50/50 rounded-2xl p-3 border border-indigo-100/50">
-                    <Row label={`Stok Mobil (${data.jumlah_unit_mobil || 0} unit)`} value={data.stok_mobil} bold />
-                    <View className="ml-3 pl-3 border-l-2 border-indigo-200/50 my-1">
-                        <Row label="Harga Beli" value={data.stok_mobil_harga_beli} small />
-                        <Row label="Biaya Persiapan (BBN, Pajak)" value={data.stok_mobil_biaya} small />
-                        <Row label="Part & Service" value={data.stok_mobil_part_service} small />
-                    </View>
+                    <Typography variant="caption" weight="bold" className="text-indigo-700 uppercase tracking-widest text-[9px] mb-2 px-1">
+                        Daftar Aset Aktif
+                    </Typography>
+                    {data.detail_aset && data.detail_aset.length > 0 ? (
+                        data.detail_aset.map((aset: any, index: number) => (
+                            <Row key={index} label={`${aset.kode} - ${aset.nama}`} value={aset.harga_beli} small />
+                        ))
+                    ) : (
+                        <Typography variant="caption" className="text-gray-400 py-2 text-center">Belum ada aset terdaftar</Typography>
+                    )}
+                    <View className="h-[1px] bg-indigo-200/50 my-1.5" />
+                    <Row label="Total Aktiva Tetap" value={data.total_aktiva_tetap} bold color="text-indigo-700" />
                 </View>
             </Card>
         );

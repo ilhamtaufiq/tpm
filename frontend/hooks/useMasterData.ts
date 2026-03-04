@@ -136,3 +136,62 @@ export const useDeleteSupplier = () => {
         },
     });
 };
+
+// =============================================
+// ASSET
+// =============================================
+export const useAssetList = (params?: any) => {
+    return useQuery({
+        queryKey: ['assets', params],
+        queryFn: () => masterDataService.getAssetList(params),
+    });
+};
+
+export const useAsset = (id: number) => {
+    return useQuery({
+        queryKey: ['asset', id],
+        queryFn: () => masterDataService.getAsset(id),
+        enabled: !!id,
+    });
+};
+
+export const useAssetStats = () => {
+    return useQuery({
+        queryKey: ['asset_stats'],
+        queryFn: () => masterDataService.getAssetStats(),
+    });
+};
+
+export const useCreateAsset = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: masterDataService.createAsset,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
+            queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+        },
+    });
+};
+
+export const useUpdateAsset = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) =>
+            masterDataService.updateAsset(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
+            queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+        },
+    });
+};
+
+export const useDeleteAsset = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => masterDataService.deleteAsset(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
+            queryClient.invalidateQueries({ queryKey: ['asset_stats'] });
+        },
+    });
+};
