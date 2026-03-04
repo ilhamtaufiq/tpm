@@ -209,10 +209,17 @@ export default function NeracaScreen() {
                     </Typography>
                     {data.detail_aset && data.detail_aset.length > 0 ? (
                         data.detail_aset.map((aset: any, index: number) => (
-                            <Row key={index} label={`${aset.kode} - ${aset.nama}`} value={aset.harga_beli} small />
+                            <Row
+                                key={index}
+                                label={`${aset.kode} - ${aset.nama}`}
+                                value={aset.harga_beli}
+                                small
+                            />
                         ))
                     ) : (
-                        <Typography variant="caption" className="text-gray-400 py-2 text-center">Belum ada aset terdaftar</Typography>
+                        <View className="py-4 items-center">
+                            <Typography variant="caption" className="text-gray-400">Belum ada aset terdaftar</Typography>
+                        </View>
                     )}
                     <View className="h-[1px] bg-indigo-200/50 my-1.5" />
                     <Row label="Total Aktiva Tetap" value={data.total_aktiva_tetap} bold color="text-indigo-700" />

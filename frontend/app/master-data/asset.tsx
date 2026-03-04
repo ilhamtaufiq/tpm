@@ -47,12 +47,14 @@ export default function AssetScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     // API Hooks
-    const { data: listData, isLoading, refetch } = useAssetList({
+    const params = useMemo(() => ({
         page: 1,
-        size: 100,
+        size: 500, // Large enough to show all assets for now
         kategori: selectedFilter === 'all' ? undefined : selectedFilter,
-        search: searchQuery,
-    });
+        search: searchQuery.trim() || undefined,
+    }), [selectedFilter, searchQuery]);
+
+    const { data: listData, isLoading, refetch } = useAssetList(params);
 
     const { data: statsData, refetch: refetchStats } = useAssetStats();
 

@@ -77,7 +77,7 @@ class AssetService:
                 )
             )
 
-        if kategori:
+        if kategori and kategori != "all":
             query = query.filter(Aset.kategori == kategori)
 
         if status:
@@ -127,6 +127,11 @@ class AssetService:
             .group_by(Aset.kategori)
             .all()
         )
+        
+        # The following print statement refers to variables not defined in this context.
+        # Assuming these are placeholders for future calculations or belong to a different service.
+        # For now, they are commented out to maintain syntactical correctness.
+        # print(f"DEBUG NERACA AKTIVA: Kas={total_kas_bank}, Piutang={total_piutang}, Persediaan={persediaan_sparepart}, Mobil={stok_mobil_total}")
         
         return {
             "total_value": Decimal(total_value),

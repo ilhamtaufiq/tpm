@@ -808,13 +808,13 @@ def get_neraca(
         "akumulasi_depresiasi": 0, # Not implemented yet
         "nilai_buku": nilai_perolehan,
         "total_aktiva_tetap": total_aktiva_tetap,
-        "details": [
+        "detail_aset": [
             {
                 "id": a.id,
                 "kode": a.kode,
                 "nama": a.nama,
                 "kategori": a.kategori.value,
-                "harga": float(a.harga_beli)
+                "harga_beli": float(a.harga_beli)
             } for a in fixed_assets
         ]
     }
@@ -913,7 +913,7 @@ def get_neraca(
 
     print(f"DEBUG NERACA: Aktiva={total_aktiva}, Hutang={total_hutang}, Modal={total_modal}, Pasiva={total_pasiva}, Selisih={selisih}")
     print(f"DEBUG NERACA KOMPONEN: Setoran={setoran_modal}, Laba={laba_ditahan}, Prive={prive}, Komponen={modal_komponen}, SelisihModal={selisih_modal}")
-    print(f"DEBUG NERACA AKTIVA: Kas={total_kas_bank}, Piutang={total_piutang}, Persediaan={persediaan_sparepart}, Mobil={stok_mobil_total} (Beli={stok_mobil_harga_beli}+Biaya={stok_mobil_biaya}+Part={stok_mobil_part_service})")
+    print(f"DEBUG NERACA AKTIVA: Kas={total_kas_bank}, Piutang={total_piutang}, Persediaan={persediaan_sparepart}, Mobil={stok_mobil_total}")
 
     return {
         "periode": {
