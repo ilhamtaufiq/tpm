@@ -566,10 +566,10 @@ def get_capital_report(
     if tanggal_sampai: q_prep = q_prep.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
     biaya_persiapan_display = float(q_prep.scalar() or 0)
 
-    # 6. Kasbon Karyawan (Net outflow: given - repaid)
-    kasbon_out = get_kas_sum(KasBankSource.KASBON, KasBankType.KELUAR)
-    kasbon_in = get_kas_sum(KasBankSource.KASBON, KasBankType.MASUK)
-    kasbon_net = kasbon_out - kasbon_in  # Net cash spent on kasbon
+    # 6. Kasbon Karyawan is excluded from Section C 
+    # Because it is already tracked in Section B (Piutang).
+    # Including it here would double-count it during reconciliation (Modal - B - C).
+    kasbon_net = 0
 
     # 7. Transaksi Lainnya (Net: keluar - masuk from manual entries)
     lainnya_out = get_kas_sum(KasBankSource.LAINNYA, KasBankType.KELUAR)
@@ -581,7 +581,7 @@ def get_capital_report(
         total_beli_mobil +
         jb_mobil_cash + jb_mobil_transfer +
         biaya_opr + biaya_gaji + prive +
-        kasbon_net +
+        # kasbon_net + 
         lainnya_net_out
     )
 

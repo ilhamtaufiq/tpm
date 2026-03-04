@@ -304,12 +304,12 @@ class MuatanService:
              
              if data.payments:
                  for p in data.payments:
-                     if p.jumlah > 0:
+                     if p.nominal > 0:
                          create_kas_entry(
                              db=self.db,
                              tanggal=data.tanggal,
                              tipe=KasBankType.MASUK,
-                             nominal=p.jumlah,
+                             nominal=p.nominal,
                              sumber=KasBankSource.JASA_ANGKUT,
                              metode_bayar=p.metode,
                              referensi_id=muatan.id,

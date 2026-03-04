@@ -84,6 +84,10 @@ export const useProcessPaymentSplit = () => {
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            // Invalidate mobil queries so car status updates (BOOKING → TERJUAL)
+            queryClient.invalidateQueries({ queryKey: ['mobil_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['penjualan_mobil_list'] });
+            queryClient.invalidateQueries({ queryKey: ['mobil_list'] });
         },
     });
 };

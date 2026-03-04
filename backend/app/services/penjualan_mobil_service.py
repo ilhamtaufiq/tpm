@@ -378,6 +378,7 @@ class PenjualanMobilService:
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
                 nominal_piutang=data.harga_jual,
+                total_dibayar=data.dp,
                 sisa_piutang=sisa_bayar,
                 status=PiutangStatus.BELUM_LUNAS if data.dp == 0 else PiutangStatus.SEBAGIAN,
                 catatan=f"Piutang penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
@@ -607,9 +608,12 @@ class PenjualanMobilService:
             .first()
         )
         if piutang:
+            piutang.total_dibayar += jumlah_bayar
             piutang.sisa_piutang = transaksi.sisa_bayar
             if transaksi.status_bayar == PaymentStatus.LUNAS:
                 piutang.status = PiutangStatus.LUNAS
+                piutang.sisa_piutang = Decimal("0")
+                piutang.tanggal_lunas = date.today()
             else:
                 piutang.status = PiutangStatus.SEBAGIAN
 

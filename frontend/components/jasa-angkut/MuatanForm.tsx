@@ -176,19 +176,22 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
-            setPayments([{ id: Date.now(), metode: formData.metode_bayar, jumlah: '' }]);
+            // Auto-fill with TPM Share for convenience
+            const targetAmount = calculations.tpmShare > 0 ? formatNumber(calculations.tpmShare.toString()) : '';
+            setPayments([{ id: Date.now(), metode: formData.metode_bayar, jumlah: targetAmount }]);
         } else {
             setPayments([]);
         }
         setIsSplitPayment(!isSplitPayment);
     };
 
-    const calculations = useMemo(() => {
+    const calculations = useMemo((): { revenue: number; tpmShare: number; totalCosts: number; beli: number; jual: number; bengkelTotal: number } => {
         const beli = parseNumber(formData.harga_beli) || 0;
         const jual = parseNumber(formData.harga_jual) || 0;
         const revenue = jual - beli;
+        const tpmShare = revenue * 0.5; // TPM share is 50% of the profit
 
-        return { revenue, totalCosts: 0, beli, jual, bengkelTotal: 0 };
+        return { revenue, tpmShare, totalCosts: 0, beli, jual, bengkelTotal: 0 };
     }, [formData.harga_beli, formData.harga_jual]);
 
     const filteredDrivers = useMemo(() => {
@@ -265,8 +268,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 biaya_operasional: [],
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode,
-                    jumlah: parseNumber(p.jumlah)
-                })).filter(p => p.jumlah > 0) : [],
+                    nominal: parseNumber(p.jumlah)
+                })).filter(p => p.nominal > 0) : [],
                 persentase_tpm: 50
             };
 
@@ -623,9 +626,15 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     </View>
                 </View>
                 <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-blue-200">
-                    <Typography variant="caption">Estimasi Pendapatan (Margin)</Typography>
+                    <Typography variant="caption">Total Margin</Typography>
                     <Typography weight="bold" className={calculations.revenue >= 0 ? "text-green-600" : "text-red-600"}>
                         {formatCurrency(calculations.revenue)}
+                    </Typography>
+                </View>
+                <View className="flex-row justify-between items-center mt-1">
+                    <Typography variant="caption" className="text-blue-600 font-bold italic">Share TPM (50%)</Typography>
+                    <Typography weight="bold" className="text-blue-700">
+                        {formatCurrency(calculations.tpmShare)}
                     </Typography>
                 </View>
             </View>
@@ -696,7 +705,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         </View>
 
                                         <View className="flex-row flex-wrap gap-2 mb-3">
-                                            {['TUNAI', 'TRANSFER', 'DEBIT'].map((m) => (
+                                            {['TUNAI', 'TRANSFER'].map((m) => (
                                                 <TouchableOpacity
                                                     key={m}
                                                     onPress={() => updatePaymentRow(p.id, 'metode', m)}
@@ -719,12 +728,15 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 ))}
 
                                 <View className="flex-row justify-between items-center p-3 bg-primary/5 rounded-xl mt-2 border border-primary/10">
-                                    <Typography variant="caption" weight="bold" className="text-primary">TOTAL BAYAR</Typography>
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-primary">TOTAL BAYAR</Typography>
+                                        <Typography variant="caption" className="text-primary/70 text-[8px] font-bold">(TARGET: SHARE TPM 50%)</Typography>
+                                    </View>
                                     <View className="items-end">
                                         <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
-                                        {totalSplitAmount !== calculations.revenue && (
+                                        {totalSplitAmount !== calculations.tpmShare && (
                                             <Typography variant="caption" className="text-red-500 font-bold" style={{ fontSize: 9 }}>
-                                                {totalSplitAmount < calculations.revenue ? `Kurang: ${formatCurrency(calculations.revenue - totalSplitAmount)}` : `Lebih: ${formatCurrency(totalSplitAmount - calculations.revenue)}`}
+                                                {totalSplitAmount < calculations.tpmShare ? `Kurang: ${formatCurrency(calculations.tpmShare - totalSplitAmount)}` : `Lebih: ${formatCurrency(totalSplitAmount - calculations.tpmShare)}`}
                                             </Typography>
                                         )}
                                     </View>
