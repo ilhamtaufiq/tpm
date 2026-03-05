@@ -124,3 +124,15 @@ def transfer(
     """Transfer between kas/bank accounts."""
     service = KasBankService(db)
     return service.transfer(dari, ke, nominal, tanggal, keterangan, current_user.id)
+@router.post("/adjust")
+def adjust_balance(
+    jenis: KasBankJenis,
+    nominal: Decimal,
+    tanggal: date,
+    keterangan: str,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Adjust balance to a target nominal."""
+    service = KasBankService(db)
+    return service.adjust_balance(jenis, nominal, tanggal, keterangan, current_user.id)

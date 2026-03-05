@@ -42,11 +42,11 @@ const STATUS_BADGE_MAP: Record<PiutangStatus, 'warning' | 'success' | 'info'> = 
 };
 
 const SUMBER_LABEL: Record<string, string> = {
-    bengkel: 'Bengkel',
-    jual_beli_mobil: 'Jual Mobil',
-    jasa_angkut: 'Jasa Angkut',
-    kasbon_karyawan: 'Kasbon',
-    lainnya: 'Lainnya',
+    BENGKEL: 'Bengkel',
+    JUAL_BELI_MOBIL: 'Jual Mobil',
+    JASA_ANGKUT: 'Jasa Angkut',
+    KASBON_KARYAWAN: 'Kasbon',
+    LAINNYA: 'Lainnya',
 };
 
 export default function PiutangUsahaScreen() {

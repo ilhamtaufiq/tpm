@@ -438,3 +438,47 @@ class KasBankService:
             "keluar": keluar,
             "masuk": masuk,
         }
+    def adjust_balance(
+        self,
+        jenis: KasBankJenis,
+        target_nominal: Decimal,
+        tanggal: date,
+        keterangan: str,
+        user_id: Optional[int] = None,
+    ) -> KasBank:
+        """Adjust balance to a target nominal by creating an adjustment transaction."""
+        current_balance = self._get_current_balance(jenis)
+        
+        if target_nominal == current_balance:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Saldo sudah sesuai dengan target nominal: {target_nominal}",
+            )
+            
+        if target_nominal > current_balance:
+            tipe = KasBankType.MASUK
+            nominal = target_nominal - current_balance
+            adj_keterangan = f"Penyesuaian Saldo (Tambah): {keterangan}"
+        else:
+            tipe = KasBankType.KELUAR
+            nominal = current_balance - target_nominal
+            adj_keterangan = f"Penyesuaian Saldo (Kurang): {keterangan}"
+            
+        kas_bank = KasBank(
+            nomor_transaksi=self._generate_nomor_transaksi(),
+            tanggal=tanggal,
+            jenis=jenis,
+            tipe=tipe,
+            nominal=nominal,
+            sumber=KasBankSource.LAINNYA,
+            keterangan=adj_keterangan,
+            created_by=user_id,
+        )
+        
+        kas_bank.calculate_saldo(current_balance)
+        
+        self.db.add(kas_bank)
+        self.db.commit()
+        self.db.refresh(kas_bank)
+        
+        return kas_bank

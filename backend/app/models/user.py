@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Boolean, DateTime, Enum as SQLEnum
+from sqlalchemy import String, Boolean, DateTime, Enum as SQLEnum, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base, TimestampMixin
@@ -26,6 +26,11 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     profile_picture: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    
+    # PIN Security (server-side)
+    hashed_pin: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    security_settings: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string for protected features
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
+

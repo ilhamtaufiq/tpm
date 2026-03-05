@@ -9,10 +9,13 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useSecurityStore } from '../../store/useSecurityStore';
+import { Lock, Fingerprint } from 'lucide-react-native';
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
     const { themeColors } = useUIStore();
+    const { isPinEnabled, useBiometrics, enableBiometrics, resetSecurity, protectedFeatures, toggleFeatureProtection } = useSecurityStore();
     const { mutate: resetTransactions, isPending: isResetting } = useResetTransactions();
     const [dialogConfig, setDialogConfig] = React.useState<{
         visible: boolean;
@@ -135,14 +138,38 @@ export default function ProfileScreen() {
 
                     <TouchableOpacity
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
-                        onPress={() => router.push('/settings/password')}
+                        onPress={() => {
+                            if (isPinEnabled) {
+                                setDialogConfig({
+                                    visible: true,
+                                    title: "PIN Keamanan",
+                                    message: "Pilih tindakan keamanan untuk PIN Anda.",
+                                    variant: 'info',
+                                    type: 'confirm',
+                                    onConfirm: () => {
+                                        // Push to verify first before reset
+                                        router.push({
+                                            pathname: '/(security)/pin',
+                                            params: { mode: 'verify', action: 'disable_pin' }
+                                        });
+                                        setDialogConfig(prev => ({ ...prev, visible: false }));
+                                    }
+                                });
+                            } else {
+                                router.push('/(security)/pin?mode=setup');
+                            }
+                        }}
                     >
-                        <View className="w-10 h-10 bg-amber-50 rounded-[14px] items-center justify-center mb-3">
-                            <ShieldCheck size={20} color="#F59E0B" />
+                        <View className={`w-10 h-10 ${isPinEnabled ? 'bg-emerald-50' : 'bg-rose-50'} rounded-[14px] items-center justify-center mb-3`}>
+                            <Lock size={20} color={isPinEnabled ? '#10B981' : '#EF4444'} />
                         </View>
                         <View>
-                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Kata Sandi</Typography>
-                            <Typography variant="caption" className="text-text/40 text-[10px]">Keamanan Akun</Typography>
+                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">
+                                PIN {isPinEnabled ? 'Aktif' : 'Nonaktif'}
+                            </Typography>
+                            <Typography variant="caption" className="text-text/40 text-[10px]">
+                                {isPinEnabled ? 'Ubah atau Matikan' : 'Kunci Aplikasi'}
+                            </Typography>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -177,22 +204,69 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* THEME SETTINGS - NEW SECTION */}
-                <View className="flex-row gap-4 mb-6">
+                <View className="flex-row gap-4 mb-8">
                     <TouchableOpacity
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
-                        onPress={() => router.push('/settings/theme')}
+                        onPress={async () => {
+                            if (!isPinEnabled) {
+                                Alert.alert('Peringatan', 'Aktifkan PIN terlebih dahulu untuk menggunakan Biometrik');
+                                return;
+                            }
+                            // Always require PIN verification before toggling biometrics for safety
+                            router.push({
+                                pathname: '/(security)/pin',
+                                params: {
+                                    mode: 'verify',
+                                    redirect: '/(tabs)/profile' // Optional: simplified for now, usually just toggle works
+                                }
+                            });
+                        }}
                     >
-                        <View className="w-10 h-10 bg-purple-50 rounded-[14px] items-center justify-center mb-3">
-                            <Palette size={20} color="#8B5CF6" />
+                        <View className={`w-10 h-10 ${useBiometrics ? 'bg-blue-50' : 'bg-gray-50'} rounded-[14px] items-center justify-center mb-3`}>
+                            <Fingerprint size={20} color={useBiometrics ? '#3B82F6' : '#9CA3AF'} />
                         </View>
                         <View>
-                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Tampilan</Typography>
-                            <Typography variant="caption" className="text-text/40 text-[10px]">Tema & Warna</Typography>
+                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Biometrik</Typography>
+                            <Typography variant="caption" className="text-text/40 text-[10px]">{useBiometrics ? 'Aktif' : 'Klik Aktifkan'}</Typography>
                         </View>
                     </TouchableOpacity>
 
-                    <View className="flex-1" />
+                    <TouchableOpacity
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        onPress={() => setDialogConfig({
+                            visible: true,
+                            title: "Tema & Warna",
+                            message: "Fitur kustomisasi warna akan segera hadir.",
+                            variant: 'info',
+                            type: 'alert'
+                        })}
+                    >
+                        <View className="w-10 h-10 bg-indigo-50 rounded-[14px] items-center justify-center mb-3">
+                            <Palette size={20} color="#6366F1" />
+                        </View>
+                        <View>
+                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Tampilan</Typography>
+                            <Typography variant="caption" className="text-text/40 text-[10px]">Kustom UI</Typography>
+                        </View>
+                    </TouchableOpacity>
                 </View>
+
+                {/* FEATURE PROTECTION SETTINGS - NEW SECTION */}
+                <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>
+
+                <TouchableOpacity
+                    className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
+                    onPress={() => router.push('/settings/security-features')}
+                >
+                    <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
+                        <ShieldCheck size={24} color="#3B82F6" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body1" weight="bold" className="text-text mb-0.5">Keamanan Halaman</Typography>
+                        <Typography variant="caption" className="text-text/40">Atur proteksi PIN per menu</Typography>
+                    </View>
+                    <ChevronRight size={20} color={themeColors.textGray} />
+                </TouchableOpacity>
 
                 {/* DANGER ZONE & SESSION */}
                 <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>

@@ -182,7 +182,7 @@ export default function MutasiKasScreen() {
             await createTxMutation.mutateAsync({
                 tanggal: new Date().toISOString().split('T')[0],
                 jenis: modalForm.jenis,
-                tipe: 'masuk',
+                tipe: 'MASUK',
                 nominal: parseNumber(modalForm.nominal),
                 sumber: 'modal',
                 keterangan: modalForm.keterangan,
@@ -209,7 +209,7 @@ export default function MutasiKasScreen() {
     };
 
     const renderTransaction = ({ item }: { item: KasBankTransaction }) => {
-        const isIncome = item.tipe === 'masuk';
+        const isIncome = item.tipe === 'MASUK';
         return (
             <Card className="mb-3 p-4">
                 <View className="flex-row items-center">
@@ -422,9 +422,13 @@ export default function MutasiKasScreen() {
                             </Typography>
                             <Typography className="text-white/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
                         </View>
-                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                            <Wallet size={24} color="white" />
-                        </View>
+                        <TouchableOpacity
+                            onPress={() => router.push('/finance/akun')}
+                            className="bg-white/10 px-4 py-2 rounded-xl border border-white/10 flex-row items-center"
+                        >
+                            <Building2 size={16} color="white" />
+                            <Typography className="text-white text-xs font-bold ml-2">Detail Akun</Typography>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Bento Stats Row Inside Header */}
@@ -472,7 +476,7 @@ export default function MutasiKasScreen() {
                 data={transactions}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => {
-                    const isIncome = item.tipe === 'masuk';
+                    const isIncome = item.tipe === 'MASUK';
                     return (
                         <TouchableOpacity
                             activeOpacity={0.9}

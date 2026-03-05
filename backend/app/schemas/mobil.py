@@ -150,6 +150,8 @@ class MobilResponse(BaseModel):
     persentase_investor: Decimal
     nominal_investor: Decimal
     status: CarStatus
+    status_bayar_beli: PaymentStatus
+    dp_beli: Decimal
     tanggal_masuk: date
     tanggal_terjual: Optional[date] = None
     total_biaya: Decimal

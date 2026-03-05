@@ -25,6 +25,7 @@ from app.api.v1 import (
     public_receipt,
     armada,
     assets,
+    security,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -53,6 +54,8 @@ api_router.include_router(dashboard.router)
 api_router.include_router(maintenance.router)
 api_router.include_router(armada.router)
 api_router.include_router(assets.router)
+api_router.include_router(security.router)
+
 
 # Public endpoints (no auth required) - mount outside /api/v1
 from fastapi import FastAPI

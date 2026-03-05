@@ -11,10 +11,12 @@ import {
     Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 import { useAuthStore } from '../store/useAuthStore';
+import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore';
 import { vars } from 'nativewind';
 import { useUIStore } from '../store/useUIStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { AppState, AppStateStatus } from 'react-native';
 import '../global.css';
 
 const queryClient = new QueryClient();
@@ -33,6 +35,10 @@ export default function RootLayout() {
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const {
+        isLocked, isPinEnabled, lock,
+        protectedFeatures, unlockedFeatures
+    } = useSecurityStore();
     const themeColors = useUIStore(state => state.themeColors);
 
     const theme = vars({
@@ -45,36 +51,76 @@ export default function RootLayout() {
     });
 
     useEffect(() => {
-        console.log('LAYOUT: Fonts loaded:', loaded, 'Error:', error);
+        console.log('LAYOUT: Initializing app fonts');
+
         if (loaded || error) {
             console.log('LAYOUT: Hiding splash screen');
             SplashScreen.hideAsync();
-            // Give AsyncStorage time to hydrate
             setTimeout(() => {
-                console.log('LAYOUT: Setting isReady to true');
                 setIsReady(true);
-            }, 500); // Increased from 100ms
+            }, 500);
         }
     }, [loaded, error]);
 
     useEffect(() => {
-        console.log('LAYOUT: Navigation check - isReady:', isReady, 'loaded:', loaded);
-        console.log('LAYOUT: isAuthenticated:', isAuthenticated);
-        console.log('LAYOUT: segments:', segments);
+        const handleAppStateChange = (nextAppState: AppStateStatus) => {
+            if (nextAppState.match(/inactive|background/) && isPinEnabled) {
+                console.log('LAYOUT: App going to background, locking...');
+                lock();
+            }
+        };
 
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        return () => {
+            subscription.remove();
+        };
+    }, [isPinEnabled]);
+
+    useEffect(() => {
         if (!isReady || !loaded) return;
 
         const inAuthGroup = segments[0] === '(auth)';
-        console.log('LAYOUT: inAuthGroup:', inAuthGroup);
+        const inSecurityGroup = segments[0] === '(security)';
 
+        // 1. Auth guard
         if (!isAuthenticated && !inAuthGroup) {
-            // Redirect to login if not authenticated and not in auth group
             router.replace('/(auth)/login');
-        } else if (isAuthenticated && inAuthGroup) {
-            // Redirect to home if authenticated and trying to access auth pages
-            router.replace('/(tabs)/home');
+            return;
         }
-    }, [isAuthenticated, segments, loaded, isReady]);
+        if (isAuthenticated && inAuthGroup) {
+            router.replace('/(tabs)/home');
+            return;
+        }
+
+        // 2. PIN guard — only applies when PIN is enabled
+        if (!isPinEnabled || !isAuthenticated || inSecurityGroup || inAuthGroup) return;
+
+        // 2a. Global app lock (after background / restart)
+        if (isLocked && protectedFeatures.app_lock) {
+            router.replace('/(security)/pin?mode=verify');
+            return;
+        }
+
+        // 2b. Per-feature protection — check on EVERY navigation
+        // Find which protected feature the current route maps to
+        let currentFeature: string | null = null;
+        for (const seg of segments) {
+            const feature = SEGMENT_TO_FEATURE[seg as string];
+            if (feature && protectedFeatures[feature]) {
+                currentFeature = feature;
+                break;
+            }
+        }
+
+        if (currentFeature && !unlockedFeatures.includes(currentFeature)) {
+            // This feature is protected and NOT yet unlocked — redirect to PIN
+            router.replace({
+                pathname: '/(security)/pin',
+                params: { mode: 'verify', feature: currentFeature }
+            } as any);
+        }
+    }, [isAuthenticated, isLocked, segments, loaded, isReady, isPinEnabled, unlockedFeatures]);
 
     // Show error message if fonts failed to load
     if (error) {
@@ -114,6 +160,7 @@ export default function RootLayout() {
                             <Stack.Screen name="index" options={{ headerShown: false }} />
                             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                            <Stack.Screen name="(security)" options={{ headerShown: false }} />
                             <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                         </Stack>
                     </BottomSheetModalProvider>

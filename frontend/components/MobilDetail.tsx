@@ -30,10 +30,12 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil } from '../hooks/useMobil';
+import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
 import { formatCurrency, parseNumber, formatNumber } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
+import { HutangPaymentModal } from './HutangPaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
 
 const { width } = Dimensions.get('window');
@@ -73,6 +75,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const [cancelAlasan, setCancelAlasan] = useState('');
     const [cancelSuccess, setCancelSuccess] = useState(false);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [hutangModalVisible, setHutangModalVisible] = useState(false);
 
     const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
@@ -86,6 +89,15 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     // Find the active transaction for this car
     const activeTx = penjualanData?.data?.find(
         (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'LUNAS'
+    );
+
+    // Fetch purchase debt if any
+    const { data: hutangData } = useHutangList(
+        activeUnit?.kode ? { search: activeUnit.kode } : undefined
+    );
+
+    const activeHutang = hutangData?.data?.find(
+        (h: any) => h.nomor_referensi === activeUnit?.kode && h.status !== 'LUNAS'
     );
 
     if (!activeUnit) return null;
@@ -346,6 +358,48 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </View>
                         )}
                     </Card>
+
+                    {/* PURCHASE Debt Section */}
+                    {activeHutang && (
+                        <View className="mb-10">
+                            <Typography variant="h3" weight="bold" className="mb-6 text-textMain tracking-tight">Status Hutang Pembelian</Typography>
+                            <Card className="p-0 rounded-[36px] overflow-hidden border-2 border-rose-200 bg-rose-50/30 shadow-xl shadow-rose-900/5">
+                                {/* Header */}
+                                <View className="bg-rose-500 px-6 py-4 flex-row items-center justify-between">
+                                    <View className="flex-row items-center">
+                                        <Wallet size={18} color="white" />
+                                        <Typography weight="bold" className="text-white ml-2 uppercase tracking-wider text-xs">Hutang Belum Lunas</Typography>
+                                    </View>
+                                    <View className="bg-white/20 px-3 py-1 rounded-full">
+                                        <Typography className="text-white text-xs font-bold">{activeHutang.nomor_hutang}</Typography>
+                                    </View>
+                                </View>
+
+                                {/* Debt Info */}
+                                <View className="p-6">
+                                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-rose-100">
+                                        <Typography className="text-gray-500">Harga Beli</Typography>
+                                        <Typography weight="bold" className="text-textMain">{formatCurrency(activeHutang.nominal_hutang)}</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-rose-100">
+                                        <Typography className="text-gray-500">Total Terbayar</Typography>
+                                        <Typography weight="bold" className="text-emerald-600">{formatCurrency(activeHutang.total_dibayar)}</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between items-center mb-6">
+                                        <Typography className="text-gray-500">Sisa Hutang</Typography>
+                                        <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeHutang.sisa_hutang)}</Typography>
+                                    </View>
+
+                                    <Button
+                                        title="Pelunasan Hutang Unit"
+                                        onPress={() => setHutangModalVisible(true)}
+                                        className="rounded-2xl h-14 bg-rose-600 mb-0 shadow-lg shadow-rose-900/20"
+                                        icon={<TrendingUp size={20} color="white" />}
+                                    />
+                                </View>
+                            </Card>
+                        </View>
+                    )}
 
                     {/* BOOKING Payment Section */}
                     {isBooking && activeTx && (
@@ -811,6 +865,21 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     piutangId={activeTx.piutang_id}
                     initialAmount={Number(activeTx.sisa_bayar)}
                     title="Pelunasan Unit Mobil"
+                />
+            )}
+
+            {activeHutang && (
+                <HutangPaymentModal
+                    visible={hutangModalVisible}
+                    onClose={() => setHutangModalVisible(false)}
+                    onSuccess={() => {
+                        setHutangModalVisible(false);
+                        Alert.alert('Sukses', 'Pelunasan hutang berhasil dicatat');
+                        onClose();
+                    }}
+                    hutangId={activeHutang.id}
+                    initialAmount={Number(activeHutang.sisa_hutang)}
+                    title="Pelunasan Hutang Unit"
                 />
             )}
         </View>

@@ -464,4 +464,13 @@ export const keuanganService = {
         const response = await api.post('/kas-bank', data);
         return response.data;
     },
+    adjustBalance: async (data: {
+        jenis: KasBankJenis;
+        nominal: number;
+        tanggal: string;
+        keterangan: string;
+    }) => {
+        const response = await api.post('/kas-bank/adjust', null, { params: data });
+        return response.data;
+    },
 };

@@ -319,13 +319,29 @@ export default function MobilInventoryScreen() {
                                             </View>
                                         )}
                                         {/* Glassmorphism Badges */}
-                                        <View className="absolute top-4 left-4 right-4 flex-row justify-between">
-                                            <View className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
-                                                <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
-                                                    {item.status}
-                                                </Typography>
+                                        <View className="absolute top-4 left-4 right-4 flex-row justify-between flex-wrap gap-2">
+                                            <View className="flex-row gap-2">
+                                                <View className="bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                                                    <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                                        {item.status}
+                                                    </Typography>
+                                                </View>
+                                                {item.status_bayar_beli !== 'LUNAS' && (
+                                                    <View className="bg-rose-600/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                                                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                                            HUTANG
+                                                        </Typography>
+                                                    </View>
+                                                )}
+                                                {item.status === 'booking' && (
+                                                    <View className="bg-amber-500/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                                                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                                            PIUTANG
+                                                        </Typography>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <View className="bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+                                            <View className="bg-white/90 px-3 py-1.5 rounded-full shadow-sm self-start">
                                                 <Typography variant="caption" weight="bold" className="text-primary text-[10px]">
                                                     {item.tahun}
                                                 </Typography>
