@@ -27,64 +27,54 @@ export const SEGMENT_TO_FEATURE: Record<string, keyof ProtectedFeatures> = {
     'settings': 'settings',
 };
 
+export const DEFAULT_PROTECTED_FEATURES: ProtectedFeatures = {
+    app_lock: true,
+    finance: true,
+    bengkel: false,
+    jasa_angkut: false,
+    laporan: true,
+    master_data: false,
+    mobil: false,
+    sdm: false,
+    settings: false,
+};
+
 interface SecurityState {
+    // Session State (Memory)
     isLocked: boolean;
-    isPinEnabled: boolean;
-    useBiometrics: boolean;
-    pinCode: string | null;
-    protectedFeatures: ProtectedFeatures;
-    // Track which features have been unlocked in the current session
     unlockedFeatures: string[];
-    setIsPinEnabled: (enabled: boolean) => void;
-    setPin: (pin: string) => Promise<void>;
-    verifyPin: (pin: string) => Promise<boolean>;
+
+    // Synced with Backend
+    isPinEnabled: boolean;
+    protectedFeatures: ProtectedFeatures;
+
+    // Device preference (Persisted Locally)
+    useBiometrics: boolean;
+
+    // Actions
+    syncWithBackend: (isPinEnabled: boolean, protectedFeatures: ProtectedFeatures) => void;
     enableBiometrics: (enabled: boolean) => Promise<void>;
     lock: () => void;
     unlock: () => void;
     unlockFeature: (feature: string) => void;
     isFeatureUnlocked: (feature: string) => boolean;
     clearUnlockedFeatures: () => void;
-    resetSecurity: () => Promise<void>;
-    toggleFeatureProtection: (feature: keyof ProtectedFeatures) => void;
+    resetSession: () => void;
 }
 
 export const useSecurityStore = create<SecurityState>()(
     persist(
         (set, get) => ({
             isLocked: false,
-            isPinEnabled: false,
-            useBiometrics: false,
-            pinCode: null,
-            protectedFeatures: {
-                app_lock: true,
-                finance: true,
-                bengkel: false,
-                jasa_angkut: false,
-                laporan: true,
-                master_data: false,
-                mobil: false,
-                sdm: false,
-                settings: false,
-            },
             unlockedFeatures: [],
 
-            setIsPinEnabled: (enabled) => set({ isPinEnabled: enabled }),
+            isPinEnabled: false,
+            protectedFeatures: DEFAULT_PROTECTED_FEATURES,
 
-            setPin: async (pin: string) => {
-                set({
-                    pinCode: pin,
-                    isPinEnabled: true,
-                    isLocked: false
-                });
-            },
+            useBiometrics: false,
 
-            verifyPin: async (pin: string) => {
-                const { pinCode } = get();
-                if (pinCode === pin) {
-                    set({ isLocked: false });
-                    return true;
-                }
-                return false;
+            syncWithBackend: (isPinEnabled, protectedFeatures) => {
+                set({ isPinEnabled, protectedFeatures });
             },
 
             enableBiometrics: async (enabled: boolean) => {
@@ -128,35 +118,23 @@ export const useSecurityStore = create<SecurityState>()(
                 set({ unlockedFeatures: [] });
             },
 
-            resetSecurity: async () => {
+            resetSession: () => {
                 set({
-                    isPinEnabled: false,
                     isLocked: false,
-                    useBiometrics: false,
-                    pinCode: null,
                     unlockedFeatures: []
                 });
-            },
-
-            toggleFeatureProtection: (feature) => {
-                set((state) => ({
-                    protectedFeatures: {
-                        ...state.protectedFeatures,
-                        [feature]: !state.protectedFeatures[feature]
-                    }
-                }));
             }
         }),
         {
             name: 'security-storage',
             storage: createJSONStorage(() => AsyncStorage),
             partialize: (state) => ({
-                isPinEnabled: state.isPinEnabled,
                 useBiometrics: state.useBiometrics,
-                pinCode: state.pinCode,
+                // We keep a backup of backend sync locally so app can boot immediately with last known state
+                isPinEnabled: state.isPinEnabled,
                 protectedFeatures: state.protectedFeatures
-                // unlockedFeatures is NOT persisted — resets on app restart
             }),
         }
     )
 );
+

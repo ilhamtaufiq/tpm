@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Switch, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -18,11 +18,30 @@ import {
 import { Typography } from '../../components/ui/Typography';
 import { useSecurityStore, ProtectedFeatures } from '../../store/useSecurityStore';
 import { useUIStore } from '../../store/useUIStore';
+import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 
 export default function SecurityFeaturesScreen() {
     const router = useRouter();
     const { themeColors } = useUIStore();
-    const { isPinEnabled, protectedFeatures, toggleFeatureProtection } = useSecurityStore();
+    const { isPinEnabled, protectedFeatures, syncWithBackend } = useSecurityStore();
+    const updateSettingsMutation = useUpdateSecuritySettings();
+
+    const handleToggle = async (id: keyof ProtectedFeatures) => {
+        const newValue = !protectedFeatures[id];
+
+        // Optimistic update
+        const updatedFeatures = { ...protectedFeatures, [id]: newValue };
+        syncWithBackend(isPinEnabled, updatedFeatures);
+
+        try {
+            const serverFeatures = await updateSettingsMutation.mutateAsync({ [id]: newValue });
+            syncWithBackend(isPinEnabled, serverFeatures);
+        } catch (error) {
+            console.error('Failed to update security settings', error);
+            // Revert on failure
+            syncWithBackend(isPinEnabled, protectedFeatures);
+        }
+    };
 
     const featureList = [
         {
@@ -129,7 +148,12 @@ export default function SecurityFeaturesScreen() {
                     </View>
                 )}
 
-                <View className="bg-white rounded-[32px] overflow-hidden border border-gray-100 mb-20 shadow-sm">
+                <View className="bg-white rounded-[32px] overflow-hidden border border-gray-100 mb-20 shadow-sm relative">
+                    {updateSettingsMutation.isPending && (
+                        <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
+                            <ActivityIndicator size="large" color={themeColors.primary} />
+                        </View>
+                    )}
                     {featureList.map((item, index) => (
                         <View
                             key={item.id}
@@ -147,10 +171,10 @@ export default function SecurityFeaturesScreen() {
 
                             <Switch
                                 value={protectedFeatures[item.id as keyof ProtectedFeatures]}
-                                onValueChange={() => toggleFeatureProtection(item.id as keyof ProtectedFeatures)}
+                                onValueChange={() => handleToggle(item.id as keyof ProtectedFeatures)}
                                 trackColor={{ false: '#E2E8F0', true: '#10B981' }}
                                 thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : '#FFFFFF'}
-                                disabled={!isPinEnabled}
+                                disabled={!isPinEnabled || updateSettingsMutation.isPending}
                             />
                         </View>
                     ))}
@@ -167,3 +191,4 @@ export default function SecurityFeaturesScreen() {
         </SafeAreaView>
     );
 }
+

@@ -12,6 +12,7 @@ import {
 } from '@expo-google-fonts/outfit';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore';
+import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
 import { useUIStore } from '../store/useUIStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -24,7 +25,7 @@ const queryClient = new QueryClient();
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayoutContent() {
     const [loaded, error] = useFonts({
         Outfit_400Regular,
         Outfit_500Medium,
@@ -35,8 +36,12 @@ export default function RootLayout() {
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+    // API state fetching
+    const { data: securityStatus, isLoading: isLoadingSecurity } = useSecurityStatus();
+
     const {
-        isLocked, isPinEnabled, lock,
+        isLocked, isPinEnabled, lock, syncWithBackend,
         protectedFeatures, unlockedFeatures
     } = useSecurityStore();
     const themeColors = useUIStore(state => state.themeColors);
@@ -49,6 +54,13 @@ export default function RootLayout() {
         '--color-text': themeColors.text,
         '--color-text-gray': themeColors.textGray,
     });
+
+    // Sync remote API settings to local store
+    useEffect(() => {
+        if (securityStatus) {
+            syncWithBackend(securityStatus.is_pin_enabled, securityStatus.protected_features);
+        }
+    }, [securityStatus]);
 
     useEffect(() => {
         console.log('LAYOUT: Initializing app fonts');
@@ -154,18 +166,24 @@ export default function RootLayout() {
     return (
         <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
             <ErrorBoundary>
-                <QueryClientProvider client={queryClient}>
-                    <BottomSheetModalProvider>
-                        <Stack screenOptions={{ headerShown: false }}>
-                            <Stack.Screen name="index" options={{ headerShown: false }} />
-                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                            <Stack.Screen name="(security)" options={{ headerShown: false }} />
-                            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-                        </Stack>
-                    </BottomSheetModalProvider>
-                </QueryClientProvider>
+                <BottomSheetModalProvider>
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(security)" options={{ headerShown: false }} />
+                        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+                    </Stack>
+                </BottomSheetModalProvider>
             </ErrorBoundary>
         </GestureHandlerRootView>
+    );
+}
+
+export default function RootLayout() {
+    return (
+        <QueryClientProvider client={queryClient}>
+            <RootLayoutContent />
+        </QueryClientProvider>
     );
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Vibration } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Vibration, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
+import { useSetupPin, useVerifyPin, useChangePin, useDisablePin } from '../../hooks/useSecurityAPI';
 import { LucideDelete, LucideFingerprint, LucideChevronLeft } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
@@ -16,22 +17,39 @@ export default function PinScreen() {
         redirect?: string,
         feature?: string
     }>();
+
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
+    const [oldPin, setOldPin] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [currentMode, setCurrentMode] = useState(mode || 'verify');
 
-    const { verifyPin, setPin: savePin, useBiometrics, unlock, lock, resetSecurity, unlockFeature } = useSecurityStore();
+    // Zustand store for local session unlock state
+    const { useBiometrics, unlock, resetSession, unlockFeature } = useSecurityStore();
+
+    // API Hooks
+    const setupPinMutation = useSetupPin();
+    const verifyPinMutation = useVerifyPin();
+    const changePinMutation = useChangePin();
+    const disablePinMutation = useDisablePin();
+
+    const isLoading = setupPinMutation.isPending || verifyPinMutation.isPending || changePinMutation.isPending || disablePinMutation.isPending;
 
     useEffect(() => {
-        if (currentMode === 'verify' && useBiometrics && Platform.OS !== 'web') {
+        // Special case: if action is change_pin, we first need to verify the old PIN
+        if (action === 'change_pin') {
+            setCurrentMode('verify');
+        }
+
+        if (currentMode === 'verify' && useBiometrics && Platform.OS !== 'web' && action !== 'change_pin' && action !== 'disable_pin') {
             handleBiometrics();
         }
-    }, []);
+    }, [action]);
 
     // Handle physical keyboard input (for Web/Desktop/Simulator)
     useEffect(() => {
         const handleKeyPress = (e: any) => {
+            if (isLoading) return;
             const key = e.key;
             if (/^[0-9]$/.test(key)) {
                 handlePress(key);
@@ -44,7 +62,7 @@ export default function PinScreen() {
             window.addEventListener('keydown', handleKeyPress);
             return () => window.removeEventListener('keydown', handleKeyPress);
         }
-    }, [pin, currentMode]);
+    }, [pin, currentMode, isLoading]);
 
     const handleBiometrics = async () => {
         if (Platform.OS === 'web') return;
@@ -57,54 +75,10 @@ export default function PinScreen() {
                 promptMessage: 'Unlock TPM Super App',
                 fallbackLabel: 'Use PIN',
             });
+
             if (result.success) {
                 unlock();
-                router.replace('/(tabs)/home');
-            }
-        } catch (e) {
-            console.error('Biometric error:', e);
-        }
-    };
-
-    const handlePress = (num: string) => {
-        if (pin.length < 4) {
-            const newPin = pin + num;
-            setPin(newPin);
-            setError(null);
-
-            if (newPin.length === 4) {
-                setTimeout(() => handleFullPin(newPin), 200);
-            }
-        }
-    };
-
-    const handleFullPin = async (completedPin: string) => {
-        if (currentMode === 'setup') {
-            setConfirmPin(completedPin);
-            setPin('');
-            setCurrentMode('confirm');
-        } else if (currentMode === 'confirm') {
-            if (completedPin === confirmPin) {
-                await savePin(completedPin);
-                router.back();
-            } else {
-                setError('PIN tidak cocok');
-                setPin('');
-                Vibration.vibrate(200);
-            }
-        } else {
-            const isValid = await verifyPin(completedPin);
-            if (isValid) {
-                unlock();
-
-                if (action === 'disable_pin') {
-                    await resetSecurity();
-                    router.back();
-                } else if (action === 'change_pin') {
-                    setCurrentMode('setup');
-                    setPin('');
-                } else if (feature) {
-                    // Unlock that specific feature, then go back
+                if (feature) {
                     unlockFeature(feature);
                     router.back();
                 } else if (redirect) {
@@ -112,8 +86,97 @@ export default function PinScreen() {
                 } else {
                     router.replace('/(tabs)/home');
                 }
+            }
+        } catch (error) {
+            console.error('Biometric authentication error', error);
+        }
+    };
+
+    const handlePress = (num: string) => {
+        if (isLoading) return;
+
+        setError(null);
+        if (pin.length < 6) {
+            const newPin = pin + num;
+            setPin(newPin);
+
+            if (newPin.length === 6) {
+                // Determine whether to proceed based on whether we hit 6 digits
+                processCompletePin(newPin);
+            }
+        }
+    };
+
+    const processCompletePin = async (completedPin: string) => {
+        if (currentMode === 'setup') {
+            setConfirmPin(completedPin);
+            setPin('');
+            setCurrentMode('confirm');
+
+        } else if (currentMode === 'confirm') {
+            if (completedPin === confirmPin) {
+                try {
+                    if (action === 'change_pin') {
+                        // Change PIN API
+                        await changePinMutation.mutateAsync({ old_pin: oldPin, new_pin: completedPin });
+                        alert('PIN berhasil diubah');
+                        router.back();
+                    } else {
+                        // Setup new PIN API
+                        await setupPinMutation.mutateAsync(completedPin);
+                        router.back();
+                    }
+                } catch (err: any) {
+                    setError(err.response?.data?.detail || 'Gagal menyimpan PIN');
+                    setPin('');
+                    setConfirmPin('');
+                    setCurrentMode('setup');
+                    Vibration.vibrate(200);
+                }
             } else {
-                setError('PIN salah');
+                setError('PIN Konfirmasi tidak cocok');
+                setPin('');
+                Vibration.vibrate(200);
+            }
+
+        } else {
+            // mode = 'verify'
+            try {
+                if (action === 'change_pin') {
+                    // Verify old pin first, then move to setup new pin
+                    const isValid = await verifyPinMutation.mutateAsync(completedPin);
+                    if (isValid) {
+                        setOldPin(completedPin);
+                        setCurrentMode('setup');
+                        setPin('');
+                        return;
+                    }
+                }
+                else if (action === 'disable_pin') {
+                    await disablePinMutation.mutateAsync(completedPin);
+                    resetSession();
+                    alert('PIN berhasil dinonaktifkan');
+                    router.back();
+                    return;
+                }
+
+                // Normal verify
+                const isValid = await verifyPinMutation.mutateAsync(completedPin);
+                if (isValid) {
+                    unlock();
+
+                    if (feature) {
+                        // Unlock that specific feature, then go back
+                        unlockFeature(feature);
+                        router.back();
+                    } else if (redirect) {
+                        router.replace(redirect as any);
+                    } else {
+                        router.replace('/(tabs)/home');
+                    }
+                }
+            } catch (err: any) {
+                setError(err.response?.data?.detail || 'PIN salah');
                 setPin('');
                 Vibration.vibrate(200);
             }
@@ -121,6 +184,7 @@ export default function PinScreen() {
     };
 
     const handleDelete = () => {
+        if (isLoading) return;
         setPin(pin.slice(0, -1));
         setError(null);
     };
@@ -137,9 +201,10 @@ export default function PinScreen() {
     return (
         <View className="flex-1 bg-white items-center justify-center px-6">
             <View className="absolute top-12 left-6">
-                {(currentMode === 'setup' || currentMode === 'confirm') && (
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+                {(currentMode === 'setup' || currentMode === 'confirm' || action === 'change_pin' || action === 'disable_pin') && (
+                    <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2" disabled={isLoading}>
                         <LucideChevronLeft size={28} color="#1e293b" />
+
                     </TouchableOpacity>
                 )}
             </View>
