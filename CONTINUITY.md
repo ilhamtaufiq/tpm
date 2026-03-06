@@ -1,7 +1,7 @@
 # CONTINUITY: Car Sales DP and Debt Management
 
 ## Goal
-Implement car sales/purchase DP logic, display remaining debt, and implement repayment functionality. Recover from corrupted Git configuration.
+Implement car sales/purchase DP logic, display remaining debt, and implement repayment functionality. Recover from corrupted Git configuration. Update PIN pad design.
 
 ## Context
 - The system handles car inventory (purchases) and car sales.
@@ -9,7 +9,12 @@ Implement car sales/purchase DP logic, display remaining debt, and implement rep
 - Sales can be cash or DP (creating `PiutangUsaha`).
 - Car status changes to `BOOKING` if sold via DP, and `TERJUAL` if fully paid.
 - Users need to see remaining debt/receivables for each car and process repayments.
-- **NEW**: `.git/config` was corrupted (bad config line 1), likely due to a system crash.
+- **Git Recovery**: `.git/config` was corrupted, rebuilt using info from `.git/FETCH_HEAD`.
+- **PIN Pad**: User wants a specific layout: 
+  1 2 3
+  4 5 6
+  7 8 9
+    0 x
 
 ## Key Decisions
 - **Backend Sync**: Recording a car purchase with DP automatically creates a `HutangUsaha` record.
@@ -18,6 +23,7 @@ Implement car sales/purchase DP logic, display remaining debt, and implement rep
 - **Repayment Integration**: Created `HutangPaymentModal` (based on `PaymentModal`) to handle debt repayments.
 - **Visibility**: Added badges ("HUTANG", "PIUTANG") to the car inventory list for quick identification.
 - **Git Recovery**: Manually rebuilding `.git/config` using info from `.git/FETCH_HEAD` and directory structure.
+- **PIN Design**: Adjusting the `PinScreen` layout to match the 3-column keypad with 0 and Backspace in the center and right slots of the last row.
 
 ## Progress State
 ### Done
@@ -29,14 +35,17 @@ Implement car sales/purchase DP logic, display remaining debt, and implement rep
 - Updated `MobilInventoryScreen` to show status badges.
 - Fixed source labels in `PiutangScreen`.
 - Updated `MobilResponse` schema to include purchase payment status.
+- Recovered corrupted `.git/config` file.
+- Updated PIN pad design in `frontend/app/(security)/pin.tsx` to match custom layout (3 columns, 0 and delete on last row).
 
 ### Now
-- Recovering corrupted `.git/config` file.
-
-### Next
 - Final verification of the end-to-end flow.
 
+### Next
+- Monitoring for any further UI feedback.
+
 ## Working Set
+- `frontend/app/(security)/pin.tsx`
 - `backend/app/services/mobil_service.py`
 - `backend/app/services/penjualan_mobil_service.py`
 - `backend/app/services/hutang_service.py`

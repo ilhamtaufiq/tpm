@@ -243,36 +243,38 @@ export default function PinScreen() {
                 </Animated.Text>
             )}
 
-            <View className="w-full max-w-xs flex-row flex-wrap justify-between">
+            <View className="w-full max-w-sm flex-row flex-wrap justify-between px-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <TouchableOpacity
                         key={num}
                         onPress={() => handlePress(num.toString())}
-                        className="w-20 h-20 items-center justify-center rounded-full mb-4 bg-slate-50 border border-slate-100"
+                        className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
                     >
-                        <Text className="text-2xl font-semibold text-slate-800">{num}</Text>
+                        <Text className="text-3xl font-semibold text-slate-800">{num}</Text>
                     </TouchableOpacity>
                 ))}
 
-                <TouchableOpacity
-                    onPress={() => currentMode === 'verify' && handleBiometrics()}
-                    className="w-20 h-20 items-center justify-center rounded-full mb-4"
-                >
-                    {currentMode === 'verify' && useBiometrics ? (
-                        <LucideFingerprint size={32} color="#3b82f6" />
-                    ) : null}
-                </TouchableOpacity>
+                <View className="w-[28%] aspect-square mb-6 items-center justify-center">
+                    {currentMode === 'verify' && useBiometrics && (
+                        <TouchableOpacity
+                            onPress={handleBiometrics}
+                            className="w-full h-full items-center justify-center rounded-full"
+                        >
+                            <LucideFingerprint size={32} color="#3b82f6" />
+                        </TouchableOpacity>
+                    )}
+                </View>
 
                 <TouchableOpacity
                     onPress={() => handlePress('0')}
-                    className="w-20 h-20 items-center justify-center rounded-full mb-4 bg-slate-50 border border-slate-100"
+                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
                 >
-                    <Text className="text-2xl font-semibold text-slate-800">0</Text>
+                    <Text className="text-3xl font-semibold text-slate-800">0</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     onPress={handleDelete}
-                    className="w-20 h-20 items-center justify-center rounded-full mb-4"
+                    className="w-[28%] aspect-square items-center justify-center rounded-full mb-6"
                 >
                     <LucideDelete size={32} color="#64748b" />
                 </TouchableOpacity>
