@@ -110,7 +110,9 @@ function RootLayoutContent() {
 
         // 2a. Global app lock (after background / restart)
         if (isLocked && protectedFeatures.app_lock) {
-            router.replace('/(security)/pin?mode=verify');
+            // Get current path to redirect back after unlock
+            const path = segments.join('/');
+            router.replace(`/(security)/pin?mode=verify&redirect=${path}`);
             return;
         }
 
@@ -127,9 +129,15 @@ function RootLayoutContent() {
 
         if (currentFeature && !unlockedFeatures.includes(currentFeature)) {
             // This feature is protected and NOT yet unlocked — redirect to PIN
+            // Join segments to create the full path (e.g., "(tabs)/finance")
+            const path = segments.join('/');
             router.replace({
                 pathname: '/(security)/pin',
-                params: { mode: 'verify', feature: currentFeature }
+                params: {
+                    mode: 'verify',
+                    feature: currentFeature,
+                    redirect: path
+                }
             } as any);
         }
     }, [isAuthenticated, isLocked, segments, loaded, isReady, isPinEnabled, unlockedFeatures]);

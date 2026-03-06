@@ -80,9 +80,11 @@ export default function PinScreen() {
                 unlock();
                 if (feature) {
                     unlockFeature(feature);
-                    router.back();
-                } else if (redirect) {
-                    router.replace(redirect as any);
+                }
+
+                if (redirect) {
+                    const targetPath = redirect.startsWith('/') ? redirect : `/${redirect}`;
+                    router.replace(targetPath as any);
                 } else {
                     router.replace('/(tabs)/home');
                 }
@@ -96,12 +98,12 @@ export default function PinScreen() {
         if (isLoading) return;
 
         setError(null);
-        if (pin.length < 6) {
+        if (pin.length < 4) {
             const newPin = pin + num;
             setPin(newPin);
 
-            if (newPin.length === 6) {
-                // Determine whether to proceed based on whether we hit 6 digits
+            if (newPin.length === 4) {
+                // Determine whether to proceed based on whether we hit 4 digits
                 processCompletePin(newPin);
             }
         }
@@ -166,11 +168,13 @@ export default function PinScreen() {
                     unlock();
 
                     if (feature) {
-                        // Unlock that specific feature, then go back
                         unlockFeature(feature);
-                        router.back();
-                    } else if (redirect) {
-                        router.replace(redirect as any);
+                    }
+
+                    if (redirect) {
+                        // Redirect back to original target path
+                        const targetPath = redirect.startsWith('/') ? redirect : `/${redirect}`;
+                        router.replace(targetPath as any);
                     } else {
                         router.replace('/(tabs)/home');
                     }
@@ -200,6 +204,11 @@ export default function PinScreen() {
 
     return (
         <View className="flex-1 bg-white items-center justify-center px-6">
+            {isLoading && (
+                <View className="absolute inset-0 z-50 bg-white/50 items-center justify-center">
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                </View>
+            )}
             <View className="absolute top-12 left-6">
                 {(currentMode === 'setup' || currentMode === 'confirm' || action === 'change_pin' || action === 'disable_pin') && (
                     <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2" disabled={isLoading}>
