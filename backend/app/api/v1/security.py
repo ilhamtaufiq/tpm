@@ -110,7 +110,7 @@ def verify_pin(
 
     if not verify_password(data.pin, current_user.hashed_pin):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="PIN salah.",
         )
 
@@ -132,7 +132,7 @@ def change_pin(
 
     if not verify_password(data.old_pin, current_user.hashed_pin):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="PIN lama salah.",
         )
 
@@ -156,7 +156,7 @@ def disable_pin(
 
     if not verify_password(data.pin, current_user.hashed_pin):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="PIN salah.",
         )
 

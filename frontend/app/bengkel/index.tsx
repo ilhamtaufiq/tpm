@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -22,10 +22,11 @@ import {
     AlertCircle,
     Banknote,
     Truck,
-    Car
+    Car,
+    Share2
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
@@ -38,6 +39,7 @@ import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { FILE_URL } from '../../utils/api';
 
 export default function BengkelScreen() {
 
@@ -164,7 +166,7 @@ export default function BengkelScreen() {
 
             await printReceipt(receiptData, printSettings);
 
-            setPrinting(false); // Ensure loading is off before showing dialog
+            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
@@ -173,7 +175,7 @@ export default function BengkelScreen() {
                 type: 'alert'
             });
         } catch (error) {
-            setPrinting(false); // Ensure loading is off before showing dialog
+            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Error',
@@ -230,7 +232,7 @@ export default function BengkelScreen() {
 
             await saveReceiptPDF(receiptData, printSettings);
 
-            setPrinting(false); // Ensure loading is off before showing dialog
+            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
@@ -239,7 +241,7 @@ export default function BengkelScreen() {
                 type: 'alert'
             });
         } catch (error) {
-            setPrinting(false); // Ensure loading is off before showing dialog
+            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Error',
@@ -247,6 +249,47 @@ export default function BengkelScreen() {
                 variant: 'error',
                 type: 'alert'
             });
+        }
+    };
+
+    const handleShareLink = async (item: any) => {
+        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/bengkel/${item.id}`;
+        const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
+
+        try {
+            if (Platform.OS === 'web' && !navigator.share) {
+                await navigator.clipboard.writeText(shareMessage);
+                setDialogConfig({
+                    visible: true,
+                    title: 'Berhasil',
+                    message: 'Link struk telah disalin ke clipboard.',
+                    variant: 'success',
+                    type: 'alert'
+                });
+                return;
+            }
+
+            await Share.share({
+                message: shareMessage,
+                url: shareUrl,
+                title: 'Bagikan Struk Digital'
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
+                try {
+                    await navigator.clipboard.writeText(shareMessage);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Link struk telah disalin ke clipboard.',
+                        variant: 'success',
+                        type: 'alert'
+                    });
+                } catch (clipError) {
+                    console.error('Clipboard fallback also failed:', clipError);
+                }
+            }
         }
     };
 
@@ -281,15 +324,12 @@ export default function BengkelScreen() {
     const updateStatus = async (id: number, newStatus: string) => {
         try {
             await updateStatsMutation.mutateAsync({ id, status: newStatus });
-            // Don't auto-close the modal, so user can see the status changed
-            // refetch is already handled by useFocusEffect or polling, but we can manually refetch if needed
             refetch();
             refetchSummary();
         } catch (error) {
             console.error('Failed to update status:', error);
         }
     };
-
 
     const handleVoidOrder = async (item: any) => {
         setDialogConfig({
@@ -308,7 +348,6 @@ export default function BengkelScreen() {
                         message: 'Order berhasil dibatalkan',
                         variant: 'success',
                         type: 'alert',
-                        onConfirm: undefined,
                         loading: false
                     });
                     handleClosePress();
@@ -319,7 +358,6 @@ export default function BengkelScreen() {
                         message: getErrorMessage(err, 'Gagal membatalkan order'),
                         variant: 'error',
                         type: 'alert',
-                        onConfirm: undefined,
                         loading: false
                     });
                 }
@@ -327,199 +365,226 @@ export default function BengkelScreen() {
         });
     };
 
+    const renderDetailContent = () => {
+        if (!selectedItem) return null;
+        return (
+            <>
+                <View className="flex-row justify-between items-start mb-6">
+                    <View>
+                        <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{selectedItem.nomor_plat}</Typography>
+                        <Typography variant="body2" className="text-textGray mt-1">{selectedItem.jenis_kendaraan}</Typography>
+                    </View>
+                    <Badge
+                        label={(selectedItem.status_pengerjaan || '').toUpperCase()}
+                        variant={
+                            selectedItem.status_pengerjaan === 'proses' ? 'info' :
+                                selectedItem.status_pengerjaan === 'selesai' ? 'success' :
+                                    selectedItem.status_pengerjaan === 'batal' ? 'error' : 'warning'
+                        }
+                    />
+                </View>
+
+                {/* Category Info */}
+                {selectedItem.kategori && selectedItem.kategori !== 'umum' && (
+                    <View className={`flex-row items-center mb-4 px-4 py-2.5 rounded-2xl border ${selectedItem.kategori === 'jasa_angkut'
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-blue-50 border-blue-200'
+                        }`}>
+                        {selectedItem.kategori === 'jasa_angkut' ? (
+                            <Truck size={16} color="#10B981" />
+                        ) : (
+                            <Car size={16} color="#3B82F6" />
+                        )}
+                        <Typography weight="bold" className={`ml-2 text-xs ${selectedItem.kategori === 'jasa_angkut' ? 'text-emerald-700' : 'text-blue-700'
+                            }`}>
+                            {selectedItem.kategori === 'jasa_angkut' ? 'Jasa Angkut' : 'Jual Beli Mobil'}
+                        </Typography>
+                        {selectedItem.muatan_id && (
+                            <Typography className="text-emerald-500 text-[10px] ml-2">
+                                Muatan {selectedItem.muatan_nomor ? `#${selectedItem.muatan_nomor}` : `ID #${selectedItem.muatan_id}`}
+                            </Typography>
+                        )}
+                        {selectedItem.mobil_id && (
+                            <Typography className="text-blue-500 text-[10px] ml-2">
+                                Mobil #{selectedItem.mobil_id}
+                            </Typography>
+                        )}
+                    </View>
+                )}
+
+                <Card variant="outlined" className="p-6 border-gray-100 mb-8 bg-gray-50/50 rounded-[32px]">
+                    <Typography variant="caption" weight="bold" className="mb-4 text-primary uppercase tracking-widest">Rincian Order</Typography>
+
+                    {(selectedItem.detail_services || []).map((s: any, idx: number) => (
+                        <View key={`svc-${idx}`} className="flex-row justify-between mb-2">
+                            <Typography variant="body2" className="flex-1 text-textMain">{s.nama_jasa}</Typography>
+                            <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
+                        </View>
+                    ))}
+
+                    {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
+                        <View key={`part-${idx}`} className="flex-row justify-between mb-2">
+                            <Typography variant="body2" className="flex-1 text-textGray">
+                                {p.spare_part_nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
+                            </Typography>
+                        </View>
+                    ))}
+
+                    {(!selectedItem.detail_services?.length && !selectedItem.detail_parts?.length) ? (
+                        <Typography variant="body2" className="mb-4 text-gray-400 italic">Tidak ada item rincian</Typography>
+                    ) : null}
+
+                    {selectedItem.catatan ? (
+                        <View className="mt-4 pt-4 border-t border-gray-100">
+                            <Typography variant="caption" className="text-gray-400 mb-1">Catatan:</Typography>
+                            <Typography variant="body2" className="italic text-textMain">{selectedItem.catatan}</Typography>
+                        </View>
+                    ) : null}
+
+                    <View className="h-[1px] bg-gray-200 my-4" />
+
+                    <View className="space-y-1 mb-2">
+                        <View className="flex-row justify-between items-center">
+                            <Typography variant="caption" className="text-textGray">Subtotal</Typography>
+                            <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.subtotal || 0)}</Typography>
+                        </View>
+                        {selectedItem.diskon > 0 ? (
+                            <View className="flex-row justify-between items-center">
+                                <Typography variant="caption" className="text-rose-500">Diskon</Typography>
+                                <Typography variant="caption" weight="semibold" className="text-rose-500">-{formatCurrency(selectedItem.diskon)}</Typography>
+                            </View>
+                        ) : null}
+                        <View className="flex-row justify-between items-center">
+                            <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
+                            <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
+                        </View>
+                    </View>
+
+                    <View className="h-[1px] bg-gray-200 my-4" />
+                    <View className="flex-row justify-between items-center">
+                        <View>
+                            <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
+                            {selectedItem.metode_bayar === 'INTERNAL' ? (
+                                (selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas') ? (
+                                    <Typography variant="caption" className="text-emerald-600 font-bold">
+                                        Lunas — Potong Laba TPM
+                                    </Typography>
+                                ) : (
+                                    <Typography variant="caption" className="text-amber-600 font-bold">
+                                        Menunggu Pelunasan Jasa Angkut
+                                    </Typography>
+                                )
+                            ) : (selectedItem.grand_total > (selectedItem.jumlah_bayar || 0)) && (
+                                <Typography variant="caption" className="text-rose-600 font-bold">
+                                    Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
+                                </Typography>
+                            )}
+                        </View>
+                        <Typography variant="h2" weight="bold" className="text-primary">
+                            {formatCurrency(selectedItem.grand_total || 0)}
+                        </Typography>
+                    </View>
+
+                    {selectedItem.piutang_id && selectedItem.status_bayar !== 'LUNAS' && selectedItem.status_bayar !== 'lunas' && (
+                        <TouchableOpacity
+                            onPress={() => setPaymentModalVisible(true)}
+                            className="mt-6 bg-primary/10 py-4 rounded-2xl flex-row items-center justify-center border border-primary/20 shadow-sm"
+                        >
+                            <Banknote size={20} color="#023C69" />
+                            <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
+                        </TouchableOpacity>
+                    )}
+                </Card>
+
+                {/* Status Update Section */}
+                <View className="mb-8 mt-2">
+                    <Typography variant="caption" weight="bold" className="mb-3 text-textGray uppercase tracking-widest px-1">Update Status Pengerjaan</Typography>
+                    <View className="flex-row items-center space-x-3">
+                        {[
+                            { id: 'antre', label: 'Antre', activeBg: '#F59E0B', activeBorder: '#D97706' },
+                            { id: 'proses', label: 'Proses', activeBg: '#3B82F6', activeBorder: '#2563EB' },
+                            { id: 'selesai', label: 'Selesai', activeBg: '#10B981', activeBorder: '#059669' }
+                        ].map((s) => {
+                            const isActive = (selectedItem.status_pengerjaan || '').toString().toLowerCase() === s.id;
+                            return (
+                                <TouchableOpacity
+                                    key={s.id}
+                                    onPress={() => updateStatus(selectedItem.id, s.id)}
+                                    disabled={updateStatsMutation.isPending}
+                                    activeOpacity={0.7}
+                                    style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
+                                    className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${isActive ? 'shadow-lg' : 'bg-white border-gray-100 shadow-sm'}`}
+                                >
+                                    <Typography
+                                        weight="bold"
+                                        className={`text-[10px] uppercase tracking-widest ${isActive ? 'text-white' : 'text-textGray'}`}
+                                    >
+                                        {s.label}
+                                    </Typography>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View className="space-y-4">
+                    <Button
+                        variant="primary"
+                        title="Cetak Struk Transaksi"
+                        onPress={() => handlePrintReceipt(selectedItem)}
+                        loading={printing}
+                        icon={<Printer size={20} color="white" />}
+                        className="rounded-2xl h-14 bg-primary shadow-lg shadow-primary/30"
+                    />
+
+                    <Button
+                        variant="secondary"
+                        title="Simpan / Bagikan PDF"
+                        onPress={() => handleSavePDF(selectedItem)}
+                        loading={printing}
+                        icon={<Download size={20} color="white" />}
+                        className="rounded-2xl h-14 bg-secondary shadow-lg shadow-secondary/30"
+                    />
+
+                    <Button
+                        variant="primary"
+                        title="Bagikan Link Struk"
+                        onPress={() => handleShareLink(selectedItem)}
+                        icon={<Share2 size={20} color="white" />}
+                        className="rounded-2xl h-14 bg-[#00ADEF] shadow-lg shadow-[#00ADEF]/30"
+                    />
+
+                    <Button
+                        variant="outline-danger"
+                        title="Batalkan Order"
+                        onPress={() => handleVoidOrder(selectedItem)}
+                        loading={voidMutation.isPending}
+                        className="rounded-2xl h-14"
+                    />
+                </View>
+            </>
+        );
+    };
+
     const renderBottomSheetContent = () => (
         <View style={{ flex: 1 }}>
             {view === 'form' ? (
                 <BengkelForm onSuccess={handleClosePress} />
             ) : selectedItem ? (
-                <View className="p-8">
-                    <View className="flex-row justify-between items-start mb-6">
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{selectedItem.nomor_plat}</Typography>
-                            <Typography variant="body2" className="text-textGray mt-1">{selectedItem.jenis_kendaraan}</Typography>
+                Platform.OS === 'web' ? (
+                    <ScrollView className="flex-1">
+                        <View className="p-8 pb-32">
+                            {renderDetailContent()}
                         </View>
-                        <Badge
-                            label={selectedItem.status_pengerjaan.toUpperCase()}
-                            variant={
-                                selectedItem.status_pengerjaan === 'proses' ? 'info' :
-                                    selectedItem.status_pengerjaan === 'selesai' ? 'success' :
-                                        selectedItem.status_pengerjaan === 'batal' ? 'error' : 'warning'
-                            }
-                        />
-                    </View>
-
-                    {/* Category Info */}
-                    {selectedItem.kategori && selectedItem.kategori !== 'umum' && (
-                        <View className={`flex-row items-center mb-4 px-4 py-2.5 rounded-2xl border ${selectedItem.kategori === 'jasa_angkut'
-                            ? 'bg-emerald-50 border-emerald-200'
-                            : 'bg-blue-50 border-blue-200'
-                            }`}>
-                            {selectedItem.kategori === 'jasa_angkut' ? (
-                                <Truck size={16} color="#10B981" />
-                            ) : (
-                                <Car size={16} color="#3B82F6" />
-                            )}
-                            <Typography weight="bold" className={`ml-2 text-xs ${selectedItem.kategori === 'jasa_angkut' ? 'text-emerald-700' : 'text-blue-700'
-                                }`}>
-                                {selectedItem.kategori === 'jasa_angkut' ? 'Jasa Angkut' : 'Jual Beli Mobil'}
-                            </Typography>
-                            {selectedItem.muatan_id && (
-                                <Typography className="text-emerald-500 text-[10px] ml-2">
-                                    Muatan {selectedItem.muatan_nomor ? `#${selectedItem.muatan_nomor}` : `ID #${selectedItem.muatan_id}`}
-                                </Typography>
-                            )}
-                            {selectedItem.mobil_id && (
-                                <Typography className="text-blue-500 text-[10px] ml-2">
-                                    Mobil #{selectedItem.mobil_id}
-                                </Typography>
-                            )}
+                    </ScrollView>
+                ) : (
+                    <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                        <View className="p-8 pb-32">
+                            {renderDetailContent()}
                         </View>
-                    )}
-
-                    <Card variant="outlined" className="p-6 border-gray-100 mb-8 bg-gray-50/50 rounded-[32px]">
-                        <Typography variant="caption" weight="bold" className="mb-4 text-primary uppercase tracking-widest">Rincian Order</Typography>
-
-                        {(selectedItem.detail_services || []).map((s: any, idx: number) => (
-                            <View key={`svc-${idx}`} className="flex-row justify-between mb-2">
-                                <Typography variant="body2" className="flex-1 text-textMain">{s.nama_jasa}</Typography>
-                                <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
-                            </View>
-                        ))}
-
-                        {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
-                            <View key={`part-${idx}`} className="flex-row justify-between mb-2">
-                                <Typography variant="body2" className="flex-1 text-textGray">
-                                    {p.spare_part_nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
-                                </Typography>
-                            </View>
-                        ))}
-
-                        <View className="h-[1px] bg-gray-200 my-4" />
-
-                        <View className="space-y-1 mb-2">
-                            <View className="flex-row justify-between items-center">
-                                <Typography variant="caption" className="text-textGray">Subtotal</Typography>
-                                <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.subtotal || 0)}</Typography>
-                            </View>
-                            {selectedItem.diskon > 0 ? (
-                                <View className="flex-row justify-between items-center">
-                                    <Typography variant="caption" className="text-rose-500">Diskon</Typography>
-                                    <Typography variant="caption" weight="semibold" className="text-rose-500">-{formatCurrency(selectedItem.diskon)}</Typography>
-                                </View>
-                            ) : null}
-                            <View className="flex-row justify-between items-center">
-                                <Typography variant="caption" className="text-textGray">Sudah Dibayar</Typography>
-                                <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
-                            </View>
-                        </View>
-
-                        {(!selectedItem.detail_services?.length && !selectedItem.detail_parts?.length) ? (
-                            <Typography variant="body2" className="mb-4 text-gray-400 italic">Tidak ada item rincian</Typography>
-                        ) : null}
-
-                        {selectedItem.catatan ? (
-                            <View className="mt-4 pt-4 border-t border-gray-100">
-                                <Typography variant="caption" className="text-gray-400 mb-1">Catatan:</Typography>
-                                <Typography variant="body2" className="italic text-textMain">{selectedItem.catatan}</Typography>
-                            </View>
-                        ) : null}
-
-                        <View className="h-[1px] bg-gray-200 my-4" />
-                        <View className="flex-row justify-between items-center">
-                            <View>
-                                <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
-                                {selectedItem.metode_bayar === 'INTERNAL' ? (
-                                    selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas' ? (
-                                        <Typography variant="caption" className="text-emerald-600 font-bold">
-                                            Lunas — Potong Laba TPM
-                                        </Typography>
-                                    ) : (
-                                        <Typography variant="caption" className="text-amber-600 font-bold">
-                                            Menunggu Pelunasan Jasa Angkut
-                                        </Typography>
-                                    )
-                                ) : selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) && (
-                                    <Typography variant="caption" className="text-rose-600 font-bold">
-                                        Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
-                                    </Typography>
-                                )}
-                            </View>
-                            <Typography variant="h2" weight="bold" className="text-primary">
-                                {formatCurrency(selectedItem.grand_total || 0)}
-                            </Typography>
-                        </View>
-
-                        {selectedItem.piutang_id && selectedItem.status_bayar !== 'LUNAS' && selectedItem.status_bayar !== 'lunas' && (
-                            <TouchableOpacity
-                                onPress={() => setPaymentModalVisible(true)}
-                                className="mt-6 bg-primary/10 py-4 rounded-2xl flex-row items-center justify-center border border-primary/20 shadow-sm"
-                            >
-                                <Banknote size={20} color="#023C69" />
-                                <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
-                            </TouchableOpacity>
-                        )}
-                    </Card>
-
-                    {/* Status Update Section */}
-                    <View className="mb-8 mt-2">
-                        <Typography variant="caption" weight="bold" className="mb-3 text-textGray uppercase tracking-widest px-1">Update Status Pengerjaan</Typography>
-                        <View className="flex-row items-center space-x-3">
-                            {[
-                                { id: 'antre', label: 'Antre', activeBg: '#F59E0B', activeBorder: '#D97706' },
-                                { id: 'proses', label: 'Proses', activeBg: '#3B82F6', activeBorder: '#2563EB' },
-                                { id: 'selesai', label: 'Selesai', activeBg: '#10B981', activeBorder: '#059669' }
-                            ].map((s) => {
-                                const isActive = selectedItem.status_pengerjaan?.toString().toLowerCase() === s.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={s.id}
-                                        onPress={() => updateStatus(selectedItem.id, s.id)}
-                                        disabled={updateStatsMutation.isPending}
-                                        activeOpacity={0.7}
-                                        style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
-                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${isActive ? 'shadow-lg' : 'bg-white border-gray-100 shadow-sm'}`}
-                                    >
-                                        <Typography
-                                            weight="bold"
-                                            className={`text-[10px] uppercase tracking-widest ${isActive ? 'text-white' : 'text-textGray'}`}
-                                        >
-                                            {s.label}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    </View>
-
-                    {/* Action Buttons */}
-                    <View className="space-y-4">
-                        <Button
-                            variant="primary"
-                            title="Cetak Struk Transaksi"
-                            onPress={() => handlePrintReceipt(selectedItem)}
-                            loading={printing}
-                            icon={<Printer size={20} color="white" />}
-                            className="rounded-2xl h-14 bg-primary shadow-lg shadow-primary/30"
-                        />
-
-                        <Button
-                            variant="secondary"
-                            title="Simpan / Bagikan PDF"
-                            onPress={() => handleSavePDF(selectedItem)}
-                            loading={printing}
-                            icon={<Download size={20} color="white" />}
-                            className="rounded-2xl h-14 bg-secondary shadow-lg shadow-secondary/30"
-                        />
-
-                        <Button
-                            variant="outline-danger"
-                            title="Batalkan Order"
-                            onPress={() => handleVoidOrder(selectedItem)}
-                            loading={voidMutation.isPending}
-                            className="rounded-2xl h-14"
-                        />
-                    </View>
-                </View>
+                    </BottomSheetScrollView>
+                )
             ) : null}
 
             {selectedItem && selectedItem.piutang_id && (

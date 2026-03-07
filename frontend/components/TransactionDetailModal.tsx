@@ -6,7 +6,9 @@ import {
     ScrollView,
     ActivityIndicator,
     Dimensions,
-    SafeAreaView
+    SafeAreaView,
+    Share,
+    Platform
 } from 'react-native';
 import {
     X,
@@ -35,6 +37,12 @@ import { formatCurrency } from '../utils/format';
 import { keuanganService, ActivityItem } from '../services/keuangan';
 import { bengkelService } from '../services/bengkel';
 import { jasaAngkutService } from '../services/jasaAngkut';
+import { FILE_URL } from '../utils/api';
+import { AlertDialog } from './ui/AlertDialog';
+import * as Linking from 'expo-linking';
+import { printSettingsService, PrintSettings } from '../utils/printSettings';
+import { printReceipt, PrintReceiptData, saveReceiptPDF } from '../utils/printReceipt';
+import { useAuthStore } from '../store/useAuthStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -68,6 +76,34 @@ const BentoSection = ({ title, children }: { title: string, children: React.Reac
 export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDetailModalProps) => {
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
+    const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
+    const [printing, setPrinting] = useState(false);
+    const user = useAuthStore(state => state.user);
+    const [dialogConfig, setDialogConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        variant: 'success' | 'error' | 'warning' | 'info';
+        type: 'alert' | 'confirm';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        variant: 'info',
+        type: 'alert'
+    });
+
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const s = await printSettingsService.getSettings();
+                setPrintSettings(s);
+            } catch (e) {
+                console.error('Failed to load print settings', e);
+            }
+        };
+        loadSettings();
+    }, []);
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -77,9 +113,9 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     let data;
                     const id = item.original_id;
 
-                    if (item.source === 'jasa_angkut') {
+                    if (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') {
                         data = await jasaAngkutService.getMuatan(id);
-                    } else if (item.type === 'workshop') {
+                    } else if (item.type === 'workshop' || item.source === 'BENGKEL' || item.source === 'bengkel') {
                         data = await bengkelService.getDetailTransaksi(id);
                     } else {
                         data = await keuanganService.getKasBankTransaction(id);
@@ -95,6 +131,154 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
 
         fetchDetails();
     }, [visible, item]);
+
+    const handleShareLink = async () => {
+        if (!item) return;
+
+        const type = (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') ? 'jasa_angkut' :
+            (item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL') ? 'bengkel' : null;
+
+        if (!type) {
+            setDialogConfig({
+                visible: true,
+                title: 'Info',
+                message: 'Struk publik tidak tersedia untuk tipe transaksi ini.',
+                variant: 'info',
+                type: 'alert'
+            });
+            return;
+        }
+
+        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/${type}/${item.original_id}`;
+        const shareMessage = `Halo, ini adalah rincian transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
+
+        try {
+            if (Platform.OS === 'web' && !navigator.share) {
+                await navigator.clipboard.writeText(shareMessage);
+                setDialogConfig({
+                    visible: true,
+                    title: 'Berhasil',
+                    message: 'Link struk telah disalin ke clipboard.',
+                    variant: 'success',
+                    type: 'alert'
+                });
+                return;
+            }
+
+            await Share.share({
+                message: shareMessage,
+                url: shareUrl,
+                title: 'Bagikan Struk Digital'
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
+                try {
+                    await navigator.clipboard.writeText(shareMessage);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Link struk telah disalin ke clipboard.',
+                        variant: 'success',
+                        type: 'alert'
+                    });
+                } catch (clipError) {
+                    console.error('Clipboard fallback failed:', clipError);
+                }
+            }
+        }
+    };
+
+    const handlePrintThermal = async () => {
+        if (!item || !details || !printSettings) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: 'Data atau pengaturan cetak belum siap.',
+                variant: 'error',
+                type: 'alert'
+            });
+            return;
+        }
+
+        try {
+            setPrinting(true);
+            const sourceKey = item.source?.toUpperCase() || '';
+            const type = (sourceKey === 'JASA_ANGKUT') ? 'jasa_angkut' : 'bengkel';
+
+            let receiptData: PrintReceiptData;
+
+            if (type === 'bengkel') {
+                receiptData = {
+                    type: 'bengkel',
+                    transactionNumber: details.nomor_transaksi || details.id.toString(),
+                    antrian: details.nomor_antrian || '-',
+                    date: new Date(details.created_at || new Date()),
+                    customerName: details.customer_nama || details.nama_customer || '-',
+                    cashierName: user?.nama || '-',
+                    mechanicName: details.mekanik_nama || '-',
+                    status: details.status_bayar || 'Belum Lunas',
+                    vehiclePlate: details.nomor_plat || '-',
+                    vehicleType: details.jenis_kendaraan || '-',
+                    services: (details.detail_services || []).map((s: any) => ({
+                        description: s.nama_jasa,
+                        quantity: 1,
+                        unitPrice: Number(s.harga),
+                        subtotal: Number(s.harga)
+                    })),
+                    parts: (details.detail_parts || []).map((p: any) => ({
+                        description: p.spare_part_nama || p.spare_part?.nama || 'Sparepart',
+                        quantity: p.qty,
+                        unitPrice: Number(p.subtotal) / p.qty,
+                        subtotal: Number(p.subtotal)
+                    })),
+                    subtotal: details.subtotal || details.total_biaya || 0,
+                    total: details.grand_total || details.total_biaya || 0,
+                    discount: details.diskon || 0,
+                    paymentMethod: details.metode_bayar || '-',
+                    paid: details.total_bayar || 0,
+                    change: details.kembalian || 0,
+                    notes: details.catatan
+                };
+            } else {
+                // Jasa Angkut
+                receiptData = {
+                    type: 'jasa_angkut',
+                    transactionNumber: details.nomor_transaksi || details.id.toString(),
+                    date: new Date(details.tanggal || new Date()),
+                    customerName: details.customer_nama || '-',
+                    cashierName: user?.nama || '-',
+                    status: details.status_bayar || 'Belum Lunas',
+                    origin: details.asal || '-',
+                    destination: details.tujuan || '-',
+                    driverName: details.supir_nama || details.supir?.nama || '-',
+                    items: [{
+                        description: `Ritase: ${details.asal} - ${details.tujuan}`,
+                        quantity: details.ritase || 1,
+                        unitPrice: Number(details.pendapatan_kotor) / (details.ritase || 1),
+                        subtotal: Number(details.pendapatan_kotor)
+                    }],
+                    subtotal: Number(details.pendapatan_kotor),
+                    total: Number(details.pendapatan_kotor),
+                    paymentMethod: 'TRANSFER/TUNAI',
+                    paid: details.jumlah_bayar || 0,
+                    notes: details.catatan
+                };
+            }
+
+            await printReceipt(receiptData, printSettings);
+        } catch (error: any) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: error.message || 'Gagal mencetak struk thermal',
+                variant: 'error',
+                type: 'alert'
+            });
+        } finally {
+            setPrinting(false);
+        }
+    };
 
     if (!item) return null;
 
@@ -244,7 +428,7 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 160 }}
+                        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 220 }}
                     >
                         {loading ? (
                             <View className="py-20 items-center justify-center">
@@ -281,21 +465,33 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                                 </View>
 
                                 {/* Dynamic Content */}
-                                {item.source === 'jasa_angkut' ? renderLogisticsDetail() :
-                                    item.type === 'workshop' ? renderWorkshopDetail() :
+                                {item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' ? renderLogisticsDetail() :
+                                    (item.type === 'workshop' || item.source === 'BENGKEL' || item.source === 'bengkel') ? renderWorkshopDetail() :
                                         renderFinancialDetail()}
 
-                                {/* Action Footer */}
-                                <View className="flex-row gap-4 mt-4">
-                                    <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white h-14 rounded-2xl border border-gray-100 shadow-sm">
-                                        <Share2 size={18} color="#023C69" />
-                                        <Typography weight="bold" className="text-primary ml-2">Bagikan</Typography>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white h-14 rounded-2xl border border-gray-100 shadow-sm">
-                                        <Printer size={18} color="#023C69" />
-                                        <Typography weight="bold" className="text-primary ml-2">Cetak</Typography>
-                                    </TouchableOpacity>
-                                </View>
+                                {((item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' || item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL')) && (
+                                    <View className="flex-row gap-4 mt-4">
+                                        <TouchableOpacity
+                                            onPress={handleShareLink}
+                                            className="flex-1 flex-row items-center justify-center bg-white h-14 rounded-2xl border border-gray-100 shadow-sm"
+                                        >
+                                            <Share2 size={18} color="#00ADEF" />
+                                            <Typography weight="bold" className="text-[#00ADEF] ml-2">Bagikan Link</Typography>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={handlePrintThermal}
+                                            disabled={printing}
+                                            className="flex-1 flex-row items-center justify-center bg-primary h-14 rounded-2xl shadow-lg shadow-primary/30"
+                                        >
+                                            {printing ? <ActivityIndicator color="white" size="small" /> : (
+                                                <>
+                                                    <Printer size={18} color="white" />
+                                                    <Typography weight="bold" className="text-white ml-2">Cetak Struk</Typography>
+                                                </>
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
                             </View>
                         )}
                     </ScrollView>
@@ -314,6 +510,14 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     )}
                 </View>
             </View>
+            <AlertDialog
+                visible={dialogConfig.visible}
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                type={dialogConfig.type}
+                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+            />
         </Modal>
     );
 };

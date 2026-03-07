@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -20,7 +20,8 @@ import {
     RefreshCw,
     Edit,
     X,
-    Trash2
+    Trash2,
+    Share2
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -35,6 +36,7 @@ import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 import { PaymentModal } from '../../components/PaymentModal';
 import { formatNumber, parseNumber } from '../../utils/format';
+import { FILE_URL } from '../../utils/api';
 
 export default function JasaAngkutScreen() {
 
@@ -205,6 +207,48 @@ export default function JasaAngkutScreen() {
         }
     };
 
+    const handleShareLink = async (trip: any) => {
+        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/jasa_angkut/${trip.id}`;
+        const shareMessage = `Halo, ini adalah rincian ritase/angkutan Anda di Tiga Putra Motor: ${shareUrl}`;
+
+        try {
+            if (Platform.OS === 'web' && !navigator.share) {
+                // Fallback for web browser that doesn't support Web Share API
+                await navigator.clipboard.writeText(shareMessage);
+                setDialogConfig({
+                    visible: true,
+                    title: 'Berhasil',
+                    message: 'Link struk telah disalin ke clipboard.',
+                    variant: 'success',
+                    type: 'alert'
+                });
+                return;
+            }
+
+            await Share.share({
+                message: shareMessage,
+                url: shareUrl,
+                title: 'Bagikan Struk Digital'
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            if (error?.message?.includes('not supported') || Platform.OS === 'web') {
+                try {
+                    await navigator.clipboard.writeText(shareMessage);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Link struk telah disalin ke clipboard.',
+                        variant: 'success',
+                        type: 'alert'
+                    });
+                } catch (clipError) {
+                    console.error('Clipboard fallback also failed:', clipError);
+                }
+            }
+        }
+    };
+
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
@@ -306,7 +350,7 @@ export default function JasaAngkutScreen() {
 
         return (
             <ScrollContainer style={{ flex: 1 }}>
-                <View className="p-8">
+                <View className="p-8 pb-32">
                     <View className="flex-row justify-between items-start mb-6">
                         <View>
                             <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{trip.tujuan}</Typography>
@@ -417,6 +461,14 @@ export default function JasaAngkutScreen() {
                                 icon={<RefreshCw size={20} color="white" />}
                             />
                         )}
+
+                        <Button
+                            variant="primary"
+                            title="Bagikan Link Struk"
+                            onPress={() => handleShareLink(trip)}
+                            icon={<Share2 size={20} color="white" />}
+                            className="rounded-2xl h-14 bg-[#00ADEF] shadow-lg shadow-[#00ADEF]/30"
+                        />
                         <Button
                             variant="ghost"
                             title="Tutup Panel"
