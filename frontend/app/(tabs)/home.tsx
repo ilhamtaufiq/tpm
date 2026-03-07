@@ -1,4 +1,4 @@
-import { ScrollView, StatusBar, View } from 'react-native';
+import { ScrollView, StatusBar, View, RefreshControl } from 'react-native';
 import { HomeHeader } from '../../components/HomeHeader';
 import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
@@ -26,6 +26,7 @@ export default function HomeScreen() {
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#023C69" />}
                 >
                     <WalletSection />
                     <ServiceGrid />
