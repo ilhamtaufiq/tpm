@@ -16,6 +16,7 @@ from app.models.mobil import (
     TransaksiPenjualanMobil,
     MobilBiayaLainnya,
     MobilPartService,
+    MobilMedia,
     Mobil
 )
 from app.utils.constants import CarStatus
@@ -34,13 +35,12 @@ class MaintenanceService:
         1. Delete all workshop transactions and details.
         2. Delete all spare part purchases.
         3. Delete all freight (jasa angkut) transactions.
-        4. Delete all car sales transactions.
+        4. Delete all car sales transactions and car inventory (Mobil).
         5. Delete all receivables (piutang), payables (hutang), and payments.
         6. Delete all workshop expenses.
         7. Delete all employee transactions (Absensi, Kasbon, Slip Gaji).
         8. Delete all cash/bank journal entries (KasBank) - LAST.
         9. Reset spare part stocks to 0.
-        10. Reset car statuses to AVAILABLE.
         """
         try:
             print("RESET: Starting transaction reset process...")
@@ -54,6 +54,7 @@ class MaintenanceService:
             self.db.query(JasaAngkutPartService).delete()
             self.db.query(MobilBiayaLainnya).delete()
             self.db.query(MobilPartService).delete()
+            self.db.query(MobilMedia).delete()
             self.db.query(Absensi).delete()
             
             # 2. Main Transaction Tables
@@ -85,11 +86,9 @@ class MaintenanceService:
             # Reset Spare Part Stock
             self.db.query(SparePart).update({SparePart.stok: 0})
 
-            # Reset Mobil Status
-            self.db.query(Mobil).update({
-                Mobil.status: CarStatus.TERSEDIA,
-                Mobil.tanggal_terjual: None
-            })
+            # Menghapus Stock Mobil (Inventory) - Sesuai permintaan user
+            print("RESET: Deleting car inventory stock (Mobil)...")
+            self.db.query(Mobil).delete()
 
             self.db.commit()
             print("RESET: Success.")

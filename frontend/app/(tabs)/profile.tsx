@@ -11,11 +11,12 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useSecurityStore } from '../../store/useSecurityStore';
 import { Lock, Fingerprint } from 'lucide-react-native';
+import { BaseModal } from '../../components/ui/BaseModal';
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
     const { themeColors } = useUIStore();
-    const { isPinEnabled, useBiometrics, enableBiometrics, resetSecurity, protectedFeatures, toggleFeatureProtection } = useSecurityStore();
+    const { isPinEnabled, useBiometrics } = useSecurityStore();
     const { mutate: resetTransactions, isPending: isResetting } = useResetTransactions();
     const [dialogConfig, setDialogConfig] = React.useState<{
         visible: boolean;
@@ -31,12 +32,13 @@ export default function ProfileScreen() {
         variant: 'info',
         type: 'alert'
     });
+    const [pinActionVisible, setPinActionVisible] = React.useState(false);
 
     const handleReset = () => {
         setDialogConfig({
             visible: true,
-            title: "Hapus Transaksi?",
-            message: "Tindakan ini akan menghapus SELURUH riwayat transaksi (Bengkel, Mobil, Jasa Angkut, Hutang & Piutang). Data master tidak akan terhapus. Tindakan ini tidak dapat dibatalkan!",
+            title: "Hapus Transaksi & Stok?",
+            message: "Tindakan ini akan menghapus SELURUH riwayat transaksi dan Stok Mobil (Inventory). Data master (Karyawan, Pelanggan, Sparepart) tetap tersimpan tetapi stok sparepart akan di-nol-kan. Tindakan ini tidak dapat dibatalkan!",
             variant: 'error',
             type: 'confirm',
             onConfirm: () => {
@@ -140,21 +142,7 @@ export default function ProfileScreen() {
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => {
                             if (isPinEnabled) {
-                                setDialogConfig({
-                                    visible: true,
-                                    title: "PIN Keamanan",
-                                    message: "Pilih tindakan keamanan untuk PIN Anda.",
-                                    variant: 'info',
-                                    type: 'confirm',
-                                    onConfirm: () => {
-                                        // Push to verify first before reset
-                                        router.push({
-                                            pathname: '/(security)/pin',
-                                            params: { mode: 'verify', action: 'disable_pin' }
-                                        });
-                                        setDialogConfig(prev => ({ ...prev, visible: false }));
-                                    }
-                                });
+                                setPinActionVisible(true);
                             } else {
                                 router.push('/(security)/pin?mode=setup');
                             }
@@ -317,6 +305,62 @@ export default function ProfileScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={isResetting}
             />
+
+            <BaseModal
+                visible={pinActionVisible}
+                onClose={() => setPinActionVisible(false)}
+                title="PIN Keamanan"
+            >
+                <View className="gap-y-4">
+                    <Typography className="text-gray-500 mb-2 leading-relaxed">
+                        Pilih tindakan untuk pengaturan PIN keamanan Anda.
+                    </Typography>
+
+                    <TouchableOpacity
+                        onPress={() => {
+                            setPinActionVisible(false);
+                            router.push({
+                                pathname: '/(security)/pin',
+                                params: { mode: 'verify', action: 'change_pin' }
+                            });
+                        }}
+                        className="flex-row items-center p-5 bg-blue-50/50 rounded-[28px] border border-blue-100/50"
+                    >
+                        <View className="w-12 h-12 bg-blue-100/50 rounded-[18px] items-center justify-center mr-4">
+                            <Lock size={22} color="#3B82F6" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-blue-700 text-base mb-0.5">Ubah PIN</Typography>
+                            <Typography variant="caption" className="text-blue-600/60 uppercase tracking-widest font-bold text-[9px]">Ganti PIN Lama</Typography>
+                        </View>
+                        <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
+                            <ChevronRight size={16} color="#3B82F6" />
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => {
+                            setPinActionVisible(false);
+                            router.push({
+                                pathname: '/(security)/pin',
+                                params: { mode: 'verify', action: 'disable_pin' }
+                            });
+                        }}
+                        className="flex-row items-center p-5 bg-rose-50/50 rounded-[28px] border border-rose-100/50"
+                    >
+                        <View className="w-12 h-12 bg-rose-100/50 rounded-[18px] items-center justify-center mr-4">
+                            <ShieldCheck size={22} color="#EF4444" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-rose-700 text-base mb-0.5">Nonaktifkan</Typography>
+                            <Typography variant="caption" className="text-rose-600/60 uppercase tracking-widest font-bold text-[9px]">Matikan Keamanan</Typography>
+                        </View>
+                        <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
+                            <ChevronRight size={16} color="#EF4444" />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            </BaseModal>
         </View>
     );
 }

@@ -281,7 +281,10 @@ export default function BengkelScreen() {
     const updateStatus = async (id: number, newStatus: string) => {
         try {
             await updateStatsMutation.mutateAsync({ id, status: newStatus });
-            handleClosePress();
+            // Don't auto-close the modal, so user can see the status changed
+            // refetch is already handled by useFocusEffect or polling, but we can manually refetch if needed
+            refetch();
+            refetchSummary();
         } catch (error) {
             console.error('Failed to update status:', error);
         }
@@ -376,7 +379,6 @@ export default function BengkelScreen() {
                     <Card variant="outlined" className="p-6 border-gray-100 mb-8 bg-gray-50/50 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-primary uppercase tracking-widest">Rincian Order</Typography>
 
-                        {/* Services List */}
                         {(selectedItem.detail_services || []).map((s: any, idx: number) => (
                             <View key={`svc-${idx}`} className="flex-row justify-between mb-2">
                                 <Typography variant="body2" className="flex-1 text-textMain">{s.nama_jasa}</Typography>
@@ -384,14 +386,10 @@ export default function BengkelScreen() {
                             </View>
                         ))}
 
-                        {/* Parts List */}
                         {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
                             <View key={`part-${idx}`} className="flex-row justify-between mb-2">
                                 <Typography variant="body2" className="flex-1 text-textGray">
                                     {p.spare_part_nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
-                                </Typography>
-                                <Typography variant="body2" weight="medium" className="text-textGray">
-                                    {formatCurrency(p.subtotal)}
                                 </Typography>
                             </View>
                         ))}
@@ -440,11 +438,11 @@ export default function BengkelScreen() {
                                             Menunggu Pelunasan Jasa Angkut
                                         </Typography>
                                     )
-                                ) : selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) ? (
+                                ) : selectedItem.grand_total > (selectedItem.jumlah_bayar || 0) && (
                                     <Typography variant="caption" className="text-rose-600 font-bold">
                                         Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
                                     </Typography>
-                                ) : null}
+                                )}
                             </View>
                             <Typography variant="h2" weight="bold" className="text-primary">
                                 {formatCurrency(selectedItem.grand_total || 0)}
@@ -462,46 +460,56 @@ export default function BengkelScreen() {
                         )}
                     </Card>
 
+                    {/* Status Update Section */}
+                    <View className="mb-8 mt-2">
+                        <Typography variant="caption" weight="bold" className="mb-3 text-textGray uppercase tracking-widest px-1">Update Status Pengerjaan</Typography>
+                        <View className="flex-row items-center space-x-3">
+                            {[
+                                { id: 'antre', label: 'Antre', activeBg: '#F59E0B', activeBorder: '#D97706' },
+                                { id: 'proses', label: 'Proses', activeBg: '#3B82F6', activeBorder: '#2563EB' },
+                                { id: 'selesai', label: 'Selesai', activeBg: '#10B981', activeBorder: '#059669' }
+                            ].map((s) => {
+                                const isActive = selectedItem.status_pengerjaan?.toString().toLowerCase() === s.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={s.id}
+                                        onPress={() => updateStatus(selectedItem.id, s.id)}
+                                        disabled={updateStatsMutation.isPending}
+                                        activeOpacity={0.7}
+                                        style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
+                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${isActive ? 'shadow-lg' : 'bg-white border-gray-100 shadow-sm'}`}
+                                    >
+                                        <Typography
+                                            weight="bold"
+                                            className={`text-[10px] uppercase tracking-widest ${isActive ? 'text-white' : 'text-textGray'}`}
+                                        >
+                                            {s.label}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+
+                    {/* Action Buttons */}
                     <View className="space-y-4">
-                        {selectedItem.status_pengerjaan === 'antre' && (
-                            <Button
-                                title="Mulai Pengerjaan"
-                                onPress={() => updateStatus(selectedItem.id, 'proses')}
-                                loading={updateStatsMutation.isPending}
-                                className="rounded-2xl h-14"
-                            />
-                        )}
-                        {selectedItem.status_pengerjaan === 'proses' && (
-                            <Button
-                                title="Selesaikan & Checkout"
-                                onPress={() => updateStatus(selectedItem.id, 'selesai')}
-                                loading={updateStatsMutation.isPending}
-                                className="rounded-2xl h-14"
-                            />
-                        )}
+                        <Button
+                            variant="primary"
+                            title="Cetak Struk Transaksi"
+                            onPress={() => handlePrintReceipt(selectedItem)}
+                            loading={printing}
+                            icon={<Printer size={20} color="white" />}
+                            className="rounded-2xl h-14 bg-primary shadow-lg shadow-primary/30"
+                        />
 
-                        {/* Print Buttons */}
-                        {selectedItem.status_pengerjaan === 'selesai' && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    title="Cetak Struk"
-                                    onPress={() => handlePrintReceipt(selectedItem)}
-                                    loading={printing}
-                                    icon={<Printer size={20} color="#023C69" />}
-                                    className="rounded-2xl h-14"
-                                />
-                                <Button
-                                    variant="outline-neutral"
-                                    title="Simpan PDF"
-                                    onPress={() => handleSavePDF(selectedItem)}
-                                    loading={printing}
-                                    icon={<Download size={20} color="#6B7280" />}
-                                    className="rounded-2xl h-14"
-                                />
-                            </>
-                        )}
-
+                        <Button
+                            variant="secondary"
+                            title="Simpan / Bagikan PDF"
+                            onPress={() => handleSavePDF(selectedItem)}
+                            loading={printing}
+                            icon={<Download size={20} color="white" />}
+                            className="rounded-2xl h-14 bg-secondary shadow-lg shadow-secondary/30"
+                        />
 
                         <Button
                             variant="outline-danger"

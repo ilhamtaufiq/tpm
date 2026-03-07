@@ -457,8 +457,15 @@ class PiutangService:
 
         source_summary = {}
         for row in by_source:
+            # We also need the gross total piutang for these matching records
+            gross_total = (
+                query.filter(PiutangUsaha.sumber == row.sumber)
+                .with_entities(func.sum(PiutangUsaha.nominal_piutang))
+                .scalar() or 0
+            )
             source_summary[row.sumber.value] = {
                 "count": row.count,
+                "total_piutang": float(gross_total),
                 "sisa_piutang": float(row.sisa or 0),
             }
 

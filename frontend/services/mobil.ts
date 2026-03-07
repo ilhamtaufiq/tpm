@@ -7,14 +7,20 @@ export interface Mobil {
 }
 
 export interface InventorySummary {
-    total_units: number;
-    total_value: number;
+    total_units?: number;
+    total_mobil?: number;
+    total_value?: number;
+    total_modal_tersedia?: number;
+    per_status?: Record<string, number>;
 }
 
 export interface PenjualanSummary {
-    total_units_sold: number;
-    total_revenue: number;
-    total_profit: number;
+    total_units_sold?: number;
+    total_transaksi?: number;
+    total_revenue?: number;
+    total_penjualan?: number;
+    total_profit?: number;
+    total_laba_tpm?: number;
 }
 
 export const mobilService = {

@@ -206,13 +206,35 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
         const html = generateReceiptHTML(data, settings);
 
         if (Platform.OS === 'web') {
-            // For web, open print dialog
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                printWindow.document.write(html);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
+            // For web, use a hidden iframe for more reliable printing
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            const iframeDoc = iframe.contentWindow?.document;
+            if (iframeDoc) {
+                iframeDoc.open();
+                iframeDoc.write(html);
+                iframeDoc.close();
+
+                // Wait for content to load
+                iframe.onload = () => {
+                    iframe.contentWindow?.focus();
+                    iframe.contentWindow?.print();
+                    // Remove iframe after print dialog is closed
+                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                };
+
+                // Fallback for browsers where onload doesn't fire for iframe.document.write
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        iframe.contentWindow?.focus();
+                        iframe.contentWindow?.print();
+                        setTimeout(() => {
+                            if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                        }, 1000);
+                    }
+                }, 500);
             }
         } else {
             // For mobile, use Expo Print
@@ -233,6 +255,12 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
 export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
         const html = generateReceiptHTML(data, settings);
+
+        if (Platform.OS === 'web') {
+            // For web, browsers handle "Save as PDF" through the print dialog
+            // We use the same iframe logic as printReceipt
+            return printReceipt(data, settings);
+        }
 
         const { uri } = await Print.printToFileAsync({
             html,

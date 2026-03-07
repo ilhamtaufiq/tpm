@@ -4,8 +4,9 @@ import { Typography } from './ui/Typography';
 import { useLowStockParts, useTransaksiBengkelSummary } from '../hooks/useBengkel';
 import { useMuatanSummary } from '../hooks/useJasaAngkut';
 import { useInventorySummary, usePenjualanSummary } from '../hooks/useMobil';
+import { useDashboardSummary } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
-import { AlertCircle, Wrench, Truck, CarFront } from 'lucide-react-native';
+import { AlertCircle, Wrench, Truck, CarFront, Wallet } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 const SLIDE_WIDTH = width - 48;
@@ -16,6 +17,7 @@ export const StatsSlider = () => {
     const { data: logistikStats } = useMuatanSummary();
     const { data: carInventory } = useInventorySummary();
     const { data: carSales } = usePenjualanSummary();
+    const { data: dashboard } = useDashboardSummary();
 
     const lowStockCount = lowStock?.length || 0;
 
@@ -23,8 +25,8 @@ export const StatsSlider = () => {
         {
             id: 'mobil',
             title: 'Jual Beli Mobil',
-            subtitle: `${carInventory?.total_units || 0} unit tersedia di showroom`,
-            value: `${carSales?.total_units_sold || 0} Terjual`,
+            subtitle: `${carInventory?.total_units || carInventory?.total_mobil || 0} unit tersedia`,
+            value: `${carSales?.total_units_sold || carSales?.total_transaksi || 0} Terjual`,
             icon: CarFront,
             color: '#F59E0B', // Amber/Orange
             path: '/laporan/mobil',
@@ -41,20 +43,29 @@ export const StatsSlider = () => {
         {
             id: 'bengkel',
             title: 'Performa Bengkel',
-            subtitle: 'Total pendapatan hari ini',
-            value: formatCurrency(bengkelStats?.total_pendapatan || 0),
+            subtitle: 'Total transaksi periode ini',
+            value: `${bengkelStats?.total_transaksi || 0} Transaksi`,
             icon: Wrench,
-            color: '#023C69', // Gojek Green
+            color: '#023C69', // Deep Blue
             path: '/laporan/bengkel',
         },
         {
             id: 'logistik',
             title: 'Stats Jasa Angkut',
-            subtitle: 'Total muatan diproses',
-            value: `${logistikStats?.total_muatan || 0} Trip`,
+            subtitle: 'Total pendapatan kotor',
+            value: formatCurrency(logistikStats?.total_pendapatan || 0),
             icon: Truck,
             color: '#00ADEF', // Gopay Blue
             path: '/laporan/jasa-angkut',
+        },
+        {
+            id: 'finance',
+            title: 'Piutang & Kasbon',
+            subtitle: `${dashboard?.piutang?.jumlah_overdue || 0} Tagihan Overdue`,
+            value: formatCurrency(dashboard?.piutang?.total_sisa || 0),
+            icon: Wallet,
+            color: '#10B981', // Emerald
+            path: '/laporan/piutang',
         },
     ];
 

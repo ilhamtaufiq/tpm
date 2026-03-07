@@ -1,57 +1,24 @@
-# CONTINUITY: Car Sales DP and Debt Management
+# Continuity Ledger
 
-## Goal
-Implement car sales/purchase DP logic, display remaining debt, and implement repayment functionality. Recover from corrupted Git configuration. Update PIN pad design.
-
-## Context
-- The system handles car inventory (purchases) and car sales.
-- Purchases can be cash or DP (creating `HutangUsaha`).
-- Sales can be cash or DP (creating `PiutangUsaha`).
-- Car status changes to `BOOKING` if sold via DP, and `TERJUAL` if fully paid.
-- Users need to see remaining debt/receivables for each car and process repayments.
-- **Git Recovery**: `.git/config` was corrupted, rebuilt using info from `.git/FETCH_HEAD`.
-- **PIN Pad**: User wants a specific layout: 
-  1 2 3
-  4 5 6
-  7 8 9
-    0 x
-
-## Key Decisions
-- **Backend Sync**: Recording a car purchase with DP automatically creates a `HutangUsaha` record.
-- **Backend Sync**: Recording a car sale with DP automatically creates a `PiutangUsaha` record and sets car status to `BOOKING`.
-- **Frontend Tracking**: `MobilDetail` screen now fetches and displays both `activeTx` (sales receivable) and `activeHutang` (purchase debt).
-- **Repayment Integration**: Created `HutangPaymentModal` (based on `PaymentModal`) to handle debt repayments.
-- **Visibility**: Added badges ("HUTANG", "PIUTANG") to the car inventory list for quick identification.
-- **Git Recovery**: Manually rebuilding `.git/config` using info from `.git/FETCH_HEAD` and directory structure.
-- **PIN Design**: Adjusting the `PinScreen` layout to match the 3-column keypad with 0 and Backspace in the center and right slots of the last row.
-
-## Progress State
-### Done
-- Backend logic for creating Hutang on car purchase (`mobil_service.py`).
-- Backend logic for reaching Piutang on car sale (`penjualan_mobil_service.py`).
-- Integrated `HutangService.process_payment` to update source transaction status.
-- Created `HutangPaymentModal` component.
-- Updated `MobilDetail` to show debt info and trigger repayment modals.
-- Updated `MobilInventoryScreen` to show status badges.
-- Fixed source labels in `PiutangScreen`.
-- Updated `MobilResponse` schema to include purchase payment status.
-- Recovered corrupted `.git/config` file.
-- Updated PIN pad design in `frontend/app/(security)/pin.tsx` to match custom layout (3 columns, 0 and delete on last row).
-
-### Now
-- Final verification of the end-to-end flow.
-
-### Next
-- Monitoring for any further UI feedback.
-
-## Working Set
-- `frontend/app/(security)/pin.tsx`
-- `backend/app/services/mobil_service.py`
-- `backend/app/services/penjualan_mobil_service.py`
-- `backend/app/services/hutang_service.py`
-- `backend/app/schemas/mobil.py`
-- `frontend/components/MobilDetail.tsx`
-- `frontend/components/HutangPaymentModal.tsx`
-- `frontend/app/mobil/index.tsx`
-- `frontend/app/finance/piutang.tsx`
-- `.git/config`
+- Goal (incl. success criteria): Fix "Piutang Karyawan" not decreasing in reports when deducted from salary slips.
+- Constraints/Assumptions:
+    - P&L uses Gross Salary for expenses.
+    - Capital Report reconciliation depends on tracking net changes in assets.
+- Key decisions:
+    1.  Create `KasBank` MASUK entries for salary deductions in `KasbonService.apply_payment_from_payroll` (Source: KASBON, Method: POTONG_GAJI).
+    2.  Modify `dashboard.py` to calculate `total_penerimaan_piutang` (All payments received) and subtract it from Section B in the Capital Report.
+    3.  This ensures the modal reconciliation formula balances when old debts are repaid (as cash increases, piutang asset correctly "decreases" in the net total).
+- State:
+  - Done:
+    - Identified that `KasBank` entries were missing for payroll deductions.
+    - Identified that Capital Report was ignoring repayments of old piutangs.
+    - Implemented `create_kas_entry` in `KasbonService`.
+    - Implemented `void_payroll_payment` cleanup for `KasBank`.
+    - Updated `PiutangService.get_summary` and `dashboard.py` (Capital Report) to handle gross totals and total repayments.
+    - Fixed "Stok Mobil" zero value in Neraca: corrected math error in `get_neraca` where purchase price was accidentally subtracted.
+  - Now: Monitoring and verification.
+  - Next: User verification of Neraca and Profit & Loss values.
+- Open questions (UNCONFIRMED if needed): None.
+- Working set (files/ids/commands):
+    - `backend/app/api/v1/dashboard.py`
+    - `backend/app/models/mobil.py`

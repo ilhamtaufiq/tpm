@@ -220,12 +220,20 @@ export default function PinScreen() {
 
             <View className="mb-12 items-center">
                 <Text className="text-2xl font-bold text-slate-800 mb-2">
-                    {currentMode === 'setup' ? 'Buat PIN Baru' :
-                        currentMode === 'confirm' ? 'Konfirmasi PIN' : 'Masukkan PIN'}
+                    {currentMode === 'setup' 
+                        ? (action === 'change_pin' ? 'Buat PIN Baru' : 'Buat PIN Baru') 
+                        : currentMode === 'confirm' 
+                        ? 'Konfirmasi PIN' 
+                        : (action === 'change_pin' ? 'Masukkan PIN Lama' : 
+                           action === 'disable_pin' ? 'Verifikasi PIN' : 'Masukkan PIN')}
                 </Text>
                 <Text className="text-slate-500 text-center">
-                    {currentMode === 'setup' ? 'Gunakan PIN untuk keamanan aplikasi' :
-                        currentMode === 'confirm' ? 'Masukkan PIN sekali lagi' : 'Silakan masukkan PIN Anda'}
+                    {currentMode === 'setup' 
+                        ? (action === 'change_pin' ? 'Masukkan PIN baru Anda' : 'Gunakan PIN untuk keamanan aplikasi') 
+                        : currentMode === 'confirm' 
+                        ? 'Masukkan PIN baru sekali lagi' 
+                        : (action === 'change_pin' ? 'Masukkan PIN lama Anda untuk verifikasi' : 
+                           action === 'disable_pin' ? 'Masukkan PIN untuk menonaktifkan keamanan' : 'Silakan masukkan PIN Anda')}
                 </Text>
             </View>
 

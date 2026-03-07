@@ -80,27 +80,30 @@ def get_dashboard_summary(
             "jumlah_transaksi": pengeluaran_summary["total_transaksi"] + gaji_summary["count"],
         },
         "mobil": {
-            "total_penjualan": mobil_summary["total_penjualan"],
+            "total_penjualan": float(mobil_summary["total_penjualan"]),
             "total_transaksi": mobil_summary["total_transaksi"],
-            "laba_kotor": mobil_summary["laba_tpm"],
-            "laba_tpm": mobil_summary["laba_tpm"],
+            "laba_kotor": float(mobil_summary["laba_tpm"]),
+            "laba_tpm": float(mobil_summary["laba_tpm"]),
+            "total_modal_tersedia": float(mobil_summary.get("total_modal_tersedia", 0)),
         },
         "jasa_angkut": {
-            "total_pendapatan": muatan_summary["total_pendapatan"],
+            "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
-            "laba_tpm": muatan_summary["laba_tpm"],
+            "laba_tpm": float(muatan_summary["laba_tpm"]),
+            "active_trips": muatan_summary["hutang_supir_count"],
         },
         "piutang": {
-            "total_piutang": piutang_summary["total_piutang"],
-            "total_sisa": piutang_summary["total_sisa"],
+            "total_piutang": float(piutang_summary["total_piutang"]),
+            "total_sisa": float(piutang_summary["total_sisa"]),
             "jumlah_overdue": piutang_summary["jumlah_overdue"],
         },
         "hutang": {
-            "total_hutang": hutang_summary["total_hutang"],
-            "total_sisa": hutang_summary["total_sisa"],
+            "total_hutang": float(hutang_summary["total_hutang"]),
+            "total_sisa": float(hutang_summary["total_sisa"]),
             "jumlah_belum_lunas": hutang_summary["jumlah_belum_lunas"],
         },
         "kas_bank": kas_bank_summary,
+        "active_trips": muatan_summary["hutang_supir_count"], # For BusinessPulse
     }
 
 
@@ -436,18 +439,16 @@ def get_capital_report(
     piutang_summ = piutang_service.get_summary(tanggal_dari, tanggal_sampai)
     p_by_sumber = piutang_summ.get("by_sumber", {})
     
-    p_lainnya = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("sisa_piutang", 0)
-    p_mobil = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_piutang", 0)
-    p_bengkel_pure = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
+    p_lainnya_gross = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("total_piutang", 0)
+    p_mobil_gross = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("total_piutang", 0)
     
-    # Integrated bengkel piutang (from Unpaid Jasa Angkut)
+    # Integrated bengkel piutang (all created in the period)
     # 1. Biaya Lainnya (Older records)
     q_integrated_old = (
         db.query(func.sum(JasaAngkutBiayaLainnya.jumlah))
         .join(MuatanJasaAngkut)
         .filter(
-            JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel",
-            MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS
+            JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
         )
     )
     if tanggal_dari: q_integrated_old = q_integrated_old.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
@@ -457,68 +458,90 @@ def get_capital_report(
     q_integrated_new = (
         db.query(func.sum(JasaAngkutPartService.total))
         .join(MuatanJasaAngkut)
-        .filter(MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS)
     )
     if tanggal_dari: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
     if tanggal_sampai: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
     p_bengkel_integrated = float((q_integrated_old.scalar() or 0) + (q_integrated_new.scalar() or 0))
 
-    # Piutang Jasa Angkut (Laba TPM part)
-    q_ja_tpm = (
-        db.query(func.sum(MuatanJasaAngkut.laba_tpm))
-        .filter(MuatanJasaAngkut.status_bayar == PaymentStatus.BELUM_LUNAS)
-    )
+    # Piutang Jasa Angkut Gross (Laba TPM part)
+    q_ja_tpm = db.query(func.sum(MuatanJasaAngkut.laba_tpm))
     if tanggal_dari: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
     if tanggal_sampai: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
     p_jasa_angkut_tpm = float(q_ja_tpm.scalar() or 0)
     
-    # Combined: PIUTANG SUPIR JASA ANGKUT
+    # Combined: PIUTANG SUPIR JASA ANGKUT (Gross New)
     p_supir_ja = p_jasa_angkut_tpm + p_bengkel_integrated
 
-    # PIUTANG PART JUAL MOBIL — display only, NOT in total_b.
-    # Internal bengkel transactions for unsold cars create Piutang only (no bilateral).
-    # The piutang is NOT included in total_b because no cash actually left the company;
-    # it's an internal asset reclassification (parts inventory → car value).
-    # The piutang is settled automatically when the car is sold.
+    # PIUTANG PART JUAL MOBIL (Gross New value added)
+    # Internal bengkel transactions for cars add value to inventory.
     q_part_mobil = (
         db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
-        .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
         .filter(
-            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
-            Mobil.status == CarStatus.TERSEDIA
+            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil"
         )
     )
+    if tanggal_dari: q_part_mobil = q_part_mobil.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_part_mobil = q_part_mobil.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
     p_part_jual_mobil = float(q_part_mobil.scalar() or 0)
 
-    p_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
+    p_karyawan_gross = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("total_piutang", 0)
     
-    # PIUTANG USAHA = Bengkel piutang EXCLUDING jual_beli_mobil internal ones
+    # PIUTANG USAHA (Gross New)
     from app.models.keuangan import PiutangUsaha as PiutangModel
-    q_usaha = db.query(func.sum(PiutangModel.sisa_piutang)).filter(
+    from app.models.keuangan import PembayaranPiutang as PaymentModel
+    q_usaha_gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
         PiutangModel.sumber == PiutangSource.BENGKEL,
-        PiutangModel.sisa_piutang > 0,
     )
+    if tanggal_dari: q_usaha_gross = q_usaha_gross.filter(PiutangModel.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_usaha_gross = q_usaha_gross.filter(PiutangModel.tanggal <= tanggal_sampai)
+    
     # Exclude piutang linked to jual_beli_mobil transactions
     jb_mobil_trx_ids = db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
         TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil'
     ).subquery()
-    q_usaha = q_usaha.filter(~PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids))
+    q_usaha_gross = q_usaha_gross.filter(~PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids))
+    p_usaha_gross = float(q_usaha_gross.scalar() or 0)
+
+    # --- ALL REPAYMENTS RECEIVED THIS PERIOD ---
+    # This includes payments for NEW piutang and OLD piutang
+    q_repayments = db.query(func.sum(PaymentModel.nominal))
+    if tanggal_dari: q_repayments = q_repayments.filter(PaymentModel.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_repayments = q_repayments.filter(PaymentModel.tanggal <= tanggal_sampai)
+    total_penerimaan_piutang = float(q_repayments.scalar() or 0)
+
+    # Breakdown repayments by source for net items
+    q_repayments_source = (
+        db.query(PiutangModel.sumber, func.sum(PaymentModel.nominal))
+        .join(PaymentModel, PaymentModel.piutang_id == PiutangModel.id)
+    )
+    if tanggal_dari: q_repayments_source = q_repayments_source.filter(PaymentModel.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_repayments_source = q_repayments_source.filter(PaymentModel.tanggal <= tanggal_sampai)
     
-    p_usaha = float(q_usaha.scalar() or 0)
+    repayments_by_source = {s.value if hasattr(s, "value") else s: float(n) for s, n in q_repayments_source.group_by(PiutangModel.sumber).all()}
+
+    # Calculate net items for display (Gross Created in period - Payments Received in period)
+    p_lainnya_net = p_lainnya_gross - repayments_by_source.get(PiutangSource.LAINNYA.value, 0)
+    p_mobil_net = p_mobil_gross - repayments_by_source.get(PiutangSource.JUAL_BELI_MOBIL.value, 0)
+    p_supir_ja_net = p_supir_ja - repayments_by_source.get(PiutangSource.JASA_ANGKUT.value, 0)
+    p_karyawan_net = p_karyawan_gross - repayments_by_source.get(PiutangSource.KASBON_KARYAWAN.value, 0)
+    p_usaha_net = p_usaha_gross - repayments_by_source.get(PiutangSource.BENGKEL.value, 0)
     
-    # piutang_part_mobil INCLUDED in total — balanced by HPP+Laba in Section A
-    total_b = p_lainnya + p_mobil + p_supir_ja + p_karyawan + p_usaha + p_part_jual_mobil
+    # Total B = Net Change in Piutang asset this period.
+    # Note: p_part_jual_mobil is internal (reclassification), so we usually keep it separate 
+    # but the user sees it as a category too.
+    total_b = p_lainnya_net + p_mobil_net + p_supir_ja_net + p_karyawan_net + p_usaha_net + p_part_jual_mobil
 
     section_b = {
-        "piutang_lainnya": p_lainnya,
-        "piutang_mobil": p_mobil,
+        "piutang_lainnya": p_lainnya_net,
+        "piutang_mobil": p_mobil_net,
         "piutang_part_mobil": p_part_jual_mobil,
         "piutang_part_mobil_display": p_part_jual_mobil,
-        "piutang_jasa_angkut": p_supir_ja,
-        "piutang_karyawan": p_karyawan,
-        "piutang_usaha": p_usaha,
+        "piutang_jasa_angkut": p_supir_ja_net,
+        "piutang_karyawan": p_karyawan_net,
+        "piutang_usaha": p_usaha_net,
+        "total_penerimaan": total_penerimaan_piutang, # For display
         "total_b": total_b
     }
 
@@ -768,8 +791,8 @@ def get_neraca(
     stok_mobil_biaya = 0
     stok_mobil_part_service = 0
     for car in available_cars:
-        stok_mobil_harga_beli += float(car.hpp)
-        stok_mobil_biaya += float(car.total_biaya - car.hpp) if hasattr(car, 'total_biaya') else 0
+        stok_mobil_harga_beli += float(car.harga_beli)
+        stok_mobil_biaya += float(car.total_biaya)
         stok_mobil_part_service += float(car.total_part_service)
     
     stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
