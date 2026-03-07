@@ -1,4 +1,5 @@
 import { ScrollView, StatusBar, View, RefreshControl } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { HomeHeader } from '../../components/HomeHeader';
 import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
@@ -11,6 +12,12 @@ import React from 'react';
 export default function HomeScreen() {
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            queryClient.invalidateQueries();
+        }, [queryClient])
+    );
 
     const handleRefresh = async () => {
         setRefreshing(true);
