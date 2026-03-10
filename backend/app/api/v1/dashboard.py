@@ -422,7 +422,7 @@ def get_capital_report(
     section_a = {
         "setoran_modal": setoran_modal,
         "hpp_bengkel": hpp_bengkel,
-        "hpp_mobil": hpp_mobil,
+        "hpp_mobil": mobil_summ["total_modal_excluding_parts"], # Use HPP without parts
         "total_laba": total_laba_kotor,
         "internal_bengkel_mobil": 0,  # Removed: no longer uses bilateral
         "details": {
@@ -432,7 +432,7 @@ def get_capital_report(
             "laba_mobil_tpm": laba_mobil_tpm,
             "laba_jasa_angkut": laba_jasa_angkut_tpm,
         },
-        "total_a": setoran_modal + hpp_bengkel + hpp_mobil + total_laba_kotor
+        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal_excluding_parts"] + total_laba_kotor
     }
 
     # --- B. Piutang ---
@@ -795,7 +795,7 @@ def get_neraca(
         stok_mobil_biaya += float(car.total_biaya)
         stok_mobil_part_service += float(car.total_part_service)
     
-    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
+    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya
     
     total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart + stok_mobil_total
 

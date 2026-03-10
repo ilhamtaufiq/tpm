@@ -62,7 +62,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
         const jual = parseRaw(hargaJual);
         const downpayment = isSplitPayment ? totalSplitAmount : parseRaw(dp);
-        const modalAwal = parseFloat(String(activeUnit.total_modal)) || 0;
+        const modalAwal = Number(activeUnit.total_modal) || 0;
 
         // Calculate dynamic costs added during sale
         const opCostTotal = operationalCosts.reduce((acc, item) => acc + parseRaw(item.jumlah), 0);
@@ -356,7 +356,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center">
                         <TrendingUp size={18} color="#023C69" />
-                        <Typography weight="bold" className="ml-2 text-primary">BIAYA TAMBAHAN PENJUALAN</Typography>
+                        <Typography weight="bold" className="ml-2 text-primary">BIAYA TAMBAHAN PENJUALAN / KOMISI</Typography>
                     </View>
                     <TouchableOpacity onPress={addOpCost}>
                         <Typography variant="caption" weight="bold" className="text-primary">+ Tambah</Typography>
@@ -371,7 +371,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     <View key={index} className="flex-row space-x-2 items-center mb-3">
                         <View className="flex-[2]">
                             <Input
-                                placeholder="Ket: Komisi, Cuci, dll"
+                                placeholder="Ket: Komisi Karyawan / Penjualan, dll"
                                 value={item.deskripsi}
                                 onChangeText={v => updateOpCost(index, 'deskripsi', v)}
                                 containerClassName="mb-0"
@@ -411,25 +411,39 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     <Typography weight="bold" className="ml-2 text-primary">ESTIMASI LABA</Typography>
                 </View>
 
-                <View className="space-y-3">
+                <View className="space-y-4">
                     <View className="flex-row justify-between">
                         <Typography variant="body2" className="text-gray-600">Harga Jual</Typography>
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(parseNumber(hargaJual) || 0)}</Typography>
                     </View>
+
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Modal ( Include Biaya Pengeluaran Seperti Pajak dll )</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency((parseFloat(String(activeUnit.harga_beli)) || 0) + (parseFloat(String(activeUnit.total_biaya)) || 0) + totalCostsAtSale)}</Typography>
+                        <Typography variant="body2" className="text-gray-600">Harga Beli Unit</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.harga_beli) || 0)}</Typography>
                     </View>
+
+                    <View className="flex-row justify-between">
+                        <Typography variant="body2" className="text-gray-600">Biaya Pengeluaran (Pajak, BBN, dll)</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.total_biaya) || 0)}</Typography>
+                    </View>
+
                     <View className="flex-row justify-between">
                         <Typography variant="body2" className="text-gray-600">Biaya Sparepart dan Servis</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency(parseFloat(String(activeUnit.total_part_service)) || 0)}</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.total_part_service) || 0)}</Typography>
                     </View>
+
+                    {totalCostsAtSale > 0 && (
+                        <View className="flex-row justify-between">
+                            <Typography variant="body2" className="text-gray-600 italic">Biaya Operasional Tambahan</Typography>
+                            <Typography weight="bold" className="text-gray-800">{formatCurrency(totalCostsAtSale)}</Typography>
+                        </View>
+                    )}
 
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
 
-                    <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600 font-bold">Laba</Typography>
-                        <Typography weight="bold" className={labaKotor >= 0 ? 'text-primary' : 'text-secondary'}>
+                    <View className="flex-row justify-between items-center bg-primary/5 p-3 rounded-2xl">
+                        <Typography variant="h3" weight="bold" className="text-primary">Estimasi Laba</Typography>
+                        <Typography variant="h3" weight="bold" className={labaKotor >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
                             {formatCurrency(labaKotor)}
                         </Typography>
                     </View>

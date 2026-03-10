@@ -829,6 +829,7 @@ class PenjualanMobilService:
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "total_dp": float(aggregates.total_dp or 0),
+            "total_modal_excluding_parts": float(aggregates.total_modal or 0),
             "per_kepemilikan": ownership_summary,
             "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
