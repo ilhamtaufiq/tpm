@@ -417,22 +417,18 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         <Typography weight="bold" className="text-gray-800">{formatCurrency(parseNumber(hargaJual) || 0)}</Typography>
                     </View>
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Harga Beli Unit</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.harga_beli || 0)}</Typography>
+                        <Typography variant="body2" className="text-gray-600">Modal ( Include Biaya Pengeluaran Seperti Pajak dll )</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency((activeUnit.harga_beli || 0) + (activeUnit.total_biaya || 0) + totalCostsAtSale)}</Typography>
                     </View>
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">Biaya Persiapan (MBU)</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency((activeUnit.total_biaya || 0) + (activeUnit.total_part_service || 0))}</Typography>
-                    </View>
-                    <View className="flex-row justify-between border-t border-primary/10 pt-3 mt-1">
-                        <Typography variant="body2" className="text-textMain font-bold">Total Modal Unit (Setelah Biaya)</Typography>
-                        <Typography weight="bold" className="text-textMain">{formatCurrency(activeUnit.total_modal + totalCostsAtSale)}</Typography>
+                        <Typography variant="body2" className="text-gray-600">Biaya Sparepart dan Servis</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.total_part_service || 0)}</Typography>
                     </View>
 
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600 font-bold">Total Laba Kotor</Typography>
+                        <Typography variant="body2" className="text-gray-600 font-bold">Laba</Typography>
                         <Typography weight="bold" className={labaKotor >= 0 ? 'text-primary' : 'text-secondary'}>
                             {formatCurrency(labaKotor)}
                         </Typography>
