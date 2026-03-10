@@ -418,11 +418,11 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     </View>
                     <View className="flex-row justify-between">
                         <Typography variant="body2" className="text-gray-600">Modal ( Include Biaya Pengeluaran Seperti Pajak dll )</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency((activeUnit.harga_beli || 0) + (activeUnit.total_biaya || 0) + totalCostsAtSale)}</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency((parseFloat(String(activeUnit.harga_beli)) || 0) + (parseFloat(String(activeUnit.total_biaya)) || 0) + totalCostsAtSale)}</Typography>
                     </View>
                     <View className="flex-row justify-between">
                         <Typography variant="body2" className="text-gray-600">Biaya Sparepart dan Servis</Typography>
-                        <Typography weight="bold" className="text-gray-800">{formatCurrency(activeUnit.total_part_service || 0)}</Typography>
+                        <Typography weight="bold" className="text-gray-800">{formatCurrency(parseFloat(String(activeUnit.total_part_service)) || 0)}</Typography>
                     </View>
 
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
