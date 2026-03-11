@@ -339,7 +339,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
                             <View>
                                 <Typography variant="caption" className="text-textGray mb-1">Total Biaya & Sparepart</Typography>
-                                <Typography variant="h3" weight="bold" className="text-orange-500">{formatCurrency((activeUnit.total_biaya || 0) + (activeUnit.total_part_service || 0))}</Typography>
+                                <Typography variant="h3" weight="bold" className="text-orange-500">{formatCurrency(Number(activeUnit.total_biaya || 0) + Number(activeUnit.total_part_service || 0))}</Typography>
                             </View>
                             <View className="w-12 h-12 bg-orange-50 rounded-2xl items-center justify-center">
                                 <Settings size={20} color="#F97316" />
