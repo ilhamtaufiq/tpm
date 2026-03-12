@@ -11,7 +11,10 @@
     - Fixed DP discrepancy: added `p_mobil_direct_cash` (sum of `KasBank` MASUK for `JUAL_BELI_MOBIL` source linked to active piutangs) to ensure DPs and direct partial payments for car sales are correctly subtracted from the gross piutang in the LPM.
 - **Backend `penjualan_mobil_service.py`**:
     - Added `total_modal_excluding_parts` to the `get_summary` return value.
-    - Enhanced workshop piutang settlement: Created `_settle_internal_workshop_piutang` method with robust matching (by transaction number and name) and implemented bilateral `KasBank` transfers (INTERNAL method) to synchronize departmental cash positions during sales.
+    - Enhanced unit financial settlement: Created `_settle_unit_financial_obligations` method. This automatically settles BOTH:
+        1. **Internal Piutangs** (Workshop → Unit JB) via bilateral internal transfers.
+        2. **Unit Hutangs** (Unit JB → Suppliers/Purchase Debt) for costs like car purchase, BBN, or Taxes if recorded as payables.
+    - This ensures that all financial "loose ends" for a unit are closed and recorded in the departmental cash flows as soon as the car is sold or booked.
 - **Frontend `MobilSalesForm.tsx`**:
     - Fixed numeric parsing bug (replaced `parseFloat(String(...))` with `Number(...)`).
     - Redesigned "Estimasi Laba" card to show a detailed breakdown:
