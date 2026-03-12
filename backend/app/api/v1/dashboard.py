@@ -16,10 +16,10 @@ from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
-from app.models.mobil import Mobil, MobilBiayaLainnya
+from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
 from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus
-from app.models.keuangan import KasBank
+from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from sqlalchemy import func
 
 
@@ -486,10 +486,25 @@ def get_capital_report(
     if tanggal_sampai: q_part_mobil = q_part_mobil.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
     p_part_jual_mobil = float(q_part_mobil.scalar() or 0)
 
+    # DIRECT PAYMENTS (DP & Partials) for Car Sales
+    # These often use JUAL_BELI_MOBIL source instead of PIUTANG source in KasBank entries.
+    # We must subtract them from p_mobil_gross to get the correct net outstanding change.
+    q_jb_mobil_direct_cash = (
+        db.query(func.sum(KasBank.nominal))
+        .join(PiutangModel, PiutangModel.nomor_referensi == KasBank.nomor_referensi)
+        .filter(
+            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+            KasBank.tipe == KasBankType.MASUK,
+            PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL
+        )
+    )
+    if tanggal_dari: q_jb_mobil_direct_cash = q_jb_mobil_direct_cash.filter(KasBank.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_jb_mobil_direct_cash = q_jb_mobil_direct_cash.filter(KasBank.tanggal <= tanggal_sampai)
+    p_mobil_direct_cash = float(q_jb_mobil_direct_cash.scalar() or 0)
+
     p_karyawan_gross = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("total_piutang", 0)
     
     # PIUTANG USAHA (Gross New)
-    from app.models.keuangan import PiutangUsaha as PiutangModel
     from app.models.keuangan import PembayaranPiutang as PaymentModel
     q_usaha_gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
         PiutangModel.sumber == PiutangSource.BENGKEL,
@@ -523,7 +538,7 @@ def get_capital_report(
 
     # Calculate net items for display (Gross Created in period - Payments Received in period)
     p_lainnya_net = p_lainnya_gross - repayments_by_source.get(PiutangSource.LAINNYA.value, 0)
-    p_mobil_net = p_mobil_gross - repayments_by_source.get(PiutangSource.JUAL_BELI_MOBIL.value, 0)
+    p_mobil_net = p_mobil_gross - p_mobil_direct_cash - repayments_by_source.get(PiutangSource.JUAL_BELI_MOBIL.value, 0)
     p_supir_ja_net = p_supir_ja - repayments_by_source.get(PiutangSource.JASA_ANGKUT.value, 0)
     p_karyawan_net = p_karyawan_gross - repayments_by_source.get(PiutangSource.KASBON_KARYAWAN.value, 0)
     p_usaha_net = p_usaha_gross - repayments_by_source.get(PiutangSource.BENGKEL.value, 0)

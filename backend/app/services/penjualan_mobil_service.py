@@ -107,6 +107,7 @@ class PenjualanMobilService:
             .options(
                 joinedload(Mobil.biaya_lainnya),
                 joinedload(Mobil.part_services),
+                joinedload(Mobil.bengkel_perbaikan),
             )
             .filter(
                 Mobil.id == mobil_id,
@@ -336,23 +337,7 @@ class PenjualanMobilService:
         self.db.add(transaksi)
 
         # 4. Settle Internal Workshop Piutang
-        biaya_part_service = mobil.total_part_service
-        if biaya_part_service > 0:
-            internal_piutangs = (
-                self.db.query(PiutangUsaha)
-                .filter(
-                    PiutangUsaha.nama_debitur == f"JB MOBIL - {mobil.nomor_plat}",
-                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
-                    PiutangUsaha.status != PiutangStatus.LUNAS
-                )
-                .all()
-            )
-            for p in internal_piutangs:
-                p.status = PiutangStatus.LUNAS
-                p.total_dibayar = p.nominal_piutang
-                p.sisa_piutang = Decimal("0")
-                p.tanggal_lunas = data.tanggal
-                p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {nomor_transaksi})"
+        self._settle_internal_workshop_piutang(mobil, data.tanggal, nomor_transaksi, user_id)
 
         # Update car status based on payment
         if status_bayar == PaymentStatus.LUNAS:
@@ -432,6 +417,75 @@ class PenjualanMobilService:
                 )
 
         return transaksi
+
+    def _settle_internal_workshop_piutang(
+        self, 
+        mobil: Mobil, 
+        tanggal: date, 
+        ref_no: str, 
+        user_id: Optional[int] = None
+    ):
+        """Robustly settle any outstanding workshop piutangs for this unit."""
+        # Find all relevant workshop transactions for this car
+        workshop_nos = [t.nomor_transaksi for t in mobil.bengkel_perbaikan if t.kategori == 'jual_beli_mobil']
+        
+        # Debtor names can vary with spaces/case, use reliable ilike if needed
+        internal_piutangs = (
+            self.db.query(PiutangUsaha)
+            .filter(
+                or_(
+                    PiutangUsaha.nomor_referensi.in_(workshop_nos),
+                    PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
+                    PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
+                ),
+                PiutangUsaha.sumber == PiutangSource.BENGKEL,
+                PiutangUsaha.status != PiutangStatus.LUNAS
+            )
+            .all()
+        )
+        
+        total_settled = Decimal("0")
+        for p in internal_piutangs:
+            amount = p.sisa_piutang
+            if amount <= 0:
+                continue
+                
+            total_settled += amount
+            p.status = PiutangStatus.LUNAS
+            p.total_dibayar = p.nominal_piutang
+            p.sisa_piutang = Decimal("0")
+            p.tanggal_lunas = tanggal
+            p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
+            
+        # If any piutang was settled, create bilateral internal transfer records
+        # This keeps the pocket balances consistent between departments
+        if total_settled > 0:
+            # 1. MASUK to Workshop (Paying their receivable)
+            create_kas_entry(
+                db=self.db,
+                tanggal=tanggal,
+                tipe=KasBankType.MASUK,
+                nominal=total_settled,
+                sumber=KasBankSource.BENGKEL,
+                metode_bayar=PaymentMethod.INTERNAL,
+                referensi_id=None,
+                nomor_referensi=ref_no,
+                keterangan=f"Pelunasan Piutang Internal via Penjualan {mobil.nomor_plat}",
+                user_id=user_id,
+            )
+            # 2. KELUAR from JB Mobil (Settling the repair cost)
+            create_kas_entry(
+                db=self.db,
+                tanggal=tanggal,
+                tipe=KasBankType.KELUAR,
+                nominal=total_settled,
+                sumber=KasBankSource.JUAL_BELI_MOBIL,
+                metode_bayar=PaymentMethod.INTERNAL,
+                referensi_id=None,
+                nomor_referensi=ref_no,
+                keterangan=f"Pelunasan Biaya Repair Internal {mobil.nomor_plat}",
+                user_id=user_id,
+            )
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
         """Get transaction by ID."""
@@ -620,9 +674,13 @@ class PenjualanMobilService:
         # Update car status: BOOKING → TERJUAL when fully paid
         if transaksi.status_bayar == PaymentStatus.LUNAS:
             mobil = self.db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
-            if mobil and mobil.status == CarStatus.BOOKING:
-                mobil.status = CarStatus.TERJUAL
-                mobil.tanggal_terjual = date.today()
+            if mobil:
+                # Ensure internal piutangs are settled if they weren't already
+                self._settle_internal_workshop_piutang(mobil, date.today(), transaksi.nomor_transaksi, user_id)
+                
+                if mobil.status == CarStatus.BOOKING:
+                    mobil.status = CarStatus.TERJUAL
+                    mobil.tanggal_terjual = date.today()
 
         self.db.commit()
         self.db.refresh(transaksi)
