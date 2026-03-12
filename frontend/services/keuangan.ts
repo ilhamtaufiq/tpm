@@ -9,9 +9,42 @@ export type HutangSource = 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'LAINNYA';
 export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA';
 export type KasBankType = 'MASUK' | 'KELUAR';
 export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'HUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
-export type PaymentMethod = 'TUNAI' | 'TRANSFER' | 'KREDIT' | 'DEBIT' | 'SPLIT';
+export type PaymentMethod = 'TUNAI' | 'TRANSFER' | 'KREDIT' | 'DEBIT' | 'SPLIT' | 'INTERNAL' | 'POTONG_GAJI' | 'OTHER';
 
-// --- Piutang Interfaces ---
+// --- Investor Disbursement Interfaces ---
+
+export interface InvestorDisbursementSummary {
+    pending_count: number;
+    pending_total: number;
+    disbursed_count: number;
+    disbursed_total: number;
+}
+
+export interface PendingDisbursement {
+    id: number;
+    tanggal_jual: string;
+    nomor_transaksi: string;
+    mobil: string;
+    mobil_id: number;
+    nama_investor: string;
+    harga_beli: number;
+    nominal_investor: number;
+    harga_jual: number;
+    total_modal: number;
+    laba_kotor: number;
+    persentase_investor: number;
+    laba_investor: number;
+    laba_tpm: number;
+    total_pencairan: number;
+    status_pencairan: string;
+}
+
+export interface DisbursementRequest {
+    metode_bayar: PaymentMethod;
+    tanggal?: string;
+    catatan?: string;
+}
+
 
 export interface Piutang {
     id: number;
@@ -471,6 +504,30 @@ export const keuanganService = {
         keterangan: string;
     }) => {
         const response = await api.post('/kas-bank/adjust', null, { params: data });
+        return response.data;
+    },
+
+    // ============================================
+    // INVESTOR DISBURSEMENT METHODS
+    // ============================================
+
+    getPendingInvestorDisbursements: async (namaInvestor?: string): Promise<PendingDisbursement[]> => {
+        const response = await api.get('/penjualan-mobil/investor/pending-disbursements', {
+            params: { nama_investor: namaInvestor }
+        });
+        return response.data;
+    },
+
+    getInvestorDisbursementSummary: async (params?: {
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }): Promise<InvestorDisbursementSummary> => {
+        const response = await api.get('/penjualan-mobil/investor/disbursement-summary', { params });
+        return response.data;
+    },
+
+    processInvestorDisbursement: async (transaksiId: number, data: DisbursementRequest) => {
+        const response = await api.post(`/penjualan-mobil/${transaksiId}/disburse`, data);
         return response.data;
     },
 };

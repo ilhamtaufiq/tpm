@@ -24,6 +24,7 @@ from app.utils.constants import (
     PaymentMethod,
     PiutangStatus,
     PiutangSource,
+    InvestorDisbursementStatus,
     TRANSACTION_PREFIXES,
     KasBankType,
     KasBankSource,
@@ -499,20 +500,9 @@ class PenjualanMobilService:
             h.sisa_hutang = Decimal("0")
             h.tanggal_lunas = tanggal
             h.catatan = (h.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
-            
-            # Record KELUAR from JB Mobil pocket for the payout
-            create_kas_entry(
-                db=self.db,
-                tanggal=tanggal,
-                tipe=KasBankType.KELUAR,
-                nominal=amount,
-                sumber=KasBankSource.JUAL_BELI_MOBIL,
-                metode_bayar=PaymentMethod.INTERNAL,
-                referensi_id=None,
-                nomor_referensi=ref_no,
-                keterangan=f"Pelunasan {h.sumber.value if h.sumber else 'Hutang'} Unit {mobil.nomor_plat}: {h.nama_kreditur}",
-                user_id=user_id,
-            )
+            # NOTE: No KasBank entry here. The financial impact of the hutang was already
+            # recorded when the cost was originally incurred (e.g. pembelian mobil, biaya BBN/pajak).
+            # Creating a KELUAR entry here would double-count the expense in the capital report.
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
         """Get transaction by ID."""
@@ -865,14 +855,30 @@ class PenjualanMobilService:
         total_count = query.count()
 
         # Aggregate values (All transactions in period)
-        aggregates = query.with_entities(
-            func.sum(TransaksiPenjualanMobil.harga_jual).label("total_penjualan"),
-            func.sum(TransaksiPenjualanMobil.total_modal).label("total_modal"),
-            func.sum(TransaksiPenjualanMobil.laba_kotor).label("total_laba_kotor"),
-            func.sum(TransaksiPenjualanMobil.laba_investor).label("total_laba_investor"),
-            func.sum(TransaksiPenjualanMobil.laba_tpm).label("total_laba_tpm"),
-            func.sum(TransaksiPenjualanMobil.dp).label("total_dp"),
-        ).first()
+        aggregates = (
+            query.join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            .with_entities(
+                func.sum(TransaksiPenjualanMobil.harga_jual).label("total_penjualan"),
+                func.sum(TransaksiPenjualanMobil.total_modal).label("total_modal"),
+                func.sum(TransaksiPenjualanMobil.laba_kotor).label("total_laba_kotor"),
+                func.sum(TransaksiPenjualanMobil.laba_investor).label("total_laba_investor"),
+                func.sum(TransaksiPenjualanMobil.laba_tpm).label("total_laba_tpm"),
+                func.sum(TransaksiPenjualanMobil.dp).label("total_dp"),
+                # Calculate realized parts (sum of the total_part_service of sold cars)
+                # Note: Mobil.total_part_service is a hybrid property or similar, 
+                # but we can sum the component values if needed. 
+                # Let's use func.sum(Mobil.biaya_persiapan) or similar if available, 
+                # but better to rely on what was recorded in total_modal.
+            ).first()
+        )
+        
+        # Recalculate component for parts realized by joining with Mobil and its additional costs
+        realized_parts_q = (
+            query.join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            .join(MobilBiayaLainnya, Mobil.id == MobilBiayaLainnya.mobil_id)
+            .filter(MobilBiayaLainnya.kategori == "Perawatan Bengkel")
+        )
+        total_parts_realized = float(realized_parts_q.with_entities(func.sum(MobilBiayaLainnya.jumlah)).scalar() or 0)
 
         # By ownership type
         by_ownership = (
@@ -914,7 +920,8 @@ class PenjualanMobilService:
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "total_dp": float(aggregates.total_dp or 0),
-            "total_modal_excluding_parts": float(aggregates.total_modal or 0),
+            "total_parts_realized": total_parts_realized,
+            "total_modal_excluding_parts": float(aggregates.total_modal or 0) - total_parts_realized,
             "per_kepemilikan": ownership_summary,
             "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
@@ -955,6 +962,183 @@ class PenjualanMobilService:
                 "persentase_investor": float(t.persentase_investor),
                 "laba_investor": float(t.laba_investor),
                 "laba_tpm": float(t.laba_tpm),
+                "status_pencairan": t.status_pencairan.value if t.status_pencairan else "BELUM_DICAIRKAN",
+                "tanggal_pencairan": t.tanggal_pencairan.isoformat() if t.tanggal_pencairan else None,
+                "nominal_pencairan": float(t.nominal_pencairan or 0),
             }
             for t in transaksis
         ]
+
+    def get_pending_disbursements(
+        self,
+        nama_investor: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get list of investor car sales that haven't been disbursed yet."""
+        query = (
+            self.db.query(TransaksiPenjualanMobil)
+            .join(Mobil)
+            .filter(
+                TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+                TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+                or_(
+                    TransaksiPenjualanMobil.status_pencairan == InvestorDisbursementStatus.BELUM_DICAIRKAN,
+                    TransaksiPenjualanMobil.status_pencairan.is_(None),
+                ),
+            )
+            .options(joinedload(TransaksiPenjualanMobil.mobil))
+        )
+
+        if nama_investor:
+            query = query.filter(Mobil.nama_investor.ilike(f"%{nama_investor}%"))
+
+        transaksis = query.order_by(TransaksiPenjualanMobil.tanggal.desc()).all()
+
+        result = []
+        for t in transaksis:
+            # Nominal pencairan = modal investor + laba investor
+            nominal_investor = float(t.mobil.nominal_investor or 0)
+            laba_inv = float(t.laba_investor or 0)
+            total_pencairan = nominal_investor + laba_inv
+
+            result.append({
+                "id": t.id,
+                "tanggal_jual": t.tanggal.isoformat(),
+                "nomor_transaksi": t.nomor_transaksi,
+                "mobil": f"{t.mobil.merek} {t.mobil.model} ({t.mobil.nomor_plat})",
+                "mobil_id": t.mobil_id,
+                "nama_investor": t.mobil.nama_investor,
+                "harga_beli": float(t.mobil.harga_beli),
+                "nominal_investor": nominal_investor,
+                "harga_jual": float(t.harga_jual),
+                "total_modal": float(t.total_modal),
+                "laba_kotor": float(t.laba_kotor),
+                "persentase_investor": float(t.persentase_investor),
+                "laba_investor": laba_inv,
+                "laba_tpm": float(t.laba_tpm),
+                "total_pencairan": total_pencairan,
+                "status_pencairan": "BELUM_DICAIRKAN",
+            })
+
+        return result
+
+    def process_disbursement(
+        self,
+        transaksi_id: int,
+        metode_bayar: PaymentMethod,
+        tanggal: Optional[date] = None,
+        catatan: str = "",
+        user_id: Optional[int] = None,
+    ) -> TransaksiPenjualanMobil:
+        """Process investor fund disbursement for a sold car."""
+        transaksi = (
+            self.db.query(TransaksiPenjualanMobil)
+            .options(joinedload(TransaksiPenjualanMobil.mobil))
+            .filter(TransaksiPenjualanMobil.id == transaksi_id)
+            .first()
+        )
+
+        if not transaksi:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaksi penjualan tidak ditemukan",
+            )
+
+        if transaksi.tipe_kepemilikan != OwnershipType.INVESTOR:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi ini bukan mobil investor",
+            )
+
+        if transaksi.status_bayar != PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pembayaran mobil belum lunas, tidak bisa dicairkan",
+            )
+
+        if transaksi.status_pencairan == InvestorDisbursementStatus.DICAIRKAN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Dana investor sudah dicairkan sebelumnya",
+            )
+
+        # Calculate disbursement amount
+        nominal_investor = float(transaksi.mobil.nominal_investor or 0)
+        laba_inv = float(transaksi.laba_investor or 0)
+        total_pencairan = Decimal(str(nominal_investor + laba_inv))
+
+        tanggal_pencairan = tanggal or date.today()
+
+        # Update transaction
+        transaksi.status_pencairan = InvestorDisbursementStatus.DICAIRKAN
+        transaksi.tanggal_pencairan = tanggal_pencairan
+        transaksi.nominal_pencairan = total_pencairan
+        transaksi.metode_pencairan = metode_bayar
+        transaksi.catatan_pencairan = catatan or f"Pencairan dana investor {transaksi.mobil.nama_investor}"
+
+        # Record cash outflow (actual money leaving the company to investor)
+        create_kas_entry(
+            db=self.db,
+            tanggal=tanggal_pencairan,
+            tipe=KasBankType.KELUAR,
+            nominal=total_pencairan,
+            sumber=KasBankSource.JUAL_BELI_MOBIL,
+            metode_bayar=metode_bayar,
+            referensi_id=transaksi.id,
+            nomor_referensi=transaksi.nomor_transaksi,
+            keterangan=f"Pencairan Investor {transaksi.mobil.nama_investor} - {transaksi.mobil.merek} {transaksi.mobil.model} ({transaksi.mobil.nomor_plat})",
+            user_id=user_id,
+        )
+
+        self.db.commit()
+        self.db.refresh(transaksi)
+        return transaksi
+
+    def get_disbursement_summary(
+        self,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+    ) -> Dict[str, Any]:
+        """Get summary of investor disbursements."""
+        # Pending
+        q_pending = (
+            self.db.query(TransaksiPenjualanMobil)
+            .filter(
+                TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+                TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+                or_(
+                    TransaksiPenjualanMobil.status_pencairan == InvestorDisbursementStatus.BELUM_DICAIRKAN,
+                    TransaksiPenjualanMobil.status_pencairan.is_(None),
+                ),
+            )
+        )
+        pending_count = q_pending.count()
+        pending_agg = q_pending.join(Mobil).with_entities(
+            func.sum(Mobil.nominal_investor + TransaksiPenjualanMobil.laba_investor).label("total")
+        ).scalar() or 0
+
+        # Disbursed (in period)
+        q_disbursed = (
+            self.db.query(TransaksiPenjualanMobil)
+            .filter(
+                TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+                TransaksiPenjualanMobil.status_pencairan == InvestorDisbursementStatus.DICAIRKAN,
+            )
+        )
+        if tanggal_dari:
+            q_disbursed = q_disbursed.filter(TransaksiPenjualanMobil.tanggal_pencairan >= tanggal_dari)
+        if tanggal_sampai:
+            q_disbursed = q_disbursed.filter(TransaksiPenjualanMobil.tanggal_pencairan <= tanggal_sampai)
+
+        disbursed_count = q_disbursed.count()
+        disbursed_total = float(
+            q_disbursed.with_entities(
+                func.sum(TransaksiPenjualanMobil.nominal_pencairan)
+            ).scalar() or 0
+        )
+
+        return {
+            "pending_count": pending_count,
+            "pending_total": float(pending_agg),
+            "disbursed_count": disbursed_count,
+            "disbursed_total": disbursed_total,
+        }

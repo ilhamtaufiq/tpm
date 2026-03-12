@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, InvestorDisbursementStatus
 
 
 # ============================================
@@ -241,6 +241,11 @@ class TransaksiMobilResponse(BaseModel):
     sisa_bayar: Decimal
     piutang_id: Optional[int] = None
     catatan: Optional[str] = None
+    status_pencairan: Optional[InvestorDisbursementStatus] = None
+    tanggal_pencairan: Optional[date] = None
+    nominal_pencairan: Decimal = Decimal("0")
+    metode_pencairan: Optional[PaymentMethod] = None
+    catatan_pencairan: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -166,6 +166,22 @@ class OwnershipType(str, Enum):
         return None
 
 
+class InvestorDisbursementStatus(str, Enum):
+    """Status pencairan dana investor setelah mobil terjual."""
+
+    BELUM_DICAIRKAN = "BELUM_DICAIRKAN"
+    DICAIRKAN = "DICAIRKAN"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "InvestorDisbursementStatus | None":
+        if isinstance(value, str):
+            upper = value.upper().replace(' ', '_')
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
 class PiutangStatus(str, Enum):
     """Receivable (piutang) status."""
 

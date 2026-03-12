@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin, SoftDeleteMixin
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, InvestorDisbursementStatus
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
@@ -255,6 +255,20 @@ class TransaksiPenjualanMobil(Base, TimestampMixin):
     sisa_bayar: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Investor Disbursement (Pencairan Investor)
+    status_pencairan: Mapped[Optional[InvestorDisbursementStatus]] = mapped_column(
+        SQLEnum(InvestorDisbursementStatus),
+        default=InvestorDisbursementStatus.BELUM_DICAIRKAN,
+        nullable=True,
+    )
+    tanggal_pencairan: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    nominal_pencairan: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+    metode_pencairan: Mapped[Optional[PaymentMethod]] = mapped_column(
+        SQLEnum(PaymentMethod), nullable=True
+    )
+    catatan_pencairan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,

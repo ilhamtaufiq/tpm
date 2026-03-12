@@ -20,7 +20,7 @@ from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
 from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
@@ -409,11 +409,17 @@ def get_capital_report(
     hpp_mobil = mobil_summ["total_modal"]   # Total Modal Mobil (Harga Beli + Biaya)
     
     # Laba (Gross Profit contributions)
+    # IMPORTANT: For reconciliation, we must use FULL laba_kotor_mobil (including investor share)
+    # because the FULL selling price enters as cash. The investor payout is a SEPARATE expense
+    # tracked in Section C (jb_mobil KELUAR). Using only laba_tpm here would create a gap.
     laba_bengkel = bengkel_summ["total_laba_kotor"]
-    laba_mobil_tpm = mobil_summ["laba_tpm"]
+    laba_kotor_mobil = mobil_summ["total_laba_kotor"]  # Full gross profit (investor + TPM)
+    laba_mobil_tpm = mobil_summ["laba_tpm"]             # TPM share only (for display)
+    laba_investor_mobil = mobil_summ["laba_investor"]    # Investor share (for display)
     laba_jasa_angkut_tpm = muatan_summ["laba_tpm"]
     
-    total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut_tpm
+    # Total laba uses FULL car profit (not just TPM's share)
+    total_laba_kotor = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_tpm
 
     # 2b. Internal bengkel for TERSEDIA cars — no bilateral KasBank.
     # Cost is tracked via Piutang (BENGKEL → JB MOBIL) in Section B.
@@ -422,17 +428,17 @@ def get_capital_report(
     section_a = {
         "setoran_modal": setoran_modal,
         "hpp_bengkel": hpp_bengkel,
-        "hpp_mobil": mobil_summ["total_modal_excluding_parts"], # Use HPP without parts
+        "hpp_mobil": mobil_summ["total_modal"],  # Full HPP including parts (realized)
         "total_laba": total_laba_kotor,
-        "internal_bengkel_mobil": 0,  # Removed: no longer uses bilateral
+        "internal_bengkel_mobil": 0,
         "details": {
             "laba_bengkel": laba_bengkel,
-            "laba_kotor_mobil": mobil_summ["total_laba_kotor"],
-            "laba_investor_mobil": mobil_summ["laba_investor"],
+            "laba_kotor_mobil": laba_kotor_mobil,
+            "laba_investor_mobil": laba_investor_mobil,
             "laba_mobil_tpm": laba_mobil_tpm,
             "laba_jasa_angkut": laba_jasa_angkut_tpm,
         },
-        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal_excluding_parts"] + total_laba_kotor
+        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + total_laba_kotor
     }
 
     # --- B. Piutang ---
@@ -474,12 +480,15 @@ def get_capital_report(
     # Combined: PIUTANG SUPIR JASA ANGKUT (Gross New)
     p_supir_ja = p_jasa_angkut_tpm + p_bengkel_integrated
 
-    # PIUTANG PART JUAL MOBIL (Gross New value added)
-    # Internal bengkel transactions for cars add value to inventory.
+    # PIUTANG PART JUAL MOBIL — Outstanding workshop investment in UNSOLD cars only.
+    # When a car is sold, its parts cost is fully captured via total_modal in Section A,
+    # so it must NOT appear here anymore. Only unsold cars have "outstanding" parts.
     q_part_mobil = (
         db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
+        .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
         .filter(
-            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil"
+            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+            Mobil.status != CarStatus.TERJUAL,  # Exclude sold cars
         )
     )
     if tanggal_dari: q_part_mobil = q_part_mobil.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
@@ -576,21 +585,28 @@ def get_capital_report(
     jb_mobil_cash = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'cash')
     jb_mobil_transfer = get_kas_sum(KasBankSource.JUAL_BELI_MOBIL, KasBankType.KELUAR, 'transfer')
 
-    # Subtract old bilateral KELUAR entries (legacy from before bilateral removal)
-    q_old_bilateral = (
+    # Subtract internal/bilateral KELUAR entries (not real cash movements)
+    # Includes: legacy bilateral, new internal piutang/hutang settlement entries
+    from app.utils.constants import PaymentMethod
+    q_internal_bilateral = (
         db.query(func.sum(KasBank.nominal))
         .filter(
             KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
             KasBank.tipe == KasBankType.KELUAR,
-            KasBank.keterangan.like("Biaya Repair Internal via Bengkel%"),
+            or_(
+                KasBank.keterangan.like("Biaya Repair Internal via Bengkel%"),  # Legacy
+                KasBank.keterangan.like("Pelunasan Biaya Repair Internal%"),    # New piutang settlement
+                KasBank.keterangan.like("Pelunasan %Unit %"),                   # New hutang settlement
+                KasBank.metode_bayar == PaymentMethod.INTERNAL,                 # Catch-all for INTERNAL
+            ),
         )
     )
     if tanggal_dari:
-        q_old_bilateral = q_old_bilateral.filter(KasBank.tanggal >= tanggal_dari)
+        q_internal_bilateral = q_internal_bilateral.filter(KasBank.tanggal >= tanggal_dari)
     if tanggal_sampai:
-        q_old_bilateral = q_old_bilateral.filter(KasBank.tanggal <= tanggal_sampai)
-    old_bilateral_keluar = float(q_old_bilateral.scalar() or 0)
-    jb_mobil_cash = max(jb_mobil_cash - old_bilateral_keluar, 0)  # Remove legacy bilateral
+        q_internal_bilateral = q_internal_bilateral.filter(KasBank.tanggal <= tanggal_sampai)
+    internal_bilateral_keluar = float(q_internal_bilateral.scalar() or 0)
+    jb_mobil_cash = max(jb_mobil_cash - internal_bilateral_keluar, 0)  # Remove internal entries
 
     # 4. Beban Operasional, Gaji, Prive (From KasBank)
     biaya_opr = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
@@ -696,6 +712,10 @@ def get_capital_report(
 
     print(f"DEBUG RECON: A={section_a['total_a']}, B={section_b['total_b']}, C={section_c['total_c']}, E={total_e}")
     print(f"DEBUG RECON: formula={modal_komponen}, bank={total_kas}, penyesuaian={penyesuaian}")
+    print(f"DEBUG RECON DETAIL A: setoran={setoran_modal}, hpp_bengkel={hpp_bengkel}, hpp_mobil={mobil_summ['total_modal']}, laba_total={total_laba_kotor} (bengkel={laba_bengkel}, mobil_kotor={laba_kotor_mobil}, investor={laba_investor_mobil}, tpm={laba_mobil_tpm}, JA={laba_jasa_angkut_tpm})")
+    print(f"DEBUG RECON DETAIL B: lainnya={p_lainnya_net}, mobil={p_mobil_net}, part={p_part_jual_mobil}, JA={p_supir_ja_net}, kary={p_karyawan_net}, usaha={p_usaha_net}")
+    print(f"DEBUG RECON DETAIL C: beli_part={total_beli_part}, beli_mobil={total_beli_mobil}, jb_cash={jb_mobil_cash}, jb_transfer={jb_mobil_transfer}, opr={biaya_opr}, gaji={biaya_gaji}, prive={prive}, lainnya={lainnya_net_out}")
+    print(f"DEBUG RECON DETAIL: internal_bilateral_keluar={internal_bilateral_keluar}")
     return {
         "section_a": section_a,
         "section_b": section_b,

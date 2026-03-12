@@ -207,3 +207,35 @@ export const useNeracaReport = (params?: any) => {
         queryFn: () => keuanganService.getNeracaReport(params),
     });
 };
+// =============================================
+// INVESTOR DISBURSEMENT
+// =============================================
+export const usePendingInvestorDisbursements = (namaInvestor?: string) => {
+    return useQuery({
+        queryKey: ['pending_investor_disbursements', namaInvestor],
+        queryFn: () => keuanganService.getPendingInvestorDisbursements(namaInvestor),
+    });
+};
+
+export const useInvestorDisbursementSummary = (params?: any) => {
+    return useQuery({
+        queryKey: ['investor_disbursement_summary', params],
+        queryFn: () => keuanganService.getInvestorDisbursementSummary(params),
+    });
+};
+
+export const useProcessInvestorDisbursement = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ transaksiId, data }: { transaksiId: number; data: any }) => 
+            keuanganService.processInvestorDisbursement(transaksiId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending_investor_disbursements'] });
+            queryClient.invalidateQueries({ queryKey: ['investor_disbursement_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+        },
+    });
+};

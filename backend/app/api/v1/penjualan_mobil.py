@@ -105,6 +105,41 @@ def get_investor_report(
     return service.get_investor_report(nama_investor, tanggal_dari, tanggal_sampai)
 
 
+# --- Investor Disbursement Endpoints ---
+# NOTE: These MUST be before /{transaksi_id} to avoid path parameter conflict
+
+class DisbursementRequest(BaseModel):
+    """Schema for processing investor disbursement."""
+    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    tanggal: Optional[date] = None
+    catatan: Optional[str] = ""
+
+
+@router.get("/investor/pending-disbursements")
+def get_pending_disbursements(
+    db: DBSession,
+    current_user: ManagerUser,
+    nama_investor: Optional[str] = None,
+):
+    """Get list of investor sales pending disbursement."""
+    service = PenjualanMobilService(db)
+    return service.get_pending_disbursements(nama_investor)
+
+
+@router.get("/investor/disbursement-summary")
+def get_disbursement_summary(
+    db: DBSession,
+    current_user: ManagerUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+):
+    """Get summary of investor disbursements."""
+    service = PenjualanMobilService(db)
+    return service.get_disbursement_summary(tanggal_dari, tanggal_sampai)
+
+
+# --- Transaction-specific routes (use /{transaksi_id} path parameter) ---
+
 @router.get("/{transaksi_id}", response_model=TransaksiMobilResponse)
 def get_transaksi(
     transaksi_id: int,
@@ -157,3 +192,26 @@ def cancel_booking(
     )
 
 
+@router.post("/{transaksi_id}/disburse")
+def process_disbursement(
+    transaksi_id: int,
+    data: DisbursementRequest,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Process investor fund disbursement for a sold car."""
+    service = PenjualanMobilService(db)
+    result = service.process_disbursement(
+        transaksi_id=transaksi_id,
+        metode_bayar=data.metode_bayar,
+        tanggal=data.tanggal,
+        catatan=data.catatan or "",
+        user_id=current_user.id,
+    )
+    return {
+        "message": "Dana investor berhasil dicairkan",
+        "transaksi_id": result.id,
+        "nominal_pencairan": float(result.nominal_pencairan),
+        "tanggal_pencairan": result.tanggal_pencairan.isoformat(),
+        "status_pencairan": result.status_pencairan.value,
+    }

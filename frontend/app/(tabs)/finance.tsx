@@ -19,7 +19,7 @@ import {
 import { useRouter, router } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
-import { useDashboardSummary, usePiutangSummary, useHutangSummary } from '../../hooks/useKeuangan';
+import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
 import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 
@@ -30,6 +30,7 @@ export default function FinanceTab() {
     const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary();
     const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary();
     const { data: hutangSummary, isLoading: isLoadingHutang, refetch: refetchHutang } = useHutangSummary();
+    const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary();
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -41,9 +42,9 @@ export default function FinanceTab() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([refetchDashboard(), refetchPiutang(), refetchHutang()]);
+        await Promise.all([refetchDashboard(), refetchPiutang(), refetchHutang(), refetchInvestor()]);
         setRefreshing(false);
-    }, [refetchDashboard, refetchPiutang, refetchHutang]);
+    }, [refetchDashboard, refetchPiutang, refetchHutang, refetchInvestor]);
 
     // Calculate totals
     const totalPendapatan = dashboard ? (
@@ -233,7 +234,7 @@ export default function FinanceTab() {
                 {piutangSummary && piutangSummary.jumlah_overdue > 0 && (
                     <TouchableOpacity
                         onPress={() => router.push('/finance/piutang')}
-                        className="bg-rose-50 p-5 rounded-[32px] mb-8 border border-rose-100/50 flex-row items-center"
+                        className="bg-rose-50 p-5 rounded-[32px] mb-4 border border-rose-100/50 flex-row items-center"
                     >
                         <View className="w-12 h-12 bg-rose-500 rounded-2xl items-center justify-center mr-4 shadow-lg shadow-rose-500/20">
                             <AlertTriangle size={24} color="white" />
@@ -250,6 +251,27 @@ export default function FinanceTab() {
                     </TouchableOpacity>
                 )}
 
+                {/* Investor Payout Alert */}
+                {investorSummary && investorSummary.pending_count > 0 && (
+                    <TouchableOpacity
+                        onPress={() => router.push('/finance/pencairan-investor')}
+                        className="bg-amber-50 p-5 rounded-[32px] mb-8 border border-amber-100/50 flex-row items-center"
+                    >
+                        <View className="w-12 h-12 bg-amber-500 rounded-2xl items-center justify-center mr-4 shadow-lg shadow-amber-500/20">
+                            <CircleDollarSign size={24} color="white" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography variant="body1" weight="bold" className="text-amber-900 tracking-tight">
+                                {investorSummary.pending_count} Pencairan Investor
+                            </Typography>
+                            <Typography className="text-amber-600/70 text-xs">Total: {formatCurrency(investorSummary.pending_total)}</Typography>
+                        </View>
+                        <View className="w-10 h-10 bg-amber-100 rounded-xl items-center justify-center">
+                            <ChevronRight size={20} color="#F59E0B" />
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 {/* Circular Glass Quick Actions */}
                 <View className="mb-10">
                     <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Aksi Cepat</Typography>
@@ -258,6 +280,7 @@ export default function FinanceTab() {
                             { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
                             { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
                             { label: 'Hutang', icon: CircleDollarSign, color: '#E11D48', path: '/finance/hutang' },
+                            { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
                             { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
                         ].map((action, idx) => (
                             <TouchableOpacity
