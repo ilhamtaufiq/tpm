@@ -26,6 +26,7 @@ Ensure all financial obligations related to car sales (including workshop parts,
 - Fixed Section A to use full laba (including investor share)
 - Excluded INTERNAL bilateral entries from Section C
 - Added investor disbursement mechanism (model, migration, service, API)
+- Fixed duplicate index migration error (`ix_jasa_angkut_biaya_lainnya_tanggal`) by deleting redundant migration `20260313_001553`
 
 ### Now
 - Backend for investor disbursement complete
@@ -46,4 +47,4 @@ Ensure all financial obligations related to car sales (including workshop parts,
 - `backend/app/api/v1/dashboard.py` — LPM capital report fixes
 - `backend/app/utils/constants.py` — InvestorDisbursementStatus enum
 - `backend/app/schemas/mobil.py` — TransaksiMobilResponse with disbursement fields
-- `backend/alembic/versions/20260313_001000_*` — migration
+- `backend/alembic/versions/20260313_001000_add_investor_disbursement_fields.py` — migration (Redundant migration 20260313_001553 deleted)
