@@ -35,6 +35,8 @@
 - Fixed receipt print paper size (80mm/58mm) in preview by correcting units from pixels to points for Expo Print and enforcing mm units in CSS.
 - **Implemented split payment for investor disbursement** (backend & frontend).
 - **Added investor disbursement history and reporting**.
+- **Fixed database migration mismatch and missing table** (`investor_disbursement_detail`).
+- **Resolved ImportError for `MobilList` and other missing schemas**.
 
 ### Now
 - Final testing and polishing of the investor disbursement UI.
