@@ -31,6 +31,7 @@ from app.schemas.mobil import (
     MobilResponse,
     TransaksiMobilCreate,
     TransaksiMobilResponse,
+    InvestorDisbursementDetailResponse,
 )
 from app.schemas.jasa_angkut import (
     SupirCreate,
@@ -87,6 +88,7 @@ __all__ = [
     "MobilResponse",
     "TransaksiMobilCreate",
     "TransaksiMobilResponse",
+    "InvestorDisbursementDetailResponse",
     # Jasa Angkut
     "SupirCreate",
     "SupirUpdate",

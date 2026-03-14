@@ -59,7 +59,7 @@ class PaymentItem(BaseModel):
     nominal: Decimal
     catatan: Optional[str] = None
 
-class TransaksiJualMobilCreate(BaseModel):
+class TransaksiMobilCreate(BaseModel):
     tanggal: date
     mobil_id: int
     customer_id: Optional[int] = None
