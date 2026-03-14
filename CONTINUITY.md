@@ -27,6 +27,7 @@ Ensure all financial obligations related to car sales (including workshop parts,
 - Excluded INTERNAL bilateral entries from Section C
 - Added investor disbursement mechanism (model, migration, service, API)
 - Fixed duplicate index migration error (`ix_jasa_angkut_biaya_lainnya_tanggal`) by deleting redundant migration `20260313_001553`
+- Fixed receipt print paper size (80mm/58mm) in preview by correcting units from pixels to points for Expo Print and enforcing mm units in CSS.
 
 ### Now
 - Backend for investor disbursement complete

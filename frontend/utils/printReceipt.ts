@@ -42,6 +42,7 @@ export interface PrintReceiptData {
  */
 function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): string {
     const paperWidth = settings.paperSize === '80mm' ? '80mm' : '58mm';
+    // For CSS width on screen, we'll keep using px but strictly controlled
     const widthPx = settings.paperSize === '80mm' ? '302px' : '220px';
 
     const formatCurrency = (amount: number) => {
@@ -110,28 +111,61 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
         <html>
         <head>
             <meta charset="utf-8">
-            <meta name="viewport" content="width=${paperWidth}, initial-scale=1.0">
             <style>
-                @page { size: ${paperWidth} auto; margin: 0; }
-                * { margin: 0; padding: 0; box-sizing: border-box; }
+                @page { 
+                    size: ${paperWidth} auto; 
+                    margin: 0; 
+                }
+                * { 
+                    margin: 0; 
+                    padding: 0; 
+                    box-sizing: border-box; 
+                    -webkit-print-color-adjust: exact;
+                }
+                html {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    background: #eee; /* Light gray background to distinguish paper in preview */
+                    display: flex;
+                    justify-content: center;
+                }
                 body {
-                    font-family: 'Courier New', Courier, monospace;
-                    width: ${widthPx};
-                    padding: 12px;
+                    width: ${paperWidth} !important;
+                    max-width: ${paperWidth} !important;
+                    margin: 0 auto !important; /* Centering the receipt strictly */
+                    padding: 10px;
                     background: white;
                     color: black;
-                    font-weight: 500;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-weight: 600;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                    min-height: 100vh;
                 }
                 .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
                 .text-center { text-align: center; }
                 .flex-between { display: flex; justify-content: space-between; }
-                @media print { body { width: ${paperWidth}; } }
+                @media print {
+                    html { 
+                        background: white; 
+                        display: block; 
+                        width: auto;
+                    }
+                    body {
+                        margin: 0 auto !important;
+                        padding: 10px;
+                        box-shadow: none;
+                        width: ${paperWidth} !important;
+                        min-height: auto;
+                    }
+                }
             </style>
+            <!-- Riverside layout centering fix -->
         </head>
         <body>
             <!-- Header -->
             <div class="text-center">
-                ${settings.logoUri ? `<img src="${settings.logoUri}" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 4px;" />` : ''}
+                ${settings.logoUri ? `<img src="${settings.logoUri}" style="width: 60px; height: 60px; display: block; margin: 0 auto 4px auto; object-fit: contain;" />` : ''}
                 <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
                 <div style="font-size: 10px; margin-bottom: 2px;">${settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</div>
                 <div style="font-size: 10px;">cianjur &nbsp; HP ${settings.companyPhone || '087720225244'}</div>
@@ -185,13 +219,24 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
             <div class="divider"></div>
             
             ${data.vehiclePlate ? `
-                <div style="font-size: 11px; margin-bottom: 8px;">${data.vehiclePlate}</div>
+                <div style="font-size: 11px; margin-bottom: 8px; text-align: center;">${data.vehiclePlate}</div>
                 <div class="divider"></div>
             ` : ''}
 
             <!-- Footer -->
             <div class="text-center" style="font-size: 10px; margin-top: 10px;">
                 ${settings.footer || 'Terimakasih atas kepercayaan anda'}
+            </div>
+
+            <div class="text-center" style="font-size: 8px; margin-top: 15px; color: #555; border-top: 1px dotted #ccc; padding-top: 5px;">
+                Waktu Cetak: ${new Date().toLocaleString('id-ID', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                }).replace(/\//g, '-')}
             </div>
         </body>
         </html>
@@ -204,6 +249,11 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
 export async function printReceipt(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
         const html = generateReceiptHTML(data, settings);
+        
+        // Calculations for points (1/72 inch)
+        // 80mm = 226.77 points
+        // 58mm = 164.41 points
+        const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
         if (Platform.OS === 'web') {
             // For web, use a hidden iframe for more reliable printing
@@ -222,7 +272,9 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
                     iframe.contentWindow?.focus();
                     iframe.contentWindow?.print();
                     // Remove iframe after print dialog is closed
-                    setTimeout(() => document.body.removeChild(iframe), 1000);
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                    }, 2000);
                 };
 
                 // Fallback for browsers where onload doesn't fire for iframe.document.write
@@ -232,15 +284,15 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
                         iframe.contentWindow?.print();
                         setTimeout(() => {
                             if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                        }, 1000);
+                        }, 2000);
                     }
-                }, 500);
+                }, 800);
             }
         } else {
             // For mobile, use Expo Print
             await Print.printAsync({
                 html,
-                width: settings.paperSize === '80mm' ? 302 : 220
+                width: paperWidthPoints,
             });
         }
     } catch (error) {
@@ -255,16 +307,18 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
 export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
         const html = generateReceiptHTML(data, settings);
+        
+        // Use points for Expo Print (72dpi)
+        const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
         if (Platform.OS === 'web') {
             // For web, browsers handle "Save as PDF" through the print dialog
-            // We use the same iframe logic as printReceipt
             return printReceipt(data, settings);
         }
 
         const { uri } = await Print.printToFileAsync({
             html,
-            width: settings.paperSize === '80mm' ? 302 : 220
+            width: paperWidthPoints,
         });
 
         // Share the PDF
@@ -282,3 +336,4 @@ export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSett
         throw new Error('Gagal menyimpan struk sebagai PDF');
     }
 }
+
