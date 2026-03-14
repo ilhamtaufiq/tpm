@@ -388,6 +388,7 @@ class PenjualanMobilService:
 
         # Record DP payment to kas/bank if any
         if data.dp > 0:
+            keterangan_prefix = "Penjualan" if status_bayar == PaymentStatus.LUNAS else "DP"
             if hasattr(data, 'payments') and data.payments:
                 for p in data.payments:
                     if p.jumlah > 0:
@@ -400,7 +401,7 @@ class PenjualanMobilService:
                             metode_bayar=p.metode,
                             referensi_id=transaksi.id,
                             nomor_referensi=transaksi.nomor_transaksi,
-                            keterangan=f"DP penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat}) - {p.metode}",
+                            keterangan=f"{keterangan_prefix} mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat}) - {p.metode}",
                             user_id=user_id,
                         )
             else:
@@ -413,7 +414,7 @@ class PenjualanMobilService:
                     metode_bayar=data.metode_bayar,
                     referensi_id=transaksi.id,
                     nomor_referensi=transaksi.nomor_transaksi,
-                    keterangan=f"DP penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
+                    keterangan=f"{keterangan_prefix} mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                     user_id=user_id,
                 )
 

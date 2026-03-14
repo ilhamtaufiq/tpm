@@ -98,6 +98,16 @@ class TransaksiMobilCreate(BaseModel):
     catatan: Optional[str] = None
 
 
+class TransaksiMobilMinimal(BaseModel):
+    """Minimal schema for car sale transaction to avoid circularity."""
+    id: int
+    nomor_transaksi: str
+    mobil_info: Optional[str] = None
+    nama_pembeli: Optional[str] = None
+    
+    model_config = {"from_attributes": True}
+
+
 class InvestorDisbursementDetailResponse(BaseModel):
     """Schema for individual disbursement payment."""
     id: int
@@ -107,8 +117,7 @@ class InvestorDisbursementDetailResponse(BaseModel):
     catatan: Optional[str] = None
     created_at: datetime
     transaksi_id: Optional[int] = None
-    # Use forward reference to avoid circularity if TransaksiMobilResponse is defined later
-    transaksi: Optional['TransaksiMobilResponse'] = None
+    transaksi: Optional[TransaksiMobilMinimal] = None
 
     model_config = {"from_attributes": True}
 

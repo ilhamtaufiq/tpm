@@ -224,7 +224,7 @@ def process_disbursement(
     else:
         # Fallback to single payment if provided, or use calculated default in service
         total_payout = data.nominal
-        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.nominal)] if data.nominal is not None else []
+        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.nominal)]
 
     result = service.process_disbursement(
         transaksi_id=transaksi_id,

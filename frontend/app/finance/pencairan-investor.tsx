@@ -119,8 +119,9 @@ export default function PencairanInvestorScreen() {
                 }));
             } else {
                 requestData.metode_bayar = metode;
-                if (payments[0]?.nominal) {
-                    requestData.nominal = parseNumber(payments[0].nominal);
+                const nominalVal = parseNumber(payments[0]?.nominal);
+                if (nominalVal > 0) {
+                    requestData.nominal = nominalVal;
                 }
             }
 
