@@ -325,7 +325,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     </View>
                 ) : (
                     <>
-                        <Input label="DP / Tanda Jadi (Rp)" placeholder="0" keyboardType="numeric" value={dp} onChangeText={(v) => setDp(formatNumber(v))} />
+                        <Input 
+                            label={parseNumber(dp) >= parseNumber(hargaJual) && parseNumber(hargaJual) > 0 ? "Pembayaran (Lunas) (Rp)" : "DP / Tanda Jadi (Rp)"} 
+                            placeholder="0" 
+                            keyboardType="numeric" 
+                            value={dp} 
+                            onChangeText={(v) => setDp(formatNumber(v))} 
+                        />
                         <Typography variant="body2" className="text-textGray mb-2 font-medium pl-1">Metode Pembayaran</Typography>
                         <View className="flex-row space-x-2 mb-4">
                             {['TUNAI', 'TRANSFER'].map((m) => (
@@ -451,7 +457,9 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     <View className="h-[1px] bg-primary/10 w-full my-1" />
 
                     <View className="flex-row justify-between">
-                        <Typography variant="body2" className="text-gray-600">DP / Terbayar</Typography>
+                        <Typography variant="body2" className="text-gray-600">
+                            { (isSplitPayment ? totalSplitAmount : parseNumber(dp)) >= (parseNumber(hargaJual) || 0) && parseNumber(hargaJual) > 0 ? "Pembayaran (Lunas)" : "DP / Terbayar" }
+                        </Typography>
                         <Typography weight="bold" className="text-emerald-600">{formatCurrency(isSplitPayment ? totalSplitAmount : parseNumber(dp))}</Typography>
                     </View>
 

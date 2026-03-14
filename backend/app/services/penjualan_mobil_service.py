@@ -388,7 +388,7 @@ class PenjualanMobilService:
 
         # Record DP payment to kas/bank if any
         if data.dp > 0:
-            keterangan_prefix = "Penjualan" if status_bayar == PaymentStatus.LUNAS else "DP"
+            keterangan_prefix = "Lunas" if status_bayar == PaymentStatus.LUNAS else "DP"
             if hasattr(data, 'payments') and data.payments:
                 for p in data.payments:
                     if p.jumlah > 0:
