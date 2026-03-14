@@ -19,11 +19,11 @@ class MobilBase(BaseModel):
     nomor_plat: str = Field(..., min_length=3, max_length=20)
     nomor_rangka: Optional[str] = Field(None, max_length=50)
     nomor_mesin: Optional[str] = Field(None, max_length=50)
-    tipe_kepemilikan: OwnershipType = OwnershipType.MILIK_SENDIRI
+    tipe_kepemilikan: OwnershipType = OwnershipType.TPM
     nama_investor: Optional[str] = Field(None, max_length=100)
     nominal_investor: Decimal = Field(default=Decimal("0"), ge=0)
     harga_beli: Decimal = Field(..., ge=0)
-    status: CarStatus = CarStatus.READY
+    status: CarStatus = CarStatus.TERSEDIA
 
 class MobilCreate(MobilBase):
     pass
