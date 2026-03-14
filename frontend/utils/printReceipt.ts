@@ -130,36 +130,44 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                 body {
                     width: ${paperWidth} !important;
                     max-width: ${paperWidth} !important;
-                    margin: 0 !important;
-                    padding: 8mm 4mm !important; /* Standard receipt padding */
+                    margin: 0 auto !important;
+                    padding: 4mm 4mm !important; /* Increased horizontal padding for safer centering */
                     background: white;
                     color: black;
                     font-family: 'Courier New', Courier, monospace;
                     font-size: 11px;
                     font-weight: 600;
                     line-height: 1.2;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                 }
-                .divider { border-bottom: 1px dashed #000; margin: 4mm 0; }
-                .text-center { text-align: center; }
-                .text-right { text-align: right; }
-                .font-bold { font-weight: bold; }
-                .flex-between { display: flex; justify-content: space-between; }
-                
-                /* Receipt Specific Layouts */
                 .receipt-container {
                     width: 100%;
+                    max-width: 100%;
+                    margin: 0 auto;
                 }
+                .divider { 
+                    width: 100%;
+                    border-bottom: 1px dashed #000; 
+                    margin: 3mm 0; 
+                }
+                .text-center { text-align: center; width: 100%; }
+                .text-right { text-align: right; }
+                .font-bold { font-weight: bold; }
+                .flex-between { display: flex; justify-content: space-between; width: 100%; }
                 
                 @media print {
                     body {
-                        padding: 2mm !important;
+                        padding: 2mm 2mm !important;
                         width: ${paperWidth} !important;
+                        margin: 0 !important;
                     }
                 }
             </style>
-            <!-- Riverside layout centering fix -->
         </head>
         <body>
+            <div class="receipt-container">
             <!-- Header -->
             <div class="text-center">
                 ${settings.logoUri ? `<img src="${settings.logoUri}" style="width: 60px; height: 60px; display: block; margin: 0 auto 4px auto; object-fit: contain;" />` : ''}
@@ -235,8 +243,9 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                     second: '2-digit' 
                 }).replace(/\//g, '-')}
             </div>
-        </body>
-        </html>
+        </div>
+    </body>
+    </html>
     `;
 }
 

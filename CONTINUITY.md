@@ -1,9 +1,14 @@
 # Continuity Ledger
 
 ## Goal
-Ensure all financial obligations related to car sales (including workshop parts, unit management costs, and investor disbursements) are correctly settled and accounted for upon sale. Build accurate financial reporting reflecting these settlements.
+- Ensure all financial obligations related to car sales are correctly settled and accounted for.
+- Refine Printing and Exporting: A4 for reports, 80mm/58mm for receipts, improved centering, and consistent timestamps.
 
-## Constraints/Assumptions
+## Progress State
+- Done: Corrected paper size for receipts and reports. Standardized report header with company info. Improved thermal receipt layout and centering. Add timestamps to report headers and receipts.
+- Now: Applying these refinements consistently across all report modules.
+- Next: Final UAT for print layouts.
+
 - Backend: FastAPI + SQLAlchemy + MySQL
 - Frontend: React Native (Expo) + NativeWind
 - Mobile-first app (TPM business management)

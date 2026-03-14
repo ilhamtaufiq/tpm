@@ -110,7 +110,7 @@ export async function printReportHTML(htmlContent: string, config: PrintReportCo
                 </div>
                 <div class="report-title">${config.title}</div>
                 <div class="report-info">Periode: ${config.dateRange}</div>
-                <div class="report-info">Waktu Transaksi: ${new Date().toLocaleString('id-ID')}</div>
+                <div class="report-info">Waktu Cetak: ${new Date().toLocaleString('id-ID')}</div>
                 ${config.subtitle ? `<div class="report-info">${config.subtitle}</div>` : ''}
             </div>
 
