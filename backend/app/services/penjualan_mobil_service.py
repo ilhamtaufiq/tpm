@@ -6,7 +6,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
-from app.models.mobil import Mobil, TransaksiPenjualanMobil, MobilBiayaLainnya
+from app.models.mobil import Mobil, TransaksiPenjualanMobil, MobilBiayaLainnya, InvestorDisbursementDetail
 from app.models.customer import Customer
 from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource
 from app.models.bengkel import (
@@ -1024,15 +1024,19 @@ class PenjualanMobilService:
     def process_disbursement(
         self,
         transaksi_id: int,
-        metode_bayar: PaymentMethod,
+        payment_entries: List[tuple[PaymentMethod, Decimal]],
+        total_nominal: Optional[Decimal] = None,
         tanggal: Optional[date] = None,
         catatan: str = "",
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanMobil:
-        """Process investor fund disbursement for a sold car."""
+        """Process investor fund disbursement for a sold car (supports partial & split payments)."""
         transaksi = (
             self.db.query(TransaksiPenjualanMobil)
-            .options(joinedload(TransaksiPenjualanMobil.mobil))
+            .options(
+                joinedload(TransaksiPenjualanMobil.mobil),
+                joinedload(TransaksiPenjualanMobil.rincian_pencairan)
+            )
             .filter(TransaksiPenjualanMobil.id == transaksi_id)
             .first()
         )
@@ -1058,36 +1062,86 @@ class PenjualanMobilService:
         if transaksi.status_pencairan == InvestorDisbursementStatus.DICAIRKAN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Dana investor sudah dicairkan sebelumnya",
+                detail="Dana investor sudah dicairkan sepenuhnya sebelumnya",
             )
 
-        # Calculate disbursement amount
-        nominal_investor = float(transaksi.mobil.nominal_investor or 0)
-        laba_inv = float(transaksi.laba_investor or 0)
-        total_pencairan = Decimal(str(nominal_investor + laba_inv))
+        # Calculate what should be disbursed
+        nominal_investor = Decimal(str(transaksi.mobil.nominal_investor or 0))
+        laba_inv = Decimal(str(transaksi.laba_investor or 0))
+        target_pencairan = nominal_investor + laba_inv
+        
+        # Calculate what has been disbursed
+        current_disbursed = sum(d.nominal for d in transaksi.rincian_pencairan) if transaksi.rincian_pencairan else Decimal("0")
+        remaining_to_disburse = target_pencairan - current_disbursed
+
+        # Validate payout amount
+        if total_nominal is None:
+            # If not specified, default to remaining amount
+            total_nominal = remaining_to_disburse
+            # If we're defaulting the total, and have one entry with no nominal, update it
+            if len(payment_entries) == 1 and payment_entries[0][1] is None:
+                payment_entries = [(payment_entries[0][0], total_nominal)]
+        
+        if total_nominal <= 0:
+             raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nominal pencairan harus lebih dari 0",
+            )
+
+        if total_nominal > remaining_to_disburse:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Nominal pencairan ({total_nominal}) melebihi sisa dana ({remaining_to_disburse})",
+            )
+
+        # Validate split payments total
+        total_payout_input = sum(n for m, n in payment_entries)
+        if total_payout_input != total_nominal:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Total rincian pembayaran ({total_payout_input}) tidak sesuai dengan total pencairan ({total_nominal})",
+            )
 
         tanggal_pencairan = tanggal or date.today()
 
-        # Update transaction
-        transaksi.status_pencairan = InvestorDisbursementStatus.DICAIRKAN
+        # Update transaction status
+        new_total_disbursed = current_disbursed + total_nominal
+        transaksi.nominal_pencairan = new_total_disbursed
         transaksi.tanggal_pencairan = tanggal_pencairan
-        transaksi.nominal_pencairan = total_pencairan
-        transaksi.metode_pencairan = metode_bayar
-        transaksi.catatan_pencairan = catatan or f"Pencairan dana investor {transaksi.mobil.nama_investor}"
+        
+        if new_total_disbursed >= target_pencairan:
+            transaksi.status_pencairan = InvestorDisbursementStatus.DICAIRKAN
+        else:
+            transaksi.status_pencairan = InvestorDisbursementStatus.SEBAGIAN
 
-        # Record cash outflow (actual money leaving the company to investor)
-        create_kas_entry(
-            db=self.db,
-            tanggal=tanggal_pencairan,
-            tipe=KasBankType.KELUAR,
-            nominal=total_pencairan,
-            sumber=KasBankSource.JUAL_BELI_MOBIL,
-            metode_bayar=metode_bayar,
-            referensi_id=transaksi.id,
-            nomor_referensi=transaksi.nomor_transaksi,
-            keterangan=f"Pencairan Investor {transaksi.mobil.nama_investor} - {transaksi.mobil.merek} {transaksi.mobil.model} ({transaksi.mobil.nomor_plat})",
-            user_id=user_id,
-        )
+        # Add records to history and cash book
+        for metode, nominal in payment_entries:
+            if nominal <= 0: continue
+            
+            # 1. Record detail
+            detail = InvestorDisbursementDetail(
+                transaksi_id=transaksi.id,
+                tanggal=tanggal_pencairan,
+                nominal=nominal,
+                metode_bayar=metode,
+                catatan=catatan or f"Pencairan dana investor {transaksi.mobil.nama_investor}",
+                created_by=user_id
+            )
+            self.db.add(detail)
+
+            # 2. Record cash outflow
+            create_kas_entry(
+                db=self.db,
+                tanggal=tanggal_pencairan,
+                tipe=KasBankType.KELUAR,
+                nominal=nominal,
+                sumber=KasBankSource.JUAL_BELI_MOBIL,
+                metode_bayar=metode,
+                referensi_id=transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                keterangan=f"Pencairan Investor {transaksi.mobil.nama_investor} ({metode}) - {transaksi.mobil.merek} ({transaksi.mobil.nomor_plat})",
+                user_id=user_id,
+            )
 
         self.db.commit()
         self.db.refresh(transaksi)
@@ -1142,3 +1196,25 @@ class PenjualanMobilService:
             "disbursed_count": disbursed_count,
             "disbursed_total": disbursed_total,
         }
+
+    def get_disbursement_history(
+        self,
+        nama_investor: Optional[str] = None,
+        tanggal_dari: Optional[date] = None,
+        tanggal_sampai: Optional[date] = None,
+    ) -> List[InvestorDisbursementDetail]:
+        """Get history of all investor disbursements."""
+        query = (
+            self.db.query(InvestorDisbursementDetail)
+            .join(InvestorDisbursementDetail.transaksi)
+            .join(TransaksiPenjualanMobil.mobil)
+        )
+        
+        if nama_investor:
+            query = query.filter(Mobil.nama_investor.ilike(f"%{nama_investor}%"))
+        if tanggal_dari:
+            query = query.filter(InvestorDisbursementDetail.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            query = query.filter(InvestorDisbursementDetail.tanggal <= tanggal_sampai)
+            
+        return query.order_by(InvestorDisbursementDetail.tanggal.desc(), InvestorDisbursementDetail.id.desc()).all()

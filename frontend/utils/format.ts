@@ -80,3 +80,13 @@ export const formatDate = (dateString: string): string => {
         year: 'numeric'
     });
 };
+
+export const formatDateTime = (dateString: string): string => {
+    return new Date(dateString).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};

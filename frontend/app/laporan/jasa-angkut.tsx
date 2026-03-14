@@ -268,16 +268,16 @@ export default function JasaAngkutReportScreen() {
                         </View>
                     </View>
                     <View className="flex-row items-center">
+                        <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10 mr-2">
+                            <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REAL-TIME</Typography>
+                        </View>
                         <TouchableOpacity
                             onPress={() => setShowExportMenu(true)}
                             disabled={isExporting}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-3"
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             <Download size={22} color="white" />
                         </TouchableOpacity>
-                        <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                            <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REAL-TIME</Typography>
-                        </View>
                     </View>
                 </View>
 

@@ -9,6 +9,7 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.mobil import (
     TransaksiMobilCreate,
     TransaksiMobilResponse,
+    InvestorDisbursementDetailResponse,
 )
 from app.services.penjualan_mobil_service import PenjualanMobilService
 from app.utils.constants import PaymentStatus, OwnershipType, PaymentMethod
@@ -110,7 +111,9 @@ def get_investor_report(
 
 class DisbursementRequest(BaseModel):
     """Schema for processing investor disbursement."""
-    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    nominal: Optional[Decimal] = Field(None, ge=0)
+    metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    payments: List[PaymentEntry] = []  # For split payment
     tanggal: Optional[date] = None
     catatan: Optional[str] = ""
 
@@ -136,6 +139,19 @@ def get_disbursement_summary(
     """Get summary of investor disbursements."""
     service = PenjualanMobilService(db)
     return service.get_disbursement_summary(tanggal_dari, tanggal_sampai)
+
+
+@router.get("/investor/disbursement-history", response_model=List[InvestorDisbursementDetailResponse])
+def get_disbursement_history(
+    db: DBSession,
+    current_user: ManagerUser,
+    nama_investor: Optional[str] = None,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+):
+    """Get history of all investor disbursements."""
+    service = PenjualanMobilService(db)
+    return service.get_disbursement_history(nama_investor, tanggal_dari, tanggal_sampai)
 
 
 # --- Transaction-specific routes (use /{transaksi_id} path parameter) ---
@@ -201,9 +217,19 @@ def process_disbursement(
 ):
     """Process investor fund disbursement for a sold car."""
     service = PenjualanMobilService(db)
+    # Build payment entries list
+    if data.payments:
+        payment_entries = [(p.metode, p.nominal) for p in data.payments]
+        total_payout = sum(p.nominal for p in data.payments)
+    else:
+        # Fallback to single payment if provided, or use calculated default in service
+        total_payout = data.nominal
+        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.nominal)] if data.nominal is not None else []
+
     result = service.process_disbursement(
         transaksi_id=transaksi_id,
-        metode_bayar=data.metode_bayar,
+        payment_entries=payment_entries,
+        total_nominal=total_payout,
         tanggal=data.tanggal,
         catatan=data.catatan or "",
         user_id=current_user.id,

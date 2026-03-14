@@ -279,6 +279,32 @@ class TransaksiPenjualanMobil(Base, TimestampMixin):
     customer: Mapped[Optional["Customer"]] = relationship(
         back_populates="transaksi_mobil"
     )
+    rincian_pencairan: Mapped[List["InvestorDisbursementDetail"]] = relationship(
+        back_populates="transaksi",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<TransaksiMobil(id={self.id}, nomor='{self.nomor_transaksi}', harga={self.harga_jual})>"
+
+
+class InvestorDisbursementDetail(Base, TimestampMixin):
+    """Detail of each payment made to an investor."""
+
+    __tablename__ = "investor_disbursement_detail"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    transaksi_id: Mapped[int] = mapped_column(
+        ForeignKey("transaksi_penjualan_mobil.id", ondelete="CASCADE")
+    )
+    tanggal: Mapped[date] = mapped_column(Date)
+    nominal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    metode_bayar: Mapped[PaymentMethod] = mapped_column(SQLEnum(PaymentMethod))
+    catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # Relationship
+    transaksi: Mapped["TransaksiPenjualanMobil"] = relationship(back_populates="rincian_pencairan")

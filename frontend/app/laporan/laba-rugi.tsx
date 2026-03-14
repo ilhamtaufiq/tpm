@@ -163,20 +163,21 @@ export default function LabaRugiScreen() {
                         </View>
                     </View>
 
-                    {/* Export Button */}
-                    <TouchableOpacity
-                        onPress={() => setShowExportMenu(true)}
-                        disabled={isExporting}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
-                    >
-                        <Download size={22} color="white" />
-                    </TouchableOpacity>
-
-                    {/* Period Badge */}
-                    <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5">
-                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
-                            {getHeaderDate()}
-                        </Typography>
+                    <View className="flex-row items-center">
+                        {/* Period Badge */}
+                        <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5 mr-2">
+                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
+                                {getHeaderDate()}
+                            </Typography>
+                        </View>
+                        {/* Export Button */}
+                        <TouchableOpacity
+                            onPress={() => setShowExportMenu(true)}
+                            disabled={isExporting}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            <Download size={22} color="white" />
+                        </TouchableOpacity>
                     </View>
                 </View>
 

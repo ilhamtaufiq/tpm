@@ -172,14 +172,14 @@ export default function PembelianMobilReportScreen() {
                     <Typography variant="h2" weight="bold">Laporan Pembelian Mobil</Typography>
                 </View>
                 <View className="flex-row items-center">
+                    <Badge variant="info" label="Inventory" className="px-3 py-1 mr-2" />
                     <TouchableOpacity
                         onPress={() => setShowExportMenu(true)}
                         disabled={isExporting}
-                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 mr-3"
+                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100"
                     >
                         <Download size={20} color="#023C69" />
                     </TouchableOpacity>
-                    <Badge variant="info" label="Inventory" className="px-3 py-1" />
                 </View>
             </View>
 

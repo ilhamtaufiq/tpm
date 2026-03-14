@@ -530,4 +530,12 @@ export const keuanganService = {
         const response = await api.post(`/penjualan-mobil/${transaksiId}/disburse`, data);
         return response.data;
     },
+    getInvestorDisbursementHistory: async (params?: {
+        nama_investor?: string;
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }): Promise<any[]> => {
+        const response = await api.get('/penjualan-mobil/investor/disbursement-history', { params });
+        return response.data;
+    },
 };

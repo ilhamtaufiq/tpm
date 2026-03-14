@@ -131,14 +131,14 @@ export default function StockSparepartReportScreen() {
                     <Typography variant="h2" weight="bold">Laporan Stok</Typography>
                 </View>
                 <View className="flex-row items-center">
+                    <Badge variant="info" label={format(new Date(), 'dd/MM/yyyy')} className="px-3 py-1 mr-2" />
                     <TouchableOpacity
                         onPress={() => setShowExportMenu(true)}
                         disabled={isExporting}
-                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 mr-2"
+                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100"
                     >
                         <Download size={20} color="#023C69" />
                     </TouchableOpacity>
-                    <Badge variant="info" label={format(new Date(), 'dd/MM/yyyy')} className="px-3 py-1" />
                 </View>
             </View>
 

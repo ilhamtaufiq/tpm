@@ -239,3 +239,9 @@ export const useProcessInvestorDisbursement = () => {
         },
     });
 };
+export const useInvestorDisbursementHistory = (params?: any) => {
+    return useQuery({
+        queryKey: ['investor_disbursement_history', params],
+        queryFn: () => keuanganService.getInvestorDisbursementHistory(params),
+    });
+};

@@ -33,13 +33,13 @@
 - Added investor disbursement mechanism (model, migration, service, API)
 - Fixed duplicate index migration error (`ix_jasa_angkut_biaya_lainnya_tanggal`) by deleting redundant migration `20260313_001553`
 - Fixed receipt print paper size (80mm/58mm) in preview by correcting units from pixels to points for Expo Print and enforcing mm units in CSS.
+- **Implemented split payment for investor disbursement** (backend & frontend).
+- **Added investor disbursement history and reporting**.
 
 ### Now
-- Backend for investor disbursement complete
-- Frontend page for investor disbursement pending (can be built when needed)
+- Final testing and polishing of the investor disbursement UI.
 
 ### Next
-- Build frontend UI for `/finance/pencairan-investor` page
 - Test full reconciliation flow end-to-end
 - Verify penyesuaian is Rp.0 after fixes
 

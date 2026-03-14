@@ -170,6 +170,7 @@ class InvestorDisbursementStatus(str, Enum):
     """Status pencairan dana investor setelah mobil terjual."""
 
     BELUM_DICAIRKAN = "BELUM_DICAIRKAN"
+    SEBAGIAN = "SEBAGIAN"
     DICAIRKAN = "DICAIRKAN"
 
     @classmethod
