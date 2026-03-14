@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, GestureResponderEvent, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
@@ -162,6 +162,7 @@ export default function LaporanPerubahanModalScreen() {
                     <div class="header">
                         <div class="title">LAPORAN SISA LABA & MODAL DI TANGAN TPM</div>
                         <div class="period">PERIODE: ${format(new Date(getDateParams().tanggal_dari), 'dd MMM yyyy', { locale: localeID })} - ${format(new Date(getDateParams().tanggal_sampai), 'dd MMM yyyy', { locale: localeID }).toUpperCase()}</div>
+                        <div class="period">Waktu Transaksi: ${new Date().toLocaleString('id-ID')}</div>
                     </div>
 
                     <!-- SECTION A -->

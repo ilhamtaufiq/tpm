@@ -1,31 +1,25 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, TextInput, Platform } from 'react-native';
+import {
+    View, ScrollView, TouchableOpacity, StatusBar,
+    RefreshControl as RNRefreshControl, ActivityIndicator,
+    TextInput, Platform, Alert, Modal
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft,
-    ChevronRight,
-    Calendar,
-    ShoppingCart,
-    Wallet,
-    Clock,
-    Search,
-    Filter,
-    X,
-    Package,
-    FileText,
-    TrendingUp,
-    ArrowUpRight,
-    ClipboardList,
-    User
+    ChevronLeft, ChevronRight, Calendar, ShoppingCart,
+    Wallet, Clock, Search, Filter, X, Package,
+    FileText, TrendingUp, ArrowUpRight, ClipboardList,
+    User, Printer, Download, Eye, Share2
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency } from '../../utils/format';
+import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
@@ -37,6 +31,8 @@ export default function PembelianSparepartReportScreen() {
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const [summary, setSummary] = useState<any>(null);
     const [purchases, setPurchases] = useState<any[]>([]);
@@ -160,8 +156,17 @@ export default function PembelianSparepartReportScreen() {
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Pembelian Sparepart</Typography>
                         </View>
                     </View>
-                    <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                        <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REALTIME</Typography>
+                    <View className="flex-row items-center">
+                        <TouchableOpacity
+                            onPress={() => setShowExportMenu(true)}
+                            disabled={isExporting}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-3"
+                        >
+                            <Download size={22} color="white" />
+                        </TouchableOpacity>
+                        <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
+                            <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REALTIME</Typography>
+                        </View>
                     </View>
                 </View>
 
@@ -488,6 +493,180 @@ export default function PembelianSparepartReportScreen() {
                     ) : null}
                 </BottomSheetView>
             </BottomSheetModal>
+
+            {/* Export Action Menu */}
+            <Modal
+                visible={showExportMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowExportMenu(false)}
+            >
+                <TouchableOpacity
+                    className="flex-1 bg-black/50 justify-end"
+                    activeOpacity={1}
+                    onPress={() => setShowExportMenu(false)}
+                >
+                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
+                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!summary) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN PEMBELIAN SPAREPART</div>
+                                            <div class="row-item">
+                                                <span>Total Nilai Pembelian</span>
+                                                <span class="font-bold">${formatCurrency(summary.total_nilai || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Transaksi</span>
+                                                <span>${summary.total_transaksi || 0} Nota</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Hutang (Unpaid)</span>
+                                                <span class="text-error font-bold">${formatCurrency(summary.belum_lunas_nilai || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Lunas (Paid)</span>
+                                                <span class="text-success font-bold">${formatCurrency((summary.total_nilai || 0) - (summary.belum_lunas_nilai || 0))}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">DAFTAR PEMBELIAN SPAREPART</div>
+                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                                                <thead>
+                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tanggal/Nota</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Supplier</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Total</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${purchases.map(item => `
+                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                                                            <td style="padding: 8px;">
+                                                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_transaksi}</span>
+                                                            </td>
+                                                            <td style="padding: 8px;">
+                                                                <span style="font-weight: bold;">${item.supplier?.nama || item.supplier_nama || 'Supplier Umum'}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
+                                                            <td style="padding: 8px;">
+                                                                <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
+                                                                    ${item.status_bayar}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Pembelian Sparepart',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal mencetak laporan');
+                                    }
+                                }}
+                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                    <Eye size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
+                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!summary) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN PEMBELIAN SPAREPART</div>
+                                            <div class="row-item">
+                                                <span>Total Nilai Pembelian</span>
+                                                <span class="font-bold">${formatCurrency(summary.total_nilai || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Transaksi</span>
+                                                <span>${summary.total_transaksi || 0} Nota</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Hutang (Unpaid)</span>
+                                                <span class="text-error font-bold">${formatCurrency(summary.belum_lunas_nilai || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Lunas (Paid)</span>
+                                                <span class="text-success font-bold">${formatCurrency((summary.total_nilai || 0) - (summary.belum_lunas_nilai || 0))}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">DAFTAR PEMBELIAN SPAREPART</div>
+                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                                                <thead>
+                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tanggal/Nota</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Supplier</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Total</th>
+                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${purchases.map(item => `
+                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                                                            <td style="padding: 8px;">
+                                                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_transaksi}</span>
+                                                            </td>
+                                                            <td style="padding: 8px;">
+                                                                <span style="font-weight: bold;">${item.supplier?.nama || item.supplier_nama || 'Supplier Umum'}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
+                                                            <td style="padding: 8px;">
+                                                                <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
+                                                                    ${item.status_bayar}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Pembelian Sparepart',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal membuat PDF');
+                                    }
+                                }}
+                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                            >
+                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
+                                    <Share2 size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
+                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }

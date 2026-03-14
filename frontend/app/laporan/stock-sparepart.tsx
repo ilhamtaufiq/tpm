@@ -12,14 +12,20 @@ import {
     AlertTriangle,
     Coins,
     BarChart3,
-    Search
+    Search,
+    Printer,
+    Download,
+    Eye,
+    Share2,
+    X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency } from '../../utils/format';
-import { TextInput } from 'react-native';
+import { printReportHTML } from '../../utils/printReport';
+import { TextInput, Alert, Modal } from 'react-native';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -29,6 +35,8 @@ export default function StockSparepartReportScreen() {
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const [stockStats, setStockStats] = useState<any>(null);
     const [parts, setParts] = useState<any[]>([]);
@@ -122,7 +130,16 @@ export default function StockSparepartReportScreen() {
                     </TouchableOpacity>
                     <Typography variant="h2" weight="bold">Laporan Stok</Typography>
                 </View>
-                <Badge variant="info" label={format(new Date(), 'dd/MM/yyyy')} className="px-3 py-1" />
+                <View className="flex-row items-center">
+                    <TouchableOpacity
+                        onPress={() => setShowExportMenu(true)}
+                        disabled={isExporting}
+                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100 mr-2"
+                    >
+                        <Download size={20} color="#023C69" />
+                    </TouchableOpacity>
+                    <Badge variant="info" label={format(new Date(), 'dd/MM/yyyy')} className="px-3 py-1" />
+                </View>
             </View>
 
             {/* Date Filter Section (Standard Pattern) */}
@@ -259,6 +276,170 @@ export default function StockSparepartReportScreen() {
                     </View>
                 </View>
             </ScrollView>
+
+            {/* Export Action Menu */}
+            <Modal
+                visible={showExportMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowExportMenu(false)}
+            >
+                <TouchableOpacity
+                    className="flex-1 bg-black/50 justify-end"
+                    activeOpacity={1}
+                    onPress={() => setShowExportMenu(false)}
+                >
+                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Typography variant="h3" weight="bold">Ekspor Laporan Stok</Typography>
+                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!stockStats) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN STOK SPAREPART</div>
+                                            <div class="row-item">
+                                                <span>Total Produk</span>
+                                                <span class="font-bold">${stockStats.total_products || 0} Item</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Stok (Unit)</span>
+                                                <span class="font-bold">${stockStats.total_items || 0} Unit</span>
+                                            </div>
+                                            <div class="row-item row-total">
+                                                <span>Total Nilai Aset</span>
+                                                <span class="font-bold text-success">${formatCurrency(stockStats.total_value || 0)}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">DAFTAR INVENTARIS</div>
+                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                                                <thead>
+                                                    <tr style="text-align: left; font-size: 10px; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                                        <th style="padding: 8px;">Product / Kode</th>
+                                                        <th style="padding: 8px; text-align: center;">Stok</th>
+                                                        <th style="padding: 8px; text-align: right;">Total Nilai</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${parts.map(part => `
+                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                                                            <td style="padding: 8px;">
+                                                                <b>${part.nama}</b><br/>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; text-align: center;">
+                                                                <span style="font-weight: bold; color: ${part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b'};">
+                                                                    ${part.stok}
+                                                                </span>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${part.satuan || 'Unit'}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; text-align: right; font-weight: bold;">
+                                                                ${formatCurrency(part.stok * part.harga_beli)}
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Stok Sparepart',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal mencetak laporan');
+                                    }
+                                }}
+                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                    <Eye size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
+                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!stockStats) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN STOK SPAREPART</div>
+                                            <div class="row-item">
+                                                <span>Total Produk</span>
+                                                <span class="font-bold">${stockStats.total_products || 0} Item</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Stok (Unit)</span>
+                                                <span class="font-bold">${stockStats.total_items || 0} Unit</span>
+                                            </div>
+                                            <div class="row-item row-total">
+                                                <span>Total Nilai Aset</span>
+                                                <span class="font-bold text-success">${formatCurrency(stockStats.total_value || 0)}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">DAFTAR INVENTARIS</div>
+                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                                                <thead>
+                                                    <tr style="text-align: left; font-size: 10px; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                                        <th style="padding: 8px;">Product / Kode</th>
+                                                        <th style="padding: 8px; text-align: center;">Stok</th>
+                                                        <th style="padding: 8px; text-align: right;">Total Nilai</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${parts.map(part => `
+                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                                                            <td style="padding: 8px;">
+                                                                <b>${part.nama}</b><br/>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; text-align: center;">
+                                                                <span style="font-weight: bold; color: ${part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b'};">
+                                                                    ${part.stok}
+                                                                </span>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${part.satuan || 'Unit'}</span>
+                                                            </td>
+                                                            <td style="padding: 8px; text-align: right; font-weight: bold;">
+                                                                ${formatCurrency(part.stok * part.harga_beli)}
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Stok Sparepart',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal membuat PDF');
+                                    }
+                                }}
+                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                            >
+                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
+                                    <Share2 size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
+                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }

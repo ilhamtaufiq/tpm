@@ -126,37 +126,34 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                     margin: 0;
                     padding: 0;
                     width: 100%;
-                    background: #eee; /* Light gray background to distinguish paper in preview */
-                    display: flex;
-                    justify-content: center;
                 }
                 body {
                     width: ${paperWidth} !important;
                     max-width: ${paperWidth} !important;
-                    margin: 0 auto !important; /* Centering the receipt strictly */
-                    padding: 10px;
+                    margin: 0 !important;
+                    padding: 8mm 4mm !important; /* Standard receipt padding */
                     background: white;
                     color: black;
                     font-family: 'Courier New', Courier, monospace;
+                    font-size: 11px;
                     font-weight: 600;
-                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                    min-height: 100vh;
+                    line-height: 1.2;
                 }
-                .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+                .divider { border-bottom: 1px dashed #000; margin: 4mm 0; }
                 .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .font-bold { font-weight: bold; }
                 .flex-between { display: flex; justify-content: space-between; }
+                
+                /* Receipt Specific Layouts */
+                .receipt-container {
+                    width: 100%;
+                }
+                
                 @media print {
-                    html { 
-                        background: white; 
-                        display: block; 
-                        width: auto;
-                    }
                     body {
-                        margin: 0 auto !important;
-                        padding: 10px;
-                        box-shadow: none;
+                        padding: 2mm !important;
                         width: ${paperWidth} !important;
-                        min-height: auto;
                     }
                 }
             </style>

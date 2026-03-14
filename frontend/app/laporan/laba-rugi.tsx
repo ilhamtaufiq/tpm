@@ -8,7 +8,9 @@ import { useUIStore } from '../../store/useUIStore';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { keuanganService } from '../../services/keuangan';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, Modal } from 'react-native';
+import { Printer, Download, Eye, Share2, X } from 'lucide-react-native';
+import { printReportHTML } from '../../utils/printReport';
 
 import { formatCurrency } from '../../utils/format';
 
@@ -49,6 +51,8 @@ export default function LabaRugiScreen() {
     const router = useRouter();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
     const { themeColors } = useUIStore();
 
     // Date Manipulation
@@ -158,6 +162,15 @@ export default function LabaRugiScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Analisa Performa Finansial</Typography>
                         </View>
                     </View>
+
+                    {/* Export Button */}
+                    <TouchableOpacity
+                        onPress={() => setShowExportMenu(true)}
+                        disabled={isExporting}
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
+                    >
+                        <Download size={22} color="white" />
+                    </TouchableOpacity>
 
                     {/* Period Badge */}
                     <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5">
@@ -422,6 +435,284 @@ export default function LabaRugiScreen() {
                     <View className="h-20" />
                 </ScrollView>
             )}
+        
+        {/* Export Action Menu */}
+        <Modal
+            visible={showExportMenu}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowExportMenu(false)}
+        >
+            <TouchableOpacity
+                className="flex-1 bg-black/50 justify-end"
+                activeOpacity={1}
+                onPress={() => setShowExportMenu(false)}
+            >
+                <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                    <View className="flex-row justify-between items-center mb-8">
+                        <View>
+                            <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
+                            <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                        </View>
+                        <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                            <X size={20} color={themeColors.textGray} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="flex-row gap-4">
+                        <TouchableOpacity
+                            onPress={async () => {
+                                setShowExportMenu(false);
+                                if (!reportData) return;
+                                try {
+                                    const html = `
+                                        <div class="section-header">UNIT BENGKEL</div>
+                                        <div class="row-item">
+                                            <span>1. Penjualan Sparepart & Jasa</span>
+                                            <span>${formatCurrency(bengkelData.penjualan)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Sparepart</span>
+                                            <span>${formatCurrency(reportData?.bengkel_details?.total_parts || 0)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Jasa</span>
+                                            <span>${formatCurrency(reportData?.bengkel_details?.total_jasa || 0)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Diskon</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.bengkel_details?.total_diskon || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. HPP Sparepart Terjual</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.hpp)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>3. LABA KOTOR BENGKEL</span>
+                                            <span class="font-bold">${formatCurrency(labaKotor)}</span>
+                                        </div>
+                                        <div class="row-item" style="margin-top: 10px;">
+                                            <span>4. Biaya Operasional</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaOps)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>5. Biaya Gaji</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaGaji)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>6. LABA BERSIH BENGKEL</span>
+                                            <span class="font-bold">${formatCurrency(labaBersih)}</span>
+                                        </div>
+
+                                        <div class="section-header">UNIT JASA ANGKUT</div>
+                                        <div class="row-item">
+                                            <span>1. Penghasilan Jasa (Gross TPM)</span>
+                                            <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. Biaya Lainnya</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_lainnya || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>3. Biaya Sparepart & Servis</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_bengkel || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>4. LABA BERSIH JASA ANGKUT</span>
+                                            <span class="font-bold">${formatCurrency(reportData?.laba_kotor?.jasa_angkut || 0)}</span>
+                                        </div>
+
+                                        <div class="section-header">UNIT JUAL BELI MOBIL</div>
+                                        <div class="row-item">
+                                            <span>1. Laba Kotor Terjual</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.total_laba_kotor || 0)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. Laba Investor</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.mobil_details?.laba_investor || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>3. LABA TPM (NET)</span>
+                                            <span class="font-bold">${formatCurrency(reportData?.mobil_details?.laba_tpm || 0)}</span>
+                                        </div>
+
+                                        <div class="section-header">BEBAN & PRIVE</div>
+                                        <div class="row-item">
+                                            <span>Beban Lainnya</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Prive Pemilik</span>
+                                            <span class="text-error">(${formatCurrency(priveTotal)})</span>
+                                        </div>
+
+                                        <div style="margin-top:30px; padding:20px; background:#f0f7ff; border-radius:10px; border: 2px solid #023C69;">
+                                            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">RINGKASAN AKHIR</div>
+                                            <div class="row-item">
+                                                <span>Total Laba Kotor Unit</span>
+                                                <span>${formatCurrency(reportData?.laba_kotor?.total || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Beban Bisnis</span>
+                                                <span class="text-error">(${formatCurrency((reportData?.pengeluaran || 0) - priveTotal)})</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Prive Pemilik</span>
+                                                <span class="text-error">(${formatCurrency(priveTotal)})</span>
+                                            </div>
+                                            <div class="row-item row-total" style="font-size:18px; color:#023C69;">
+                                                <span>PROFIT BERSIH AKHIR</span>
+                                                <span>${formatCurrency(reportData?.laba_bersih || 0)}</span>
+                                            </div>
+                                        </div>
+                                    `;
+
+                                    await printReportHTML(html, {
+                                        title: 'Laporan Laba Rugi',
+                                        dateRange: getFormattedDate()
+                                    });
+                                } catch (e) {
+                                    Alert.alert('Error', 'Gagal mencetak laporan');
+                                }
+                            }}
+                            className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                        >
+                            <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                <Eye size={28} color="white" />
+                            </View>
+                            <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
+                            <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={async () => {
+                                setShowExportMenu(false);
+                                // For now, download and preview use same logic through expo-print/sharing in printReportHTML
+                                // which automatically handles sharing on mobile
+                                if (!reportData) return;
+                                try {
+                                    const html = `
+                                        <div class="section-header">UNIT BENGKEL</div>
+                                        <div class="row-item">
+                                            <span>1. Penjualan Sparepart & Jasa</span>
+                                            <span>${formatCurrency(bengkelData.penjualan)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Sparepart</span>
+                                            <span>${formatCurrency(reportData?.bengkel_details?.total_parts || 0)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Jasa</span>
+                                            <span>${formatCurrency(reportData?.bengkel_details?.total_jasa || 0)}</span>
+                                        </div>
+                                        <div class="row-item row-sub">
+                                            <span>Diskon</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.bengkel_details?.total_diskon || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. HPP Sparepart Terjual</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.hpp)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>3. LABA KOTOR BENGKEL</span>
+                                            <span class="font-bold">${formatCurrency(labaKotor)}</span>
+                                        </div>
+                                        <div class="row-item" style="margin-top: 10px;">
+                                            <span>4. Biaya Operasional</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaOps)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>5. Biaya Gaji</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaGaji)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>6. LABA BERSIH BENGKEL</span>
+                                            <span class="font-bold">${formatCurrency(labaBersih)}</span>
+                                        </div>
+
+                                        <div class="section-header">UNIT JASA ANGKUT</div>
+                                        <div class="row-item">
+                                            <span>1. Penghasilan Jasa (Gross TPM)</span>
+                                            <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. Biaya Lainnya</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_lainnya || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>3. Biaya Sparepart & Servis</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_bengkel || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>4. LABA BERSIH JASA ANGKUT</span>
+                                            <span class="font-bold">${formatCurrency(reportData?.laba_kotor?.jasa_angkut || 0)}</span>
+                                        </div>
+
+                                        <div class="section-header">UNIT JUAL BELI MOBIL</div>
+                                        <div class="row-item">
+                                            <span>1. Laba Kotor Terjual</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.total_laba_kotor || 0)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>2. Laba Investor</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.mobil_details?.laba_investor || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>3. LABA TPM (NET)</span>
+                                            <span class="font-bold">${formatCurrency(reportData?.mobil_details?.laba_tpm || 0)}</span>
+                                        </div>
+
+                                        <div class="section-header">BEBAN & PRIVE</div>
+                                        <div class="row-item">
+                                            <span>Beban Lainnya</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Prive Pemilik</span>
+                                            <span class="text-error">(${formatCurrency(priveTotal)})</span>
+                                        </div>
+
+                                        <div style="margin-top:30px; padding:20px; background:#f0f7ff; border-radius:10px; border: 2px solid #023C69;">
+                                            <div style="font-size:16px; font-weight:bold; margin-bottom:10px;">RINGKASAN AKHIR</div>
+                                            <div class="row-item">
+                                                <span>Total Laba Kotor Unit</span>
+                                                <span>${formatCurrency(reportData?.laba_kotor?.total || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Beban Bisnis</span>
+                                                <span class="text-error">(${formatCurrency((reportData?.pengeluaran || 0) - priveTotal)})</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Prive Pemilik</span>
+                                                <span class="text-error">(${formatCurrency(priveTotal)})</span>
+                                            </div>
+                                            <div class="row-item row-total" style="font-size:18px; color:#023C69;">
+                                                <span>PROFIT BERSIH AKHIR</span>
+                                                <span>${formatCurrency(reportData?.laba_bersih || 0)}</span>
+                                            </div>
+                                        </div>
+                                    `;
+
+                                    await printReportHTML(html, {
+                                        title: 'Laporan Laba Rugi',
+                                        dateRange: getFormattedDate()
+                                    });
+                                } catch (e) {
+                                    Alert.alert('Error', 'Gagal membuat PDF');
+                                }
+                            }}
+                            className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                        >
+                            <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
+                                <Share2 size={28} color="white" />
+                            </View>
+                            <Typography weight="bold" className="text-primary-dark">Download</Typography>
+                            <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </TouchableOpacity>
+        </Modal>
         </View>
     );
 }

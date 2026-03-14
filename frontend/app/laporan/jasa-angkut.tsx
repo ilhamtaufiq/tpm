@@ -1,39 +1,27 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, TextInput, Platform } from 'react-native';
+import {
+    View, ScrollView, TouchableOpacity, StatusBar,
+    RefreshControl as RNRefreshControl, ActivityIndicator,
+    TextInput, Platform, Alert, Modal
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft,
-    ChevronRight,
-    Calendar,
-    Truck,
-    TrendingUp,
-    Search,
-    User,
-    ArrowUpRight,
-    BarChart3,
-    ArrowRight,
-    Clock,
-    Wallet,
-    MapPin,
-    X,
-    Fuel,
-    Receipt,
-    Utensils,
-    ParkingSquare,
-    MoreHorizontal,
-    Percent,
-    Users,
-    ChevronDown,
-    Plus
+    ChevronLeft, ChevronRight, Calendar, Truck,
+    TrendingUp, Search, User, ArrowUpRight, BarChart3,
+    ArrowRight, Clock, Wallet, MapPin, X, Fuel,
+    Receipt, Utensils, ParkingSquare, MoreHorizontal,
+    Percent, Users, ChevronDown, Plus, Printer,
+    Download, Eye, Share2
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { jasaAngkutService } from '../../services/jasaAngkut';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useActiveArmada } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -48,6 +36,8 @@ export default function JasaAngkutReportScreen() {
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const [summary, setSummary] = useState<any>(null);
     const [trips, setTrips] = useState<any[]>([]);
@@ -277,8 +267,17 @@ export default function JasaAngkutReportScreen() {
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
                         </View>
                     </View>
-                    <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                        <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REAL-TIME</Typography>
+                    <View className="flex-row items-center">
+                        <TouchableOpacity
+                            onPress={() => setShowExportMenu(true)}
+                            disabled={isExporting}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-3"
+                        >
+                            <Download size={22} color="white" />
+                        </TouchableOpacity>
+                        <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
+                            <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REAL-TIME</Typography>
+                        </View>
                     </View>
                 </View>
 
@@ -752,6 +751,184 @@ export default function JasaAngkutReportScreen() {
                     ) : null}
                 </BottomSheetView>
             </BottomSheetModal>
+
+            {/* Export Action Menu */}
+            <Modal
+                visible={showExportMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowExportMenu(false)}
+            >
+                <TouchableOpacity
+                    className="flex-1 bg-black/50 justify-end"
+                    activeOpacity={1}
+                    onPress={() => setShowExportMenu(false)}
+                >
+                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Typography variant="h3" weight="bold">Ekspor Laporan Ritase</Typography>
+                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                                <X size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!summary) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN JASA ANGKUT</div>
+                                            <div class="row-item">
+                                                <span>Total Laba TPM</span>
+                                                <span class="font-bold text-success">${formatCurrency(summary.laba_tpm || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Ritase</span>
+                                                <span>${summary.total_transaksi || 0} Trip Selesai</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Pendapatan TPM</span>
+                                                <span class="font-bold">${formatCurrency(summary.total_pendapatan || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Piutang Supir</span>
+                                                <span class="text-error">${formatCurrency(summary.total_hutang_supir || 0)}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">RINCIAN TRIP (Group by ${groupBy.toUpperCase()})</div>
+                                            ${groupedTrips.map(group => `
+                                                <div style="background-color: #f8fafc; padding: 10px; margin-top: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                                    <div style="font-weight: bold; font-size: 11px;">${group.title}</div>
+                                                    <div style="font-size: 9px; color: #64748b;">${group.subtitle || ''} • ${group.trips.length} Transaksi</div>
+                                                    <div style="font-size: 10px; margin-top: 5px;">Total Laba: <b>${formatCurrency(group.totalPendapatanTPM)}</b></div>
+                                                </div>
+                                                <table style="width:100%; border-collapse: collapse; margin-top:5px;">
+                                                    <thead>
+                                                        <tr style="text-align: left; font-size: 9px; color: #64748b;">
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0;">Tgl/Nota</th>
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0;">Rute / Muatan</th>
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0; text-align: right;">Laba TPM</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${group.trips.map(trip => `
+                                                            <tr style="font-size: 9px; border-bottom: 1px solid #f1f5f9;">
+                                                                <td style="padding: 5px;">
+                                                                    ${formatDate(trip.tanggal)}<br/>
+                                                                    <span style="font-size: 7px; color: #94a3b8;">${trip.nomor_transaksi}</span>
+                                                                </td>
+                                                                <td style="padding: 5px;">
+                                                                    <b>${trip.asal} &rarr; ${trip.tujuan}</b><br/>
+                                                                    <span style="font-size: 8px; color: #64748b;">${trip.supir_nama}</span>
+                                                                </td>
+                                                                <td style="padding: 5px; text-align: right; font-weight: bold;">${formatCurrency(trip.laba_tpm || 0)}</td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            `).join('')}
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Jasa Angkut',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal mencetak laporan');
+                                    }
+                                }}
+                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                    <Eye size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
+                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!summary) return;
+                                    try {
+                                        const html = `
+                                            <div class="section-header">RINGKASAN JASA ANGKUT</div>
+                                            <div class="row-item">
+                                                <span>Total Laba TPM</span>
+                                                <span class="font-bold text-success">${formatCurrency(summary.laba_tpm || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Ritase</span>
+                                                <span>${summary.total_transaksi || 0} Trip Selesai</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Total Pendapatan TPM</span>
+                                                <span class="font-bold">${formatCurrency(summary.total_pendapatan || 0)}</span>
+                                            </div>
+                                            <div class="row-item">
+                                                <span>Piutang Supir</span>
+                                                <span class="text-error">${formatCurrency(summary.total_hutang_supir || 0)}</span>
+                                            </div>
+
+                                            <div class="section-header" style="margin-top:30px;">RINCIAN TRIP (Group by ${groupBy.toUpperCase()})</div>
+                                            ${groupedTrips.map(group => `
+                                                <div style="background-color: #f8fafc; padding: 10px; margin-top: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                                    <div style="font-weight: bold; font-size: 11px;">${group.title}</div>
+                                                    <div style="font-size: 9px; color: #64748b;">${group.subtitle || ''} • ${group.trips.length} Transaksi</div>
+                                                    <div style="font-size: 10px; margin-top: 5px;">Total Laba: <b>${formatCurrency(group.totalPendapatanTPM)}</b></div>
+                                                </div>
+                                                <table style="width:100%; border-collapse: collapse; margin-top:5px;">
+                                                    <thead>
+                                                        <tr style="text-align: left; font-size: 9px; color: #64748b;">
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0;">Tgl/Nota</th>
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0;">Rute / Muatan</th>
+                                                            <th style="padding: 5px; border-bottom: 1px solid #e2e8f0; text-align: right;">Laba TPM</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${group.trips.map(trip => `
+                                                            <tr style="font-size: 9px; border-bottom: 1px solid #f1f5f9;">
+                                                                <td style="padding: 5px;">
+                                                                    ${formatDate(trip.tanggal)}<br/>
+                                                                    <span style="font-size: 7px; color: #94a3b8;">${trip.nomor_transaksi}</span>
+                                                                </td>
+                                                                <td style="padding: 5px;">
+                                                                    <b>${trip.asal} &rarr; ${trip.tujuan}</b><br/>
+                                                                    <span style="font-size: 8px; color: #64748b;">${trip.supir_nama}</span>
+                                                                </td>
+                                                                <td style="padding: 5px; text-align: right; font-weight: bold;">${formatCurrency(trip.laba_tpm || 0)}</td>
+                                                            </tr>
+                                                        `).join('')}
+                                                    </tbody>
+                                                </table>
+                                            `).join('')}
+                                        `;
+
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Jasa Angkut',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal membuat PDF');
+                                    }
+                                }}
+                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                            >
+                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
+                                    <Share2 size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
+                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 }
