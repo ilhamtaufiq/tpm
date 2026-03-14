@@ -19,14 +19,30 @@ class MobilBase(BaseModel):
     nomor_plat: str = Field(..., min_length=3, max_length=20)
     nomor_rangka: Optional[str] = Field(None, max_length=50)
     nomor_mesin: Optional[str] = Field(None, max_length=50)
+    transmisi: Optional[str] = Field(None, max_length=20)
+    bahan_bakar: Optional[str] = Field(None, max_length=20)
+    kilometer: Optional[int] = Field(None, ge=0)
+    harga_beli: Decimal = Field(..., ge=0)
+    harga_jual: Optional[Decimal] = Field(None, ge=0)
     tipe_kepemilikan: OwnershipType = OwnershipType.TPM
     nama_investor: Optional[str] = Field(None, max_length=100)
+    persentase_investor: Decimal = Field(default=Decimal("0"), ge=0, le=100)
     nominal_investor: Decimal = Field(default=Decimal("0"), ge=0)
-    harga_beli: Decimal = Field(..., ge=0)
     status: CarStatus = CarStatus.TERSEDIA
+    tanggal_masuk: date
+    catatan: Optional[str] = None
+
+class PurchasePaymentItem(BaseModel):
+    metode: PaymentMethod
+    jumlah: Decimal
+    catatan: Optional[str] = None
 
 class MobilCreate(MobilBase):
-    pass
+    kode: Optional[str] = None
+    status_bayar: PaymentStatus = PaymentStatus.LUNAS
+    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    dp: Decimal = Field(default=Decimal("0"), ge=0)
+    payments: Optional[List[PurchasePaymentItem]] = None
 
 class MobilUpdate(BaseModel):
     merek: Optional[str] = Field(None, min_length=1, max_length=50)
@@ -36,14 +52,22 @@ class MobilUpdate(BaseModel):
     nomor_plat: Optional[str] = Field(None, min_length=3, max_length=20)
     nomor_rangka: Optional[str] = Field(None, max_length=50)
     nomor_mesin: Optional[str] = Field(None, max_length=50)
+    transmisi: Optional[str] = None
+    bahan_bakar: Optional[str] = None
+    kilometer: Optional[int] = None
+    harga_beli: Optional[Decimal] = None
+    harga_jual: Optional[Decimal] = None
     tipe_kepemilikan: Optional[OwnershipType] = None
     nama_investor: Optional[str] = None
+    persentase_investor: Optional[Decimal] = None
     nominal_investor: Optional[Decimal] = None
-    harga_beli: Optional[Decimal] = None
     status: Optional[CarStatus] = None
+    tanggal_masuk: Optional[date] = None
+    catatan: Optional[str] = None
 
 class MobilResponse(MobilBase):
     id: int
+    kode: str
     created_at: datetime
     updated_at: datetime
 
@@ -147,6 +171,43 @@ class MobilDetailResponse(MobilResponse):
     final_capital: Decimal = Decimal("0")
     is_sold: bool = False
     penjualan: Optional[TransaksiMobilResponse] = None
+
+class MobilList(BaseModel):
+    data: List[MobilResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+    model_config = {"from_attributes": True}
+
+class MobilMediaResponse(BaseModel):
+    id: int
+    mobil_id: int
+    file_path: str
+    file_name: str
+    file_type: str
+    is_primary: bool
+    urutan: int
+
+    model_config = {"from_attributes": True}
+
+class MobilBiayaCreate(BaseModel):
+    tanggal: date
+    kategori: str
+    deskripsi: str
+    jumlah: Decimal = Field(..., ge=0)
+    metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    payments: Optional[List[PaymentItem]] = None
+    catatan: Optional[str] = None
+
+class MobilPartServiceCreate(BaseModel):
+    tanggal: date
+    tipe: str
+    deskripsi: str
+    qty: int = Field(..., ge=1)
+    harga_satuan: Decimal = Field(..., ge=0)
+    catatan: Optional[str] = None
 
 InvestorDisbursementDetailResponse.model_rebuild()
 TransaksiMobilResponse.model_rebuild()
