@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { View, ScrollView, TouchableOpacity, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
     ChevronLeft,
@@ -14,12 +14,13 @@ import {
     TrendingDown,
     Calendar,
     FileText,
-    BarChart3
+    BarChart3,
+    X
 } from 'lucide-react-native';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { keuanganService, KasBankAllBalances, KasBankBalance, KasBankJenis } from '../../services/keuangan';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
-import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -93,6 +94,23 @@ export default function AkunKeuanganScreen() {
     // Success Alert state
     const [showSuccessAlert, setShowSuccessAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
+
+    // Sheet refs
+    const adjustSheetRef = useRef<BottomSheet>(null);
+    const adjustSnapPoints = useMemo(() => ['75%', '90%'], []);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    // Sync sheet with visible state
+    useEffect(() => {
+        if (Platform.OS !== 'web') {
+            if (isAdjustModalVisible) {
+                adjustSheetRef.current?.expand();
+                setIsSheetOpen(true);
+            } else {
+                adjustSheetRef.current?.close();
+            }
+        }
+    }, [isAdjustModalVisible]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -282,6 +300,75 @@ export default function AkunKeuanganScreen() {
         );
     };
 
+    const renderAdjustContent = () => (
+        <View className="p-0">
+            <View className="bg-amber-50 p-4 rounded-3xl border border-amber-100 mb-6 flex-row items-start">
+                <Info size={20} color="#D97706" />
+                <Typography className="flex-1 ml-3 text-amber-800 text-xs leading-5">
+                    Adjustment akan membuat transaksi <Typography weight="bold">MASUK</Typography> atau <Typography weight="bold">KELUAR</Typography> secara otomatis untuk mencapai saldo target. Gunakan fitur ini hanya untuk koreksi saldo stok opname atau perbaikan data.
+                </Typography>
+            </View>
+
+            <View className="mb-6">
+                <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
+                <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex-row items-center">
+                    <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-3 shadow-sm">
+                        {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "#023C69" })}
+                    </View>
+                    <Typography weight="bold" className="text-gray-800">
+                        {selectedAccount ? ACCOUNT_LABELS[selectedAccount] : ''}
+                    </Typography>
+                </View>
+            </View>
+
+            <Input
+                label="SALDO TARGET BARU"
+                value={newNominal}
+                onChangeText={setNewNominal}
+                keyboardType="numeric"
+                placeholder="0"
+                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+            />
+
+            <Input
+                label="TANGGAL"
+                value={adjustmentDate}
+                onChangeText={setAdjustmentDate}
+                placeholder="YYYY-MM-DD"
+                startIcon={<Calendar size={18} color="#9CA3AF" />}
+            />
+
+            <Input
+                label="KETERANGAN / ALASAN"
+                value={keterangan}
+                onChangeText={setKeterangan}
+                placeholder="Contoh: Koreksi saldo akhir tahun"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                startIcon={<FileText size={18} color="#9CA3AF" />}
+            />
+
+            <View className="flex-row mt-4 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => setIsAdjustModalVisible(false)}
+                        disabled={isSubmitting}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Simpan"
+                        onPress={handleAdjustSubmit}
+                        loading={isSubmitting}
+                    />
+                </View>
+            </View>
+        </View>
+    );
+
     return (
         <View className="flex-1 bg-surface">
             <Stack.Screen options={{ headerShown: false }} />
@@ -423,79 +510,44 @@ export default function AkunKeuanganScreen() {
                 <View className="h-20" />
             </ScrollView>
 
-            {/* Adjustment Modal */}
-            <BaseModal
-                visible={isAdjustModalVisible}
-                onClose={() => setIsAdjustModalVisible(false)}
-                title="Penyesuaian Saldo"
-            >
-                <View className="p-4">
-                    <View className="bg-amber-50 p-4 rounded-3xl border border-amber-100 mb-6 flex-row items-start">
-                        <Info size={20} color="#D97706" />
-                        <Typography className="flex-1 ml-3 text-amber-800 text-xs leading-5">
-                            Adjustment akan membuat transaksi <Typography weight="bold">MASUK</Typography> atau <Typography weight="bold">KELUAR</Typography> secara otomatis untuk mencapai saldo target. Gunakan fitur ini hanya untuk koreksi saldo stok opname atau perbaikan data.
-                        </Typography>
-                    </View>
-
-                    <View className="mb-6">
-                        <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-2 ml-1">Akun Terpilih</Typography>
-                        <View className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex-row items-center">
-                            <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-3 shadow-sm">
-                                {selectedAccount && React.createElement(ACCOUNT_ICONS[selectedAccount] || Banknote, { size: 20, color: "#023C69" })}
+            {/* Adjustment Modal - Platform Specific */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={isAdjustModalVisible} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <TouchableOpacity className="absolute inset-0" onPress={() => setIsAdjustModalVisible(false)} />
+                        <View style={styles.webModalContent}>
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Typography variant="h2" weight="bold">Penyesuaian Saldo</Typography>
+                                <TouchableOpacity onPress={() => setIsAdjustModalVisible(false)}>
+                                    <X size={24} color="#6B7280" />
+                                </TouchableOpacity>
                             </View>
-                            <Typography weight="bold" className="text-gray-800">
-                                {selectedAccount ? ACCOUNT_LABELS[selectedAccount] : ''}
-                            </Typography>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                {renderAdjustContent()}
+                            </ScrollView>
                         </View>
                     </View>
-
-                    <Input
-                        label="SALDO TARGET BARU"
-                        value={newNominal}
-                        onChangeText={setNewNominal}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-                    />
-
-                    <Input
-                        label="TANGGAL"
-                        value={adjustmentDate}
-                        onChangeText={setAdjustmentDate}
-                        placeholder="YYYY-MM-DD"
-                        startIcon={<Calendar size={18} color="#9CA3AF" />}
-                    />
-
-                    <Input
-                        label="KETERANGAN / ALASAN"
-                        value={keterangan}
-                        onChangeText={setKeterangan}
-                        placeholder="Contoh: Koreksi saldo akhir tahun"
-                        multiline
-                        numberOfLines={3}
-                        textAlignVertical="top"
-                        startIcon={<FileText size={18} color="#9CA3AF" />}
-                    />
-
-                    <View className="flex-row mt-4 space-x-3">
-                        <View className="flex-1">
-                            <Button
-                                variant="outline"
-                                title="Batal"
-                                onPress={() => setIsAdjustModalVisible(false)}
-                                disabled={isSubmitting}
-                            />
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={adjustSheetRef}
+                    index={-1}
+                    snapPoints={adjustSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    onClose={() => {
+                        setIsAdjustModalVisible(false);
+                        setIsSheetOpen(false);
+                    }}
+                >
+                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <View className="px-6 py-2">
+                            <Typography variant="h2" weight="bold" className="mb-6">Penyesuaian Saldo</Typography>
+                            {renderAdjustContent()}
                         </View>
-                        <View className="flex-1">
-                            <Button
-                                title="Simpan"
-                                onPress={handleAdjustSubmit}
-                                loading={isSubmitting}
-                            />
-                        </View>
-                    </View>
-                </View>
-            </BaseModal>
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
 
             {/* Success Alert */}
             <AlertDialog
@@ -508,3 +560,26 @@ export default function AkunKeuanganScreen() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    webModalContent: {
+        backgroundColor: 'white',
+        borderRadius: 32,
+        width: '100%',
+        maxHeight: '90%',
+        maxWidth: 500,
+        padding: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+    }
+});

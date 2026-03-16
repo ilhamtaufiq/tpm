@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -24,6 +24,7 @@ import {
     Download
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
 import { 
     usePendingInvestorDisbursements, 
@@ -32,7 +33,6 @@ import {
     useInvestorDisbursementHistory 
 } from '../../hooks/useKeuangan';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { BaseModal } from '../../components/ui/BaseModal';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { printReportHTML } from '../../utils/printReport';
@@ -44,6 +44,10 @@ export default function PencairanInvestorScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState<'PENDING' | 'HISTORY'>('PENDING');
     const [printing, setPrinting] = useState(false);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    const paymentSheetRef = useRef<BottomSheet>(null);
+    const paymentSnapPoints = useMemo(() => ['70%', '85%'], []);
 
     // Form states
     const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
@@ -100,7 +104,14 @@ export default function PencairanInvestorScreen() {
     const handleOpenModal = (item: any) => {
         setSelectedId(item.id);
         setCatatan(`Pencairan dana investor ${item.nama_investor} - ${item.mobil}`);
-        setModalVisible(true);
+        
+        if (Platform.OS === 'web') {
+            setModalVisible(true);
+            setIsSheetOpen(true);
+        } else {
+            paymentSheetRef.current?.expand();
+            setIsSheetOpen(true);
+        }
     };
 
     const handleProcessDisbursement = async () => {
@@ -130,7 +141,14 @@ export default function PencairanInvestorScreen() {
                 data: requestData
             });
 
-            setModalVisible(false);
+            if (Platform.OS === 'web') {
+                setModalVisible(false);
+                setIsSheetOpen(false);
+            } else {
+                paymentSheetRef.current?.close();
+                setIsSheetOpen(false);
+            }
+
             showAlert('Sukses', 'Dana investor berhasil dicairkan dan tercatat di KasBank.', 'success');
             setSelectedId(null);
             // Reset split payments
@@ -216,6 +234,169 @@ export default function PencairanInvestorScreen() {
         } else {
             router.replace('/finance');
         }
+    };
+
+    const renderProcessDisbursementContent = () => {
+        const selectedItem = pendingList?.find((i: any) => i.id === selectedId);
+        const totalInput = payments.reduce((acc, curr) => acc + parseNumber(curr.nominal), 0);
+
+        return (
+            <View className="px-8 py-4">
+                <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter mb-2">Konfirmasi Pencairan</Typography>
+                <Typography variant="body2" className="text-gray-500 mb-6 font-medium">
+                    Anda akan memproses pencairan dana kepada investor. Nominal yang diajukan adalah sisa kewajiban.
+                </Typography>
+
+                <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
+                    <View className="flex-row items-center mb-3">
+                        <View className="w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center mr-4">
+                            <Banknote size={24} color="#023C69" />
+                        </View>
+                        <View>
+                            <Typography className="text-primary/60 text-[10px] uppercase font-bold tracking-widest mb-1">Sisa Wajib Cair</Typography>
+                            <Typography variant="h2" weight="bold" className="text-primary text-2xl tracking-tighter">
+                                {formatCurrency(selectedItem?.total_pencairan || 0)}
+                            </Typography>
+                        </View>
+                    </View>
+                    {totalInput > 0 && metode === 'SPLIT' && (
+                        <View className="mt-4 pt-4 border-t border-primary/10 flex-row justify-between items-center">
+                            <Typography variant="caption" weight="bold" className="text-primary/60 uppercase tracking-widest">Total Input</Typography>
+                            <Typography variant="body1" weight="bold" className="text-primary">
+                                {formatCurrency(totalInput)}
+                            </Typography>
+                        </View>
+                    )}
+                </Card>
+
+                <View className="mb-8">
+                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-4 uppercase tracking-[2px] text-[10px]">Pilih Metode Pembayaran</Typography>
+                    <View className="flex-row space-x-2 gap-2">
+                        {['TUNAI', 'TRANSFER', 'SPLIT'].map((m: any) => (
+                            <TouchableOpacity
+                                key={m}
+                                onPress={() => setMetode(m)}
+                                className={`flex-1 h-14 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-gray-50 border-gray-200'}`}
+                            >
+                                <Typography className={`text-xs font-bold ${metode === m ? 'text-white' : 'text-gray-500'}`}>{m}</Typography>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                {metode === 'SPLIT' ? (
+                    <View className="mb-8">
+                        <View className="flex-row justify-between items-center mb-4 px-1">
+                            <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-[2px] text-[10px]">Rincian Split Payment</Typography>
+                            <TouchableOpacity 
+                                onPress={handleAddPaymentRow}
+                                className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
+                            >
+                                <Plus size={14} color="#023C69" />
+                                <Typography weight="bold" className="text-primary text-[10px] ml-1 uppercase">Tambah</Typography>
+                            </TouchableOpacity>
+                        </View>
+
+                        {payments.map((p, index) => (
+                            <Card key={index} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View className="bg-gray-100 px-2 py-1 rounded-lg">
+                                        <Typography weight="bold" className="text-gray-500 text-[9px] uppercase tracking-widest">Entry #{index + 1}</Typography>
+                                    </View>
+                                    {payments.length > 1 && (
+                                        <TouchableOpacity 
+                                            onPress={() => handleRemovePaymentRow(index)}
+                                            className="w-8 h-8 bg-red-50 rounded-xl items-center justify-center"
+                                        >
+                                            <Trash2 size={16} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                <View className="flex-row space-x-2 gap-2 mb-4">
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                        <TouchableOpacity
+                                            key={m}
+                                            onPress={() => handleUpdatePayment(index, 'metode', m as 'TUNAI' | 'TRANSFER')}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary shadow-md shadow-primary/20' : 'bg-gray-50 border-gray-100'}`}
+                                        >
+                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+
+                                <Input
+                                    label="Nominal (Rp)"
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    value={p.nominal}
+                                    onChangeText={(text) => handleUpdatePayment(index, 'nominal', formatNumber(text))}
+                                    containerClassName="mb-0"
+                                />
+                            </Card>
+                        ))}
+                    </View>
+                ) : (
+                    <Input 
+                        label="Nominal Pencairan"
+                        placeholder="Opsional (Isi jika bayar parsial)"
+                        keyboardType="numeric"
+                        value={payments[0]?.nominal || ''}
+                        onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text))}
+                        startIcon={<CircleDollarSign size={18} color="#9CA3AF" />}
+                        containerClassName="mb-6"
+                    />
+                )}
+
+                <View className="flex-row gap-4 mb-6">
+                    <View className="flex-1">
+                        <Input 
+                            label="Tanggal Cair"
+                            placeholder="YYYY-MM-DD"
+                            value={tanggal}
+                            onChangeText={(text) => setTanggal(text)}
+                            startIcon={<Calendar size={18} color="#9CA3AF" />}
+                            containerClassName="mb-0"
+                        />
+                    </View>
+                </View>
+
+                <Input 
+                    label="Catatan Pencairan"
+                    placeholder="Tambahkan keterangan transaksi..."
+                    value={catatan}
+                    onChangeText={(text) => setCatatan(text)}
+                    multiline
+                    numberOfLines={2}
+                    startIcon={<FileText size={18} color="#9CA3AF" />}
+                    style={{ height: 60, textAlignVertical: 'top' }}
+                    containerClassName="mb-8"
+                />
+
+                <View className="flex-row gap-3 mb-10">
+                    <Button 
+                        title="Batal" 
+                        variant="outline" 
+                        className="flex-1 h-14 rounded-2xl"
+                        onPress={() => {
+                            if (Platform.OS === 'web') {
+                                setModalVisible(false);
+                                setIsSheetOpen(false);
+                            } else {
+                                paymentSheetRef.current?.close();
+                                setIsSheetOpen(false);
+                            }
+                        }}
+                    />
+                    <Button 
+                        title={disburseMutation.isPending ? "Memproses..." : "Konfirmasi & Cairkan"}
+                        className="flex-[2] h-14 rounded-2xl bg-primary shadow-xl shadow-primary/30"
+                        loading={disburseMutation.isPending}
+                        onPress={handleProcessDisbursement}
+                    />
+                </View>
+            </View>
+        );
     };
 
     return (
@@ -439,145 +620,39 @@ export default function PencairanInvestorScreen() {
                 <View className="h-10" />
             </ScrollView>
 
-            {/* Disbursement Process Modal */}
-            <BaseModal 
-                visible={modalVisible} 
-                onClose={() => setModalVisible(false)} 
-                title="Konfirmasi Pencairan"
-            >
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <Typography variant="body2" className="text-gray-500 mb-6 font-medium">
-                        Anda akan memproses pencairan dana kepada investor. Nominal yang diajukan adalah sisa kewajiban.
-                    </Typography>
-
-                    <Card variant="outlined" className="p-5 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
-                        <View className="flex-row items-center mb-3">
-                            <View className="w-10 h-10 bg-primary/10 rounded-2xl items-center justify-center mr-3">
-                                <Banknote size={20} color="#023C69" />
-                            </View>
-                            <View>
-                                <Typography className="text-primary/60 text-[10px] uppercase font-bold tracking-widest">Sisa Wajib Cair</Typography>
-                                {(() => {
-                                    const selectedItem = pendingList?.find((i: any) => i.id === selectedId);
-                                    return (
-                                        <Typography variant="h2" weight="bold" className="text-primary text-2xl tracking-tighter">
-                                            {formatCurrency(selectedItem?.total_pencairan || 0)}
-                                        </Typography>
-                                    );
-                                })()}
-                            </View>
-                        </View>
-                    </Card>
-
-                    <View className="mb-6">
-                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-3 uppercase tracking-widest">Pilih Metode</Typography>
-                        <View className="flex-row space-x-2">
-                            {['TUNAI', 'TRANSFER', 'SPLIT'].map((m: any) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setMetode(m)}
-                                    className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-md shadow-primary/30' : 'bg-gray-50 border-gray-200'}`}
-                                >
-                                    <Typography className={`text-[10px] font-bold ${metode === m ? 'text-white' : 'text-gray-500'}`}>{m}</Typography>
-                                </TouchableOpacity>
-                            ))}
+            {/* Disbursement Process UI Upgraded to Premium Style */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => {
+                    setModalVisible(false);
+                    setIsSheetOpen(false);
+                }}>
+                    <View className="flex-1 justify-end bg-black/40">
+                        <TouchableOpacity className="absolute inset-0" onPress={() => {
+                            setModalVisible(false);
+                            setIsSheetOpen(false);
+                        }} />
+                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView className="flex-1">
+                                {renderProcessDisbursementContent()}
+                            </ScrollView>
                         </View>
                     </View>
-
-                    {metode === 'SPLIT' ? (
-                        <View className="mb-8">
-                            <Typography variant="caption" weight="bold" className="text-gray-500 mb-3 uppercase tracking-widest">Rincian Pembayaran</Typography>
-                            {payments.map((p, index) => (
-                                <View key={index} className="flex-row items-center mb-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                                    <TouchableOpacity 
-                                        onPress={() => handleUpdatePayment(index, 'metode', p.metode === 'TUNAI' ? 'TRANSFER' : 'TUNAI')}
-                                        className="bg-primary/10 px-3 py-2 rounded-xl border border-primary/10 mr-3 min-w-[80px] items-center"
-                                    >
-                                        <Typography weight="bold" className="text-primary text-[10px]">{p.metode}</Typography>
-                                    </TouchableOpacity>
-                                    <View className="flex-1">
-                                        <TextInput
-                                            placeholder="Nominal"
-                                            className="text-sm font-bold text-textMain py-1"
-                                            keyboardType="numeric"
-                                            value={p.nominal}
-                                            onChangeText={(text) => handleUpdatePayment(index, 'nominal', formatNumber(text))}
-                                        />
-                                    </View>
-                                    {payments.length > 1 && (
-                                        <TouchableOpacity 
-                                            onPress={() => handleRemovePaymentRow(index)}
-                                            className="ml-2 w-8 h-8 bg-red-50 rounded-xl items-center justify-center border border-red-100"
-                                        >
-                                            <Trash2 size={14} color="#EF4444" />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            ))}
-                            <TouchableOpacity 
-                                onPress={handleAddPaymentRow}
-                                className="flex-row items-center justify-center py-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/30"
-                            >
-                                <Plus size={16} color="#9CA3AF" />
-                                <Typography className="ml-2 text-xs font-bold text-gray-400">Tambah Metode Lain</Typography>
-                            </TouchableOpacity>
-                            
-                            <View className="mt-4 flex-row justify-between px-2">
-                                <Typography weight="bold" className="text-gray-400 text-xs uppercase">Total Input</Typography>
-                                <Typography weight="bold" className="text-primary text-sm">
-                                    {formatCurrency(payments.reduce((acc, curr) => acc + parseNumber(curr.nominal), 0))}
-                                </Typography>
-                            </View>
-                        </View>
-                    ) : (
-                        <Input 
-                            label="Nominal"
-                            placeholder="Opsional (Isi jika parsial)"
-                            keyboardType="numeric"
-                            value={payments[0]?.nominal || ''}
-                            onChangeText={(text) => handleUpdatePayment(0, 'nominal', formatNumber(text))}
-                            startIcon={<CircleDollarSign size={18} color="#9CA3AF" />}
-                            containerClassName="mb-6"
-                        />
-                    )}
-
-                    <Input 
-                        label="Tanggal Pencairan"
-                        placeholder="YYYY-MM-DD"
-                        value={tanggal}
-                        onChangeText={(text) => setTanggal(text)}
-                        startIcon={<Calendar size={18} color="#9CA3AF" />}
-                        containerClassName="mb-6"
-                    />
-
-                    <Input 
-                        label="Catatan"
-                        placeholder="Tambahkan keterangan..."
-                        value={catatan}
-                        onChangeText={(text) => setCatatan(text)}
-                        multiline
-                        numberOfLines={3}
-                        startIcon={<FileText size={18} color="#9CA3AF" />}
-                        style={{ height: 80, textAlignVertical: 'top' }}
-                        containerClassName="mb-8"
-                    />
-
-                    <View className="flex-row mb-6">
-                        <Button 
-                            title="Batal" 
-                            variant="outline" 
-                            className="flex-1 h-12 rounded-2xl mr-3"
-                            onPress={() => setModalVisible(false)}
-                        />
-                        <Button 
-                            title={disburseMutation.isPending ? "Memproses..." : "Konfirmasi & Cairkan"}
-                            className="flex-[2] h-12 rounded-2xl bg-primary shadow-lg shadow-primary/30"
-                            loading={disburseMutation.isPending}
-                            onPress={handleProcessDisbursement}
-                        />
-                    </View>
-                </ScrollView>
-            </BaseModal>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={paymentSheetRef}
+                    index={-1}
+                    snapPoints={paymentSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    onChange={(index) => setIsSheetOpen(index !== -1)}
+                >
+                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                        {renderProcessDisbursementContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
 
             <AlertDialog 
                 visible={alertState.visible}

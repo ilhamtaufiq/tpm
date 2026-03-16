@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
     ChevronLeft,
@@ -18,9 +18,10 @@ import {
     Settings,
     ShieldCheck,
     HelpCircle,
-    Info
+    Info,
+    X
 } from 'lucide-react-native';
-import { BaseModal } from '../../components/ui/BaseModal';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Input } from '../../components/ui/Input';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { keuanganService } from '../../services/keuangan';
@@ -63,6 +64,36 @@ export default function LaporanKeuanganScreen() {
     // Date Selection Modal
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
     const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
+
+    // Sheet refs
+    const setupSheetRef = useRef<BottomSheet>(null);
+    const dateSheetRef = useRef<BottomSheet>(null);
+    const setupSnapPoints = useMemo(() => ['75%', '90%'], []);
+    const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    // Sync sheet with visible state
+    useEffect(() => {
+        if (Platform.OS !== 'web') {
+            if (isSetupModalVisible) {
+                setupSheetRef.current?.expand();
+                setIsSheetOpen(true);
+            } else {
+                setupSheetRef.current?.close();
+            }
+        }
+    }, [isSetupModalVisible]);
+
+    useEffect(() => {
+        if (Platform.OS !== 'web') {
+            if (isDateModalVisible) {
+                dateSheetRef.current?.expand();
+                setIsSheetOpen(true);
+            } else {
+                dateSheetRef.current?.close();
+            }
+        }
+    }, [isDateModalVisible]);
 
     const fetchReport = useCallback(async () => {
         setIsLoading(true);
@@ -164,6 +195,115 @@ export default function LaporanKeuanganScreen() {
         setDateRange(tempDateRange);
         setIsDateModalVisible(false);
     };
+
+    const renderSetupContent = () => (
+        <View className="p-0">
+            <View className="bg-blue-50 p-4 rounded-3xl border border-blue-100 mb-6 flex-row items-start">
+                <ShieldCheck size={20} color="#023C69" />
+                <Typography className="flex-1 ml-3 text-blue-800 text-xs leading-5">
+                    Gunakan fitur ini untuk memasukkan saldo dari pembukuan manual Anda sebelumnya. Data ini akan menjadi <Typography weight="bold">titik awal</Typography> laporan keuangan di aplikasi ini.
+                </Typography>
+            </View>
+
+            <Input
+                label="TANGGAL MIGRASI"
+                value={setupForm.tanggal}
+                onChangeText={(v) => setSetupForm({ ...setupForm, tanggal: v })}
+                placeholder="YYYY-MM-DD"
+                startIcon={<Calendar size={18} color="#9CA3AF" />}
+            />
+
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 mt-2 ml-1">Modal & Ekuitas</Typography>
+            <Input
+                label="MODAL AWAL / DISETORE"
+                value={setupForm.modal_awal}
+                onChangeText={(v) => setSetupForm({ ...setupForm, modal_awal: v })}
+                keyboardType="numeric"
+                placeholder="0"
+                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+            />
+
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 mt-2 ml-1">Asset Lancar (Kas & Bank)</Typography>
+            <Input
+                label="SALDO BANK BCA"
+                value={setupForm.bca}
+                onChangeText={(v) => setSetupForm({ ...setupForm, bca: v })}
+                keyboardType="numeric"
+                placeholder="0"
+                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+            />
+            <Input
+                label="SALDO KAS TUNAI"
+                value={setupForm.kas_tunai}
+                onChangeText={(v) => setSetupForm({ ...setupForm, kas_tunai: v })}
+                keyboardType="numeric"
+                placeholder="0"
+                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+            />
+
+            <Input
+                label="KETERANGAN"
+                value={setupForm.keterangan}
+                onChangeText={(v) => setSetupForm({ ...setupForm, keterangan: v })}
+                placeholder="Contoh: Migrasi pembukuan manual 2024"
+                startIcon={<FileText size={18} color="#9CA3AF" />}
+            />
+
+            <View className="flex-row mt-4 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => setIsSetupModalVisible(false)}
+                        disabled={isSubmitting}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Proses Migrasi"
+                        onPress={handleSetupSubmit}
+                        loading={isSubmitting}
+                    />
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderDateContent = () => (
+        <View className="p-0">
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
+            <Input
+                label="DARI TANGGAL"
+                value={tempDateRange.dari}
+                onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
+                placeholder="YYYY-MM-DD"
+                startIcon={<Calendar size={18} color="#9CA3AF" />}
+            />
+            <Input
+                label="SAMPAI TANGGAL"
+                value={tempDateRange.sampai}
+                onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
+                placeholder="YYYY-MM-DD"
+                startIcon={<Calendar size={18} color="#9CA3AF" />}
+            />
+
+            <View className="flex-row mt-6 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => setIsDateModalVisible(false)}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Terapkan"
+                        onPress={handleApplyDate}
+                    />
+                </View>
+            </View>
+        </View>
+    );
 
     const renderHeader = () => (
         <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
@@ -495,124 +635,85 @@ export default function LaporanKeuanganScreen() {
                 )}
             </ScrollView>
 
-            {/* Migration Setup Modal */}
-            <BaseModal
-                visible={isSetupModalVisible}
-                onClose={() => setIsSetupModalVisible(false)}
-                title="Migrasi Data Awal"
-            >
-                <View className="p-4">
-                    <View className="bg-blue-50 p-4 rounded-3xl border border-blue-100 mb-6 flex-row items-start">
-                        <ShieldCheck size={20} color="#023C69" />
-                        <Typography className="flex-1 ml-3 text-blue-800 text-xs leading-5">
-                            Gunakan fitur ini untuk memasukkan saldo dari pembukuan manual Anda sebelumnya. Data ini akan menjadi <Typography weight="bold">titik awal</Typography> laporan keuangan di aplikasi ini.
-                        </Typography>
-                    </View>
-
-                    <Input
-                        label="TANGGAL MIGRASI"
-                        value={setupForm.tanggal}
-                        onChangeText={(v) => setSetupForm({ ...setupForm, tanggal: v })}
-                        placeholder="YYYY-MM-DD"
-                        startIcon={<Calendar size={18} color="#9CA3AF" />}
-                    />
-
-                    <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 mt-2 ml-1">Modal & Ekuitas</Typography>
-                    <Input
-                        label="MODAL AWAL / DISETORE"
-                        value={setupForm.modal_awal}
-                        onChangeText={(v) => setSetupForm({ ...setupForm, modal_awal: v })}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-                    />
-
-                    <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 mt-2 ml-1">Asset Lancar (Kas & Bank)</Typography>
-                    <Input
-                        label="SALDO BANK BCA"
-                        value={setupForm.bca}
-                        onChangeText={(v) => setSetupForm({ ...setupForm, bca: v })}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-                    />
-                    <Input
-                        label="SALDO KAS TUNAI"
-                        value={setupForm.kas_tunai}
-                        onChangeText={(v) => setSetupForm({ ...setupForm, kas_tunai: v })}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-                    />
-
-                    <Input
-                        label="KETERANGAN"
-                        value={setupForm.keterangan}
-                        onChangeText={(v) => setSetupForm({ ...setupForm, keterangan: v })}
-                        placeholder="Contoh: Migrasi pembukuan manual 2024"
-                        startIcon={<FileText size={18} color="#9CA3AF" />}
-                    />
-
-                    <View className="flex-row mt-4 space-x-3">
-                        <View className="flex-1">
-                            <Button
-                                variant="outline"
-                                title="Batal"
-                                onPress={() => setIsSetupModalVisible(false)}
-                                disabled={isSubmitting}
-                            />
+            {/* Modal UI - Platform Specific */}
+            {Platform.OS === 'web' ? (
+                <>
+                    {/* Setup Modal */}
+                    <Modal visible={isSetupModalVisible} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <TouchableOpacity className="absolute inset-0" onPress={() => setIsSetupModalVisible(false)} />
+                            <View style={styles.webModalContent}>
+                                <View className="flex-row justify-between items-center mb-6">
+                                    <Typography variant="h2" weight="bold">Migrasi Data Awal</Typography>
+                                    <TouchableOpacity onPress={() => setIsSetupModalVisible(false)}>
+                                        <X size={24} color="#6B7280" />
+                                    </TouchableOpacity>
+                                </View>
+                                <ScrollView showsVerticalScrollIndicator={false}>
+                                    {renderSetupContent()}
+                                </ScrollView>
+                            </View>
                         </View>
-                        <View className="flex-1">
-                            <Button
-                                title="Proses Migrasi"
-                                onPress={handleSetupSubmit}
-                                loading={isSubmitting}
-                            />
-                        </View>
-                    </View>
-                </View>
-            </BaseModal>
+                    </Modal>
 
-            {/* Date Range Modal */}
-            <BaseModal
-                visible={isDateModalVisible}
-                onClose={() => setIsDateModalVisible(false)}
-                title="Pilih Periode Laporan"
-            >
-                <View className="p-4">
-                    <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
-                    <Input
-                        label="DARI TANGGAL"
-                        value={tempDateRange.dari}
-                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
-                        placeholder="YYYY-MM-DD"
-                        startIcon={<Calendar size={18} color="#9CA3AF" />}
-                    />
-                    <Input
-                        label="SAMPAI TANGGAL"
-                        value={tempDateRange.sampai}
-                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
-                        placeholder="YYYY-MM-DD"
-                        startIcon={<Calendar size={18} color="#9CA3AF" />}
-                    />
+                    {/* Date Modal */}
+                    <Modal visible={isDateModalVisible} transparent animationType="fade">
+                        <View style={styles.modalOverlay}>
+                            <TouchableOpacity className="absolute inset-0" onPress={() => setIsDateModalVisible(false)} />
+                            <View style={styles.webModalContent}>
+                                <View className="flex-row justify-between items-center mb-6">
+                                    <Typography variant="h2" weight="bold">Pilih Periode Laporan</Typography>
+                                    <TouchableOpacity onPress={() => setIsDateModalVisible(false)}>
+                                        <X size={24} color="#6B7280" />
+                                    </TouchableOpacity>
+                                </View>
+                                {renderDateContent()}
+                            </View>
+                        </View>
+                    </Modal>
+                </>
+            ) : (
+                <>
+                    {/* Mobile Bottom Sheets */}
+                    <BottomSheet
+                        ref={setupSheetRef}
+                        index={-1}
+                        snapPoints={setupSnapPoints}
+                        enablePanDownToClose
+                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        onClose={() => {
+                            setIsSetupModalVisible(false);
+                            setIsSheetOpen(false);
+                        }}
+                    >
+                        <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                            <View className="px-6 py-2">
+                                <Typography variant="h2" weight="bold" className="mb-6">Migrasi Data Awal</Typography>
+                                {renderSetupContent()}
+                            </View>
+                        </BottomSheetScrollView>
+                    </BottomSheet>
 
-                    <View className="flex-row mt-6 space-x-3">
-                        <View className="flex-1">
-                            <Button
-                                variant="outline"
-                                title="Batal"
-                                onPress={() => setIsDateModalVisible(false)}
-                            />
-                        </View>
-                        <View className="flex-1">
-                            <Button
-                                title="Terapkan"
-                                onPress={handleApplyDate}
-                            />
-                        </View>
-                    </View>
-                </View>
-            </BaseModal>
+                    <BottomSheet
+                        ref={dateSheetRef}
+                        index={-1}
+                        snapPoints={dateSnapPoints}
+                        enablePanDownToClose
+                        backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                        onClose={() => {
+                            setIsDateModalVisible(false);
+                            setIsSheetOpen(false);
+                        }}
+                    >
+                        <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                            <View className="px-6 py-2">
+                                <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode Laporan</Typography>
+                                {renderDateContent()}
+                            </View>
+                        </BottomSheetScrollView>
+                    </BottomSheet>
+                </>
+            )}
 
             {/* Success Alert */}
             <AlertDialog
@@ -625,3 +726,26 @@ export default function LaporanKeuanganScreen() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20
+    },
+    webModalContent: {
+        backgroundColor: 'white',
+        borderRadius: 32,
+        width: '100%',
+        maxHeight: '90%',
+        maxWidth: 500,
+        padding: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+    }
+});

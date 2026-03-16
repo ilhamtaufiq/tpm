@@ -26,6 +26,7 @@ import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit, useCreat
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { PaymentModal } from '../../components/PaymentModal';
 
 const STATUS_FILTERS: { label: string; value: HutangStatus | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -127,13 +128,6 @@ export default function HutangUsahaScreen() {
         }
     };
 
-    // Payment form
-    const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
-    ]);
-    const [paymentNote, setPaymentNote] = useState('');
-
     const [detailVisible, setDetailVisible] = useState(false);
     const [paymentVisible, setPaymentVisible] = useState(false);
 
@@ -224,73 +218,18 @@ export default function HutangUsahaScreen() {
 
     const handleOpenPayment = () => {
         if (!selectedHutang) return;
-        setPayments([{
-            id: Date.now(),
-            metode: 'TUNAI',
-            nominal: formatNumber(selectedHutang.sisa_hutang.toString()),
-            catatan: ''
-        }]);
-        setPaymentNote('');
-        setIsSplitPayment(false);
+        setPaymentVisible(true);
         if (Platform.OS === 'web') {
             setDetailVisible(false);
-            setPaymentVisible(true);
             setIsSheetOpen(true);
         } else {
             detailSheetRef.current?.close();
-            setTimeout(() => {
-                paymentSheetRef.current?.expand();
-                setIsSheetOpen(true);
-            }, 300);
+            setIsSheetOpen(true);
         }
     };
 
     const handleSubmitPayment = async () => {
-        if (!selectedHutang || payments.length === 0) return;
-
-        const validatedPayments = payments
-            .map(p => ({
-                metode: p.metode as any,
-                nominal: parseNumber(p.nominal),
-                catatan: p.catatan || undefined
-            }))
-            .filter(p => p.nominal > 0);
-
-        if (validatedPayments.length === 0) {
-            showAlert('Validasi', 'Minimal satu pembayaran dengan nominal > 0', 'warning');
-            return;
-        }
-
-        const totalInternal = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
-        if (totalInternal > selectedHutang.sisa_hutang) {
-            showAlert('Validasi', `Total pembayaran (${formatCurrency(totalInternal)}) melebihi sisa hutang (${formatCurrency(selectedHutang.sisa_hutang)})`, 'warning');
-            return;
-        }
-
-        try {
-            await paymentMutation.mutateAsync({
-                hutang_id: selectedHutang.id,
-                tanggal: new Date().toISOString().split('T')[0],
-                payments: validatedPayments,
-                catatan: paymentNote || undefined,
-            });
-            showAlert('Sukses', 'Pembayaran berhasil dicatat', 'success');
-            if (Platform.OS === 'web') {
-                setPaymentVisible(false);
-                setIsSheetOpen(false);
-            }
-            else {
-                paymentSheetRef.current?.close();
-                setIsSheetOpen(false);
-            }
-            setSelectedHutang(null);
-            refetchList();
-            refetchSummary();
-        } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat memproses pembayaran';
-            showAlert('Gagal', errorMessage, 'error');
-            console.error(error);
-        }
+        // Handled by PaymentModal
     };
 
     const renderCreateContent = () => (
@@ -421,6 +360,13 @@ export default function HutangUsahaScreen() {
             </View>
 
             <Input
+                label="Tanggal (YYYY-MM-DD)"
+                placeholder="2024-01-01"
+                value={createDate}
+                onChangeText={setCreateDate}
+            />
+
+            <Input
                 label="Catatan (Opsional)"
                 placeholder="Contoh: Pinjaman modal usaha"
                 value={createNote}
@@ -539,120 +485,6 @@ export default function HutangUsahaScreen() {
         )
     );
 
-    const renderPaymentContent = () => {
-        const totalBayar = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
-        const sisaHutang = selectedHutang?.sisa_hutang || 0;
-        const sisaSetelahBayar = sisaHutang - totalBayar;
-
-        return (
-            <View className="p-8">
-                <View className="flex-row justify-between items-center mb-6">
-                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Bayar Hutang</Typography>
-                </View>
-
-                {selectedHutang && (
-                    <Card variant="outlined" className="p-6 mb-8 border-rose-100 bg-rose-50 rounded-[32px]">
-                        <View className="flex-row justify-between mb-2">
-                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Sisa Hutang</Typography>
-                            <Typography variant="body2" weight="bold" className="text-rose-600 font-bold">{formatCurrency(selectedHutang.sisa_hutang)}</Typography>
-                        </View>
-                        <View className="flex-row justify-between">
-                            <Typography variant="caption" className="text-rose-600/60 font-bold uppercase tracking-widest">Sisa Setelah Bayar</Typography>
-                            <Typography variant="body2" weight="bold" className="text-primary">
-                                {formatCurrency(Math.max(0, sisaSetelahBayar))}
-                            </Typography>
-                        </View>
-                    </Card>
-                )}
-
-                <View className="mb-6">
-                    {payments.map((p, idx) => (
-                        <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">
-                                    Pembayaran #{idx + 1}
-                                </Typography>
-                                {payments.length > 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => setPayments(prev => prev.filter(item => item.id !== p.id))}
-                                        className="bg-rose-50 p-2 rounded-full"
-                                    >
-                                        <Trash2 size={16} color="#E11D48" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            <View className="flex-row space-x-2 mb-4 gap-2">
-                                {['TUNAI', 'TRANSFER'].map((m) => (
-                                    <TouchableOpacity
-                                        key={m}
-                                        onPress={() => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                        className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                                    >
-                                        <Typography
-                                            className={p.metode === m ? 'text-white text-xs font-bold' : 'text-textGray text-xs'}
-                                        >
-                                            {m}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Input
-                                label="Nominal (Rp)"
-                                keyboardType="numeric"
-                                placeholder="0"
-                                value={p.nominal}
-                                onChangeText={(t) => setPayments(prev => prev.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
-                                containerClassName="mb-0"
-                            />
-                        </Card>
-                    ))}
-
-                    <TouchableOpacity
-                        onPress={() => setPayments(prev => [...prev, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
-                        className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-gray-50/50 active:bg-gray-100"
-                    >
-                        <Plus size={20} color="#64748B" className="mr-2" />
-                        <Typography weight="bold" className="text-gray-500">Tambah Metode Pembayaran</Typography>
-                    </TouchableOpacity>
-                </View>
-
-                <Input
-                    label="Catatan (Opsional)"
-                    placeholder="Contoh: Pelunasan sisa pembelian part"
-                    value={paymentNote}
-                    onChangeText={setPaymentNote}
-                    multiline
-                    numberOfLines={2}
-                    containerClassName="mb-8"
-                />
-
-                <View className="flex-row space-x-3">
-                    <Button
-                        title="Batal"
-                        variant="outline"
-                        onPress={() => {
-                            if (Platform.OS === 'web') {
-                                setPaymentVisible(false);
-                                setIsSheetOpen(false);
-                            } else {
-                                paymentSheetRef.current?.close();
-                            }
-                        }}
-                        className="flex-1 rounded-2xl h-14"
-                    />
-                    <Button
-                        title={paymentMutation.isPending ? 'Memproses...' : 'Simpan Pembayaran'}
-                        onPress={handleSubmitPayment}
-                        disabled={paymentMutation.isPending || totalBayar <= 0}
-                        loading={paymentMutation.isPending}
-                        className="flex-[1.5] rounded-2xl h-14 shadow-lg shadow-primary/20"
-                    />
-                </View>
-            </View>
-        );
-    };
 
     return (
         <View className="flex-1 bg-surface">
@@ -788,20 +620,13 @@ export default function HutangUsahaScreen() {
                 />
             )}
 
-            {/* Modal Components */}
+            {/* Detail & Create Modals - Platform Specific */}
             {Platform.OS === 'web' ? (
                 <>
                     <Modal visible={detailVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
                             <View style={styles.webModalContent}>
                                 {renderDetailContent()}
-                            </View>
-                        </View>
-                    </Modal>
-                    <Modal visible={paymentVisible} transparent animationType="fade">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.webModalContent}>
-                                {renderPaymentContent()}
                             </View>
                         </View>
                     </Modal>
@@ -826,16 +651,6 @@ export default function HutangUsahaScreen() {
                         <BottomSheetScrollView>{renderDetailContent()}</BottomSheetScrollView>
                     </BottomSheet>
                     <BottomSheet
-                        ref={paymentSheetRef}
-                        snapPoints={paymentSnapPoints}
-                        enablePanDownToClose
-                        index={-1}
-                        backgroundStyle={{ borderRadius: 40 }}
-                        onClose={() => setIsSheetOpen(false)}
-                    >
-                        <BottomSheetScrollView>{renderPaymentContent()}</BottomSheetScrollView>
-                    </BottomSheet>
-                    <BottomSheet
                         ref={createSheetRef}
                         snapPoints={createSnapPoints}
                         enablePanDownToClose
@@ -846,6 +661,18 @@ export default function HutangUsahaScreen() {
                         <BottomSheetScrollView>{renderCreateContent()}</BottomSheetScrollView>
                     </BottomSheet>
                 </>
+            )}
+
+            {/* Payment Modal - Self-contained (handles its own Modal/BottomSheet) */}
+            {selectedHutang && (
+                <PaymentModal
+                    visible={paymentVisible}
+                    onClose={() => setPaymentVisible(false)}
+                    onSuccess={onRefresh}
+                    id={selectedHutang.id}
+                    initialAmount={selectedHutang.sisa_hutang}
+                    type="hutang"
+                />
             )}
 
             <AlertDialog

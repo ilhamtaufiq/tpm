@@ -26,6 +26,7 @@ import { usePiutangList, usePiutangSummary, useProcessPayment, useProcessPayment
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { PaymentModal } from '../../components/PaymentModal';
 
 const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
     { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
@@ -118,12 +119,9 @@ export default function PiutangUsahaScreen() {
         }
     };
 
-    // Payment form
-    const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
-    ]);
-    const [paymentNote, setPaymentNote] = useState('');
+    const [createVisible, setCreateVisible] = useState(false);
+    const [detailVisible, setDetailVisible] = useState(false);
+    const [paymentVisible, setPaymentVisible] = useState(false);
 
     // Create form state
     const [createSource, setCreateSource] = useState('LAINNYA');
@@ -136,10 +134,6 @@ export default function PiutangUsahaScreen() {
         { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
     ]);
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
-
-    const [createVisible, setCreateVisible] = useState(false);
-    const [detailVisible, setDetailVisible] = useState(false);
-    const [paymentVisible, setPaymentVisible] = useState(false);
 
     const handleOpenDetail = (piutang: Piutang) => {
         setSelectedPiutang(piutang);
@@ -155,24 +149,13 @@ export default function PiutangUsahaScreen() {
 
     const handleOpenPayment = () => {
         if (!selectedPiutang) return;
-        setPayments([{
-            id: Date.now(),
-            metode: 'TUNAI',
-            nominal: formatNumber(selectedPiutang.sisa_piutang.toString()),
-            catatan: ''
-        }]);
-        setPaymentNote('');
-        setIsSplitPayment(false);
+        setPaymentVisible(true);
         if (Platform.OS === 'web') {
             setDetailVisible(false);
-            setPaymentVisible(true);
             setIsSheetOpen(true);
         } else {
             detailSheetRef.current?.close();
-            setTimeout(() => {
-                paymentSheetRef.current?.expand();
-                setIsSheetOpen(true);
-            }, 300);
+            setIsSheetOpen(true);
         }
     };
 
@@ -195,49 +178,7 @@ export default function PiutangUsahaScreen() {
     };
 
     const handleSubmitPayment = async () => {
-        if (!selectedPiutang || payments.length === 0) return;
-
-        const validatedPayments = payments
-            .map(p => ({
-                metode: p.metode as any,
-                nominal: parseNumber(p.nominal),
-                catatan: p.catatan || undefined
-            }))
-            .filter(p => p.nominal > 0);
-
-        if (validatedPayments.length === 0) {
-            showAlert('Validasi', 'Minimal satu pembayaran dengan nominal > 0', 'warning');
-            return;
-        }
-
-        const totalInternal = validatedPayments.reduce((acc, p) => acc + p.nominal, 0);
-        if (totalInternal > selectedPiutang.sisa_piutang) {
-            showAlert('Validasi', `Total pembayaran (${formatCurrency(totalInternal)}) melebihi sisa piutang (${formatCurrency(selectedPiutang.sisa_piutang)})`, 'warning');
-            return;
-        }
-
-        try {
-            await paymentMutation.mutateAsync({
-                piutang_id: selectedPiutang.id,
-                tanggal: new Date().toISOString().split('T')[0],
-                payments: validatedPayments,
-                catatan: paymentNote || undefined,
-            });
-            showAlert('Sukses', 'Pembayaran berhasil dicatat', 'success');
-            if (Platform.OS === 'web') {
-                setPaymentVisible(false);
-                setIsSheetOpen(false);
-            }
-            else {
-                paymentSheetRef.current?.close();
-                setIsSheetOpen(false);
-            }
-            setSelectedPiutang(null);
-        } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat memproses pembayaran';
-            showAlert('Gagal', errorMessage, 'error');
-            console.error(error);
-        }
+        // Handled by PaymentModal
     };
 
     const handleSubmitCreate = async () => {
@@ -296,8 +237,8 @@ export default function PiutangUsahaScreen() {
     };
 
     const renderCreateContent = () => (
-        <>
-            <Typography variant="h2" weight="bold" className="mb-4">Buat Piutang Baru</Typography>
+        <View className="p-8">
+            <Typography variant="h2" weight="bold" className="mb-6 tracking-tighter">Buat Piutang Baru</Typography>
 
             <Input
                 label="Nama Debitur"
@@ -314,18 +255,18 @@ export default function PiutangUsahaScreen() {
                 onChangeText={(t) => setCreateAmount(formatNumber(t))}
             />
 
-            <View className="mb-4">
-                <Typography className="mb-2 text-gray-600 font-medium">Sumber Piutang</Typography>
-                <View className="flex-row flex-wrap">
+            <View className="mb-6">
+                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Sumber Piutang</Typography>
+                <View className="flex-row flex-wrap gap-2">
                     {Object.entries(SUMBER_LABEL).map(([key, label]) => (
                         <TouchableOpacity
                             key={key}
                             onPress={() => setCreateSource(key)}
-                            className={`mr-2 mb-2 px-3 py-2 rounded-lg border ${createSource === key ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
                         >
                             <Typography
-                                className={createSource === key ? 'text-primary' : 'text-gray-500'}
-                                weight={createSource === key ? 'semibold' : 'normal'}
+                                className={createSource === key ? 'text-primary' : 'text-gray-400'}
+                                weight={createSource === key ? 'bold' : 'medium'}
                                 variant="caption"
                             >
                                 {label}
@@ -335,36 +276,35 @@ export default function PiutangUsahaScreen() {
                 </View>
             </View>
 
-            <View className="mb-4">
-                <View className="flex-row justify-between items-center mb-2">
-                    <Typography className="text-gray-600 font-medium">Metode Pencairan (Opsional)</Typography>
+            <View className="mb-6">
+                <View className="flex-row justify-between items-center mb-3">
+                    <Typography className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Metode Pencairan (Opsional)</Typography>
                     <TouchableOpacity
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
-                        className={`px-3 py-1 rounded-full ${isCreateSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                        className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-100 border-gray-200'}`}
                     >
-                        <Typography className={`text-[10px] font-bold ${isCreateSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                        <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
                             {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
                     </TouchableOpacity>
                 </View>
 
                 {!isCreateSplitPayment ? (
-                    <View className="flex-row space-x-2">
+                    <View className="flex-row space-x-2 gap-2">
                         <TouchableOpacity
                             onPress={() => setCreateMethod(undefined)}
-                            className={`flex-1 py-3 items-center rounded-xl border ${!createMethod ? 'border-gray-400 bg-gray-100/50' : 'border-gray-200'}`}
+                            className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-gray-100' : 'border-gray-100 bg-gray-50/50'}`}
                         >
-                            <Typography className={!createMethod ? 'text-gray-800' : 'text-gray-500'} variant="caption">Tidak Ada</Typography>
+                            <Typography className={!createMethod ? 'text-gray-700 font-bold' : 'text-gray-400'} variant="caption">Tidak Ada</Typography>
                         </TouchableOpacity>
                         {['TUNAI', 'TRANSFER'].map((m) => (
                             <TouchableOpacity
                                 key={m}
                                 onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
-                                className={`flex-1 py-3 items-center rounded-xl border ${createMethod === m ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
                             >
                                 <Typography
-                                    className={createMethod === m ? 'text-primary' : 'text-gray-500'}
-                                    weight={createMethod === m ? 'semibold' : 'normal'}
+                                    className={createMethod === m ? 'text-primary font-bold' : 'text-gray-400'}
                                     variant="caption"
                                 >
                                     {m}
@@ -373,29 +313,31 @@ export default function PiutangUsahaScreen() {
                         ))}
                     </View>
                 ) : (
-                    <View className="space-y-3">
+                    <View className="space-y-4">
                         {createPayments.map((p, idx) => (
-                            <Card key={p.id} variant="outlined" className="p-3 border-gray-100 rounded-xl bg-gray-50/30">
-                                <View className="flex-row items-center justify-between mb-2">
-                                    <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
+                            <Card key={p.id} variant="outlined" className="p-5 border-gray-100 rounded-[24px] bg-gray-50/30">
+                                <View className="flex-row items-center justify-between mb-4">
+                                    <View className="bg-primary/10 px-2 py-1 rounded-lg">
+                                        <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
+                                    </View>
                                     {createPayments.length > 1 && (
                                         <TouchableOpacity
                                             onPress={() => setCreatePayments(createPayments.filter(item => item.id !== p.id))}
-                                            className="w-6 h-6 items-center justify-center bg-rose-50 rounded-lg"
+                                            className="w-8 h-8 items-center justify-center bg-rose-50 rounded-xl"
                                         >
-                                            <Trash2 size={12} color="#EF4444" />
+                                            <Trash2 size={14} color="#EF4444" />
                                         </TouchableOpacity>
                                     )}
                                 </View>
 
-                                <View className="flex-row space-x-2 mb-2">
+                                <View className="flex-row space-x-2 mb-4 gap-2">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
                                         <TouchableOpacity
                                             key={m}
                                             onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
-                                            className={`flex-1 py-2 items-center rounded-lg border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'border-gray-200 bg-white'}`}
                                         >
-                                            <Typography variant="caption" className={p.metode === m ? 'text-primary' : 'text-gray-500'}>{m}</Typography>
+                                            <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -403,25 +345,21 @@ export default function PiutangUsahaScreen() {
                                 <Input
                                     placeholder="Nominal"
                                     keyboardType="numeric"
-                                    containerClassName="mb-0"
-                                    className="h-9 text-xs"
                                     value={p.nominal}
                                     onChangeText={(t) => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, nominal: formatNumber(t) } : item))}
+                                    containerClassName="mb-0"
                                 />
                             </Card>
                         ))}
                         <TouchableOpacity
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
-                            className="w-full py-2 border border-dashed border-gray-300 rounded-xl items-center flex-row justify-center"
+                            className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
                         >
-                            <Plus size={14} color="#9CA3AF" />
-                            <Typography className="text-gray-400 font-bold ml-1 text-xs">Tambah Metode</Typography>
+                            <Plus size={18} color="#64748B" className="mr-2" />
+                            <Typography weight="bold" className="text-gray-500 text-xs text-center">Tambah Metode Pencairan</Typography>
                         </TouchableOpacity>
                     </View>
                 )}
-                <Typography variant="caption" className="text-gray-400 mt-1">
-                    Pilih atau split jika piutang ini melibatkan pengeluaran uang.
-                </Typography>
             </View>
 
             <Input
@@ -437,18 +375,34 @@ export default function PiutangUsahaScreen() {
                 value={createNote}
                 onChangeText={setCreateNote}
                 multiline
-                numberOfLines={3}
-                style={{ height: 80, textAlignVertical: 'top' }}
+                numberOfLines={2}
+                containerClassName="mb-8"
             />
 
-            <Button
-                title={createMutation.isPending ? 'Menyimpan...' : 'Simpan Piutang'}
-                onPress={handleSubmitCreate}
-                disabled={createMutation.isPending || !createName || !createAmount}
-                loading={createMutation.isPending}
-                className="mt-6"
-            />
-        </>
+            <View className="flex-row space-x-3 gap-3">
+                <Button
+                    title="Batal"
+                    variant="outline"
+                    onPress={() => {
+                        if (Platform.OS === 'web') {
+                            setCreateVisible(false);
+                            setIsSheetOpen(false);
+                        } else {
+                            createSheetRef.current?.close();
+                            setIsSheetOpen(false);
+                        }
+                    }}
+                    className="flex-1 rounded-[20px] h-14"
+                />
+                <Button
+                    title={createMutation.isPending ? 'Menyimpan...' : 'Simpan Piutang'}
+                    onPress={handleSubmitCreate}
+                    disabled={createMutation.isPending || !createName || !createAmount}
+                    loading={createMutation.isPending}
+                    className="flex-[2] rounded-[20px] h-14"
+                />
+            </View>
+        </View>
     );
 
     const renderDetailContent = () => (
@@ -525,168 +479,6 @@ export default function PiutangUsahaScreen() {
         )
     );
 
-    const renderPaymentContent = () => {
-        const totalBayar = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
-        const sisaPiutang = selectedPiutang?.sisa_piutang || 0;
-        const sisaSetelahBayar = sisaPiutang - totalBayar;
-
-        const addPayment = () => {
-            setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
-            setIsSplitPayment(true);
-        };
-
-        const removePayment = (id: number) => {
-            const newPayments = payments.filter(p => p.id !== id);
-            setPayments(newPayments);
-            if (newPayments.length <= 1) setIsSplitPayment(false);
-        };
-
-        const updatePayment = (id: number, field: string, value: any) => {
-            setPayments(payments.map(p => p.id === id ? { ...p, [field]: value } : p));
-        };
-
-        return (
-            <View className="p-8">
-                <View className="flex-row justify-between items-center mb-6">
-                    <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">Catat Pembayaran</Typography>
-                    <TouchableOpacity
-                        onPress={() => setIsSplitPayment(!isSplitPayment)}
-                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
-                    >
-                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
-                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
-                        </Typography>
-                    </TouchableOpacity>
-                </View>
-
-                {selectedPiutang && (
-                    <Card variant="outlined" className="p-6 mb-8 border-primary/10 bg-primary/5 rounded-[32px]">
-                        <View className="flex-row justify-between mb-2">
-                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Sisa Piutang</Typography>
-                            <Typography variant="body2" weight="bold" className="text-rose-600 font-bold">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
-                        </View>
-                        <View className="flex-row justify-between">
-                            <Typography variant="caption" className="text-primary/60 font-bold uppercase tracking-widest">Sisa Setelah Bayar</Typography>
-                            <Typography variant="body2" weight="bold" className={sisaSetelahBayar < 0 ? "text-rose-600" : "text-primary"}>
-                                {formatCurrency(Math.max(0, sisaSetelahBayar))}
-                            </Typography>
-                        </View>
-                        {totalBayar > 0 && (
-                            <View className="mt-4 pt-4 border-t border-primary/10">
-                                <View className="flex-row justify-between">
-                                    <Typography variant="body2" weight="bold" className="text-primary">Total Dibayar</Typography>
-                                    <Typography variant="body1" weight="bold" className="text-primary">{formatCurrency(totalBayar)}</Typography>
-                                </View>
-                            </View>
-                        )}
-                    </Card>
-                )}
-
-                <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Daftar Pembayaran</Typography>
-                        {isSplitPayment && (
-                            <TouchableOpacity onPress={addPayment} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10">
-                                <Plus size={14} color="#023C69" />
-                                <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {payments.map((p, idx) => (
-                        <Card key={p.id} variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
-                            <View className="flex-row items-center justify-between mb-4">
-                                <Typography variant="caption" weight="bold" className="text-primary">Pembayaran #{idx + 1}</Typography>
-                                {payments.length > 1 && (
-                                    <TouchableOpacity onPress={() => removePayment(p.id)} className="w-8 h-8 items-center justify-center bg-rose-50 rounded-xl">
-                                        <Trash2 size={16} color="#EF4444" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            <View className="flex-row space-x-2 mb-4">
-                                {['TUNAI', 'TRANSFER'].map((m) => (
-                                    <TouchableOpacity
-                                        key={m}
-                                        onPress={() => updatePayment(p.id, 'metode', m)}
-                                        className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                                    >
-                                        <Typography
-                                            className={p.metode === m ? 'text-white text-xs font-bold' : 'text-textGray text-xs'}
-                                        >
-                                            {m}
-                                        </Typography>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-
-                            <Input
-                                label="Nominal (Rp)"
-                                keyboardType="numeric"
-                                placeholder="0"
-                                value={p.nominal}
-                                onChangeText={(t) => updatePayment(p.id, 'nominal', formatNumber(t))}
-                                containerClassName="mb-4"
-                            />
-
-                            {isSplitPayment && (
-                                <Input
-                                    label="Catatan Pembayaran (Opsional)"
-                                    placeholder="Keterangan untuk bagian ini"
-                                    value={p.catatan}
-                                    onChangeText={(t) => updatePayment(p.id, 'catatan', t)}
-                                    containerClassName="mb-0"
-                                />
-                            )}
-                        </Card>
-                    ))}
-
-                    {!isSplitPayment && (
-                        <TouchableOpacity
-                            onPress={addPayment}
-                            className="w-full h-14 border-2 border-dashed border-gray-200 rounded-2xl items-center justify-center flex-row"
-                        >
-                            <Plus size={20} color="#9CA3AF" />
-                            <Typography className="text-gray-400 font-bold ml-2">Tambah Metode Pembayaran Lain</Typography>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <Input
-                    label="Catatan Global (Opsional)"
-                    placeholder="Contoh: Pembayaran tagihan bulan ini"
-                    value={paymentNote}
-                    onChangeText={setPaymentNote}
-                    multiline
-                    numberOfLines={2}
-                    containerClassName="mb-8"
-                />
-
-                <View className="flex-row space-x-3">
-                    <Button
-                        title="Batal"
-                        variant="outline"
-                        onPress={() => {
-                            if (Platform.OS === 'web') {
-                                setPaymentVisible(false);
-                                setIsSheetOpen(false);
-                            } else {
-                                paymentSheetRef.current?.close();
-                            }
-                        }}
-                        className="flex-1 rounded-2xl h-14"
-                    />
-                    <Button
-                        title={paymentMutation.isPending ? 'Memproses...' : 'Simpan Pembayaran'}
-                        onPress={handleSubmitPayment}
-                        disabled={paymentMutation.isPending || totalBayar <= 0}
-                        loading={paymentMutation.isPending}
-                        className="flex-[1.5] rounded-2xl h-14 shadow-lg shadow-primary/20"
-                    />
-                </View>
-            </View>
-        );
-    };
 
     const renderPiutangItem = ({ item }: { item: Piutang }) => {
         const progressPercent = item.persentase_terbayar;
@@ -1003,38 +795,16 @@ export default function PiutangUsahaScreen() {
                 </BottomSheet>
             )}
 
-            {/* Payment UI - Platform Specific */}
-            {Platform.OS === 'web' ? (
-                <Modal visible={paymentVisible} transparent animationType="slide" onRequestClose={() => {
-                    setPaymentVisible(false);
-                    setIsSheetOpen(false);
-                }}>
-                    <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={() => {
-                            setPaymentVisible(false);
-                            setIsSheetOpen(false);
-                        }} />
-                        <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[75%] self-center p-0 overflow-hidden shadow-2xl relative">
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView className="flex-1">
-                                {renderPaymentContent()}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
-            ) : (
-                <BottomSheet
-                    ref={paymentSheetRef}
-                    index={-1}
-                    snapPoints={paymentSnapPoints}
-                    enablePanDownToClose
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
-                    onChange={(index) => setIsSheetOpen(index !== -1)}
-                >
-                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-                        {renderPaymentContent()}
-                    </BottomSheetScrollView>
-                </BottomSheet>
+            {/* Payment Modal Refactored */}
+            {selectedPiutang && (
+                <PaymentModal
+                    visible={paymentVisible}
+                    onClose={() => setPaymentVisible(false)}
+                    onSuccess={onRefresh}
+                    id={selectedPiutang.id}
+                    initialAmount={selectedPiutang.sisa_piutang}
+                    type="piutang"
+                />
             )}
 
             {/* Global Alert */}
