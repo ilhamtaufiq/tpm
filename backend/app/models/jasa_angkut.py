@@ -70,6 +70,13 @@ class ArmadaJasaAngkut(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="armada",
         cascade="all, delete-orphan",
     )
+    part_services: Mapped[List["JasaAngkutPartService"]] = relationship(
+        back_populates="armada",
+        cascade="all, delete-orphan",
+    )
+    pengeluaran_bengkel: Mapped[List["PengeluaranBengkel"]] = relationship(
+        back_populates="armada"
+    )
 
     def __repr__(self) -> str:
         return f"<Armada(id={self.id}, nopol='{self.nopol}', nama='{self.nama}')>"
@@ -149,6 +156,9 @@ class MuatanJasaAngkut(Base, TimestampMixin):
         back_populates="muatan",
         cascade="all, delete-orphan",
     )
+    pengeluaran_bengkel: Mapped[List["PengeluaranBengkel"]] = relationship(
+        back_populates="muatan"
+    )
 
     def calculate_profit(self) -> None:
         """Calculate profit split between TPM and driver.
@@ -214,8 +224,13 @@ class JasaAngkutPartService(Base, TimestampMixin):
     __tablename__ = "jasa_angkut_part_service"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    muatan_id: Mapped[int] = mapped_column(
-        ForeignKey("muatan_jasa_angkut.id", ondelete="CASCADE")
+    muatan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("muatan_jasa_angkut.id", ondelete="CASCADE"),
+        nullable=True
+    )
+    armada_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("armada_jasa_angkut.id", ondelete="CASCADE"),
+        nullable=True
     )
     tanggal: Mapped[date] = mapped_column(Date)
     tipe: Mapped[str] = mapped_column(String(20))  # 'part' or 'service'
@@ -226,4 +241,5 @@ class JasaAngkutPartService(Base, TimestampMixin):
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
-    muatan: Mapped["MuatanJasaAngkut"] = relationship(back_populates="part_services")
+    muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship(back_populates="part_services")
+    armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship(back_populates="part_services")

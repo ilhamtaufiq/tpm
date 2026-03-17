@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from fastapi import HTTPException, status
 
 from app.models.jasa_angkut import ArmadaJasaAngkut, MuatanJasaAngkut
-from app.models.bengkel import TransaksiPenjualanBengkel
+from app.models.bengkel import TransaksiPenjualanBengkel, PengeluaranBengkel
 from app.schemas.jasa_angkut import (
     ArmadaCreate, 
     ArmadaUpdate, 
@@ -15,13 +15,36 @@ from app.schemas.jasa_angkut import (
 from decimal import Decimal
 from app.models.jasa_angkut import JasaAngkutBiayaLainnya
 from app.services.kas_bank_integration import create_kas_entry
-from app.utils.constants import KasBankType, KasBankSource, PaymentMethod
+from app.utils.constants import KasBankType, KasBankSource, PaymentMethod, TRANSACTION_PREFIXES, ExpenseCategory
+from datetime import date, datetime
 
 class ArmadaService:
     """Service for armada management."""
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _generate_pengeluaran_nomor(self) -> str:
+        """Generate unique expense transaction number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["pengeluaran"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(PengeluaranBengkel)
+            .filter(PengeluaranBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
+            .order_by(PengeluaranBengkel.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_transaksi[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
 
     def create(self, data: ArmadaCreate) -> ArmadaJasaAngkut:
         """Create a new armada."""
@@ -166,6 +189,11 @@ class ArmadaService:
             JasaAngkutBiayaLainnya.muatan_id.is_(None)
         ).order_by(JasaAngkutBiayaLainnya.created_at.desc()).all()
 
+        # 4. Workshop Operational Expenses (linked directly from Workshop module)
+        workshop_expenses = self.db.query(PengeluaranBengkel).filter(
+            PengeluaranBengkel.armada_id == armada_id
+        ).order_by(PengeluaranBengkel.tanggal.desc()).all()
+
         # 4. Calculate Stats
         stats = ArmadaStats()
         stats.total_muatan = len(muatan_history)
@@ -208,25 +236,37 @@ class ArmadaService:
             # Since total_laba_tpm was aggregated from muatan, we must deduct general expenses from it
             stats.total_laba_tpm -= ge.jumlah or 0
             
+        # Add workshop expenses to total biaya operasional
+        for we in workshop_expenses:
+            stats.total_biaya_operasional += we.jumlah or 0
+            stats.total_laba_tpm -= we.jumlah or 0
+            
         return {
             "armada": armada,
             "stats": stats,
             "muatan_history": muatan_history,
             "perbaikan_history": perbaikan_history,
-            "general_expenses": general_expenses
+            "general_expenses": general_expenses,
+            "workshop_expenses": workshop_expenses
         }
 
-    def add_expense(self, armada_id: int, data: ArmadaExpenseCreate, user_id: Optional[int] = None) -> JasaAngkutBiayaLainnya:
+    def add_expense(self, armada_id: int, data: ArmadaExpenseCreate, user_id: Optional[int] = None) -> PengeluaranBengkel:
         """Add a general expense to an armada."""
         armada = self.get_by_id(armada_id)
         
-        expense = JasaAngkutBiayaLainnya(
-            armada_id=armada_id,
+        # Create a unified PengeluaranBengkel record instead of JasaAngkutBiayaLainnya
+        nomor_transaksi = self._generate_pengeluaran_nomor()
+        
+        expense = PengeluaranBengkel(
+            nomor_transaksi=nomor_transaksi,
             tanggal=data.tanggal,
-            kategori=data.kategori,
+            bisnis_kategori="jasa_angkut",
+            armada_id=armada_id,
+            kategori=ExpenseCategory.BIAYA_OPERASIONAL,
             deskripsi=data.deskripsi,
             jumlah=data.jumlah,
-            catatan=data.catatan
+            catatan=data.catatan,
+            created_by=user_id
         )
         
         self.db.add(expense)
@@ -235,18 +275,19 @@ class ArmadaService:
         # Record to Kas/Bank
         if data.payments:
             for payment in data.payments:
-                create_kas_entry(
-                    db=self.db,
-                    tanggal=data.tanggal,
-                    tipe=KasBankType.KELUAR,
-                    nominal=payment.nominal,
-                    sumber=KasBankSource.JASA_ANGKUT,
-                    metode_bayar=payment.metode,
-                    referensi_id=expense.id,
-                    nomor_referensi=armada.nopol,
-                    keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi} ({payment.metode})",
-                    user_id=user_id
-                )
+                if payment.nominal > 0:
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=data.tanggal,
+                        tipe=KasBankType.KELUAR,
+                        nominal=payment.nominal,
+                        sumber=KasBankSource.JASA_ANGKUT,
+                        metode_bayar=payment.metode,
+                        referensi_id=expense.id,
+                        nomor_referensi=nomor_transaksi,
+                        keterangan=f"Biaya Ops Jasa Angkut ({payment.metode.upper()}) - {armada.nopol}: {data.deskripsi}",
+                        user_id=user_id,
+                    )
         else:
             create_kas_entry(
                 db=self.db,
@@ -256,9 +297,9 @@ class ArmadaService:
                 sumber=KasBankSource.JASA_ANGKUT,
                 metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
                 referensi_id=expense.id,
-                nomor_referensi=armada.nopol,
-                keterangan=f"Biaya Ops Armada {armada.nopol}: {data.deskripsi}",
-                user_id=user_id
+                nomor_referensi=nomor_transaksi,
+                keterangan=f"Biaya Ops Jasa Angkut - {armada.nopol}: {data.deskripsi}",
+                user_id=user_id,
             )
         
         self.db.commit()

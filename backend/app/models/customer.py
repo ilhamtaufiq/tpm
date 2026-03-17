@@ -1,6 +1,7 @@
+from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
 
-from sqlalchemy import String, Text, Enum as SQLEnum, ForeignKey
+from sqlalchemy import String, Text, Enum as SQLEnum, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin, SoftDeleteMixin
@@ -34,6 +35,11 @@ class Customer(Base, TimestampMixin, SoftDeleteMixin):
     telepon: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     npwp: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    saldo: Mapped[Decimal] = mapped_column(
+        Numeric(15, 2),
+        default=0,
+        server_default="0",
+    )
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships

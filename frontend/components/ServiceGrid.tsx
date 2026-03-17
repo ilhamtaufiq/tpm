@@ -96,8 +96,6 @@ export const ServiceGrid = () => {
         { id: 'mobil', label: 'Mobil', icon: CarFront, color: themeColors.primary, path: '/mobil' },
         { id: 'sdm', label: 'SDM', icon: Users, color: themeColors.primary, path: '/sdm' },
         { id: 'laporan', label: 'Laporan', icon: BarChart3, color: themeColors.primary, path: '/laporan' },
-        { id: 'master', label: 'Master', icon: Database, color: themeColors.primary, path: '/master-data' },
-        { id: 'pembelian', label: 'Restock', icon: Receipt, color: themeColors.primary, path: '/bengkel/purchase' },
         { id: 'history', label: 'Riwayat', icon: History, color: themeColors.primary, path: '/history' },
     ];
 

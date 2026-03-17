@@ -5,7 +5,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, InvestorDisbursementStatus
-
+from app.schemas.bengkel import PengeluaranBengkelResponse
 
 # ============================================
 # MOBIL SCHEMAS
@@ -180,6 +180,7 @@ class MobilDetailResponse(MobilResponse):
     final_capital: Decimal = Decimal("0")
     is_sold: bool = False
     penjualan: Optional[TransaksiMobilResponse] = None
+    pengeluaran_bengkel: List[PengeluaranBengkelResponse] = []
 
 class MobilList(BaseModel):
     data: List[MobilResponse]

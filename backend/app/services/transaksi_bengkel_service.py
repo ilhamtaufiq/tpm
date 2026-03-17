@@ -434,6 +434,226 @@ class TransaksiBengkelService:
         self.db.commit()
         return transaksi
 
+    def update(
+        self,
+        transaksi_id: int,
+        data: Any, # Use any since we handle mixed schemas
+        user_id: Optional[int] = None,
+    ) -> TransaksiPenjualanBengkel:
+        """Update an existing workshop transaction."""
+        transaksi = self.get_by_id(transaksi_id)
+
+        # 1. Restore stock
+        for detail in transaksi.detail_parts:
+            sp = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
+            if sp:
+                sp.stok += detail.qty
+
+        # 2. Delete old details
+        self.db.query(DetailTransaksiSpareParts).filter(DetailTransaksiSpareParts.transaksi_id == transaksi_id).delete(synchronize_session=False)
+        self.db.query(DetailTransaksiServices).filter(DetailTransaksiServices.transaksi_id == transaksi_id).delete(synchronize_session=False)
+
+        # 3. Delete related KasBank, Piutang, and unit history
+        # (similar to void but keeps the main transaction)
+        piutang = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+            PiutangUsaha.sumber == PiutangSource.BENGKEL
+        ).first()
+
+        self.db.query(KasBank).filter(
+            KasBank.referensi_id == transaksi.id,
+            KasBank.sumber == KasBankSource.BENGKEL
+        ).delete(synchronize_session=False)
+
+        if piutang:
+            pembayaran_ids = [p.id for p in piutang.pembayaran]
+            if pembayaran_ids:
+                self.db.query(KasBank).filter(
+                    KasBank.referensi_id.in_(pembayaran_ids),
+                    KasBank.sumber == KasBankSource.PIUTANG,
+                    KasBank.nomor_referensi == piutang.nomor_piutang
+                ).delete(synchronize_session=False)
+            self.db.delete(piutang)
+
+        self.db.query(MobilPartService).filter(
+            MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
+        ).delete(synchronize_session=False)
+
+        self.db.query(JasaAngkutPartService).filter(
+            JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
+        ).delete(synchronize_session=False)
+
+        # 4. Re-calculate with new data
+        customer = None
+        if data.customer_id:
+            customer = self._validate_customer(data.customer_id)
+
+        # Validate spare parts
+        spare_parts_map = self._validate_spare_parts(data.detail_parts)
+
+        # Totals
+        total_parts = Decimal("0")
+        hpp_parts = Decimal("0")
+        detail_parts_records = []
+
+        for item in data.detail_parts:
+            sp = spare_parts_map[item.spare_part_id]
+            harga_jual = item.harga_jual if item.harga_jual else sp.harga_jual
+            subtotal = harga_jual * item.qty
+            total_parts += subtotal
+            hpp_parts += sp.harga_beli * item.qty
+            detail_parts_records.append(
+                DetailTransaksiSpareParts(
+                    transaksi_id=transaksi.id,
+                    spare_part_id=item.spare_part_id,
+                    qty=item.qty,
+                    harga_beli=sp.harga_beli,
+                    harga_jual=harga_jual,
+                    subtotal=subtotal,
+                )
+            )
+
+        total_jasa = Decimal("0")
+        detail_services_records = []
+
+        for item in data.detail_services:
+            subtotal = item.harga * item.qty
+            total_jasa += subtotal
+            detail_services_records.append(
+                DetailTransaksiServices(
+                    transaksi_id=transaksi.id,
+                    nama_jasa=item.nama_jasa,
+                    deskripsi=item.deskripsi,
+                    harga=item.harga,
+                    qty=item.qty,
+                    subtotal=subtotal,
+                )
+            )
+
+        subtotal = total_parts + total_jasa
+        grand_total = subtotal - data.diskon
+        laba_kotor = grand_total - hpp_parts
+
+        # Payments logic
+        total_pembayaran = Decimal("0")
+        metode_utama = data.metode_bayar
+        
+        is_internal_jasa_angkut = (data.kategori == 'jasa_angkut' and data.muatan_id)
+        is_internal_mobil = (data.kategori == 'jual_beli_mobil' and data.mobil_id)
+        
+        if is_internal_jasa_angkut:
+            total_pembayaran = grand_total
+            metode_utama = PaymentMethod.INTERNAL
+        elif is_internal_mobil:
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.INTERNAL
+        elif data.payments:
+            total_pembayaran = sum(p.jumlah for p in data.payments)
+            metodes = list(set(p.metode for p in data.payments if p.jumlah > 0))
+            if len(metodes) > 1: metode_utama = PaymentMethod.SPLIT
+            elif len(metodes) == 1: metode_utama = metodes[0]
+        else:
+            total_pembayaran = data.jumlah_bayar
+            metode_utama = data.metode_bayar
+
+        kembalian = Decimal("0")
+        if total_pembayaran >= grand_total:
+            kembalian = total_pembayaran - grand_total
+            status_bayar = PaymentStatus.LUNAS
+        elif total_pembayaran > 0:
+            status_bayar = PaymentStatus.CICILAN
+        else:
+            status_bayar = PaymentStatus.BELUM_LUNAS
+
+        # 5. Update main record
+        transaksi.tanggal = data.tanggal
+        transaksi.customer_id = data.customer_id
+        transaksi.nama_customer = data.nama_customer or (customer.nama if customer else None)
+        transaksi.nomor_plat = data.nomor_plat
+        transaksi.jenis_kendaraan = data.jenis_kendaraan
+        transaksi.kategori = data.kategori
+        transaksi.muatan_id = data.muatan_id
+        transaksi.armada_id = data.armada_id
+        transaksi.mobil_id = data.mobil_id
+        transaksi.total_parts = total_parts
+        transaksi.total_jasa = total_jasa
+        transaksi.subtotal = subtotal
+        transaksi.diskon = data.diskon
+        transaksi.grand_total = grand_total
+        transaksi.hpp_parts = hpp_parts
+        transaksi.laba_kotor = laba_kotor
+        transaksi.status_bayar = status_bayar
+        transaksi.metode_bayar = metode_utama
+        transaksi.jumlah_bayar = total_pembayaran
+        transaksi.kembalian = kembalian
+        transaksi.catatan = data.catatan
+        transaksi.detail_parts = detail_parts_records
+        transaksi.detail_services = detail_services_records
+
+        # 6. Apply stock & Re-create piutang / kas entries
+        for item in data.detail_parts:
+            sp = spare_parts_map[item.spare_part_id]
+            sp.stok -= item.qty
+
+        if status_bayar != PaymentStatus.LUNAS:
+            debtor_name = transaksi.nama_customer or (customer.nama if customer else "Guest")
+            if is_internal_mobil: debtor_name = f"JB MOBIL - {data.nomor_plat}"
+            
+            new_piutang = PiutangUsaha(
+                nomor_piutang=self._generate_nomor_piutang(),
+                tanggal=data.tanggal,
+                customer_id=data.customer_id,
+                nama_debitur=debtor_name,
+                 telepon_debitur=customer.telepon if customer else None,
+                alamat_debitur=customer.alamat if customer else None,
+                sumber=PiutangSource.BENGKEL,
+                referensi_id=transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                nominal_piutang=grand_total,
+                sisa_piutang=max(grand_total - total_pembayaran, Decimal("0")),
+                status=PiutangStatus.BELUM_LUNAS if total_pembayaran == 0 else PiutangStatus.SEBAGIAN,
+                catatan=f"Piutang Internal JB Mobil dari (EDITED) {transaksi.nomor_transaksi}" if is_internal_mobil else f"Piutang dari (EDITED) {transaksi.nomor_transaksi}",
+                created_by=user_id,
+            )
+            self.db.add(new_piutang)
+
+        # Link entries (Mobil & Jasa Angkut)
+        if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:
+             for detail in detail_parts_records:
+                sp = spare_parts_map.get(detail.spare_part_id)
+                self.db.add(MobilPartService(mobil_id=transaksi.mobil_id, tanggal=transaksi.tanggal, tipe='part', deskripsi=f"Sparepart: {sp.nama if sp else 'Part'}", qty=detail.qty, harga_satuan=detail.harga_jual, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
+             for detail in detail_services_records:
+                self.db.add(MobilPartService(mobil_id=transaksi.mobil_id, tanggal=transaksi.tanggal, tipe='service', deskripsi=f"Service: {detail.nama_jasa}", qty=detail.qty, harga_satuan=detail.harga, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
+
+        if transaksi.kategori == 'jasa_angkut' and transaksi.muatan_id:
+             for detail in detail_parts_records:
+                sp = spare_parts_map.get(detail.spare_part_id)
+                self.db.add(JasaAngkutPartService(muatan_id=transaksi.muatan_id, tanggal=transaksi.tanggal, tipe='part', deskripsi=f"Sparepart: {sp.nama if sp else 'Part'}", qty=detail.qty, harga_satuan=detail.harga_jual, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
+             for detail in detail_services_records:
+                self.db.add(JasaAngkutPartService(muatan_id=transaksi.muatan_id, tanggal=transaksi.tanggal, tipe='service', deskripsi=f"Service: {detail.nama_jasa}", qty=detail.qty, harga_satuan=detail.harga, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
+
+        # KasBank Entries
+        source_pocket = KasBankSource.BENGKEL
+        if data.kategori == 'jasa_angkut': source_pocket = KasBankSource.JASA_ANGKUT
+        elif data.kategori == 'jual_beli_mobil': source_pocket = KasBankSource.JUAL_BELI_MOBIL
+
+        def record_bilateral_payment(amount, method, ref_id, ref_num):
+            create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", user_id=user_id)
+            if source_pocket != KasBankSource.BENGKEL:
+                create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
+
+        if data.payments:
+            for p in data.payments:
+                if p.jumlah > 0: record_bilateral_payment(p.jumlah, p.metode, transaksi.id, transaksi.nomor_transaksi)
+        elif data.jumlah_bayar > 0:
+            record_bilateral_payment(data.jumlah_bayar, data.metode_bayar, transaksi.id, transaksi.nomor_transaksi)
+        elif is_internal_jasa_angkut:
+            record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
+
+        self.db.commit()
+        self.db.refresh(transaksi)
+        return transaksi
+
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanBengkel:
         """Get transaction by ID with details."""
         transaksi = (

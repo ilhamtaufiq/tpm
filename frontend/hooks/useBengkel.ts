@@ -31,6 +31,18 @@ export const useCreateTransaksiBengkel = () => {
     });
 };
 
+export const useUpdateTransaksiBengkel = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) =>
+            bengkelService.updateTransaksi(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
+        },
+    });
+};
+
 export const useUpdateTransaksiBengkelPayment = () => {
     const queryClient = useQueryClient();
     return useMutation({

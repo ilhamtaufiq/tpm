@@ -108,6 +108,18 @@ def update_payment(
     return service.update_payment(transaksi_id, data.jumlah_bayar, data.metode_bayar, current_user.id)
 
 
+@router.put("/{transaksi_id}", response_model=TransaksiBengkelResponse)
+def update_transaksi(
+    transaksi_id: int,
+    data: TransaksiBengkelCreate, # Reusing Create schema as it contains all needed fields for edit
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Update an existing workshop transaction."""
+    service = TransaksiBengkelService(db)
+    return service.update(transaksi_id, data, current_user.id)
+
+
 @router.patch("/{transaksi_id}/status", response_model=TransaksiBengkelResponse)
 def update_status(
     transaksi_id: int,

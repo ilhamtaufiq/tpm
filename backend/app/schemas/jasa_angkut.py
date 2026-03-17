@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.utils.constants import PaymentStatus, PaymentMethod
 from app.schemas.keuangan import PaymentDetail
+from app.schemas.bengkel import PengeluaranBengkelResponse
 
 
 # ============================================
@@ -333,6 +334,7 @@ class ArmadaDetailResponse(BaseModel):
     muatan_history: List[MuatanResponse]
     perbaikan_history: List[TransaksiBengkelResponse]
     general_expenses: List[BiayaTambahanResponse] = []
+    workshop_expenses: List[PengeluaranBengkelResponse] = []
 
 
     model_config = {"from_attributes": True}

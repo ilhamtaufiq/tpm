@@ -406,34 +406,7 @@ export default function JasaAngkutScreen() {
                             <Typography weight="bold" className="text-textMain">{formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}</Typography>
                         </View>
 
-                        <View className="flex-row justify-between mb-3">
-                            <Typography variant="body2" className="text-textGray">Biaya Operasional</Typography>
-                            <Typography weight="bold" className="text-rose-500">
-                                -{formatCurrency(
-                                    ((trip.biaya_tambahan && trip.biaya_tambahan.length > 0)
-                                        ? (trip.biaya_tambahan || [])
-                                            .filter((b: any) => b.kategori === 'Operasional')
-                                            .reduce((acc: number, curr: any) => acc + Number(curr.jumlah), 0)
-                                        : (Number(trip.biaya_bbm || 0) + Number(trip.biaya_tol || 0) + Number(trip.biaya_makan || 0) + Number(trip.biaya_parkir || 0) + Number(trip.biaya_lainnya || 0))
-                                    )
-                                )}
-                            </Typography>
-                        </View>
-
-                        {/* Biaya Bengkel dari Riwayat Bengkel Terkait */}
-                        {(trip.part_services && trip.part_services.length > 0) && (
-                            <View className="flex-row justify-between mb-3">
-                                <Typography variant="body2" className="text-textGray">Biaya Bengkel (Sparepart & Servis)</Typography>
-                                <Typography weight="bold" className="text-rose-500">
-                                    -{formatCurrency(
-                                        (trip.part_services || []).reduce((acc: number, ps: any) => acc + Number(ps.total), 0)
-                                    )}
-                                </Typography>
-                            </View>
-                        )}
-
-                        <View className="h-[1px] bg-gray-100 my-4" />
-                        <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl">
+                        <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl mt-4">
                             <Typography variant="body2" weight="bold" className="text-primary text-[11px]">PENDAPATAN TPM (NET)</Typography>
                             <Typography weight="bold" className="text-primary">{formatCurrency(trip.laba_tpm)}</Typography>
                         </View>
@@ -837,7 +810,7 @@ export default function JasaAngkutScreen() {
                         refetch();
                         handleCloseSheet();
                     }}
-                    piutangId={selectedTrip.piutang_id}
+                    id={selectedTrip.piutang_id}
                     initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
                     title="Pelunasan Jasa Angkut"
                     allowedMethods={['TUNAI', 'TRANSFER']}

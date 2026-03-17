@@ -22,7 +22,8 @@ import {
     DollarSign,
     X as CloseIcon,
     Trash2,
-    PlusCircle
+    PlusCircle,
+    GaugeCircle
 } from 'lucide-react-native';
 import { SkeletonCard } from '../ui/Skeleton';
 import { Input } from '../ui/Input';
@@ -132,23 +133,25 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         );
     }
 
-    if (!detailData) {
+    if (!detailData || !detailData.armada) {
         return (
             <View className="p-10 items-center justify-center">
-                <Typography className="text-gray-400">Data tidak tersedia</Typography>
+                <Typography className="text-gray-400">Data armada tidak tersedia</Typography>
             </View>
         );
     }
 
-    const { armada, stats, muatan_history = [], perbaikan_history = [], general_expenses = [] } = detailData || {};
+    const { 
+        armada, 
+        stats, 
+        muatan_history = [], 
+        perbaikan_history = [], 
+        general_expenses = [],
+        workshop_expenses = [],
+        pengeluaran_bengkel = [] 
+    } = detailData;
 
-    if (!armada || !stats) {
-        return (
-            <View className="p-10 items-center justify-center">
-                <Typography className="text-gray-400">Data armada tidak lengkap</Typography>
-            </View>
-        );
-    }
+    const actualWorkshopExpenses = [...(workshop_expenses || []), ...(pengeluaran_bengkel || [])];
 
     return (
         <ScrollView
@@ -386,28 +389,97 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </TouchableOpacity>
                                     </View>
 
-                                    {general_expenses.length === 0 ? (
-                                        <View className="py-20 items-center">
-                                            <Typography className="text-gray-400 italic">Belum ada biaya operasional tercatat</Typography>
-                                        </View>
-                                    ) : (
-                                        general_expenses.map((expense: any) => (
-                                            <View key={expense.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
-                                                <View className="w-10 h-10 bg-orange-50 rounded-xl items-center justify-center mr-4">
-                                                    <TrendingDown size={20} color="#F59E0B" />
+                                    {(() => {
+                                        // 1. Costs from linked workshop expenses
+                                        const workshopItems = actualWorkshopExpenses.map((we: any) => ({
+                                            ...we,
+                                            type: 'WORKSHOP',
+                                            display_deskripsi: we.deskripsi,
+                                            display_sub: `[Bengkel] ${we.nomor_transaksi}`
+                                        }));
+
+                                        // 2. Costs from general armada expenses (biaya lainnya)
+                                        const generalItems = general_expenses.map((ge: any) => ({
+                                            ...ge,
+                                            type: 'GENERAL',
+                                            display_deskripsi: ge.deskripsi,
+                                            display_sub: ge.kategori
+                                        }));
+
+                                        // 3. Costs from each trip (muatan) that contribute to stats.total_biaya_operasional
+                                        const tripItems = muatan_history.map((m: any) => {
+                                            // Deduction logic to match backend's stats.total_biaya_operasional
+                                            const maintenance_in_muatan = (m.part_services || []).reduce((acc: number, ps: any) => acc + Number(ps.total || 0), 0);
+                                            const bengkel_cat_costs = (m.biaya_tambahan || []).reduce((acc: number, b: any) => b.kategori === 'Perawatan Bengkel' ? acc + Number(b.jumlah || 0) : acc, 0);
+                                            const ops_cost = Number(m.total_biaya || 0) - (maintenance_in_muatan + bengkel_cat_costs);
+                                            
+                                            if (ops_cost <= 0) return null;
+
+                                            return {
+                                                id: `muatan-${m.id}`,
+                                                tanggal: m.tanggal,
+                                                jumlah: ops_cost,
+                                                type: 'TRIP',
+                                                display_deskripsi: `Biaya Ops Trip: ${m.tujuan}`,
+                                                display_sub: m.nomor_transaksi
+                                            };
+                                        }).filter(Boolean);
+
+                                        const allExpenses = [...workshopItems, ...generalItems, ...tripItems].sort((a, b) => 
+                                            new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+                                        );
+
+                                        if (allExpenses.length === 0) {
+                                            return (
+                                                <View className="py-20 items-center">
+                                                    <Typography className="text-gray-400 italic">Belum ada biaya operasional tercatat</Typography>
                                                 </View>
-                                                <View className="flex-1">
-                                                    <View className="flex-row justify-between items-start">
-                                                        <Typography weight="bold" className="text-textMain flex-1 mr-2">{expense.deskripsi}</Typography>
-                                                        <Typography weight="bold" className="text-orange-600">{formatCurrency(expense.jumlah)}</Typography>
+                                            );
+                                        }
+
+                                        return allExpenses.map((expense: any) => {
+                                            const isWorkshop = expense.type === 'WORKSHOP';
+                                            const isTrip = expense.type === 'TRIP';
+
+                                            let bgColor = 'bg-orange-50';
+                                            let iconColor = '#F59E0B';
+                                            let IconComp = TrendingDown;
+                                            
+                                            if (isWorkshop) {
+                                                bgColor = 'bg-red-50';
+                                                iconColor = '#EF4444';
+                                                IconComp = Wrench;
+                                            } else if (isTrip) {
+                                                bgColor = 'bg-blue-50';
+                                                iconColor = '#3B82F6';
+                                                IconComp = GaugeCircle;
+                                            }
+
+                                            return (
+                                                <View key={expense.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
+                                                    <View className={`w-10 h-10 ${bgColor} rounded-xl items-center justify-center mr-4`}>
+                                                        <IconComp size={20} color={iconColor} />
                                                     </View>
-                                                    <Typography variant="caption" className="text-textGray mt-0.5">
-                                                        {formatDate(expense.created_at)}
-                                                    </Typography>
+                                                    <View className="flex-1">
+                                                        <View className="flex-row justify-between items-start">
+                                                            <View className="flex-1 mr-2">
+                                                                 <Typography weight="bold" className="text-textMain">{expense.display_deskripsi}</Typography>
+                                                                <Typography variant="caption" className={`${isWorkshop ? 'text-red-600' : isTrip ? 'text-blue-600' : 'text-textGray'} font-bold text-[10px] uppercase`}>
+                                                                    {expense.display_sub}
+                                                                </Typography>
+                                                            </View>
+                                                            <Typography weight="bold" className={`${isWorkshop ? 'text-red-700' : isTrip ? 'text-blue-700' : 'text-orange-600'}`}>
+                                                                {formatCurrency(expense.jumlah)}
+                                                            </Typography>
+                                                        </View>
+                                                        <Typography variant="caption" className="text-textGray mt-0.5">
+                                                            {formatDate(expense.tanggal)}
+                                                        </Typography>
+                                                    </View>
                                                 </View>
-                                            </View>
-                                        ))
-                                    )}
+                                            );
+                                        });
+                                    })()}
                                 </View>
                             );
                         default:

@@ -251,6 +251,27 @@ class TransaksiBengkelCreate(BaseModel):
     catatan: Optional[str] = None
 
 
+class TransaksiBengkelUpdate(BaseModel):
+    """Schema for updating workshop transaction."""
+
+    tanggal: Optional[date] = None
+    customer_id: Optional[int] = None
+    nama_customer: Optional[str] = Field(None, max_length=100)
+    nomor_plat: Optional[str] = Field(None, max_length=15)
+    jenis_kendaraan: Optional[str] = Field(None, max_length=50)
+    kategori: Optional[str] = Field(None, pattern="^(umum|jasa_angkut|jual_beli_mobil)$")
+    muatan_id: Optional[int] = None
+    armada_id: Optional[int] = None
+    mobil_id: Optional[int] = None
+    detail_parts: Optional[List[DetailPartCreate]] = None
+    detail_services: Optional[List[DetailServiceCreate]] = None
+    diskon: Optional[Decimal] = Field(None, ge=0)
+    metode_bayar: Optional[PaymentMethod] = None
+    jumlah_bayar: Optional[Decimal] = Field(None, ge=0)
+    payments: Optional[List[PaymentItem]] = None
+    catatan: Optional[str] = None
+
+
 class DetailPartResponse(BaseModel):
     """Schema for transaction part response."""
 
@@ -342,6 +363,10 @@ class PengeluaranBengkelCreate(BaseModel):
     """Schema for creating workshop expense."""
 
     tanggal: date
+    bisnis_kategori: str = "umum"
+    muatan_id: Optional[int] = None
+    armada_id: Optional[int] = None
+    mobil_id: Optional[int] = None
     kategori: ExpenseCategory = ExpenseCategory.BIAYA_OPERASIONAL
     deskripsi: str = Field(..., min_length=2, max_length=255)
     jumlah: Decimal = Field(..., gt=0)
@@ -354,6 +379,10 @@ class PengeluaranBengkelUpdate(BaseModel):
     """Schema for updating workshop expense."""
 
     tanggal: Optional[date] = None
+    bisnis_kategori: Optional[str] = None
+    muatan_id: Optional[int] = None
+    armada_id: Optional[int] = None
+    mobil_id: Optional[int] = None
     kategori: Optional[ExpenseCategory] = None
     deskripsi: Optional[str] = Field(None, min_length=2, max_length=255)
     jumlah: Optional[Decimal] = Field(None, gt=0)
@@ -367,6 +396,10 @@ class PengeluaranBengkelResponse(BaseModel):
     id: int
     nomor_transaksi: str
     tanggal: date
+    bisnis_kategori: str
+    muatan_id: Optional[int] = None
+    armada_id: Optional[int] = None
+    mobil_id: Optional[int] = None
     kategori: ExpenseCategory
     deskripsi: str
     jumlah: Decimal

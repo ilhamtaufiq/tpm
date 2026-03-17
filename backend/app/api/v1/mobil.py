@@ -13,6 +13,7 @@ from app.schemas.mobil import (
     MobilMediaResponse,
     MobilBiayaCreate,
     MobilPartServiceCreate,
+    MobilDetailResponse,
 )
 from app.services.mobil_service import MobilService
 from app.utils.constants import CarStatus, OwnershipType
@@ -109,7 +110,7 @@ def get_years(
     return service.get_years()
 
 
-@router.get("/{mobil_id}", response_model=MobilResponse)
+@router.get("/{mobil_id}", response_model=MobilDetailResponse)
 def get_mobil(
     mobil_id: int,
     db: DBSession,
@@ -224,6 +225,7 @@ def delete_part_service(
     service = MobilService(db)
     service.delete_part_service(part_service_id)
     return {"message": "Part/Service berhasil dihapus"}
+
 
 @router.post("/{mobil_id}/media", response_model=List[MobilMediaResponse])
 def upload_media(

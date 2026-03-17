@@ -9,7 +9,7 @@ import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useCreateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
+import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useMobilList } from '../hooks/useMobil';
 import { MasterDataSelector } from './ui/MasterDataSelector';
@@ -26,9 +26,10 @@ type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 
 interface BengkelFormProps {
     onSuccess: () => void;
+    initialData?: any;
 }
 
-export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
+export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     // Category selection
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
@@ -58,10 +59,12 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([{ id: Date.now(), metode: 'Tunai', jumlah: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
+    const [catatan, setCatatan] = useState('');
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
     const createTransaksiMutation = useCreateTransaksiBengkel();
+    const updateTransaksiMutation = useUpdateTransaksiBengkel();
 
     // Load muatan & mobil data for category pickers
     const { data: muatanData } = useMuatanList({ limit: 100 });
@@ -142,6 +145,57 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
         setGrandTotal(Math.max(0, subtotal - discAmount));
     }, [services, parts, diskon]);
 
+    useEffect(() => {
+        if (initialData) {
+            setKategori(initialData.kategori);
+            setNomorPlat(initialData.plat_nomor || initialData.nomor_plat || '');
+            setJenisKendaraan(initialData.jenis_kendaraan || '');
+            setGuestName(initialData.customer_nama || initialData.nama_customer || '');
+            setDiskon(formatNumber(initialData.diskon?.toString() || '0'));
+            setCatatan(initialData.catatan || '');
+            
+            // Restore IDs for internal linking
+            if (initialData.armada_id) setSelectedArmada({ id: initialData.armada_id, nopol: initialData.nomor_plat, nama: initialData.nama_customer?.replace('Armada ', '') } as any);
+            if (initialData.mobil_id) setSelectedMobil({ id: initialData.mobil_id, nomor_plat: initialData.nomor_plat } as any);
+            if (initialData.muatan_id) setSelectedMuatan({ id: initialData.muatan_id, nomor_transaksi: initialData.muatan_nomor } as any);
+            if (initialData.customer_id) setSelectedCustomer({ id: initialData.customer_id, nama: initialData.customer_nama || initialData.nama_customer } as any);
+
+            // Restore payments
+            if (initialData.jumlah_bayar > 0) {
+                setPayments([{ 
+                    id: Date.now(), 
+                    metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || 'Tunai'), 
+                    jumlah: formatNumber(initialData.jumlah_bayar.toString()) 
+                }]);
+            }
+
+            // Restore services
+            if (initialData.detail_services?.length > 0) {
+                setServices(initialData.detail_services.map((s: any) => ({
+                    id: s.id || Math.random(),
+                    service_id: s.service_id || 0,
+                    nama_jasa: s.nama_jasa,
+                    harga: formatNumber(s.harga.toString()),
+                    qty: s.qty
+                })));
+            }
+
+            // Restore parts
+            if (initialData.detail_parts?.length > 0) {
+                setParts(initialData.detail_parts.map((p: any) => ({
+                    id: p.id || Math.random(),
+                    spare_part_id: p.spare_part_id,
+                    nama: p.spare_part_nama,
+                    harga: formatNumber(p.harga_jual.toString()),
+                    qty: p.qty
+                })));
+            }
+            
+            // Note: Customer, Muatan, Mobil selection restoration would require full object match / re-fetch
+            // For now, we rely on the manual fields (Plat, Name) which are auto-populated
+        }
+    }, [initialData]);
+
     const addService = () => setServices([...services, { id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
     const addPart = () => setParts([...parts, { id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
 
@@ -191,7 +245,7 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
         const isInternalJasaAngkut = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
 
         const payload: any = {
-            tanggal: new Date().toISOString().split('T')[0],
+            tanggal: initialData ? initialData.tanggal : new Date().toISOString().split('T')[0],
             nomor_plat: validatedPlat,
             jenis_kendaraan: finalJenis.substring(0, 50),
             nama_customer: validatedCustomerName,
@@ -226,26 +280,31 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                     })),
             jumlah_bayar: isInternalJasaAngkut
                 ? grandTotal
-                : payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0)
+                : payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0),
+            catatan: catatan
         };
 
         try {
-            await createTransaksiMutation.mutateAsync(payload);
+            if (initialData) {
+                await updateTransaksiMutation.mutateAsync({ id: initialData.id, data: payload });
+            } else {
+                await createTransaksiMutation.mutateAsync(payload);
+            }
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
-                message: 'Transaksi bengkel berhasil dibuat',
+                message: initialData ? 'Transaksi bengkel berhasil diperbarui' : 'Transaksi bengkel berhasil dibuat',
                 variant: 'success'
             });
             setTimeout(() => {
                 onSuccess();
             }, 1500);
         } catch (error) {
-            console.error('Failed to create transaction:', error);
+            console.error('Failed to save transaction:', error);
             setDialogConfig({
                 visible: true,
                 title: 'Transaksi Gagal',
-                message: getErrorMessage(error, 'Gagal membuat transaksi. Cek koneksi dan stok sparepart.'),
+                message: getErrorMessage(error, initialData ? 'Gagal memperbarui transaksi.' : 'Gagal membuat transaksi.'),
                 variant: 'error'
             });
         }
@@ -866,13 +925,25 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
                 </Card>
             </View>
 
+            <View className="mb-6">
+                <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Catatan Tambahan</Typography>
+                <Input
+                    placeholder="Contoh: Titipan kunci, barang berharga, atau pesan mekanik"
+                    multiline
+                    numberOfLines={3}
+                    className="h-24 py-3"
+                    value={catatan}
+                    onChangeText={setCatatan}
+                />
+            </View>
+
             {/* Submit Button */}
             <View className="mb-8">
                 <Button
-                    title="Buat Transaksi & Masuk Antrian"
+                    title={initialData ? "Update Transaksi" : "Buat Transaksi & Masuk Antrian"}
                     onPress={handleSubmit}
                     className="rounded-2xl"
-                    loading={createTransaksiMutation.isPending}
+                    loading={createTransaksiMutation.isPending || updateTransaksiMutation.isPending}
                 />
             </View>
 
@@ -892,8 +963,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             <View style={styles.webContainer}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">Input Order Baru</Typography>
-                    <Badge label="Antre" variant="neutral" />
+                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
                 </View>
 
                 {/* Scrollable Content */}
@@ -918,8 +989,8 @@ export const BengkelForm = ({ onSuccess }: BengkelFormProps) => {
             <View style={styles.mobileContainer}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">Input Order Baru</Typography>
-                    <Badge label="Antre" variant="neutral" />
+                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
                 </View>
 
                 {/* Scrollable Content for BottomSheet */}

@@ -35,7 +35,6 @@ import { FILE_URL } from '../utils/api';
 import { formatCurrency, parseNumber, formatNumber } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
-import { HutangPaymentModal } from './HutangPaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
 
 const { width } = Dimensions.get('window');
@@ -862,14 +861,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         Alert.alert('Sukses', 'Pembayaran berhasil dicatat');
                         onClose();
                     }}
-                    piutangId={activeTx.piutang_id}
+                    id={activeTx.piutang_id}
                     initialAmount={Number(activeTx.sisa_bayar)}
                     title="Pelunasan Unit Mobil"
                 />
             )}
 
             {activeHutang && (
-                <HutangPaymentModal
+                <PaymentModal
                     visible={hutangModalVisible}
                     onClose={() => setHutangModalVisible(false)}
                     onSuccess={() => {
@@ -877,9 +876,10 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         Alert.alert('Sukses', 'Pelunasan hutang berhasil dicatat');
                         onClose();
                     }}
-                    hutangId={activeHutang.id}
+                    id={activeHutang.id}
                     initialAmount={Number(activeHutang.sisa_hutang)}
                     title="Pelunasan Hutang Unit"
+                    type="hutang"
                 />
             )}
         </View>

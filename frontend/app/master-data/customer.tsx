@@ -19,10 +19,12 @@ import {
     Filter,
     Truck,
     Trash2,
+    Wallet,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { masterDataService, Customer } from '../../services/masterData';
 import { useCustomerList, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../../hooks/useMasterData';
+import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -70,6 +72,7 @@ export default function CustomerScreen() {
         kota: '',
         telepon: '',
         email: '',
+        saldo: 0,
         vehicles: [] as { plat_nomor: string; jenis_unit: string; catatan?: string }[],
     });
 
@@ -139,6 +142,7 @@ export default function CustomerScreen() {
             kota: '',
             telepon: '',
             email: '',
+            saldo: 0,
             vehicles: [],
         });
         setViewMode('form');
@@ -154,6 +158,7 @@ export default function CustomerScreen() {
             kota: customer.kota || '',
             telepon: customer.telepon || '',
             email: customer.email || '',
+            saldo: customer.saldo || 0,
             vehicles: customer.vehicles?.map(v => ({
                 plat_nomor: v.plat_nomor,
                 jenis_unit: v.jenis_unit,
@@ -179,11 +184,16 @@ export default function CustomerScreen() {
         }
 
         try {
+            const submitData = {
+                ...formData,
+                saldo: typeof formData.saldo === 'string' ? parseNumber(formData.saldo) : formData.saldo
+            };
+
             if (selectedCustomer) {
-                await updateMutation.mutateAsync({ id: selectedCustomer.id, data: formData });
+                await updateMutation.mutateAsync({ id: selectedCustomer.id, data: submitData });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Customer berhasil diupdate', variant: 'success' });
             } else {
-                await createMutation.mutateAsync(formData);
+                await createMutation.mutateAsync(submitData);
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Customer baru berhasil ditambahkan', variant: 'success' });
             }
             handleCloseSheet();
@@ -295,6 +305,22 @@ export default function CustomerScreen() {
                             variant={selectedCustomer.tipe === 'perusahaan' ? 'info' : 'success'}
                         />
                     </View>
+
+                    <Card className="p-5 mb-6 border border-gray-100 rounded-[24px]">
+                        <Typography variant="h3" weight="bold" className="mb-4 text-base">Informasi Saldo</Typography>
+                        
+                        <View className="flex-row items-center bg-primary/5 p-4 rounded-3xl border border-primary/10">
+                            <View className="w-12 h-12 bg-white rounded-2xl items-center justify-center shadow-sm mr-4">
+                                <Wallet size={24} color="#023C69" />
+                            </View>
+                            <View>
+                                <Typography className="text-[10px] text-textGray/60 font-black uppercase tracking-widest mb-0.5">Saldo Tersedia</Typography>
+                                <Typography variant="h2" weight="bold" className="text-primary text-xl">
+                                    {formatCurrency(selectedCustomer.saldo || 0)}
+                                </Typography>
+                            </View>
+                        </View>
+                    </Card>
 
                     <Card className="p-5 mb-6 border border-gray-100 rounded-[24px]">
                         <Typography variant="h3" weight="bold" className="mb-4 text-base">Informasi Kontak</Typography>
@@ -428,6 +454,21 @@ export default function CustomerScreen() {
                             onChangeText={(text) => setFormData({ ...formData, telepon: text })}
                             keyboardType="phone-pad"
                         />
+                    </View>
+
+                    <View>
+                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Saldo Customer (Rp)</Typography>
+                        <View className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 flex-row items-center focus-within:border-primary focus-within:bg-primary/5">
+                            <Typography className="text-gray-400 mr-2 font-bold">Rp</Typography>
+                            <TextInput
+                                className="flex-1 text-textMain font-bold text-lg"
+                                placeholder="0"
+                                placeholderTextColor="#9CA3AF"
+                                value={formatNumber(formData.saldo)}
+                                onChangeText={(text) => setFormData({ ...formData, saldo: text })}
+                                keyboardType="numeric"
+                            />
+                        </View>
                     </View>
 
                     <View>

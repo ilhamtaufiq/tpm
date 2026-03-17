@@ -11,9 +11,9 @@ from fastapi import HTTPException, status, UploadFile
 from app.config import settings
 
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService
-from app.models.bengkel import SparePart
+from app.models.bengkel import SparePart, PengeluaranBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, HutangSource, HutangStatus
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, HutangSource, HutangStatus, ExpenseCategory
 from app.models.keuangan import HutangUsaha, HutangStatus
 from app.services.kas_bank_integration import create_kas_entry
 
@@ -60,6 +60,28 @@ class MobilService:
 
         if last:
             last_num = int(last.nomor_hutang[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+
+    def _generate_pengeluaran_nomor(self) -> str:
+        """Generate unique expense transaction number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["pengeluaran"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(PengeluaranBengkel)
+            .filter(PengeluaranBengkel.nomor_transaksi.like(f"{prefix}{date_str}%"))
+            .order_by(PengeluaranBengkel.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_transaksi[-4:])
             new_num = last_num + 1
         else:
             new_num = 1
@@ -225,6 +247,7 @@ class MobilService:
                 joinedload(Mobil.biaya_lainnya),
                 joinedload(Mobil.part_services),
                 joinedload(Mobil.bengkel_perbaikan),
+                joinedload(Mobil.pengeluaran_bengkel),
             )
             .filter(
                 Mobil.id == mobil_id,
@@ -421,8 +444,8 @@ class MobilService:
         payments: Optional[List[Dict[str, Any]]] = None,
         catatan: Optional[str] = None,
         user_id: Optional[int] = None,
-    ) -> MobilBiayaLainnya:
-        """Add additional cost to car."""
+    ) -> PengeluaranBengkel:
+        """Add additional cost to car, unified with workshop expenses."""
         mobil = self.get_by_id(mobil_id)
 
         if mobil.status == CarStatus.TERJUAL:
@@ -431,13 +454,18 @@ class MobilService:
                 detail="Tidak dapat menambah biaya untuk mobil yang sudah terjual",
             )
 
-        biaya = MobilBiayaLainnya(
-            mobil_id=mobil_id,
+        nomor_transaksi = self._generate_pengeluaran_nomor()
+
+        biaya = PengeluaranBengkel(
+            nomor_transaksi=nomor_transaksi,
             tanggal=tanggal,
-            kategori=kategori,
-            deskripsi=deskripsi,
+            bisnis_kategori="jasa_angkut" if kategori == "Jasa Angkut" else "mobil",
+            mobil_id=mobil_id,
+            kategori=ExpenseCategory.BIAYA_OPERASIONAL,
+            deskripsi=f"[{kategori}] {deskripsi}" if kategori else deskripsi,
             jumlah=jumlah,
             catatan=catatan,
+            created_by=user_id
         )
 
         self.db.add(biaya)
@@ -458,7 +486,7 @@ class MobilService:
                             sumber=KasBankSource.JUAL_BELI_MOBIL,
                             metode_bayar=p_metode,
                             referensi_id=biaya.id,
-                            nomor_referensi=f"BIAYA-{mobil.kode}",
+                            nomor_referensi=nomor_transaksi,
                             keterangan=f"Biaya {kategori} ({p_metode.upper()}) - {mobil.nomor_plat}: {deskripsi}",
                             user_id=user_id,
                         )
@@ -471,7 +499,7 @@ class MobilService:
                     sumber=KasBankSource.JUAL_BELI_MOBIL,
                     metode_bayar=metode_bayar,
                     referensi_id=biaya.id,
-                    nomor_referensi=f"BIAYA-{mobil.kode}",
+                    nomor_referensi=nomor_transaksi,
                     keterangan=f"Biaya {kategori} - {mobil.nomor_plat}: {deskripsi}",
                     user_id=user_id,
                 )

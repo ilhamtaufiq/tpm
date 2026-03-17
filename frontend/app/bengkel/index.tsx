@@ -15,6 +15,7 @@ import {
     CheckCircle2,
     Package,
     Receipt,
+    Database,
     ArrowRight,
     Printer,
     Download,
@@ -23,7 +24,9 @@ import {
     Banknote,
     Truck,
     Car,
-    Share2
+    Share2,
+    ShoppingCart,
+    Edit2
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -63,7 +66,7 @@ export default function BengkelScreen() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
-    const [view, setView] = React.useState<'form' | 'detail'>('form');
+    const [view, setView] = React.useState<'form' | 'detail' | 'edit'>('form');
     const [refreshing, setRefreshing] = React.useState(false);
     const [sheetIndex, setSheetIndex] = React.useState(-1);
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
@@ -310,9 +313,10 @@ export default function BengkelScreen() {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
 
-    const handlePresentModalPress = (type: 'form' | 'detail', item?: any) => {
+    const handlePresentModalPress = (type: 'form' | 'detail' | 'edit', item?: any) => {
         setView(type);
         if (item) setSelectedItem(item);
+        else if (type === 'form') setSelectedItem(null);
         setSheetIndex(0);
     };
 
@@ -326,8 +330,25 @@ export default function BengkelScreen() {
             await updateStatsMutation.mutateAsync({ id, status: newStatus });
             refetch();
             refetchSummary();
+            
+            // Close modal and show notification
+            handleClosePress();
+            setDialogConfig({
+                visible: true,
+                title: 'Status Diperbarui',
+                message: `Status pengerjaan unit berhasil diubah menjadi ${newStatus.toUpperCase()}`,
+                variant: 'success',
+                type: 'alert'
+            });
         } catch (error) {
             console.error('Failed to update status:', error);
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal Update',
+                message: 'Terjadi kesalahan saat memperbarui status pengerjaan',
+                variant: 'error',
+                type: 'alert'
+            });
         }
     };
 
@@ -556,6 +577,14 @@ export default function BengkelScreen() {
                     />
 
                     <Button
+                        variant="secondary"
+                        title="Edit Transaksi"
+                        onPress={() => setView('edit')}
+                        icon={<Edit2 size={20} color="white" />}
+                        className="rounded-2xl h-14 bg-amber-500 shadow-lg shadow-amber-500/30"
+                    />
+
+                    <Button
                         variant="outline-danger"
                         title="Batalkan Order"
                         onPress={() => handleVoidOrder(selectedItem)}
@@ -569,8 +598,11 @@ export default function BengkelScreen() {
 
     const renderBottomSheetContent = () => (
         <View style={{ flex: 1 }}>
-            {view === 'form' ? (
-                <BengkelForm onSuccess={handleClosePress} />
+            {view === 'form' || view === 'edit' ? (
+                <BengkelForm 
+                    initialData={view === 'edit' ? selectedItem : null} 
+                    onSuccess={handleClosePress} 
+                />
             ) : selectedItem ? (
                 Platform.OS === 'web' ? (
                     <ScrollView className="flex-1">
@@ -603,7 +635,7 @@ export default function BengkelScreen() {
                         refetchSummary();
                         handleClosePress();
                     }}
-                    piutangId={selectedItem.piutang_id}
+                    id={selectedItem.piutang_id}
                     initialAmount={selectedItem.grand_total - (selectedItem.jumlah_bayar || 0)}
                 />
             )}
@@ -629,12 +661,20 @@ export default function BengkelScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Antrian & Inventori</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        onPress={() => router.push('/laporan')}
-                    >
-                        <Receipt size={22} color="white" />
-                    </TouchableOpacity>
+                    <View className="flex-row space-x-2">
+                        <TouchableOpacity
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            onPress={() => router.push('/bengkel/purchase')}
+                        >
+                            <ShoppingCart size={22} color="white" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            onPress={() => router.push('/master-data')}
+                        >
+                            <Database size={22} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Bento Quick Actions (Home Style) */}

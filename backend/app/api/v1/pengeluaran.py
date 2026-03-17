@@ -60,7 +60,7 @@ def list_pengeluaran(
 @router.get("/summary")
 def get_pengeluaran_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: CurrentUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
 ):

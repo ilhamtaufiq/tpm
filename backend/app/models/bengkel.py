@@ -310,6 +310,24 @@ class PengeluaranBengkel(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_transaksi: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
+    
+    # Business Category: umum (default), jasa_angkut, jual_beli_mobil
+    bisnis_kategori: Mapped[str] = mapped_column(String(30), default="umum", server_default="umum")
+    
+    # Links to other modules for operational costs tracking
+    muatan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("muatan_jasa_angkut.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    armada_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("armada_jasa_angkut.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    mobil_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("mobil.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     kategori: Mapped[str] = mapped_column(
         String(50),
         default=ExpenseCategory.BIAYA_OPERASIONAL.value,
@@ -325,6 +343,11 @@ class PengeluaranBengkel(Base, TimestampMixin):
         ForeignKey("users.id"),
         nullable=True,
     )
+
+    # Relationships
+    muatan: Mapped[Optional["MuatanJasaAngkut"]] = relationship()
+    armada: Mapped[Optional["ArmadaJasaAngkut"]] = relationship()
+    mobil: Mapped[Optional["Mobil"]] = relationship()
 
     def __repr__(self) -> str:
         return f"<PengeluaranBengkel(id={self.id}, deskripsi='{self.deskripsi}', jumlah={self.jumlah})>"

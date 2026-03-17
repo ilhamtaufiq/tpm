@@ -20,16 +20,26 @@ import {
     TrendingDown,
     Search,
     Split,
-    Trash2
+    Trash2,
+    Truck,
+    Car,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
+import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
+import { MobilSelector } from '../../../components/ui/MobilSelector';
 
 const CATEGORIES = [
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
     { label: 'Biaya Operasional', value: 'BIAYA_OPERASIONAL', icon: Wrench, color: '#023C69' },
     { label: 'Biaya Lainnya', value: 'BIAYA_LAINNYA', icon: Info, color: '#6B7280' },
+];
+
+const BISNIS_KATEGORI = [
+    { label: 'Umum', value: 'umum', icon: Info, color: '#6B7280' },
+    { label: 'Jasa Angkut', value: 'jasa_angkut', icon: Truck, color: '#10B981' },
+    { label: 'Jual Beli Mobil', value: 'jual_beli_mobil', icon: Car, color: '#3B82F6' },
 ];
 
 export default function ExpensesScreen() {
@@ -39,6 +49,11 @@ export default function ExpensesScreen() {
 
     // Form State
     const [kategori, setKategori] = useState('BIAYA_OPERASIONAL');
+    const [bisnisKategori, setBisnisKategori] = useState('umum');
+    const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
+    const [selectedMobil, setSelectedMobil] = useState<any>(null);
+    const [selectedArmada, setSelectedArmada] = useState<any>(null);
+    
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [payMetode, setPayMetode] = useState('TUNAI');
@@ -79,6 +94,10 @@ export default function ExpensesScreen() {
         const payload: any = {
             tanggal: new Date().toISOString().split('T')[0],
             kategori,
+            bisnis_kategori: bisnisKategori,
+            muatan_id: selectedMuatan?.id || null,
+            armada_id: selectedArmada?.id || null,
+            mobil_id: selectedMobil?.id || null,
             jumlah: totalAmount,
             deskripsi,
             metode_bayar: payMetode,
@@ -105,6 +124,10 @@ export default function ExpensesScreen() {
             setShowForm(false);
             setJumlah('');
             setDeskripsi('');
+            setBisnisKategori('umum');
+            setSelectedMuatan(null);
+            setSelectedMobil(null);
+            setSelectedArmada(null);
             setPayMetode('TUNAI');
             setSplitPayments([
                 { metode: 'TUNAI', jumlah: '' },
@@ -202,6 +225,64 @@ export default function ExpensesScreen() {
                                             </TouchableOpacity>
                                         ))}
                                     </View>
+                                </View>
+
+                                {/* Kaitan Bisnis */}
+                                <View>
+                                    <View className="flex-row justify-between items-center mb-3">
+                                        <Typography variant="caption" weight="bold" className="text-textGray/40 px-1 uppercase tracking-widest">Kaitan Bisnis</Typography>
+                                        <Badge label={bisnisKategori === 'umum' ? 'General' : bisnisKategori.replace('_', ' ')} variant="neutral" className="px-1.5 py-0" />
+                                    </View>
+                                    <View className="flex-row space-x-2 mb-4">
+                                        {BISNIS_KATEGORI.map((cat) => (
+                                            <TouchableOpacity
+                                                key={cat.value}
+                                                onPress={() => {
+                                                    setBisnisKategori(cat.value);
+                                                    if (cat.value === 'umum') {
+                                                        setSelectedMuatan(null);
+                                                        setSelectedMobil(null);
+                                                        setSelectedArmada(null);
+                                                    }
+                                                }}
+                                                className={`flex-1 p-3 rounded-2xl border items-center ${bisnisKategori === cat.value
+                                                    ? 'bg-primary border-primary shadow-sm'
+                                                    : 'bg-gray-50 border-gray-100'
+                                                    }`}
+                                            >
+                                                <cat.icon size={18} color={bisnisKategori === cat.value ? '#FFFFFF' : '#9CA3AF'} />
+                                                <Typography
+                                                    weight={bisnisKategori === cat.value ? 'bold' : 'medium'}
+                                                    className={`text-[9px] mt-2 tracking-tighter ${bisnisKategori === cat.value ? 'text-white' : 'text-textGray'}`}
+                                                    numberOfLines={1}
+                                                >
+                                                    {cat.label}
+                                                </Typography>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+
+                                    {bisnisKategori === 'jasa_angkut' && (
+                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2">
+                                            <ArmadaSelector
+                                                label="ARMADA (TRUK)"
+                                                placeholder="Pilih Armada..."
+                                                value={selectedArmada}
+                                                onSelect={setSelectedArmada}
+                                            />
+                                        </View>
+                                    )}
+
+                                    {bisnisKategori === 'jual_beli_mobil' && (
+                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                            <MobilSelector
+                                                label="UNIT MOBIL"
+                                                placeholder="Pilih Unit Mobil..."
+                                                value={selectedMobil}
+                                                onSelect={setSelectedMobil}
+                                            />
+                                        </View>
+                                    )}
                                 </View>
 
                                 <Input
@@ -365,6 +446,14 @@ export default function ExpensesScreen() {
                                                         <Typography className="text-textGray/20 text-[9px] mx-1.5">•</Typography>
                                                         <Typography className="text-textGray/40 text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
                                                     </View>
+                                                    {item.bisnis_kategori !== 'umum' && (
+                                                        <View className="flex-row items-center mt-1">
+                                                            <View className="w-1.5 h-1.5 rounded-full bg-primary/30 mr-1.5" />
+                                                            <Typography className="text-primary/60 text-[8px] font-black uppercase tracking-[1px]">
+                                                                Linked to {item.bisnis_kategori.replace('_', ' ')}
+                                                            </Typography>
+                                                        </View>
+                                                    )}
                                                 </View>
                                             </View>
                                             <View className="items-end">

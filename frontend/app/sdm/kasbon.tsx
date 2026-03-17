@@ -768,7 +768,7 @@ export default function KasbonScreen() {
                         });
                         loadData();
                     }}
-                    piutangId={selectedKasbon.piutang_id}
+                    id={selectedKasbon.piutang_id}
                     initialAmount={Number(selectedKasbon.nominal)}
                     title={`Pelunasan Kasbon: ${selectedKasbon.karyawan_nama}`}
                 />

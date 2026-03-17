@@ -18,8 +18,11 @@ import {
     Trash2,
     Calendar,
     FileText,
-    PlusCircle
+    PlusCircle,
+    TrendingDown,
+    TrendingUp
 } from 'lucide-react-native';
+
 interface MobilCostFormProps {
     unit: any;
     onSuccess?: () => void;
@@ -49,7 +52,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     });
 
     const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([]);
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -68,10 +71,10 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
         loading: false
     });
 
-    const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.jumlah), 0);
+    const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', jumlah: '' }]);
+        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -81,7 +84,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const updatePaymentRow = (id: number, field: string, value: string) => {
         setPayments(payments.map(p => {
             if (p.id === id) {
-                return { ...p, [field]: field === 'jumlah' ? formatNumber(value) : value };
+                return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
             }
             return p;
         }));
@@ -90,7 +93,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
             // Turning ON: Move current amount to first payment row
-            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar, jumlah: newLainnya.jumlah }]);
+            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar, nominal: newLainnya.jumlah }]);
         } else {
             // Turning OFF: Move sum back to main amount
             setNewLainnya({ ...newLainnya, jumlah: formatNumber(totalSplitAmount.toString()) });
@@ -116,8 +119,8 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 metode_bayar: newLainnya.metode_bayar,
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode,
-                    jumlah: parseNumber(p.jumlah)
-                })).filter(p => p.jumlah > 0) : []
+                    nominal: parseNumber(p.nominal)
+                })).filter(p => p.nominal > 0) : []
             }
         };
 
@@ -173,8 +176,9 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
     const calculateTotal = () => {
         const totalLainnya = (activeUnit?.biaya_lainnya || []).reduce((acc: number, curr: any) => acc + (Number(curr.jumlah) || 0), 0);
+        const totalWorkshop = (activeUnit?.pengeluaran_bengkel || []).reduce((acc: number, curr: any) => acc + (Number(curr.jumlah) || 0), 0);
         const totalPerbaikan = (activeUnit?.part_services || []).reduce((acc: number, curr: any) => acc + (Number(curr.total) || 0), 0);
-        return totalLainnya + totalPerbaikan;
+        return totalLainnya + totalWorkshop + totalPerbaikan;
     };
 
     const renderTabs = () => (
@@ -254,9 +258,9 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                 <Input
                                     placeholder="Nominal Rp"
                                     keyboardType="numeric"
-                                    value={p.jumlah}
+                                    value={p.nominal}
                                     containerClassName="mb-0"
-                                    onChangeText={(t) => updatePaymentRow(p.id, 'jumlah', t)}
+                                    onChangeText={(t) => updatePaymentRow(p.id, 'nominal', t)}
                                 />
                             </View>
                         ))}
@@ -350,6 +354,28 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     </Card>
                 ))}
             </View>
+
+            {/* Workshop Operational Expenses (e.g. Pajak, Biaya Ops from Migrasi) */}
+            {(activeUnit?.pengeluaran_bengkel || []).length > 0 && (
+                <View className="mb-6">
+                    <Typography variant="caption" weight="bold" className="text-blue-500 uppercase tracking-widest pl-2 mb-4">BIAYA OPERASIONAL BENGKEL (MIGRASI/PUSAT)</Typography>
+                    {(activeUnit?.pengeluaran_bengkel || []).map((item: any) => (
+                        <Card key={item.id} className="mb-4 p-4 flex-row items-center bg-blue-50/30 border border-blue-100 rounded-[24px]">
+                            <View className="w-12 h-12 bg-blue-100/50 rounded-2xl items-center justify-center mr-4">
+                                <TrendingDown size={20} color="#3B82F6" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography weight="bold" className="text-textMain">{item.bisnis_kategori || 'Bengkel'}</Typography>
+                                <Typography variant="caption" className="text-gray-500 mt-0.5">{item.deskripsi || item.nomor_transaksi}</Typography>
+                            </View>
+                            <View className="items-end mr-2">
+                                <Typography weight="bold" className="text-blue-600">{formatCurrency(Number(item.jumlah))}</Typography>
+                                <Typography variant="caption" className="text-gray-400 mt-1">{item.tanggal}</Typography>
+                            </View>
+                        </Card>
+                    ))}
+                </View>
+            )}
 
             {/* Show readonly repairs from workshop if any */}
             {(activeUnit?.part_services || []).length > 0 && (

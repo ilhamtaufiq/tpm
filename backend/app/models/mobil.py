@@ -18,7 +18,7 @@ from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, Payment
 
 if TYPE_CHECKING:
     from app.models.customer import Customer
-    from app.models.bengkel import TransaksiPenjualanBengkel
+    from app.models.bengkel import TransaksiPenjualanBengkel, PengeluaranBengkel
 
 
 class Mobil(Base, TimestampMixin, SoftDeleteMixin):
@@ -104,6 +104,9 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="mobil",
         cascade="all, delete-orphan",
     )
+    pengeluaran_bengkel: Mapped[List["PengeluaranBengkel"]] = relationship(
+        back_populates="mobil"
+    )
 
     @property
     def total_biaya(self) -> Decimal:
@@ -118,10 +121,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         This DOES NOT contribute to HPP, but is deducted from final profit.
         Avoids double counting by excluding MobilPartService records that originated from a workshop transaction.
         """
-        # Manual entries (exclude those synced from Workshop)
+        # Old mirrored records in MobilPartService (exclude those with "Pengeluaran Bengkel:" as well)
         manual_total = sum(
             p.total for p in self.part_services 
-            if not p.catatan or "Trans Bengkel:" not in p.catatan
+            if not p.catatan or ("Trans Bengkel:" not in p.catatan and "Pengeluaran Bengkel:" not in p.catatan)
         ) if self.part_services else Decimal(0)
         
         # Workshop transactions specifically categorized for car sales
@@ -134,8 +137,13 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
             t.grand_total for t in self.bengkel_perbaikan 
             if t.kategori == 'jual_beli_mobil'
         ) if self.bengkel_perbaikan else Decimal(0)
+
+        # Direct links to Workshop operational expenses
+        pengeluaran_bengkel_total = sum(
+            p.jumlah for p in self.pengeluaran_bengkel
+        ) if self.pengeluaran_bengkel else Decimal(0)
         
-        return manual_total + bengkel_total + biaya_bengkel_total
+        return manual_total + bengkel_total + biaya_bengkel_total + pengeluaran_bengkel_total
 
     @property
     def hpp(self) -> Decimal:

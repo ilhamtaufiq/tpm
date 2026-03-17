@@ -6,7 +6,9 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.models.bengkel import PengeluaranBengkel
+from app.models.bengkel import PengeluaranBengkel, SparePart
+from app.models.mobil import Mobil, MobilPartService
+from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutPartService
 from app.schemas.bengkel import PengeluaranBengkelCreate, PengeluaranBengkelUpdate
 from app.utils.constants import (
     ExpenseCategory,
@@ -72,6 +74,10 @@ class PengeluaranService:
         pengeluaran = PengeluaranBengkel(
             nomor_transaksi=nomor_transaksi,
             tanggal=data.tanggal,
+            bisnis_kategori=data.bisnis_kategori,
+            muatan_id=data.muatan_id,
+            armada_id=data.armada_id,
+            mobil_id=data.mobil_id,
             kategori=data.kategori,
             deskripsi=data.deskripsi,
             jumlah=data.jumlah,
@@ -81,7 +87,7 @@ class PengeluaranService:
         )
 
         self.db.add(pengeluaran)
-        self.db.flush()  # Flush to get ID for referensi_id
+        self.db.flush()
         self.db.refresh(pengeluaran)
 
         # Record expense to kas/bank (money going out)
@@ -226,12 +232,20 @@ class PengeluaranService:
 
         self.db.commit()
         self.db.refresh(pengeluaran)
-
         return pengeluaran
 
     def delete(self, pengeluaran_id: int) -> bool:
         """Delete expense record."""
         pengeluaran = self.get_by_id(pengeluaran_id)
+
+        # Clean linked costs
+        self.db.query(JasaAngkutPartService).filter(
+            JasaAngkutPartService.catatan.like(f"Pengeluaran Bengkel: {pengeluaran.nomor_transaksi}")
+        ).delete(synchronize_session=False)
+
+        self.db.query(MobilPartService).filter(
+            MobilPartService.catatan.like(f"Pengeluaran Bengkel: {pengeluaran.nomor_transaksi}")
+        ).delete(synchronize_session=False)
 
         self.db.delete(pengeluaran)
         self.db.commit()
@@ -244,6 +258,12 @@ class PengeluaranService:
         tanggal_sampai: Optional[date] = None,
     ) -> Dict[str, Any]:
         """Get expense summary statistics."""
+        # Default to current month if no dates provided
+        if not tanggal_dari and not tanggal_sampai:
+            today = date.today()
+            tanggal_dari = date(today.year, today.month, 1)
+            tanggal_sampai = today
+
         query = self.db.query(PengeluaranBengkel)
 
         if tanggal_dari:
@@ -253,43 +273,50 @@ class PengeluaranService:
 
         # Total expenses
         total_count = query.count()
-        total_value = (
-            query.with_entities(func.sum(PengeluaranBengkel.jumlah)).scalar()
-            or Decimal("0")
-        )
+        
+        # Calculate sum separately to be safe from with_entities issues
+        sum_query = self.db.query(func.sum(PengeluaranBengkel.jumlah))
+        if tanggal_dari:
+            sum_query = sum_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            sum_query = sum_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
+        
+        total_value = sum_query.scalar() or Decimal("0")
 
         # By category
-        by_category = (
-            query.with_entities(
-                PengeluaranBengkel.kategori,
-                func.count(PengeluaranBengkel.id).label("count"),
-                func.sum(PengeluaranBengkel.jumlah).label("total"),
-            )
-            .group_by(PengeluaranBengkel.kategori)
-            .all()
+        cat_query = self.db.query(
+            PengeluaranBengkel.kategori,
+            func.count(PengeluaranBengkel.id),
+            func.sum(PengeluaranBengkel.jumlah)
         )
+        if tanggal_dari:
+            cat_query = cat_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            cat_query = cat_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
+            
+        by_category = cat_query.group_by(PengeluaranBengkel.kategori).all()
 
         category_summary = {
             cat.value.lower(): {"count": 0, "total": 0.0} for cat in ExpenseCategory
         }
-        for row in by_category:
-            if row.kategori:
-                # row.kategori is now a string because we changed the model to String
-                # Normalize to lowercase to match frontend expectations
-                key = row.kategori.lower()
-                if key in category_summary:
-                    category_summary[key]["count"] += row.count
-                    category_summary[key]["total"] += float(row.total or 0)
-                else:
-                    category_summary[key] = {
-                        "count": row.count,
-                        "total": float(row.total or 0),
-                    }
+        for kat, count, total in by_category:
+            if kat:
+                key = str(kat).lower()
+                category_summary[key] = {
+                    "count": count,
+                    "total": float(total or 0),
+                }
 
         return {
             "total_transaksi": total_count,
             "total_pengeluaran": float(total_value),
+            "total_jumlah": float(total_value),
+            "count": total_count,
             "per_kategori": category_summary,
+            "period": {
+                "start": tanggal_dari.isoformat() if tanggal_dari else None,
+                "end": tanggal_sampai.isoformat() if tanggal_sampai else None,
+            }
         }
 
     def get_daily_summary(self, tanggal: date) -> Dict[str, Any]:

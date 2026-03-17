@@ -91,6 +91,11 @@ export const bengkelService = {
         const response = await api.post('/transaksi-bengkel', data);
         return response.data;
     },
+    
+    updateTransaksi: async (id: number, data: any) => {
+        const response = await api.put(`/transaksi-bengkel/${id}`, data);
+        return response.data;
+    },
 
     updateTransaksiPayment: async (id: number, data: any) => {
         const response = await api.patch(`/transaksi-bengkel/${id}/payment`, data);

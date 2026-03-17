@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, TouchableOpacity } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useRouter } from 'expo-router';
 import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
-import { ShieldCheck, User, Lock, LogIn } from 'lucide-react-native';
+import { ShieldCheck, User, Lock, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -23,6 +23,7 @@ export default function LoginScreen() {
 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async () => {
@@ -112,10 +113,19 @@ export default function LoginScreen() {
                             <Input
                                 label="Password"
                                 placeholder="Masukkan password"
-                                secureTextEntry
+                                secureTextEntry={!showPassword}
                                 value={password}
                                 onChangeText={setPassword}
                                 startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                endIcon={
+                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                        {showPassword ? (
+                                            <EyeOff size={18} color="#023C69" opacity={0.6} />
+                                        ) : (
+                                            <Eye size={18} color="#023C69" opacity={0.6} />
+                                        )}
+                                    </TouchableOpacity>
+                                }
                                 containerClassName="mb-4"
                             />
 
