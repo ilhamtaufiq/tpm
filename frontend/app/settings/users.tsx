@@ -398,59 +398,59 @@ export default function UserManagementScreen() {
             {/* Premium Header */}
             <View 
                 style={{ backgroundColor: themeColors.primary }}
-                className="pt-16 pb-14 px-6 rounded-b-[48px] shadow-2xl relative overflow-hidden"
+                className="pt-16 pb-24 px-6 rounded-b-[48px] shadow-2xl relative overflow-hidden"
             >
                 {/* Decorative Pattern / Gradient Overlay */}
                 <View className="absolute top-0 left-0 right-0 h-full opacity-20">
-                    <View className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-400 rounded-full blur-3xl opacity-30" />
-                    <View className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-400 rounded-full blur-3xl opacity-30" />
+                    <View className="absolute -top-10 -right-10 w-80 h-80 bg-emerald-400/20 rounded-full blur-[80px]" />
+                    <View className="absolute -bottom-10 -left-10 w-80 h-80 bg-blue-400/20 rounded-full blur-[80px]" />
                 </View>
 
-                <View className="flex-row items-center justify-between mb-8 relative z-10">
+                <View className="flex-row items-center justify-between mb-10 relative z-10">
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={() => router.back()}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/20"
+                            className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/20"
                         >
-                            <ChevronLeft size={24} color="white" />
+                            <ChevronLeft size={28} color="white" />
                         </TouchableOpacity>
                         <View>
-                            <Typography variant="h1" className="text-white text-3xl tracking-tighter leading-tight">User Base</Typography>
-                            <Typography className="text-white/60 text-xs font-bold uppercase tracking-widest mt-0.5">Control Center</Typography>
+                            <Typography variant="h1" className="text-white text-3xl tracking-tighter leading-tight font-black">User Base</Typography>
+                            <Typography className="text-white/50 text-[10px] font-black uppercase tracking-[3px] mt-0.5">Control Center</Typography>
                         </View>
                     </View>
                     <TouchableOpacity 
                         onPress={onRefresh} 
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/20"
+                        className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center border border-white/20"
                     >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
+                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
                     </TouchableOpacity>
                 </View>
 
                 {/* Bento Stats Row */}
-                <View className="flex-row justify-between relative z-10">
-                    <View className="flex-1 bg-white/10 p-4 rounded-[28px] border border-white/10 mr-3">
-                        <Typography className="text-white/50 text-[9px] uppercase font-black tracking-[2px] mb-1">Total</Typography>
-                        <Typography variant="h2" weight="bold" className="text-white">{stats.total}</Typography>
+                <View className="flex-row justify-between relative z-10 px-1">
+                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 mr-3 shadow-sm">
+                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Total</Typography>
+                        <Typography className="text-white text-4xl font-black">{stats.total}</Typography>
                     </View>
-                    <View className="flex-1 bg-white/10 p-4 rounded-[28px] border border-emerald-400/20 mr-3">
-                        <Typography className="text-white/50 text-[9px] uppercase font-black tracking-[2px] mb-1">Active</Typography>
-                        <Typography variant="h2" weight="bold" className="text-emerald-400">{stats.active}</Typography>
+                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-emerald-400/10 mr-3 shadow-sm">
+                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Active</Typography>
+                        <Typography className="text-emerald-400 text-4xl font-black">{stats.active}</Typography>
                     </View>
-                    <View className="flex-1 bg-white/10 p-4 rounded-[28px] border border-red-400/20">
-                        <Typography className="text-white/50 text-[9px] uppercase font-black tracking-[2px] mb-1">Down</Typography>
-                        <Typography variant="h2" weight="bold" className="text-red-400">{stats.inactive}</Typography>
+                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-red-400/10 shadow-sm">
+                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Inactive</Typography>
+                        <Typography className="text-red-400 text-4xl font-black">{stats.inactive}</Typography>
                     </View>
                 </View>
             </View>
 
-            <View className="px-6 -mt-8 z-20">
-                <View className="bg-white p-2.5 rounded-[32px] shadow-2xl flex-row items-center border border-gray-100">
-                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
+            <View className="px-6 -mt-12 z-20">
+                <View className="bg-white p-3 rounded-[32px] shadow-2xl flex-row items-center border border-gray-100">
+                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-16 rounded-2xl border border-gray-100">
                         <Search size={22} color="#9CA3AF" />
                         <TextInput
                             placeholder="Find administrator or staff..."
-                            className="flex-1 ml-3 text-base font-semibold text-textMain"
+                            className="flex-1 ml-3 text-base font-bold text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             placeholderTextColor="#9CA3AF"
@@ -459,9 +459,9 @@ export default function UserManagementScreen() {
                     <TouchableOpacity 
                         onPress={openAddForm}
                         style={{ backgroundColor: themeColors.primary }}
-                        className="ml-3 w-14 h-14 rounded-2xl items-center justify-center shadow-lg"
+                        className="ml-3 w-16 h-16 rounded-2xl items-center justify-center shadow-2xl shadow-primary/20"
                     >
-                        <Plus size={24} color="white" />
+                        <Plus size={28} color="white" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -476,13 +476,6 @@ export default function UserManagementScreen() {
                 ListEmptyComponent={!isLoading ? <EmptyState title="User Tidak Ditemukan" description="Mulai dengan menambah user baru." icon={Users} /> : null}
             />
 
-            <TouchableOpacity
-                onPress={openAddForm}
-                style={{ backgroundColor: themeColors.primary }}
-                className="absolute bottom-10 right-6 w-16 h-16 rounded-full items-center justify-center shadow-2xl border-4 border-white/20"
-            >
-                <Plus size={32} color="white" />
-            </TouchableOpacity>
 
             {/* Bottom Sheet for Detail/Form */}
             {Platform.OS === 'web' ? (
