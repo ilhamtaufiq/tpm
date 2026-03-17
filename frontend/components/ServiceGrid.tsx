@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Pressable } from 'react-native';
-import { Wrench, CarFront, Truck, Users, BarChart3, Database, Receipt, History } from 'lucide-react-native';
+import { Wrench, CarFront, Truck, Users, BarChart3, Database, Receipt, History, LayoutGrid } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { useUIStore } from '../store/useUIStore';
 import { router } from 'expo-router';
@@ -91,12 +91,11 @@ export const ServiceGrid = () => {
     const { themeColors } = useUIStore();
 
     const MENUS = [
+        { id: 'master', label: 'Data Master', icon: Database, color: themeColors.primary, path: '/master-data' },
         { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: themeColors.primary, path: '/bengkel' },
-        { id: 'angkut', label: 'Logistik', icon: Truck, color: themeColors.primary, path: '/jasa-angkut' },
-        { id: 'mobil', label: 'Mobil', icon: CarFront, color: themeColors.primary, path: '/mobil' },
-        { id: 'sdm', label: 'SDM', icon: Users, color: themeColors.primary, path: '/sdm' },
-        { id: 'laporan', label: 'Laporan', icon: BarChart3, color: themeColors.primary, path: '/laporan' },
-        { id: 'history', label: 'Riwayat', icon: History, color: themeColors.primary, path: '/history' },
+        { id: 'logistik', label: 'Logistik', icon: Truck, color: themeColors.primary, path: '/jasa-angkut' },
+        { id: 'mobil', label: 'Jual Beli Mobil', icon: CarFront, color: themeColors.primary, path: '/mobil' },
+        { id: 'menus', label: 'Semua Menu', icon: LayoutGrid, color: themeColors.primary, path: '/all-menus' },
     ];
 
     return (
