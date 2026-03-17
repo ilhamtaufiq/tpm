@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, EmailStr, field_validator
@@ -143,7 +142,6 @@ class CustomerBase(BaseModel):
         return v
 
     npwp: Optional[str] = Field(None, max_length=30)
-    saldo: Decimal = Field(default=Decimal("0"))
     catatan: Optional[str] = None
 
 
@@ -172,7 +170,6 @@ class CustomerUpdate(BaseModel):
         return v
 
     npwp: Optional[str] = Field(None, max_length=30)
-    saldo: Optional[Decimal] = None
     catatan: Optional[str] = None
     vehicles: Optional[List[VehicleCreate]] = None
 
@@ -189,7 +186,6 @@ class CustomerResponse(BaseModel):
     telepon: Optional[str] = None
     email: Optional[str] = None
     npwp: Optional[str] = None
-    saldo: float = 0
     catatan: Optional[str] = None
     vehicles: List[VehicleResponse] = []
     created_at: datetime

@@ -18,7 +18,6 @@ export interface Customer {
     telepon?: string;
     email?: string;
     npwp?: string;
-    saldo?: number;
     catatan?: string;
     vehicles?: Vehicle[];
     created_at: string;

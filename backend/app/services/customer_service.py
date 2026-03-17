@@ -66,7 +66,6 @@ class CustomerService:
             telepon=data.telepon,
             email=data.email,
             npwp=data.npwp,
-            saldo=data.saldo,
             catatan=data.catatan,
         )
 
