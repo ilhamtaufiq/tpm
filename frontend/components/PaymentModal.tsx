@@ -33,7 +33,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', nominal: formatNumber(initialAmount.toString()), catatan: '' }
+        { id: Date.now(), metode: '', nominal: formatNumber(initialAmount.toString()), catatan: '' }
     ]);
     const [paymentNote, setPaymentNote] = useState('');
     const [loading, setLoading] = useState(false);
@@ -53,7 +53,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const sisaSetelahBayar = initialAmount - totalBayar;
 
     const addPayment = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+        setPayments([...payments, { id: Date.now(), metode: '', nominal: '', catatan: '' }]);
         setIsSplitPayment(true);
     };
 
@@ -75,6 +75,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 catatan: p.catatan || undefined
             }))
             .filter(p => p.nominal > 0);
+
+        const hasEmptyMethod = payments.some(p => !p.metode && parseNumber(p.nominal) > 0);
+        if (hasEmptyMethod) {
+            alert('Silakan pilih metode pembayaran untuk semua nominal yang diinput');
+            return;
+        }
 
         if (validatedPayments.length === 0) {
             return;

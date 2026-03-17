@@ -27,7 +27,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
     const [teleponPembeli, setTeleponPembeli] = useState('');
     const [hargaJual, setHargaJual] = useState('');
     const [dp, setDp] = useState('0');
-    const [metodeBayar, setMetodeBayar] = useState('TUNAI');
+    const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
     const [catatan, setCatatan] = useState('');
@@ -107,7 +107,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     // Split Payment Helpers
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', jumlah: '' }]);
+        setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -125,7 +125,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
-            setPayments([{ id: Date.now(), metode: metodeBayar.toUpperCase(), jumlah: dp }]);
+            setPayments([{ id: Date.now(), metode: metodeBayar || '', jumlah: dp }]);
         } else {
             setDp(formatNumber(totalSplitAmount.toString()));
         }
@@ -144,6 +144,29 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 return;
             }
 
+            if (!isSplitPayment && !metodeBayar) {
+                setDialogConfig({
+                    visible: true,
+                    title: 'Validasi',
+                    message: 'Silakan pilih metode pembayaran (Tunai atau Transfer)',
+                    variant: 'warning'
+                });
+                return;
+            }
+
+            if (isSplitPayment) {
+                const hasEmptyMethod = payments.some(p => !p.metode || parseNumber(p.jumlah) <= 0);
+                if (hasEmptyMethod) {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Validasi',
+                        message: 'Silakan pilih metode pembayaran dan isi nominal untuk setiap baris split payment',
+                        variant: 'warning'
+                    });
+                    return;
+                }
+            }
+
             const finalDp = isSplitPayment ? totalSplitAmount : parseNumber(dp);
 
             const payload = {
@@ -153,7 +176,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 telepon_pembeli: teleponPembeli || null,
                 harga_jual: parseNumber(hargaJual),
                 dp: finalDp,
-                metode_bayar: metodeBayar.toUpperCase(),
+                metode_bayar: (isSplitPayment ? 'SPLIT' : (metodeBayar || '')).toUpperCase(),
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
                     jumlah: parseNumber(p.jumlah)
@@ -334,15 +357,18 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         />
                         <Typography variant="body2" className="text-textGray mb-2 font-medium pl-1">Metode Pembayaran</Typography>
                         <View className="flex-row space-x-2 mb-4">
-                            {['TUNAI', 'TRANSFER'].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => setMetodeBayar(m)}
-                                    className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === m ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
-                                >
-                                    <Typography weight="bold" className={`uppercase ${metodeBayar === m ? 'text-primary' : 'text-gray-400'}`}>{m}</Typography>
-                                </TouchableOpacity>
-                            ))}
+                            <TouchableOpacity
+                                onPress={() => setMetodeBayar('TUNAI')}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TUNAI' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
+                            >
+                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TUNAI' ? 'text-primary' : 'text-gray-400'}`}>Tunai</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setMetodeBayar('TRANSFER')}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TRANSFER' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
+                            >
+                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-gray-400'}`}>Transfer</Typography>
+                            </TouchableOpacity>
                         </View>
 
                         {sisaBayar > 0 && (

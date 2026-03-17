@@ -83,7 +83,7 @@ export default function HutangUsahaScreen() {
     const [createNote, setCreateNote] = useState('');
     const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
     const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }
+        { id: Date.now(), metode: '', nominal: '', catatan: '' }
     ]);
 
     const onRefresh = useCallback(async () => {
@@ -198,7 +198,7 @@ export default function HutangUsahaScreen() {
             setCreateNote('');
             setCreateMethod(undefined);
             setIsCreateSplitPayment(false);
-            setCreatePayments([{ id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }]);
+            setCreatePayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
 
             if (Platform.OS === 'web') {
                 setCreateVisible(false);
@@ -349,7 +349,7 @@ export default function HutangUsahaScreen() {
                         ))}
 
                         <TouchableOpacity
-                            onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: 'TUNAI', nominal: '', catatan: '' }])}
+                            onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
                             className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />

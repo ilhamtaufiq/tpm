@@ -45,12 +45,12 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     const [namaInvestor, setNamaInvestor] = useState(initialData?.nama_investor || '');
     const [nominalInvestor, setNominalInvestor] = useState(formatNumber(String(initialData?.nominal_investor || '')));
     const [persentaseInvestor, setPersentaseInvestor] = useState(String(initialData?.persentase_investor || '0'));
-    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar_beli || 'TUNAI');
+    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar_beli || '');
     const [statusBayar, setStatusBayar] = useState(initialData?.status_bayar_beli || 'LUNAS');
     const [dp, setDp] = useState(formatNumber(String(initialData?.dp_beli || '0')));
 
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([
-        { id: Date.now(), metode: 'Tunai', jumlah: '' }
+        { id: Date.now(), metode: '', jumlah: '' }
     ]);
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -74,6 +74,20 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 variant: 'warning'
             });
             return;
+        }
+
+        if (!isEdit) {
+            if (!metodeBayar) {
+                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning' });
+                return;
+            }
+            if (metodeBayar === 'SPLIT') {
+                const hasEmptyMethod = payments.some(p => !p.metode || parseNumber(p.jumlah) <= 0);
+                if (hasEmptyMethod) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk semua nominal', variant: 'warning' });
+                    return;
+                }
+            }
         }
 
         const payload: any = {
@@ -351,7 +365,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
                                     {/* Add Button */}
                                     <TouchableOpacity
-                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', jumlah: '' }])}
+                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />

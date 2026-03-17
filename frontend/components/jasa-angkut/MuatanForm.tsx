@@ -39,7 +39,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         harga_beli: '',
         harga_jual: '',
         status_bayar: 'BELUM_LUNAS',
-        metode_bayar: 'TUNAI',
+        metode_bayar: '',
         catatan: ''
     });
 
@@ -156,7 +156,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     };
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', jumlah: '' }]);
+        setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -178,7 +178,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         if (!isSplitPayment) {
             // Auto-fill with TPM Share for convenience
             const targetAmount = calculations.tpmShare > 0 ? formatNumber(calculations.tpmShare.toString()) : '';
-            setPayments([{ id: Date.now(), metode: formData.metode_bayar, jumlah: targetAmount }]);
+            setPayments([{ id: Date.now(), metode: formData.metode_bayar || '', jumlah: targetAmount }]);
         } else {
             setPayments([]);
         }
@@ -245,6 +245,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Asal dan Tujuan wajib diisi', variant: 'warning' });
             return;
         }
+
+        if (formData.status_bayar === 'LUNAS') {
+            if (!isSplitPayment && !formData.metode_bayar) {
+                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning' });
+                return;
+            }
+            if (isSplitPayment) {
+                const hasEmptyMethod = payments.some(p => !p.metode || parseNumber(p.jumlah) <= 0);
+                if (hasEmptyMethod) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk semua nominal', variant: 'warning' });
+                    return;
+                }
+            }
+        }
+
         if (!formData.harga_jual || !formData.harga_beli) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Harga Beli dan Jual wajib diisi', variant: 'warning' });
             return;
@@ -750,10 +765,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         <TouchableOpacity
                                             key={m}
                                             onPress={() => updateField('metode_bayar', m)}
-                                            className={`flex-1 py-2 items-center rounded-lg border ${formData.metode_bayar === m ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'}`}
+                                            className={`flex-1 py-2 items-center rounded-lg border ${formData.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                         >
                                             <Typography
-                                                className={formData.metode_bayar === m ? 'text-green-700 uppercase' : 'text-gray-500 uppercase'}
+                                                className={formData.metode_bayar === m ? 'text-primary uppercase' : 'text-gray-500 uppercase'}
                                                 weight={formData.metode_bayar === m ? 'bold' : 'medium'}
                                                 variant="caption"
                                             >

@@ -50,14 +50,14 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [guestName, setGuestName] = useState('');
 
-    const [metodeBayar, setMetodeBayar] = useState('Tunai');
+    const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
 
     const [services, setServices] = useState<{ id: number; service_id: number; nama_jasa: string; harga: string | number; qty: number }[]>([{ id: Date.now(), service_id: 0, nama_jasa: '', harga: 0, qty: 1 }]);
     const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
     const [total, setTotal] = useState(0); // Subtotal
     const [diskon, setDiskon] = useState('0');
     const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([{ id: Date.now(), metode: 'Tunai', jumlah: '' }]);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
     const [catatan, setCatatan] = useState('');
 
@@ -162,33 +162,28 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             // Restore payments
             if (initialData.jumlah_bayar > 0) {
-                setPayments([{ 
-                    id: Date.now(), 
-                    metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || 'Tunai'), 
-                    jumlah: formatNumber(initialData.jumlah_bayar.toString()) 
-                }]);
-            }
-
-            // Restore services
-            if (initialData.detail_services?.length > 0) {
-                setServices(initialData.detail_services.map((s: any) => ({
-                    id: s.id || Math.random(),
-                    service_id: s.service_id || 0,
-                    nama_jasa: s.nama_jasa,
-                    harga: formatNumber(s.harga.toString()),
-                    qty: s.qty
-                })));
-            }
-
-            // Restore parts
-            if (initialData.detail_parts?.length > 0) {
-                setParts(initialData.detail_parts.map((p: any) => ({
-                    id: p.id || Math.random(),
-                    spare_part_id: p.spare_part_id,
-                    nama: p.spare_part_nama,
-                    harga: formatNumber(p.harga_jual.toString()),
-                    qty: p.qty
-                })));
+                // If initialData has multiple payments, restore them. Otherwise, use a single payment.
+                if (initialData.payments && initialData.payments.length > 1) {
+                    setIsSplitPayment(true);
+                    setPayments(initialData.payments.map((p: any) => ({
+                        id: Math.random(), // Use random ID for new payment objects
+                        metode: p.metode.charAt(0).toUpperCase() + p.metode.slice(1).toLowerCase(),
+                        nominal: formatNumber(p.jumlah.toString()),
+                        catatan: p.catatan || ''
+                    })));
+                } else {
+                    setIsSplitPayment(false);
+                    setPayments([{ 
+                        id: Date.now(), 
+                        metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || ''), 
+                        nominal: formatNumber(initialData.jumlah_bayar.toString()),
+                        catatan: initialData.catatan_pembayaran || ''
+                    }]);
+                }
+            } else {
+                // If no payment data, reset to default empty state
+                setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                setIsSplitPayment(false);
             }
             
             // Note: Customer, Muatan, Mobil selection restoration would require full object match / re-fetch
@@ -238,6 +233,23 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             return;
         }
 
+        // Payment validation
+        const isInternalTransaction = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
+        if (!isInternalTransaction) {
+            if (!isSplitPayment) {
+                if (!payments[0]?.metode || Number(parseNumber(payments[0]?.nominal)) <= 0) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran dan isi nominal pembayaran.', variant: 'warning' });
+                    return;
+                }
+            } else {
+                const hasInvalidSplitPayment = payments.some(p => !p.metode || Number(parseNumber(p.nominal)) <= 0);
+                if (hasInvalidSplitPayment) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran dan isi nominal untuk setiap baris split payment.', variant: 'warning' });
+                    return;
+                }
+            }
+        }
+
         const validatedPlat = finalPlat.substring(0, 15);
         const validatedCustomerName = finalCustomer.substring(0, 100);
 
@@ -254,7 +266,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: isInternalJasaAngkut ? 'INTERNAL' : metodeBayar.toUpperCase(),
+            metode_bayar: isInternalJasaAngkut ? 'INTERNAL' : (isSplitPayment ? 'SPLIT' : payments[0]?.metode?.toUpperCase() || ''),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
                 .map(s => ({
@@ -273,14 +285,15 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             payments: isInternalJasaAngkut
                 ? [{ metode: 'INTERNAL', jumlah: grandTotal }]
                 : payments
-                    .filter(p => Number(parseNumber(p.jumlah)) > 0)
+                    .filter(p => Number(parseNumber(p.nominal)) > 0)
                     .map(p => ({
                         metode: p.metode.toUpperCase(),
-                        jumlah: Number(parseNumber(p.jumlah))
+                        jumlah: Number(parseNumber(p.nominal)),
+                        catatan: p.catatan || ''
                     })),
             jumlah_bayar: isInternalJasaAngkut
                 ? grandTotal
-                : payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0),
+                : payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0),
             catatan: catatan
         };
 
@@ -757,7 +770,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography weight="semibold">Metode Pembayaran</Typography>
                                 <TouchableOpacity
-                                    onPress={() => setIsSplitPayment(!isSplitPayment)}
+                                    onPress={() => {
+                                        setIsSplitPayment(!isSplitPayment);
+                                        // Reset payments to a single empty entry if switching from split to single
+                                        if (isSplitPayment) {
+                                            setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                                        }
+                                    }}
                                     className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                                 >
                                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
@@ -777,6 +796,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     key={m}
                                                     onPress={() => {
                                                         const newP = [...payments];
+                                                        if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
                                                         newP[0].metode = m;
                                                         setPayments(newP);
                                                     }}
@@ -794,10 +814,11 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             keyboardType="numeric"
                                             containerClassName="mb-0"
                                             className="h-10 text-sm border-primary/30"
-                                            value={payments[0]?.jumlah || ''}
+                                            value={payments[0]?.nominal || ''}
                                             onChangeText={(val) => {
                                                 const newP = [...payments];
-                                                newP[0].jumlah = formatNumber(val);
+                                                if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                newP[0].nominal = formatNumber(val);
                                                 setPayments(newP);
                                             }}
                                         />
@@ -838,10 +859,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     keyboardType="numeric"
                                                     containerClassName="mb-0"
                                                     className="h-10 text-sm"
-                                                    value={p.jumlah}
+                                                    value={p.nominal}
                                                     onChangeText={(val) => {
                                                         const newP = [...payments];
-                                                        newP[idx].jumlah = formatNumber(val);
+                                                        newP[idx].nominal = formatNumber(val);
                                                         setPayments(newP);
                                                     }}
                                                 />
@@ -852,6 +873,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                         setPayments(payments.filter(pay => pay.id !== p.id));
                                                     } else {
                                                         setIsSplitPayment(false);
+                                                        setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]); // Reset to single empty payment
                                                     }
                                                 }}
                                                 className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
@@ -861,7 +883,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         </View>
                                     ))}
                                     <TouchableOpacity
-                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: 'Tunai', jumlah: '' }])}
+                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />
@@ -899,7 +921,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             ) : (
                                 <View>
                                     {(() => {
-                                        const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.jumlah)) || 0), 0);
+                                        const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0);
                                         if (grandTotal > totalPaid) {
                                             return (
                                                 <Typography variant="caption" className="text-rose-600 font-bold">

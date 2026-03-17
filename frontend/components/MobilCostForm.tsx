@@ -48,7 +48,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
         kategori: '',
         deskripsi: '',
         jumlah: '',
-        metode_bayar: 'TUNAI'
+        metode_bayar: ''
     });
 
     const [isSplitPayment, setIsSplitPayment] = useState(false);
@@ -74,7 +74,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
+        setPayments([...payments, { id: Date.now(), metode: '', nominal: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -93,7 +93,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
             // Turning ON: Move current amount to first payment row
-            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar, nominal: newLainnya.jumlah }]);
+            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar || '', nominal: newLainnya.jumlah }]);
         } else {
             // Turning OFF: Move sum back to main amount
             setNewLainnya({ ...newLainnya, jumlah: formatNumber(totalSplitAmount.toString()) });
@@ -107,6 +107,19 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
         if (isNaN(finalAmount) || finalAmount <= 0) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Mohon isi jumlah biaya yang valid', variant: 'warning', type: 'alert' });
             return;
+        }
+
+        if (!isSplitPayment && !newLainnya.metode_bayar) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning', type: 'alert' });
+            return;
+        }
+
+        if (isSplitPayment) {
+            const hasEmptyMethod = payments.some(p => !p.metode || parseNumber(p.nominal) <= 0);
+            if (hasEmptyMethod) {
+                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk semua nominal', variant: 'warning', type: 'alert' });
+                return;
+            }
         }
 
         const payload: any = {
@@ -126,7 +139,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
         addBiayaMutation.mutate(payload, {
             onSuccess: () => {
-                setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: 'TUNAI' });
+                setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: '' });
                 setPayments([]);
                 setIsSplitPayment(false);
                 setDialogConfig({
@@ -279,7 +292,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                     <TouchableOpacity
                                         key={m}
                                         onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m })}
-                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
+                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-100'}`}
                                     >
                                         <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
                                     </TouchableOpacity>
