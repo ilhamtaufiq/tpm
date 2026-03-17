@@ -91,7 +91,6 @@ export const ServiceGrid = () => {
     const { themeColors } = useUIStore();
 
     const MENUS = [
-        { id: 'master', label: 'Data Master', icon: Database, color: themeColors.primary, path: '/master-data' },
         { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: themeColors.primary, path: '/bengkel' },
         { id: 'logistik', label: 'Logistik', icon: Truck, color: themeColors.primary, path: '/jasa-angkut' },
         { id: 'mobil', label: 'Jual Beli Mobil', icon: CarFront, color: themeColors.primary, path: '/mobil' },
