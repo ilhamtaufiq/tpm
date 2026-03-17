@@ -44,9 +44,19 @@ class KasBankService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
-    def _get_current_balance(self, jenis: KasBankJenis, as_of: Optional[date] = None) -> Decimal:
-        """Get balance for kas/bank type at a specific date (end of day)."""
+    def _get_current_balance(
+        self, 
+        jenis: KasBankJenis, 
+        user_id: Optional[int] = None,
+        as_of: Optional[date] = None
+    ) -> Decimal:
+        """Get balance for kas/bank type at a specific date (end of day).
+        If jenis is CASH and user_id is provided, gets balance for that user's wallet.
+        """
         query = self.db.query(KasBank).filter(KasBank.jenis == jenis)
+        
+        if jenis == KasBankJenis.CASH and user_id is not None:
+            query = query.filter(KasBank.user_id == user_id)
         
         if as_of:
             query = query.filter(KasBank.tanggal <= as_of)
@@ -57,17 +67,27 @@ class KasBankService:
     def create(
         self,
         data: KasBankCreate,
-        user_id: Optional[int] = None,
+        current_user_id: Optional[int] = None,
     ) -> KasBank:
         """Create a new cash/bank transaction."""
-        # Get current balance
-        saldo_sebelum = self._get_current_balance(data.jenis)
+        # For CASH transactions, we MUST have a user_id (the wallet owner)
+        # If not provided in data, use the current user
+        target_user_id = data.user_id
+        if data.jenis == KasBankJenis.CASH and target_user_id is None:
+            target_user_id = current_user_id
+
+        # Get current balance (filtered by user if it's CASH)
+        saldo_sebelum = self._get_current_balance(
+            data.jenis, 
+            user_id=target_user_id if data.jenis == KasBankJenis.CASH else None
+        )
 
         # Check if enough balance for outgoing transaction
         if data.tipe == KasBankType.KELUAR and data.nominal > saldo_sebelum:
+            user_msg = f" for user {target_user_id}" if data.jenis == KasBankJenis.CASH else ""
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Saldo tidak mencukupi. Saldo {data.jenis.value}: {saldo_sebelum}",
+                detail=f"Saldo tidak mencukupi{user_msg}. Saldo {data.jenis.value}: {saldo_sebelum}",
             )
 
         # Generate transaction number
@@ -85,7 +105,8 @@ class KasBankService:
             nomor_referensi=data.nomor_referensi,
             keterangan=data.keterangan,
             catatan=data.catatan,
-            created_by=user_id,
+            user_id=target_user_id, # The wallet owner
+            created_by=current_user_id, # The person who entered the data
         )
 
         # Calculate balance
@@ -126,6 +147,7 @@ class KasBankService:
         jenis: Optional[KasBankJenis] = None,
         tipe: Optional[KasBankType] = None,
         sumber: Optional[KasBankSource] = None,
+        user_id: Optional[int] = None,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
@@ -145,6 +167,10 @@ class KasBankService:
         # Source filter
         if sumber:
             query = query.filter(KasBank.sumber == sumber)
+
+        # User filter
+        if user_id:
+            query = query.filter(KasBank.user_id == user_id)
 
         # Date range filter
         if tanggal_dari:
@@ -242,12 +268,50 @@ class KasBankService:
         total_saldo = Decimal("0")
 
         for jenis in KasBankJenis:
-            balance_info = self.get_balance(jenis, as_of)
-            result[jenis.value] = balance_info
+            key = jenis.value.lower()
+            if jenis == KasBankJenis.CASH:
+                # For cash, we provide the total but also a breakdown by user
+                balance_info = self.get_balance(jenis, as_of=as_of)
+                balance_info["breakdown"] = self.get_cash_user_breakdown(as_of=as_of)
+                result[key] = balance_info
+            else:
+                balance_info = self.get_balance(jenis, as_of=as_of)
+                result[key] = balance_info
+            
             total_saldo += Decimal(str(balance_info["saldo"]))
 
         result["total_saldo"] = float(total_saldo)
         return result
+
+    def get_cash_user_breakdown(self, as_of: Optional[date] = None) -> List[Dict[str, Any]]:
+        """Get breakdown of cash balance per user."""
+        from app.models.user import User
+        
+        # Get all users who have at least one cash transaction
+        user_ids = (
+            self.db.query(KasBank.user_id)
+            .filter(KasBank.jenis == KasBankJenis.CASH)
+            .filter(KasBank.user_id != None)
+            .distinct()
+            .all()
+        )
+        
+        breakdown = []
+        for (uid,) in user_ids:
+            user = self.db.query(User).filter(User.id == uid).first()
+            if not user:
+                continue
+                
+            balance = self._get_current_balance(KasBankJenis.CASH, user_id=uid, as_of=as_of)
+            if balance != 0:
+                breakdown.append({
+                    "user_id": uid,
+                    "username": user.username,
+                    "full_name": user.full_name,
+                    "balance": float(balance)
+                })
+        
+        return breakdown
 
     def get_daily_summary(self, tanggal: date) -> Dict[str, Any]:
         """Get daily cash/bank summary."""
@@ -394,21 +458,32 @@ class KasBankService:
         nominal: Decimal,
         tanggal: date,
         keterangan: str,
-        user_id: Optional[int] = None,
+        current_user_id: Optional[int] = None,
+        dari_user_id: Optional[int] = None,
+        ke_user_id: Optional[int] = None,
     ) -> Dict[str, KasBank]:
-        """Transfer between kas/bank accounts."""
-        if dari == ke:
+        """Transfer between kas/bank accounts (optionally between different user wallets for CASH)."""
+        if dari == ke and dari != KasBankJenis.CASH:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tidak dapat transfer ke akun yang sama",
             )
+            
+        if dari == ke and dari == KasBankJenis.CASH and dari_user_id == ke_user_id:
+             raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat transfer kas ke user yang sama",
+            )
 
         # Check source balance
-        source_balance = self._get_current_balance(dari)
+        source_balance = self._get_current_balance(dari, user_id=dari_user_id)
         if nominal > source_balance:
+            msg = f"Saldo {dari.value}"
+            if dari == KasBankJenis.CASH and dari_user_id:
+                msg += f" user {dari_user_id}"
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Saldo {dari.value} tidak mencukupi. Saldo: {source_balance}",
+                detail=f"{msg} tidak mencukupi. Saldo: {source_balance}",
             )
 
         # Create outgoing transaction
@@ -418,9 +493,10 @@ class KasBankService:
             tipe=KasBankType.KELUAR,
             nominal=nominal,
             sumber=KasBankSource.LAINNYA,
-            keterangan=f"Transfer ke {ke.value}: {keterangan}",
+            keterangan=f"Transfer ke {ke.value}{' (User ' + str(ke_user_id) + ')' if ke_user_id else ''}: {keterangan}",
+            user_id=dari_user_id,
         )
-        keluar = self.create(keluar_data, user_id)
+        keluar = self.create(keluar_data, current_user_id)
 
         # Create incoming transaction
         masuk_data = KasBankCreate(
@@ -430,9 +506,10 @@ class KasBankService:
             nominal=nominal,
             sumber=KasBankSource.LAINNYA,
             nomor_referensi=keluar.nomor_transaksi,
-            keterangan=f"Transfer dari {dari.value}: {keterangan}",
+            keterangan=f"Transfer dari {dari.value}{' (User ' + str(dari_user_id) + ')' if dari_user_id else ''}: {keterangan}",
+            user_id=ke_user_id,
         )
-        masuk = self.create(masuk_data, user_id)
+        masuk = self.create(masuk_data, current_user_id)
 
         return {
             "keluar": keluar,

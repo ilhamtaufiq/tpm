@@ -176,11 +176,19 @@ export interface KasBankTransaction {
     created_at: string;
 }
 
+export interface UserCashBreakdown {
+    user_id: number;
+    username: string;
+    full_name: string;
+    balance: number;
+}
+
 export interface KasBankBalance {
     jenis: KasBankJenis;
     saldo: number;
     total_masuk_bulan_ini: number;
     total_keluar_bulan_ini: number;
+    breakdown?: UserCashBreakdown[];
 }
 
 export interface KasBankAllBalances {
@@ -403,6 +411,7 @@ export const keuanganService = {
         jenis?: KasBankJenis;
         tipe?: KasBankType;
         sumber?: KasBankSource;
+        user_id?: number;
         tanggal_dari?: string;
         tanggal_sampai?: string;
         sort_by?: string;
@@ -443,6 +452,8 @@ export const keuanganService = {
         nominal: number;
         tanggal: string;
         keterangan: string;
+        dari_user_id?: number;
+        ke_user_id?: number;
     }) => {
         const response = await api.post('/kas-bank/transfer', null, { params: data });
         return response.data;
@@ -493,6 +504,7 @@ export const keuanganService = {
         sumber: KasBankSource;
         keterangan: string;
         catatan?: string;
+        user_id?: number;
     }): Promise<KasBankTransaction> => {
         const response = await api.post('/kas-bank', data);
         return response.data;

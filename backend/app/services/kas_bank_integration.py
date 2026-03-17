@@ -86,6 +86,7 @@ def create_kas_entry(
         referensi_id=referensi_id,
         nomor_referensi=nomor_referensi,
         keterangan=keterangan,
+        user_id=user_id,
     )
 
     return service.create(data, user_id)

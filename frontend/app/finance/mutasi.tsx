@@ -25,8 +25,10 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
+import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { useKasBankList, useKasBankBalances, useTransfer, useCreateTransaction } from '../../hooks/useKeuangan';
+import { useUserList } from '../../hooks/useUsers';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Tabs } from '../../components/ui/Tabs';
@@ -48,8 +50,14 @@ const JENIS_LABEL: Record<KasBankJenis, string> = {
 };
 
 export default function MutasiKasScreen() {
-    const { action } = useLocalSearchParams<{ action?: string }>();
-    const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>('all');
+    const { action, user_id, jenis, from_user } = useLocalSearchParams<{ 
+        action?: string, 
+        user_id?: string, 
+        jenis?: string,
+        from_user?: string 
+    }>();
+    
+    const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>((jenis as KasBankJenis) || 'all');
     const [refreshing, setRefreshing] = useState(false);
     const [mode, setMode] = useState<'transfer' | 'modal'>('transfer');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -58,6 +66,7 @@ export default function MutasiKasScreen() {
     const { data: txData, isLoading: isLoadingTx, refetch: refetchTx } = useKasBankList({
         limit: 50,
         jenis: selectedFilter === 'all' ? undefined : selectedFilter,
+        user_id: user_id ? parseInt(user_id) : undefined,
     });
     const { data: balances, isLoading: isLoadingBalances, refetch: refetchBalances } = useKasBankBalances();
     const transferMutation = useTransfer();
@@ -67,9 +76,18 @@ export default function MutasiKasScreen() {
     useEffect(() => {
         if (action === 'modal') {
             setMode('modal');
+            if (user_id) {
+                setModalForm(prev => ({ ...prev, user_id: parseInt(user_id) }));
+            }
+            setTimeout(() => bottomSheetRef.current?.expand(), 200);
+        } else if (action === 'transfer') {
+            setMode('transfer');
+            if (from_user) {
+                setTransferForm(prev => ({ ...prev, dari_user_id: parseInt(from_user) }));
+            }
             setTimeout(() => bottomSheetRef.current?.expand(), 200);
         }
-    }, [action]);
+    }, [action, user_id, from_user]);
 
     const transactions = txData?.data || [];
     const summary = {
@@ -86,18 +104,23 @@ export default function MutasiKasScreen() {
         }
     };
 
-    // Form states
+    const { data: userData } = useUserList({ limit: 100 });
+    const users = userData?.data || [];
+
     const [transferForm, setTransferForm] = useState({
         dari: 'CASH' as KasBankJenis,
         ke: 'BANK_BCA' as KasBankJenis,
         nominal: '',
         keterangan: '',
+        dari_user_id: from_user ? parseInt(from_user) : undefined,
+        ke_user_id: undefined as number | undefined,
     });
 
     const [modalForm, setModalForm] = useState({
-        jenis: 'CASH' as KasBankJenis,
+        jenis: (jenis as KasBankJenis) || 'CASH',
         nominal: '',
         keterangan: 'Setoran Modal',
+        user_id: user_id ? parseInt(user_id) : undefined,
     });
 
     const bottomSheetRef = useRef<BottomSheet>(null);
@@ -154,9 +177,11 @@ export default function MutasiKasScreen() {
                 nominal: parseNumber(transferForm.nominal),
                 tanggal: new Date().toISOString().split('T')[0],
                 keterangan: transferForm.keterangan,
+                dari_user_id: transferForm.dari_user_id,
+                ke_user_id: transferForm.ke_user_id,
             });
             handleCloseSheet();
-            setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '' });
+            setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '', dari_user_id: undefined, ke_user_id: undefined });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -186,9 +211,10 @@ export default function MutasiKasScreen() {
                 nominal: parseNumber(modalForm.nominal),
                 sumber: 'modal',
                 keterangan: modalForm.keterangan,
+                user_id: modalForm.user_id,
             });
             handleCloseSheet();
-            setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal' });
+            setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal', user_id: undefined });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -271,7 +297,7 @@ export default function MutasiKasScreen() {
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
-                                onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
+                                onPress={() => setTransferForm((p) => ({ ...p, dari: jenis, dari_user_id: undefined }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.dari === jenis ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
                             >
                                 <Typography
@@ -285,12 +311,31 @@ export default function MutasiKasScreen() {
                         ))}
                     </View>
 
+                    {transferForm.dari === 'CASH' && (
+                        <>
+                            <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari User (Dompet Personal)</Typography>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                                {users.map((u: User) => (
+                                    <TouchableOpacity
+                                        key={u.id}
+                                        onPress={() => setTransferForm((p) => ({ ...p, dari_user_id: u.id }))}
+                                        className={`px-4 py-2 rounded-xl mr-2 border ${transferForm.dari_user_id === u.id ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                    >
+                                        <Typography variant="caption" weight="bold" className={transferForm.dari_user_id === u.id ? 'text-white' : 'text-textGray'}>
+                                            {u.full_name}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </>
+                    )}
+
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
-                                onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
+                                onPress={() => setTransferForm((p) => ({ ...p, ke: jenis, ke_user_id: undefined }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.ke === jenis ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-200'}`}
                             >
                                 <Typography
@@ -303,6 +348,25 @@ export default function MutasiKasScreen() {
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {transferForm.ke === 'CASH' && (
+                        <>
+                            <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke User (Dompet Personal)</Typography>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                                {users.map((u: User) => (
+                                    <TouchableOpacity
+                                        key={u.id}
+                                        onPress={() => setTransferForm((p) => ({ ...p, ke_user_id: u.id }))}
+                                        className={`px-4 py-2 rounded-xl mr-2 border ${transferForm.ke_user_id === u.id ? 'bg-blue-500 border-blue-500' : 'bg-gray-50 border-gray-100'}`}
+                                    >
+                                        <Typography variant="caption" weight="bold" className={transferForm.ke_user_id === u.id ? 'text-white' : 'text-textGray'}>
+                                            {u.full_name}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </>
+                    )}
 
                     <Input
                         label="Nominal (Rp)"
@@ -336,7 +400,7 @@ export default function MutasiKasScreen() {
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <TouchableOpacity
                                 key={jenis}
-                                onPress={() => setModalForm((p) => ({ ...p, jenis }))}
+                                onPress={() => setModalForm((p) => ({ ...p, jenis, user_id: undefined }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${modalForm.jenis === jenis ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-200'}`}
                             >
                                 <Typography
@@ -349,6 +413,25 @@ export default function MutasiKasScreen() {
                             </TouchableOpacity>
                         ))}
                     </View>
+
+                    {modalForm.jenis === 'CASH' && (
+                        <>
+                            <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Pilih User (Target Dompet)</Typography>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                                {users.map((u: User) => (
+                                    <TouchableOpacity
+                                        key={u.id}
+                                        onPress={() => setModalForm((p) => ({ ...p, user_id: u.id }))}
+                                        className={`px-4 py-2 rounded-xl mr-2 border ${modalForm.user_id === u.id ? 'bg-emerald-500 border-emerald-500' : 'bg-gray-50 border-gray-100'}`}
+                                    >
+                                        <Typography variant="caption" weight="bold" className={modalForm.user_id === u.id ? 'text-white' : 'text-textGray'}>
+                                            {u.full_name}
+                                        </Typography>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </>
+                    )}
 
                     <Input
                         label="Nominal Modal (Rp)"
@@ -449,6 +532,29 @@ export default function MutasiKasScreen() {
                             <Typography weight="bold" className="text-rose-300 text-sm">{formatCurrency(summary.total_keluar)}</Typography>
                         </View>
                     </View>
+
+                    {/* Cash Breakdown Section */}
+                    {balances?.cash?.breakdown && balances.cash.breakdown.length > 0 && (
+                        <View className="mt-8 bg-black/20 rounded-[24px] p-5 border border-white/5 shadow-inner">
+                            <View className="flex-row items-center justify-between mb-4">
+                                <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Breakdown Cash Per User</Typography>
+                                <View className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            </View>
+                            <View className="space-y-3">
+                                {balances.cash.breakdown.map((user) => (
+                                    <View key={user.user_id} className="flex-row justify-between items-center py-1">
+                                        <View className="flex-row items-center">
+                                            <View className="w-7 h-7 bg-white/10 rounded-lg items-center justify-center mr-3">
+                                                <Typography className="text-white/60 text-[10px] font-bold">{user.username.substring(0, 1).toUpperCase()}</Typography>
+                                            </View>
+                                            <Typography className="text-white/80 text-xs font-medium">{user.full_name}</Typography>
+                                        </View>
+                                        <Typography weight="bold" className="text-emerald-400 text-xs">{formatCurrency(user.balance)}</Typography>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
                 </View>
             </View>
 

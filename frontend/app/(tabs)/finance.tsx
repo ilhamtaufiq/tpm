@@ -14,7 +14,9 @@ import {
     RefreshCw,
     ChevronRight,
     AlertTriangle,
-    PlusCircle
+    PlusCircle,
+    Users,
+    User
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
@@ -184,6 +186,26 @@ export default function FinanceTab() {
                         </View>
                     </View>
 
+                    {/* Saldo Personil Shortcut (Full Width) */}
+                    <TouchableOpacity
+                        onPress={() => router.push('/finance/user-wallets')}
+                        activeOpacity={0.8}
+                        className="w-full bg-emerald-500 p-5 rounded-[24px] shadow-lg shadow-emerald-500/20 mb-6 flex-row items-center justify-between"
+                    >
+                        <View className="flex-row items-center">
+                            <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center mr-3">
+                                <User size={20} color="white" />
+                            </View>
+                            <View>
+                                <Typography className="text-white/60 text-[8px] uppercase font-bold tracking-[3px]">Financial Insight</Typography>
+                                <Typography weight="bold" className="text-white text-lg tracking-tight">Saldo di Tangan User</Typography>
+                            </View>
+                        </View>
+                        <View className="bg-white/20 px-3 py-1.5 rounded-full border border-white/10">
+                            <Typography className="text-white text-[10px] font-bold">CEK DETAIL</Typography>
+                        </View>
+                    </TouchableOpacity>
+
                     {/* Piutang & Hutang Row */}
                     <View className="flex-row justify-between">
                         <TouchableOpacity
@@ -278,6 +300,7 @@ export default function FinanceTab() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
                         {[
                             { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
+                            { label: 'Dompet User', icon: User, color: '#10B981', path: '/finance/user-wallets' },
                             { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
                             { label: 'Hutang', icon: CircleDollarSign, color: '#E11D48', path: '/finance/hutang' },
                             { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },

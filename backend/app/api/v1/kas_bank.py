@@ -8,6 +8,7 @@ from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.keuangan import (
     KasBankCreate,
     KasBankResponse,
+    KasBankAllSummary,
 )
 from app.services.kas_bank_service import KasBankService
 from app.utils.constants import KasBankJenis, KasBankType, KasBankSource
@@ -36,6 +37,7 @@ def list_transactions(
     jenis: Optional[KasBankJenis] = None,
     tipe: Optional[KasBankType] = None,
     sumber: Optional[KasBankSource] = None,
+    user_id: Optional[int] = None,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
     sort_by: str = "tanggal",
@@ -49,6 +51,7 @@ def list_transactions(
         jenis=jenis,
         tipe=tipe,
         sumber=sumber,
+        user_id=user_id,
         tanggal_dari=tanggal_dari,
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
@@ -56,7 +59,7 @@ def list_transactions(
     )
 
 
-@router.get("/balances")
+@router.get("/balances", response_model=KasBankAllSummary)
 def get_all_balances(
     db: DBSession,
     current_user: CurrentUser,
@@ -120,10 +123,15 @@ def transfer(
     keterangan: str,
     db: DBSession,
     current_user: ManagerUser,
+    dari_user_id: Optional[int] = Query(None),
+    ke_user_id: Optional[int] = Query(None),
 ):
     """Transfer between kas/bank accounts."""
     service = KasBankService(db)
-    return service.transfer(dari, ke, nominal, tanggal, keterangan, current_user.id)
+    return service.transfer(
+        dari, ke, nominal, tanggal, keterangan, 
+        current_user.id, dari_user_id, ke_user_id
+    )
 @router.post("/adjust")
 def adjust_balance(
     jenis: KasBankJenis,

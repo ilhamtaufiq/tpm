@@ -1,39 +1,40 @@
 # Continuity Ledger - TPM Project
 
 ## Goal
-Implement a comprehensive User Management system (Admin, Cashier, Mechanic) and unify operational costs into the Bengkel Expenses system. Ensure the UI adheres to the Premium Bento Layout and supports dynamic theme colors.
+Implement a comprehensive User Management system, unify operational costs, and track cash transactions on a per-user basis (Individual User Wallets). Ensure the UI adheres to the Premium Bento Layout and supports dynamic theme colors.
 
 ## Constraints/Assumptions
-- Workshop expenses are now primarily linked to `armada_id` or `mobil_id` within the `PengeluaranBengkel` system.
-- User roles now include `ADMIN`, `KASIR`, `MEKANIK`, `MANAGER`, `STAFF`.
-- UI must follow the "Premium Bento Layout" with large rounded corners and dynamic colors from `useUIStore`.
+- Cash transactions are linked to `user_id` in `KasBank` to track individual wallets.
+- Global cash balance is the sum of all individual user wallets.
+- Users can transfer cash to each other (e.g., Cashier to Manager).
 
 ## Key Decisions
-- **User Management**: Updated `UserRole` enum and database schema to support new roles.
-- **User Management**: Implemented `users.tsx` with a premium bento design, stats dashboard, and role-based visualization.
-- **Dynamic Styling**: Replaced hardcoded `#023C69` with `themeColors.primary` from `useUIStore` across key files (`users.tsx`, `index.tsx`, `all-menus.tsx`, `home.tsx`, `customer.tsx`, `Button.tsx`, `StatsSlider.tsx`).
-- **Backend Architecture**: Unified all operational costs (Armada and Mobil) into `PengeluaranBengkel` records.
+- **Cash Per User**: Added `user_id` to `KasBank` model and updated `KasBankService` to filter balances by user.
+- **Cash Breakdown**: Implemented a per-user cash breakdown in the `Mutasi Kas` screen.
+- **Transfer Logic**: Enhanced `KasBankService.transfer` to support user-to-user cash movements.
+- **User Management**: Integrated user selection into financial forms (Modal/Transfer) for role-based cash handling.
 
 ## State
 - **Done**: 
-  - Backend and frontend support for Admin, Cashier, and Mechanic roles.
+  - Backend and frontend support for Admin, Kasir, and Mekanik roles.
   - Premium User Management UI with stats and profile details.
-  - Refined theme support: ensured core pages respect dynamic primary/secondary colors from appearance settings.
-  - Unified operational costs aggregation in Armada and Mobil views.
-- **Now**: 
-  - Standardizing dynamic color usage across all remaining tactical components.
+  - Cash Per User: Database schema updated, service logic implemented, and API endpoints enhanced.
+  - Mutasi Kas UI updated with user cash breakdown and user-specific transaction forms.
+  - **User Wallets Screen**: Created a dedicated dashboard for per-user cash balances with filter and transfer integration.
+- **Now**:
+  - Verification of deep-linking from User Wallets to filtered transaction lists.
 - **Next**:
-  - Test role-based access control (RBAC) specifically for Cashiers and Mechanics.
+  - Implement a "Tutup Kasir" (Cashier Closing) report feature.
   - Review remaining forms for hardcoded color values.
+  - Verify "Tutup Kasir" handles all user wallets simultaneously or per cashier.
 
 ## Open Questions
-- Should Mechanics have limited access to car sales data? (Likely yes, restricted to technical details).
+- Should we implement a "pending transfer" logic where the receiver must accept the cash? (Currently immediate).
 
 ## Working Set
-- `frontend/app/settings/users.tsx`
-- `frontend/app/all-menus.tsx`
-- `frontend/store/useUIStore.ts`
-- `frontend/app/index.tsx`
-- `frontend/components/ui/Button.tsx`
-- `frontend/components/StatsSlider.tsx`
-- `frontend/app/master-data/customer.tsx`
+- `backend/app/services/kas_bank_service.py`
+- `backend/app/api/v1/kas_bank.py`
+- `frontend/app/finance/user-wallets.tsx`
+- `frontend/app/finance/mutasi.tsx`
+- `frontend/components/WalletSection.tsx`
+- `frontend/services/keuangan.ts`

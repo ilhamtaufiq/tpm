@@ -293,28 +293,38 @@ class KasBank(Base, TimestampMixin):
 
     keterangan: Mapped[str] = mapped_column(String(255))
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # user_id tracks which user's wallet this cash belongs to (specifically for KasBankJenis.CASH)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+    
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
     )
 
     @classmethod
-    def get_current_balance(cls, db_session, jenis: KasBankJenis) -> Decimal:
+    def get_current_balance(cls, db_session, jenis: KasBankJenis, user_id: Optional[int] = None) -> Decimal:
         """Get current balance for a specific kas/bank type.
+        If jenis is CASH and user_id is provided, gets balance for that user's wallet.
 
         Args:
             db_session: SQLAlchemy session
             jenis: Type of kas/bank (cash, bank_bca, etc.)
+            user_id: Optional user ID for per-user cash balance
 
         Returns:
             Current balance as Decimal
         """
-        last_record = (
-            db_session.query(cls)
-            .filter(cls.jenis == jenis)
-            .order_by(cls.id.desc())
-            .first()
-        )
+        query = db_session.query(cls).filter(cls.jenis == jenis)
+        
+        if jenis == KasBankJenis.CASH and user_id is not None:
+            query = query.filter(cls.user_id == user_id)
+        
+        last_record = query.order_by(cls.id.desc()).first()
         return last_record.saldo_sesudah if last_record else Decimal("0")
 
     def calculate_saldo(self, saldo_sebelum: Decimal) -> None:

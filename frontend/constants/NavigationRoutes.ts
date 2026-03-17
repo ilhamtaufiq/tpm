@@ -50,6 +50,7 @@ export const APP_ROUTES: AppRoute[] = [
 
     // --- Finance ---
     { id: 'fin-mutasi', label: 'Mutasi Kas', description: 'Arus keluar masuk uang', path: '/finance/mutasi', icon: History, category: 'Finance', keywords: ['bank', 'tunai', 'kas', 'transfer', 'setor', 'tarik', 'dompet'] },
+    { id: 'fin-wallets', label: 'Saldo User', description: 'Lihat rincian cash di pegang personil', path: '/finance/user-wallets', icon: Users, category: 'Finance', keywords: ['dompet', 'wallet', 'pegawai', 'karyawan', 'cash'] },
     { id: 'fin-piutang', label: 'Piutang Usaha', description: 'Tagihan yang belum dibayar pelanggan', path: '/finance/piutang', icon: Wallet, category: 'Finance', keywords: ['tagihan', 'hutang', 'bon', 'cicilan', 'bayar'] },
 
     // --- Settings ---

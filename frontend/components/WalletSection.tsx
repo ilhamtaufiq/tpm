@@ -1,4 +1,4 @@
-import { ArrowUp, Plus, History, Wallet, MoreHorizontal } from 'lucide-react-native';
+import { ArrowUp, Plus, History, Wallet, MoreHorizontal, Users } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { TouchableOpacity, ActivityIndicator, View } from 'react-native';
 import { useKasBankBalances } from '../hooks/useKeuangan';
@@ -13,7 +13,10 @@ export const WalletSection = () => {
             <View className="bg-gopayBlue rounded-3xl overflow-hidden shadow-lg shadow-gopayBlue/30">
                 <View className="flex-row items-center p-4">
                     {/* Balance Area */}
-                    <View className="bg-white rounded-2xl p-3 flex-1 flex-row items-center justify-between mr-4 shadow-sm">
+                    <TouchableOpacity 
+                        onPress={() => router.push('/finance/mutasi')}
+                        className="bg-white rounded-2xl p-3 flex-1 flex-row items-center justify-between mr-4 shadow-sm"
+                    >
                         <View className="flex-row items-center">
                             <View className="bg-gopayBlue/10 p-1.5 rounded-lg mr-2">
                                 <Wallet size={16} color="#00ADEF" />
@@ -30,7 +33,7 @@ export const WalletSection = () => {
                             </View>
                         </View>
                         <Typography className="text-[10px] text-gopayBlue font-bold bg-gopayBlue/10 px-1.5 py-0.5 rounded-md">KLIK</Typography>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Quick Actions */}
                     <View className="flex-row items-center space-x-5 px-1">
@@ -52,6 +55,15 @@ export const WalletSection = () => {
                                 <ArrowUp size={20} color="white" strokeWidth={3} />
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Keluar</Typography>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.push('/finance/user-wallets')}
+                            className="items-center"
+                        >
+                            <View className="bg-white/20 w-8 h-8 rounded-xl items-center justify-center mb-1">
+                                <Users size={20} color="white" strokeWidth={3} />
+                            </View>
+                            <Typography className="text-white text-[10px] font-bold">Wallets</Typography>
                         </TouchableOpacity>
                     </View>
                 </View>
