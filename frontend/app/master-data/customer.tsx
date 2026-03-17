@@ -65,7 +65,16 @@ export default function CustomerScreen() {
     }, [customerList]);
 
     // Form state
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        nama: string;
+        tipe: string;
+        alamat: string;
+        kota: string;
+        telepon: string;
+        email: string;
+        saldo: number | string;
+        vehicles: { plat_nomor: string; jenis_unit: string; catatan?: string }[];
+    }>({
         nama: '',
         tipe: 'perorangan',
         alamat: '',
@@ -73,7 +82,7 @@ export default function CustomerScreen() {
         telepon: '',
         email: '',
         saldo: 0,
-        vehicles: [] as { plat_nomor: string; jenis_unit: string; catatan?: string }[],
+        vehicles: [],
     });
 
     const [dialogConfig, setDialogConfig] = useState<{
