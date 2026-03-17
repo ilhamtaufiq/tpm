@@ -2,11 +2,13 @@ import { Redirect } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
 import { View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from 'react';
+import { useUIStore } from '../store/useUIStore';
 
 export default function Index() {
     const [isHydrated, setIsHydrated] = useState(false);
     const [forceNav, setForceNav] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const { themeColors } = useUIStore();
 
     useEffect(() => {
         console.log('===== INDEX: Component mounted =====');
@@ -54,11 +56,11 @@ export default function Index() {
                     width: 80,
                     height: 80,
                     borderRadius: 40,
-                    backgroundColor: '#023C69',
+                    backgroundColor: themeColors.primary,
                     justifyContent: 'center',
                     alignItems: 'center',
                     marginBottom: 24,
-                    shadowColor: '#023C69',
+                    shadowColor: themeColors.primary,
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.3,
                     shadowRadius: 16,
@@ -68,7 +70,7 @@ export default function Index() {
                         TPM
                     </Text>
                 </View>
-                <ActivityIndicator size="large" color="#023C69" />
+                <ActivityIndicator size="large" color={themeColors.primary} />
                 <Text style={{
                     marginTop: 16,
                     fontSize: 16,

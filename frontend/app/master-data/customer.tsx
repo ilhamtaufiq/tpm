@@ -28,6 +28,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useUIStore } from '../../store/useUIStore';
 
 const TYPE_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -41,6 +42,7 @@ export default function CustomerScreen() {
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
     const [refreshing, setRefreshing] = useState(false);
+    const { themeColors } = useUIStore();
 
     // API Hooks
     const { data: listData, isLoading, refetch } = useCustomerList({
@@ -478,13 +480,14 @@ export default function CustomerScreen() {
                     <View className="pt-4 border-t border-gray-100">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography weight="bold" className="text-base">Daftar Kendaraan</Typography>
-                            <TouchableOpacity
-                                onPress={addVehicle}
-                                className="flex-row items-center bg-primary/10 px-3 py-2 rounded-xl"
-                            >
-                                <Plus size={16} color="#023C69" />
-                                <Typography className="text-primary font-bold text-xs ml-1">Tambah</Typography>
-                            </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={addVehicle}
+                                    style={{ backgroundColor: `${themeColors.primary}15` }}
+                                    className="flex-row items-center px-3 py-2 rounded-xl"
+                                >
+                                    <Plus size={16} color={themeColors.primary} />
+                                    <Typography style={{ color: themeColors.primary }} className="font-bold text-xs ml-1">Tambah</Typography>
+                                </TouchableOpacity>
                         </View>
 
                         {formData.vehicles.map((vehicle, index) => (
@@ -648,7 +651,7 @@ export default function CustomerScreen() {
                 renderItem={renderCustomerItem}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={
                     isLoading ? (
                         <View className="mt-4">

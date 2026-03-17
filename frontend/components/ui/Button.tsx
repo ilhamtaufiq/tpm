@@ -3,6 +3,7 @@ import { Text, ActivityIndicator, View, Pressable as RNPressable, PressableProps
 import { Pressable as GHPressable } from 'react-native-gesture-handler';
 import { cssInterop } from 'nativewind';
 import { cn } from './Card';
+import { useUIStore } from '../../store/useUIStore';
 
 // Use GH Pressable on native platforms for BottomSheet compatibility
 // Use RN Pressable on web for rendering compatibility
@@ -34,6 +35,7 @@ export const Button = ({
 }: ButtonProps) => {
     const [isPressed, setIsPressed] = React.useState(false);
     const isDisabled = disabled || loading;
+    const { themeColors } = useUIStore();
 
     const Wrapper = (Platform.OS === 'web' || forceNative) ? RNPressable : Pressable;
 
@@ -62,9 +64,9 @@ export const Button = ({
         >
             {loading ? (
                 <ActivityIndicator color={
-                    variant === 'outline-danger' ? '#EE2737' :
+                    variant === 'outline-danger' ? themeColors.secondary :
                         variant === 'outline-neutral' ? '#6B7280' :
-                            variant.includes('outline') || variant === 'ghost' ? '#023C69' : 'white'
+                            variant.includes('outline') || variant === 'ghost' ? themeColors.primary : 'white'
                 } />
             ) : (
                 <>

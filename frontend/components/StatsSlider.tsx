@@ -6,6 +6,7 @@ import { useMuatanSummary } from '../hooks/useJasaAngkut';
 import { useInventorySummary, usePenjualanSummary } from '../hooks/useMobil';
 import { useDashboardSummary } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
+import { useUIStore } from '../store/useUIStore';
 import { AlertCircle, Wrench, Truck, CarFront, Wallet } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -18,6 +19,7 @@ export const StatsSlider = () => {
     const { data: carInventory } = useInventorySummary();
     const { data: carSales } = usePenjualanSummary();
     const { data: dashboard } = useDashboardSummary();
+    const { themeColors } = useUIStore();
 
     const lowStockCount = lowStock?.length || 0;
 
@@ -46,7 +48,7 @@ export const StatsSlider = () => {
             subtitle: 'Total transaksi periode ini',
             value: `${bengkelStats?.total_transaksi || 0} Transaksi`,
             icon: Wrench,
-            color: '#023C69', // Deep Blue
+            color: themeColors.primary,
             path: '/laporan/bengkel',
         },
         {

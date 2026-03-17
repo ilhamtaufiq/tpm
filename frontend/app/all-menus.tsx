@@ -13,10 +13,12 @@ import {
     Wallet,
     BadgeDollarSign,
     ClipboardList,
-    LayoutGrid
+    LayoutGrid,
+    ShieldCheck
 } from 'lucide-react-native';
 import { Typography } from '../components/ui/Typography';
 import { useRouter } from 'expo-router';
+import { useUIStore } from '../store/useUIStore';
 
 const MenuCard = ({ label, icon: Icon, color, path, description }: { 
     label: string, 
@@ -46,6 +48,7 @@ const MenuCard = ({ label, icon: Icon, color, path, description }: {
 };
 
 export default function AllMenusScreen() {
+    const { themeColors } = useUIStore();
     const router = useRouter();
 
     const ALL_MENUS = [
@@ -53,7 +56,7 @@ export default function AllMenusScreen() {
             id: 'bengkel', 
             label: 'Bengkel', 
             icon: Wrench, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/bengkel',
             description: 'Servis & Sparepart'
         },
@@ -61,7 +64,7 @@ export default function AllMenusScreen() {
             id: 'logistik', 
             label: 'Logistik', 
             icon: Truck, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/jasa-angkut',
             description: 'Jasa Angkut Barang'
         },
@@ -69,7 +72,7 @@ export default function AllMenusScreen() {
             id: 'mobil', 
             label: 'Jual Beli Mobil', 
             icon: CarFront, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/mobil',
             description: 'Inventaris & Penjualan'
         },
@@ -77,7 +80,7 @@ export default function AllMenusScreen() {
             id: 'finance', 
             label: 'Keuangan', 
             icon: Wallet, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/finance',
             description: 'Kas, Hutang & Piutang'
         },
@@ -85,7 +88,7 @@ export default function AllMenusScreen() {
             id: 'master', 
             label: 'Master Data', 
             icon: Database, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/master-data',
             description: 'Customer & Supplier'
         },
@@ -93,7 +96,7 @@ export default function AllMenusScreen() {
             id: 'sdm', 
             label: 'SDM', 
             icon: Users, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/sdm',
             description: 'Karyawan & Payroll'
         },
@@ -101,7 +104,7 @@ export default function AllMenusScreen() {
             id: 'laporan', 
             label: 'Laporan', 
             icon: BarChart3, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/laporan',
             description: 'Rekap & Analisa'
         },
@@ -109,7 +112,7 @@ export default function AllMenusScreen() {
             id: 'history', 
             label: 'Riwayat', 
             icon: History, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/history',
             description: 'Log Transaksi'
         },
@@ -117,9 +120,17 @@ export default function AllMenusScreen() {
             id: 'settings', 
             label: 'Pengaturan', 
             icon: Settings, 
-            color: '#023C69', 
+            color: themeColors.primary, 
             path: '/settings',
             description: 'Profil & Aplikasi'
+        },
+        { 
+            id: 'users', 
+            label: 'User Management', 
+            icon: ShieldCheck, 
+            color: themeColors.primary, 
+            path: '/settings/users',
+            description: 'Admin, Kasir & Mekanik'
         },
     ];
 
@@ -134,10 +145,10 @@ export default function AllMenusScreen() {
                             onPress={() => router.back()}
                             className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-4 border border-gray-100 shadow-sm"
                         >
-                            <ChevronLeft size={20} color="#023C69" />
+                            <ChevronLeft size={20} color={themeColors.primary} />
                         </TouchableOpacity>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-[#023C69]">Semua Menu</Typography>
+                            <Typography variant="h2" weight="bold" style={{ color: themeColors.primary }}>Semua Menu</Typography>
                             <Typography variant="caption" className="text-gray-400">Pilih modul aplikasi</Typography>
                         </View>
                     </View>

@@ -8,10 +8,12 @@ import { TransactionList } from '../../components/TransactionList';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
+import { useUIStore } from '../../store/useUIStore';
 
 export default function HomeScreen() {
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
+    const { themeColors } = useUIStore();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -33,7 +35,7 @@ export default function HomeScreen() {
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#023C69" />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >
                     <WalletSection />
                     <ServiceGrid />
