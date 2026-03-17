@@ -21,10 +21,12 @@ Implement a comprehensive User Management system, unify operational costs, and t
   - Cash Per User: Database schema updated, service logic implemented, and API endpoints enhanced.
   - Mutasi Kas UI updated with user cash breakdown and user-specific transaction forms.
   - **User Wallets Screen**: Created a dedicated dashboard for per-user cash balances with filter and transfer integration.
+  - **SMTP Settings**: Added global SMTP configuration for Gmail, including Backend model, API with test connection feature, and dedicated Frontend settings page.
 - **Now**:
   - Verification of deep-linking from User Wallets to filtered transaction lists.
 - **Next**:
   - Implement a "Tutup Kasir" (Cashier Closing) report feature.
+
   - Review remaining forms for hardcoded color values.
   - Verify "Tutup Kasir" handles all user wallets simultaneously or per cashier.
 

@@ -26,7 +26,9 @@ from app.api.v1 import (
     armada,
     assets,
     security,
+    settings,
 )
+
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -55,6 +57,8 @@ api_router.include_router(maintenance.router)
 api_router.include_router(armada.router)
 api_router.include_router(assets.router)
 api_router.include_router(security.router)
+api_router.include_router(settings.router)
+
 
 
 # Public endpoints (no auth required) - mount outside /api/v1

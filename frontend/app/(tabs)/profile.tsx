@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, ScrollView, Alert, TouchableOpacity, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail } from 'lucide-react-native';
+
 import { Typography } from '../../components/ui/Typography';
 import { useUIStore } from '../../store/useUIStore';
 import { useResetTransactions } from '../../hooks/useMaintenance';
@@ -255,6 +256,21 @@ export default function ProfileScreen() {
                     </View>
                     <ChevronRight size={20} color={themeColors.textGray} />
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
+                    onPress={() => router.push('/settings/smtp')}
+                >
+                    <View className="w-12 h-12 bg-indigo-50 rounded-[20px] items-center justify-center mr-4">
+                        <Mail size={24} color="#6366F1" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body1" weight="bold" className="text-text mb-0.5">Server Email (SMTP)</Typography>
+                        <Typography variant="caption" className="text-text/40">Konfigurasi Gmail Server</Typography>
+                    </View>
+                    <ChevronRight size={20} color={themeColors.textGray} />
+                </TouchableOpacity>
+
 
                 {/* DANGER ZONE & SESSION */}
                 <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>

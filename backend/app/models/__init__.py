@@ -36,6 +36,8 @@ from app.models.keuangan import (
     PembayaranHutang,
     KasBank,
 )
+from app.models.system_setting import SystemSetting
+
 
 __all__ = [
     "User",
@@ -66,4 +68,6 @@ __all__ = [
     "HutangUsaha",
     "PembayaranHutang",
     "KasBank",
+    "SystemSetting",
 ]
+
