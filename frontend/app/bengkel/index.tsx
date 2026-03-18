@@ -446,8 +446,9 @@ export default function BengkelScreen() {
                     {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
                         <View key={`part-${idx}`} className="flex-row justify-between mb-2">
                             <Typography variant="body2" className="flex-1 text-textGray">
-                                {p.spare_part_nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
+                                {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
                             </Typography>
+                            <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                         </View>
                     ))}
 

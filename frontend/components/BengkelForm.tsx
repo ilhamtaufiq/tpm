@@ -60,6 +60,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
     const [catatan, setCatatan] = useState('');
+    const [activeTab, setActiveTab] = useState<'service' | 'sparepart'>('service');
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
@@ -145,6 +146,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         setGrandTotal(Math.max(0, subtotal - discAmount));
     }, [services, parts, diskon]);
 
+    const serviceCount = useMemo(() => services.filter(s => s.nama_jasa.trim().length > 0).length, [services]);
+    const partCount = useMemo(() => parts.filter(p => p.spare_part_id !== 0).length, [parts]);
+
     useEffect(() => {
         if (initialData) {
             setKategori(initialData.kategori);
@@ -184,6 +188,34 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 // If no payment data, reset to default empty state
                 setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
                 setIsSplitPayment(false);
+            }
+            
+            // Restore services
+            if (initialData.detail_services && initialData.detail_services.length > 0) {
+                setServices(initialData.detail_services.map((s: any) => ({
+                    id: s.id || Date.now() + Math.random(),
+                    service_id: s.service_id || 0,
+                    nama_jasa: s.nama_jasa || '',
+                    harga: formatNumber(Math.floor(Number(s.harga || 0)).toString()),
+                    qty: s.qty || 1,
+                })));
+            } else {
+                setServices([{ id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
+            }
+
+            // Restore parts
+            if (initialData.detail_parts && initialData.detail_parts.length > 0) {
+                setParts(initialData.detail_parts.map((p: any) => ({
+                    id: p.id || Date.now() + Math.random(),
+                    spare_part_id: p.spare_part_id || 0,
+                    nama: p.spare_part_nama || p.spare_part?.nama || p.nama || '',
+                    harga: formatNumber(Math.floor(Number(p.harga_jual || p.harga || 0)).toString()),
+                    qty: p.qty || 1,
+                    stok: p.spare_part?.stok ?? (p as any).stok ?? 0,
+                    kode: p.spare_part?.kode || (p as any).kode || '',
+                })));
+            } else {
+                setParts([{ id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
             }
             
             // Note: Customer, Muatan, Mobil selection restoration would require full object match / re-fetch
@@ -589,161 +621,211 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 </View>
             )}
 
-            {/* Jasa Section */}
-            <View className="mb-6">
-                <View className="flex-row justify-between items-center mb-3">
-                    <View className="flex-row items-center">
-                        <Wrench size={18} color="#023C69" />
-                        <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
-                    </View>
-                    <TouchableOpacity onPress={addService} className="flex-row items-center">
-                        <Plus size={16} color="#023C69" />
-                        <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
-                    </TouchableOpacity>
-                </View>
-
-                {services.map((service, index) => (
-                    <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
-                        <JasaSelector
-                            value={service.service_id ? {
-                                id: service.service_id,
-                                nama: service.nama_jasa,
-                                harga: service.harga
-                            } : null}
-                            onSelect={(js) => {
-                                const newS = [...services];
-                                if (js) {
-                                    newS[index].service_id = js.id;
-                                    newS[index].nama_jasa = js.nama;
-                                    const cleanPrice = Math.floor(Number(js.harga)).toString();
-                                    newS[index].harga = formatNumber(cleanPrice);
-                                } else {
-                                    newS[index].service_id = 0;
-                                    newS[index].nama_jasa = '';
-                                    newS[index].harga = '';
-                                }
-                                setServices(newS);
-                            }}
-                        />
-                        <View className="flex-row gap-2 items-center mt-2 px-1">
-                            <View className="flex-1">
-                                <Typography variant="caption" className="text-textGray mb-1 ml-1">Penyesuaian Harga</Typography>
-                                <Input
-                                    placeholder="Harga"
-                                    keyboardType="numeric"
-                                    containerClassName="mb-0"
-                                    className="h-10 text-sm"
-                                    value={service.harga.toString()}
-                                    onChangeText={(val) => {
-                                        const newS = [...services];
-                                        newS[index].harga = formatNumber(val);
-                                        setServices(newS);
-                                    }}
-                                />
-                            </View>
-                            {services.length > 1 ? (
-                                <TouchableOpacity
-                                    onPress={() => setServices(services.filter(s => s.id !== service.id))}
-                                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                    style={{
-                                        padding: 8,
-                                        marginTop: 20,
-                                        zIndex: 100,
-                                        cursor: Platform.OS === 'web' ? 'pointer' : undefined
-                                    }}
-                                    className="items-center justify-center"
-                                >
-                                    <Trash2 size={20} color="#EE2737" />
-                                </TouchableOpacity>
-                            ) : null}
+            {/* TABS SWITCHER */}
+            <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
+                <TouchableOpacity
+                    onPress={() => setActiveTab('service')}
+                    className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
+                        activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'
+                    }`}
+                >
+                    <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
+                    <Typography 
+                        variant="caption" 
+                        weight={activeTab === 'service' ? 'bold' : 'medium'} 
+                        className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
+                    >
+                        Jasa (Service)
+                    </Typography>
+                    {serviceCount > 0 && (
+                        <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'service' ? 'bg-primary' : 'bg-gray-200'}`}>
+                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
+                                {serviceCount}
+                            </Typography>
                         </View>
-                    </Card>
-                ))}
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => setActiveTab('sparepart')}
+                    className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
+                        activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'
+                    }`}
+                >
+                    <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
+                    <Typography 
+                        variant="caption" 
+                        weight={activeTab === 'sparepart' ? 'bold' : 'medium'} 
+                        className={`ml-2 ${activeTab === 'sparepart' ? 'text-blue-600' : 'text-gray-400'}`}
+                    >
+                        Sparepart
+                    </Typography>
+                    {partCount > 0 && (
+                        <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'sparepart' ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
+                                {partCount}
+                            </Typography>
+                        </View>
+                    )}
+                </TouchableOpacity>
             </View>
+
+            {/* Jasa Section */}
+            {activeTab === 'service' && (
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-center mb-3">
+                        <View className="flex-row items-center">
+                            <Wrench size={18} color="#023C69" />
+                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
+                        </View>
+                        <TouchableOpacity onPress={addService} className="flex-row items-center">
+                            <Plus size={16} color="#023C69" />
+                            <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
+                        </TouchableOpacity>
+                    </View>
+
+                    {services.map((service, index) => (
+                        <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
+                            <View className="flex-row items-center space-x-2">
+                                <View style={{ flex: 1 }}>
+                                    <JasaSelector
+                                        value={service.nama_jasa ? {
+                                            id: service.service_id || 0,
+                                            nama: service.nama_jasa,
+                                            harga: service.harga,
+                                            kategori: 'Servis',
+                                        } : null}
+                                        onSelect={(js) => {
+                                            const newS = [...services];
+                                            if (js) {
+                                                newS[index].service_id = js.id;
+                                                newS[index].nama_jasa = js.nama;
+                                                const cleanPrice = Math.floor(Number(js.harga)).toString();
+                                                newS[index].harga = formatNumber(cleanPrice);
+                                            } else {
+                                                newS[index].service_id = 0;
+                                                newS[index].nama_jasa = '';
+                                                newS[index].harga = '';
+                                            }
+                                            setServices(newS);
+                                        }}
+                                    />
+                                </View>
+                                {services.length > 1 && (
+                                    <TouchableOpacity
+                                        onPress={() => setServices(services.filter(s => s.id !== service.id))}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                        style={{
+                                            padding: 10,
+                                            zIndex: 100,
+                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined
+                                        }}
+                                        className="items-center justify-center bg-red-50 rounded-2xl"
+                                    >
+                                        <Trash2 size={22} color="#EE2737" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </Card>
+                    ))}
+                </View>
+            )}
 
             {/* Parts Section */}
-            <View className="mb-6">
-                <View className="flex-row justify-between items-center mb-3">
-                    <View className="flex-row items-center">
-                        <Package size={18} color="#2563EB" />
-                        <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
-                    </View>
-                    <TouchableOpacity onPress={addPart} className="flex-row items-center">
-                        <Plus size={16} color="#2563EB" />
-                        <Typography className="text-blue-600 text-xs ml-1 font-bold">Tambah</Typography>
-                    </TouchableOpacity>
-                </View>
-
-                {parts.map((part, index) => (
-                    <Card key={part.id} variant="outlined" className="p-3 mb-3 border-gray-100">
-                        <SparePartSelector
-                            value={part.spare_part_id ? {
-                                id: part.spare_part_id,
-                                nama: part.nama,
-                                harga_jual: part.harga,
-                                stok: (part as any).stok || 0,
-                                kode: (part as any).kode || ''
-                            } : null}
-                            onSelect={(ap) => {
-                                const newP = [...parts];
-                                if (ap) {
-                                    newP[index].spare_part_id = ap.id;
-                                    newP[index].nama = ap.nama;
-                                    const cleanPrice = Math.floor(Number(ap.harga_jual)).toString();
-                                    newP[index].harga = formatNumber(cleanPrice);
-                                    (newP[index] as any).stok = ap.stok;
-                                    (newP[index] as any).kode = ap.kode;
-                                } else {
-                                    newP[index].spare_part_id = 0;
-                                    newP[index].nama = '';
-                                    newP[index].harga = '';
-                                }
-                                setParts(newP);
-                            }}
-                        />
-                        <View className="flex-row space-x-2 items-center">
-                            <Input
-                                label="Qty"
-                                keyboardType="numeric"
-                                containerClassName="flex-1 mb-0"
-                                className="h-10 text-sm"
-                                value={part.qty.toString()}
-                                onChangeText={(val) => {
-                                    const newP = [...parts];
-                                    newP[index].qty = Number(val);
-                                    setParts(newP);
-                                }}
-                            />
-                            <Input
-                                label="Harga Unit"
-                                keyboardType="numeric"
-                                containerClassName="flex-[2] mb-0"
-                                className="h-10 text-sm"
-                                value={part.harga.toString()}
-                                onChangeText={(val) => {
-                                    const newP = [...parts];
-                                    newP[index].harga = formatNumber(val);
-                                    setParts(newP);
-                                }}
-                            />
-                            {parts.length > 1 ? (
-                                <TouchableOpacity
-                                    onPress={() => setParts(parts.filter(p => p.id !== part.id))}
-                                    hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                    style={{
-                                        padding: 8,
-                                        marginTop: 24,
-                                        zIndex: 100,
-                                        cursor: Platform.OS === 'web' ? 'pointer' : undefined
-                                    }}
-                                >
-                                    <Trash2 size={20} color="#EE2737" />
-                                </TouchableOpacity>
-                            ) : null}
+            {activeTab === 'sparepart' && (
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-center mb-3">
+                        <View className="flex-row items-center">
+                            <Package size={18} color="#2563EB" />
+                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
                         </View>
-                    </Card>
-                ))}
-            </View>
+                        <TouchableOpacity onPress={addPart} className="flex-row items-center">
+                            <Plus size={16} color="#2563EB" />
+                            <Typography className="text-blue-600 text-xs ml-1 font-bold">Tambah</Typography>
+                        </TouchableOpacity>
+                    </View>
+
+                    {parts.map((part, index) => (
+                        <Card key={part.id} variant="outlined" className="p-3 mb-3 border-gray-100">
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <View style={{ flex: 1 }}>
+                                    <SparePartSelector
+                                        value={(part.spare_part_id || part.nama) ? {
+                                            id: part.spare_part_id,
+                                            nama: part.nama,
+                                            harga_jual: part.harga,
+                                            stok: (part as any).stok ?? 0,
+                                            kode: (part as any).kode || ''
+                                        } : null}
+                                        onSelect={(ap) => {
+                                            const newP = [...parts];
+                                            if (ap) {
+                                                newP[index].spare_part_id = ap.id;
+                                                newP[index].nama = ap.nama;
+                                                const cleanPrice = Math.floor(Number(ap.harga_jual)).toString();
+                                                newP[index].harga = formatNumber(cleanPrice);
+                                                (newP[index] as any).stok = ap.stok;
+                                                (newP[index] as any).kode = ap.kode;
+                                            } else {
+                                                newP[index].spare_part_id = 0;
+                                                newP[index].nama = '';
+                                                newP[index].harga = '';
+                                            }
+                                            setParts(newP);
+                                        }}
+                                    />
+                                </View>
+                                <View style={{
+                                    width: 64,
+                                    backgroundColor: '#F3F4F6',
+                                    borderRadius: 12,
+                                    paddingHorizontal: 8,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    alignSelf: 'stretch',
+                                }}>
+                                    <Typography variant="caption" className="text-textGray" style={{ fontSize: 10, marginBottom: 2 }}>Qty</Typography>
+                                    <TextInput
+                                        keyboardType="numeric"
+                                        value={part.qty.toString()}
+                                        onChangeText={(val) => {
+                                            const newP = [...parts];
+                                            newP[index].qty = Number(val) || 0;
+                                            setParts(newP);
+                                        }}
+                                        style={{
+                                            fontSize: 15,
+                                            fontWeight: '700',
+                                            color: '#111827',
+                                            textAlign: 'center',
+                                            width: '100%',
+                                            padding: 0,
+                                        }}
+                                    />
+                                </View>
+                                {parts.length > 1 && (
+                                    <TouchableOpacity
+                                        onPress={() => setParts(parts.filter(p => p.id !== part.id))}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                        style={{
+                                            padding: 10,
+                                            zIndex: 100,
+                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined,
+                                            backgroundColor: '#FEF2F2',
+                                            borderRadius: 12,
+                                            alignSelf: 'stretch',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <Trash2 size={20} color="#EE2737" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </Card>
+                    ))}
+                </View>
+            )}
 
             {/* Total Summary */}
             <View className="mb-6">
