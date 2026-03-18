@@ -1,18 +1,19 @@
 import React from 'react';
 import { View, ScrollView, Alert, TouchableOpacity, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint } from 'lucide-react-native';
 
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
 import { useUIStore } from '../../store/useUIStore';
 import { useResetTransactions } from '../../hooks/useMaintenance';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../store/useAuthStore';
 import { useSecurityStore } from '../../store/useSecurityStore';
-import { Lock, Fingerprint } from 'lucide-react-native';
 import { BaseModal } from '../../components/ui/BaseModal';
+
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
@@ -82,15 +83,11 @@ export default function ProfileScreen() {
 
     return (
         <View className="flex-1 bg-background">
-            {/* Pattern 1: Adaptive Premium Header - Ultra Compact */}
-            <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[48px] shadow-xl overflow-hidden z-10">
-                {/* Decorative Glass Effect */}
-                <View className="absolute top-[-50] right-[-50] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
-                <View className="absolute bottom-[-20] left-[-20] w-[100] h-[100] bg-black/5 rounded-full blur-[40px]" />
-
-                <View className="flex-row items-center">
-                    {/* Avatar */}
-                    <View className="w-14 h-14 bg-white/20 rounded-full p-1 mr-4 border border-white/10">
+            <Header
+                title={user?.full_name || user?.name || 'Admin TPM'}
+                subtitle={`Profil Saya • ${user?.role || 'Manager'}`}
+                leftElement={
+                    <View className="w-14 h-14 bg-white/20 rounded-full p-1 border border-white/10">
                         <View className="w-full h-full bg-white rounded-full items-center justify-center overflow-hidden">
                             {user?.profile_picture ? (
                                 <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
@@ -100,23 +97,16 @@ export default function ProfileScreen() {
                         </View>
                         <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-primary" />
                     </View>
-
-                    {/* Text Info */}
-                    <View className="flex-1 justify-center">
-                        <Typography className="text-white/60 text-[10px] uppercase tracking-widest font-bold mb-0.5">Profil Saya</Typography>
-                        <Typography variant="h3" weight="bold" className="text-white text-lg leading-tight">{user?.full_name || user?.name || 'Admin TPM'}</Typography>
-                        <Typography className="text-white/80 text-xs">{user?.role || 'Manager'}</Typography>
-                    </View>
-
-                    {/* Settings Button */}
+                }
+                rightElement={
                     <TouchableOpacity
                         onPress={() => router.push('/settings/profile')}
                         className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center border border-white/5 active:bg-white/20"
                     >
                         <Settings size={20} color="white" />
                     </TouchableOpacity>
-                </View>
-            </View>
+                }
+            />
 
 
             <ScrollView

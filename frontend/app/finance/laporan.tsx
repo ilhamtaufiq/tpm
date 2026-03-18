@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
-    ChevronLeft,
     PieChart,
     BarChart3,
     Scale,
@@ -28,6 +27,7 @@ import { keuanganService } from '../../services/keuangan';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
+import { Header } from '../../components/ui/Header';
 
 type ReportType = 'LABA_RUGI' | 'MODAL' | 'NERACA';
 
@@ -305,50 +305,38 @@ export default function LaporanKeuanganScreen() {
         </View>
     );
 
-    const renderHeader = () => (
-        <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-            <View className="flex-row items-center justify-between mb-8">
-                <View className="flex-row items-center">
+            <Header
+                title="Laporan Keuangan"
+                subtitle="Analisis & Ringkasan Performa"
+                showBackButton
+                onBackButtonPress={() => router.back()}
+                rightElement={
                     <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                        onPress={() => setIsSetupModalVisible(true)}
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
-                        <ChevronLeft size={24} color="white" />
+                        <Settings size={20} color="white" />
                     </TouchableOpacity>
-                    <View>
-                        <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
-                            Laporan Keuangan
-                        </Typography>
-                        <Typography className="text-white/50 text-xs mt-0.5">Analisis & Ringkasan Performa</Typography>
-                    </View>
-                </View>
-                <TouchableOpacity
-                    onPress={() => setIsSetupModalVisible(true)}
-                    className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                >
-                    <Settings size={20} color="white" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Report Selector Tab */}
-            <View className="flex-row bg-black/20 p-1.5 rounded-3xl border border-white/5">
-                {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
-                    <TouchableOpacity
-                        key={type}
-                        onPress={() => setReportType(type)}
-                        className={`flex-1 py-3 items-center rounded-2xl ${reportType === type ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography
-                            weight="bold"
-                            className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-primary' : 'text-white/50'}`}
+                }
+            >
+                {/* Report Selector Tab */}
+                <View className="flex-row bg-black/20 p-1.5 rounded-3xl border border-white/5 mt-2">
+                    {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
+                        <TouchableOpacity
+                            key={type}
+                            onPress={() => setReportType(type)}
+                            className={`flex-1 py-3 items-center rounded-2xl ${reportType === type ? 'bg-white shadow-sm' : ''}`}
                         >
-                            {type.replace('_', ' ')}
-                        </Typography>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </View>
-    );
+                            <Typography
+                                weight="bold"
+                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-primary' : 'text-white/50'}`}
+                            >
+                                {type.replace('_', ' ')}
+                            </Typography>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </Header>
 
     const renderProfitLoss = () => {
         if (!profitData) return null;
@@ -596,9 +584,7 @@ export default function LaporanKeuanganScreen() {
 
     return (
         <View className="flex-1 bg-surface">
-            <Stack.Screen options={{ headerShown: false }} />
-
-            {renderHeader()}
+            {/* Global Header Integration */}
 
             <ScrollView
                 className="flex-1 px-6 pt-6"

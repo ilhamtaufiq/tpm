@@ -27,6 +27,7 @@ from app.api.v1 import (
     assets,
     security,
     settings,
+    user_cash,
 )
 
 
@@ -58,6 +59,7 @@ api_router.include_router(armada.router)
 api_router.include_router(assets.router)
 api_router.include_router(security.router)
 api_router.include_router(settings.router)
+api_router.include_router(user_cash.router)
 
 
 

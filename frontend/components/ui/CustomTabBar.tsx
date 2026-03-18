@@ -69,7 +69,6 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                         accessibilityRole="button"
                         accessibilityState={isFocused ? { selected: true } : {}}
                         accessibilityLabel={options.tabBarAccessibilityLabel}
-                        testID={options.tabBarTestID}
                         onPress={onPress}
                         onLongPress={onLongPress}
                         className={cn(

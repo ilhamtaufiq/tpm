@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import {
-    ChevronLeft,
     AlertTriangle,
     CheckCircle2,
     Clock,
@@ -531,31 +531,20 @@ export default function PiutangUsahaScreen() {
 
     return (
         <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
-
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Piutang Usaha</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Pantau Penagihan & Jatuh Tempo</Typography>
-                        </View>
-                    </View>
+            <Header
+                title="Piutang Usaha"
+                subtitle="Pantau Penagihan & Jatuh Tempo"
+                showBackButton
+                onBackButtonPress={handleGoBack}
+                rightElement={
                     <TouchableOpacity
                         onPress={handleOpenCreate}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <Plus size={24} color="white" />
                     </TouchableOpacity>
-                </View>
-
+                }
+            >
                 {/* Receivables Insight Card (Glassmorphism) */}
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
                     <View className="flex-row justify-between items-center mb-6">
@@ -596,7 +585,7 @@ export default function PiutangUsahaScreen() {
                         </View>
                     </View>
                 </View>
-            </View>
+            </Header>
 
             {/* Filter & Search Navigator Overlay */}
             {!isSheetOpen && (

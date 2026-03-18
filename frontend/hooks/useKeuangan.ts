@@ -245,3 +245,44 @@ export const useInvestorDisbursementHistory = (params?: any) => {
         queryFn: () => keuanganService.getInvestorDisbursementHistory(params),
     });
 };
+
+// =============================================
+// USER CASH (CATATAN KEUANGAN CASH)
+// =============================================
+export const useUserCashList = () => {
+    return useQuery({
+        queryKey: ['user_cash_list'],
+        queryFn: () => keuanganService.getUserCashList(),
+    });
+};
+
+export const useAdjustUserCash = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, data }: { userId: number; data: { nominal: number; keterangan?: string } }) =>
+            keuanganService.adjustUserCash(userId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user_cash_list'] });
+            queryClient.invalidateQueries({ queryKey: ['user_cash_history'] });
+        },
+    });
+};
+
+export const useSetUserCash = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ userId, params }: { userId: number; params: { nominal: number; keterangan?: string } }) =>
+            keuanganService.setUserCash(userId, params),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user_cash_list'] });
+            queryClient.invalidateQueries({ queryKey: ['user_cash_history'] });
+        },
+    });
+};
+
+export const useUserCashHistory = (userId?: number) => {
+    return useQuery({
+        queryKey: ['user_cash_history', userId],
+        queryFn: () => keuanganService.getUserCashHistory(userId),
+    });
+};

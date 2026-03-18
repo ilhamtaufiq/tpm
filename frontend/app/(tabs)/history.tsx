@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Header } from '../../components/ui/Header';
 import {
-    ChevronLeft,
     Search,
     Wrench,
     CarFront,
     Truck,
     Receipt,
     Wallet,
-    User,
     HelpCircle,
-    ArrowUpRight,
-    ArrowDownRight,
     Filter,
     Calendar,
-    ArrowRight
+    User
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { useRecentActivity } from '../../hooks/useKeuangan';
@@ -116,31 +113,17 @@ export default function HistoryTab() {
 
     return (
         <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
-
-            {/* Premium Header */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <View className="flex-row items-center mb-0.5">
-                                <View className="w-1.5 h-1.5 rounded-full bg-secondary mr-2" />
-                                <Typography className="text-white/40 text-[9px] uppercase tracking-widest font-bold">Log Transaksi</Typography>
-                            </View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Aktivitas Bisnis</Typography>
-                        </View>
-                    </View>
+            <Header
+                title="Aktivitas Bisnis"
+                subtitle="Log Transaksi"
+                showBackButton
+                onBackButtonPress={handleBack}
+                rightElement={
                     <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
                         <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">ARCHIVE</Typography>
                     </View>
-                </View>
-
+                }
+            >
                 {/* Search & Filter (Glassmorphism) */}
                 <View className="bg-white/10 p-2 rounded-3xl border border-white/10 flex-row items-center">
                     <View className="flex-1 flex-row items-center px-4 bg-white/5 h-12 rounded-2xl border border-white/5">
@@ -157,7 +140,7 @@ export default function HistoryTab() {
                         <Filter size={20} color="white" />
                     </TouchableOpacity>
                 </View>
-            </View>
+            </Header>
 
             <ScrollView
                 className="flex-1 px-6 pt-10"

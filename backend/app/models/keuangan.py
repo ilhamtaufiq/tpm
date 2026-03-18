@@ -30,6 +30,7 @@ from app.utils.constants import (
 if TYPE_CHECKING:
     from app.models.customer import Customer
     from app.models.supplier import Supplier
+    from app.models.user import User
 
 
 class PiutangUsaha(Base, TimestampMixin):
@@ -294,37 +295,28 @@ class KasBank(Base, TimestampMixin):
     keterangan: Mapped[str] = mapped_column(String(255))
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
-    # user_id tracks which user's wallet this cash belongs to (specifically for KasBankJenis.CASH)
-    user_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id"),
-        nullable=True,
-        index=True,
-    )
-    
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
     )
 
     @classmethod
-    def get_current_balance(cls, db_session, jenis: KasBankJenis, user_id: Optional[int] = None) -> Decimal:
+    def get_current_balance(cls, db_session, jenis: KasBankJenis) -> Decimal:
         """Get current balance for a specific kas/bank type.
-        If jenis is CASH and user_id is provided, gets balance for that user's wallet.
 
         Args:
             db_session: SQLAlchemy session
             jenis: Type of kas/bank (cash, bank_bca, etc.)
-            user_id: Optional user ID for per-user cash balance
 
         Returns:
             Current balance as Decimal
         """
-        query = db_session.query(cls).filter(cls.jenis == jenis)
-        
-        if jenis == KasBankJenis.CASH and user_id is not None:
-            query = query.filter(cls.user_id == user_id)
-        
-        last_record = query.order_by(cls.id.desc()).first()
+        last_record = (
+            db_session.query(cls)
+            .filter(cls.jenis == jenis)
+            .order_by(cls.id.desc())
+            .first()
+        )
         return last_record.saldo_sesudah if last_record else Decimal("0")
 
     def calculate_saldo(self, saldo_sebelum: Decimal) -> None:
@@ -374,3 +366,35 @@ class Aset(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Aset(id={self.id}, nama='{self.nama}', harga={self.harga_beli})>"
+
+
+class UserCashAdjustment(Base, TimestampMixin):
+    """Log of manual cash balance modifications by admin (Catatan Keuangan Cash)."""
+
+    __tablename__ = "user_cash_adjustments"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    admin_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    
+    saldo_sebelum: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    saldo_sesudah: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    nominal: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    keterangan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Relationships
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+    admin: Mapped["User"] = relationship("User", foreign_keys=[admin_id])
+
+    @property
+    def target_user_name(self) -> str:
+        return self.user.full_name if self.user else f"User {self.user_id}"
+
+    @property
+    def admin_name(self) -> str:
+        return self.admin.full_name if self.admin else f"Admin {self.admin_id}"
+
+
+    def __repr__(self) -> str:
+        return f"<UserCashAdjustment(user_id={self.user_id}, nominal={self.nominal})>"
+

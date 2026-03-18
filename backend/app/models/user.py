@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Boolean, DateTime, Enum as SQLEnum, Text
+from sqlalchemy import String, Boolean, DateTime, Enum as SQLEnum, Text, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
+from decimal import Decimal
 
 from app.database.base import Base, TimestampMixin
 from app.utils.constants import UserRole
@@ -30,6 +31,9 @@ class User(Base, TimestampMixin):
     # PIN Security (server-side)
     hashed_pin: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     security_settings: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string for protected features
+    
+    # Financial Balance (Catatan Keuangan Cash)
+    cash_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"

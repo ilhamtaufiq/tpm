@@ -56,15 +56,7 @@ export const WalletSection = () => {
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Keluar</Typography>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => router.push('/finance/user-wallets')}
-                            className="items-center"
-                        >
-                            <View className="bg-white/20 w-8 h-8 rounded-xl items-center justify-center mb-1">
-                                <Users size={20} color="white" strokeWidth={3} />
-                            </View>
-                            <Typography className="text-white text-[10px] font-bold">Wallets</Typography>
-                        </TouchableOpacity>
+
                     </View>
                 </View>
             </View>

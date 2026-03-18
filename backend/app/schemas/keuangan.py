@@ -284,7 +284,6 @@ class KasBankCreate(BaseModel):
     nomor_referensi: Optional[str] = Field(None, max_length=30)
     keterangan: str = Field(..., min_length=2, max_length=255)
     catatan: Optional[str] = None
-    user_id: Optional[int] = None
 
 
 class KasBankResponse(BaseModel):
@@ -322,13 +321,6 @@ class KasBankList(BaseModel):
     saldo_akhir: Decimal = Decimal("0")
 
 
-class UserCashBreakdown(BaseModel):
-    """Schema for breakdown of cash per user."""
-    user_id: int
-    username: str
-    full_name: str
-    balance: Decimal
-
 class KasBankSummary(BaseModel):
     """Schema for cash/bank summary."""
 
@@ -336,7 +328,6 @@ class KasBankSummary(BaseModel):
     saldo: Decimal
     total_masuk_bulan_ini: Decimal
     total_keluar_bulan_ini: Decimal
-    breakdown: Optional[List[UserCashBreakdown]] = None
 
 
 class KasBankAllSummary(BaseModel):

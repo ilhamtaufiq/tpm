@@ -176,19 +176,11 @@ export interface KasBankTransaction {
     created_at: string;
 }
 
-export interface UserCashBreakdown {
-    user_id: number;
-    username: string;
-    full_name: string;
-    balance: number;
-}
-
 export interface KasBankBalance {
     jenis: KasBankJenis;
     saldo: number;
     total_masuk_bulan_ini: number;
     total_keluar_bulan_ini: number;
-    breakdown?: UserCashBreakdown[];
 }
 
 export interface KasBankAllBalances {
@@ -210,6 +202,30 @@ export interface KasBankListResponse {
     total_keluar: number;
     saldo_akhir: number;
 }
+
+export interface UserCashAdjustment {
+    id: number;
+    user_id: number;
+    admin_id: number;
+    saldo_sebelum: number;
+    saldo_sesudah: number;
+    nominal: number;
+    keterangan?: string;
+    created_at: string;
+}
+
+export interface UserResponse {
+    id: number;
+    username: string;
+    email: string;
+    full_name: string;
+    phone?: string;
+    role: string;
+    is_active: boolean;
+    cash_balance: number;
+    profile_picture?: string;
+}
+
 
 export interface ActivityItem {
     type: 'financial' | 'workshop';
@@ -411,7 +427,6 @@ export const keuanganService = {
         jenis?: KasBankJenis;
         tipe?: KasBankType;
         sumber?: KasBankSource;
-        user_id?: number;
         tanggal_dari?: string;
         tanggal_sampai?: string;
         sort_by?: string;
@@ -452,8 +467,6 @@ export const keuanganService = {
         nominal: number;
         tanggal: string;
         keterangan: string;
-        dari_user_id?: number;
-        ke_user_id?: number;
     }) => {
         const response = await api.post('/kas-bank/transfer', null, { params: data });
         return response.data;
@@ -504,7 +517,6 @@ export const keuanganService = {
         sumber: KasBankSource;
         keterangan: string;
         catatan?: string;
-        user_id?: number;
     }): Promise<KasBankTransaction> => {
         const response = await api.post('/kas-bank', data);
         return response.data;
@@ -550,4 +562,25 @@ export const keuanganService = {
         const response = await api.get('/penjualan-mobil/investor/disbursement-history', { params });
         return response.data;
     },
+
+    // ============================================
+    // USER CASH (CATATAN KEUANGAN CASH)
+    // ============================================
+    getUserCashList: async (): Promise<UserResponse[]> => {
+        const response = await api.get('/user-cash/users');
+        return response.data;
+    },
+    adjustUserCash: async (userId: number, data: { nominal: number; keterangan?: string }): Promise<UserResponse> => {
+        const response = await api.post(`/user-cash/${userId}/adjust`, data);
+        return response.data;
+    },
+    setUserCash: async (userId: number, params: { nominal: number; keterangan?: string }): Promise<UserResponse> => {
+        const response = await api.post(`/user-cash/${userId}/set`, null, { params });
+        return response.data;
+    },
+    getUserCashHistory: async (userId?: number): Promise<UserCashAdjustment[]> => {
+        const response = await api.get('/user-cash/history', { params: { user_id: userId } });
+        return response.data;
+    },
 };
+

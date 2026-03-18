@@ -1,42 +1,40 @@
 # Continuity Ledger - TPM Project
 
 ## Goal
-Implement a comprehensive User Management system, unify operational costs, and track cash transactions on a per-user basis (Individual User Wallets). Ensure the UI adheres to the Premium Bento Layout and supports dynamic theme colors.
+Implement a comprehensive User Management system, unify operational costs, and manage overall cash transactions. Ensure the UI adheres to the Premium Bento Layout and supports dynamic theme colors.
 
 ## Constraints/Assumptions
-- Cash transactions are linked to `user_id` in `KasBank` to track individual wallets.
-- Global cash balance is the sum of all individual user wallets.
-- Users can transfer cash to each other (e.g., Cashier to Manager).
+- Cash transactions are NOT linked to `user_id` in `KasBank` (Per-User Wallets removed).
+- Global cash balance is tracked per account type (CASH, BANK_BCA, etc.) regardless of who holds it.
+- Transfers occur between account types (e.g., CASH to BANK_BCA).
 
 ## Key Decisions
-- **Cash Per User**: Added `user_id` to `KasBank` model and updated `KasBankService` to filter balances by user.
-- **Cash Breakdown**: Implemented a per-user cash breakdown in the `Mutasi Kas` screen.
-- **Transfer Logic**: Enhanced `KasBankService.transfer` to support user-to-user cash movements.
-- **User Management**: Integrated user selection into financial forms (Modal/Transfer) for role-based cash handling.
+- **Remove Per-User Cash**: Removed `user_id` from `KasBank` model and simplified `KasBankService` to track global balances.
+- **Simplify Transfers**: Modified `KasBankService.transfer` to remove user-to-user logic, focusing only on account-to-account movements.
+- **UI Cleanup**: Removed "User Wallets" screen and breakdown from "Mutasi Kas" and home dashboard.
 
 ## State
 - **Done**: 
   - Backend and frontend support for Admin, Kasir, and Mekanik roles.
   - Premium User Management UI with stats and profile details.
-  - Cash Per User: Database schema updated, service logic implemented, and API endpoints enhanced.
-  - Mutasi Kas UI updated with user cash breakdown and user-specific transaction forms.
-  - **User Wallets Screen**: Created a dedicated dashboard for per-user cash balances with filter and transfer integration.
-  - **SMTP Settings**: Added global SMTP configuration for Gmail, including Backend model, API with test connection feature, and dedicated Frontend settings page.
+  - Per-User Cash Removal: Database schema updated (user_id removed), service logic simplified, and API endpoints updated.
+  - Mutasi Kas UI cleaned up (removed user filters and breakdown).
+  - User Wallets screen deleted.
+  - SMTP Settings: Added global SMTP configuration for Gmail, including Backend model, API with test connection feature, and dedicated Frontend settings page.
 - **Now**:
-  - Verification of deep-linking from User Wallets to filtered transaction lists.
+  - Final verification of the cash flow system without per-user tracking.
 - **Next**:
-  - Implement a "Tutup Kasir" (Cashier Closing) report feature.
-
-  - Review remaining forms for hardcoded color values.
-  - Verify "Tutup Kasir" handles all user wallets simultaneously or per cashier.
+  - Implement a "Tutup Kasir" (Cashier Closing) report feature based on total cash.
 
 ## Open Questions
-- Should we implement a "pending transfer" logic where the receiver must accept the cash? (Currently immediate).
+- Should "Tutup Kasir" include a physical vs system cash comparison field?
 
 ## Working Set
+- `backend/app/models/keuangan.py`
 - `backend/app/services/kas_bank_service.py`
 - `backend/app/api/v1/kas_bank.py`
-- `frontend/app/finance/user-wallets.tsx`
-- `frontend/app/finance/mutasi.tsx`
-- `frontend/components/WalletSection.tsx`
 - `frontend/services/keuangan.ts`
+- `frontend/app/finance/mutasi.tsx`
+- `frontend/app/(tabs)/finance.tsx`
+- `frontend/components/WalletSection.tsx`
+

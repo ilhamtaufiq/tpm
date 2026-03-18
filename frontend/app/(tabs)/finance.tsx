@@ -1,23 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import {
-    ChevronLeft,
-    TrendingUp,
-    TrendingDown,
-    Wallet,
-    ArrowRightLeft,
-    CircleDollarSign,
-    BarChart3,
-    RefreshCw,
-    ChevronRight,
-    AlertTriangle,
-    PlusCircle,
-    Users,
-    User
-} from 'lucide-react-native';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
@@ -66,31 +52,20 @@ export default function FinanceTab() {
 
     return (
         <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
-
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Finance Hub</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Ringkasan Keuangan Seluruh Unit</Typography>
-                        </View>
-                    </View>
+            <Header
+                title="Finance Hub"
+                subtitle="Ringkasan Keuangan Seluruh Unit"
+                showBackButton
+                onBackButtonPress={handleGoBack}
+                rightElement={
                     <TouchableOpacity
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <RefreshCw size={20} color="white" />
                     </TouchableOpacity>
-                </View>
-
+                }
+            >
                 {/* Main Profit Card (Bento Style) */}
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
                     <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
@@ -119,7 +94,7 @@ export default function FinanceTab() {
                         </View>
                     </View>
                 </View>
-            </View>
+            </Header>
 
             <ScrollView
                 className="flex-1 px-6 pt-10"
@@ -186,25 +161,7 @@ export default function FinanceTab() {
                         </View>
                     </View>
 
-                    {/* Saldo Personil Shortcut (Full Width) */}
-                    <TouchableOpacity
-                        onPress={() => router.push('/finance/user-wallets')}
-                        activeOpacity={0.8}
-                        className="w-full bg-emerald-500 p-5 rounded-[24px] shadow-lg shadow-emerald-500/20 mb-6 flex-row items-center justify-between"
-                    >
-                        <View className="flex-row items-center">
-                            <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center mr-3">
-                                <User size={20} color="white" />
-                            </View>
-                            <View>
-                                <Typography className="text-white/60 text-[8px] uppercase font-bold tracking-[3px]">Financial Insight</Typography>
-                                <Typography weight="bold" className="text-white text-lg tracking-tight">Saldo di Tangan User</Typography>
-                            </View>
-                        </View>
-                        <View className="bg-white/20 px-3 py-1.5 rounded-full border border-white/10">
-                            <Typography className="text-white text-[10px] font-bold">CEK DETAIL</Typography>
-                        </View>
-                    </TouchableOpacity>
+
 
                     {/* Piutang & Hutang Row */}
                     <View className="flex-row justify-between">
@@ -300,7 +257,9 @@ export default function FinanceTab() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
                         {[
                             { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
-                            { label: 'Dompet User', icon: User, color: '#10B981', path: '/finance/user-wallets' },
+                            { label: 'Cash User', icon: Users, color: '#06b6d4', path: '/finance/user-cash' },
+
+
                             { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
                             { label: 'Hutang', icon: CircleDollarSign, color: '#E11D48', path: '/finance/hutang' },
                             { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },

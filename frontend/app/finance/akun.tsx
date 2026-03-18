@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { View, ScrollView, TouchableOpacity, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
-    ChevronLeft,
     Wallet,
     CreditCard,
     Banknote,
@@ -25,6 +24,7 @@ import { Input } from '../../components/ui/Input';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { formatCurrency } from '../../utils/format';
+import { Header } from '../../components/ui/Header';
 
 const ACCOUNT_ICONS: Record<string, any> = {
     CASH: Wallet,
@@ -373,31 +373,20 @@ export default function AkunKeuanganScreen() {
         <View className="flex-1 bg-surface">
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Header */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
-                                Akun Keuangan
-                            </Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Daftar Saldo Kas & Bank</Typography>
-                        </View>
-                    </View>
+            <Header
+                title="Akun Keuangan"
+                subtitle="Daftar Saldo Kas & Bank"
+                showBackButton
+                onBackButtonPress={() => router.back()}
+                rightElement={
                     <TouchableOpacity
                         onPress={() => router.push('/finance/laporan')}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <BarChart3 size={24} color="white" />
                     </TouchableOpacity>
-                </View>
-
+                }
+            >
                 {/* Total Balance Bento */}
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/5">
                     <View className="flex-row items-center mb-1">
@@ -450,7 +439,7 @@ export default function AkunKeuanganScreen() {
                         </View>
                     </View>
                 </View>
-            </View>
+            </Header>
 
             {/* Content */}
             <ScrollView

@@ -6,7 +6,6 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import {
-    ChevronLeft,
     Search,
     RefreshCw,
     CircleDollarSign,
@@ -24,6 +23,7 @@ import {
     Download
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
+import { Header } from '../../components/ui/Header';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
 import { 
@@ -403,21 +403,13 @@ export default function PencairanInvestorScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System Stitch UI) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Pencairan Investor</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Kelola Kewajiban Dana Investor</Typography>
-                        </View>
-                    </View>
+            {/* Global Header Integration */}
+            <Header
+                title="Pencairan Investor"
+                subtitle="Kelola Kewajiban Dana Investor"
+                showBackButton
+                onBackButtonPress={handleGoBack}
+                rightElement={
                     <View className="flex-row items-center">
                         <TouchableOpacity
                             onPress={handleDownloadReport}
@@ -433,8 +425,8 @@ export default function PencairanInvestorScreen() {
                             <RefreshCw size={20} color="white" />
                         </TouchableOpacity>
                     </View>
-                </View>
-
+                }
+            >
                 {/* Insight Card (Glassmorphism Bento) */}
                 <View className="flex-row justify-between mb-2">
                     <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 mr-2">
@@ -453,7 +445,7 @@ export default function PencairanInvestorScreen() {
                         <Typography className="text-white/30 text-[10px] mt-1">{summary?.disbursed_count || 0} Pencairan</Typography>
                     </View>
                 </View>
-            </View>
+            </Header>
 
             {/* Tab Navigation */}
             <View className="px-6 -mt-6 z-10">

@@ -1,6 +1,6 @@
 import { ScrollView, StatusBar, View, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { HomeHeader } from '../../components/HomeHeader';
+import { Header } from '../../components/ui/Header';
 import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
 import { StatsSlider } from '../../components/StatsSlider';
@@ -31,16 +31,16 @@ export default function HomeScreen() {
         <View className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" />
             <SafeAreaView className="flex-1" edges={['top']}>
-                <HomeHeader onRefresh={handleRefresh} refreshing={refreshing} />
+                <Header variant="home" showSearch showProfile />
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >
-                    <WalletSection />
+                    {/* <WalletSection /> */}
                     <ServiceGrid />
-                    <StatsSlider />
-                    <TransactionList />
+                    {/* <StatsSlider /> */}
+                    {/* <TransactionList /> */}
                 </ScrollView>
             </SafeAreaView>
         </View>
