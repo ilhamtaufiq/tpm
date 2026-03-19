@@ -22,8 +22,8 @@ Implement user avatar update functionality and integrate it with the backend.
     - Added background management to `ThemeSettingsScreen`.
     - Linked `ProfileScreen` to `ThemeSettingsScreen`.
     - Updated `Header` and `HomeHeader` to display custom background.
-- Now: VPS database error fixed (migration pushed).
-- Next: User needs to pull and run `alembic upgrade head` on VPS.
+- Now: Fixed cross-platform file upload validation error and improved image display after upload.
+- Next: Check if images are served correctly on VPS (Nginx).
 
 ## Open Questions (UNCONFIRMED)
 - None.

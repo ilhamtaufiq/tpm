@@ -79,7 +79,7 @@ export default function ProfileSettingsScreen() {
             let updatedUser = user;
 
             // 1. Handle Avatar Upload if it's a new local image
-            if (image && image.startsWith('file://')) {
+            if (image && !image.startsWith('http') && !image.startsWith('data:image')) {
                 updatedUser = await authService.uploadAvatar(image);
             }
 
@@ -95,6 +95,11 @@ export default function ProfileSettingsScreen() {
 
             // Update local store
             setAuth(updatedUser, token || '');
+            
+            // Sync local image state with new server URL
+            if (updatedUser.profile_picture) {
+                setImage(getFileUrl(updatedUser.profile_picture));
+            }
 
             setDialogConfig({
                 visible: true,

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import api from '../utils/api';
 
 export interface User {
@@ -49,18 +50,22 @@ export const authService = {
 
     uploadAvatar: async (uri: string) => {
         const formData = new FormData();
-        
-        // Extract filename and extension from URI
         const filename = uri.split('/').pop() || 'avatar.jpg';
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
 
-        // @ts-ignore - FormData.append expecting 2 arguments but React Native needs 3 for files
-        formData.append('file', {
-            uri: uri,
-            name: filename,
-            type: type,
-        });
+        if (Platform.OS === 'web') {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            formData.append('file', blob, filename);
+        } else {
+            // @ts-ignore
+            formData.append('file', {
+                uri: uri,
+                name: filename,
+                type: type,
+            });
+        }
 
         const response = await api.post('/auth/me/avatar', formData, {
             headers: {
@@ -72,18 +77,22 @@ export const authService = {
 
     uploadHomeBackground: async (uri: string) => {
         const formData = new FormData();
-        
-        // Extract filename and extension from URI
         const filename = uri.split('/').pop() || 'background.jpg';
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
 
-        // @ts-ignore - FormData.append expecting 2 arguments but React Native needs 3 for files
-        formData.append('file', {
-            uri: uri,
-            name: filename,
-            type: type,
-        });
+        if (Platform.OS === 'web') {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            formData.append('file', blob, filename);
+        } else {
+            // @ts-ignore
+            formData.append('file', {
+                uri: uri,
+                name: filename,
+                type: type,
+            });
+        }
 
         const response = await api.post('/auth/me/home-background', formData, {
             headers: {
