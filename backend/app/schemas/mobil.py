@@ -190,7 +190,8 @@ class MobilDetailResponse(MobilResponse):
     total_biaya: Decimal = Decimal("0")
     total_part_service: Decimal = Decimal("0")
     total_biaya_part: Decimal = Decimal("0")
-    final_capital: Decimal = Decimal("0")
+    total_modal: Decimal = Decimal("0")
+    hpp: Decimal = Decimal("0")
     is_sold: bool = False
     penjualan: Optional[TransaksiMobilResponse] = None
     pengeluaran_bengkel: List[PengeluaranBengkelResponse] = []
