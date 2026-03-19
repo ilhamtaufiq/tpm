@@ -105,6 +105,6 @@ class JasaServisService:
     def delete(self, jasa_id: int) -> bool:
         """Soft delete workshop service."""
         jasa = self.get_by_id(jasa_id)
-        jasa.deleted_at = datetime.utcnow()
+        jasa.deleted_at = datetime.now()
         self.db.commit()
         return True

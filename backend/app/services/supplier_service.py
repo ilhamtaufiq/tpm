@@ -210,7 +210,7 @@ class SupplierService:
                 detail="Tidak dapat menghapus supplier yang memiliki riwayat pembelian",
             )
 
-        supplier.deleted_at = datetime.utcnow()
+        supplier.deleted_at = datetime.now()
         self.db.commit()
 
         return True

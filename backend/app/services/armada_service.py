@@ -150,7 +150,7 @@ class ArmadaService:
             )
 
         from datetime import datetime
-        armada.deleted_at = datetime.utcnow()
+        armada.deleted_at = datetime.now()
         self.db.commit()
         return True
 

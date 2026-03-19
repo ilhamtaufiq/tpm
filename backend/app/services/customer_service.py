@@ -232,7 +232,7 @@ class CustomerService:
                 detail="Tidak dapat menghapus customer yang memiliki piutang aktif",
             )
 
-        customer.deleted_at = datetime.utcnow()
+        customer.deleted_at = datetime.now()
         self.db.commit()
 
         return True

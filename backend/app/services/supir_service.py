@@ -219,7 +219,7 @@ class SupirService:
                 detail="Tidak dapat menghapus supir yang memiliki riwayat transaksi",
             )
 
-        supir.deleted_at = datetime.utcnow()
+        supir.deleted_at = datetime.now()
         self.db.commit()
 
         return True

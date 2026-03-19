@@ -240,7 +240,7 @@ class KaryawanService:
                 detail="Tidak dapat menghapus karyawan yang masih memiliki kasbon",
             )
 
-        karyawan.deleted_at = datetime.utcnow()
+        karyawan.deleted_at = datetime.now()
         karyawan.status = EmployeeStatus.TIDAK_AKTIF
         self.db.commit()
 

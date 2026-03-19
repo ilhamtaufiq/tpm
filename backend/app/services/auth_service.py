@@ -74,7 +74,7 @@ class AuthService:
             )
 
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now()
         self.db.commit()
 
         # Create token

@@ -216,7 +216,7 @@ class SparePartService:
                 detail="Tidak dapat menghapus spare part yang masih memiliki stok",
             )
 
-        spare_part.deleted_at = datetime.utcnow()
+        spare_part.deleted_at = datetime.now()
         self.db.commit()
 
         return True

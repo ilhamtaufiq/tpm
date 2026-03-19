@@ -427,7 +427,7 @@ class MobilService:
                 detail="Tidak dapat menghapus mobil yang sudah terjual",
             )
 
-        mobil.deleted_at = datetime.utcnow()
+        mobil.deleted_at = datetime.now()
         self.db.commit()
 
         return True
