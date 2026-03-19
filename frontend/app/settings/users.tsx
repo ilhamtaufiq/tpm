@@ -42,6 +42,8 @@ const ROLE_OPTIONS = [
     { label: 'Staff', value: 'STAFF', color: '#6B7280', icon: UserSquare2 },
 ];
 
+const UsersIcon = ({ size, color }: { size: number, color: string }) => <UserPlus size={size} color={color} />;
+
 export default function UserManagementScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
@@ -473,7 +475,7 @@ export default function UserManagementScreen() {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
                 ListHeaderComponent={isLoading ? <SkeletonCard /> : null}
-                ListEmptyComponent={!isLoading ? <EmptyState title="User Tidak Ditemukan" description="Mulai dengan menambah user baru." icon={Users} /> : null}
+                ListEmptyComponent={!isLoading ? <EmptyState title="User Tidak Ditemukan" description="Mulai dengan menambah user baru." icon={UsersIcon} /> : null}
             />
 
 
@@ -514,4 +516,4 @@ export default function UserManagementScreen() {
     );
 }
 
-const Users = ({ size, color }: { size: number, color: string }) => <UserPlus size={size} color={color} />;
+
