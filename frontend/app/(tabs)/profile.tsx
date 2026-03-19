@@ -14,6 +14,7 @@ import { useSecurityStore } from '../../store/useSecurityStore';
 import { BaseModal } from '../../components/ui/BaseModal';
 
 import { useAuthStore } from '../../store/useAuthStore';
+import { getFileUrl } from '../../utils/image';
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
@@ -90,7 +91,7 @@ export default function ProfileScreen() {
                     <View className="w-14 h-14 bg-white/20 rounded-full p-1 border border-white/10">
                         <View className="w-full h-full bg-white rounded-full items-center justify-center overflow-hidden">
                             {user?.profile_picture ? (
-                                <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
+                                <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                             ) : (
                                 <CircleUser size={28} color={themeColors.primary} />
                             )}
@@ -212,13 +213,7 @@ export default function ProfileScreen() {
 
                     <TouchableOpacity
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
-                        onPress={() => setDialogConfig({
-                            visible: true,
-                            title: "Tema & Warna",
-                            message: "Fitur kustomisasi warna akan segera hadir.",
-                            variant: 'info',
-                            type: 'alert'
-                        })}
+                        onPress={() => router.push('/settings/theme')}
                     >
                         <View className="w-10 h-10 bg-indigo-50 rounded-[14px] items-center justify-center mb-3">
                             <Palette size={20} color="#6366F1" />

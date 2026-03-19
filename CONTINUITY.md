@@ -1,27 +1,37 @@
 # Continuity Ledger
 
-- Goal: Fix server-client timezone discrepancy (WIB time vs Server UTC time).
-- Constraints/Assumptions:
-    - User location: Indonesia (WIB/UTC+7).
-    - Server time correctly set to WIB in VPS.
-    - Application/DB may be running in containers (Docker) or directly on VPS.
-    - Transaction timestamps show "7 hours ago" (saved in UTC, read as local).
-- Key decisions:
-    - Set `TZ=Asia/Jakarta` in `docker-compose.yml` and `backend/Dockerfile` (to be safe even if not used).
-    - Configured SQLAlchemy engine with session timezone `+07:00` for MySQL.
-    - Replaced all `datetime.utcnow()` with `datetime.now()` in backend code to ensure consistency with the VPS local time.
-- State:
-    - Done:
-        - Applied timezone fixes to `docker-compose.yml` and `Dockerfile`.
-        - Applied `SET time_zone = '+07:00'` to SQLAlchemy connection engine.
-        - Replaced `utcnow()` in 11 files with `now()`.
-    - Now:
-        - Ready for user verification.
-    - Next:
-        - Ask user to restart the backend and check a new transaction.
-- Open questions (UNCONFIRMED):
-    - Confirm how the user starts the backend (pm2, docker, etc.).
-- Working set:
-    - [connection.py](file:///c:/laragon/www/tpm/backend/app/database/connection.py)
-    - [security.py](file:///c:/laragon/www/tpm/backend/app/utils/security.py)
-    - Various services using timestamps.
+## Goal
+Implement user avatar update functionality and integrate it with the backend.
+
+## Constraints/Assumptions
+- Backend: FastAPI.
+- Frontend: Expo (React Native).
+- Storage: Local storage in `uploads/` directory.
+- Timezone: WIB (Asia/Jakarta).
+
+## Key Decisions
+- Added `/auth/me/avatar` endpoint for multipart file upload.
+- Used `expo-image-picker` on the frontend for selecting images.
+- Created `getFileUrl` utility in frontend to handle server-side image paths.
+- Serves static files from the `uploads/` directory on the backend.
+
+## State
+- Done:
+    - Implemented `/auth/me/avatar` and `/auth/me/home-background` endpoints.
+    - Updated User model and schemas with `home_background`.
+    - Added background management to `ThemeSettingsScreen`.
+    - Linked `ProfileScreen` to `ThemeSettingsScreen`.
+    - Updated `Header` and `HomeHeader` to display custom background.
+- Now: Feature implementation complete.
+- Next: User verification.
+
+## Open Questions (UNCONFIRMED)
+- None.
+
+## Working Set
+- `backend/app/api/v1/auth.py`
+- `backend/app/services/auth_service.py`
+- `frontend/services/auth.ts`
+- `frontend/app/settings/profile.tsx`
+- `frontend/utils/image.ts`
+

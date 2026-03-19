@@ -10,6 +10,7 @@ export interface User {
     is_active: boolean;
     last_login?: string;
     profile_picture?: string;
+    home_background?: string;
     created_at: string;
     updated_at: string;
 }
@@ -32,6 +33,7 @@ export interface UserUpdateData {
     is_active?: boolean;
     password?: string;
     profile_picture?: string | null;
+    home_background?: string | null;
 }
 
 export const authService = {
@@ -42,6 +44,52 @@ export const authService = {
 
     updateMe: async (data: UserUpdateData) => {
         const response = await api.put('/auth/me', data);
+        return response.data;
+    },
+
+    uploadAvatar: async (uri: string) => {
+        const formData = new FormData();
+        
+        // Extract filename and extension from URI
+        const filename = uri.split('/').pop() || 'avatar.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+
+        // @ts-ignore - FormData.append expecting 2 arguments but React Native needs 3 for files
+        formData.append('file', {
+            uri: uri,
+            name: filename,
+            type: type,
+        });
+
+        const response = await api.post('/auth/me/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    uploadHomeBackground: async (uri: string) => {
+        const formData = new FormData();
+        
+        // Extract filename and extension from URI
+        const filename = uri.split('/').pop() || 'background.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+
+        // @ts-ignore - FormData.append expecting 2 arguments but React Native needs 3 for files
+        formData.append('file', {
+            uri: uri,
+            name: filename,
+            type: type,
+        });
+
+        const response = await api.post('/auth/me/home-background', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     },
 

@@ -27,6 +27,7 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     profile_picture: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    home_background: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
     # PIN Security (server-side)
     hashed_pin: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

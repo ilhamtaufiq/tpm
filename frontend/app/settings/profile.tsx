@@ -10,6 +10,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { getErrorMessage } from '../../utils/error';
+import { getFileUrl } from '../../utils/image';
 
 export default function ProfileSettingsScreen() {
     const router = useRouter();
@@ -21,7 +22,7 @@ export default function ProfileSettingsScreen() {
     const [email, setEmail] = useState(user?.email || 'admin@tpm.com');
     const [phone, setPhone] = useState(user?.phone || '081234567890');
     const [jabatan, setJabatan] = useState(user?.role || 'Manager');
-    const [image, setImage] = useState<string | null>(user?.profile_picture || null);
+    const [image, setImage] = useState<string | null>(getFileUrl(user?.profile_picture) || null);
 
     const [isSaving, setIsSaving] = useState(false);
     const [isPicking, setIsPicking] = useState(false);
@@ -75,14 +76,22 @@ export default function ProfileSettingsScreen() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            let updatedUser = user;
+
+            // 1. Handle Avatar Upload if it's a new local image
+            if (image && image.startsWith('file://')) {
+                updatedUser = await authService.uploadAvatar(image);
+            }
+
+            // 2. Handle Profile Data Update
             const data = {
                 full_name: name,
                 email: email,
                 phone: phone,
-                profile_picture: image
+                // Don't send profile_picture here as it was handled above or shouldn't be changed if it's not a local file
             };
 
-            const updatedUser = await authService.updateMe(data);
+            updatedUser = await authService.updateMe(data);
 
             // Update local store
             setAuth(updatedUser, token || '');

@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import DBSession, CurrentUser, AdminUser
@@ -13,6 +13,9 @@ from app.schemas.user import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
 )
+import os
+import uuid
+from app.config import settings
 from app.services.auth_service import AuthService
 
 
@@ -84,6 +87,133 @@ def update_current_user(
 
     service = AuthService(db)
     return service.update_user(current_user.id, user_data)
+
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_avatar(
+    db: DBSession,
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+):
+    """
+    Upload a new profile picture for the current user.
+    """
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image",
+        )
+
+    # Validate file size
+    file_size = 0
+    contents = await file.read()
+    file_size = len(contents)
+    if file_size > settings.max_file_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Max size is {settings.max_file_size / (1024 * 1024)}MB",
+        )
+    await file.seek(0)
+
+    # Generate unique filename
+    extension = os.path.splitext(file.filename)[1]
+    if not extension:
+        # Fallback if no extension
+        if file.content_type == "image/jpeg": extension = ".jpg"
+        elif file.content_type == "image/png": extension = ".png"
+        else: extension = ".png"
+        
+    filename = f"avatar_{current_user.id}_{uuid.uuid4().hex}{extension}"
+    
+    # Save file
+    upload_path = os.path.realpath(settings.upload_full_path)
+    file_path = os.path.join(upload_path, filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    # Generate URI for the database
+    # Assuming the app serves the upload directory at /uploads/
+    avatar_uri = f"/{settings.upload_dir}/{filename}"
+
+    # Update user record
+    service = AuthService(db)
+    
+    # Delete old file if it exists and is local
+    if current_user.profile_picture and current_user.profile_picture.startswith(f"/{settings.upload_dir}/"):
+        old_filename = current_user.profile_picture.split("/")[-1]
+        old_file_path = os.path.join(upload_path, old_filename)
+        if os.path.exists(old_file_path):
+            try:
+                os.remove(old_file_path)
+            except Exception as e:
+                print(f"Error removing old avatar: {e}")
+
+    return service.update_avatar(current_user.id, avatar_uri)
+
+
+@router.post("/me/home-background", response_model=UserResponse)
+async def upload_home_background(
+    db: DBSession,
+    current_user: CurrentUser,
+    file: UploadFile = File(...),
+):
+    """
+    Upload a new home screen background image for the current user.
+    """
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image",
+        )
+
+    # Validate file size
+    file_size = 0
+    contents = await file.read()
+    file_size = len(contents)
+    if file_size > settings.max_file_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Max size is {settings.max_file_size / (1024 * 1024)}MB",
+        )
+    await file.seek(0)
+
+    # Generate unique filename
+    extension = os.path.splitext(file.filename)[1]
+    if not extension:
+        # Fallback if no extension
+        if file.content_type == "image/jpeg": extension = ".jpg"
+        elif file.content_type == "image/png": extension = ".png"
+        else: extension = ".png"
+        
+    filename = f"bg_{current_user.id}_{uuid.uuid4().hex}{extension}"
+    
+    # Save file
+    upload_path = os.path.realpath(settings.upload_full_path)
+    file_path = os.path.join(upload_path, filename)
+    
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    # Generate URI for the database
+    background_uri = f"/{settings.upload_dir}/{filename}"
+
+    # Update user record
+    service = AuthService(db)
+    
+    # Delete old file if it exists and is local
+    if current_user.home_background and current_user.home_background.startswith(f"/{settings.upload_dir}/"):
+        old_filename = current_user.home_background.split("/")[-1]
+        old_file_path = os.path.join(upload_path, old_filename)
+        if os.path.exists(old_file_path):
+            try:
+                os.remove(old_file_path)
+            except Exception as e:
+                print(f"Error removing old background: {e}")
+
+    return service.update_home_background(current_user.id, background_uri)
 
 
 @router.post("/change-password")

@@ -6,6 +6,7 @@ import { APP_ROUTES, AppRoute } from '../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
 import { useUIStore } from '../store/useUIStore';
+import { getFileUrl } from '../utils/image';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -39,6 +40,15 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
 
     return (
         <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-30" 
+                    resizeMode="cover"
+                />
+            )}
+            
             {/* Decorative Ambient Glass */}
             <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
             <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
@@ -57,7 +67,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                 >
                     <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
                         {user?.profile_picture ? (
-                            <Image source={{ uri: user.profile_picture }} className="w-full h-full" />
+                            <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                         ) : (
                             <User size={24} color={themeColors.primary} strokeWidth={2.5} />
                         )}

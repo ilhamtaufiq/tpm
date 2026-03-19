@@ -33,6 +33,7 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6, max_length=100)
     profile_picture: Optional[str] = None
+    home_background: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -47,6 +48,7 @@ class UserResponse(BaseModel):
     is_active: bool
     last_login: Optional[datetime] = None
     profile_picture: Optional[str] = None
+    home_background: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     cash_balance: Decimal = Decimal("0")

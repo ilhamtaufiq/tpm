@@ -158,6 +158,38 @@ class AuthService:
 
         return user
 
+    def update_avatar(self, user_id: int, avatar_uri: str) -> User:
+        """Update user profile picture URL."""
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        user.profile_picture = avatar_uri
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def update_home_background(self, user_id: int, background_uri: str) -> User:
+        """Update user home screen background URL."""
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        user.home_background = background_uri
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
     def delete_user(self, user_id: int) -> bool:
         """Delete a user (soft delete by deactivating)."""
         user = self.get_user_by_id(user_id)

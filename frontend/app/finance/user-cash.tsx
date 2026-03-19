@@ -34,6 +34,8 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { Image } from 'react-native';
+import { getFileUrl } from '../../utils/image';
 
 interface AdjustmentForm {
     type: 'adjust' | 'set';
@@ -139,8 +141,12 @@ export default function UserCashManagementScreen() {
 
     const renderUserItem = ({ item }: { item: any }) => (
         <View className="flex-row items-center px-6 py-4 border-b border-slate-50">
-            <View className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center mr-4">
-                <User size={24} color="#64748b" />
+            <View className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center mr-4 overflow-hidden">
+                {item.profile_picture ? (
+                    <Image source={{ uri: getFileUrl(item.profile_picture) as string }} className="w-full h-full" />
+                ) : (
+                    <User size={24} color="#64748b" />
+                )}
             </View>
             <View className="flex-1">
                 <Typography variant="body1" weight="bold" className="text-text">{item.full_name}</Typography>
