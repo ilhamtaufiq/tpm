@@ -35,6 +35,10 @@ class User(Base, TimestampMixin):
     # Financial Balance (Catatan Keuangan Cash)
     cash_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0"))
 
+    # Password Reset
+    reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    reset_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
 

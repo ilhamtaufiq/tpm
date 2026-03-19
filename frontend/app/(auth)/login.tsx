@@ -126,8 +126,17 @@ export default function LoginScreen() {
                                         )}
                                     </TouchableOpacity>
                                 }
-                                containerClassName="mb-4"
+                                containerClassName="mb-1"
                             />
+
+                            <TouchableOpacity 
+                                onPress={() => router.push('/(auth)/forgot-password')}
+                                className="items-end mb-4 pr-1"
+                            >
+                                <Typography variant="caption" weight="medium" className="text-primary/70">
+                                    Lupa Password?
+                                </Typography>
+                            </TouchableOpacity>
 
                             <Button
                                 title="Masuk Sekarang"

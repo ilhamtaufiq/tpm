@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -196,4 +197,44 @@ class AuthService:
         user.hashed_password = hash_password(new_password)
         self.db.commit()
 
+        return True
+
+    def forgot_password(self, email: str) -> bool:
+        """Process forgot password request."""
+        user = self.get_user_by_email(email)
+        
+        # We return True even if user not found to prevent user enumeration
+        if not user:
+            return True
+            
+        # Generate token
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires = datetime.now() + timedelta(hours=1)
+        
+        self.db.commit()
+        
+        # Send email
+        from app.utils.email import send_password_reset_email
+        return send_password_reset_email(self.db, user.email, token, user.full_name)
+
+    def reset_password(self, token: str, new_password: str) -> bool:
+        """Reset password using token."""
+        user = self.db.query(User).filter(
+            User.reset_token == token,
+            User.reset_token_expires > datetime.now()
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token tidak valid atau sudah kadaluarsa",
+            )
+            
+        user.hashed_password = hash_password(new_password)
+        user.reset_token = None
+        user.reset_token_expires = None
+        
+        self.db.commit()
+        
         return True

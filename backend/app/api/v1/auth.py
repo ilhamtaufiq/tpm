@@ -10,6 +10,8 @@ from app.schemas.user import (
     UserResponse,
     UserLogin,
     Token,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 from app.services.auth_service import AuthService
 
@@ -172,3 +174,29 @@ def delete_user(
     service = AuthService(db)
     service.delete_user(user_id)
     return {"message": "User deactivated successfully"}
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    data: ForgotPasswordRequest,
+    db: DBSession,
+):
+    """
+    Request a password reset.
+    """
+    service = AuthService(db)
+    service.forgot_password(data.email)
+    return {"message": "Jika email terdaftar di sistem kami, instruksi untuk mereset password telah dikirim ke email tersebut."}
+
+
+@router.post("/reset-password")
+def reset_password(
+    data: ResetPasswordRequest,
+    db: DBSession,
+):
+    """
+    Reset password using a token.
+    """
+    service = AuthService(db)
+    service.reset_password(data.token, data.new_password)
+    return {"message": "Password Anda telah berhasil diperbarui."}
