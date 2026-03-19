@@ -407,7 +407,7 @@ class TransaksiBengkelService:
                 nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method,
                 referensi_id=ref_id, nomor_referensi=ref_num,
                 keterangan=f"Pembayaran ({method.upper()}) bengkel {ref_num}",
-                current_user_id=user_id,
+                user_id=user_id,
             )
             # KELUAR from Unit (if internal/integrated)
             if source_pocket != KasBankSource.BENGKEL:
@@ -416,7 +416,7 @@ class TransaksiBengkelService:
                     nominal=amount, sumber=source_pocket, metode_bayar=method,
                     referensi_id=ref_id, nomor_referensi=ref_num,
                     keterangan=f"Biaya Repair Internal via Bengkel: {ref_num}",
-                    current_user_id=user_id,
+                    user_id=user_id,
                 )
 
         if data.payments:
@@ -638,9 +638,9 @@ class TransaksiBengkelService:
         elif data.kategori == 'jual_beli_mobil': source_pocket = KasBankSource.JUAL_BELI_MOBIL
 
         def record_bilateral_payment(amount, method, ref_id, ref_num):
-            create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", current_user_id=user_id)
+            create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", user_id=user_id)
             if source_pocket != KasBankSource.BENGKEL:
-                create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", current_user_id=user_id)
+                create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
         if data.payments:
             for p in data.payments:

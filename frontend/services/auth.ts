@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
 
 export interface User {
     id: number;
@@ -67,6 +68,22 @@ export const authService = {
             });
         }
 
+        if (Platform.OS === 'web') {
+            const token = useAuthStore.getState().token;
+            const res = await fetch(`${BASE_URL}/auth/me/avatar`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw { response: { data: errorData } };
+            }
+            return await res.json();
+        }
+
         const response = await api.post('/auth/me/avatar', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -92,6 +109,22 @@ export const authService = {
                 name: filename,
                 type: type,
             });
+        }
+
+        if (Platform.OS === 'web') {
+            const token = useAuthStore.getState().token;
+            const res = await fetch(`${BASE_URL}/auth/me/home-background`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw { response: { data: errorData } };
+            }
+            return await res.json();
         }
 
         const response = await api.post('/auth/me/home-background', formData, {

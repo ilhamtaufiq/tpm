@@ -52,7 +52,7 @@ def create_kas_entry(
     referensi_id: Optional[int],
     nomor_referensi: str,
     keterangan: str,
-    current_user_id: Optional[int] = None,
+    user_id: Optional[int] = None,
 ) -> KasBank:
     """Create a kas/bank entry for financial transactions.
 
@@ -69,7 +69,7 @@ def create_kas_entry(
         referensi_id: ID of the source transaction (optional)
         nomor_referensi: Reference number of the source transaction
         keterangan: Description of the transaction
-        current_user_id: ID of the user creating the transaction (optional)
+        user_id: ID of the user creating the transaction (optional)
 
     Returns:
         The created KasBank record
@@ -88,4 +88,4 @@ def create_kas_entry(
         keterangan=keterangan,
     )
 
-    return service.create(data, current_user_id)
+    return service.create(data, user_id)

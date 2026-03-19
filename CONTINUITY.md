@@ -22,8 +22,8 @@ Implement user avatar update functionality and integrate it with the backend.
     - Added background management to `ThemeSettingsScreen`.
     - Linked `ProfileScreen` to `ThemeSettingsScreen`.
     - Updated `Header` and `HomeHeader` to display custom background.
-- Now: Fixed cross-platform file upload validation error and improved image display after upload.
-- Next: Check if images are served correctly on VPS (Nginx).
+- Now: Fixed `TypeError` in `create_kas_entry` by standardizing the `user_id` parameter name across the application.
+- Next: Check if there are any other services that were broken by this parameter mismatch.
 
 ## Open Questions (UNCONFIRMED)
 - None.

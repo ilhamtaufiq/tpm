@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
 
 export interface Mobil {
     id: number;
@@ -114,6 +115,29 @@ export const mobilService = {
                     type: file.type,
                 } as any);
             }
+        }
+
+        if (Platform.OS === 'web') {
+            const token = useAuthStore.getState().token;
+            const response = await fetch(`${BASE_URL}/mobil/${id}/media`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData,
+            });
+
+            console.log(`[mobilService] Web upload status: ${response.status} ${response.statusText}`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('[mobilService] Web upload failed:', errorData);
+                throw { response: { data: errorData } };
+            }
+
+            const data = await response.json();
+            console.log('[mobilService] Web upload success:', data);
+            return data;
         }
 
         const response = await api.post(`/mobil/${id}/media`, formData, {

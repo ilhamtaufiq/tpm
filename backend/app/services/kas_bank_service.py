@@ -61,7 +61,7 @@ class KasBankService:
     def create(
         self,
         data: KasBankCreate,
-        current_user_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> KasBank:
         """Create a new cash/bank transaction."""
         # Get current balance
@@ -89,7 +89,7 @@ class KasBankService:
             nomor_referensi=data.nomor_referensi,
             keterangan=data.keterangan,
             catatan=data.catatan,
-            created_by=current_user_id, # The person who entered the data
+            created_by=user_id, # The person who entered the data
         )
 
         # Calculate balance
@@ -399,7 +399,7 @@ class KasBankService:
         nominal: Decimal,
         tanggal: date,
         keterangan: str,
-        current_user_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Dict[str, KasBank]:
         """Transfer between kas/bank accounts."""
         if dari == ke:
@@ -427,7 +427,7 @@ class KasBankService:
             sumber=KasBankSource.LAINNYA,
             keterangan=f"Transfer ke {ke.value}: {keterangan}",
         )
-        keluar = self.create(keluar_data, current_user_id)
+        keluar = self.create(keluar_data, user_id)
 
         # Create incoming transaction
         masuk_data = KasBankCreate(
@@ -439,7 +439,7 @@ class KasBankService:
             nomor_referensi=keluar.nomor_transaksi,
             keterangan=f"Transfer dari {dari.value}: {keterangan}",
         )
-        masuk = self.create(masuk_data, current_user_id)
+        masuk = self.create(masuk_data, user_id)
 
         return {
             "keluar": keluar,

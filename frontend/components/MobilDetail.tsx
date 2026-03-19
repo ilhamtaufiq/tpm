@@ -127,9 +127,10 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
             try {
                 await uploadMediaAction.mutateAsync({ id: activeUnit.id, files });
-                // Note: We'll show a success dialog here if needed, but per project style Alert.alert or local toast is fine if it works
+                Alert.alert('Berhasil', 'Media berhasil diunggah');
             } catch (error) {
                 console.error('Upload error:', error);
+                Alert.alert('Gagal Upload', 'Terjadi kesalahan saat mengunggah media. Silakan coba lagi.');
             }
         }
     };
@@ -227,10 +228,26 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     >
                         <X size={20} color="white" />
                     </TouchableOpacity>
-                    <View style={{ backgroundColor: getStatusColor(activeUnit.status) + 'E6' }} className="backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg">
-                        <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
-                            {activeUnit.status}
-                        </Typography>
+                    <View className="flex-row gap-2">
+                        <View style={{ backgroundColor: getStatusColor(activeUnit.status) + 'E6' }} className="backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg">
+                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                {activeUnit.status}
+                            </Typography>
+                        </View>
+                        {activeUnit.status_bayar_beli !== 'LUNAS' && (
+                            <View className="bg-rose-600/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg">
+                                <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                    HUTANG
+                                </Typography>
+                            </View>
+                        )}
+                        {activeUnit.status === 'booking' && (
+                            <View className="bg-amber-500/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg">
+                                <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
+                                    PIUTANG
+                                </Typography>
+                            </View>
+                        )}
                     </View>
                 </View>
 

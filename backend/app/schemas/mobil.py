@@ -30,6 +30,7 @@ class MobilBase(BaseModel):
     nominal_investor: Decimal = Field(default=Decimal("0"), ge=0)
     status: CarStatus = CarStatus.TERSEDIA
     tanggal_masuk: date
+    status_bayar_beli: Optional[PaymentStatus] = None
     catatan: Optional[str] = None
 
 class PurchasePaymentItem(BaseModel):
@@ -65,11 +66,23 @@ class MobilUpdate(BaseModel):
     tanggal_masuk: Optional[date] = None
     catatan: Optional[str] = None
 
+class MobilMediaResponse(BaseModel):
+    id: int
+    mobil_id: int
+    file_path: str
+    file_name: str
+    file_type: str
+    is_primary: bool
+    urutan: int
+
+    model_config = {"from_attributes": True}
+
 class MobilResponse(MobilBase):
     id: int
     kode: str
     created_at: datetime
     updated_at: datetime
+    media: List[MobilMediaResponse] = []
 
     model_config = {"from_attributes": True}
 
@@ -191,16 +204,7 @@ class MobilList(BaseModel):
 
     model_config = {"from_attributes": True}
 
-class MobilMediaResponse(BaseModel):
-    id: int
-    mobil_id: int
-    file_path: str
-    file_name: str
-    file_type: str
-    is_primary: bool
-    urutan: int
-
-    model_config = {"from_attributes": True}
+# MobilMediaResponse was moved up
 
 class MobilBiayaCreate(BaseModel):
     tanggal: date
