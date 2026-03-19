@@ -11,7 +11,8 @@ RUN apt-get update && \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
-    curl && \
+    curl \
+    tzdata && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
