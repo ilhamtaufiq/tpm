@@ -53,37 +53,30 @@ def send_email(
 
 def send_password_reset_email(db: Session, to_email: str, token: str, user_name: str):
     """Send password reset email to user."""
-    # Build your reset URL here. In a real app, this should point to your frontend.
-    # We can try to get the base URL from settings if available, or use a default.
     from app.config import settings
     
-    # Simple heuristic to get the frontend URL
-    # Usually it's the first origin in cors_origins_list that isn't localhost:8000
-    frontend_url = "https://tpm.cianjur.space" # Default fallback
-    for origin in settings.cors_origins_list:
-        if "localhost" in origin and "8000" not in origin:
-            frontend_url = origin
-            break
-        elif "localhost" not in origin:
-            frontend_url = origin
-            break
-            
+    # Use explicitly configured frontend URL from settings/env
+    frontend_url = settings.frontend_url.rstrip('/')
     reset_link = f"{frontend_url}/reset-password?token={token}"
     
     subject = "Reset Password Akun TPM"
     body = f"""
     <html>
-    <body>
-        <h2>Halo {user_name},</h2>
-        <p>Kami menerima permintaan untuk mereset password akun TPM Anda.</p>
-        <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
-        <p>
-            <a href="{reset_link}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
-        </p>
-        <p>Link ini akan kadaluarsa dalam 1 jam.</p>
-        <p>Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan email ini.</p>
-        <br>
-        <p>Terima kasih,<br>Tim TPM</p>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #023C69;">Halo {user_name},</h2>
+            <p>Kami menerima permintaan untuk mereset password akun TPM Anda.</p>
+            <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_link}" style="background-color: #023C69; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Reset Password Sekarang</a>
+            </div>
+            <p>Jika tombol di atas tidak berfungsi, Anda juga bisa menyalin link berikut ke browser Anda:</p>
+            <p style="word-break: break-all; color: #666; font-size: 12px;">{reset_link}</p>
+            <p>Link ini akan kadaluarsa dalam 1 jam.</p>
+            <p style="color: #999; font-size: 12px;">Jika Anda tidak merasa melakukan permintaan ini, silakan abaikan email ini.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+            <p>Terima kasih,<br><strong>Tim TPM</strong></p>
+        </div>
     </body>
     </html>
     """
