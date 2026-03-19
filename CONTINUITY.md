@@ -1,7 +1,27 @@
-1: # Continuity Ledger
-2: 
-3: - Goal: Fix server-client timezone discrepancy (WIB time vs Server UTC time).
-21:     - `docker-compose.yml`
-22:     - `backend/app/database/connection.py`
-23:     - `backend/app/database/base.py`
-24: 
+# Continuity Ledger
+
+- Goal: Fix server-client timezone discrepancy (WIB time vs Server UTC time).
+- Constraints/Assumptions:
+    - User location: Indonesia (WIB/UTC+7).
+    - Server time correctly set to WIB in VPS.
+    - Application/DB may be running in containers (Docker) or directly on VPS.
+    - Transaction timestamps show "7 hours ago" (saved in UTC, read as local).
+- Key decisions:
+    - Set `TZ=Asia/Jakarta` in `docker-compose.yml` and `backend/Dockerfile` (to be safe even if not used).
+    - Configured SQLAlchemy engine with session timezone `+07:00` for MySQL.
+    - Replaced all `datetime.utcnow()` with `datetime.now()` in backend code to ensure consistency with the VPS local time.
+- State:
+    - Done:
+        - Applied timezone fixes to `docker-compose.yml` and `Dockerfile`.
+        - Applied `SET time_zone = '+07:00'` to SQLAlchemy connection engine.
+        - Replaced `utcnow()` in 11 files with `now()`.
+    - Now:
+        - Ready for user verification.
+    - Next:
+        - Ask user to restart the backend and check a new transaction.
+- Open questions (UNCONFIRMED):
+    - Confirm how the user starts the backend (pm2, docker, etc.).
+- Working set:
+    - [connection.py](file:///c:/laragon/www/tpm/backend/app/database/connection.py)
+    - [security.py](file:///c:/laragon/www/tpm/backend/app/utils/security.py)
+    - Various services using timestamps.
