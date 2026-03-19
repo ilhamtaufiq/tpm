@@ -9,6 +9,7 @@ from app.config import settings
 # Create SQLAlchemy engine
 engine = create_engine(
     settings.database_url,
+    connect_args={"init_command": "SET time_zone = '+07:00'"},
     pool_pre_ping=True,
     pool_recycle=3600,
     echo=False,
