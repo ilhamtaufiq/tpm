@@ -4,17 +4,14 @@ import {
     ChevronLeft,
     Wrench,
     Truck,
-    CarFront,
+    Car,
     Database,
     Users,
-    BarChart3,
+    BarChart2,
     History,
     Settings,
     Wallet,
-    BadgeDollarSign,
-    ClipboardList,
-    LayoutGrid,
-    ShieldCheck
+    Shield
 } from 'lucide-react-native';
 import { Typography } from '../components/ui/Typography';
 import { useRouter } from 'expo-router';
@@ -71,7 +68,7 @@ export default function AllMenusScreen() {
         {
             id: 'mobil',
             label: 'Jual Beli Mobil',
-            icon: CarFront,
+            icon: Car,
             color: themeColors.primary,
             path: '/mobil',
             description: 'Inventaris & Penjualan'
@@ -103,7 +100,7 @@ export default function AllMenusScreen() {
         {
             id: 'laporan',
             label: 'Laporan',
-            icon: BarChart3,
+            icon: BarChart2,
             color: themeColors.primary,
             path: '/laporan',
             description: 'Rekap & Analisa'
@@ -127,7 +124,7 @@ export default function AllMenusScreen() {
         {
             id: 'users',
             label: 'User Management',
-            icon: ShieldCheck,
+            icon: Shield,
             color: themeColors.primary,
             path: '/settings/users',
             description: 'Admin, Kasir & Mekanik'

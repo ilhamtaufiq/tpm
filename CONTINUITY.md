@@ -1,18 +1,20 @@
 # Continuity Ledger
 
-- Goal: Fix backend migration error (MySQL 1553 - cannot drop index used in FK).
+- Goal: Fix frontend "Minified React error #130" on VPS.
 - Constraints/Assumptions:
-    - MySQL requires foreign keys to be dropped before the index they use.
-    - Migration file `20260318_152354_remove_user_id_from_kas_bank.py` had the wrong order.
+    - Error #130 means an `undefined` component was rendered.
+    - Most likely cause: missing icon in `lucide-react-native` version on VPS.
 - Key decisions:
-    - Swap `op.drop_index` and `op.drop_constraint` in the `upgrade()` function.
+    - Replace potentially newer or suspect icon names with older, more stable ones.
+    - `ShieldCheck` -> `Shield`, `BarChart3` -> `BarChart2`, `CarFront` -> `Car`.
 - State:
     - Done:
-        - Identified the problematic migration file.
-        - Swapped the order of dropping the index and foreign key.
-    - Now: Confirming the fix and communicating with the user.
+        - Identified suspect icons in `all-menus.tsx`.
+        - Replaced suspect icons with stable alternatives.
+        - Removed unused suspect imports.
+    - Now: Confirming with the user if the error persists.
     - Next: None.
 - Open questions (UNCONFIRMED):
     - None.
 - Working set (files/ids/commands):
-    - `backend/alembic/versions/20260318_152354_remove_user_id_from_kas_bank.py`
+    - `frontend/app/all-menus.tsx`
