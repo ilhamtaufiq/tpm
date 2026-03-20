@@ -819,7 +819,7 @@ def get_neraca(
     # 4. Stok Mobil (Inventory - formerly in Fixed Assets)
     available_cars = (
         db.query(Mobil)
-        .filter(Mobil.deleted_at.is_(None), Mobil.status == CarStatus.TERSEDIA)
+        .filter(Mobil.deleted_at.is_(None), Mobil.status != CarStatus.TERJUAL)
         .all()
     )
     stok_mobil_harga_beli = 0
