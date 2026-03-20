@@ -14,6 +14,7 @@ import {
     Calendar,
     Truck,
     Search,
+    Package,
     X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -31,7 +32,8 @@ export default function PurchaseScreen() {
     const [tanggal, setTanggal] = useState(new Date());
     const [items, setItems] = useState<any[]>([]);
     const [catatan, setCatatan] = useState('');
-    const [metodeBayar, setMetodeBayar] = useState('tunai');
+    const [statusBayar, setStatusBayar] = useState('LUNAS');
+    const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([
         { id: Date.now(), metode: 'TUNAI', nominal: '' }
@@ -94,12 +96,18 @@ export default function PurchaseScreen() {
     };
 
     const handleUpdatePaymentRow = (id: number, field: string, value: string) => {
-        setPayments(payments.map(p => {
+        const nextPayments = payments.map(p => {
             if (p.id === id) {
                 return { ...p, [field]: field === 'nominal' ? formatNumber(value) : value };
             }
             return p;
-        }));
+        });
+        setPayments(nextPayments);
+
+        if (field === 'nominal') {
+            const totalPaid = nextPayments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+            setStatusBayar(totalPaid >= total ? 'LUNAS' : 'BELUM_LUNAS');
+        }
     };
 
     const handleSelectPart = (part: any) => {
@@ -129,16 +137,24 @@ export default function PurchaseScreen() {
             return;
         }
 
+        if (!isSplitPayment && !metodeBayar) {
+            alert('Mohon pilih metode pembayaran');
+            return;
+        }
+
         const payload = {
             tanggal: tanggal.toISOString().split('T')[0],
             supplier_id: selectedSupplier.id,
             nomor_faktur: nomorFaktur || '-', // Optional
             catatan: catatan,
-            metode_bayar: isSplitPayment ? 'SPLIT' : metodeBayar.toUpperCase(),
+            status_bayar: isSplitPayment ? (totalSplitAmount >= total ? 'LUNAS' : 'BELUM_LUNAS') : statusBayar,
+            metode_bayar: isSplitPayment ? 'SPLIT' : (metodeBayar || 'TUNAI').toUpperCase(),
             payments: isSplitPayment ? payments.map(p => ({
                 metode: p.metode,
                 jumlah: parseNumber(p.nominal)
-            })) : [],
+            })).filter(p => p.jumlah > 0) : [
+                { metode: (metodeBayar || 'TUNAI').toUpperCase(), jumlah: statusBayar === 'LUNAS' ? total : parseNumber(payments[0]?.nominal || '0') }
+            ],
             diskon: 0,
             detail: items.map(item => ({
                 spare_part_id: item.spare_part_id,
@@ -202,11 +218,11 @@ export default function PurchaseScreen() {
 
                 {/* Metode Pembayaran */}
                 <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-2">
-                        <Typography variant="body2" className="text-textGray text-sm font-medium">Metode Pembayaran *</Typography>
+                    <View className="flex-row justify-between items-center mb-4">
+                        <Typography variant="body2" weight="bold" className="text-primary uppercase pr-1">Pembayaran</Typography>
                         <TouchableOpacity
                             onPress={() => setIsSplitPayment(!isSplitPayment)}
-                            className={`px-3 py-1 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                            className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                         >
                             <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                                 {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
@@ -214,91 +230,168 @@ export default function PurchaseScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    {isSplitPayment ? (
-                        <View className="space-y-3">
-                            {payments.map((p, idx) => (
-                                <Card key={p.id} variant="outlined" className="p-4 border-gray-100 bg-gray-50/50">
-                                    <View className="flex-row justify-between items-center mb-3">
-                                        <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
-                                        {payments.length > 1 && (
-                                            <TouchableOpacity onPress={() => handleRemovePaymentRow(p.id)} className="w-8 h-8 items-center justify-center bg-red-50 rounded-xl">
-                                                <Trash2 size={16} color="#EE2737" />
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
-                                    <View className="flex-row space-x-2 mb-3">
-                                        {['TUNAI', 'TRANSFER'].map((m) => (
-                                            <TouchableOpacity
-                                                key={m}
-                                                onPress={() => handleUpdatePaymentRow(p.id, 'metode', m)}
-                                                className={`flex-1 py-2.5 items-center rounded-xl border-2 ${p.metode === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
-                                            >
-                                                <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                    <Input
-                                        placeholder="Nominal Rp"
-                                        keyboardType="numeric"
-                                        value={p.nominal}
-                                        containerClassName="mb-0"
-                                        onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
-                                    />
-                                </Card>
-                            ))}
-                            <TouchableOpacity
-                                onPress={handleAddPaymentRow}
-                                className="flex-row items-center justify-center py-3 border-2 border-dashed border-gray-200 rounded-xl"
-                            >
-                                <Plus size={18} color="#023C69" />
-                                <Typography className="ml-2 text-primary font-bold">Tambah Metode</Typography>
-                            </TouchableOpacity>
-
-                            <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/10 mt-2">
-                                <Typography variant="caption" weight="bold" className="text-primary">TOTAL TERBAYAR</Typography>
-                                <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
+                    {!isSplitPayment ? (
+                        <View className="space-y-4">
+                            {/* Row: Method */}
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Metode Pembayaran</Typography>
+                                <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
+                                    {[
+                                        { label: 'Cash', value: 'TUNAI' },
+                                        { label: 'Trf', value: 'TRANSFER' },
+                                        { label: 'Hutang Penuh', value: 'KREDIT' }
+                                    ].map((m) => (
+                                        <TouchableOpacity
+                                            key={m.value}
+                                            onPress={() => {
+                                                setMetodeBayar(m.value);
+                                                if (m.value === 'KREDIT') {
+                                                    setStatusBayar('BELUM_LUNAS');
+                                                    handleUpdatePaymentRow(payments[0].id, 'nominal', '0');
+                                                } else {
+                                                    // Default to Lunas if switching to Cash/Trf
+                                                    setStatusBayar('LUNAS');
+                                                    handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(total.toString()));
+                                                }
+                                            }}
+                                            className={`flex-1 py-3 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
+                                        >
+                                            <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
+                                                {m.label}
+                                            </Typography>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
                             </View>
 
-                            {totalSplitAmount < total && (
-                                <View className="p-4 bg-amber-50 rounded-xl border border-amber-100 mt-2 flex-row justify-between items-center">
-                                    <View>
-                                        <Typography variant="caption" weight="bold" className="text-amber-700">SISA HUTANG</Typography>
-                                        <Typography variant="body2" className="text-amber-600">Akan dicatat sebagai hutang</Typography>
+                            {/* Row: Nominal if NOT full Hutang and NOT null */}
+                            {metodeBayar && metodeBayar !== 'KREDIT' && (
+                                <View className="bg-primary/5 border border-primary/10 p-4 rounded-[28px]">
+                                    <View className="flex-row justify-between items-center mb-2 px-1">
+                                        <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-tight">Jumlah Bayar (Rp)</Typography>
+                                        <Typography 
+                                            variant="caption" 
+                                            weight="bold" 
+                                            className={parseNumber(payments[0]?.nominal || '0') >= total ? "text-emerald-600" : "text-amber-600"}
+                                        >
+                                            {parseNumber(payments[0]?.nominal || '0') >= total ? "Lunas" : "Titip / DP"}
+                                        </Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-amber-700">{formatCurrency(total - totalSplitAmount)}</Typography>
+                                    <Input
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        containerClassName="mb-1"
+                                        className="h-12 text-lg border-primary/20 bg-white"
+                                        value={payments[0]?.nominal || ''}
+                                        onChangeText={(v) => {
+                                            const nominal = parseNumber(v);
+                                            handleUpdatePaymentRow(payments[0].id, 'nominal', v);
+                                            setStatusBayar(nominal >= total ? 'LUNAS' : 'BELUM_LUNAS');
+                                        }}
+                                    />
+                                    {parseNumber(payments[0]?.nominal || '0') < total && (
+                                        <Typography variant="caption" className="text-amber-600 italic mt-1 px-1">
+                                            * Sisa {formatCurrency(Math.max(0, total - parseNumber(payments[0]?.nominal || '0')))} akan dicatat sebagai <Typography weight="bold">Hutang</Typography>.
+                                        </Typography>
+                                    )}
+                                </View>
+                            )}
+                            
+                            {/* Feedback if full Hutang */}
+                            {metodeBayar === 'KREDIT' && (
+                                <View className="bg-amber-50/50 border border-amber-100 p-5 rounded-[28px] flex-row items-center">
+                                    <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-4">
+                                        <Package size={20} color="#D97706" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Typography variant="caption" weight="bold" className="text-amber-800 uppercase tracking-widest text-[10px] mb-1">Status: HUTANG PENUH</Typography>
+                                        <Typography variant="body2" className="text-amber-700 font-medium">
+                                            Transaksi dicatat sebagai hutang sebesar {formatCurrency(total)}.
+                                        </Typography>
+                                    </View>
                                 </View>
                             )}
                         </View>
                     ) : (
-                        <View className="flex-row space-x-2">
-                            {[
-                                { id: 'tunai', label: 'Tunai' },
-                                { id: 'transfer', label: 'Transfer' },
-                                { id: 'kredit', label: 'Hutang' }
-                            ].map((m) => (
-                                <TouchableOpacity
-                                    key={m.id}
-                                    onPress={() => setMetodeBayar(m.id)}
-                                    className={`flex-1 py-3 items-center rounded-xl border-2 ${metodeBayar === m.id ? 'border-primary bg-primary/5' : 'border-gray-100'}`}
-                                >
-                                    <Typography
-                                        className={metodeBayar === m.id ? 'text-primary' : 'text-gray-400'}
-                                        weight={metodeBayar === m.id ? 'bold' : 'medium'}
+                        <View className="space-y-3">
+                            {payments.map((p, idx) => (
+                                <View key={p.id} className="flex-row space-x-3 items-end mb-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
+                                    <View className="flex-1">
+                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Metode</Typography>}
+                                        <View className="flex-row bg-white border border-gray-200 rounded-xl overflow-hidden h-10">
+                                            {['TUNAI', 'TRANSFER'].map((m) => {
+                                                const label = m === 'TRANSFER' ? 'Trf' : 'Cash';
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={m}
+                                                        onPress={() => handleUpdatePaymentRow(p.id, 'metode', m)}
+                                                        className={`flex-1 items-center justify-center ${p.metode === m ? 'bg-primary' : 'bg-transparent'}`}
+                                                    >
+                                                        <Typography weight="bold" className={`text-[9px] ${p.metode === m ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                    <View className="flex-[1.5]">
+                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Nominal (Rp)</Typography>}
+                                        <Input
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            containerClassName="mb-0"
+                                            className="h-10 text-sm"
+                                            value={p.nominal}
+                                            onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
+                                        />
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => handleRemovePaymentRow(p.id)}
+                                        className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
                                     >
-                                        {m.label}
-                                    </Typography>
-                                </TouchableOpacity>
+                                        <Trash2 size={14} color="#F43F5E" />
+                                    </TouchableOpacity>
+                                </View>
                             ))}
+                            <TouchableOpacity
+                                onPress={handleAddPaymentRow}
+                                className="flex-row items-center justify-center py-2.5 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
+                            >
+                                <Plus size={14} color="#023C69" />
+                                <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
+                            </TouchableOpacity>
+
+                            <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-2xl border border-primary/10 mt-2">
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-primary text-[10px]">TOTAL TERBAYAR</Typography>
+                                    <Typography weight="bold" className="text-primary text-lg">{formatCurrency(totalSplitAmount)}</Typography>
+                                </View>
+                                <View className="items-end">
+                                    {totalSplitAmount < total ? (
+                                        <>
+                                            <Typography variant="caption" weight="bold" className="text-amber-600 text-[10px]">SISA HUTANG</Typography>
+                                            <Typography weight="bold" className="text-amber-600 text-lg">{formatCurrency(total - totalSplitAmount)}</Typography>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Typography variant="caption" weight="bold" className="text-emerald-600 text-[10px]">STATUS</Typography>
+                                            <Typography weight="bold" className="text-emerald-600 text-lg">LUNAS</Typography>
+                                        </>
+                                    )}
+                                </View>
+                            </View>
                         </View>
                     )}
                 </View>
 
                 {/* Items List */}
                 <View className="flex-row justify-between items-center mt-2 mb-4">
-                    <Typography variant="body2" weight="bold">Daftar Barang</Typography>
-                    <TouchableOpacity onPress={handleAddItem} className="flex-row items-center bg-green-50 px-3 py-1.5 rounded-full">
-                        <Plus size={16} color="#023C69" />
-                        <Typography className="text-primary text-xs ml-1 font-bold">Tambah Item</Typography>
+                    <View className="flex-row items-center">
+                        <Package size={18} color="#023C69" />
+                        <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
+                    </View>
+                    <TouchableOpacity onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                        <Plus size={14} color="#023C69" />
+                        <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
                     </TouchableOpacity>
                 </View>
 
