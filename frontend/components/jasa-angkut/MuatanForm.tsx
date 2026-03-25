@@ -12,6 +12,7 @@ import { Plus, Trash2, Truck, PlusCircle } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { onlineManager } from '@tanstack/react-query';
 
 interface MuatanFormProps {
     onSuccess?: () => void;
@@ -287,6 +288,26 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 })).filter(p => p.nominal > 0) : [],
                 persentase_tpm: 50
             };
+
+            if (!onlineManager.isOnline()) {
+                if (isEditMode) {
+                    jasaAngkutService.updateMuatan(initialData.id, payload);
+                } else {
+                    jasaAngkutService.createMuatan(payload);
+                }
+
+                setDialogConfig({
+                    visible: true,
+                    title: 'Offline Mode',
+                    message: isEditMode ? 'Update muatan telah disimpan di antrean offline.' : 'Muatan baru telah disimpan di antrean offline.',
+                    variant: 'info'
+                });
+
+                setTimeout(() => {
+                    onSuccess?.();
+                }, 1500);
+                return;
+            }
 
             if (isEditMode) {
                 await jasaAngkutService.updateMuatan(initialData.id, payload);

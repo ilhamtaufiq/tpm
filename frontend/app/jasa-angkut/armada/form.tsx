@@ -10,6 +10,7 @@ import { Card } from '../../../components/ui/Card';
 import { useCreateArmada, useUpdateArmada, useDeleteArmada, useArmadaList } from '../../../hooks/useJasaAngkut';
 import { jasaAngkutService } from '../../../services/jasaAngkut';
 import { getErrorMessage } from '../../../utils/error';
+import { onlineManager } from '@tanstack/react-query';
 
 export default function ArmadaFormScreen() {
     const router = useRouter();
@@ -67,6 +68,18 @@ export default function ArmadaFormScreen() {
 
         try {
             setSubmitting(true);
+
+            if (!onlineManager.isOnline()) {
+                if (isEdit) {
+                    updateArmada.mutate({ id: parseInt(id), data: formData });
+                } else {
+                    createArmada.mutate(formData);
+                }
+                Alert.alert('Offline Mode', 'Data armada telah disimpan di antrean offline.');
+                router.back();
+                return;
+            }
+
             if (isEdit) {
                 await updateArmada.mutateAsync({ id: parseInt(id), data: formData });
             } else {
@@ -92,6 +105,14 @@ export default function ArmadaFormScreen() {
                     onPress: async () => {
                         try {
                             setSubmitting(true);
+
+                            if (!onlineManager.isOnline()) {
+                                deleteArmada.mutate(parseInt(id));
+                                Alert.alert('Offline Mode', 'Data armada telah dijadwalkan untuk dihapus saat online.');
+                                router.back();
+                                return;
+                            }
+
                             await deleteArmada.mutateAsync(parseInt(id));
                             router.back();
                         } catch (error) {

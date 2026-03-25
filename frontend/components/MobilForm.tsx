@@ -10,6 +10,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { formatNumber, parseNumber } from '../utils/format';
+import { onlineManager } from '@tanstack/react-query';
 
 interface MobilFormProps {
     initialData?: any;
@@ -144,6 +145,26 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                 });
             }
         };
+
+        if (!onlineManager.isOnline()) {
+            if (isEdit) {
+                updateMutation.mutate({ id: initialData.id, data: payload });
+            } else {
+                createMutation.mutate(payload);
+            }
+
+            setDialogConfig({
+                visible: true,
+                title: 'Offline Mode',
+                message: isEdit ? 'Update data mobil telah disimpan di antrean offline.' : 'Mobil baru telah disimpan di antrean offline.',
+                variant: 'info'
+            });
+
+            setTimeout(() => {
+                onSuccess?.();
+            }, 1500);
+            return;
+        }
 
         if (isEdit) {
             updateMutation.mutate({ id: initialData.id, data: payload }, mutateOptions);

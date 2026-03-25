@@ -25,6 +25,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter } from 'expo-router';
+import { onlineManager } from '@tanstack/react-query';
 
 export default function SupplierScreen() {
     const router = useRouter(); const [searchQuery, setSearchQuery] = useState('');
@@ -147,6 +148,17 @@ export default function SupplierScreen() {
         }
 
         try {
+            if (!onlineManager.isOnline()) {
+                if (selectedSupplier) {
+                    updateMutation.mutate({ id: selectedSupplier.id, data: formData });
+                } else {
+                    createMutation.mutate(formData);
+                }
+                setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Data supplier telah disimpan di antrean offline.', variant: 'info' });
+                handleCloseSheet();
+                return;
+            }
+
             if (selectedSupplier) {
                 await updateMutation.mutateAsync({ id: selectedSupplier.id, data: formData });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Supplier berhasil diupdate', variant: 'success' });
@@ -172,6 +184,13 @@ export default function SupplierScreen() {
             type: 'confirm',
             onConfirm: async () => {
                 try {
+                    if (!onlineManager.isOnline()) {
+                        deleteMutation.mutate(selectedSupplier.id);
+                        setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Supplier telah dijadwalkan untuk dihapus saat online.', variant: 'info' });
+                        handleCloseSheet();
+                        return;
+                    }
+
                     await deleteMutation.mutateAsync(selectedSupplier.id);
                     setDialogConfig({ visible: true, title: 'Sukses', message: 'Supplier berhasil dihapus', variant: 'success' });
                     handleCloseSheet();

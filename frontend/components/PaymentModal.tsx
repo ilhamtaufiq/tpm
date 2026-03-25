@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { View, TouchableOpacity, ScrollView, Platform, Modal, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Platform, Modal, StyleSheet, Alert } from 'react-native';
+import { onlineManager } from '@tanstack/react-query';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -98,6 +99,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 payload.piutang_id = id;
             } else {
                 payload.hutang_id = id;
+            }
+
+            if (!onlineManager.isOnline()) {
+                currentMutation.mutate(payload);
+                Alert.alert('Offline Mode', 'Pembayaran telah disimpan di antrean offline.');
+                onSuccess();
+                onClose();
+                return;
             }
 
             await currentMutation.mutateAsync(payload);

@@ -20,6 +20,8 @@ import {
     useDebounce
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
+import { onlineManager } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 
 interface JasaServisForm {
     id?: number;
@@ -131,6 +133,17 @@ export default function JasaServisScreen() {
                 harga: parseNumber(form.harga),
             };
 
+            if (!onlineManager.isOnline()) {
+                if (isEditing && form.id) {
+                    updateMutation.mutate({ id: form.id, data: payload });
+                } else {
+                    createMutation.mutate(payload);
+                }
+                Alert.alert('Offline Mode', 'Data jasa telah disimpan di antrean offline.');
+                handleCloseSheet();
+                return;
+            }
+
             if (isEditing && form.id) {
                 await updateMutation.mutateAsync({ id: form.id, data: payload });
             } else {
@@ -144,6 +157,11 @@ export default function JasaServisScreen() {
     };
 
     const handleDelete = (id: number) => {
+        if (!onlineManager.isOnline()) {
+            deleteMutation.mutate(id);
+            Alert.alert('Offline Mode', 'Jasa telah dijadwalkan untuk dihapus saat online.');
+            return;
+        }
         deleteMutation.mutate(id);
     };
 

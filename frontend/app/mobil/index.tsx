@@ -19,6 +19,7 @@ import {
     Trash2
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { onlineManager } from '@tanstack/react-query';
 import BottomSheet, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { MobilForm } from '../../components/MobilForm';
 import { MobilDetail } from '../../components/MobilDetail';
@@ -159,6 +160,15 @@ export default function MobilInventoryScreen() {
             onConfirm: async () => {
                 try {
                     setActionLoading(true);
+
+                    if (!onlineManager.isOnline()) {
+                        deleteMutation.mutate(unit.id);
+                        refetch();
+                        closeDialog();
+                        Alert.alert('Offline Mode', 'Unit mobil telah dijadwalkan untuk dihapus saat online.');
+                        return;
+                    }
+
                     await deleteMutation.mutateAsync(unit.id);
                     refetch();
                     closeDialog();

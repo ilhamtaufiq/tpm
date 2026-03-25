@@ -26,6 +26,8 @@ import {
     useDebounce
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
+import { onlineManager } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 
 interface SparePartForm {
     id?: number;
@@ -150,6 +152,17 @@ export default function SparePartMasterScreen() {
                 stok_minimum: Number(form.stok_minimum),
             };
 
+            if (!onlineManager.isOnline()) {
+                if (isEditing && form.id) {
+                    updateMutation.mutate({ id: form.id, data: payload });
+                } else {
+                    createMutation.mutate(payload);
+                }
+                Alert.alert('Offline Mode', 'Data barang telah disimpan di antrean offline.');
+                handleCloseSheet();
+                return;
+            }
+
             if (isEditing && form.id) {
                 await updateMutation.mutateAsync({ id: form.id, data: payload });
             } else {
@@ -167,7 +180,11 @@ export default function SparePartMasterScreen() {
     };
 
     const handleDelete = (id: number) => {
-        // In a real app, confirm first
+        if (!onlineManager.isOnline()) {
+            deleteMutation.mutate(id);
+            Alert.alert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
+            return;
+        }
         deleteMutation.mutate(id);
     };
 

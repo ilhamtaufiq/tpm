@@ -20,6 +20,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit, useCreateHutang } from '../../hooks/useKeuangan';
@@ -187,6 +188,27 @@ export default function HutangUsahaScreen() {
                 payload.payments = validatedPayments;
             } else if (createMethod) {
                 payload.metode_pembayaran = createMethod;
+            }
+
+            if (!onlineManager.isOnline()) {
+                createMutation.mutate(payload);
+                showAlert('Offline Mode', 'Hutang telah disimpan di antrean offline.', 'info');
+                // Reset state
+                setCreateName('');
+                setCreateAmount('');
+                setCreateNote('');
+                setCreateMethod(undefined);
+                setIsCreateSplitPayment(false);
+                setCreatePayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+
+                if (Platform.OS === 'web') {
+                    setCreateVisible(false);
+                    setIsSheetOpen(false);
+                } else {
+                    createSheetRef.current?.close();
+                    setIsSheetOpen(false);
+                }
+                return;
             }
 
             await createMutation.mutateAsync(payload);

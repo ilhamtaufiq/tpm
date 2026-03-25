@@ -10,6 +10,7 @@ import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useAddBiaya, useDeleteBiaya, useMobilDetail } from '../hooks/useMobil';
+import { onlineManager } from '@tanstack/react-query';
 
 // Import Icons properly
 import {
@@ -137,6 +138,21 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             }
         };
 
+        if (!onlineManager.isOnline()) {
+            addBiayaMutation.mutate(payload);
+            setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: '' });
+            setPayments([]);
+            setIsSplitPayment(false);
+            setDialogConfig({
+                visible: true,
+                title: 'Offline Mode',
+                message: 'Biaya telah disimpan di antrean offline.',
+                variant: 'info',
+                type: 'alert'
+            });
+            return;
+        }
+
         addBiayaMutation.mutate(payload, {
             onSuccess: () => {
                 setNewLainnya({ kategori: '', deskripsi: '', jumlah: '', metode_bayar: '' });
@@ -172,6 +188,13 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
             loading: false,
             onConfirm: () => {
                 setDialogConfig((prev: any) => ({ ...prev, loading: true }));
+
+                if (!onlineManager.isOnline()) {
+                    deleteBiayaMutation.mutate({ id: activeUnit.id, biayaId });
+                    setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Biaya telah dijadwalkan untuk dihapus saat online.', variant: 'info', type: 'alert', loading: false });
+                    return;
+                }
+
                 deleteBiayaMutation.mutate({ id: activeUnit.id, biayaId }, {
                     onSuccess: () => {
                         setDialogConfig({ visible: true, title: 'Sukses', message: 'Biaya berhasil dihapus', variant: 'success', type: 'alert', loading: false });

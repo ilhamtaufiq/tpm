@@ -30,6 +30,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
 import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, usePayPenjualanMobil, useCancelBookingMobil } from '../hooks/useMobil';
+import { onlineManager } from '@tanstack/react-query';
 import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
 import { formatCurrency, parseNumber, formatNumber } from '../utils/format';
@@ -126,6 +127,11 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             }));
 
             try {
+                if (!onlineManager.isOnline()) {
+                    uploadMediaAction.mutate({ id: activeUnit.id, files });
+                    Alert.alert('Offline Mode', 'Media akan diunggah saat koneksi tersedia.');
+                    return;
+                }
                 await uploadMediaAction.mutateAsync({ id: activeUnit.id, files });
                 Alert.alert('Berhasil', 'Media berhasil diunggah');
             } catch (error) {
@@ -139,6 +145,15 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         if (!deleteDialog.mediaId) return;
 
         try {
+            if (!onlineManager.isOnline()) {
+                deleteMediaAction.mutate({
+                    id: activeUnit.id,
+                    mediaId: deleteDialog.mediaId
+                });
+                Alert.alert('Offline Mode', 'Penghapusan media telah dijadwalkan.');
+                setDeleteDialog({ visible: false, mediaId: null });
+                return;
+            }
             await deleteMediaAction.mutateAsync({
                 id: activeUnit.id,
                 mediaId: deleteDialog.mediaId

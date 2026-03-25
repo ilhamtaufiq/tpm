@@ -11,6 +11,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
+import { onlineManager } from '@tanstack/react-query';
 
 interface MobilSalesFormProps {
     unit: any;
@@ -189,6 +190,20 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                         jumlah: parseNumber(c.jumlah)
                     })),
             };
+
+            if (!onlineManager.isOnline()) {
+                mutate(payload);
+                setDialogConfig({
+                    visible: true,
+                    title: 'Offline Mode',
+                    message: 'Transaksi penjualan telah disimpan di antrean offline.',
+                    variant: 'info'
+                });
+                setTimeout(() => {
+                    onSuccess?.();
+                }, 1500);
+                return;
+            }
 
             mutate(payload, {
                 onSuccess: () => {

@@ -24,6 +24,7 @@ import {
     Share2
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
+import { onlineManager } from '@tanstack/react-query';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
@@ -319,6 +320,16 @@ export default function JasaAngkutScreen() {
             onConfirm: async () => {
                 try {
                     setActionLoading(true);
+
+                    if (!onlineManager.isOnline()) {
+                        jasaAngkutService.deleteMuatan(item.id);
+                        handleCloseSheet();
+                        refetch();
+                        closeDialog();
+                        Alert.alert('Offline Mode', 'Data muatan telah dijadwalkan untuk dihapus saat online.');
+                        return;
+                    }
+
                     await jasaAngkutService.deleteMuatan(item.id);
                     handleCloseSheet();
                     refetch();

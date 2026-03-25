@@ -29,6 +29,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
+import { onlineManager } from '@tanstack/react-query';
 
 const TYPE_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -189,6 +190,17 @@ export default function CustomerScreen() {
         }
 
         try {
+            if (!onlineManager.isOnline()) {
+                if (selectedCustomer) {
+                    updateMutation.mutate({ id: selectedCustomer.id, data: formData });
+                } else {
+                    createMutation.mutate(formData);
+                }
+                setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Data customer telah disimpan di antrean offline.', variant: 'info' });
+                handleCloseSheet();
+                return;
+            }
+
             if (selectedCustomer) {
                 await updateMutation.mutateAsync({ id: selectedCustomer.id, data: formData });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Customer berhasil diupdate', variant: 'success' });
@@ -233,6 +245,13 @@ export default function CustomerScreen() {
             type: 'confirm',
             onConfirm: async () => {
                 try {
+                    if (!onlineManager.isOnline()) {
+                        deleteMutation.mutate(selectedCustomer.id);
+                        setDialogConfig({ visible: true, title: 'Offline Mode', message: 'Customer telah dijadwalkan untuk dihapus saat online.', variant: 'info' });
+                        handleCloseSheet();
+                        return;
+                    }
+
                     await deleteMutation.mutateAsync(selectedCustomer.id);
                     setDialogConfig({ visible: true, title: 'Sukses', message: 'Customer berhasil dihapus', variant: 'success' });
                     handleCloseSheet();

@@ -23,6 +23,8 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
+import { onlineManager } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 
 export default function AbsensiScreen() {
     const router = useRouter();
@@ -182,7 +184,6 @@ export default function AbsensiScreen() {
             });
             return;
         }
-
         try {
             const attendanceRecords = Object.entries(selectedDates).map(([date, info]: [string, any]) => ({
                 date,
@@ -190,6 +191,17 @@ export default function AbsensiScreen() {
                 jam_masuk: info.jam_masuk,
                 jam_keluar: info.jam_keluar
             }));
+
+            if (!onlineManager.isOnline()) {
+                bulkClockInMutation.mutate({
+                    karyawanId: selectedKaryawan.id,
+                    dates: attendanceRecords
+                });
+                Alert.alert('Offline Mode', `Data absensi ${selectedKaryawan.nama} telah disimpan di antrean offline.`);
+                setSelectedKaryawan(null);
+                setSelectedDates({});
+                return;
+            }
 
             await bulkClockInMutation.mutateAsync({
                 karyawanId: selectedKaryawan.id,
