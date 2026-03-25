@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal } from 'react-native';
+import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -24,7 +24,6 @@ import { getErrorMessage } from '../../utils/error';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { onlineManager } from '@tanstack/react-query';
-import { Alert } from 'react-native';
 
 export default function AbsensiScreen() {
     const router = useRouter();
@@ -173,8 +172,6 @@ export default function AbsensiScreen() {
         if (!selectedKaryawan) return;
         const dates = Object.keys(selectedDates);
 
-        // Note: For simplicity, we are just sending all currently selected dates.
-        // The backend should handle creating new or updating existing ones.
         if (dates.length === 0) {
             setDialogConfig({
                 visible: true,
@@ -184,6 +181,7 @@ export default function AbsensiScreen() {
             });
             return;
         }
+
         try {
             const attendanceRecords = Object.entries(selectedDates).map(([date, info]: [string, any]) => ({
                 date,
@@ -246,7 +244,6 @@ export default function AbsensiScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header */}
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
@@ -273,17 +270,14 @@ export default function AbsensiScreen() {
                     )}
                 </View>
 
-                {/* Search Bar - Only show in list mode */}
                 {!selectedKaryawan && (
                     <View className="bg-white/10 px-5 py-3 rounded-2xl border border-white/10 flex-row items-center">
                         <Search size={18} color="white" opacity={0.6} />
                         <Typography className="flex-1 ml-3 text-white/40 text-sm">Cari karyawan...</Typography>
-                        {/* Note: In a real app we'd have a TextInput here, but let's keep it clean for now since the focus is the flow */}
                     </View>
                 )}
             </View>
 
-            {/* Content Area */}
             <View className="flex-1 -mt-8 z-10 px-6">
                 {!selectedKaryawan ? (
                     <FlatList
@@ -328,7 +322,6 @@ export default function AbsensiScreen() {
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ paddingTop: 10, paddingBottom: 150 }}
                     >
-                        {/* Calendar View */}
                         <Card className="rounded-[32px] overflow-hidden border border-gray-100 shadow-xl mb-6">
                             <View className="p-5 border-b border-gray-50 bg-gray-50/50 flex-row items-center justify-between">
                                 <View className="flex-row items-center">
@@ -363,7 +356,6 @@ export default function AbsensiScreen() {
                                     textDayFontSize: 14,
                                     textMonthFontSize: 16,
                                     textDayHeaderFontSize: 12,
-                                    fontFamily: 'Outfit_500Medium'
                                 }}
                                 style={{
                                     borderRadius: 16,
@@ -372,15 +364,13 @@ export default function AbsensiScreen() {
                             />
                         </Card>
 
-                        {/* Summary Card */}
                         <View className="bg-amber-50 p-6 rounded-[32px] border border-amber-100 mb-6">
                             <Typography className="text-amber-700/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Petunjuk</Typography>
                             <Typography className="text-amber-900 text-xs leading-relaxed">
-                                Klik pada tanggal di kalender. Sekali untuk HADIR (Biru), dua kali untuk SETENGAH HARI (Oranye), dan tiga kali untuk membatalkan.
+                                Klik pada tanggal di kalender. Sekali untuk HADIR (Biru). Keluar antara 12:00 - 14:00 otomatis Setengah Hari (Oranye).
                             </Typography>
                         </View>
 
-                        {/* Action Buttons */}
                         <View className="flex-row space-x-4">
                             <TouchableOpacity
                                 onPress={() => setSelectedKaryawan(null)}
@@ -415,7 +405,6 @@ export default function AbsensiScreen() {
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
             />
 
-            {/* Time Picker Modal */}
             <BaseModal
                 visible={timeModalVisible}
                 onClose={() => setTimeModalVisible(false)}
