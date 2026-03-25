@@ -14,7 +14,7 @@ Redesign the `all-menus.tsx` screen and simplify the Home navigation to a minima
 - **Home UI:** Expanded `ServiceGrid` to 8 items (color-coded) to replace the missing tab bar navigation.
 
 ## State
-- **Done**: Redesigned `all-menus.tsx`, added balance section, removed floating navigation, removed whole bottom tab bar.
+- **Done**: Redesigned `all-menus.tsx`, added balance section, removed floating navigation, removed whole bottom tab bar. Fixed Jasa Angkut 'metode_bayar' enum error for `BELUM_LUNAS` status.
 - **Now**: Verifying the accessibility of all modules from the Home menu.
 - **Next**: Final polish on layout transitions.
 

@@ -39,7 +39,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         harga_beli: '',
         harga_jual: '',
         status_bayar: 'BELUM_LUNAS',
-        metode_bayar: '',
+        metode_bayar: 'TUNAI',
         catatan: ''
     });
 
@@ -272,7 +272,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ...formData,
                 jenis_muatan: formData.jenis_muatan_list.filter(item => item.trim() !== '').join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
-                metode_bayar: isSplitPayment ? 'SPLIT' : formData.metode_bayar?.toUpperCase(),
+                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
                 supir_id: driverMode === 'registered' ? parseInt(formData.supir_id) : undefined,
                 supir_nama: driverMode === 'manual' ? formData.supir_nama : undefined,
                 armada_id: armadaMode === 'registered' ? parseInt(formData.armada_id) : undefined,
