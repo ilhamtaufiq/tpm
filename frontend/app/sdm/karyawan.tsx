@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView } from 'react-native';
+import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -28,6 +28,8 @@ import { sdmService, Karyawan, EmployeeStatus } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { onlineManager } from '@tanstack/react-query';
+import { useCreateKaryawan, useUpdateKaryawan } from '../../hooks/useSDM';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -181,6 +183,9 @@ export default function KaryawanScreen() {
         else bottomSheetRef.current?.expand();
     };
 
+    const createKaryawanMutation = useCreateKaryawan();
+    const updateKaryawanMutation = useUpdateKaryawan();
+
     const handleSubmit = async () => {
         if (!formData.nama || !formData.jabatan || !formData.gaji_pokok) {
             setDialogConfig({ visible: true, title: 'Error', message: 'Nama, Jabatan, dan Gaji Pokok wajib diisi', variant: 'warning' });
@@ -188,7 +193,7 @@ export default function KaryawanScreen() {
         }
 
         try {
-            const data = {
+            const data: any = {
                 nama: formData.nama,
                 nik: formData.nik || undefined,
                 alamat: formData.alamat || undefined,
@@ -202,19 +207,29 @@ export default function KaryawanScreen() {
                 catatan: formData.catatan || undefined,
             };
 
+            if (!onlineManager.isOnline()) {
+                if (selectedKaryawan) {
+                    updateKaryawanMutation.mutate({ id: selectedKaryawan.id, data });
+                } else {
+                    createKaryawanMutation.mutate({ ...data, status: 'AKTIF' });
+                }
+                Alert.alert('Offline Mode', `Data ${formData.nama} telah disimpan di antrean offline.`);
+                handleCloseSheet();
+                return;
+            }
+
             if (selectedKaryawan) {
-                await sdmService.updateKaryawan(selectedKaryawan.id, data);
+                await updateKaryawanMutation.mutateAsync({ id: selectedKaryawan.id, data });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Data karyawan berhasil diupdate', variant: 'success' });
             } else {
-                await sdmService.createKaryawan({
+                await createKaryawanMutation.mutateAsync({
                     ...data,
                     status: 'AKTIF',
                 });
                 setDialogConfig({ visible: true, title: 'Sukses', message: 'Karyawan baru berhasil ditambahkan', variant: 'success' });
             }
 
-            if (Platform.OS === 'web') setIsSheetOpen(false);
-            else bottomSheetRef.current?.close();
+            handleCloseSheet();
             loadData();
         } catch (error) {
             console.error('Failed to save karyawan:', error);
