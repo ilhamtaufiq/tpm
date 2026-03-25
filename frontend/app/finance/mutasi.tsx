@@ -25,6 +25,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { onlineManager } from '@tanstack/react-query';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
@@ -160,6 +161,26 @@ export default function MutasiKasScreen() {
     const handleTransfer = async () => {
         if (!transferForm.nominal || !transferForm.keterangan) return;
         try {
+            if (!onlineManager.isOnline()) {
+                transferMutation.mutate({
+                    dari: transferForm.dari,
+                    ke: transferForm.ke,
+                    nominal: parseNumber(transferForm.nominal),
+                    tanggal: new Date().toISOString().split('T')[0],
+                    keterangan: transferForm.keterangan,
+                });
+                handleCloseSheet();
+                setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '' });
+                setDialogConfig({
+                    visible: true,
+                    title: "Offline Mode",
+                    message: "Transfer telah disimpan di antrean offline.",
+                    variant: 'info',
+                    type: 'alert'
+                });
+                return;
+            }
+
             await transferMutation.mutateAsync({
                 dari: transferForm.dari,
                 ke: transferForm.ke,
@@ -191,6 +212,27 @@ export default function MutasiKasScreen() {
     const handleCreateModal = async () => {
         if (!modalForm.nominal || !modalForm.keterangan) return;
         try {
+            if (!onlineManager.isOnline()) {
+                createTxMutation.mutate({
+                    tanggal: new Date().toISOString().split('T')[0],
+                    jenis: modalForm.jenis,
+                    tipe: 'MASUK',
+                    nominal: parseNumber(modalForm.nominal),
+                    sumber: 'modal',
+                    keterangan: modalForm.keterangan,
+                });
+                handleCloseSheet();
+                setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal' });
+                setDialogConfig({
+                    visible: true,
+                    title: "Offline Mode",
+                    message: "Setoran modal telah disimpan di antrean offline.",
+                    variant: 'info',
+                    type: 'alert'
+                });
+                return;
+            }
+
             await createTxMutation.mutateAsync({
                 tanggal: new Date().toISOString().split('T')[0],
                 jenis: modalForm.jenis,

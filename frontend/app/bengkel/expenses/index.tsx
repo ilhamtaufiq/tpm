@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
+import { onlineManager } from '@tanstack/react-query';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
@@ -120,6 +121,24 @@ export default function ExpensesScreen() {
         }
 
         try {
+            if (!onlineManager.isOnline()) {
+                createExpenseMutation.mutate(payload);
+                setShowForm(false);
+                setJumlah('');
+                setDeskripsi('');
+                setBisnisKategori('umum');
+                setSelectedMuatan(null);
+                setSelectedMobil(null);
+                setSelectedArmada(null);
+                setPayMetode('TUNAI');
+                setSplitPayments([
+                    { metode: 'TUNAI', jumlah: '' },
+                    { metode: 'TRANSFER', jumlah: '' },
+                ]);
+                Alert.alert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
+                return;
+            }
+
             await createExpenseMutation.mutateAsync(payload);
             setShowForm(false);
             setJumlah('');

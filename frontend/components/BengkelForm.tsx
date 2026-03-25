@@ -12,6 +12,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useMobilList } from '../hooks/useMobil';
+import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { SparePartSelector } from './ui/SparePartSelector';
 import { JasaSelector } from './ui/JasaSelector';
@@ -330,6 +331,24 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         };
 
         try {
+            if (!onlineManager.isOnline()) {
+                if (initialData) {
+                    updateTransaksiMutation.mutate({ id: initialData.id, data: payload });
+                } else {
+                    createTransaksiMutation.mutate(payload);
+                }
+                setDialogConfig({
+                    visible: true,
+                    title: 'Offline Mode',
+                    message: 'Transaksi telah disimpan di antrean offline dan akan disinkronisasi otomatis saat internet tersedia.',
+                    variant: 'info'
+                });
+                setTimeout(() => {
+                    onSuccess();
+                }, 2000);
+                return;
+            }
+
             if (initialData) {
                 await updateTransaksiMutation.mutateAsync({ id: initialData.id, data: payload });
             } else {

@@ -18,7 +18,7 @@ import {
     X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
@@ -162,6 +162,17 @@ export default function PurchaseScreen() {
                 harga_satuan: Number(parseNumber(item.price))
             }))
         };
+
+        // Check online status via TanStack Query's onlineManager
+        const isOnline = onlineManager.isOnline();
+
+        if (!isOnline) {
+            // Mode Offline: Fire and forget (it will be queued in TanStack Query)
+            createPembelianMutation.mutate(payload);
+            alert('Mode Offline: Transaksi telah disimpan di antrian. Data akan disinkronkan otomatis saat Anda terhubung ke internet kembali.');
+            handleBack();
+            return;
+        }
 
         try {
             await createPembelianMutation.mutateAsync(payload);
