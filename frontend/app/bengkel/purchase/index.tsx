@@ -132,8 +132,8 @@ export default function PurchaseScreen() {
             alert('Mohon pilih supplier terlebih dahulu');
             return;
         }
-        if (items.length === 0 || items.some(i => !i.spare_part_id)) {
-            alert('Mohon lengkapi data barang');
+        if (items.length === 0 || items.some(i => !i.spare_part_id || !i.qty || Number(i.qty) <= 0)) {
+            alert('Mohon lengkapi data barang dengan jumlah yang valid (> 0)');
             return;
         }
 
@@ -166,9 +166,11 @@ export default function PurchaseScreen() {
         try {
             await createPembelianMutation.mutateAsync(payload);
             handleBack();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert('Gagal menyimpan transaksi pembelian');
+            const errorDetail = error.response?.data?.detail;
+            const message = typeof errorDetail === 'string' ? errorDetail : 'Gagal menyimpan transaksi pembelian. Pastikan semua data valid dan saldo mencukupi.';
+            alert(message);
         }
     };
 
