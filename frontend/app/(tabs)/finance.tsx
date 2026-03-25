@@ -115,12 +115,12 @@ export default function FinanceTab() {
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Cash</Typography>
                             </View>
                             <Typography weight="bold" className="text-emerald-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
-                                {formatCurrency(dashboard?.kas_bank?.CASH?.saldo || 0)}
+                                {formatCurrency(dashboard?.kas_bank?.cash?.saldo || 0)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#10B981" />
                                 <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.CASH?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(dashboard?.kas_bank?.cash?.total_masuk_bulan_ini || 0)}
                                 </Typography>
                             </View>
                         </View>
@@ -133,12 +133,12 @@ export default function FinanceTab() {
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank BCA</Typography>
                             </View>
                             <Typography weight="bold" className="text-blue-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
-                                {formatCurrency(dashboard?.kas_bank?.BANK_BCA?.saldo || 0)}
+                                {formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#3B82F6" />
                                 <Typography className="text-blue-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.BANK_BCA?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(dashboard?.kas_bank?.bank_bca?.total_masuk_bulan_ini || 0)}
                                 </Typography>
                             </View>
                         </View>

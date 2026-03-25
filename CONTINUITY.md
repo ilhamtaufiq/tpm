@@ -17,16 +17,16 @@ Implement user avatar update functionality and integrate it with the backend.
 
 ## State
 - Done:
-    - Implemented `/auth/me/avatar` and `/auth/me/home-background` endpoints.
-    - Updated User model and schemas with `home_background`.
-    - Added background management to `ThemeSettingsScreen`.
-    - Linked `ProfileScreen` to `ThemeSettingsScreen`.
-    - Updated `Header` and `HomeHeader` to display custom background.
-- Now: Fixed `TypeError` in `create_kas_entry` by standardizing the `user_id` parameter name across the application.
-- Next: Check if there are any other services that were broken by this parameter mismatch.
+    - Analyzed avatar upload and profile update logic.
+    - Verified backend implementation of `/auth/me/avatar` and `/auth/me` PUT.
+- Now: Investigating why `profile_picture` is not persisting or is being overwritten in the store.
+- Next: 
+    - Modify `handleSave` in `profile.tsx` to be more robust (merge results & fetch latest).
+    - Add logging to verify what backend returns.
 
 ## Open Questions (UNCONFIRMED)
-- None.
+- Why does the PUT `/auth/me` call potentially return stale data or clear the `profile_picture`?
+- Is there a race condition between the successive POST and PUT calls?
 
 ## Working Set
 - `backend/app/api/v1/auth.py`

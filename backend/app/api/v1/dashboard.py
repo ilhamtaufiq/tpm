@@ -688,11 +688,11 @@ def get_capital_report(
 
     # --- D. Sisa Laba dan Modal (Cash Position) ---
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    posisi_cash = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
+    posisi_cash = balances.get(KasBankJenis.CASH.value.lower(), {}).get("saldo", 0)
     
     posisi_transfer = 0
     for k, v in balances.items():
-        if k != KasBankJenis.CASH.value and isinstance(v, dict):
+        if k != KasBankJenis.CASH.value.lower() and isinstance(v, dict):
             posisi_transfer += v.get("saldo", 0)
 
     total_kas = posisi_cash + posisi_transfer
@@ -788,12 +788,12 @@ def get_neraca(
 
     # 1. Kas & Bank (cumulative balance up to date)
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    kas_tunai = balances.get(KasBankJenis.CASH.value, {}).get("saldo", 0)
+    kas_tunai = balances.get(KasBankJenis.CASH.value.lower(), {}).get("saldo", 0)
     
     kas_bank = 0
     bank_details = {}
     for k, v in balances.items():
-        if k != KasBankJenis.CASH.value and isinstance(v, dict):
+        if k != KasBankJenis.CASH.value.lower() and isinstance(v, dict):
             saldo = v.get("saldo", 0)
             kas_bank += saldo
             bank_details[k] = saldo

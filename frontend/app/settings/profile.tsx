@@ -76,11 +76,15 @@ export default function ProfileSettingsScreen() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            let updatedUser = user;
+            let updatedUser = { ...user };
 
             // 1. Handle Avatar Upload if it's a new local image
             if (image && !image.startsWith('http') && !image.startsWith('data:image')) {
-                updatedUser = await authService.uploadAvatar(image);
+                console.log('[Profile] Uploading new avatar...');
+                const avatarUser = await authService.uploadAvatar(image);
+                console.log('[Profile] Avatar upload success, new path:', avatarUser.profile_picture);
+                // Keep the updated user object with the new profile_picture
+                updatedUser = { ...updatedUser, ...avatarUser };
             }
 
             // 2. Handle Profile Data Update
@@ -88,17 +92,29 @@ export default function ProfileSettingsScreen() {
                 full_name: name,
                 email: email,
                 phone: phone,
-                // Don't send profile_picture here as it was handled above or shouldn't be changed if it's not a local file
+                // Do NOT send profile_picture here to avoid accidental overwrites
             };
 
-            updatedUser = await authService.updateMe(data);
+            console.log('[Profile] Updating text data...');
+            const textUser = await authService.updateMe(data);
+            
+            // 3. Final merge: Take text data but preserve profile_picture if we just uploaded it
+            // or if it's already there and textUser doesn't have it (or it's stale)
+            const finalUser = { 
+                ...updatedUser, 
+                ...textUser,
+                // Explicitly preserve profile_picture if textUser has it as null but updatedUser had it
+                profile_picture: textUser.profile_picture || updatedUser.profile_picture 
+            };
+
+            console.log('[Profile] Final user data:', finalUser.profile_picture);
 
             // Update local store
-            setAuth(updatedUser, token || '');
+            setAuth(finalUser, token || '');
             
             // Sync local image state with new server URL
-            if (updatedUser.profile_picture) {
-                setImage(getFileUrl(updatedUser.profile_picture));
+            if (finalUser.profile_picture) {
+                setImage(getFileUrl(finalUser.profile_picture));
             }
 
             setDialogConfig({
