@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, TextInput, Dimensions } from 'react-native';
 import {
     ChevronLeft,
     Wrench,
@@ -13,39 +13,109 @@ import {
     Wallet,
     Shield,
     Search,
-    RefreshCw
+    LayoutGrid,
+    CarFront
 } from 'lucide-react-native';
 import { Typography } from '../components/ui/Typography';
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../store/useUIStore';
-import { useDashboardSummary } from '../hooks/useKeuangan';
-import { formatCurrency } from '../utils/format';
-import { Skeleton } from '../components/ui/Skeleton';
+import { WalletSection } from '../components/WalletSection';
+import { TransactionList } from '../components/TransactionList';
+import { Header } from '../components/ui/Header';
+import Animated, { 
+    FadeInDown, 
+    useSharedValue, 
+    useAnimatedStyle, 
+    withSpring, 
+    interpolate, 
+    Extrapolate 
+} from 'react-native-reanimated';
 
-const MenuCard = ({ label, icon: Icon, color, path, description }: {
+const MenuIcon = ({ label, icon: Icon, color, path, index }: {
     label: string,
     icon: any,
     color: string,
     path: string,
-    description?: string
+    index: number
 }) => {
     const router = useRouter();
+    const scale = useSharedValue(1);
+    const rotateX = useSharedValue(0);
+    const rotateY = useSharedValue(0);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            transform: [
+                { scale: scale.value },
+                { perspective: 1000 },
+                { rotateX: `${rotateX.value}deg` },
+                { rotateY: `${rotateY.value}deg` },
+            ],
+        };
+    });
+
+    const innerShadowStyle = useAnimatedStyle(() => {
+        return {
+            shadowOpacity: interpolate(scale.value, [0.95, 1], [0.1, 0.2], Extrapolate.CLAMP),
+            shadowRadius: interpolate(scale.value, [0.95, 1], [4, 12], Extrapolate.CLAMP),
+        };
+    });
+
+    const onPressIn = () => {
+        scale.value = withSpring(0.92);
+        rotateX.value = withSpring(-10);
+    };
+
+    const onPressOut = () => {
+        scale.value = withSpring(1);
+        rotateX.value = withSpring(0);
+        rotateY.value = withSpring(0);
+    };
+
     return (
-        <TouchableOpacity
-            onPress={() => router.push(path as any)}
-            className="w-[47%] bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm"
+        <Animated.View 
+            entering={FadeInDown.delay(index * 30).springify()}
+            style={{ width: '25%' }} 
+            className="items-center mb-6 px-1"
         >
-            <View
-                style={{ backgroundColor: `${color}10` }}
-                className="w-14 h-14 rounded-[22px] items-center justify-center mb-4"
+            <TouchableOpacity
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
+                onPress={() => router.push(path as any)}
+                className="items-center w-full"
+                activeOpacity={1}
             >
-                <Icon size={28} color={color} strokeWidth={2} />
-            </View>
-            <Typography variant="body1" weight="bold" className="text-[#1C1C1C] mb-1 tracking-tight">{label}</Typography>
-            {description && (
-                <Typography variant="caption" className="text-gray-400 leading-4">{description}</Typography>
-            )}
-        </TouchableOpacity>
+                <Animated.View
+                    style={[
+                        animatedStyle,
+                        innerShadowStyle,
+                        { 
+                            backgroundColor: 'white', 
+                            borderRadius: 24,
+                            shadowColor: color,
+                            shadowOffset: { width: 0, height: 4 },
+                            elevation: 4
+                        }
+                    ]}
+                    className="w-16 h-16 items-center justify-center mb-2 border border-gray-50"
+                >
+                    <View
+                        style={{ backgroundColor: `${color}15` }}
+                        className="w-12 h-12 rounded-2xl items-center justify-center"
+                    >
+                        <Icon size={26} color={color} strokeWidth={2.5} />
+                    </View>
+                </Animated.View>
+                <Typography
+                    variant="caption"
+                    weight="bold"
+                    className="text-text text-[10px] text-center uppercase tracking-tighter"
+                    numberOfLines={1}
+                >
+                    {label}
+                </Typography>
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
@@ -53,9 +123,6 @@ export default function AllMenusScreen() {
     const { themeColors } = useUIStore();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-
-    // Fetch Dashboard Data for Saldo
-    const { data: dashboard, isLoading: isLoadingSaldo } = useDashboardSummary();
 
     const ALL_MENUS = [
         {
@@ -76,8 +143,8 @@ export default function AllMenusScreen() {
         },
         {
             id: 'mobil',
-            label: 'Jual Beli Mobil',
-            icon: Car,
+            label: 'Jual Beli',
+            icon: CarFront,
             color: '#10B981', // Emerald
             path: '/mobil',
             description: 'Inventaris & Jual Beli'
@@ -92,7 +159,7 @@ export default function AllMenusScreen() {
         },
         {
             id: 'master',
-            label: 'Master Data',
+            label: 'Master',
             icon: Database,
             color: '#8B5CF6', // Violet
             path: '/master-data',
@@ -146,93 +213,40 @@ export default function AllMenusScreen() {
     );
 
     return (
-        <View className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 bg-white">
             <StatusBar barStyle="light-content" />
             
-            {/* Premium Header */}
-            <View style={{ backgroundColor: themeColors.primary }} className="pt-14 pb-14 px-6 rounded-b-[48px] shadow-2xl overflow-hidden">
-                {/* Background Decor */}
-                <View className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-white/5 rounded-full" />
-                
-                {/* Navigation Row */}
-                <View className="flex-row items-center justify-between mb-2">
-                    <View className="flex-row items-center">
-                        <TouchableOpacity 
-                            onPress={() => router.back()}
-                            className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Semua Menu</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5 font-bold tracking-widest uppercase">MODUL APLIKASI</Typography>
-                        </View>
-                    </View>
+            <Header 
+                title="Semua Menu" 
+                subtitle="MODUL OPERASIONAL" 
+                showBackButton 
+                variant="page"
+            >
+                {/* Search Bar inside Header */}
+                <View className="bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md">
+                    <Search size={18} color="white" opacity={0.6} />
+                    <TextInput 
+                        placeholder="Cari fitur atau modul..." 
+                        className="flex-1 ml-3 text-sm font-bold text-white" 
+                        placeholderTextColor="rgba(255,255,255,0.4)"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        selectionColor="white"
+                    />
                 </View>
-            </View>
-
-            {/* Floating Search Overlay */}
-            <View className="px-6 -mt-7 z-10">
-                <View className="bg-white p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
-                        <Search size={20} color="#9CA3AF" />
-                        <TextInput 
-                            placeholder="Cari menu atau modul..." 
-                            className="flex-1 ml-3 text-sm font-medium text-[#1C1C1C]" 
-                            placeholderTextColor="#9CA3AF"
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
-                    </View>
-                </View>
-            </View>
+            </Header>
 
             <ScrollView
-                className="flex-1 px-6 pt-10"
+                className="flex-1"
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 60 }}
+                contentContainerStyle={{ paddingBottom: 20 }}
             >
-                {/* Saldo Bento Section */}
-                <View className="flex-row justify-between mb-8 px-1">
-                    <View className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm mr-4">
-                        <View className="flex-row items-center mb-3">
-                            <View className="w-9 h-9 bg-emerald-50 rounded-xl items-center justify-center mr-2.5">
-                                <Wallet size={18} color="#10B981" />
-                            </View>
-                            <Typography className="text-gray-400 text-[9px] uppercase font-bold tracking-[2px]">CASH</Typography>
-                        </View>
-                        {isLoadingSaldo ? (
-                            <Skeleton width="80%" height={24} borderRadius={12} />
-                        ) : (
-                            <Typography weight="bold" className="text-emerald-600 text-[17px] tracking-tight">
-                                {formatCurrency(dashboard?.kas_bank?.cash?.saldo || 0)}
-                            </Typography>
-                        )}
-                    </View>
+                {/* Wallet Section Replacement */}
+                <WalletSection />
 
-                    <View className="flex-1 bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm">
-                        <View className="flex-row items-center mb-3">
-                            <View className="w-9 h-9 bg-blue-50 rounded-xl items-center justify-center mr-2.5">
-                                <RefreshCw size={18} color="#3B82F6" />
-                            </View>
-                            <Typography className="text-gray-400 text-[9px] uppercase font-bold tracking-[2px]">BANK BCA</Typography>
-                        </View>
-                        {isLoadingSaldo ? (
-                            <Skeleton width="80%" height={24} borderRadius={12} />
-                        ) : (
-                            <Typography weight="bold" className="text-blue-600 text-[17px] tracking-tight">
-                                {formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}
-                            </Typography>
-                        )}
-                    </View>
-                </View>
-
-                {/* Grid Title */}
-                <Typography variant="h3" weight="bold" className="text-[#1C1C1C] mb-6 px-1 tracking-tight">Navigasi Langsung</Typography>
-
-                <View className="flex-row flex-wrap justify-between">
-                    {filteredMenus.map((menu) => (
-                        <MenuCard key={menu.id} {...menu} />
+                <View className="flex-row flex-wrap px-5 mt-6">
+                    {filteredMenus.map((menu, index) => (
+                        <MenuIcon key={menu.id} {...menu} index={index} />
                     ))}
                     {filteredMenus.length === 0 && (
                         <View className="w-full items-center justify-center py-20">
@@ -240,6 +254,9 @@ export default function AllMenusScreen() {
                         </View>
                     )}
                 </View>
+
+                {/* Transaction List Section */}
+                <TransactionList />
             </ScrollView>
         </View>
     );

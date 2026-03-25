@@ -4,27 +4,35 @@ import { TouchableOpacity, ActivityIndicator, View } from 'react-native';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
 import { router } from 'expo-router';
+import { useUIStore } from '../store/useUIStore';
 
 export const WalletSection = () => {
     const { data: balances, isLoading, isRefetching } = useKasBankBalances();
+    const { themeColors } = useUIStore();
 
     return (
         <View className="px-6 mt-4">
-            <View className="bg-gopayBlue rounded-3xl overflow-hidden shadow-lg shadow-gopayBlue/30">
+            <View 
+                style={{ backgroundColor: themeColors.primary }}
+                className="rounded-3xl overflow-hidden shadow-lg shadow-black/10"
+            >
                 <View className="flex-row items-center p-4">
                     {/* Balance Area */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => router.push('/finance/mutasi')}
                         className="bg-white rounded-2xl p-3 flex-1 flex-row items-center justify-between mr-4 shadow-sm"
                     >
                         <View className="flex-row items-center">
-                            <View className="bg-gopayBlue/10 p-1.5 rounded-lg mr-2">
-                                <Wallet size={16} color="#00ADEF" />
+                            <View 
+                                style={{ backgroundColor: `${themeColors.primary}10` }}
+                                className="p-1.5 rounded-lg mr-2"
+                            >
+                                <Wallet size={16} color={themeColors.primary} />
                             </View>
                             <View>
                                 <Typography variant="caption" weight="bold" className="text-text tracking-tight h-4">Total Saldo</Typography>
                                 {isLoading || isRefetching ? (
-                                    <ActivityIndicator size="small" color="#00ADEF" style={{ height: 16 }} />
+                                    <ActivityIndicator size="small" color={themeColors.primary} style={{ height: 16 }} />
                                 ) : (
                                     <Typography variant="body2" weight="bold" className="text-text">
                                         {formatCurrency(balances?.total_saldo || 0)}
@@ -32,7 +40,12 @@ export const WalletSection = () => {
                                 )}
                             </View>
                         </View>
-                        <Typography className="text-[10px] text-gopayBlue font-bold bg-gopayBlue/10 px-1.5 py-0.5 rounded-md">KLIK</Typography>
+                        <Typography 
+                            style={{ color: themeColors.primary, backgroundColor: `${themeColors.primary}10` }}
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                        >
+                            KLIK
+                        </Typography>
                     </TouchableOpacity>
 
                     {/* Quick Actions */}
