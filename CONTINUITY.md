@@ -1,24 +1,27 @@
 # CONTINUITY Ledger - TPM Project
 
 ## Goal
-Fix profile picture upload functionality which is currently reportedly not updating the UI after upload.
+Implement offline access and data synchronization for the application.
+- Success Criteria:
+  - Users can view and perform actions while offline.
+  - Data synchronizes automatically when net connection is restored.
+  - Conflicts are minimized or handled.
 
 ## Constraints/Assumptions
-- Backend handles image upload and returns updated user object with permanent URI.
-- Frontend uses Zustland for global auth state.
-- Expo ImagePicker provides local file URIs (e.g., `file://`).
-- Backend generates unique filenames using UUIDs.
-- Axios/FormData handling in React Native requires specific headers or none depending on the boundary.
+- Frontend uses React Native (Expo) with Zustand and TanStack Query (React Query) v5.
+- Persistence is likely handled by AsyncStorage or similar.
+- Backend API is mature enough to handle timestamped/versioned updates if needed.
 
 ## Key Decisions
-- Refactor `authService.uploadAvatar` to let Axios handle the `Content-Type` boundary for native platforms.
-- Improve `ProfileSettingsScreen.tsx` merge logic to prioritize the newly uploaded profile picture over stale data from subsequent API calls.
-- Add a cache-buster (timestamp) to the profile picture URL on the frontend to force image re-renders if necessary (though unique filename should help, some browsers/apps cache base paths or specific URI patterns).
+- Leverage TanStack Query's persistent cache (`persistQueryClient`) for offline reading.
+- Implement an "Offline Queue" or use TanStack Query's `onMutation` / `onSuccess` for synchronization.
+- Use `NetInfo` to detect network status.
 
 ## State
-- Done: Identified that the global Axios instance has a default `Content-Type: application/json` header that was interfering with multipart uploads, leading to 422 errors. Explicitly overrode it in the service layer.
-- Now: Fixed the 422 Unprocessable Entity error.
-- Next: Final user verification.
+- Done: Identified tech stack (React Query v5, Zustand, AsyncStorage, Axios).
+- Done: Created `offline-support.md` with a detailed implementation plan.
+- Now: Awaiting user confirmation to begin implementation (installing dependencies).
+- Next: Install `@react-native-community/netinfo` and configure `persistQueryClient`.
 
 ## Open Questions
 - Is the user seeing any error messages? (Assuming no since they didn't mention it, but that might mean silent failure).

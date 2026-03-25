@@ -1,4 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import NetInfo from '@react-native-community/netinfo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { Stack, SplashScreen, useSegments, useRouter, router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
@@ -20,8 +24,44 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AppState, AppStateStatus } from 'react-native';
 import '../global.css';
+import { ConnectivityBanner } from '../components/ConnectivityBanner';
 
-const queryClient = new QueryClient();
+// Configure online manager to listen to NetInfo
+onlineManager.setEventListener((setOnline) => {
+    return NetInfo.addEventListener((state) => {
+        setOnline(!!state.isConnected);
+    });
+});
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            // Data in cache is considered fresh for 10 minutes
+            // Increase staleTime to avoid background re-fetching when offline
+            staleTime: 1000 * 60 * 10,
+            // 24 hours until garbage collected from storage
+            gcTime: 1000 * 60 * 60 * 24,
+            // Don't retry queries when offline
+            retry: (failureCount, error: any) => {
+                if (error?.message?.includes('network')) return false;
+                return failureCount < 3;
+            },
+        },
+    },
+});
+
+// Configure offline persistence
+const asyncStoragePersister = createAsyncStoragePersister({
+    storage: AsyncStorage,
+    key: 'TPM_OFFLINE_CACHE',
+    throttleTime: 1000,
+});
+
+persistQueryClient({
+    queryClient,
+    persister: asyncStoragePersister,
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
+});
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -193,6 +233,7 @@ function RootLayoutContent() {
 
     return (
         <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
+            <ConnectivityBanner />
             <ErrorBoundary>
                 <BottomSheetModalProvider>
                     <Stack screenOptions={{ headerShown: false }}>
