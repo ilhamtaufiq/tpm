@@ -1,37 +1,32 @@
 # Continuity Ledger
 
 ## Goal
-Implement user avatar update functionality and integrate it with the backend.
+Modify the Laba Rugi report to remove "Total Beban Bisnis" and its accumulation from the display and export.
 
 ## Constraints/Assumptions
-- Backend: FastAPI.
+- Project: TPM (Laporan Laba Rugi).
 - Frontend: Expo (React Native).
-- Storage: Local storage in `uploads/` directory.
-- Timezone: WIB (Asia/Jakarta).
+- File: `frontend/app/laporan/laba-rugi.tsx`.
+- Language: Indonesian.
 
 ## Key Decisions
-- Added `/auth/me/avatar` endpoint for multipart file upload.
-- Used `expo-image-picker` on the frontend for selecting images.
-- Created `getFileUrl` utility in frontend to handle server-side image paths.
-- Serves static files from the `uploads/` directory on the backend.
+- Removed "Total Beban Bisnis" from the Final Recap section.
+- Removed "Total Beban Bisnis" from the PDF Export logic in both templates.
+- Kept "Profit Bersih Akhir" calculation as is (visibility change only).
+- Verified other "Total Beban" labels (left them for now as they are unit-specific or differently labeled).
 
 ## State
 - Done:
-    - Analyzed avatar upload and profile update logic.
-    - Verified backend implementation of `/auth/me/avatar` and `/auth/me` PUT.
-- Now: Investigating why `profile_picture` is not persisting or is being overwritten in the store.
-- Next: 
-    - Modify `handleSave` in `profile.tsx` to be more robust (merge results & fetch latest).
-    - Add logging to verify what backend returns.
+    - Analyzed `frontend/app/laporan/laba-rugi.tsx`.
+    - Removed "Total Beban Bisnis" from the mobile UI and the PDF export HTML.
+- Now:
+    - Task complete.
+- Next:
+    - Awaiting user feedback on whether unit-level "Total Beban" should also be removed.
 
 ## Open Questions (UNCONFIRMED)
-- Why does the PUT `/auth/me` call potentially return stale data or clear the `profile_picture`?
-- Is there a race condition between the successive POST and PUT calls?
+- Should "Total Beban" in unit sections or the header be removed too?
+- Does "akumulasinya" refer to calculating the profit differently? (Assumed visibility for now).
 
 ## Working Set
-- `backend/app/api/v1/auth.py`
-- `backend/app/services/auth_service.py`
-- `frontend/services/auth.ts`
-- `frontend/app/settings/profile.tsx`
-- `frontend/utils/image.ts`
-
+- `frontend/app/laporan/laba-rugi.tsx`

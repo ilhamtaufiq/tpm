@@ -413,10 +413,7 @@ export default function LabaRugiScreen() {
                                 <Typography className="text-white/60 text-xs">Total Laba Kotor Unit</Typography>
                                 <Typography weight="bold" className="text-white">{formatCurrency(reportData?.laba_kotor?.total || 0)}</Typography>
                             </View>
-                            <View className="flex-row justify-between items-center">
-                                <Typography className="text-white/60 text-xs">Total Beban Bisnis</Typography>
-                                <Typography weight="bold" className="text-rose-300">({formatCurrency((reportData?.pengeluaran || 0) - priveTotal)})</Typography>
-                            </View>
+
                             <View className="flex-row justify-between items-center">
                                 <Typography className="text-white/60 text-xs">Prive Pemilik</Typography>
                                 <Typography weight="bold" className="text-rose-300">({formatCurrency(priveTotal)})</Typography>
@@ -553,10 +550,7 @@ export default function LabaRugiScreen() {
                                                 <span>Total Laba Kotor Unit</span>
                                                 <span>${formatCurrency(reportData?.laba_kotor?.total || 0)}</span>
                                             </div>
-                                            <div class="row-item">
-                                                <span>Total Beban Bisnis</span>
-                                                <span class="text-error">(${formatCurrency((reportData?.pengeluaran || 0) - priveTotal)})</span>
-                                            </div>
+
                                             <div class="row-item">
                                                 <span>Prive Pemilik</span>
                                                 <span class="text-error">(${formatCurrency(priveTotal)})</span>
@@ -679,10 +673,7 @@ export default function LabaRugiScreen() {
                                                 <span>Total Laba Kotor Unit</span>
                                                 <span>${formatCurrency(reportData?.laba_kotor?.total || 0)}</span>
                                             </div>
-                                            <div class="row-item">
-                                                <span>Total Beban Bisnis</span>
-                                                <span class="text-error">(${formatCurrency((reportData?.pengeluaran || 0) - priveTotal)})</span>
-                                            </div>
+
                                             <div class="row-item">
                                                 <span>Prive Pemilik</span>
                                                 <span class="text-error">(${formatCurrency(priveTotal)})</span>
