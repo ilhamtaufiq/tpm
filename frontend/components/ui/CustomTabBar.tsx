@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import { View, TouchableOpacity, Platform } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { Home, History, Banknote, User } from 'lucide-react-native';
@@ -9,21 +9,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
     const insets = useSafeAreaInsets();
 
-    // Don't show tab bar on certain screens if needed
-    // const focusedOptions = descriptors[state.routes[state.index].key].options;
-    // if (focusedOptions.tabBarVisible === false) return null;
-
     return (
         <View
-            className="absolute bottom-6 left-6 right-6 bg-white/90 rounded-[36px] shadow-2xl border border-white/20 flex-row items-center justify-between px-4 py-3"
+            className="bg-white border-t border-gray-100 flex-row items-center justify-between px-4"
             style={{
-                // Blur effect on iOS/Web if supported via CSS, or just semi-transparent
-                backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.8)' : 'white',
+                paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+                paddingTop: 12,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 20,
-                elevation: 10,
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.05,
+                shadowRadius: 10,
+                elevation: 20,
             }}
         >
             {state.routes.map((route, index) => {
@@ -72,8 +68,8 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                         onPress={onPress}
                         onLongPress={onLongPress}
                         className={cn(
-                            "flex-1 items-center justify-center py-2 rounded-[24px]",
-                            isFocused ? "bg-primary/10" : ""
+                            "flex-1 items-center justify-center py-1 rounded-[20px]",
+                            isFocused ? "bg-primary/5" : ""
                         )}
                         activeOpacity={0.7}
                     >
