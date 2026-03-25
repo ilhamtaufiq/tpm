@@ -1,27 +1,31 @@
-# Continuity Ledger - TPM Super App
+# CONTINUITY Ledger - TPM Project
 
 ## Goal
-Redesign the `all-menus.tsx` screen and simplify the Home navigation to a minimalist Bento layout.
+Fix profile picture upload functionality which is currently reportedly not updating the UI after upload.
 
 ## Constraints/Assumptions
-- Framework: React Native / Expo.
-- Styling: NativeWind (Tailwind CSS for React Native).
-- Design: Premium Bento Layout, Stitch UI.
+- Backend handles image upload and returns updated user object with permanent URI.
+- Frontend uses Zustland for global auth state.
+- Expo ImagePicker provides local file URIs (e.g., `file://`).
+- Backend generates unique filenames using UUIDs.
+- Axios/FormData handling in React Native requires specific headers or none depending on the boundary.
 
 ## Key Decisions
-- **All Menus Redesign:** Implemented dark header, floating search, and bento tiles with real-time balance section.
-- **Home Navigation:** Removed floating navigation and bottom tab bar globally as requested.
-- **Home UI:** Expanded `ServiceGrid` to 8 items (color-coded) to replace the missing tab bar navigation.
+- Refactor `authService.uploadAvatar` to let Axios handle the `Content-Type` boundary for native platforms.
+- Improve `ProfileSettingsScreen.tsx` merge logic to prioritize the newly uploaded profile picture over stale data from subsequent API calls.
+- Add a cache-buster (timestamp) to the profile picture URL on the frontend to force image re-renders if necessary (though unique filename should help, some browsers/apps cache base paths or specific URI patterns).
 
 ## State
-- **Done**: Redesigned `all-menus.tsx`, added balance section, removed floating navigation, removed whole bottom tab bar. Fixed Jasa Angkut 'metode_bayar' enum error for `BELUM_LUNAS` status. Corrected 'Estimasi Modal' in `MobilInventoryScreen` and `MobilDetail` to sum all costs. **Fixed inconsistency between List and Detail view by adding `total_biaya`, `total_part_service`, and `total_modal` to the backend `MobilResponse` schema.**
-- **Now**: Verifying the sync between List and Detail views in Mobil Inventory.
-- **Next**: Final polish on layout transitions.
+- Done: Identified that the global Axios instance has a default `Content-Type: application/json` header that was interfering with multipart uploads, leading to 422 errors. Explicitly overrode it in the service layer.
+- Now: Fixed the 422 Unprocessable Entity error.
+- Next: Final user verification.
 
 ## Open Questions
-- Is the 8-item grid enough, or should we show even more shortcuts?
+- Is the user seeing any error messages? (Assuming no since they didn't mention it, but that might mean silent failure).
+- Does the profile picture change ONLY after a manual app restart/refresh? (If so, it's definitely a store/state/cache issue).
 
 ## Working Set
-- `frontend/app/all-menus.tsx`
-- `frontend/app/(tabs)/_layout.tsx`
-- `frontend/components/ServiceGrid.tsx`
+- `frontend/services/auth.ts`
+- `frontend/app/settings/profile.tsx`
+- `backend/app/api/v1/auth.py`
+- `backend/app/services/auth_service.py`

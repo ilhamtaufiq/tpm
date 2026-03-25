@@ -98,8 +98,11 @@ async def upload_avatar(
     """
     Upload a new profile picture for the current user.
     """
+    print(f"[Upload Avatar] Received file: {file.filename}, Content-Type: {file.content_type}")
+    
     # Validate file type
     if not file.content_type.startswith("image/"):
+        print(f"[Upload Avatar] Invalid file type: {file.content_type}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an image",
@@ -109,7 +112,10 @@ async def upload_avatar(
     file_size = 0
     contents = await file.read()
     file_size = len(contents)
+    print(f"[Upload Avatar] File size: {file_size} bytes")
+    
     if file_size > settings.max_file_size:
+        print(f"[Upload Avatar] File too large: {file_size} > {settings.max_file_size}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large. Max size is {settings.max_file_size / (1024 * 1024)}MB",
@@ -129,13 +135,23 @@ async def upload_avatar(
     # Save file
     upload_path = os.path.realpath(settings.upload_full_path)
     file_path = os.path.join(upload_path, filename)
+    print(f"[Upload Avatar] Target path: {file_path}")
     
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        print(f"[Upload Avatar] File saved successfully")
+    except Exception as e:
+        print(f"[Upload Avatar] ERROR saving file: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error saving file: {str(e)}",
+        )
 
     # Generate URI for the database
     # Assuming the app serves the upload directory at /uploads/
     avatar_uri = f"/{settings.upload_dir}/{filename}"
+    print(f"[Upload Avatar] New URI: {avatar_uri}")
 
     # Update user record
     service = AuthService(db)

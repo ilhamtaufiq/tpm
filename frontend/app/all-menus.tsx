@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, TextInput, Dimensions } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, TextInput, Dimensions, Image } from 'react-native';
 import {
     ChevronLeft,
     Wrench,
@@ -22,6 +22,8 @@ import { useUIStore } from '../store/useUIStore';
 import { WalletSection } from '../components/WalletSection';
 import { TransactionList } from '../components/TransactionList';
 import { Header } from '../components/ui/Header';
+import { useAuthStore } from '../store/useAuthStore';
+import { getFileUrl } from '../utils/image';
 import Animated, { 
     FadeInDown, 
     useSharedValue, 
@@ -121,6 +123,7 @@ const MenuIcon = ({ label, icon: Icon, color, path, index }: {
 
 export default function AllMenusScreen() {
     const { themeColors } = useUIStore();
+    const { user } = useAuthStore();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -213,8 +216,17 @@ export default function AllMenusScreen() {
     );
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-background overflow-hidden">
             <StatusBar barStyle="light-content" />
+
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-10" 
+                    resizeMode="cover"
+                />
+            )}
             
             <Header 
                 title="Semua Menu" 

@@ -1,4 +1,4 @@
-import { ScrollView, StatusBar, View, RefreshControl } from 'react-native';
+import { ScrollView, StatusBar, View, RefreshControl, Image } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import { WalletSection } from '../../components/WalletSection';
@@ -9,11 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { useUIStore } from '../../store/useUIStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { getFileUrl } from '../../utils/image';
 
 export default function HomeScreen() {
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
     const { themeColors } = useUIStore();
+    const { user } = useAuthStore();
 
     useFocusEffect(
         React.useCallback(() => {
@@ -28,8 +31,18 @@ export default function HomeScreen() {
     };
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-background overflow-hidden">
             <StatusBar barStyle="dark-content" />
+            
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-10" 
+                    resizeMode="cover"
+                />
+            )}
+
             <SafeAreaView className="flex-1" edges={['top']}>
                 <Header variant="home" showSearch showProfile />
                 <ScrollView

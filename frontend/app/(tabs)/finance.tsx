@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { useAuthStore } from '../../store/useAuthStore';
+import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -13,6 +15,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 
 export default function FinanceTab() {
     const [refreshing, setRefreshing] = useState(false);
+    const { user } = useAuthStore();
 
     // API Hooks
     const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary();
@@ -51,7 +54,17 @@ export default function FinanceTab() {
     ) : 0;
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background overflow-hidden">
+            <StatusBar barStyle="dark-content" />
+
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-10" 
+                    resizeMode="cover"
+                />
+            )}
             <Header
                 title="Finance Hub"
                 subtitle="Ringkasan Keuangan Seluruh Unit"

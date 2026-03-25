@@ -80,15 +80,6 @@ export const Header = ({
 
     return (
         <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-            {/* Background Image (User Custom) */}
-            {variant === 'home' && user?.home_background && (
-                <Image 
-                    source={{ uri: getFileUrl(user.home_background) as string }} 
-                    className="absolute inset-0 w-full h-full opacity-30" 
-                    resizeMode="cover"
-                />
-            )}
-            
             {/* Decorative Ambient Glass */}
             <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
             <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />

@@ -51,9 +51,23 @@ export const authService = {
 
     uploadAvatar: async (uri: string) => {
         const formData = new FormData();
-        const filename = uri.split('/').pop() || 'avatar.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+        
+        // Handle data URI, blob URI, or file URI
+        let filename = 'avatar.jpg';
+        let type = 'image/jpeg';
+        
+        if (uri.startsWith('data:')) {
+            const match = uri.match(/^data:(image\/\w+);base64,/);
+            if (match) {
+                type = match[1];
+                const extension = type.split('/')[1];
+                filename = `avatar.${extension}`;
+            }
+        } else {
+            filename = uri.split('/').pop() || 'avatar.jpg';
+            const match = /\.(\w+)$/.exec(filename);
+            type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+        }
 
         if (Platform.OS === 'web') {
             const response = await fetch(uri);
@@ -68,22 +82,8 @@ export const authService = {
             });
         }
 
-        if (Platform.OS === 'web') {
-            const token = useAuthStore.getState().token;
-            const res = await fetch(`${BASE_URL}/auth/me/avatar`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw { response: { data: errorData } };
-            }
-            return await res.json();
-        }
-
+        console.log('[Auth Service] Posting avatar to backend via Axios...', { filename, type });
+        // Use a separate config object to ensure headers are correctly overridden
         const response = await api.post('/auth/me/avatar', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
@@ -94,9 +94,22 @@ export const authService = {
 
     uploadHomeBackground: async (uri: string) => {
         const formData = new FormData();
-        const filename = uri.split('/').pop() || 'background.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+        
+        let filename = 'background.jpg';
+        let type = 'image/jpeg';
+        
+        if (uri.startsWith('data:')) {
+            const match = uri.match(/^data:(image\/\w+);base64,/);
+            if (match) {
+                type = match[1];
+                const extension = type.split('/')[1];
+                filename = `background.${extension}`;
+            }
+        } else {
+            filename = uri.split('/').pop() || 'background.jpg';
+            const match = /\.(\w+)$/.exec(filename);
+            type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+        }
 
         if (Platform.OS === 'web') {
             const response = await fetch(uri);
@@ -111,22 +124,7 @@ export const authService = {
             });
         }
 
-        if (Platform.OS === 'web') {
-            const token = useAuthStore.getState().token;
-            const res = await fetch(`${BASE_URL}/auth/me/home-background`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw { response: { data: errorData } };
-            }
-            return await res.json();
-        }
-
+        console.log('[Auth Service] Posting background to backend via Axios...', { filename, type });
         const response = await api.post('/auth/me/home-background', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',

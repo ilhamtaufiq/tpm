@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
+import { useAuthStore } from '../../store/useAuthStore';
+import { getFileUrl } from '../../utils/image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -86,6 +88,7 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 
 export default function HistoryTab() {
     const [search, setSearch] = useState('');
+    const { user } = useAuthStore();
     const [refreshing, setRefreshing] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -112,7 +115,17 @@ export default function HistoryTab() {
     ) || [];
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-background overflow-hidden">
+            <StatusBar barStyle="dark-content" />
+
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-10" 
+                    resizeMode="cover"
+                />
+            )}
             <Header
                 title="Aktivitas Bisnis"
                 subtitle="Log Transaksi"

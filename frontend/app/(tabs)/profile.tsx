@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Alert, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, ScrollView, Alert, TouchableOpacity, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint } from 'lucide-react-native';
 
@@ -83,7 +83,18 @@ export default function ProfileScreen() {
     };
 
     return (
-        <View className="flex-1 bg-background">
+        <View className="flex-1 bg-background overflow-hidden">
+            <StatusBar barStyle="dark-content" />
+
+            {/* Background Image (User Custom) */}
+            {user?.home_background && (
+                <Image 
+                    source={{ uri: getFileUrl(user.home_background) as string }} 
+                    className="absolute inset-0 w-full h-full opacity-10" 
+                    resizeMode="cover"
+                />
+            )}
+
             <Header
                 title={user?.full_name || user?.name || 'Admin TPM'}
                 subtitle={`Profil Saya • ${user?.role || 'Manager'}`}

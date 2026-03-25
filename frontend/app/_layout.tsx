@@ -11,6 +11,7 @@ import {
     Outfit_700Bold,
 } from '@expo-google-fonts/outfit';
 import { useAuthStore } from '../store/useAuthStore';
+import { authService } from '../services/auth';
 import { useSecurityStore, SEGMENT_TO_FEATURE } from '../store/useSecurityStore';
 import { useSecurityStatus } from '../hooks/useSecurityAPI';
 import { vars } from 'nativewind';
@@ -44,7 +45,8 @@ function RootLayoutContent() {
         isLocked, isPinEnabled, lock, syncWithBackend,
         protectedFeatures, unlockedFeatures
     } = useSecurityStore();
-    const themeColors = useUIStore(state => state.themeColors);
+    const { themeColors } = useUIStore();
+    const { setAuth, token } = useAuthStore();
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -88,6 +90,24 @@ function RootLayoutContent() {
             subscription.remove();
         };
     }, [isPinEnabled]);
+
+    // Sync profile on startup
+    useEffect(() => {
+        if (isAuthenticated && isReady) {
+            const syncProfile = async () => {
+                try {
+                    const freshUser = await authService.getMe();
+                    const currentToken = useAuthStore.getState().token;
+                    if (currentToken) {
+                        setAuth(freshUser, currentToken);
+                    }
+                } catch (err) {
+                    console.error('LAYOUT: Failed to sync profile:', err);
+                }
+            };
+            syncProfile();
+        }
+    }, [isAuthenticated, isReady]);
 
     useEffect(() => {
         if (!isReady || !loaded) return;
