@@ -83,6 +83,9 @@ class MobilResponse(MobilBase):
     created_at: datetime
     updated_at: datetime
     media: List[MobilMediaResponse] = []
+    total_biaya: Decimal = Decimal("0")
+    total_part_service: Decimal = Decimal("0")
+    total_modal: Decimal = Decimal("0")
 
     model_config = {"from_attributes": True}
 
@@ -187,10 +190,7 @@ class MobilSummary(BaseModel):
     total_laba_kotor: Decimal
 
 class MobilDetailResponse(MobilResponse):
-    total_biaya: Decimal = Decimal("0")
-    total_part_service: Decimal = Decimal("0")
     total_biaya_part: Decimal = Decimal("0")
-    total_modal: Decimal = Decimal("0")
     hpp: Decimal = Decimal("0")
     is_sold: bool = False
     penjualan: Optional[TransaksiMobilResponse] = None

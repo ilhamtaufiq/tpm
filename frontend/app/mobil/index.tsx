@@ -366,7 +366,7 @@ export default function MobilInventoryScreen() {
                                             </View>
                                             <View className="items-end">
                                                 <Typography variant="h3" weight="bold" className="text-primary text-xl">
-                                                    {formatCurrency(item.total_modal || item.harga_beli)}
+                                                    {formatCurrency(Number(item.harga_beli || 0) + Number(item.total_biaya || 0) + Number(item.total_part_service || 0))}
                                                 </Typography>
                                                 <Typography variant="caption" className="text-textGray mt-1">Estimasi Modal</Typography>
                                             </View>

@@ -14,8 +14,8 @@ Redesign the `all-menus.tsx` screen and simplify the Home navigation to a minima
 - **Home UI:** Expanded `ServiceGrid` to 8 items (color-coded) to replace the missing tab bar navigation.
 
 ## State
-- **Done**: Redesigned `all-menus.tsx`, added balance section, removed floating navigation, removed whole bottom tab bar. Fixed Jasa Angkut 'metode_bayar' enum error for `BELUM_LUNAS` status.
-- **Now**: Verifying the accessibility of all modules from the Home menu.
+- **Done**: Redesigned `all-menus.tsx`, added balance section, removed floating navigation, removed whole bottom tab bar. Fixed Jasa Angkut 'metode_bayar' enum error for `BELUM_LUNAS` status. Corrected 'Estimasi Modal' in `MobilInventoryScreen` and `MobilDetail` to sum all costs. **Fixed inconsistency between List and Detail view by adding `total_biaya`, `total_part_service`, and `total_modal` to the backend `MobilResponse` schema.**
+- **Now**: Verifying the sync between List and Detail views in Mobil Inventory.
 - **Next**: Final polish on layout transitions.
 
 ## Open Questions
