@@ -221,15 +221,10 @@ def get_profit_summary(
             "count": pembelian_summ["total_transaksi"]
         }
 
-    prive_total = 0
-    if "prive" in pengeluaran_details:
-        prive_total = pengeluaran_details["prive"].get("total", 0)
-
-    # Total Pengeluaran Operasional (Gaji + Pengeluaran lain kecuali Prive dan Pembelian Part)
-    # Pembelian Part tidak dihitung karena sudah masuk ke HPP saat barang terjual (Laba Kotor)
-    # Prive tidak dihitung karena merupakan pengambilan modal, bukan beban operasional
+    # Total Pengeluaran (Hanya gaji dan pengeluaran operasional, termasuk Prive tapi TANPA pembelian part)
+    # Pembelian part tidak dihitung sebagai beban di sini karena sudah masuk ke HPP di Laba Kotor
     total_pengeluaran = (
-        pengeluaran["total_pengeluaran"] - prive_total + 
+        pengeluaran["total_pengeluaran"] + 
         gaji_summary["total"]
     )
     laba_bersih = total_laba_kotor - total_pengeluaran

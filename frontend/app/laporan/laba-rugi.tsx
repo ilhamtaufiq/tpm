@@ -410,6 +410,11 @@ export default function LabaRugiScreen() {
                             </View>
 
                             <View className="flex-row justify-between items-center">
+                                <Typography className="text-white/60 text-xs">Beban Bisnis (Ops/Gaji)</Typography>
+                                <Typography weight="bold" className="text-rose-300">({formatCurrency(reportData?.pengeluaran - priveTotal)})</Typography>
+                            </View>
+
+                            <View className="flex-row justify-between items-center">
                                 <Typography className="text-white/60 text-xs">Prive Pemilik</Typography>
                                 <Typography weight="bold" className="text-rose-300">({formatCurrency(priveTotal)})</Typography>
                             </View>
@@ -547,6 +552,11 @@ export default function LabaRugiScreen() {
                                             </div>
 
                                             <div class="row-item">
+                                                <span>Beban Bisnis (Ops/Gaji)</span>
+                                                <span class="text-error">(${formatCurrency(reportData?.pengeluaran - priveTotal)})</span>
+                                            </div>
+
+                                            <div class="row-item">
                                                 <span>Prive Pemilik</span>
                                                 <span class="text-error">(${formatCurrency(priveTotal)})</span>
                                             </div>
@@ -667,6 +677,11 @@ export default function LabaRugiScreen() {
                                             <div class="row-item">
                                                 <span>Total Laba Kotor Unit</span>
                                                 <span>${formatCurrency(reportData?.laba_kotor?.total || 0)}</span>
+                                            </div>
+
+                                            <div class="row-item">
+                                                <span>Beban Bisnis (Ops/Gaji)</span>
+                                                <span class="text-error">(${formatCurrency(reportData?.pengeluaran - priveTotal)})</span>
                                             </div>
 
                                             <div class="row-item">
