@@ -1,7 +1,11 @@
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Set current directory to backend
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 from app.database.session import SessionLocal
 from app.models.mobil import Mobil
