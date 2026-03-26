@@ -113,14 +113,10 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         """Calculate total additional expenses (BBN, pajak, etc.).
         This contributes to HPP (Harga Pokok Penjualan).
         """
+        # Include ALL records from 'biaya_lainnya' (except Perawatan Bengkel)
+        # and ALL records from 'pengeluaran_bengkel' assigned to this car.
         biaya_lain_total = sum(b.jumlah for b in self.biaya_lainnya if b.kategori != "Perawatan Bengkel") if self.biaya_lainnya else Decimal(0)
-        
-        # Include Workshop Operational Expenses assigned to car if they are Tax/BBN related
-        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
-        pengeluaran_hpp_total = sum(
-            p.jumlah for p in self.pengeluaran_bengkel
-            if any(k.lower() in p.deskripsi.lower() for k in hpp_keywords)
-        ) if self.pengeluaran_bengkel else Decimal(0)
+        pengeluaran_hpp_total = sum(p.jumlah for p in self.pengeluaran_bengkel) if self.pengeluaran_bengkel else Decimal(0)
         
         return biaya_lain_total + pengeluaran_hpp_total
 
@@ -147,8 +143,8 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
             if t.kategori == 'jual_beli_mobil'
         ) if self.bengkel_perbaikan else Decimal(0)
 
-        # Direct links to Workshop operational expenses (Exclude those already counted as HPP/Tax)
-        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
+        # Direct links to Workshop operational expenses (Exclude those already counted as HPP/Tax/Fee)
+        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
         pengeluaran_bengkel_total = sum(
             p.jumlah for p in self.pengeluaran_bengkel
             if not any(k.lower() in p.deskripsi.lower() for k in hpp_keywords)

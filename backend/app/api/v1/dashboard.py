@@ -881,25 +881,19 @@ def get_neraca(
     
     stok_mobil_total = 0.0
     for car in available_cars:
-        # Sum Harga Beli
-        price = float(car.harga_beli or 0)
-        
-        # Calculate Biaya (HPP - Tax/BBN) manually
-        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
-        
-        # From MobilBiayaLainnya
+        # Include ALL records from 'biaya_lainnya' (except Perawatan Bengkel)
+        # and ALL records from 'pengeluaran_bengkel' assigned to this car.
+        # This reflects the "Manajemen Biaya Unit" screen without keyword filtering.
         biaya_lain = sum(
-            float(b.jumlah or 0) for b in car.biaya_lainnya 
+            float(b.jumlah or 0) for b in car.biaya_lainnya
             if b.kategori != "Perawatan Bengkel"
         ) if car.biaya_lainnya else 0.0
         
-        # From PengeluaranBengkel (Workshop Operational Expenses)
-        biaya_pengeluaran_hpp = sum(
+        biaya_pengeluaran = sum(
             float(p.jumlah or 0) for p in car.pengeluaran_bengkel
-            if any(k.lower() in (p.deskripsi or "").lower() for k in hpp_keywords)
         ) if car.pengeluaran_bengkel else 0.0
         
-        stok_mobil_total += price + biaya_lain + biaya_pengeluaran_hpp
+        stok_mobil_total += float(car.harga_beli or 0) + biaya_lain + biaya_pengeluaran
     
     total_aktiva_lancar = float(total_kas_bank or 0) + float(total_piutang or 0) + float(persediaan_sparepart or 0) + stok_mobil_total
     
@@ -983,7 +977,7 @@ def get_neraca(
     # 1. Setoran Modal (Net: Masuk - Keluar, cumulative)
     modal_in = get_kas_sum(KasBankSource.MODAL, KasBankType.MASUK)
     modal_out = get_kas_sum(KasBankSource.MODAL, KasBankType.KELUAR)
-    setoran_modal = modal_in - modal_out
+    setoran_modal = float(modal_in or 0) - float(modal_out or 0)
     
     # 2. Laba Ditahan components (for display)
     bengkel_summ = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
