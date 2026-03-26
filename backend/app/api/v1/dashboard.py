@@ -784,11 +784,13 @@ def get_neraca(
     
     # Helper for Snapshot Balance
     def get_sisa_snapshot(src):
+        # 1. Gross Piutang (nominal) created up to tanggal_sampai
         gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
             PiutangModel.sumber == src,
             PiutangModel.tanggal <= (tanggal_sampai or date.max)
         ).scalar() or 0
         
+        # 2. Payments via PembayaranPiutang table
         paid = db.query(func.sum(PaymentModel.nominal)).join(
             PiutangModel, PaymentModel.piutang_id == PiutangModel.id
         ).filter(
@@ -796,7 +798,25 @@ def get_neraca(
             PiutangModel.tanggal <= (tanggal_sampai or date.max),
             PaymentModel.tanggal <= (tanggal_sampai or date.max)
         ).scalar() or 0
-        return float(gross - paid)
+        
+        # 3. Direct Payments via KasBank (for JUAL_BELI_MOBIL specific cases)
+        # This matches the logic in get_capital_report (p_mobil_direct_cash)
+        direct_paid = 0
+        if src == PiutangSource.JUAL_BELI_MOBIL:
+            from app.models.keuangan import KasBank
+            from app.utils.constants import KasBankSource, KasBankType
+            q_direct = db.query(func.sum(KasBank.nominal)).join(
+                PiutangModel, PiutangModel.nomor_referensi == KasBank.nomor_referensi
+            ).filter(
+                KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+                KasBank.tipe == KasBankType.MASUK,
+                PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL,
+                PiutangModel.tanggal <= (tanggal_sampai or date.max),
+                KasBank.tanggal <= (tanggal_sampai or date.max)
+            )
+            direct_paid = float(q_direct.scalar() or 0)
+            
+        return float(gross) - float(paid) - float(direct_paid)
 
     p_lainnya = get_sisa_snapshot(PiutangSource.LAINNYA)
     p_mobil = get_sisa_snapshot(PiutangSource.JUAL_BELI_MOBIL)
