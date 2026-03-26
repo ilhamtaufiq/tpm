@@ -16,8 +16,9 @@
 - Done:
   - Created `BarcodeScannerModal.tsx`.
   - Integrated scanner into `BengkelForm.tsx`.
+  - Created branch `release/v2.1.0` and merged into `main`.
 - Now:
-  - Resolving missing `expo-camera` dependency.
+  - Development continuing on `main` branch.
 - Next:
   - User to install `expo-camera`.
   - Verify scan logic with real data.
