@@ -607,6 +607,9 @@ export default function LaporanPerubahanModalScreen() {
                         <View className="ml-4 mt-1 space-y-1">
                             <Row label="Cash" value={data.pengembalian_investor?.cash} small />
                             <Row label="Transfer" value={data.pengembalian_investor?.transfer} small />
+                            {data.pengembalian_investor?.accrued > 0 && (
+                                <Row label="Penyesuaian Kewajiban (Hutang)" value={data.pengembalian_investor?.accrued} small color="text-rose-500" />
+                            )}
                             {data.pengembalian_investor?.termasuk_biaya_persiapan > 0 && (
                                 <Typography variant="caption" className="text-textGray italic text-[10px] mt-0.5 px-1">
                                     *termasuk Biaya Persiapan Mobil: {formatCurrency(data.pengembalian_investor.termasuk_biaya_persiapan)}

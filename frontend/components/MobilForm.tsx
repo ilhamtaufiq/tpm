@@ -77,6 +77,16 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             return;
         }
 
+        if (namaInvestor && (!nominalInvestor || parseNumber(nominalInvestor) <= 0 || !persentaseInvestor || parseFloat(persentaseInvestor) <= 0)) {
+            setDialogConfig({
+                visible: true,
+                title: 'Validasi Investor',
+                message: 'Untuk unit investor, Nominal Investasi dan Persentase Bagi Hasil wajib diisi.',
+                variant: 'warning'
+            });
+            return;
+        }
+
         if (!isEdit) {
             if (!metodeBayar) {
                 setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning' });
@@ -421,7 +431,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                 onChangeText={(v) => setNominalInvestor(formatNumber(v))}
                             />
                             <View className="flex-1">
-                                <Typography variant="body2" className="mb-1 font-medium">Atau Bagi Hasil (%)</Typography>
+                                <Typography variant="body2" className="mb-1 font-medium">Bagi Hasil (%)</Typography>
                                 <View className="flex-row items-center bg-white border border-gray-200 rounded-lg h-[46px] px-3">
                                     <TextInput
                                         className="flex-1 font-bold text-primary"
@@ -435,8 +445,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             </View>
                         </View>
 
-                        <Typography variant="caption" className="text-gray-400 mt-3 italic">
-                            *Jika nominal diisi, bagi hasil (%) akan dihitung otomatis dari (Nominal / Total Modal). Jika persentase diisi manual, itu akan menjadi acuan bagi hasil.
+                        <Typography variant="caption" className="text-primary mt-3 italic bg-primary/10 p-3 rounded-2xl border border-primary/20">
+                            *Untuk unit investor, Nominal Investasi dan Persentase Bagi Hasil (%) wajib diisi secara manual sebagai acuan perhitungan profit sharing.
                         </Typography>
                     </Card>
                 </View>

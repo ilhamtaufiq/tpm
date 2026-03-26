@@ -514,8 +514,18 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     {activeUnit.tipe_kepemilikan?.toString().toLowerCase() === 'investor' && (
                         <>
                             <View className="flex-row justify-between">
-                                <Typography variant="body2" className="text-gray-600">Bagian Investor ({activeUnit.persentase_investor}%)</Typography>
+                                <Typography variant="body2" className="text-gray-600">Modal Investor</Typography>
+                                <Typography weight="bold" className="text-gray-800">{formatCurrency(Number(activeUnit.nominal_investor) || 0)}</Typography>
+                            </View>
+                            <View className="flex-row justify-between">
+                                <Typography variant="body2" className="text-gray-600">Bagian Laba Investor ({activeUnit.persentase_investor}%)</Typography>
                                 <Typography weight="bold" className="text-gray-800">{formatCurrency(labaInvestor)}</Typography>
+                            </View>
+                            <View className="flex-row justify-between bg-emerald-50 p-2.5 rounded-2xl border border-emerald-100/50 mb-1">
+                                <Typography variant="caption" weight="bold" className="text-emerald-700">PENGEMBALIAN NILAI INVESTOR</Typography>
+                                <Typography weight="bold" className="text-emerald-700">
+                                    {formatCurrency((Number(activeUnit.nominal_investor) || 0) + labaInvestor)}
+                                </Typography>
                             </View>
                             <View className="h-[1px] bg-primary/10 w-full my-1" />
                         </>

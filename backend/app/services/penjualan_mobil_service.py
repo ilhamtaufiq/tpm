@@ -159,17 +159,8 @@ class PenjualanMobilService:
         if tipe_kepemilikan == OwnershipType.TPM:
             return Decimal("0"), laba_kotor
 
-        # If nominal investor is provided, calculate effective percentage based on modal
-        # Example: if baseline is 40% and they fund 100% of (HPP + PartService), they get 40%
-        # If they fund 50%, they get (50/100) * 40% = 20%
+        # Use the manually provided percentage directly
         effective_percentage = persentase_investor
-        
-        if nominal_investor > 0 and total_modal > 0:
-            funding_ratio = nominal_investor / total_modal
-            effective_percentage = (persentase_investor * funding_ratio)
-        elif nominal_investor > 0:
-            # Fallback if total_modal is somehow 0 (shouldn't happen with buy price)
-            effective_percentage = persentase_investor
 
         # Investor car: split profit based on percentage
         laba_investor = (laba_kotor * effective_percentage / 100).quantize(Decimal("0.01"))

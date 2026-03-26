@@ -19,7 +19,7 @@ from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from sqlalchemy import func, or_
 
@@ -544,6 +544,24 @@ def get_capital_report(
         "total_b": total_b
     }
 
+    # Pre-calculate Accrued Investor Payables for use in Section C and Section E
+    # Sold investor units that are not yet disbursed: Modal Investor + Laba Investor - Any partial payouts
+    q_pending_investor = db.query(
+        func.sum(
+            Mobil.nominal_investor + 
+            TransaksiPenjualanMobil.laba_investor - 
+            TransaksiPenjualanMobil.nominal_pencairan
+        )
+    ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+        TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+        TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+        TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+    )
+    if tanggal_sampai:
+        q_pending_investor = q_pending_investor.filter(TransaksiPenjualanMobil.tanggal <= (tanggal_sampai or date.max))
+    
+    h_investor_accrued = float(q_pending_investor.scalar() or 0)
+
     # --- C. Pengurangan Laba dan Modal (Stock & Operational Acquisitions) ---
     # 1. Total Pembelian Part (Total Nominal Purchase, not just Cash)
     pembelian_part_summ = PembelianPartService(db).get_summary(tanggal_dari, tanggal_sampai)
@@ -608,7 +626,7 @@ def get_capital_report(
     total_c = (
         total_beli_part +
         total_beli_mobil +
-        jb_mobil_cash + jb_mobil_transfer +
+        (jb_mobil_cash + jb_mobil_transfer + h_investor_accrued) +
         biaya_opr + biaya_gaji + prive +
         # kasbon_net + 
         lainnya_net_out
@@ -628,7 +646,8 @@ def get_capital_report(
         "pengembalian_investor": {
             "cash": jb_mobil_cash,
             "transfer": jb_mobil_transfer,
-            "total": jb_mobil_cash + jb_mobil_transfer,
+            "accrued": h_investor_accrued,
+            "total": jb_mobil_cash + jb_mobil_transfer + h_investor_accrued,
             "termasuk_biaya_persiapan": biaya_persiapan_display,
         },
         "operasional": biaya_opr,
@@ -648,7 +667,13 @@ def get_capital_report(
     
     h_part = h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0)
     h_mobil = h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0)
-    h_investor = h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0) # e.g. investor funds waiting to be paid back
+    
+    # Hutang Investor components:
+    # 1. Manual payables from HutangUsaha table (e.g. borrowing investor money)
+    h_investor_base = h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0)
+    
+    h_investor = h_investor_base + h_investor_accrued
+    
     h_lainnya = h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0)
     
     total_e = h_part + h_mobil + h_investor + h_lainnya
@@ -974,7 +999,26 @@ def get_neraca(
     
     hutang_part = float(h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0))
     hutang_mobil = float(h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0))
-    hutang_investor = float(h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0))
+    
+    # Combined investor debt (Manual + Accrued from sales)
+    h_inv_base = float(h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0))
+    q_pending_inv = db.query(
+        func.sum(
+            Mobil.nominal_investor + 
+            TransaksiPenjualanMobil.laba_investor - 
+            TransaksiPenjualanMobil.nominal_pencairan
+        )
+    ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+        TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+        TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+        TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+    )
+    if tanggal_sampai:
+        q_pending_inv = q_pending_inv.filter(TransaksiPenjualanMobil.tanggal <= (tanggal_sampai or date.max))
+        
+    h_inv_accrued = float(q_pending_inv.scalar() or 0)
+    hutang_investor = h_inv_base + h_inv_accrued
+    
     hutang_lainnya = float(h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0))
     
     total_hutang = hutang_part + hutang_mobil + hutang_investor + hutang_lainnya
