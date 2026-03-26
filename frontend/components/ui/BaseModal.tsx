@@ -11,6 +11,7 @@ interface BaseModalProps {
     children: React.ReactNode;
     maxHeight?: DimensionValue;
     showCloseButton?: boolean;
+    containerClassName?: string;
 }
 
 export const BaseModal = ({
@@ -19,7 +20,8 @@ export const BaseModal = ({
     title,
     children,
     maxHeight = '80%',
-    showCloseButton = true
+    showCloseButton = true,
+    containerClassName = ""
 }: BaseModalProps) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(300)).current;
@@ -85,7 +87,7 @@ export const BaseModal = ({
                             maxHeight: maxHeight,
                             backgroundColor: 'white', // Ensure it is not transparent
                         }}
-                        className="w-full max-w-sm rounded-[48px] shadow-2xl overflow-hidden border border-gray-100"
+                        className={`w-full sm:max-w-md md:max-w-lg rounded-[48px] shadow-2xl overflow-hidden border border-gray-100 ${containerClassName}`}
                     >
                         {/* Header */}
                         {(title || showCloseButton) && (

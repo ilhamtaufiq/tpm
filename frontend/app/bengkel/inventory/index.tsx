@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -12,25 +12,22 @@ import {
     Package,
     ArrowUpDown,
     Filter,
+    QrCode,
+    Barcode as BarcodeIcon,
+    Printer,
+    Edit3
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSparePartsList, useLowStockParts, useUpdateSparePart } from '../../../hooks/useBengkel';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
-import { RefreshControl as RNRefreshControl } from 'react-native';
 import { formatCurrency } from '../../../utils/format';
 import { BaseModal } from '../../../components/ui/BaseModal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import QRCode from 'react-native-qrcode-svg';
 import { Barcode } from '../../../components/ui/Barcode';
-
-const PARTS = [
-    { id: '1', nama: 'Oli MPX 2 0.8L', kode: 'OL-001', stok: 2, stok_minimum: 5, price: 'Rp 65.000', category: 'Pelumas' },
-    { id: '2', nama: 'Busi Honda Genio', kode: 'BS-042', stok: 15, stok_minimum: 5, price: 'Rp 25.000', category: 'Elektrik' },
-    { id: '3', nama: 'Kampas Rem Depan Vario', kode: 'KR-012', stok: 4, stok_minimum: 10, price: 'Rp 45.000', category: 'Rem' },
-    { id: '4', nama: 'Van Belt Beat ESP', kode: 'VB-005', stok: 8, stok_minimum: 3, price: 'Rp 145.000', category: 'Transmisi' },
-];
+import * as Print from 'expo-print';
 
 export default function InventoryScreen() {
     const router = useRouter();
@@ -41,6 +38,46 @@ export default function InventoryScreen() {
     const [isEditing, setIsEditing] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const [codeType, setCodeType] = useState<'QR' | 'BARCODE'>('QR');
+    const qrRef = React.useRef<any>(null);
+
+    const handlePrint = async () => {
+        if (!selectedPart) return;
+
+        try {
+            let imageSource = '';
+            
+            if (codeType === 'QR') {
+                imageSource = `https://api.qrserver.com/v1/create-qr-code/?data=${selectedPart.kode}&size=300x300`;
+            } else {
+                imageSource = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${selectedPart.kode}&scale=3&rotate=N&includetext`;
+            }
+
+            const html = `
+                <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+                        <style>
+                            body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: 'Helvetica', sans-serif; margin: 0; padding: 20px; }
+                            h1 { font-size: 32px; margin-bottom: 5px; text-align: center; }
+                            p { font-size: 20px; color: #666; margin-bottom: 30px; }
+                            img { max-width: 100%; height: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px; }
+                            .footer { margin-top: 40px; font-size: 12px; color: #aaa; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${selectedPart.nama}</h1>
+                        <p>${selectedPart.kode}</p>
+                        <img src="${imageSource}" />
+                        <div class="footer">TPM Inventory System Management</div>
+                    </body>
+                </html>
+            `;
+
+            await Print.printAsync({ html });
+        } catch (error) {
+            Alert.alert('Error', 'Gagal mencetak kode.');
+        }
+    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -229,11 +266,12 @@ export default function InventoryScreen() {
                 visible={isModalVisible}
                 onClose={() => setIsModalVisible(false)}
                 title={isEditing ? "Edit Sparepart" : "Detail Sparepart"}
-                maxHeight="90%"
+                maxHeight="92%"
+                containerClassName="p-0 border-0"
             >
-                <View className="space-y-4">
+                <View className="flex-1">
                     {!showCode ? (
-                        <>
+                        <View className="space-y-4 px-1">
                             <Input
                                 label="Nama Sparepart"
                                 value={formData.nama}
@@ -248,21 +286,25 @@ export default function InventoryScreen() {
                                 editable={isEditing}
                                 placeholder="Contoh: OL-001"
                             />
-                            <Input
-                                label="Kategori"
-                                value={formData.kategori}
-                                onChangeText={(text) => setFormData({ ...formData, kategori: text })}
-                                editable={isEditing}
-                                placeholder="Contoh: Pelumas"
-                            />
-                            <Input
-                                label="Satuan"
-                                value={formData.satuan}
-                                onChangeText={(text) => setFormData({ ...formData, satuan: text })}
-                                editable={isEditing}
-                                placeholder="Contoh: Unit, Pcs, Liter"
-                            />
-                            <View className="flex-row" style={{ gap: 12 }}>
+                            <View className="flex-row space-x-3">
+                                <Input
+                                    label="Kategori"
+                                    value={formData.kategori}
+                                    containerClassName="flex-1"
+                                    onChangeText={(text) => setFormData({ ...formData, kategori: text })}
+                                    editable={isEditing}
+                                    placeholder="Pelumas"
+                                />
+                                <Input
+                                    label="Satuan"
+                                    value={formData.satuan}
+                                    containerClassName="flex-[0.7]"
+                                    onChangeText={(text) => setFormData({ ...formData, satuan: text })}
+                                    editable={isEditing}
+                                    placeholder="Unit"
+                                />
+                            </View>
+                            <View className="flex-row space-x-3">
                                 <View className="flex-1">
                                     <Input
                                         label="Stok"
@@ -283,7 +325,7 @@ export default function InventoryScreen() {
                                 </View>
                             </View>
                             <Input
-                                label="Harga Jual"
+                                label="Harga Jual (Rp)"
                                 value={formData.harga_jual}
                                 onChangeText={(text) => setFormData({ ...formData, harga_jual: text })}
                                 editable={isEditing}
@@ -307,67 +349,76 @@ export default function InventoryScreen() {
                                 ) : (
                                     <View className="space-y-3">
                                         <Button
-                                            title="Edit Data"
+                                            title="Ubah Data"
+                                            variant="outline-neutral"
+                                            className="bg-gray-100 border-0"
                                             onPress={() => setIsEditing(true)}
+                                            icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
                                         />
-                                        <View className="flex-row" style={{ gap: 12 }}>
-                                            <Button
-                                                title="QR Code"
-                                                variant="outline"
-                                                className="flex-1"
-                                                onPress={() => {
-                                                    setCodeType('QR');
-                                                    setShowCode(true);
-                                                }}
-                                                icon={<Typography className="mr-1">📱</Typography>}
-                                            />
-                                            <Button
-                                                title="Barcode"
-                                                variant="outline"
-                                                className="flex-1"
-                                                onPress={() => {
-                                                    setCodeType('BARCODE');
-                                                    setShowCode(true);
-                                                }}
-                                                icon={<Typography className="mr-1">📊</Typography>}
-                                            />
+                                        <View className="flex-row space-x-3">
+                                            <TouchableOpacity 
+                                                onPress={() => { setCodeType('QR'); setShowCode(true); }}
+                                                className="flex-1 bg-primary/5 border border-primary/10 rounded-2xl py-4 items-center justify-center"
+                                            >
+                                                <QrCode size={20} color="#023C69" />
+                                                <Typography variant="caption" weight="bold" className="text-primary mt-1">QR Code</Typography>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                onPress={() => { setCodeType('BARCODE'); setShowCode(true); }}
+                                                className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl py-4 items-center justify-center"
+                                            >
+                                                <BarcodeIcon size={20} color="#10B981" />
+                                                <Typography variant="caption" weight="bold" className="text-emerald-600 mt-1">Barcode</Typography>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
                                 )}
                             </View>
-                        </>
+                        </View>
                     ) : (
-                        <View className="items-center py-6">
-                            <Typography variant="h3" weight="bold" className="mb-2">{selectedPart?.nama}</Typography>
-                            <Typography variant="body2" className="text-gray-500 mb-6">{selectedPart?.kode}</Typography>
+                        <View className="items-center py-4">
+                            <View className="mb-6 w-full px-2">
+                                <Card className="bg-gray-50 border-gray-100 p-4 items-center rounded-3xl">
+                                    <Typography variant="h3" weight="bold" className="text-center mb-1">{selectedPart?.nama}</Typography>
+                                    <Typography variant="body2" className="text-gray-400 text-center font-bold tracking-widest">{selectedPart?.kode}</Typography>
+                                </Card>
+                            </View>
 
-                            <View className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-8">
+                            <View className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6">
                                 {codeType === 'QR' ? (
                                     <QRCode
                                         value={selectedPart?.kode || ''}
-                                        size={200}
+                                        size={220}
                                         backgroundColor="white"
                                         color="black"
+                                        getRef={(ref) => (qrRef.current = ref)}
                                     />
                                 ) : (
                                     <Barcode
                                         value={selectedPart?.kode || ''}
-                                        width={250}
-                                        height={100}
+                                        width={260}
+                                        height={120}
                                     />
                                 )}
                             </View>
 
-                            <Typography variant="caption" className="text-center text-gray-400 mb-10 px-10">
-                                Gunakan {codeType.toLowerCase()} ini untuk pemindaian instan saat transaksi atau pengecekan stok.
+                            <Typography variant="caption" className="text-center text-gray-400 mb-8 px-6 leading-5">
+                                Gunakan label ini pada kemasan fisik sparepart untuk memudahkan scan saat transaksi.
                             </Typography>
 
-                            <Button
-                                title="Kembali ke Detail"
-                                variant="outline"
-                                className="w-full"
-                                onPress={() => setShowCode(false)}
-                            />
+                            <View className="w-full space-y-3 px-1">
+                                <Button
+                                    title={`Cetak ${codeType}`}
+                                    onPress={handlePrint}
+                                    icon={<Printer size={20} color="white" style={{ marginRight: 8 }} />}
+                                />
+                                <Button
+                                    title="Kembali ke Detail"
+                                    variant="outline"
+                                    className="border-gray-200"
+                                    onPress={() => setShowCode(false)}
+                                />
+                            </View>
                         </View>
                     )}
                 </View>
