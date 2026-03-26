@@ -7,7 +7,8 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight } from 'lucide-react-native';
+import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode } from 'lucide-react-native';
+import { BarcodeScannerModal } from './ui/BarcodeScannerModal';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
@@ -62,6 +63,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [grandTotal, setGrandTotal] = useState(0);
     const [catatan, setCatatan] = useState('');
     const [activeTab, setActiveTab] = useState<'service' | 'sparepart'>('service');
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
@@ -226,6 +228,67 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
     const addService = () => setServices([...services, { id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
     const addPart = () => setParts([...parts, { id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
+
+    const handleScanSparePart = (scannedData: string) => {
+        const availableParts = sparePartsData?.data || [];
+        const part = availableParts.find((p: any) => p.kode === scannedData);
+        
+        if (part) {
+            // Success vibration if available or just proceed
+            setIsScannerOpen(false);
+            
+            // Logic to add or increment part
+            const existingPartIndex = parts.findIndex(p => p.spare_part_id === part.id);
+            
+            if (existingPartIndex !== -1) {
+                const newParts = [...parts];
+                newParts[existingPartIndex].qty += 1;
+                setParts(newParts);
+            } else {
+                // Check if the last part row is empty, if so, use it
+                const lastPart = parts[parts.length - 1];
+                if (lastPart && lastPart.spare_part_id === 0 && lastPart.nama === '') {
+                    const newParts = [...parts];
+                    newParts[parts.length - 1] = {
+                        id: Date.now(),
+                        spare_part_id: part.id,
+                        nama: part.nama,
+                        harga: formatNumber(Math.floor(Number(part.harga_jual)).toString()),
+                        qty: 1,
+                        stok: part.stok,
+                        kode: part.kode
+                    } as any;
+                    setParts(newParts);
+                } else {
+                    setParts([...parts, {
+                        id: Date.now(),
+                        spare_part_id: part.id,
+                        nama: part.nama,
+                        harga: formatNumber(Math.floor(Number(part.harga_jual)).toString()),
+                        qty: 1,
+                        stok: part.stok,
+                        kode: part.kode
+                    } as any]);
+                }
+            }
+
+            setDialogConfig({
+                visible: true,
+                title: 'Part Ditemukan',
+                message: `${part.nama} berhasil ditambahkan ke daftar.`,
+                variant: 'success'
+            });
+            setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 1200);
+        } else {
+            setIsScannerOpen(false);
+            setDialogConfig({
+                visible: true,
+                title: 'Tidak Ditemukan',
+                message: `Sparepart dengan kode "${scannedData}" tidak ditemukan.`,
+                variant: 'warning'
+            });
+        }
+    };
 
     const handleSubmit = async () => {
         let finalPlat = nomorPlat;
@@ -758,10 +821,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             <Package size={18} color="#2563EB" />
                             <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
                         </View>
-                        <TouchableOpacity onPress={addPart} className="flex-row items-center">
-                            <Plus size={16} color="#2563EB" />
-                            <Typography className="text-blue-600 text-xs ml-1 font-bold">Tambah</Typography>
-                        </TouchableOpacity>
+                        <View className="flex-row items-center">
+                            <TouchableOpacity 
+                                onPress={() => setIsScannerOpen(true)} 
+                                className="flex-row items-center mr-4 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100"
+                            >
+                                <QrCode size={16} color="#2563EB" />
+                                <Typography className="text-blue-600 text-xs ml-1 font-bold">Scan</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={addPart} className="flex-row items-center">
+                                <Plus size={16} color="#2563EB" />
+                                <Typography className="text-blue-600 text-xs ml-1 font-bold">Tambah</Typography>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {parts.map((part, index) => (
@@ -1098,6 +1170,11 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </ScrollView>
+                <BarcodeScannerModal 
+                    visible={isScannerOpen} 
+                    onClose={() => setIsScannerOpen(false)} 
+                    onScan={handleScanSparePart} 
+                />
             </View>
         );
     }
@@ -1125,6 +1202,11 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </BottomSheetScrollView>
+                <BarcodeScannerModal 
+                    visible={isScannerOpen} 
+                    onClose={() => setIsScannerOpen(false)} 
+                    onScan={handleScanSparePart} 
+                />
             </View>
         </KeyboardAvoidingView>
     );
