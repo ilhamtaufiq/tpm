@@ -264,7 +264,12 @@ class PengeluaranService:
             tanggal_dari = date(today.year, today.month, 1)
             tanggal_sampai = today
 
-        query = self.db.query(PengeluaranBengkel)
+        query = self.db.query(PengeluaranBengkel).filter(
+            PengeluaranBengkel.bisnis_kategori == "umum",
+            PengeluaranBengkel.mobil_id.is_(None),
+            PengeluaranBengkel.muatan_id.is_(None),
+            PengeluaranBengkel.armada_id.is_(None)
+        )
 
         if tanggal_dari:
             query = query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -275,7 +280,12 @@ class PengeluaranService:
         total_count = query.count()
         
         # Calculate sum separately to be safe from with_entities issues
-        sum_query = self.db.query(func.sum(PengeluaranBengkel.jumlah))
+        sum_query = self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
+            PengeluaranBengkel.bisnis_kategori == "umum",
+            PengeluaranBengkel.mobil_id.is_(None),
+            PengeluaranBengkel.muatan_id.is_(None),
+            PengeluaranBengkel.armada_id.is_(None)
+        )
         if tanggal_dari:
             sum_query = sum_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai:
@@ -288,6 +298,11 @@ class PengeluaranService:
             PengeluaranBengkel.kategori,
             func.count(PengeluaranBengkel.id),
             func.sum(PengeluaranBengkel.jumlah)
+        ).filter(
+            PengeluaranBengkel.bisnis_kategori == "umum",
+            PengeluaranBengkel.mobil_id.is_(None),
+            PengeluaranBengkel.muatan_id.is_(None),
+            PengeluaranBengkel.armada_id.is_(None)
         )
         if tanggal_dari:
             cat_query = cat_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)

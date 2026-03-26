@@ -774,17 +774,92 @@ def get_neraca(
     
     total_kas_bank = kas_tunai + kas_bank
 
-    # 2. Piutang Usaha — ALL outstanding (no date filter for balance sheet)
-    piutang_summ = piutang_service.get_summary()  # No date filter = all outstanding
-    p_by_sumber = piutang_summ.get("by_sumber", {})
+    # 2. Piutang (Snapshot logic)
+    # We need to replicate the exact buckets from Perubahan Modal Section B
+    from app.models.keuangan import PiutangUsaha as PiutangModel, PembayaranPiutang as PaymentModel
+    from app.models.bengkel import TransaksiPenjualanBengkel
+    from app.models.mobil import Mobil
+    from app.utils.constants import CarStatus, PiutangSource, KasBankSource, KasBankType
     
-    piutang_bengkel = p_by_sumber.get(PiutangSource.BENGKEL.value, {}).get("sisa_piutang", 0)
-    piutang_mobil = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_piutang", 0)
-    piutang_jasa_angkut = p_by_sumber.get(PiutangSource.JASA_ANGKUT.value, {}).get("sisa_piutang", 0)
-    piutang_karyawan = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("sisa_piutang", 0)
-    piutang_lainnya = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("sisa_piutang", 0)
+    # Helper for Snapshot Balance
+    def get_sisa_snapshot(src):
+        gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
+            PiutangModel.sumber == src,
+            PiutangModel.tanggal <= (tanggal_sampai or date.max)
+        ).scalar() or 0
+        
+        paid = db.query(func.sum(PaymentModel.nominal)).join(
+            PiutangModel, PaymentModel.piutang_id == PiutangModel.id
+        ).filter(
+            PiutangModel.sumber == src,
+            PiutangModel.tanggal <= (tanggal_sampai or date.max),
+            PaymentModel.tanggal <= (tanggal_sampai or date.max)
+        ).scalar() or 0
+        return float(gross - paid)
+
+    p_lainnya = get_sisa_snapshot(PiutangSource.LAINNYA)
+    p_mobil = get_sisa_snapshot(PiutangSource.JUAL_BELI_MOBIL)
+    p_jasa_angkut = get_sisa_snapshot(PiutangSource.JASA_ANGKUT)
+    p_karyawan = get_sisa_snapshot(PiutangSource.KASBON_KARYAWAN)
     
-    total_piutang = piutang_bengkel + piutang_mobil + piutang_jasa_angkut + piutang_karyawan + piutang_lainnya
+    # Internal Repair Receivable (Piutang Part Jual Mobil)
+    # Same logic as get_capital_report line 460
+    q_part_mobil = (
+        db.query(func.sum(TransaksiPenjualanBengkel.grand_total))
+        .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
+        .filter(
+            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+            TransaksiPenjualanBengkel.tanggal <= (tanggal_sampai or date.max),
+            or_(
+                Mobil.tanggal_terjual.is_(None),
+                Mobil.tanggal_terjual > (tanggal_sampai or date.max)
+            )
+        )
+    )
+    p_part_mobil = float(q_part_mobil.scalar() or 0)
+    
+    # Piutang Usaha (Bengkel)
+    p_bengkel_gross = get_sisa_snapshot(PiutangSource.BENGKEL)
+    
+    # Subtract internal portion if it exists in PiutangUsaha table
+    jb_mobil_trx_ids = db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
+        TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil'
+    ).subquery()
+    
+    q_bengkel_internal = (
+        db.query(func.sum(PiutangModel.nominal_piutang))
+        .filter(
+            PiutangModel.sumber == PiutangSource.BENGKEL,
+            PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids),
+            PiutangModel.tanggal <= (tanggal_sampai or date.max)
+        )
+    )
+    p_bengkel_internal_gross = float(q_bengkel_internal.scalar() or 0)
+    
+    q_bengkel_internal_paid = (
+        db.query(func.sum(PaymentModel.nominal))
+        .join(PiutangModel, PaymentModel.piutang_id == PiutangModel.id)
+        .filter(
+            PiutangModel.sumber == PiutangSource.BENGKEL,
+            PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids),
+            PiutangModel.tanggal <= (tanggal_sampai or date.max),
+            PaymentModel.tanggal <= (tanggal_sampai or date.max)
+        )
+    )
+    p_bengkel_internal_paid = float(q_bengkel_internal_paid.scalar() or 0)
+    p_bengkel_internal_net = p_bengkel_internal_gross - p_bengkel_internal_paid
+    
+    p_usaha = max(p_bengkel_gross - p_bengkel_internal_net, 0)
+
+    # Re-assign to clarify final names for dict
+    piutang_usaha = p_usaha
+    piutang_part_mobil = p_part_mobil
+    piutang_mobil = p_mobil
+    piutang_jasa_angkut = p_jasa_angkut
+    piutang_karyawan = p_karyawan
+    piutang_lainnya = p_lainnya
+    
+    total_piutang = piutang_usaha + piutang_part_mobil + piutang_mobil + piutang_jasa_angkut + piutang_karyawan + piutang_lainnya
 
     # 3. Persediaan Sparepart
     sparepart_summary = sparepart_service.get_stock_value()
@@ -813,7 +888,8 @@ def get_neraca(
         "kas_bank": kas_bank,
         "bank_details": bank_details,
         "total_kas_bank": total_kas_bank,
-        "piutang_bengkel": piutang_bengkel,
+        "piutang_usaha": piutang_usaha,
+        "piutang_part_mobil": piutang_part_mobil,
         "piutang_mobil": piutang_mobil,
         "piutang_jasa_angkut": piutang_jasa_angkut,
         "piutang_karyawan": piutang_karyawan,
