@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import Optional
 
 from fastapi import APIRouter
@@ -865,39 +866,58 @@ def get_neraca(
     sparepart_summary = sparepart_service.get_stock_value()
     persediaan_sparepart = sparepart_summary.get("total_value", 0)
 
-    # 4. Stok Mobil (Inventory - formerly in Fixed Assets)
+    # 4. Stok Mobil (Inventory)
+    # Get all available units with eager loaded relationships
+    from sqlalchemy.orm import joinedload
     available_cars = (
         db.query(Mobil)
-        .filter(Mobil.deleted_at.is_(None), Mobil.status != CarStatus.TERJUAL)
+        .options(
+            joinedload(Mobil.biaya_lainnya),
+            joinedload(Mobil.pengeluaran_bengkel)
+        )
+        .filter(Mobil.status != CarStatus.TERJUAL, Mobil.deleted_at.is_(None))
         .all()
     )
-    stok_mobil_harga_beli = 0
-    stok_mobil_biaya = 0
-    stok_mobil_part_service = 0
+    
+    stok_mobil_total = 0.0
     for car in available_cars:
-        stok_mobil_harga_beli += float(car.harga_beli)
-        stok_mobil_biaya += float(car.total_biaya)
-        stok_mobil_part_service += float(car.total_part_service)
+        # Sum Harga Beli
+        price = float(car.harga_beli or 0)
+        
+        # Calculate Biaya (HPP - Tax/BBN) manually
+        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
+        
+        # From MobilBiayaLainnya
+        biaya_lain = sum(
+            float(b.jumlah or 0) for b in car.biaya_lainnya 
+            if b.kategori != "Perawatan Bengkel"
+        ) if car.biaya_lainnya else 0.0
+        
+        # From PengeluaranBengkel (Workshop Operational Expenses)
+        biaya_pengeluaran_hpp = sum(
+            float(p.jumlah or 0) for p in car.pengeluaran_bengkel
+            if any(k.lower() in (p.deskripsi or "").lower() for k in hpp_keywords)
+        ) if car.pengeluaran_bengkel else 0.0
+        
+        stok_mobil_total += price + biaya_lain + biaya_pengeluaran_hpp
     
-    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
+    total_aktiva_lancar = float(total_kas_bank or 0) + float(total_piutang or 0) + float(persediaan_sparepart or 0) + stok_mobil_total
     
-    total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart + stok_mobil_total
-
     aktiva_lancar = {
-        "kas_tunai": kas_tunai,
-        "kas_bank": kas_bank,
-        "bank_details": bank_details,
-        "total_kas_bank": total_kas_bank,
-        "piutang_usaha": piutang_usaha,
-        "piutang_part_mobil": piutang_part_mobil,
-        "piutang_mobil": piutang_mobil,
-        "piutang_jasa_angkut": piutang_jasa_angkut,
-        "piutang_karyawan": piutang_karyawan,
-        "piutang_lainnya": piutang_lainnya,
-        "total_piutang": total_piutang,
-        "persediaan_sparepart": persediaan_sparepart,
-        "stok_mobil": stok_mobil_total,
-        "total_aktiva_lancar": total_aktiva_lancar,
+        "kas_tunai": float(kas_tunai or 0),
+        "kas_bank": float(kas_bank or 0),
+        "bank_details": {k: float(v or 0) for k, v in bank_details.items()},
+        "total_kas_bank": float(total_kas_bank or 0),
+        "piutang_usaha": float(piutang_usaha or 0),
+        "piutang_part_mobil": float(piutang_part_mobil or 0),
+        "piutang_mobil": float(piutang_mobil or 0),
+        "piutang_jasa_angkut": float(piutang_jasa_angkut or 0),
+        "piutang_karyawan": float(piutang_karyawan or 0),
+        "piutang_lainnya": float(piutang_lainnya or 0),
+        "total_piutang": float(total_piutang or 0),
+        "persediaan_sparepart": float(persediaan_sparepart or 0),
+        "stok_mobil": float(stok_mobil_total or 0),
+        "total_aktiva_lancar": float(total_aktiva_lancar or 0),
     }
 
     # Fixed Assets (Aktiva Tetap)
@@ -905,24 +925,24 @@ def get_neraca(
     from app.models.keuangan import Aset
     fixed_assets = db.query(Aset).filter(Aset.status == AssetStatus.AKTIF).all()
     
-    nilai_perolehan = 0
+    nilai_perolehan = 0.0
     for asset in fixed_assets:
-        nilai_perolehan += float(asset.harga_beli)
+        nilai_perolehan += float(asset.harga_beli or 0)
     
     total_aktiva_tetap = nilai_perolehan
 
     aktiva_tetap = {
-        "nilai_perolehan": nilai_perolehan,
-        "akumulasi_depresiasi": 0, # Not implemented yet
-        "nilai_buku": nilai_perolehan,
-        "total_aktiva_tetap": total_aktiva_tetap,
+        "nilai_perolehan": float(nilai_perolehan),
+        "akumulasi_depresiasi": 0.0,
+        "nilai_buku": float(nilai_perolehan),
+        "total_aktiva_tetap": float(total_aktiva_tetap),
         "detail_aset": [
             {
                 "id": a.id,
                 "kode": a.kode,
                 "nama": a.nama,
                 "kategori": a.kategori.value,
-                "harga_beli": float(a.harga_beli)
+                "harga_beli": float(a.harga_beli or 0)
             } for a in fixed_assets
         ]
     }
@@ -938,10 +958,10 @@ def get_neraca(
     hutang_summ = hutang_service.get_summary()  # No date filter = all outstanding
     h_by_sumber = hutang_summ.get("by_sumber", {})
     
-    hutang_part = h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0)
-    hutang_mobil = h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0)
-    hutang_investor = h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0)
-    hutang_lainnya = h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0)
+    hutang_part = float(h_by_sumber.get(HutangSource.PEMBELIAN_PART.value, {}).get("sisa_hutang", 0))
+    hutang_mobil = float(h_by_sumber.get(HutangSource.PEMBELIAN_MOBIL.value, {}).get("sisa_hutang", 0))
+    hutang_investor = float(h_by_sumber.get(HutangSource.JUAL_BELI_MOBIL.value, {}).get("sisa_hutang", 0))
+    hutang_lainnya = float(h_by_sumber.get(HutangSource.LAINNYA.value, {}).get("sisa_hutang", 0))
     
     total_hutang = hutang_part + hutang_mobil + hutang_investor + hutang_lainnya
 
@@ -970,9 +990,9 @@ def get_neraca(
     mobil_summ = penjualan_mobil_service.get_summary(tanggal_dari, tanggal_sampai)
     muatan_summ = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
     
-    laba_bengkel = bengkel_summ["total_laba_kotor"]
-    laba_mobil_tpm = mobil_summ["laba_tpm"]
-    laba_jasa_angkut = muatan_summ["laba_tpm"]
+    laba_bengkel = float(bengkel_summ["total_laba_kotor"] or 0)
+    laba_mobil_tpm = float(mobil_summ["laba_tpm"] or 0)
+    laba_jasa_angkut = float(muatan_summ["laba_tpm"] or 0)
     total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut
     
     # Beban Operasional
@@ -980,10 +1000,10 @@ def get_neraca(
     gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
     
     pengeluaran_details = pengeluaran["per_kategori"]
-    prive_total = pengeluaran_details.get("prive", {}).get("total", 0)
+    prive_total = float(pengeluaran_details.get("prive", {}).get("total", 0))
     
     # Beban = pengeluaran operasional (excluding prive, which is separate)
-    total_beban = pengeluaran["total_pengeluaran"] + gaji_summary["total"] - prive_total
+    total_beban = float(pengeluaran["total_pengeluaran"] or 0) + float(gaji_summary["total"] or 0) - prive_total
     
     laba_ditahan = total_laba_kotor - total_beban
     prive = prive_total
@@ -997,20 +1017,21 @@ def get_neraca(
     selisih_modal = round(total_modal - modal_komponen, 2)
 
     modal = {
-        "setoran_modal": setoran_modal,
-        "laba_kotor": total_laba_kotor,
+        "setoran_modal": float(setoran_modal),
+        "laba_kotor": float(total_laba_kotor),
         "detail_laba": {
-            "bengkel": laba_bengkel,
-            "mobil": laba_mobil_tpm,
-            "jasa_angkut": laba_jasa_angkut,
+            "bengkel": float(laba_bengkel),
+            "mobil": float(laba_mobil_tpm),
+            "jasa_angkut": float(laba_jasa_angkut),
         },
-        "total_beban": total_beban,
-        "laba_ditahan": laba_ditahan,
-        "prive": prive,
-        "total_modal": total_modal,
-        "modal_komponen": modal_komponen,
-        "selisih_modal": selisih_modal,
+        "total_beban": float(total_beban),
+        "laba_ditahan": float(laba_ditahan),
+        "prive": float(prive),
+        "total_modal": float(total_modal),
+        "modal_komponen": float(modal_komponen),
+        "selisih_modal": float(selisih_modal),
     }
+
 
     # ==========================================
     # TOTAL PASIVA (guaranteed balanced)
@@ -1030,12 +1051,15 @@ def get_neraca(
         },
         "aktiva_lancar": aktiva_lancar,
         "aktiva_tetap": aktiva_tetap,
-        "total_aktiva": total_aktiva,
+        "total_aktiva": float(total_aktiva),
         "hutang": hutang,
-        "modal": modal,
-        "total_pasiva": total_pasiva,
-        "selisih": selisih,
-        "is_balanced": abs(selisih) < 1,
+        "modal": {
+            **modal,
+            "total_modal": float(total_modal),
+            "modal_komponen": float(modal_komponen),
+            "selisih_modal": float(selisih_modal),
+        },
+        "total_pasiva": float(total_pasiva),
+        "selisih": float(selisih),
+        "is_balanced": abs(selisih) < 0.1
     }
-
-

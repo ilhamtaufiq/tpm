@@ -113,7 +113,16 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         """Calculate total additional expenses (BBN, pajak, etc.).
         This contributes to HPP (Harga Pokok Penjualan).
         """
-        return sum(b.jumlah for b in self.biaya_lainnya if b.kategori != "Perawatan Bengkel") if self.biaya_lainnya else Decimal(0)
+        biaya_lain_total = sum(b.jumlah for b in self.biaya_lainnya if b.kategori != "Perawatan Bengkel") if self.biaya_lainnya else Decimal(0)
+        
+        # Include Workshop Operational Expenses assigned to car if they are Tax/BBN related
+        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
+        pengeluaran_hpp_total = sum(
+            p.jumlah for p in self.pengeluaran_bengkel
+            if any(k.lower() in p.deskripsi.lower() for k in hpp_keywords)
+        ) if self.pengeluaran_bengkel else Decimal(0)
+        
+        return biaya_lain_total + pengeluaran_hpp_total
 
     @property
     def total_part_service(self) -> Decimal:
@@ -138,9 +147,11 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
             if t.kategori == 'jual_beli_mobil'
         ) if self.bengkel_perbaikan else Decimal(0)
 
-        # Direct links to Workshop operational expenses
+        # Direct links to Workshop operational expenses (Exclude those already counted as HPP/Tax)
+        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi"]
         pengeluaran_bengkel_total = sum(
             p.jumlah for p in self.pengeluaran_bengkel
+            if not any(k.lower() in p.deskripsi.lower() for k in hpp_keywords)
         ) if self.pengeluaran_bengkel else Decimal(0)
         
         return manual_total + bengkel_total + biaya_bengkel_total + pengeluaran_bengkel_total
