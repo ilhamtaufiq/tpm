@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput, Share } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -43,7 +43,7 @@ export default function JasaAngkutScreen() {
 
     // API Hooks
     const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
-    const { data: summaryData } = useMuatanSummary();
+    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary();
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
 
     const [refreshing, setRefreshing] = useState(false);
@@ -191,14 +191,46 @@ export default function JasaAngkutScreen() {
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
 
-    const backendStats = summaryData || {};
-    const stats = {
-        total: backendStats.total_transaksi || 0,
-        lunas: (backendStats.total_transaksi || 0) - (backendStats.hutang_supir_count || 0),
-        pending: backendStats.hutang_supir_count || 0,
-        revenue: backendStats.total_pendapatan || 0,
-        profit: backendStats.laba_tpm || 0
-    };
+    const stats = useMemo(() => {
+        const backendStats = summaryData || {};
+        
+        // If backend summary has data, use it
+        if (backendStats.total_transaksi > 0) {
+            return {
+                total: backendStats.total_transaksi || 0,
+                lunas: (backendStats.total_transaksi || 0) - (backendStats.hutang_supir_count || 0),
+                pending: backendStats.hutang_supir_count || 0,
+                revenue: backendStats.total_pendapatan || 0,
+                profit: backendStats.laba_tpm || 0
+            };
+        }
+
+        // Fallback calculation from current list data
+        const trips = muatanData?.data || [];
+        if (trips.length === 0) {
+            return {
+                total: 0,
+                lunas: 0,
+                pending: 0,
+                revenue: 0,
+                profit: 0
+            };
+        }
+
+        const total = trips.length;
+        const pending = trips.filter((t: any) => t.status_bayar !== 'LUNAS').length;
+        const lunas = total - pending;
+        const revenue = trips.reduce((acc: number, t: any) => acc + (Number(t.pendapatan_kotor || 0) - Number(t.laba_supir || 0)), 0);
+        const profit = trips.reduce((acc: number, t: any) => acc + Number(t.laba_tpm || 0), 0);
+
+        return {
+            total,
+            lunas,
+            pending,
+            revenue,
+            profit
+        };
+    }, [summaryData, muatanData]);
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -255,9 +287,9 @@ export default function JasaAngkutScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await refetch();
+        await Promise.all([refetch(), refetchSummary()]);
         setRefreshing(false);
-    }, [refetch]);
+    }, [refetch, refetchSummary]);
 
     const handleFormSuccess = () => {
         handleCloseSheet();

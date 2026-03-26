@@ -141,6 +141,9 @@ export const useCreateMuatan = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['muatan'] });
             queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
         },
     });
 };
@@ -152,6 +155,9 @@ export const useMarkMuatanPaid = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['muatan'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
         },
     });
 };
@@ -165,6 +171,9 @@ export const usePayMuatanSplit = () => {
             queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
             queryClient.invalidateQueries({ queryKey: ['armada_detail'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
         },
     });
 };

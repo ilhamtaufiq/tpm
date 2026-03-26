@@ -444,37 +444,15 @@ def get_capital_report(
     p_lainnya_gross = p_by_sumber.get(PiutangSource.LAINNYA.value, {}).get("total_piutang", 0)
     p_mobil_gross = p_by_sumber.get(PiutangSource.JUAL_BELI_MOBIL.value, {}).get("total_piutang", 0)
     
-    # Integrated bengkel piutang (all created in the period)
-    # 1. Biaya Lainnya (Older records)
-    q_integrated_old = (
-        db.query(func.sum(JasaAngkutBiayaLainnya.jumlah))
-        .join(MuatanJasaAngkut)
-        .filter(
-            JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
-        )
+    # PIUTANG JASA ANGKUT (Gross New Created in period)
+    # Only muatans that generated a PiutangUsaha record are counted.
+    # Muatans that were LUNAS from the start bypass this table and are handled by direct Kas Masuk.
+    q_ja_gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
+        PiutangModel.sumber == PiutangSource.JASA_ANGKUT
     )
-    if tanggal_dari: q_integrated_old = q_integrated_old.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai: q_integrated_old = q_integrated_old.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
-    
-    # 2. Part Service (Newer linked records)
-    q_integrated_new = (
-        db.query(func.sum(JasaAngkutPartService.total))
-        .join(MuatanJasaAngkut)
-    )
-    if tanggal_dari: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai: q_integrated_new = q_integrated_new.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
-        
-    p_bengkel_integrated = float((q_integrated_old.scalar() or 0) + (q_integrated_new.scalar() or 0))
-
-    # Piutang Jasa Angkut Gross (Laba TPM part)
-    q_ja_tpm = db.query(func.sum(MuatanJasaAngkut.laba_tpm))
-    if tanggal_dari: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-    if tanggal_sampai: q_ja_tpm = q_ja_tpm.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
-        
-    p_jasa_angkut_tpm = float(q_ja_tpm.scalar() or 0)
-    
-    # Combined: PIUTANG SUPIR JASA ANGKUT (Gross New)
-    p_supir_ja = p_jasa_angkut_tpm + p_bengkel_integrated
+    if tanggal_dari: q_ja_gross = q_ja_gross.filter(PiutangModel.tanggal >= tanggal_dari)
+    if tanggal_sampai: q_ja_gross = q_ja_gross.filter(PiutangModel.tanggal <= tanggal_sampai)
+    p_supir_ja = float(q_ja_gross.scalar() or 0)
 
     # PIUTANG PART JUAL MOBIL — Outstanding workshop investment in UNSOLD cars only.
     # When a car is sold, its parts cost is fully captured via total_modal in Section A,
@@ -826,7 +804,7 @@ def get_neraca(
         stok_mobil_biaya += float(car.total_biaya)
         stok_mobil_part_service += float(car.total_part_service)
     
-    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya
+    stok_mobil_total = stok_mobil_harga_beli + stok_mobil_biaya + stok_mobil_part_service
     
     total_aktiva_lancar = total_kas_bank + total_piutang + persediaan_sparepart + stok_mobil_total
 

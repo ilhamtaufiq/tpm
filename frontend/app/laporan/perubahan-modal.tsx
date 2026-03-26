@@ -694,11 +694,17 @@ export default function LaporanPerubahanModalScreen() {
 
                         <Row label="Modal Berjalan (= Saldo Kas & Bank)" value={data.theoretical_modal} bold large color="text-white" isDark themeColors={themeColors} />
 
-                        <View className="mt-2 flex-row items-center justify-center">
-                            <Typography className="text-emerald-300 text-xs font-bold">✓ REKONSILIASI SEIMBANG</Typography>
-                        </View>
+                        {(!data.penyesuaian || Math.abs(data.penyesuaian) < 1) ? (
+                            <View className="mt-2 flex-row items-center justify-center">
+                                <Typography className="text-emerald-300 text-xs font-bold">✓ REKONSILIASI SEIMBANG</Typography>
+                            </View>
+                        ) : (
+                            <View className="mt-2 flex-row items-center justify-center">
+                                <Typography className="text-amber-300 text-xs font-bold">⚠ REKONSILIASI MEMERLUKAN PENYESUAIAN</Typography>
+                            </View>
+                        )}
 
-                        {data.penyesuaian !== undefined && data.penyesuaian !== 0 && (
+                        {data.penyesuaian !== undefined && Math.abs(data.penyesuaian) >= 1 && (
                             <View className="mt-3 pt-3 border-t border-white/10 space-y-1">
                                 <Row label="Modal Komponen (A - B - C + E)" value={data.modal_komponen} small color="text-white/50" isDark themeColors={themeColors} />
                                 <Row label="Penyesuaian" value={data.penyesuaian} small color="text-amber-300/80" isDark themeColors={themeColors} />
