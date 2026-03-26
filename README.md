@@ -39,9 +39,11 @@ TPM Super App is designed to streamline business operations across three primary
 
 ### 🛠️ Unit Bengkel
 - Workshop transaction management (Service + Spareparts).
-- Real-time stock management for spare parts.
+- **QR & Barcode Scanner:** Instant spare part lookup and addition to sales forms.
+- **Visual Generators:** Generate QR codes and Barcodes for every spare part label.
+- Real-time stock management with automated inventory tracking.
 - Expense tracking for workshop operations.
-- Integration with Jasa Angkut for truck maintenance.
+- Integration with Jasa Angkut for internal maintenance tasks.
 
 ### 🚚 Unit Jasa Angkut (Logistics)
 - Managing shipments (Muatan) with origin/destination tracking.
