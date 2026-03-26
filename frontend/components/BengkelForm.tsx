@@ -230,8 +230,17 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const addPart = () => setParts([...parts, { id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
 
     const handleScanSparePart = (scannedData: string) => {
+        const cleanData = scannedData.trim();
         const availableParts = sparePartsData?.data || [];
-        const part = availableParts.find((p: any) => p.kode === scannedData);
+        
+        // Try exact match first
+        let part = availableParts.find((p: any) => p.kode === cleanData);
+        
+        // If not found, try matching without leading zeros (common in some barcode systems)
+        if (!part) {
+            const strippedData = cleanData.replace(/^0+/, '');
+            part = availableParts.find((p: any) => (p.kode || '').replace(/^0+/, '') === strippedData);
+        }
         
         if (part) {
             // Success vibration if available or just proceed

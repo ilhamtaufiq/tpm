@@ -22,13 +22,32 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
         }
     }, [visible, permission]);
 
-    const handleBarCodeScanned = ({ data }: { data: string }) => {
+    const handleBarCodeScanned = (result: { type: string, data: string }) => {
         if (scanned) return;
+        console.log(`[Scanner] Scanned ${result.type}: ${result.data}`);
         setScanned(true);
-        onScan(data);
+        onScan(result.data);
         // Reset scanned state after a delay to allow another scan if needed
         setTimeout(() => setScanned(false), 2000);
     };
+
+    // Stable settings object to prevent unnecessary re-renders/scanner resets
+    const scannerSettings = React.useMemo(() => ({
+        barcodeTypes: [
+            "qr", 
+            "ean13", 
+            "ean8", 
+            "code128", 
+            "code39", 
+            "code93",
+            "upc_a", 
+            "upc_e", 
+            "itf14",
+            "pdf417",
+            "aztec",
+            "datamatrix"
+        ] as any[],
+    }), []);
 
     if (!visible) return null;
 
@@ -54,9 +73,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
                             style={styles.camera}
                             enableTorch={torch}
                             onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-                            barcodeScannerSettings={{
-                                barcodeTypes: ["qr", "ean13", "ean8", "code128", "code39", "upc_a", "upc_e"],
-                            }}
+                            barcodeScannerSettings={scannerSettings}
                         >
                             {/* Overlay */}
                             <View style={styles.overlay}>
