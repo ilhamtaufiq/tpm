@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { 
+    View, 
+    ScrollView, 
+    Pressable, 
+    TextInput, 
+    StatusBar, 
+    Alert, 
+    RefreshControl as RNRefreshControl, 
+    TouchableOpacity, 
+    FlatList, 
+    ActivityIndicator, 
+    Image 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -30,6 +42,7 @@ import { Button } from '../../../components/ui/Button';
 import QRCode from 'react-native-qrcode-svg';
 import { Barcode as BarcodeGenerator } from '../../../components/ui/Barcode';
 import * as Print from 'expo-print';
+import { FILE_URL } from '../../../utils/api';
 
 export default function InventoryScreen() {
     const [search, setSearch] = useState('');
@@ -100,15 +113,25 @@ export default function InventoryScreen() {
         stok: '0',
         stok_minimum: '0',
         harga_jual: '0',
-        satuan: ''
+        satuan: '',
+        gambar: ''
     });
 
     // API Hooks
-    const { data: partsData, isLoading, refetch } = useSparePartsList({ search });
+    const { 
+        data: partsData, 
+        isLoading, 
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = useSparePartsList({ search });
     const { data: lowStockData } = useLowStockParts();
     const updatePartMutation = useUpdateSparePart();
 
-    const parts = Array.isArray(partsData) ? partsData : partsData?.data || partsData?.items || [];
+    const parts = React.useMemo(() => 
+        partsData?.pages.flatMap((page: any) => page.data) || [],
+    [partsData]);
     const lowStockCount = lowStockData?.length || 0;
 
     const handleOpenDetail = (part: any) => {
@@ -120,7 +143,8 @@ export default function InventoryScreen() {
             stok: String(part.stok || 0),
             stok_minimum: String(part.stok_minimum || 0),
             harga_jual: String(part.harga_jual || 0),
-            satuan: part.satuan || ''
+            satuan: part.satuan || '',
+            gambar: part.gambar || ''
         });
         setIsModalVisible(true);
         setIsEditing(false);
@@ -259,64 +283,90 @@ export default function InventoryScreen() {
                 )}
             </View>
 
-            <ScrollView
-                className="flex-1 px-6"
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-            >
-                {isLoading ? (
-                    <>
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                    </>
-                ) : parts.length === 0 ? (
-                    <EmptyState
-                        title="Sparepart tidak ditemukan"
-                        description={search ? `Tidak ada hasil for "${search}"` : "Belum ada item sparepart di database."}
-                        icon={Package}
-                    />
-                ) : (
-                    parts.map((part: any) => (
-                        <Card key={part.id} className="mb-4 p-4 flex-row items-center">
-                            <View className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center mr-4">
-                                <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
+            {isLoading ? (
+                <View className="flex-1 px-6 pt-4">
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
+                </View>
+            ) : (
+                <FlatList
+                    data={parts}
+                    keyExtractor={(item) => item.id.toString()}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
+                    onEndReached={() => {
+                        if (hasNextPage && !isFetchingNextPage) {
+                            fetchNextPage();
+                        }
+                    }}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={() => (
+                        isFetchingNextPage ? (
+                            <View className="py-4 items-center">
+                                <ActivityIndicator size="small" color="#023C69" />
                             </View>
-
-                            <View className="flex-1">
-                                <Typography variant="body2" weight="bold">{part.nama}</Typography>
-                                <Typography variant="caption">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
-
-                                <View className="flex-row items-center mt-2">
-                                    <Typography variant="caption" weight="bold">Stok: </Typography>
-                                    <Typography
-                                        variant="caption"
-                                        weight="bold"
-                                        className={part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary'}
-                                    >
-                                        {part.stok} {part.satuan || 'Unit'}
-                                    </Typography>
-                                    <Typography variant="caption" className="text-gray-400 ml-1">(Min: {part.stok_minimum})</Typography>
+                        ) : hasNextPage ? null : parts.length > 0 ? (
+                            <View className="py-8 items-center border-t border-gray-100 border-dashed mt-4">
+                                <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Semua data telah dimuat</Typography>
+                            </View>
+                        ) : null
+                    )}
+                    refreshControl={
+                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    }
+                    renderItem={({ item: part }) => {
+                        const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
+                        return (
+                            <Card key={part.id} className="mb-4 p-4 flex-row items-center border-gray-50/50">
+                                <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center mr-4 overflow-hidden border border-gray-100">
+                                    {imageUrl ? (
+                                        <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
+                                    ) : (
+                                        <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
+                                    )}
                                 </View>
-                            </View>
+
+                                <View className="flex-1">
+                                    <Typography variant="body2" weight="bold" className="text-textMain">{part.nama}</Typography>
+                                    <Typography variant="caption" className="text-textGray/60">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
+
+                                    <View className="flex-row items-center mt-2">
+                                        <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5'}`}>
+                                            <Typography
+                                                variant="caption"
+                                                weight="bold"
+                                                className={part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary'}
+                                            >
+                                                Stok: {part.stok} {part.satuan || 'Unit'}
+                                            </Typography>
+                                        </View>
+                                        <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
+                                    </View>
+                                </View>
 
                             <View className="items-end">
-                                <Typography variant="body2" weight="bold">{formatCurrency(part.harga_jual)}</Typography>
+                                <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
                                 <Pressable
-                                    className="mt-2 bg-gray-50 px-2 py-1 rounded-md"
+                                    className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
                                     onPress={() => handleOpenDetail(part)}
                                 >
                                     <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
                                 </Pressable>
                             </View>
                         </Card>
-                    ))
-                )}
-                <View className="h-10" />
-            </ScrollView>
+                        );
+                    }}
+                    ListEmptyComponent={
+                        <EmptyState
+                            title="Sparepart tidak ditemukan"
+                            description={search ? `Tidak ada hasil for "${search}"` : "Belum ada item sparepart di database."}
+                            icon={Package}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
 
             {/* Detail & Edit Modal */}
             <BaseModal
@@ -327,6 +377,19 @@ export default function InventoryScreen() {
                 containerClassName="p-0 border-0"
             >
                 <View className="flex-1">
+                    <View className="items-center mb-6">
+                        <View className="w-40 h-40 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
+                            {formData.gambar ? (
+                                <Image 
+                                    source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }} 
+                                    className="w-full h-full"
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Package size={48} color="#9CA3AF" strokeWidth={1} />
+                            )}
+                        </View>
+                    </View>
                     {!showCode ? (
                         <View className="space-y-4 px-1">
                             <Input

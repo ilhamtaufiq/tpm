@@ -25,6 +25,7 @@ class SparePartBase(BaseModel):
     harga_jual: Decimal = Field(default=Decimal("0"), ge=0)
     lokasi_rak: Optional[str] = Field(None, max_length=30)
     catatan: Optional[str] = None
+    gambar: Optional[str] = None
 
 
 class SparePartCreate(SparePartBase):
@@ -48,6 +49,7 @@ class SparePartUpdate(BaseModel):
     lokasi_rak: Optional[str] = Field(None, max_length=30)
     catatan: Optional[str] = None
     stok: Optional[int] = Field(None, ge=0)
+    gambar: Optional[str] = None
 
 
 class SparePartResponse(BaseModel):
@@ -66,6 +68,7 @@ class SparePartResponse(BaseModel):
     harga_jual: Decimal
     lokasi_rak: Optional[str] = None
     catatan: Optional[str] = None
+    gambar: Optional[str] = None
     is_low_stock: bool
     created_at: datetime
     updated_at: datetime

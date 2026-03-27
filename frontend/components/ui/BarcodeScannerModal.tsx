@@ -10,9 +10,16 @@ interface BarcodeScannerModalProps {
     onClose: () => void;
     onScan: (data: string) => void;
     scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
+    continuous?: boolean;
 }
 
-export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visible, onClose, onScan, scanLog = [] }) => {
+export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ 
+    visible, 
+    onClose, 
+    onScan, 
+    scanLog = [],
+    continuous = false
+}) => {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [torch, setTorch] = useState(false);

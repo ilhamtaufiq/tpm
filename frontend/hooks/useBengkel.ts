@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { bengkelService } from '../services/bengkel';
 
 // =============================================
@@ -88,9 +88,15 @@ export const useVoidTransaksiBengkel = () => {
 // SPARE PARTS
 // =============================================
 export const useSparePartsList = (params?: any) => {
-    return useQuery({
+    return useInfiniteQuery({
         queryKey: ['spare_parts', params],
-        queryFn: () => bengkelService.getSpareParts(params),
+        queryFn: ({ pageParam = 0 }) => 
+            bengkelService.getSpareParts({ ...params, skip: pageParam }),
+        getNextPageParam: (lastPage) => {
+            const nextSkip = lastPage.page * lastPage.size;
+            return nextSkip < lastPage.total ? nextSkip : undefined;
+        },
+        initialPageParam: 0,
     });
 };
 
@@ -108,6 +114,23 @@ export const useCreateSparePart = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
         },
+    });
+};
+
+export const useBulkDeleteSpareParts = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (ids: number[]) => bengkelService.bulkDeleteSpareParts(ids),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['spare_parts_low_stock'] });
+        },
+    });
+};
+
+export const useExportSpareParts = () => {
+    return useMutation({
+        mutationFn: (ids?: number[]) => bengkelService.exportSpareParts(ids),
     });
 };
 
@@ -131,6 +154,18 @@ export const useUpdateSparePart = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
             queryClient.invalidateQueries({ queryKey: ['spare_parts_low_stock'] });
+        },
+    });
+};
+
+export const useUploadSparePartImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, formData }: { id: number; formData: FormData }) =>
+            bengkelService.uploadSparePartImage(id, formData),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['spare_parts', variables.id] });
         },
     });
 };

@@ -19,9 +19,17 @@ import {
     RefreshCw,
     QrCode,
     Barcode,
-    Minus
+    Minus,
+    Printer,
+    Image as ImageIcon,
+    Camera,
+    Check,
+    Circle,
+    Download
 } from 'lucide-react-native';
+import * as Print from 'expo-print';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
@@ -34,11 +42,15 @@ import {
     useImportSpareParts,
     useUpdateSparePartStock,
     useNextSparePartKode,
-    useDebounce
+    useDebounce,
+    useUploadSparePartImage,
+    useBulkDeleteSpareParts,
+    useExportSpareParts
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
 import { Alert } from 'react-native';
+import api, { FILE_URL } from '../../utils/api';
 
 interface SparePartForm {
     id?: number;
@@ -50,9 +62,12 @@ interface SparePartForm {
     stok: string;
     stok_minimum: string;
     kategori: string;
+    merek: string;
     satuan: string;
     lokasi_rak: string;
     catatan: string;
+    gambar?: string;
+    imageUri?: string;
 }
 
 const INITIAL_FORM: SparePartForm = {
@@ -63,6 +78,7 @@ const INITIAL_FORM: SparePartForm = {
     stok: '',
     stok_minimum: '5',
     kategori: 'Umum',
+    merek: '',
     satuan: 'pcs',
     lokasi_rak: '',
     catatan: '',
@@ -79,25 +95,32 @@ export default function SparePartMasterScreen() {
         data: sparePartsData,
         isLoading,
         refetch,
-        isRefetching
+        isRefetching,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
     } = useSparePartsList({
         search: debouncedSearch,
-        limit: 100 // Load more to start
+        limit: 20
     });
 
-    const sparePartsList = sparePartsData?.data || [];
+    const sparePartsList = useMemo(() =>
+        sparePartsData?.pages.flatMap((page: any) => page.data) || [],
+        [sparePartsData]);
 
     // Stats Calculation
     const stats = useMemo(() => {
-        const total = sparePartsList.length;
+        // total should be from the first page's meta if possible, or total of all pages
+        const totalCount = sparePartsData?.pages[0]?.total || 0;
         const lowStock = sparePartsList.filter((item: any) => item.stok <= item.stok_minimum).length;
-        return { total, lowStock };
-    }, [sparePartsList]);
+        return { total: totalCount, lowStock };
+    }, [sparePartsData, sparePartsList]);
 
     // Mutations
     const createMutation = useCreateSparePart();
     const updateMutation = useUpdateSparePart();
     const deleteMutation = useDeleteSparePart();
+    const uploadImageMutation = useUploadSparePartImage();
 
     // Form State
     const [form, setForm] = useState<SparePartForm>(INITIAL_FORM);
@@ -114,6 +137,9 @@ export default function SparePartMasterScreen() {
     const [scannedPart, setScannedPart] = useState<any>(null);
     const [stockChange, setStockChange] = useState('0');
     const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
+    const [isPrintModalVisible, setIsPrintModalVisible] = useState(false);
+    const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     const handleGenerateKode = async () => {
         try {
@@ -121,6 +147,43 @@ export default function SparePartMasterScreen() {
             if (data?.kode) setForm(prev => ({ ...prev, kode: data.kode }));
         } catch (error) {
             console.error('Failed to generate code:', error);
+        }
+    };
+
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin galeri untuk mengunggah gambar.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
+        }
+    };
+
+    const takePhoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Izin Ditolak', 'Maaf, kami butuh izin kamera untuk mengambil foto.');
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setForm(prev => ({ ...prev, imageUri: result.assets[0].uri }));
         }
     };
 
@@ -146,12 +209,14 @@ export default function SparePartMasterScreen() {
                 nama: item.nama,
                 harga_beli: formatNumber(item.harga_beli.toString()),
                 harga_jual: formatNumber(item.harga_jual.toString()),
-                stok: item.stok.toString(),
-                stok_minimum: item.stok_minimum.toString(),
+                stok: (item.stok || 0).toString(),
+                stok_minimum: (item.stok_minimum || 5).toString(),
                 kategori: item.kategori || 'Umum',
+                merek: item.merek || '',
                 satuan: item.satuan || 'pcs',
                 lokasi_rak: item.lokasi_rak || '',
                 catatan: item.catatan || '',
+                gambar: item.gambar,
             });
         } else {
             setIsEditing(false);
@@ -185,7 +250,7 @@ export default function SparePartMasterScreen() {
     const handleGlobalScan = (scannedData: string) => {
         setIsGlobalScannerOpen(false);
         const cleanData = scannedData.trim();
-        const part = sparePartsList.find((p: any) => 
+        const part = sparePartsList.find((p: any) =>
             p.kode === cleanData || p.kode_part === cleanData
         );
 
@@ -195,13 +260,17 @@ export default function SparePartMasterScreen() {
             setStockOp('add');
             setIsQuickStockVisible(true);
         } else {
-            Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
+            if (Platform.OS === 'web') {
+                alert(`Kode "${scannedData}" tidak terdaftar di database.`);
+            } else {
+                Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
+            }
         }
     };
 
     const handleQuickStockUpdate = async () => {
         if (!scannedPart || !stockChange) return;
-        
+
         try {
             await updateStockMutation.mutateAsync({
                 id: scannedPart.id,
@@ -212,7 +281,11 @@ export default function SparePartMasterScreen() {
             setScannedPart(null);
             // sparePartsData is refetched automatically by mutation onSuccess
         } catch (error) {
-            Alert.alert('Error', 'Gagal memperbarui stok.');
+            if (Platform.OS === 'web') {
+                alert('Gagal memperbarui stok.');
+            } else {
+                Alert.alert('Error', 'Gagal memperbarui stok.');
+            }
         }
     };
 
@@ -237,29 +310,74 @@ export default function SparePartMasterScreen() {
                 return;
             }
 
+            let savedPart;
             if (isEditing && form.id) {
-                await updateMutation.mutateAsync({ id: form.id, data: payload });
+                savedPart = await updateMutation.mutateAsync({ id: form.id, data: payload });
             } else {
-                await createMutation.mutateAsync(payload);
+                savedPart = await createMutation.mutateAsync(payload);
             }
+
+            // Upload image if selected
+            if (form.imageUri && (savedPart?.id || (isEditing && form.id))) {
+                const targetId = savedPart?.id || form.id;
+                const formData = new FormData();
+
+                if (Platform.OS === 'web') {
+                    const response = await fetch(form.imageUri);
+                    const blob = await response.blob();
+                    formData.append('file', blob, 'image.jpg');
+                } else {
+                    // @ts-ignore
+                    formData.append('file', {
+                        uri: form.imageUri,
+                        name: 'image.jpg',
+                        type: 'image/jpeg',
+                    });
+                }
+
+                await uploadImageMutation.mutateAsync({ id: targetId!, formData });
+            }
+
             handleCloseSheet();
         } catch (error) {
             console.error('Failed to save sparepart:', error);
+            const msg = 'Gagal menyimpan data barang. Periksa kembali input Anda.';
             if (Platform.OS === 'web') {
-                alert('Gagal menyimpan data barang. Periksa kembali input Anda.');
+                alert(msg);
             } else {
-                alert('Gagal menyimpan data barang. Periksa kembali input Anda.');
+                Alert.alert('Error', msg);
             }
         }
     };
 
     const handleDelete = (id: number) => {
-        if (!onlineManager.isOnline()) {
+        const confirmDelete = () => {
+            if (!onlineManager.isOnline()) {
+                deleteMutation.mutate(id);
+                if (Platform.OS === 'web') {
+                    alert('Barang telah dijadwalkan untuk dihapus saat online.');
+                } else {
+                    Alert.alert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
+                }
+                return;
+            }
             deleteMutation.mutate(id);
-            Alert.alert('Offline Mode', 'Barang telah dijadwalkan untuk dihapus saat online.');
-            return;
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
+                confirmDelete();
+            }
+        } else {
+            Alert.alert(
+                'Hapus Barang',
+                'Apakah Anda yakin ingin menghapus barang ini?',
+                [
+                    { text: 'Batal', style: 'cancel' },
+                    { text: 'Hapus', style: 'destructive', onPress: confirmDelete }
+                ]
+            );
         }
-        deleteMutation.mutate(id);
     };
 
     const handleImport = async () => {
@@ -273,32 +391,225 @@ export default function SparePartMasterScreen() {
 
             const file = result.assets[0];
             const formData = new FormData();
-            
-            // @ts-ignore
-            formData.append('file', {
-                uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
-                name: file.name,
-                type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            });
+
+            if (Platform.OS === 'web') {
+                // @ts-ignore
+                formData.append('file', file.file);
+            } else {
+                // @ts-ignore
+                formData.append('file', {
+                    uri: Platform.OS === 'ios' ? file.uri.replace('file://', '') : file.uri,
+                    name: file.name,
+                    type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+            }
 
             const response = await importMutation.mutateAsync(formData);
-            
-            Alert.alert(
-                'Import Berhasil',
-                `Total: ${response.total}\nSukses: ${response.success}\nUpdate: ${response.updated}\nGagal: ${response.failed}`,
-                response.failed > 0 ? [
-                    { 
-                        text: 'Lihat Error', 
-                        onPress: () => Alert.alert('Detail Error', response.errors.slice(0, 5).join('\n') + (response.errors.length > 5 ? '\n...' : '')) 
-                    }, 
-                    { text: 'OK' }
-                ] : undefined
-            );
+
+            if (Platform.OS === 'web') {
+                alert(`Import Berhasil\nTotal: ${response.total}\nSukses: ${response.success}\nUpdate: ${response.updated}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
+            } else {
+                Alert.alert(
+                    'Import Berhasil',
+                    `Total: ${response.total}\nSukses: ${response.success}\nUpdate: ${response.updated}\nGagal: ${response.failed}`,
+                    response.failed > 0 ? [
+                        {
+                            text: 'Lihat Error',
+                            onPress: () => Alert.alert('Detail Error', response.errors.slice(0, 5).join('\n') + (response.errors.length > 5 ? '\n...' : ''))
+                        },
+                        { text: 'OK' }
+                    ] : undefined
+                );
+            }
         } catch (error) {
             console.error('Import failed:', error);
-            Alert.alert('Gagal', 'Terjadi kesalahan saat mengimpor data. Pastikan format file sesuai.');
+            if (Platform.OS === 'web') {
+                alert('Terjadi kesalahan saat mengimpor data. Pastikan format file sesuai.');
+            } else {
+                Alert.alert('Gagal', 'Terjadi kesalahan saat mengimpor data. Pastikan format file sesuai.');
+            }
         }
     };
+
+    const handleBulkPrint = async (type: 'QR' | 'BARCODE') => {
+        const listToPrint = selectedIds.length > 0
+            ? sparePartsList.filter((item: any) => selectedIds.includes(item.id))
+            : sparePartsList;
+
+        if (!listToPrint || listToPrint.length === 0) {
+            if (Platform.OS === 'web') {
+                alert('Tidak ada data untuk dicetak.');
+            } else {
+                Alert.alert('Info', 'Tidak ada data untuk dicetak.');
+            }
+            return;
+        }
+
+        try {
+            const itemsHtml = listToPrint.map((item: any) => {
+                const imageSource = type === 'QR'
+                    ? `https://api.qrserver.com/v1/create-qr-code/?data=${item.kode}&size=200x200`
+                    : `https://bwipjs-api.metafloor.com/?bcid=code128&text=${item.kode}&scale=2&rotate=N&includetext`;
+
+                return `
+                    <div class="sticker">
+                        <img src="${imageSource}" />
+                        <div class="code-text">${item.kode_part || item.kode}</div>
+                        <div class="name-text">${item.nama}</div>
+                    </div>
+                `;
+            }).join('');
+
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <title>Cetak Label Sparepart</title>
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-wrap: wrap; gap: 15px; padding: 20px; background: white; margin: 0; }
+                            .sticker { 
+                                width: 140px; 
+                                border: 1px solid #e2e8f0; 
+                                border-radius: 12px;
+                                padding: 12px; 
+                                text-align: center; 
+                                display: flex; 
+                                flex-direction: column; 
+                                align-items: center;
+                                page-break-inside: avoid;
+                                margin-bottom: 10px;
+                                background: white;
+                            }
+                            img { max-width: 100%; height: auto; }
+                            .code-text { font-size: 10px; font-weight: bold; margin-top: 10px; color: #023C69; text-transform: uppercase; letter-spacing: 0.5px; }
+                            .name-text { font-size: 11px; margin-top: 4px; font-weight: 600; color: #1e293b; height: 32px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+                            @media print {
+                                body { padding: 0; }
+                                .sticker { border-color: #eee; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${itemsHtml}
+                    </body>
+                </html>
+            `;
+
+            if (Platform.OS === 'web') {
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const doc = iframe.contentWindow?.document || iframe.contentDocument;
+                if (doc) {
+                    // @ts-ignore - write exists on Document
+                    doc.open();
+                    // @ts-ignore - write exists on Document
+                    doc.write(html);
+                    // @ts-ignore - write exists on Document
+                    doc.close();
+
+                    // Give images a moment to start loading
+                    setTimeout(() => {
+                        iframe.contentWindow?.focus();
+                        iframe.contentWindow?.print();
+                        setTimeout(() => {
+                            document.body.removeChild(iframe);
+                        }, 500);
+                    }, 500);
+                }
+            } else {
+                await Print.printAsync({ html });
+            }
+        } catch (error) {
+            console.error('Print error:', error);
+            Alert.alert('Error', 'Gagal mencetak label.');
+        }
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+
+        const executeDelete = async () => {
+            try {
+                await bulkDeleteMutation.mutateAsync(selectedIds);
+                setSelectedIds([]);
+                if (Platform.OS === 'web') {
+                    alert('Item berhasil dihapus.');
+                } else {
+                    Alert.alert('Sukses', 'Item berhasil dihapus.');
+                }
+            } catch (error) {
+                if (Platform.OS === 'web') {
+                    alert('Gagal menghapus item.');
+                } else {
+                    Alert.alert('Error', 'Gagal menghapus item.');
+                }
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} item terpilih?`)) {
+                executeDelete();
+            }
+        } else {
+            Alert.alert(
+                'Hapus Masal',
+                `Apakah Anda yakin ingin menghapus ${selectedIds.length} item terpilih?`,
+                [
+                    { text: 'Batal', style: 'cancel' },
+                    {
+                        text: 'Hapus',
+                        style: 'destructive',
+                        onPress: executeDelete
+                    }
+                ]
+            );
+        }
+    };
+
+    const handleBulkExport = async () => {
+        try {
+            const data = await exportMutation.mutateAsync(selectedIds.length > 0 ? selectedIds : undefined);
+            const filename = `spare_parts_export_${new Date().getTime()}.xlsx`;
+
+            if (Platform.OS === 'web') {
+                const url = window.URL.createObjectURL(new Blob([data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } else {
+                Alert.alert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Gagal mengekspor data.');
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === sparePartsList.length && sparePartsList.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(sparePartsList.map((item: any) => item.id));
+        }
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const bulkDeleteMutation = useBulkDeleteSpareParts();
+    const exportMutation = useExportSpareParts();
 
     const renderBackdrop = useCallback(
         (props: any) => (
@@ -313,44 +624,69 @@ export default function SparePartMasterScreen() {
 
     const renderItem = ({ item }: { item: any }) => {
         const isLowStock = item.stok <= item.stok_minimum;
+        const imageUrl = item.gambar ? `${FILE_URL}/uploads/${item.gambar}` : null;
+        const isSelected = selectedIds.includes(item.id);
+
         return (
-            <Pressable onPress={() => handleOpenSheet(item)}>
-                <View className={`p-5 rounded-[32px] mb-4 shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-white border border-gray-50'}`}>
-                    <View className={`w-16 h-16 rounded-[24px] items-center justify-center mr-4 ${isLowStock ? 'bg-red-100' : 'bg-emerald-50 border border-emerald-100/50'}`}>
-                        <Package size={32} color={isLowStock ? '#EF4444' : '#10B981'} />
-                    </View>
-                    <View className="flex-1">
-                        <View className="flex-row items-center justify-between mb-1">
-                            <View className="flex-1 mr-2">
-                                <Typography variant="caption" weight="bold" className="text-primary/60 text-[10px] uppercase mb-0.5">{item.kode_part || item.kode}</Typography>
-                                <Typography variant="body1" weight="bold" className="text-textMain text-lg" numberOfLines={1}>{item.nama}</Typography>
-                            </View>
-                            {isLowStock && (
-                                <View className="bg-red-100 px-2 py-1 rounded-lg flex-row items-center">
-                                    <AlertTriangle size={10} color="#EF4444" className="mr-1" />
-                                    <Typography className="text-red-600 text-[10px] font-bold uppercase">Stok Rendah</Typography>
-                                </View>
+            <View className="flex-row items-center space-x-3 mb-4">
+                <Pressable
+                    onPress={() => toggleSelect(item.id)}
+                    className="p-1"
+                >
+                    {isSelected ? (
+                        <View className="bg-primary rounded-lg p-1">
+                            <Check size={16} color="white" />
+                        </View>
+                    ) : (
+                        <Circle size={24} color="#CBD5E1" strokeWidth={1} />
+                    )}
+                </Pressable>
+
+                <Pressable
+                    onPress={() => handleOpenSheet(item)}
+                    className="flex-1"
+                >
+                    <View className={`p-4 rounded-[28px] shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-white border border-gray-100'}`}>
+                        <View className={`w-20 h-20 rounded-2xl items-center justify-center mr-4 overflow-hidden border ${isLowStock ? 'bg-red-100 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+                            {imageUrl ? (
+                                <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
+                            ) : (
+                                <Package size={28} color={isLowStock ? '#EF4444' : '#9CA3AF'} strokeWidth={1.5} />
                             )}
                         </View>
+                        <View className="flex-1">
+                            <View className="flex-row items-center justify-between mb-1">
+                                <View className="flex-1 mr-2">
+                                    <Typography variant="caption" weight="bold" className="text-primary/60 text-[10px] uppercase mb-0.5">{item.kode_part || item.kode}</Typography>
+                                    <Typography variant="body1" weight="bold" className="text-textMain text-base" numberOfLines={1}>{item.nama}</Typography>
+                                </View>
+                                {isLowStock && (
+                                    <View className="bg-red-100 px-2 py-1 rounded-lg flex-row items-center">
+                                        <AlertTriangle size={10} color="#EF4444" className="mr-1" />
+                                        <Typography className="text-red-600 text-[10px] font-bold uppercase">Stok Rendah</Typography>
+                                    </View>
+                                )}
+                            </View>
 
-                        <View className="flex-row items-center mb-1">
-                            <Typography className="text-primary font-bold text-base mr-2">
-                                Rp {Number(item.harga_jual).toLocaleString('id-ID')}
-                            </Typography>
-                            <Typography className="text-gray-400 text-xs">/ {item.satuan}</Typography>
-                        </View>
+                            <View className="flex-row items-center mb-1">
+                                <Typography className="text-primary font-bold text-base mr-2">
+                                    Rp {Number(item.harga_jual).toLocaleString('id-ID')}
+                                </Typography>
+                                <Typography className="text-gray-400 text-xs">/ {item.satuan}</Typography>
+                            </View>
 
-                        <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
-                            <Typography className="text-textGray text-xs font-medium bg-gray-100 px-2 py-0.5 rounded-md mr-2">
-                                Stok: {item.stok}
-                            </Typography>
-                            <Typography className="text-textGray/60 text-xs">
-                                Rak: {item.lokasi_rak || '-'}
-                            </Typography>
+                            <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
+                                <Typography className="text-textGray text-xs font-semibold px-2 py-1 bg-gray-100 rounded-lg mr-2">
+                                    Stok: {item.stok}
+                                </Typography>
+                                <Typography className="text-textGray/60 text-xs italic">
+                                    Rak: {item.lokasi_rak || '-'}
+                                </Typography>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Pressable>
+                </Pressable>
+            </View>
         );
     };
 
@@ -367,6 +703,43 @@ export default function SparePartMasterScreen() {
 
             <View className="space-y-5">
                 <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Foto Barang</Typography>
+                    <View className="flex-row items-center space-x-4">
+                        <View className="w-24 h-24 bg-gray-50 border border-gray-100 rounded-2xl items-center justify-center overflow-hidden">
+                            {(form.imageUri || form.gambar) ? (
+                                <Image
+                                    key={form.imageUri || form.gambar}
+                                    source={{ uri: form.imageUri || (form.gambar ? `${FILE_URL}/uploads/${form.gambar}` : undefined) }}
+                                    className="w-full h-full"
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <View className="items-center justify-center">
+                                    <ImageIcon size={32} color="#9CA3AF" strokeWidth={1.5} />
+                                    <Typography className="text-[8px] text-gray-400 mt-1">Kosong</Typography>
+                                </View>
+                            )}
+                        </View>
+                        <View className="flex-1 space-y-2">
+                            <Pressable
+                                onPress={pickImage}
+                                className="flex-row items-center bg-white border border-indigo-100 rounded-xl px-3 py-2.5 active:bg-indigo-50"
+                            >
+                                <ImageIcon size={16} color="#4F46E5" />
+                                <Typography className="text-indigo-600 font-bold text-xs ml-2">Pilih Galeri</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={takePhoto}
+                                className="flex-row items-center bg-white border border-gray-200 rounded-xl px-3 py-2.5 active:bg-gray-50"
+                            >
+                                <Camera size={16} color="#6B7280" />
+                                <Typography className="text-gray-600 font-bold text-xs ml-2">Ambil Foto</Typography>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+
+                <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Identitas Barang</Typography>
                     <View className="space-y-3">
                         <View className="flex-row items-center space-x-3">
@@ -379,7 +752,7 @@ export default function SparePartMasterScreen() {
                                     onChangeText={(t) => setForm({ ...form, kode_part: t })}
                                 />
                             </View>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => { setScannerTarget('kode_part'); setIsScannerOpen(true); }}
                                 className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-xl items-center justify-center"
                             >
@@ -400,13 +773,13 @@ export default function SparePartMasterScreen() {
                             </View>
                             {!isEditing && (
                                 <View className="flex-row space-x-2">
-                                    <Pressable 
+                                    <Pressable
                                         onPress={handleGenerateKode}
                                         className="w-12 h-12 bg-amber-50 border border-amber-100 rounded-xl items-center justify-center"
                                     >
                                         <Sparkles size={20} color="#D97706" />
                                     </Pressable>
-                                    <Pressable 
+                                    <Pressable
                                         onPress={() => { setScannerTarget('kode'); setIsScannerOpen(true); }}
                                         className="w-12 h-12 bg-gray-50 border border-gray-200 rounded-xl items-center justify-center"
                                     >
@@ -565,12 +938,24 @@ export default function SparePartMasterScreen() {
                             <ChevronLeft size={24} color="white" />
                         </Pressable>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Sparepart</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Stok & Harga Barang</Typography>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tight">Sparepart</Typography>
+                            <Typography className="text-white/60 text-xs font-medium">Manajemen Stok & Harga</Typography>
                         </View>
                     </View>
-                    <View className="flex-row space-x-2">
-                        <Pressable 
+                    <View className="flex-row space-x-3">
+                        <Pressable
+                            onPress={() => setIsImportModalVisible(true)}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            <FileUp size={20} color="white" />
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setIsPrintModalVisible(true)}
+                            className="w-11 h-11 bg-indigo-500/20 rounded-2xl items-center justify-center border border-indigo-500/30"
+                        >
+                            <Printer size={20} color="white" />
+                        </Pressable>
+                        <Pressable
                             onPress={() => setIsGlobalScannerOpen(true)}
                             className="w-11 h-11 bg-emerald-500/20 rounded-2xl items-center justify-center border border-emerald-500/30"
                         >
@@ -639,6 +1024,66 @@ export default function SparePartMasterScreen() {
                 </View>
             )}
 
+            {/* Bulk Actions Header */}
+            {!sheetVisible && (
+                <View className="px-6 mb-4">
+                    <Card className="bg-white p-3 rounded-3xl border border-gray-100 flex-row items-center justify-between shadow-sm">
+                        <View className="flex-row items-center">
+                            <Pressable
+                                onPress={toggleSelectAll}
+                                className="flex-row items-center mr-4"
+                            >
+                                <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                    {selectedIds.length === sparePartsList.length && sparePartsList.length > 0 && <Check size={14} color="white" />}
+                                </View>
+                                <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
+                            </Pressable>
+
+                            {selectedIds.length > 0 && (
+                                <Typography className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded-lg">
+                                    {selectedIds.length} terpilih
+                                </Typography>
+                            )}
+                        </View>
+
+                        <View className="flex-row space-x-2">
+                            {selectedIds.length > 0 ? (
+                                <>
+                                    <View className="flex-row bg-indigo-50 border border-indigo-100 rounded-2xl p-1 mr-2">
+                                        <Pressable
+                                            onPress={() => setIsPrintModalVisible(true)}
+                                            className="w-10 h-10 items-center justify-center"
+                                        >
+                                            <Printer size={18} color="#4F46E5" />
+                                        </Pressable>
+                                    </View>
+                                    <Pressable
+                                        onPress={handleBulkDelete}
+                                        className="w-10 h-10 bg-red-50 rounded-2xl items-center justify-center border border-red-100"
+                                    >
+                                        <Trash2 size={18} color="#EF4444" />
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={handleBulkExport}
+                                        className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center border border-emerald-100"
+                                    >
+                                        <Download size={18} color="#10B981" />
+                                    </Pressable>
+                                </>
+                            ) : (
+                                <Pressable
+                                    onPress={handleBulkExport}
+                                    className="px-4 py-2.5 bg-gray-50 rounded-2xl flex-row items-center border border-gray-100"
+                                >
+                                    <Download size={16} color="#4B5563" className="mr-2" />
+                                    <Typography className="text-xs font-bold text-gray-600">Download XLS</Typography>
+                                </Pressable>
+                            )}
+                        </View>
+                    </Card>
+                </View>
+            )}
+
             {/* List */}
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
@@ -647,72 +1092,52 @@ export default function SparePartMasterScreen() {
             ) : (
                 <FlatList
                     data={sparePartsList}
-                    keyExtractor={(item) => item.id.toString()}
                     renderItem={renderItem}
+                    keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
+                    onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
+                    onEndReachedThreshold={0.5}
                     refreshControl={
-                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#023C69" />
+                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#16A34A" />
                     }
                     ListEmptyComponent={
-                        <View className="items-center justify-center py-20 mt-10">
-                            <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-4">
-                                <Package size={32} color="#D1D5DB" />
-                            </View>
-                            <Typography className="text-gray-400 text-center font-medium">
-                                Belum ada data sparepart.{'\n'}Tap + untuk menambah.
-                            </Typography>
+                        <View className="items-center justify-center py-20">
+                            <Package size={64} color="#E5E7EB" strokeWidth={1} />
+                            <Typography className="text-textGray mt-4">Tidak ada data sparepart</Typography>
                         </View>
+                    }
+                    ListFooterComponent={
+                        isFetchingNextPage ? (
+                            <ActivityIndicator size="small" color="#16A34A" className="py-4" />
+                        ) : null
                     }
                 />
             )}
 
-            {/* FAB */}
-            <Pressable
-                onPress={() => handleOpenSheet()}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-            >
-                <Plus size={32} color="white" />
-            </Pressable>
-
-            {/* Form UI - Platform Specific */}
-            {Platform.OS === 'web' ? (
-                <Modal
-                    visible={sheetVisible}
-                    transparent={true}
-                    animationType="fade"
-                    onRequestClose={handleCloseSheet}
+            {/* Floating Action Button */}
+            {!sheetVisible && (
+                <Pressable
+                    onPress={() => handleOpenSheet()}
+                    className="absolute bottom-10 right-8 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
                 >
-                    <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <Pressable
-                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                            onPress={handleCloseSheet}
-                        />
-                        <View
-                            className="bg-white rounded-t-[32px] shadow-2xl h-[90%]"
-                            style={{
-                                width: '100%',
-                                maxWidth: 640,
-                                alignSelf: 'center',
-                            }}
-                        >
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
-                            <ScrollView className="flex-1">
-                                {renderFormContent()}
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
+                    <Plus size={32} color="white" />
+                </Pressable>
+            )}
+
+            {/* Sheet Form */}
+            {Platform.OS === 'web' ? (
+                <BaseModal visible={sheetVisible} onClose={handleCloseSheet} title={isEditing ? 'Edit Sparepart' : 'Tambah Sparepart'} fullScreen>
+                    <ScrollView>{renderFormContent()}</ScrollView>
+                </BaseModal>
             ) : (
                 <BottomSheet
                     ref={bottomSheetRef}
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    onClose={handleCloseSheet}
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 32, backgroundColor: 'white' }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
-                    onChange={(index) => setSheetVisible(index !== -1)}
-                    onClose={() => setSheetVisible(false)}
+                    backgroundStyle={{ borderRadius: 48 }}
                 >
                     <BottomSheetScrollView>
                         {renderFormContent()}
@@ -720,16 +1145,18 @@ export default function SparePartMasterScreen() {
                 </BottomSheet>
             )}
 
-            <BarcodeScannerModal 
-                visible={isScannerOpen} 
-                onClose={() => setIsScannerOpen(false)} 
-                onScan={handleScanCode} 
+            {/* Scanner Modals */}
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScanCode}
             />
 
-            <BarcodeScannerModal 
-                visible={isGlobalScannerOpen} 
-                onClose={() => setIsGlobalScannerOpen(false)} 
-                onScan={handleGlobalScan} 
+            <BarcodeScannerModal
+                visible={isGlobalScannerOpen}
+                onClose={() => setIsGlobalScannerOpen(false)}
+                onScan={handleGlobalScan}
+                continuous
             />
 
             {/* Quick Stock Modal */}
@@ -738,61 +1165,178 @@ export default function SparePartMasterScreen() {
                 onClose={() => setIsQuickStockVisible(false)}
                 title="Update Stok Cepat"
             >
-                <View className="p-1">
-                    <Card className="bg-gray-50 border-gray-100 p-4 mb-6 rounded-3xl">
-                        <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
-                        <Typography variant="caption" className="text-textGray mt-1">
-                            Kode: {scannedPart?.kode} • Stok Saat Ini: {scannedPart?.stok} {scannedPart?.satuan || 'pcs'}
-                        </Typography>
-                    </Card>
+                <View className="p-4">
+                    {scannedPart && (
+                        <View className="bg-gray-50 p-4 rounded-2xl mb-6 border border-gray-100 flex-row items-center">
+                            <View className="bg-white p-2 rounded-xl mr-4 shadow-sm">
+                                <Package size={24} color="#374151" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="caption" className="text-gray-400 font-bold uppercase">{scannedPart.kode}</Typography>
+                                <Typography variant="body1" weight="bold" className="text-gray-800">{scannedPart.nama}</Typography>
+                                <Typography className="text-primary text-xs font-bold mt-1">Stok Sekarang: {scannedPart.stok}</Typography>
+                            </View>
+                        </View>
+                    )}
 
-                    <View className="flex-row space-x-3 mb-6">
-                        <Pressable 
+                    <View className="flex-row mb-6 bg-gray-100 p-1 rounded-2xl">
+                        <Pressable
                             onPress={() => setStockOp('add')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-100'}`}
+                            className={`flex-1 py-3 items-center rounded-xl flex-row justify-center ${stockOp === 'add' ? 'bg-primary shadow-sm' : ''}`}
                         >
-                            <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
-                            <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-gray-400'}`}>Tambah</Typography>
+                            <Plus size={18} color={stockOp === 'add' ? 'white' : '#6B7280'} className="mr-2" />
+                            <Typography weight="bold" className={stockOp === 'add' ? 'text-white' : 'text-gray-500'}>Tambah</Typography>
                         </Pressable>
-                        <Pressable 
+                        <Pressable
                             onPress={() => setStockOp('subtract')}
-                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-white border-gray-100'}`}
+                            className={`flex-1 py-3 items-center rounded-xl flex-row justify-center ${stockOp === 'subtract' ? 'bg-red-500 shadow-sm' : ''}`}
                         >
-                            <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : '#94A3B8'} />
-                            <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-gray-400'}`}>Kurang</Typography>
+                            <Minus size={18} color={stockOp === 'subtract' ? 'white' : '#6B7280'} className="mr-2" />
+                            <Typography weight="bold" className={stockOp === 'subtract' ? 'text-white' : 'text-gray-500'}>Kurangi</Typography>
                         </Pressable>
                     </View>
 
-                    <Typography variant="caption" weight="bold" className="text-textGray mb-2 ml-1 uppercase tracking-wider text-[10px]">Jumlah Perubahan</Typography>
-                    <View className="flex-row items-center space-x-4 mb-8">
-                        <Pressable 
-                            onPress={() => setStockChange(prev => Math.max(0, parseInt(prev) - 1).toString())}
-                            className="w-14 h-14 bg-gray-100 rounded-2xl items-center justify-center"
-                        >
-                            <Minus size={24} color="#4B5563" />
-                        </Pressable>
-                        <View className="flex-1">
-                            <TextInput
-                                keyboardType="numeric"
-                                value={stockChange}
-                                onChangeText={setStockChange}
-                                className="h-14 bg-gray-50 border border-gray-200 rounded-2xl text-center text-2xl font-bold font-outfit"
-                            />
-                        </View>
-                        <Pressable 
-                            onPress={() => setStockChange(prev => (parseInt(prev || '0') + 1).toString())}
-                            className="w-14 h-14 bg-gray-100 rounded-2xl items-center justify-center"
-                        >
-                            <Plus size={24} color="#4B5563" />
-                        </Pressable>
+                    <View className="mb-8">
+                        <Typography className="text-gray-400 font-bold text-xs uppercase ml-1 mb-2">Jumlah Unit</Typography>
+                        <TextInput
+                            className="bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-center text-3xl font-bold text-gray-800"
+                            keyboardType="numeric"
+                            value={stockChange}
+                            onChangeText={setStockChange}
+                            autoFocus
+                        />
                     </View>
 
                     <Button
-                        title={`Konfirmasi ${stockOp === 'add' ? 'Penambahan' : 'Pengurangan'}`}
+                        title="Simpan Perubahan Stok"
                         onPress={handleQuickStockUpdate}
-                        loading={updateStockMutation.isPending}
-                        className="py-4 rounded-2xl"
+                        size="lg"
+                        className={stockOp === 'subtract' ? 'bg-red-500' : ''}
                     />
+                    <Button
+                        title="Batal"
+                        variant="ghost"
+                        onPress={() => setIsQuickStockVisible(false)}
+                        className="mt-2"
+                    />
+                </View>
+            </BaseModal>
+
+            {/* Print Selection Modal */}
+            <BaseModal
+                visible={isPrintModalVisible}
+                onClose={() => setIsPrintModalVisible(false)}
+                title="Cetak Label"
+            >
+                <View className="p-4">
+                    <Typography className="text-textGray mb-6 text-center">
+                        {selectedIds.length > 0
+                            ? `Cetak label untuk ${selectedIds.length} item terpilih.`
+                            : 'Pilih jenis label yang akan dicetak untuk semua data yang tampil di layar saat ini.'}
+                    </Typography>
+
+                    <View className="space-y-4">
+                        <Pressable
+                            onPress={() => {
+                                setIsPrintModalVisible(false);
+                                setTimeout(() => handleBulkPrint('QR'), 300);
+                            }}
+                            className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
+                        >
+                            <View className="bg-primary/10 p-3 rounded-xl mr-4">
+                                <QrCode size={24} color="#023C69" />
+                            </View>
+                            <View>
+                                <Typography variant="body1" weight="bold" className="text-primary">QR Code</Typography>
+                                <Typography variant="caption" className="text-textGray">Format kotak, cepat dipindai</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => {
+                                setIsPrintModalVisible(false);
+                                setTimeout(() => handleBulkPrint('BARCODE'), 300);
+                            }}
+                            className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex-row items-center"
+                        >
+                            <View className="bg-emerald-100 p-3 rounded-xl mr-4">
+                                <Barcode size={24} color="#059669" />
+                            </View>
+                            <View>
+                                <Typography variant="body1" weight="bold" className="text-emerald-700">Barcode</Typography>
+                                <Typography variant="caption" className="text-textGray">Format garis standar (Code 128)</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Button
+                            title="Tutup"
+                            variant="outline"
+                            onPress={() => setIsPrintModalVisible(false)}
+                            className="mt-4"
+                        />
+                    </View>
+                </View>
+            </BaseModal>
+            {/* Import & Bulk Update Modal */}
+            <BaseModal
+                visible={isImportModalVisible}
+                onClose={() => setIsImportModalVisible(false)}
+                title="Kelola Data Massal (XLS)"
+            >
+                <View className="p-4">
+                    <Typography className="text-textGray mb-6 text-center">
+                        Pilih jenis aksi massal yang ingin Anda lakukan menggunakan file Excel.
+                    </Typography>
+
+                    <View className="space-y-4">
+                        <Pressable
+                            onPress={() => {
+                                setIsImportModalVisible(false);
+                                handleImport();
+                            }}
+                            className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex-row items-center"
+                        >
+                            <View className="bg-emerald-100 p-3 rounded-xl mr-4">
+                                <Plus size={24} color="#059669" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-emerald-700">Tambah Barang Massal</Typography>
+                                <Typography variant="caption" className="text-textGray">Impor ribuan data barang baru sekaligus.</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => {
+                                setIsImportModalVisible(false);
+                                handleImport();
+                            }}
+                            className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex-row items-center"
+                        >
+                            <View className="bg-amber-100 p-3 rounded-xl mr-4">
+                                <RefreshCw size={24} color="#D97706" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-amber-700">Bulk Update (Harga/Stok)</Typography>
+                                <Typography variant="caption" className="text-textGray">Upload file XLS hasil ekspor untuk memperbarui data.</Typography>
+                            </View>
+                        </Pressable>
+
+                        <View className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mt-2">
+                            <Typography className="text-blue-700 text-[10px] font-bold uppercase mb-2 tracking-widest">Alur Bulk Update:</Typography>
+                            <Typography className="text-blue-600 text-[11px] leading-relaxed">
+                                1. Pilih barang di daftar atau klik <Typography weight="bold">"Download XLS"</Typography>{"\n"}
+                                2. Ubah harga/stok pada file Excel tersebut.{"\n"}
+                                3. Klik menu ini dan upload kembali file yang sudah diubah.
+                            </Typography>
+                        </View>
+
+                        <Button
+                            title="Tutup"
+                            variant="outline"
+                            onPress={() => setIsImportModalVisible(false)}
+                            className="mt-4"
+                        />
+                    </View>
                 </View>
             </BaseModal>
         </View>

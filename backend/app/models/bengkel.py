@@ -43,6 +43,7 @@ class SparePart(Base, TimestampMixin, SoftDeleteMixin):
     harga_jual: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     lokasi_rak: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     catatan: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    gambar: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Relationships
     detail_pembelian: Mapped[List["DetailPembelianSparePart"]] = relationship(

@@ -45,9 +45,6 @@ console.log('[TPM API] Debugger Host:', debuggerHost || 'N/A (Production Build)'
 const api = axios.create({
     baseURL: BASE_URL,
     timeout: 15000,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 // Add a request interceptor to attach the token

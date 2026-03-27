@@ -12,6 +12,7 @@ interface BaseModalProps {
     maxHeight?: DimensionValue;
     showCloseButton?: boolean;
     containerClassName?: string;
+    fullScreen?: boolean;
 }
 
 export const BaseModal = ({
@@ -21,7 +22,8 @@ export const BaseModal = ({
     children,
     maxHeight = '80%',
     showCloseButton = true,
-    containerClassName = ""
+    containerClassName = "",
+    fullScreen = false
 }: BaseModalProps) => {
     const opacityAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(300)).current;
@@ -76,7 +78,7 @@ export const BaseModal = ({
                         style={{ opacity: opacityAnim, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
                         className="absolute inset-0"
                     >
-                        <Pressable activeOpacity={1} className="flex-1" onPress={onClose} />
+                        <Pressable className="flex-1" onPress={onClose} />
                     </Animated.View>
 
                     {/* Modal Content */}
@@ -84,10 +86,11 @@ export const BaseModal = ({
                         style={{
                             transform: [{ translateY: slideAnim }],
                             opacity: opacityAnim,
-                            maxHeight: maxHeight,
+                            maxHeight: fullScreen ? '100%' : maxHeight,
                             backgroundColor: 'white', // Ensure it is not transparent
+                            ...(fullScreen ? { height: '100%', borderRadius: 0 } : {})
                         }}
-                        className={`w-full sm:max-w-md md:max-w-lg rounded-[48px] shadow-2xl overflow-hidden border border-gray-100 ${containerClassName}`}
+                        className={`w-full ${fullScreen ? '' : 'sm:max-w-md md:max-w-lg rounded-[48px] border border-gray-100'} shadow-2xl overflow-hidden ${containerClassName}`}
                     >
                         {/* Header */}
                         {(title || showCloseButton) && (

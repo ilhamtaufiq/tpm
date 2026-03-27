@@ -14,6 +14,7 @@ export interface SparePart {
     stok_minimum: number;
     rak_lokasi?: string;
     catatan?: string;
+    gambar?: string;
     created_at: string;
 }
 
@@ -156,16 +157,37 @@ export const bengkelService = {
     },
 
     importSpareParts: async (formData: FormData) => {
-        const response = await api.post('/spare-parts/import', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await api.post('/spare-parts/import', formData);
         return response.data;
     },
 
     getNextSparePartKode: async () => {
         const response = await api.get('/spare-parts/next-kode');
+        return response.data;
+    },
+
+    uploadSparePartImage: async (id: number, formData: FormData) => {
+        const response = await api.post(`/spare-parts/${id}/image`, formData);
+        return response.data;
+    },
+
+    bulkDeleteSpareParts: async (ids: number[]) => {
+        const response = await api.post('/spare-parts/bulk-delete', ids);
+        return response.data;
+    },
+
+    exportSpareParts: async (ids?: number[]) => {
+        const response = await api.get('/spare-parts/export', {
+            params: { ids },
+            paramsSerializer: (params) => {
+                const searchParams = new URLSearchParams();
+                if (params.ids) {
+                    params.ids.forEach((id: number) => searchParams.append('ids', id.toString()));
+                }
+                return searchParams.toString();
+            },
+            responseType: 'blob'
+        });
         return response.data;
     },
 

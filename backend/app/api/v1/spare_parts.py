@@ -1,8 +1,9 @@
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from decimal import Decimal
+from datetime import datetime
 
-from fastapi import APIRouter, Query, status, File, UploadFile
-
+from fastapi import APIRouter, Query, status, File, UploadFile, HTTPException
+from fastapi.responses import StreamingResponse
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.bengkel import (
     SparePartCreate,
@@ -134,6 +135,24 @@ def get_brands(
     return service.get_brands()
 
 
+
+@router.get("/export")
+def export_spare_parts(
+    db: DBSession,
+    current_user: CurrentUser,
+    ids: Annotated[Optional[List[int]], Query()] = None,
+):
+    """Export spare parts to Excel."""
+    service = SparePartService(db)
+    output = service.export_to_excel(ids)
+    
+    filename = f"spare_parts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @router.get("/{spare_part_id}", response_model=SparePartResponse)
 def get_spare_part(
     spare_part_id: int,
@@ -155,6 +174,18 @@ def update_spare_part(
     """Update spare part."""
     service = SparePartService(db)
     return service.update(spare_part_id, data)
+
+
+@router.post("/{spare_part_id}/image", response_model=SparePartResponse)
+def upload_image(
+    spare_part_id: int,
+    db: DBSession,
+    current_user: ManagerUser,
+    file: UploadFile = File(...),
+):
+    """Upload spare part image."""
+    service = SparePartService(db)
+    return service.upload_image(spare_part_id, file)
 
 
 @router.patch("/{spare_part_id}/stock", response_model=SparePartResponse)
@@ -193,3 +224,16 @@ def delete_spare_part(
     service = SparePartService(db)
     service.delete(spare_part_id)
     return {"message": "Spare part berhasil dihapus"}
+
+
+
+@router.post("/bulk-delete", status_code=status.HTTP_200_OK)
+def bulk_delete_spare_parts(
+    ids: List[int],
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Delete multiple spare parts."""
+    service = SparePartService(db)
+    count = service.bulk_delete(ids)
+    return {"message": f"{count} spare part berhasil dihapus"}

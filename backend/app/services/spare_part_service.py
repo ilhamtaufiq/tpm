@@ -1,12 +1,16 @@
+import os
+import shutil
+import uuid
+import io
+import openpyxl
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-import io
-import openpyxl
+from fastapi import HTTPException, status, UploadFile
+from app.config import settings
 
 from app.models.bengkel import SparePart
 from app.schemas.bengkel import SparePartCreate, SparePartUpdate
@@ -80,6 +84,7 @@ class SparePartService:
             harga_jual=data.harga_jual,
             lokasi_rak=data.lokasi_rak,
             catatan=data.catatan,
+            gambar=data.gambar,
         )
 
         self.db.add(spare_part)
@@ -115,6 +120,77 @@ class SparePartService:
             )
             .first()
         )
+
+    def update(self, spare_part_id: int, data: SparePartUpdate) -> SparePart:
+        """Update spare part정보."""
+        spare_part = self.get_by_id(spare_part_id)
+
+        update_data = data.model_dump(exclude_unset=True)
+        # Check duplicate name if changing
+        if "nama" in update_data and update_data["nama"] != spare_part.nama:
+            existing = (
+                self.db.query(SparePart)
+                .filter(
+                    SparePart.nama == update_data["nama"],
+                    SparePart.id != spare_part_id,
+                    SparePart.deleted_at.is_(None),
+                )
+                .first()
+            )
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Spare part dengan nama '{update_data['nama']}' sudah ada",
+                )
+
+        for key, value in update_data.items():
+            if hasattr(spare_part, key):
+                setattr(spare_part, key, value)
+
+        self.db.commit()
+        self.db.refresh(spare_part)
+
+        return spare_part
+
+    def upload_image(self, spare_part_id: int, file: UploadFile) -> SparePart:
+        """Upload image for a spare part."""
+        spare_part = self.get_by_id(spare_part_id)
+        
+        # Ensure upload directory exists
+        resolved_path = os.path.realpath(settings.upload_full_path)
+        img_dir = os.path.join(resolved_path, "spare_parts")
+        os.makedirs(img_dir, exist_ok=True)
+        
+        # Generate unique filename
+        ext = os.path.splitext(file.filename)[1].lower()
+        file_id = str(uuid.uuid4())
+        new_filename = f"{file_id}{ext}"
+        
+        # Relative path for DB
+        file_path = f"spare_parts/{new_filename}"
+        
+        # Absolute path for filesystem
+        full_path = os.path.join(img_dir, new_filename)
+        
+        # Delete old image if exists
+        if spare_part.gambar:
+            old_path = os.path.join(resolved_path, spare_part.gambar.replace("/", os.sep))
+            if os.path.exists(old_path):
+                try:
+                    os.remove(old_path)
+                except:
+                    pass
+        
+        # Save file
+        with open(full_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        # Update DB
+        spare_part.gambar = file_path
+        self.db.commit()
+        self.db.refresh(spare_part)
+        
+        return spare_part
 
     def get_list(
         self,
@@ -464,3 +540,56 @@ class SparePartService:
 
         self.db.commit()
         return results
+
+    def bulk_delete(self, ids: List[int]) -> int:
+        """Deletes multiple spare parts by ID (soft delete)."""
+        now = datetime.now()
+        updated = (
+            self.db.query(SparePart)
+            .filter(SparePart.id.in_(ids))
+            .filter(SparePart.deleted_at.is_(None))
+            .update({SparePart.deleted_at: now}, synchronize_session=False)
+        )
+        self.db.commit()
+        return updated
+
+    def export_to_excel(self, ids: Optional[List[int]] = None) -> io.BytesIO:
+        """Export non-deleted spare parts to Excel format."""
+        query = self.db.query(SparePart).filter(SparePart.deleted_at.is_(None))
+        if ids:
+            query = query.filter(SparePart.id.in_(ids))
+            
+        spare_parts = query.all()
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Spare Parts"
+        
+        # Headers
+        headers = [
+            "Kode", "Nama Barang", "Kode Part", "Kategori", "Merek", 
+            "Satuan", "Stok", "Stok Minimal", "Harga Beli", "Harga Jual", 
+            "Lokasi Rak", "Catatan"
+        ]
+        for col_idx, header in enumerate(headers, 1):
+            ws.cell(row=1, column=col_idx, value=header)
+            
+        # Data
+        for row_idx, sp in enumerate(spare_parts, 2):
+            ws.cell(row=row_idx, column=1, value=sp.kode)
+            ws.cell(row=row_idx, column=2, value=sp.nama)
+            ws.cell(row=row_idx, column=3, value=sp.kode_part)
+            ws.cell(row=row_idx, column=4, value=sp.kategori)
+            ws.cell(row=row_idx, column=5, value=sp.merek)
+            ws.cell(row=row_idx, column=6, value=sp.satuan)
+            ws.cell(row=row_idx, column=7, value=sp.stok)
+            ws.cell(row=row_idx, column=8, value=sp.stok_minimum)
+            ws.cell(row=row_idx, column=9, value=float(sp.harga_beli) if sp.harga_beli else 0)
+            ws.cell(row=row_idx, column=10, value=float(sp.harga_jual) if sp.harga_jual else 0)
+            ws.cell(row=row_idx, column=11, value=sp.lokasi_rak)
+            ws.cell(row=row_idx, column=12, value=sp.catatan)
+            
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output

@@ -19,10 +19,12 @@
 ## State
 - Done:
   - Fixed `supir_nama` validation error.
-  - Implemented Excel Import for Spare Parts.
+  - Implemented Excel Import for Spare Parts (Backend & Hooks).
   - **Implemented `semver_bump.py` script for automatic versioning.**
+  - **Fixed critical DB error (Unknown column 'kode_part') by applying missing migration.**
+  - **Added missing Import Excel button (FileUp icon) to Sparepart header UI.**
 - Now:
-  - Script is ready for use.
+  - Base features are stable.
 - Next:
   - Perform the dashboard analysis of `backend/app/api/v1/dashboard.py`.
   - Design the "Operational Balance" (Saldo BOP) feature.
