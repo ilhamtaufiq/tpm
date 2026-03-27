@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Application
     app_name: str = "TPM Backend"
-    app_version: str = "2.1.0"
+    app_version: str = "2.2.0"
     debug: bool = True
     environment: str = "development"
     frontend_url: str = "http://localhost:3000"
