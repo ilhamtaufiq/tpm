@@ -54,18 +54,18 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     export PYTHONPATH="$BACKEND_DIR"
     
     # Cek jika ada multiple heads dan gabungkan otomatis
-    NUM_HEADS=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -c "(head)")
+    NUM_HEADS=$("$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -c "(head)")
     # Fallback jika grep -c (head) tidak akurat (beberapa versi alembic beda format)
     if [ "$NUM_HEADS" -eq 0 ]; then
-        NUM_HEADS=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -v "INFO" | grep -v "Context" | wc -l)
+        NUM_HEADS=$("$BACKEND_DIR/venv/bin/python" -m alembic heads | grep -v "INFO" | grep -v "Context" | wc -l)
     fi
 
     if [ "$NUM_HEADS" -gt 1 ]; then
         echo -e "${YELLOW}$prefix WARNING${NC} Terdeteksi multiple heads ($NUM_HEADS). Melakukan merge otomatis..."
-        sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic merge -m "auto merge remote heads" heads || { echo -e "${RED}$prefix ERROR${NC} Auto merge gagal"; exit 1; }
+        "$BACKEND_DIR/venv/bin/python" -m alembic merge -m "auto merge remote heads" heads || { echo -e "${RED}$prefix ERROR${NC} Auto merge gagal"; exit 1; }
     fi
 
-    MIGRATION_OUT=$(sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/python" -m alembic upgrade head 2>&1)
+    MIGRATION_OUT=$("$BACKEND_DIR/venv/bin/python" -m alembic upgrade head 2>&1)
     if [ $? -ne 0 ]; then
 
         echo "$MIGRATION_OUT" > "$BACKEND_DIR/migration_error.log"
@@ -99,6 +99,9 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     # Buat symlink
     ln -sfn "$UPLOADS_DEST" "$BACKEND_DIR/uploads"
     chown -h $REAL_USER:$REAL_GROUP "$BACKEND_DIR/uploads"
+    
+    # Fix ownership in case root created some files during migration
+    chown -R $REAL_USER:$REAL_GROUP "$BACKEND_DIR"
     
     echo -e "${GREEN}$prefix${NC} Backend updated & restarted."
 ) &
