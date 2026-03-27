@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, TextInput, Keyboard } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -158,20 +158,20 @@ export default function UserCashManagementScreen() {
                 </Typography>
                 {isAdmin && (
                     <View className="flex-row items-center mt-2 gap-x-3">
-                        <TouchableOpacity 
+                        <Pressable 
                             onPress={() => handleOpenForm(item, 'adjust')}
                             className="bg-blue-50 px-3 py-1.5 rounded-lg flex-row items-center"
                         >
                             <Plus size={12} color="#3b82f6" />
                             <Typography weight="bold" className="text-blue-600 text-[10px] ml-1">Sesuaikan</Typography>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
+                        </Pressable>
+                        <Pressable 
                             onPress={() => handleOpenForm(item, 'set')}
                             className="bg-slate-50 px-3 py-1.5 rounded-lg flex-row items-center"
                         >
                             <Edit3 size={12} color="#64748b" />
                             <Typography weight="bold" className="text-slate-600 text-[10px] ml-1">Set</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
             </View>
@@ -231,18 +231,18 @@ export default function UserCashManagementScreen() {
 
             {/* Tabs */}
             <View className="flex-row px-6 mb-4">
-                <TouchableOpacity 
+                <Pressable 
                     onPress={() => setActiveTab('list')}
                     className={`flex-1 py-3 border-b-2 items-center ${activeTab === 'list' ? 'border-gopayBlue' : 'border-transparent'}`}
                 >
                     <Typography variant="body2" weight={activeTab === 'list' ? 'bold' : 'normal'} className={activeTab === 'list' ? 'text-gopayBlue' : 'text-text-secondary'}>Daftar User</Typography>
-                </TouchableOpacity>
-                <TouchableOpacity 
+                </Pressable>
+                <Pressable 
                     onPress={() => setActiveTab('history')}
                     className={`flex-1 py-3 border-b-2 items-center ${activeTab === 'history' ? 'border-gopayBlue' : 'border-transparent'}`}
                 >
                     <Typography variant="body2" weight={activeTab === 'history' ? 'bold' : 'normal'} className={activeTab === 'history' ? 'text-gopayBlue' : 'text-text-secondary'}>Riwayat Perubahan</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {activeTab === 'list' ? (

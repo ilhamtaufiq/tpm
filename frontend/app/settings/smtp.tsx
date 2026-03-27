@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Server, Mail, Lock, User, Save, Send, ShieldCheck, Info } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
@@ -166,12 +166,12 @@ export default function SMTPSettingsScreen() {
 
                 <View className="flex-row items-center justify-between z-10">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Server Email</Typography>
                             <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Pengaturan SMTP Gmail</Typography>
@@ -222,7 +222,7 @@ export default function SMTPSettingsScreen() {
                                     </View>
                                 </View>
                                 <View className="flex-[2] justify-center">
-                                    <TouchableOpacity 
+                                    <Pressable 
                                         onPress={() => setUseTLS(!useTLS)}
                                         className={`h-14 rounded-2xl flex-row items-center justify-center border ${useTLS ? 'bg-emerald-50 border-emerald-100' : 'bg-background border-gray-100'}`}
                                     >
@@ -230,7 +230,7 @@ export default function SMTPSettingsScreen() {
                                         <Typography weight="bold" className={`ml-2 ${useTLS ? 'text-emerald-700' : 'text-text/40'}`}>
                                             {useTLS ? 'TLS Aktif' : 'Non-TLS'}
                                         </Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             </View>
 
@@ -293,23 +293,23 @@ export default function SMTPSettingsScreen() {
                         </View>
 
                         <View className="flex-row gap-x-4">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleTest}
                                 disabled={isTesting || isSaving}
                                 className={`flex-1 h-16 rounded-[24px] flex-row items-center justify-center border border-primary/20 bg-white shadow-sm ${isTesting ? 'opacity-50' : ''}`}
                             >
                                 {isTesting ? <ActivityIndicator size="small" color="#023C69" /> : <Send size={18} color="#023C69" />}
                                 <Typography weight="bold" className="text-primary ml-3">Test Konf</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleSave}
                                 disabled={isSaving || isTesting}
                                 className={`flex-[1.5] h-16 rounded-[24px] flex-row items-center justify-center bg-primary shadow-xl ${isSaving ? 'opacity-50' : ''}`}
                             >
                                 {isSaving ? <ActivityIndicator size="small" color="white" /> : <Save size={18} color="white" />}
                                 <Typography weight="bold" className="text-white ml-3">Simpan</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                     </Animated.View>

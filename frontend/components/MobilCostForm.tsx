@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TextInput, ActivityIndicator, Alert, Platform, StyleSheet, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
-// import { TouchableOpacity } from '@gorhom/bottom-sheet'; // Removed due to web compatibility issues
+import { View, ScrollView, TextInput, ActivityIndicator, Alert, Platform, StyleSheet, KeyboardAvoidingView, Pressable } from 'react-native';
+// import { Pressable } from '@gorhom/bottom-sheet'; // Removed due to web compatibility issues
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
@@ -240,14 +240,14 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                         </View>
                         <Typography variant="body1" weight="bold" className="text-primary uppercase tracking-wider">Pencatatan Biaya</Typography>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={toggleSplitPayment}
                         className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                     >
                         <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                             {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="mb-4">
@@ -264,30 +264,30 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     <View className="mb-6">
                         <View className="flex-row justify-between items-center mb-3">
                             <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest pl-2">Alokasi Pembayaran</Typography>
-                            <TouchableOpacity onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                            <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                 <PlusCircle size={14} color="#023C69" />
                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         {payments.map((p, idx) => (
                             <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
                                 <View className="flex-row justify-between items-center mb-3">
                                     <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
-                                    <TouchableOpacity onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
+                                    <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
                                         <Trash2 size={12} color="#EF4444" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
 
                                 <View className="flex-row flex-wrap gap-2 mb-3">
                                     {['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT'].map((m) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={m}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
                                             className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                         >
                                             <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
 
@@ -312,13 +312,13 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
                             <View className="flex-row flex-wrap gap-2">
                                 {['TUNAI', 'TRANSFER', 'DEBIT'].map((m) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={m}
                                         onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m })}
                                         className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-100'}`}
                                     >
                                         <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 ))}
                             </View>
                         </View>
@@ -343,7 +343,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                     onChangeText={(val) => setNewLainnya({ ...newLainnya, deskripsi: val })}
                 />
 
-                <TouchableOpacity
+                <Pressable
                     activeOpacity={0.8}
                     onPress={handleAddBiaya}
                     disabled={addBiayaMutation.isPending}
@@ -357,7 +357,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             <Typography weight="bold" className="text-white ml-2 text-lg">Tambah Biaya</Typography>
                         </>
                     )}
-                </TouchableOpacity>
+                </Pressable>
             </Card>
 
             <View className="mb-4">
@@ -380,13 +380,13 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                             <Typography weight="bold" className="text-primary">{formatCurrency(Number(item.jumlah))}</Typography>
                             <Typography variant="caption" className="text-gray-300 mt-1">{item.tanggal}</Typography>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => handleDeleteBiaya(item.id)}
                             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                             className="w-10 h-10 bg-red-50 rounded-xl items-center justify-center"
                         >
                             <Trash2 size={18} color="#EE2737" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </Card>
                 ))}
             </View>

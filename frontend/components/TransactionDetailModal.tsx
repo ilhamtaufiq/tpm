@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     View,
     Modal,
-    TouchableOpacity,
+    Pressable,
     ScrollView,
     ActivityIndicator,
     Dimensions,
@@ -418,12 +418,12 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                                 {details?.nomor_transaksi || item.ref_number || item.id}
                             </Typography>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={onClose}
                             className="bg-white w-12 h-12 rounded-2xl items-center justify-center shadow-sm border border-gray-100"
                         >
                             <X size={20} color="#121212" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     <ScrollView
@@ -471,14 +471,14 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
 
                                 {((item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' || item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL')) && (
                                     <View className="flex-row gap-4 mt-4">
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={handleShareLink}
                                             className="flex-1 flex-row items-center justify-center bg-white h-14 rounded-2xl border border-gray-100 shadow-sm"
                                         >
                                             <Share2 size={18} color="#00ADEF" />
                                             <Typography weight="bold" className="text-[#00ADEF] ml-2">Bagikan Link</Typography>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
+                                        </Pressable>
+                                        <Pressable
                                             onPress={handlePrintThermal}
                                             disabled={printing}
                                             className="flex-1 flex-row items-center justify-center bg-primary h-14 rounded-2xl shadow-lg shadow-primary/30"
@@ -489,7 +489,7 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                                                     <Typography weight="bold" className="text-white ml-2">Cetak Struk</Typography>
                                                 </>
                                             )}
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     </View>
                                 )}
                             </View>
@@ -499,13 +499,13 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     {/* Bottom Button */}
                     {!loading && (
                         <SafeAreaView className="absolute bottom-10 left-8 right-8">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={onClose}
                                 className="bg-primary h-16 rounded-[24px] flex-row items-center justify-center shadow-2xl"
                                 activeOpacity={0.9}
                             >
                                 <Typography weight="bold" className="text-white text-base">Tutup Detail</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </SafeAreaView>
                     )}
                 </View>

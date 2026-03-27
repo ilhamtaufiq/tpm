@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -273,13 +273,13 @@ export default function PencairanInvestorScreen() {
                     <Typography variant="caption" weight="bold" className="text-gray-500 mb-4 uppercase tracking-[2px] text-[10px]">Pilih Metode Pembayaran</Typography>
                     <View className="flex-row space-x-2 gap-2">
                         {['TUNAI', 'TRANSFER', 'SPLIT'].map((m: any) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={m}
                                 onPress={() => setMetode(m)}
                                 className={`flex-1 h-14 items-center justify-center rounded-2xl border ${metode === m ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-gray-50 border-gray-200'}`}
                             >
                                 <Typography className={`text-xs font-bold ${metode === m ? 'text-white' : 'text-gray-500'}`}>{m}</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
                 </View>
@@ -288,13 +288,13 @@ export default function PencairanInvestorScreen() {
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
                             <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-[2px] text-[10px]">Rincian Split Payment</Typography>
-                            <TouchableOpacity 
+                            <Pressable 
                                 onPress={handleAddPaymentRow}
                                 className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
                             >
                                 <Plus size={14} color="#023C69" />
                                 <Typography weight="bold" className="text-primary text-[10px] ml-1 uppercase">Tambah</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         {payments.map((p, index) => (
@@ -304,24 +304,24 @@ export default function PencairanInvestorScreen() {
                                         <Typography weight="bold" className="text-gray-500 text-[9px] uppercase tracking-widest">Entry #{index + 1}</Typography>
                                     </View>
                                     {payments.length > 1 && (
-                                        <TouchableOpacity 
+                                        <Pressable 
                                             onPress={() => handleRemovePaymentRow(index)}
                                             className="w-8 h-8 bg-red-50 rounded-xl items-center justify-center"
                                         >
                                             <Trash2 size={16} color="#EF4444" />
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                 </View>
 
                                 <View className="flex-row space-x-2 gap-2 mb-4">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={m}
                                             onPress={() => handleUpdatePayment(index, 'metode', m as 'TUNAI' | 'TRANSFER')}
                                             className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'bg-primary border-primary shadow-md shadow-primary/20' : 'bg-gray-50 border-gray-100'}`}
                                         >
                                             <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
 
@@ -411,19 +411,19 @@ export default function PencairanInvestorScreen() {
                 onBackButtonPress={handleGoBack}
                 rightElement={
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleDownloadReport}
                             disabled={printing}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
                         >
                             {printing ? <ActivityIndicator size="small" color="white" /> : <Download size={20} color="white" />}
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             onPress={onRefresh}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             <RefreshCw size={20} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 }
             >
@@ -450,20 +450,20 @@ export default function PencairanInvestorScreen() {
             {/* Tab Navigation */}
             <View className="px-6 -mt-6 z-10">
                 <View className="bg-white p-2 rounded-[32px] shadow-xl flex-row items-center border border-gray-50">
-                    <TouchableOpacity 
+                    <Pressable 
                         onPress={() => setActiveTab('PENDING')}
                         className={`flex-1 flex-row h-14 items-center justify-center rounded-3xl ${activeTab === 'PENDING' ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-transparent'}`}
                     >
                         <CircleDollarSign size={18} color={activeTab === 'PENDING' ? 'white' : '#9CA3AF'} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'PENDING' ? 'text-white' : 'text-gray-400'}`}>Tunggu Bayar</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
+                    </Pressable>
+                    <Pressable 
                         onPress={() => setActiveTab('HISTORY')}
                         className={`flex-1 flex-row h-14 items-center justify-center rounded-3xl ${activeTab === 'HISTORY' ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-transparent'}`}
                     >
                         <History size={18} color={activeTab === 'HISTORY' ? 'white' : '#9CA3AF'} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'HISTORY' ? 'text-white' : 'text-gray-400'}`}>Riwayat</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -619,7 +619,7 @@ export default function PencairanInvestorScreen() {
                     setIsSheetOpen(false);
                 }}>
                     <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={() => {
+                        <Pressable className="absolute inset-0" onPress={() => {
                             setModalVisible(false);
                             setIsSheetOpen(false);
                         }} />

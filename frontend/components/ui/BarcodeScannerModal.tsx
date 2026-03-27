@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, Modal, SafeAreaView, StatusBar, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
 import { X, Zap, ZapOff } from 'lucide-react-native';
@@ -63,9 +63,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
                             Kami memerlukan akses kamera untuk memindai barcode sparepart secara instan.
                         </Typography>
                         <Button title="Berikan Izin" onPress={requestPermission} />
-                        <TouchableOpacity onPress={onClose} className="mt-4">
+                        <Pressable onPress={onClose} className="mt-4">
                             <Typography className="text-gray-400">Batal</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 ) : (
                     <View style={styles.cameraContainer}>
@@ -103,12 +103,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
 
                         {/* Controls */}
                         <View style={styles.header}>
-                            <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+                            <Pressable onPress={onClose} style={styles.iconButton}>
                                 <X size={24} color="white" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setTorch(!torch)} style={styles.iconButton}>
+                            </Pressable>
+                            <Pressable onPress={() => setTorch(!torch)} style={styles.iconButton}>
                                 {torch ? <Zap size={24} color="#FBBF24" /> : <ZapOff size={24} color="white" />}
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 )}

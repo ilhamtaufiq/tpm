@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, FlatList, RefreshControl, TouchableOpacity, StatusBar } from 'react-native';
+import { View, FlatList, RefreshControl, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Plus, Search, Users } from 'lucide-react-native';
@@ -40,7 +40,7 @@ export default function SupirScreen() {
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
                 <View className="flex-row items-center">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => {
                             if (router.canGoBack()) {
                                 router.back();
@@ -51,15 +51,15 @@ export default function SupirScreen() {
                         className="mr-4"
                     >
                         <ChevronLeft size={24} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <Typography variant="h2" weight="bold">Data Supir</Typography>
                 </View>
-                <TouchableOpacity
+                <Pressable
                     onPress={() => router.push('/jasa-angkut/supir/form')}
                     className="w-10 h-10 bg-primary rounded-full items-center justify-center"
                 >
                     <Plus size={20} color="white" />
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {/* Search & Filter */}
@@ -128,7 +128,7 @@ export default function SupirScreen() {
 }
 
 const FilterTab = ({ label, active, onPress }: { label: string, active: boolean, onPress: () => void }) => (
-    <TouchableOpacity
+    <Pressable
         onPress={onPress}
         className={`px-4 py-1.5 rounded-full border ${active ? 'bg-primary border-primary' : 'bg-transparent border-gray-200'}`}
     >
@@ -139,5 +139,5 @@ const FilterTab = ({ label, active, onPress }: { label: string, active: boolean,
         >
             {label}
         </Typography>
-    </TouchableOpacity>
+    </Pressable>
 );

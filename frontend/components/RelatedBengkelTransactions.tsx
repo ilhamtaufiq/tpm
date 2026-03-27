@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Pressable, ActivityIndicator } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Wrench, ChevronRight, Calendar, User } from 'lucide-react-native';

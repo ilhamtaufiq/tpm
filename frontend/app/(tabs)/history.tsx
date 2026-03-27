@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -149,9 +149,9 @@ export default function HistoryTab() {
                             onChangeText={setSearch}
                         />
                     </View>
-                    <TouchableOpacity className="ml-2 w-12 h-12 bg-white/10 rounded-2xl items-center justify-center">
+                    <Pressable className="ml-2 w-12 h-12 bg-white/10 rounded-2xl items-center justify-center">
                         <Filter size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </Header>
 
@@ -180,7 +180,7 @@ export default function HistoryTab() {
                         const badge = getStatusBadge(item.status);
 
                         return (
-                            <TouchableOpacity
+                            <Pressable
                                 key={item.id}
                                 activeOpacity={0.7}
                                 className="bg-white p-4 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
@@ -244,7 +244,7 @@ export default function HistoryTab() {
                                         </Typography>
                                     </View>
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         );
                     })
                 )}

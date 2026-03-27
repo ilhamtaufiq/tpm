@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -247,12 +247,12 @@ export default function AbsensiScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Absensi Karyawan</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">
@@ -261,12 +261,12 @@ export default function AbsensiScreen() {
                         </View>
                     </View>
                     {!selectedKaryawan && (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={onRefresh}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             {refreshing ? <ActivityIndicator size="small" color="white" /> : <Clock size={22} color="white" />}
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
 
@@ -283,7 +283,7 @@ export default function AbsensiScreen() {
                     <FlatList
                         data={filteredKaryawan}
                         renderItem={({ item }) => (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => setSelectedKaryawan(item)}
                                 activeOpacity={0.9}
                                 className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
@@ -302,7 +302,7 @@ export default function AbsensiScreen() {
                                 <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
                                     <CalendarIcon size={18} color="#D1D5DB" />
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                         keyExtractor={(item) => item.id.toString()}
                         contentContainerStyle={{ paddingTop: 10, paddingBottom: 120 }}
@@ -372,13 +372,13 @@ export default function AbsensiScreen() {
                         </View>
 
                         <View className="flex-row space-x-4">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => setSelectedKaryawan(null)}
                                 className="flex-1 bg-gray-100 h-16 rounded-2xl items-center justify-center border border-gray-200"
                             >
                                 <Typography weight="bold" className="text-textGray">Batal</Typography>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </Pressable>
+                            <Pressable
                                 onPress={handleSaveAbsensi}
                                 disabled={bulkClockInMutation.isPending}
                                 className="flex-[2] bg-primary h-16 rounded-2xl items-center justify-center shadow-xl shadow-primary/30 flex-row"
@@ -391,7 +391,7 @@ export default function AbsensiScreen() {
                                         <Typography weight="bold" className="text-white">Simpan Absensi</Typography>
                                     </>
                                 )}
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </ScrollView>
                 )}
@@ -430,19 +430,19 @@ export default function AbsensiScreen() {
 
                     <View className="flex-row space-x-3 mt-6">
                         {selectedDates[tempDate] && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleRemoveAttendance}
                                 className="flex-1 bg-red-50 h-14 rounded-2xl items-center justify-center border border-red-100"
                             >
                                 <Typography weight="bold" className="text-red-600">Hapus</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleConfirmTime}
                             className="flex-[2] bg-primary h-14 rounded-2xl items-center justify-center shadow-lg"
                         >
                             <Typography weight="bold" className="text-white">Simpan</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
             </BaseModal>

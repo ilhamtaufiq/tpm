@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, GestureResponderEvent, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, GestureResponderEvent, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, DollarSign, Wallet, Download, Eye, Share2, X, AlertTriangle } from 'lucide-react-native';
@@ -456,14 +456,14 @@ export default function LaporanPerubahanModalScreen() {
             {/* Rule 2: Custom Header */}
             <View className="px-6 py-4 flex-row items-center justify-between">
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={handleBack} className="mr-4">
+                    <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color={themeColors.text} />
-                    </TouchableOpacity>
+                    </Pressable>
                     <Typography variant="h2" weight="bold">Sisa Laba & Modal Di Tangan TPM</Typography>
                 </View>
-                <TouchableOpacity onPress={() => setShowExportMenu(true)} disabled={isExporting}>
+                <Pressable onPress={() => setShowExportMenu(true)} disabled={isExporting}>
                     <Download size={24} color={isExporting ? themeColors.textGray : themeColors.text} />
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {/* Rule 9: Date Filter Pattern */}
@@ -471,7 +471,7 @@ export default function LaporanPerubahanModalScreen() {
                 {/* Tabs */}
                 <View className="flex-row bg-gray-100 p-1 rounded-xl mb-4">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={type}
                             onPress={() => setFilterType(type)}
                             className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-surface shadow-sm' : ''}`}
@@ -483,24 +483,24 @@ export default function LaporanPerubahanModalScreen() {
                             >
                                 {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
 
                 {/* Navigator */}
                 <View className="flex-row justify-between items-center bg-background px-4 py-3 rounded-xl border border-gray-100">
-                    <TouchableOpacity onPress={handlePrev} className="p-1">
+                    <Pressable onPress={handlePrev} className="p-1">
                         <ChevronLeft size={20} color="#64748B" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#64748B" className="mr-2" />
                         <Typography weight="semibold" className="text-gray-700">
                             {getFormattedDate()}
                         </Typography>
                     </View>
-                    <TouchableOpacity onPress={handleNext} className="p-1">
+                    <Pressable onPress={handleNext} className="p-1">
                         <ChevronRight size={20} color="#64748B" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
         </View>
@@ -762,7 +762,7 @@ export default function LaporanPerubahanModalScreen() {
                 animationType="fade"
                 onRequestClose={() => setShowExportMenu(false)}
             >
-                <TouchableOpacity
+                <Pressable
                     className="flex-1 bg-black/50 justify-end"
                     activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
@@ -773,13 +773,13 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
                                 <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                             </View>
-                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
                                 <X size={20} color={themeColors.textGray} />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <View className="flex-row gap-4">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     setShowExportMenu(false);
                                     setTimeout(() => handleExportPDF('preview'), 100);
@@ -791,9 +791,9 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
                                 <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
                                 <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     setShowExportMenu(false);
                                     setTimeout(() => handleExportPDF('download'), 100);
@@ -805,10 +805,10 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
                                 <Typography weight="bold" className="text-primary-dark">Download</Typography>
                                 <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </Pressable>
             </Modal>
         </SafeAreaView>
     );

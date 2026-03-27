@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, Alert } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -506,36 +506,36 @@ export default function JasaAngkutScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
                         </View>
                     </View>
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push('/jasa-angkut/armada')}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
                         >
                             <Truck size={22} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             onPress={() => router.push('/jasa-angkut/supir')}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
                         >
                             <Users size={22} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             onPress={() => onRefresh()}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             <RefreshCw size={20} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
@@ -593,35 +593,35 @@ export default function JasaAngkutScreen() {
                                 placeholderTextColor="#9CA3AF"
                             />
                             {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Pressable onPress={() => setSearchQuery('')}>
                                     <Clock size={16} color="#9CA3AF" />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
 
                         {/* Filter & Group Controls */}
                         <View className="flex-row items-center justify-between px-1">
                             <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => setGroupBy('armada')}
                                     className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}
                                 >
                                     <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
                                     <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </Pressable>
+                                <Pressable
                                     onPress={() => setGroupBy('supir')}
                                     className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}
                                 >
                                     <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
                                     <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
-                            <TouchableOpacity className="flex-row items-center bg-gray-50 border border-gray-100 px-4 py-2 rounded-xl">
+                            <Pressable className="flex-row items-center bg-gray-50 border border-gray-100 px-4 py-2 rounded-xl">
                                 <Plus size={16} color="#023C69" />
                                 <Typography variant="caption" weight="bold" className="ml-2 text-primary">Filter</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -662,7 +662,7 @@ export default function JasaAngkutScreen() {
                         return (
                             <View key={group.key} className="mb-6">
                                 {/* Group Header - Enhanced Card style */}
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => toggleGroupCollapse(group.key)}
                                     activeOpacity={0.7}
                                     className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
@@ -689,12 +689,12 @@ export default function JasaAngkutScreen() {
                                             </View>
                                         )}
                                         {groupBy === 'armada' && group.id && (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => handlePresentModal('armada_detail', { id: group.id })}
                                                 className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-2 border border-gray-100"
                                             >
                                                 <ArrowUpRight size={18} color="#023C69" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         )}
                                         <ChevronLeft
                                             size={20}
@@ -702,7 +702,7 @@ export default function JasaAngkutScreen() {
                                             style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
                                         />
                                     </View>
-                                </TouchableOpacity>
+                                </Pressable>
 
                                 {/* Group Content (Trips) */}
                                 {!isCollapsed && (
@@ -713,7 +713,7 @@ export default function JasaAngkutScreen() {
                                             </View>
                                         ) : (
                                             group.trips.map((trip: any) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={trip.id}
                                                     onPress={() => handlePresentModal('detail', trip)}
                                                     activeOpacity={0.9}
@@ -761,7 +761,7 @@ export default function JasaAngkutScreen() {
                                                             </Typography>
                                                         </View>
                                                     </View>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))
                                         )}
                                     </View>
@@ -774,20 +774,20 @@ export default function JasaAngkutScreen() {
             </ScrollView>
 
             {/* Floating Action Button */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => handlePresentModal('form')}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary border-4 border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={3} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
                 <>
                     <Modal visible={isFormOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                         <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                            <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
@@ -797,7 +797,7 @@ export default function JasaAngkutScreen() {
 
                     <Modal visible={isDetailOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                         <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                            <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 {selectedTrip && renderDetailContent(selectedTrip)}

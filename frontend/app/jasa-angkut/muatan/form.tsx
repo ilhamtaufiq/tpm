@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
@@ -127,7 +127,7 @@ export default function MuatanFormScreen() {
                     ) : (
                         <View className="flex-row flex-wrap mb-3">
                             {activeDrivers.map(d => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={d.id}
                                     onPress={() => updateField('supir_id', d.id.toString())}
                                     className={`px-3 py-2 rounded-lg mr-2 mb-2 border ${formData.supir_id === d.id.toString() ? 'bg-sky-100 border-sky-500' : 'bg-white border-gray-200'}`}
@@ -135,7 +135,7 @@ export default function MuatanFormScreen() {
                                     <Text className={`${formData.supir_id === d.id.toString() ? 'text-sky-700 font-bold' : 'text-gray-600'}`}>
                                         {d.nama}
                                     </Text>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
                     )}
@@ -185,7 +185,7 @@ export default function MuatanFormScreen() {
 
                     <View className="flex-row space-x-2">
                         {(['TUNAI', 'TRANSFER'] as PaymentMethod[]).map((m) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={m}
                                 onPress={() => updateField('metode_bayar', m)}
                                 className={`flex-1 py-3 items-center rounded-xl border ${formData.metode_bayar === m ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
@@ -193,7 +193,7 @@ export default function MuatanFormScreen() {
                                 <Text className={formData.metode_bayar === m ? 'text-sky-700 font-bold' : 'text-gray-500'}>
                                     {m === 'TUNAI' ? 'Tunai' : 'Transfer'}
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
 

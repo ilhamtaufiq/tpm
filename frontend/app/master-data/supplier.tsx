@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -203,7 +203,7 @@ export default function SupplierScreen() {
     };
 
     const renderSupplierItem = ({ item }: { item: Supplier }) => (
-        <TouchableOpacity onPress={() => openDetail(item)}>
+        <Pressable onPress={() => openDetail(item)}>
             <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                 <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
                     <Package size={32} color="#F59E0B" />
@@ -224,7 +224,7 @@ export default function SupplierScreen() {
                     <MoreVertical size={16} color="#9CA3AF" />
                 </View>
             </View>
-        </TouchableOpacity>
+        </Pressable>
     );
 
     const renderSheetContent = () => {
@@ -233,9 +233,9 @@ export default function SupplierScreen() {
                 <View className="p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Supplier</Typography>
-                        <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     <View className="items-center mb-8">
@@ -324,9 +324,9 @@ export default function SupplierScreen() {
                     <Typography variant="h2" weight="bold">
                         {selectedSupplier ? 'Edit Supplier' : 'Tambah Supplier'}
                     </Typography>
-                    <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="space-y-4">
@@ -434,23 +434,23 @@ export default function SupplierScreen() {
             <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Supplier</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Database Pemasok</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Dashboard Stats (Glassmorphism) - Inside Header */}
@@ -527,7 +527,7 @@ export default function SupplierScreen() {
             />
 
             {/* FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => {
                     openAddForm();
                 }}
@@ -535,7 +535,7 @@ export default function SupplierScreen() {
                 activeOpacity={0.8}
             >
                 <Plus size={32} color="white" />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Bottom Sheet UI - Platform Specific */}
             {Platform.OS === 'web' ? (
@@ -546,7 +546,7 @@ export default function SupplierScreen() {
                     onRequestClose={handleCloseSheet}
                 >
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <TouchableOpacity
+                        <Pressable
                             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                             onPress={handleCloseSheet}
                             activeOpacity={1}

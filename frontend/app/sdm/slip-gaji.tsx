@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -448,7 +448,7 @@ export default function SlipGajiScreen() {
                             </View>
                         </View>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => handleGenerateSingle(item)}
                             disabled={isGenerating || !!generatingId}
                             className={`px-4 py-3 rounded-xl flex-row items-center ${isGenerating ? 'bg-gray-100' : 'bg-primary'}`}
@@ -461,7 +461,7 @@ export default function SlipGajiScreen() {
                                     <ArrowRight size={12} color="white" />
                                 </>
                             )}
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
             </Card>
@@ -471,7 +471,7 @@ export default function SlipGajiScreen() {
     const renderHistoryItem = ({ item }: { item: SlipGaji }) => {
         const isLunas = item.status?.toUpperCase() === 'LUNAS';
         return (
-            <TouchableOpacity onPress={() => openDetail(item)} activeOpacity={0.7}>
+            <Pressable onPress={() => openDetail(item)} activeOpacity={0.7}>
                 <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1">
@@ -496,7 +496,7 @@ export default function SlipGajiScreen() {
                         />
                     </View>
                 </Card>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -508,12 +508,12 @@ export default function SlipGajiScreen() {
             <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Sistem Payroll</Typography>
                             <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Berdasarkan Range Tanggal</Typography>
@@ -528,24 +528,24 @@ export default function SlipGajiScreen() {
 
                 {/* Range Selection Card */}
                 <View className="flex-row space-x-3 mb-4">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
                         className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
                     >
                         <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
                         <Typography className="text-white font-bold text-sm">{startDate}</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                         onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
                         className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
                     >
                         <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
                         <Typography className="text-white font-bold text-sm">{endDate}</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Date Selection Card - PREMIUM */}
-                <TouchableOpacity
+                <Pressable
                     onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
                     activeOpacity={0.9}
                     className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center"
@@ -560,7 +560,7 @@ export default function SlipGajiScreen() {
                     <View className="bg-primary/10 px-4 py-2 rounded-full">
                         <Typography className="text-primary text-[10px] font-black uppercase">Ubah</Typography>
                     </View>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {/* Search & Tabs Area */}
@@ -583,7 +583,7 @@ export default function SlipGajiScreen() {
 
                     {/* Modern Tab Switcher */}
                     <View className="flex-row p-4 space-x-2">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setActiveTab('pending')}
                             className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
                         >
@@ -591,9 +591,9 @@ export default function SlipGajiScreen() {
                             <Typography weight="bold" className={activeTab === 'pending' ? 'text-white' : 'text-gray-400'}>
                                 Belum ({filteredPending.length})
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setActiveTab('history')}
                             className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'history' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
                         >
@@ -601,7 +601,7 @@ export default function SlipGajiScreen() {
                             <Typography weight="bold" className={activeTab === 'history' ? 'text-white' : 'text-gray-400'}>
                                 Riwayat ({filteredHistory.length})
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Dynamic List */}
@@ -660,7 +660,7 @@ export default function SlipGajiScreen() {
                     {/* Bulk Generate FAB */}
                     {activeTab === 'pending' && filteredPending.length > 0 && (
                         <View className="absolute bottom-6 left-6 right-6">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleGenerateBulk}
                                 disabled={createBulkMutation.isPending}
                                 className="bg-primary h-16 rounded-[24px] items-center justify-center flex-row shadow-2xl border border-white/20"
@@ -671,7 +671,7 @@ export default function SlipGajiScreen() {
                                         <TrendingUp size={20} color="white" />
                                     </>
                                 )}
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
                 </View>
@@ -695,7 +695,7 @@ export default function SlipGajiScreen() {
             {Platform.OS === 'web' ? (
                 <Modal visible={!!selectedSlip} transparent animationType="slide" onRequestClose={() => setSelectedSlip(null)}>
                     <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
+                        <Pressable className="absolute inset-0" onPress={() => setSelectedSlip(null)} />
                         <View className="bg-white rounded-t-[56px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView className="px-10 flex-1">
@@ -739,9 +739,9 @@ export default function SlipGajiScreen() {
                                     datePickingMode === 'end' ? 'Pilih Tanggal Selesai' :
                                         'Pilih Tanggal Slip'}
                             </Typography>
-                            <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                            <Pressable onPress={() => setShowDatePicker(false)}>
                                 <X size={24} color="white" />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                         <View className="p-4">
                             <RNCalendar // Renamed Calendar to RNCalendar
@@ -781,9 +781,9 @@ export default function SlipGajiScreen() {
             <View className="pb-16">
                 <View className="flex-row justify-between items-center mb-10">
                     <Typography variant="h2" weight="bold" className="text-3xl tracking-tight">Payroll Detail</Typography>
-                    <TouchableOpacity onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
+                    <Pressable onPress={() => Platform.OS === 'web' ? setSelectedSlip(null) : bottomSheetRef.current?.close()} className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
                         <X size={24} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="items-center mb-12">
@@ -831,7 +831,7 @@ export default function SlipGajiScreen() {
                     <View>
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography className="text-textGray/60 font-black text-[10px] uppercase tracking-[3px] ml-2">Metode Pembayaran</Typography>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     if (!isSplitPayment) {
                                         setPayments([{ id: Date.now(), metode: payMetode.toUpperCase(), nominal: selectedSlip.gaji_bersih.toString() }]);
@@ -843,7 +843,7 @@ export default function SlipGajiScreen() {
                                 <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
                                     {isSplitPayment ? 'BATALKAN SPLIT' : 'SPLIT PAYMENT?'}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         {isSplitPayment ? (
@@ -853,21 +853,21 @@ export default function SlipGajiScreen() {
                                         <View className="flex-row justify-between items-center mb-4">
                                             <Typography weight="bold" className="text-primary text-xs tracking-widest uppercase">POS PEMBAYARAN #{idx + 1}</Typography>
                                             {payments.length > 1 && (
-                                                <TouchableOpacity onPress={() => setPayments(payments.filter(pay => pay.id !== p.id))} className="w-8 h-8 items-center justify-center bg-rose-100 rounded-full">
+                                                <Pressable onPress={() => setPayments(payments.filter(pay => pay.id !== p.id))} className="w-8 h-8 items-center justify-center bg-rose-100 rounded-full">
                                                     <X size={14} color="#E11D48" />
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             )}
                                         </View>
 
                                         <View className="flex-row flex-wrap gap-2 mb-4">
                                             {['TUNAI', 'TRANSFER'].map((m) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={m}
                                                     onPress={() => setPayments(payments.map(pay => pay.id === p.id ? { ...pay, metode: m } : pay))}
                                                     className={`px-4 py-2 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                                 >
                                                     <Typography className={p.metode === m ? 'text-primary' : 'text-textGray'} weight="bold" variant="caption">{m}</Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))}
                                         </View>
 
@@ -884,12 +884,12 @@ export default function SlipGajiScreen() {
                                     </View>
                                 ))}
 
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '0' }])}
                                     className="flex-row items-center justify-center py-4 rounded-3xl border border-dashed border-gray-300"
                                 >
                                     <Typography weight="bold" className="text-gray-400 text-xs uppercase">+ TAMBAH METODE</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
 
                                 <View className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 flex-row justify-between items-center">
                                     <Typography className="text-primary text-[10px] font-black uppercase tracking-widest">Total Dialokasikan</Typography>
@@ -899,18 +899,18 @@ export default function SlipGajiScreen() {
                         ) : (
                             <View className="flex-row space-x-4 mb-6">
                                 {['tunai', 'transfer'].map((m) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={m}
                                         onPress={() => setPayMetode(m)}
                                         className={`flex-1 py-5 items-center rounded-3xl border ${payMetode === m ? 'border-primary bg-primary shadow-2xl shadow-primary/30' : 'border-gray-200 bg-white'}`}
                                     >
                                         <Typography className={payMetode === m ? 'text-white' : 'text-textGray'} weight="bold">{m.toUpperCase()}</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 ))}
                             </View>
                         )}
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleDeleteSlip}
                             disabled={deleteMutation.isPending}
                             className="bg-rose-50 h-14 rounded-2xl items-center justify-center flex-row border border-rose-100 mt-4"
@@ -921,9 +921,9 @@ export default function SlipGajiScreen() {
                                     <Trash size={14} color="#E11D48" />
                                 </>
                             )}
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleProcessPayment}
                             disabled={processPaymentMutation.isPending}
                             className="bg-primary h-20 rounded-[32px] items-center justify-center shadow-2xl shadow-primary/40 mt-6 border border-white/20"
@@ -931,7 +931,7 @@ export default function SlipGajiScreen() {
                             {processPaymentMutation.isPending ? <ActivityIndicator color="white" /> : (
                                 <Typography weight="bold" className="text-white text-xl">Selesaikan Pembayaran</Typography>
                             )}
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
 
@@ -947,7 +947,7 @@ export default function SlipGajiScreen() {
                             </View>
                         </View>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleVoidPayment}
                             disabled={voidPaymentMutation.isPending}
                             className="bg-rose-50 h-16 rounded-[24px] items-center justify-center flex-row border border-rose-100 mt-2"
@@ -958,7 +958,7 @@ export default function SlipGajiScreen() {
                                     <X size={16} color="#E11D48" />
                                 </>
                             )}
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
             </View>

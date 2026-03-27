@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -170,24 +170,24 @@ export default function ExpensesScreen() {
             <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Biaya Operasional</Typography>
                             <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Workshop Expenses Control</Typography>
                         </View>
                     </View>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setShowForm(!showForm)}
                         className={`w-11 h-11 rounded-2xl items-center justify-center border ${showForm ? 'bg-white border-white' : 'bg-white/10 border-white/5'}`}
                     >
                         {showForm ? <X size={20} color="#023C69" /> : <Plus size={24} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Main Summary Stat Overlay Card */}
@@ -225,7 +225,7 @@ export default function ExpensesScreen() {
                                     <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Kategori</Typography>
                                     <View className="flex-row space-x-2">
                                         {CATEGORIES.map((cat) => (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 key={cat.value}
                                                 onPress={() => setKategori(cat.value)}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${kategori === cat.value
@@ -241,7 +241,7 @@ export default function ExpensesScreen() {
                                                 >
                                                     {cat.label.split(' ')[1] || cat.label}
                                                 </Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         ))}
                                     </View>
                                 </View>
@@ -254,7 +254,7 @@ export default function ExpensesScreen() {
                                     </View>
                                     <View className="flex-row space-x-2 mb-4">
                                         {BISNIS_KATEGORI.map((cat) => (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 key={cat.value}
                                                 onPress={() => {
                                                     setBisnisKategori(cat.value);
@@ -277,7 +277,7 @@ export default function ExpensesScreen() {
                                                 >
                                                     {cat.label}
                                                 </Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         ))}
                                     </View>
 
@@ -332,7 +332,7 @@ export default function ExpensesScreen() {
                                             { id: 'TRANSFER', label: 'TRANSFER', icon: ArrowRightLeft },
                                             { id: 'SPLIT', label: 'SPLIT', icon: Split },
                                         ].map((method) => (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 key={method.id}
                                                 onPress={() => setPayMetode(method.id as any)}
                                                 className={`flex-1 flex-row items-center justify-center py-4 rounded-3xl border ${payMetode === method.id
@@ -342,7 +342,7 @@ export default function ExpensesScreen() {
                                             >
                                                 <method.icon size={14} color={payMetode === method.id ? 'white' : '#9CA3AF'} className="mr-2" />
                                                 <Typography weight="bold" className={payMetode === method.id ? 'text-white text-[10px]' : 'text-textGray text-[10px]'}>{method.label}</Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         ))}
                                     </View>
                                 </View>
@@ -351,17 +351,17 @@ export default function ExpensesScreen() {
                                     <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-3">
                                         <View className="flex-row justify-between items-center mb-1">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '' }])}
                                                 className="bg-white border border-gray-200 p-2 rounded-xl"
                                             >
                                                 <Plus size={14} color="#023C69" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
 
                                         {splitPayments.map((split, index) => (
                                             <View key={index} className="flex-row space-x-2 items-center">
-                                                <TouchableOpacity
+                                                <Pressable
                                                     onPress={() => {
                                                         const newSplits = [...splitPayments];
                                                         newSplits[index].metode = newSplits[index].metode === 'TUNAI' ? 'TRANSFER' : 'TUNAI';
@@ -371,7 +371,7 @@ export default function ExpensesScreen() {
                                                 >
                                                     {split.metode === 'TUNAI' ? <Wallet size={12} color="#023C69" className="mr-2" /> : <ArrowRightLeft size={12} color="#023C69" className="mr-2" />}
                                                     <Typography className="text-[10px] font-bold text-primary">{split.metode}</Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
 
                                                 <Input
                                                     placeholder="0"
@@ -387,7 +387,7 @@ export default function ExpensesScreen() {
                                                 />
 
                                                 {splitPayments.length > 2 && (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         onPress={() => {
                                                             const newSplits = splitPayments.filter((_, i) => i !== index);
                                                             setSplitPayments(newSplits);
@@ -395,7 +395,7 @@ export default function ExpensesScreen() {
                                                         className="w-10 h-10 items-center justify-center bg-red-50 rounded-xl border border-red-100"
                                                     >
                                                         <Trash2 size={14} color="#EF4444" />
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 )}
                                             </View>
                                         ))}

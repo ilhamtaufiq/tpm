@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight, Scale } from 'lucide-react-native';
@@ -78,12 +78,12 @@ export default function ReportsScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Pusat Laporan</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Analisa Performa & Data Bisnis</Typography>
@@ -124,7 +124,7 @@ export default function ReportsScreen() {
                             {group.reports.map((report, rIdx) => {
                                 const isFull = report.size === 'full';
                                 return (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={rIdx}
                                         className={isFull ? "w-full bg-surface p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm" : "w-[48%] bg-surface p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"}
                                         onPress={() => router.push(report.path as any)}
@@ -157,7 +157,7 @@ export default function ReportsScreen() {
                                                 Lihat Laporan
                                             </Typography>
                                         )}
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 );
                             })}
                         </View>

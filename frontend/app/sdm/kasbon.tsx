@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -305,15 +305,15 @@ export default function KasbonScreen() {
                     <View className="w-1 h-6 bg-primary rounded-full mr-3" />
                     <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Buat Kasbon Baru</Typography>
                 </View>
-                <TouchableOpacity onPress={closeSheets} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                <Pressable onPress={closeSheets} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                     <X size={20} color="#6B7280" />
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <View className="space-y-6">
                 <View className="mb-6">
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Karyawan Penerima *</Typography>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setShowKaryawanPicker(!showKaryawanPicker)}
                         className="bg-gray-50 rounded-2xl border border-gray-100 px-5 py-4 flex-row items-center justify-between"
                     >
@@ -324,13 +324,13 @@ export default function KasbonScreen() {
                             </Typography>
                         </View>
                         <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: showKaryawanPicker ? '90deg' : '270deg' }] }} />
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {showKaryawanPicker && (
                         <View className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-lg max-h-48 overflow-hidden z-20">
                             <ScrollView nestedScrollEnabled>
                                 {karyawanList.map((k) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={k.id}
                                         onPress={() => {
                                             setFormData({ ...formData, karyawan_id: k.id, karyawan_nama: k.nama });
@@ -345,7 +345,7 @@ export default function KasbonScreen() {
                                             <Typography weight="bold" className="text-textMain text-sm">{k.nama}</Typography>
                                             <Typography className="text-textGray text-[9px] uppercase tracking-tighter">{k.jabatan}</Typography>
                                         </View>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 ))}
                             </ScrollView>
                         </View>
@@ -364,7 +364,7 @@ export default function KasbonScreen() {
                 <View className="mb-6">
                     <View className="flex-row justify-between items-center mb-3">
                         <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Sumber Dana / Pencairan *</Typography>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => {
                                 if (!isSplitDisbursement) {
                                     setDisbursements([{ id: Date.now(), metode: 'tunai', nominal: formData.jumlah }]);
@@ -376,7 +376,7 @@ export default function KasbonScreen() {
                             <Typography className="text-primary text-[10px] font-bold">
                                 {isSplitDisbursement ? 'Gunakan Tunggal' : 'Gunakan Split'}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {isSplitDisbursement ? (
@@ -386,7 +386,7 @@ export default function KasbonScreen() {
                                     <View className="flex-row justify-between items-center mb-5">
                                         <Typography className="text-primary font-bold text-xs tracking-tight">Pembayaran #{index + 1}</Typography>
                                         {disbursements.length > 1 && (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => {
                                                     const newD = disbursements.filter(item => item.id !== d.id);
                                                     setDisbursements(newD);
@@ -396,13 +396,13 @@ export default function KasbonScreen() {
                                                 className="w-8 h-8 bg-rose-50 rounded-full items-center justify-center p-0"
                                             >
                                                 <Trash2 size={14} color="#E11D48" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         )}
                                     </View>
 
                                     <View className="flex-row gap-3 mb-6">
                                         {['tunai', 'transfer'].map((m) => (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 key={m}
                                                 onPress={() => {
                                                     const newD = [...disbursements];
@@ -416,7 +416,7 @@ export default function KasbonScreen() {
                                                 >
                                                     {m.toUpperCase()}
                                                 </Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         ))}
                                     </View>
 
@@ -442,18 +442,18 @@ export default function KasbonScreen() {
                                     </View>
                                 </View>
                             ))}
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => setDisbursements([...disbursements, { id: Date.now(), metode: 'tunai', nominal: '' }])}
                                 className="flex-row items-center justify-center py-6 border border-dashed border-gray-300 rounded-[32px] bg-gray-50/30"
                             >
                                 <Plus size={18} color="#9CA3AF" />
                                 <Typography className="text-textGray/40 font-bold text-xs ml-2 tracking-wide">Tambah Metode Pembayaran Lain</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     ) : (
                         <View className="flex-row space-x-3 gap-2">
                             {['tunai', 'transfer'].map((m) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={m}
                                     onPress={() => setFormData({ ...formData, metode_bayar: m })}
                                     className={`flex-1 py-4 items-center rounded-2xl border ${formData.metode_bayar === m ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
@@ -464,7 +464,7 @@ export default function KasbonScreen() {
                                     >
                                         {m.toUpperCase()}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
                     )}
@@ -500,23 +500,23 @@ export default function KasbonScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Kasbon HR</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Pinjaman & Kasbon Karyawan</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => loadData()}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <RefreshCw size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Main Insight Card (Glassmorphism) */}
@@ -563,7 +563,7 @@ export default function KasbonScreen() {
                 <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={filter.key}
                                 onPress={() => {
                                     setSelectedFilter(filter.key as any);
@@ -578,7 +578,7 @@ export default function KasbonScreen() {
                                 >
                                     {filter.label}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </ScrollView>
 
@@ -609,7 +609,7 @@ export default function KasbonScreen() {
                         const progressPercent = (Number(item.jumlah_bayar || 0) / Number(item.nominal)) * 100;
 
                         return (
-                            <TouchableOpacity
+                            <Pressable
                                 activeOpacity={0.9}
                                 onPress={() => handleOpenDetail(item)}
                                 className="bg-white p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
@@ -660,7 +660,7 @@ export default function KasbonScreen() {
                                         />
                                     </View>
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         );
                     }}
                     keyExtractor={(item) => item.id.toString()}
@@ -678,20 +678,20 @@ export default function KasbonScreen() {
             )}
 
             {/* Redesigned FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={openAddForm}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
                 <>
                     <Modal visible={activeSheet == 'create'} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                         <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                            <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <ScrollView className="px-8 flex-1">
@@ -703,7 +703,7 @@ export default function KasbonScreen() {
 
                     <Modal visible={activeSheet == 'detail'} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                         <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                            <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[80%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                                 <ScrollView className="flex-1">

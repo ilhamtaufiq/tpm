@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Modal, TouchableOpacity, Animated, ScrollView, Platform, DimensionValue } from 'react-native';
+import { View, Modal, Pressable, Animated, ScrollView, Platform, DimensionValue } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Typography } from './Typography';
 import { X } from 'lucide-react-native';
@@ -76,7 +76,7 @@ export const BaseModal = ({
                         style={{ opacity: opacityAnim, backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
                         className="absolute inset-0"
                     >
-                        <TouchableOpacity activeOpacity={1} className="flex-1" onPress={onClose} />
+                        <Pressable activeOpacity={1} className="flex-1" onPress={onClose} />
                     </Animated.View>
 
                     {/* Modal Content */}
@@ -99,12 +99,12 @@ export const BaseModal = ({
                                 ) : <View />}
 
                                 {showCloseButton && (
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={onClose}
                                         className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
                                     >
                                         <X size={20} color="#6B7280" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 )}
                             </View>
                         )}

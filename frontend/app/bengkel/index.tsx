@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
+import { NavigationContext } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -508,13 +509,13 @@ export default function BengkelScreen() {
                     </View>
 
                     {selectedItem.piutang_id && selectedItem.status_bayar !== 'LUNAS' && selectedItem.status_bayar !== 'lunas' && (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setPaymentModalVisible(true)}
                             className="mt-6 bg-primary/10 py-4 rounded-2xl flex-row items-center justify-center border border-primary/20 shadow-sm"
                         >
                             <Banknote size={20} color="#023C69" />
                             <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </Card>
 
@@ -529,7 +530,7 @@ export default function BengkelScreen() {
                         ].map((s) => {
                             const isActive = (selectedItem.status_pengerjaan || '').toString().toLowerCase() === s.id;
                             return (
-                                <TouchableOpacity
+                                <Pressable
                                     key={s.id}
                                     onPress={() => updateStatus(selectedItem.id, s.id)}
                                     disabled={updateStatsMutation.isPending}
@@ -543,7 +544,7 @@ export default function BengkelScreen() {
                                     >
                                         {s.label}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             );
                         })}
                     </View>
@@ -598,7 +599,8 @@ export default function BengkelScreen() {
     };
 
     const renderBottomSheetContent = () => (
-        <View style={{ flex: 1 }}>
+        <NavigationContext.Provider value={null as any}>
+            <View style={{ flex: 1 }}>
             {view === 'form' || view === 'edit' ? (
                 <BengkelForm 
                     initialData={view === 'edit' ? selectedItem : null} 
@@ -641,7 +643,8 @@ export default function BengkelScreen() {
                 />
             )}
         </View>
-    );
+    </NavigationContext.Provider>
+);
 
     return (
         <View className="flex-1 bg-surface">
@@ -651,36 +654,36 @@ export default function BengkelScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Bengkel & POS</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Antrian & Inventori</Typography>
                         </View>
                     </View>
                     <View className="flex-row space-x-2">
-                        <TouchableOpacity
+                        <Pressable
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                             onPress={() => router.push('/bengkel/purchase')}
                         >
                             <ShoppingCart size={22} color="white" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                             onPress={() => router.push('/master-data')}
                         >
                             <Database size={22} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
                 {/* Bento Quick Actions (Home Style) */}
                 <View className="flex-row justify-between mb-8">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/bengkel/inventory')}
                         activeOpacity={0.9}
                         className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center mr-2"
@@ -692,9 +695,9 @@ export default function BengkelScreen() {
                             <Typography weight="bold" className="text-white text-sm">Stok Part</Typography>
                             <Typography className="text-white/40 text-[10px] uppercase font-bold">Inventori</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/bengkel/expenses')}
                         activeOpacity={0.9}
                         className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center"
@@ -706,7 +709,7 @@ export default function BengkelScreen() {
                             <Typography weight="bold" className="text-white text-sm">Biaya Ops</Typography>
                             <Typography className="text-white/40 text-[10px] uppercase font-bold">Pengeluaran</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Bento Stats (Glass Style) */}
@@ -750,14 +753,14 @@ export default function BengkelScreen() {
                                 returnKeyType="search"
                             />
                             {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')} className="ml-1">
+                                <Pressable onPress={() => setSearchQuery('')} className="ml-1">
                                     <X size={18} color="#9CA3AF" />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
-                        <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
+                        <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
                             <Filter size={20} color="#023C69" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
             )}
@@ -815,7 +818,7 @@ export default function BengkelScreen() {
                     />
                 ) : (
                     filteredQueue.map((item: any) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={item.id}
                             onPress={() => handlePresentModalPress('detail', item)}
                             activeOpacity={0.9}
@@ -888,26 +891,26 @@ export default function BengkelScreen() {
                                     )}
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))
                 )}
                 <View className="h-32" />
             </ScrollView>
 
             {/* Floating Action Button (Design System) */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => handlePresentModalPress('form')}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={3} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetIndex !== -1} transparent animationType="slide" onRequestClose={handleClosePress}>
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-                        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} activeOpacity={1} />
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} activeOpacity={1} />
                         <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '85%', alignSelf: 'center' }}>
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             {renderBottomSheetContent()}

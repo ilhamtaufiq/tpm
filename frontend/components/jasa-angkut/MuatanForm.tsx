@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, ActivityIndicator, Alert, Text, ScrollView, Platform, StyleSheet, KeyboardAvoidingView } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableOpacity as Pressable } from 'react-native-gesture-handler';
 import { Typography } from '../ui/Typography';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -346,18 +346,18 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             <View className="flex-row items-center justify-between mb-2 mt-4">
                 <Typography variant="caption" weight="medium">Identitas Armada *</Typography>
                 <View className="flex-row bg-gray-100 rounded-lg p-1">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setArmadaMode('registered')}
                         className={`px-3 py-1 rounded-md ${armadaMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
                     >
                         <Typography variant="caption" weight={armadaMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                         onPress={() => setArmadaMode('manual')}
                         className={`px-3 py-1 rounded-md ${armadaMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
                     >
                         <Typography variant="caption" weight={armadaMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -377,7 +377,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                             {activeArmada.find(a => a.id.toString() === formData.armada_id)?.nopol}
                                         </Typography>
                                     </View>
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => {
                                             updateField('armada_id', '');
                                             setArmadaSearch('');
@@ -385,7 +385,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-blue-100"
                                     >
                                         <Typography variant="caption" weight="bold" className="text-blue-600">Ganti Armada</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                                 <View className="flex-row space-x-2">
                                     <View className="flex-1">
@@ -412,7 +412,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View className="flex-row flex-wrap mb-4">
                                         {filteredArmada.length > 0 ? (
                                             filteredArmada.map(a => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={a.id}
                                                     onPress={() => {
                                                         updateField('armada_id', a.id.toString());
@@ -427,7 +427,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     >
                                                         {a.nama} ({a.nopol})
                                                     </Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))
                                         ) : (
                                             <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Armada '{armadaSearch}' tidak ditemukan</Typography>
@@ -466,18 +466,18 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             <View className="flex-row items-center justify-between mb-2 mt-4">
                 <Typography variant="caption" weight="medium">Pilih Supir Handal *</Typography>
                 <View className="flex-row bg-gray-100 rounded-lg p-1">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setDriverMode('registered')}
                         className={`px-3 py-1 rounded-md ${driverMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
                     >
                         <Typography variant="caption" weight={driverMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                         onPress={() => setDriverMode('manual')}
                         className={`px-3 py-1 rounded-md ${driverMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
                     >
                         <Typography variant="caption" weight={driverMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -499,7 +499,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
                                     </View>
                                 </View>
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => {
                                         updateField('supir_id', '');
                                         setDriverSearch('');
@@ -507,7 +507,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100"
                                 >
                                     <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         ) : (
                             <View>
@@ -523,7 +523,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View className="flex-row flex-wrap mb-4">
                                         {filteredDrivers.length > 0 ? (
                                             filteredDrivers.map(d => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={d.id}
                                                     onPress={() => {
                                                         updateField('supir_id', d.id.toString());
@@ -538,7 +538,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     >
                                                         {d.nama}
                                                     </Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))
                                         ) : (
                                             <Typography variant="caption" className="text-red-400 italic mb-4 ml-1">Supir '{driverSearch}' tidak ditemukan</Typography>
@@ -591,9 +591,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             {/* Multiple Load Types UI */}
             <View className="flex-row justify-between items-center mb-2 mt-2">
                 <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Jenis Muatan (Load Types)</Typography>
-                <TouchableOpacity onPress={addJenisMuatan}>
+                <Pressable onPress={addJenisMuatan}>
                     <Typography variant="caption" weight="bold" className="text-primary">+ Tambah</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <View className="space-y-3 mb-4">
@@ -609,12 +609,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             />
                         </View>
                         {formData.jenis_muatan_list.length > 1 && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => removeJenisMuatan(index)}
                                 className="w-11 h-11 items-center justify-center bg-red-50 rounded-xl"
                             >
                                 <Trash2 size={18} color="#EF4444" />
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                     </View>
                 ))}
@@ -678,21 +678,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             {/* Status & Metode Pembayaran */}
             <View className="flex-row items-center justify-between mb-2 mt-4">
                 <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">PEMBAYARAN Muatan</Typography>
-                <TouchableOpacity
+                <Pressable
                     onPress={toggleSplitPayment}
                     className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                 >
                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                     </Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <View className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
                 <View className="flex-row justify-between items-center mb-4">
                     <Typography variant="body2">Status Pembayaran</Typography>
                     <View className="flex-row bg-white rounded-lg p-1 border border-gray-200">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => updateField('status_bayar', 'BELUM_LUNAS')}
                             className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'BELUM_LUNAS' ? 'bg-orange-100' : ''}`}
                         >
@@ -703,8 +703,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             >
                                 BELUM_LUNAS
                             </Typography>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             onPress={() => updateField('status_bayar', 'LUNAS')}
                             className={`px-4 py-1.5 rounded-md ${formData.status_bayar === 'LUNAS' ? 'bg-green-100' : ''}`}
                         >
@@ -715,7 +715,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             >
                                 Lunas
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
@@ -725,30 +725,30 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View className="mb-2">
                                 <View className="flex-row justify-between items-center mb-3">
                                     <Typography variant="caption" weight="bold" className="text-gray-400 font-bold">ALOKASI PEMBAYARAN</Typography>
-                                    <TouchableOpacity onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                                    <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                         <PlusCircle size={14} color="#023C69" />
                                         <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
 
                                 {payments.map((p, idx) => (
                                     <View key={p.id} className="mb-3 p-3 border border-gray-100 rounded-2xl bg-white shadow-sm">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
-                                            <TouchableOpacity onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
+                                            <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
                                                 <Trash2 size={12} color="#EF4444" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
 
                                         <View className="flex-row flex-wrap gap-2 mb-3">
                                             {['TUNAI', 'TRANSFER'].map((m) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={m}
                                                     onPress={() => updatePaymentRow(p.id, 'metode', m)}
                                                     className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                                 >
                                                     <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-gray-500'}>{m}</Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))}
                                         </View>
 
@@ -783,7 +783,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={m}
                                             onPress={() => updateField('metode_bayar', m)}
                                             className={`flex-1 py-2 items-center rounded-lg border ${formData.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
@@ -795,7 +795,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                             >
                                                 {m}
                                             </Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
                             </View>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Bell, User, X, ChevronRight } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
-import { TouchableOpacity, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
+import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
 import { APP_ROUTES, AppRoute } from '../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
@@ -61,7 +61,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                         {user?.full_name || user?.name || 'Admin TPM'}
                     </Typography>
                 </View>
-                <TouchableOpacity
+                <Pressable
                     onPress={() => router.push('/(tabs)/profile')}
                     className="w-12 h-12 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden"
                 >
@@ -72,31 +72,31 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                             <User size={24} color={themeColors.primary} strokeWidth={2.5} />
                         )}
                     </View>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {/* Combined Row: Search (Expandable) + Icons */}
             <View className="flex-row items-center gap-3 z-10 mt-2">
                 {/* Search Bar - Takes available space */}
-                <TouchableOpacity
+                <Pressable
                     onPress={() => setIsSearchOpen(true)}
                     activeOpacity={0.9}
                     className="flex-1 bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md"
                 >
                     <Search size={18} color="white" opacity={0.6} />
                     <Typography className="text-white/60 ml-3 font-medium text-sm flex-1" numberOfLines={1}>Cari layanan...</Typography>
-                </TouchableOpacity>
+                </Pressable>
 
                 {/* Icons Container */}
                 <View className="flex-row items-center gap-2">
                     {/* Notification Icon */}
-                    {/* <TouchableOpacity
+                    {/* <Pressable
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         activeOpacity={0.7}
                     >
                         <Bell size={20} color="white" />
                         <View className="absolute top-2.5 right-2.5 w-2 h-2 bg-secondary rounded-full border border-primary" />
-                    </TouchableOpacity> */}
+                    </Pressable> */}
                 </View>
             </View>
 
@@ -121,14 +121,14 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                 placeholderTextColor="#9CA3AF"
                             />
                             {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Pressable onPress={() => setSearchQuery('')}>
                                     <X size={18} color="#9CA3AF" />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
-                        <TouchableOpacity onPress={() => setIsSearchOpen(false)} className="ml-4">
+                        <Pressable onPress={() => setIsSearchOpen(false)} className="ml-4">
                             <Typography weight="bold" className="text-primary pr-2">Batal</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Results Container */}
@@ -147,7 +147,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                 {filteredRoutes.map((route) => {
                                     const Icon = route.icon;
                                     return (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
                                             className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
@@ -163,7 +163,7 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                             <View className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
                                                 <ChevronRight size={16} color="#D1D5DB" />
                                             </View>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     );
                                 })}
                             </View>

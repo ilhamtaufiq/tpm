@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -191,9 +191,9 @@ export default function PurchaseScreen() {
 
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
-                <TouchableOpacity onPress={handleBack} className="mr-4">
+                <Pressable onPress={handleBack} className="mr-4">
                     <ChevronLeft size={24} color="#1C1C1C" />
-                </TouchableOpacity>
+                </Pressable>
                 <Typography variant="h2" weight="bold">Restock (Pembelian)</Typography>
             </View>
 
@@ -218,14 +218,14 @@ export default function PurchaseScreen() {
                     />
                     <View className="flex-1">
                         <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal</Typography>
-                        <TouchableOpacity className="bg-gray-100 rounded-xl px-4 h-[52px] justify-center border-2 border-transparent">
+                        <Pressable className="bg-gray-100 rounded-xl px-4 h-[52px] justify-center border-2 border-transparent">
                             <View className="flex-row items-center">
                                 <Calendar size={18} color="#767676" />
                                 <Typography className="ml-2 font-medium">
                                     {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </Typography>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
@@ -233,14 +233,14 @@ export default function PurchaseScreen() {
                 <View className="mb-6">
                     <View className="flex-row justify-between items-center mb-4">
                         <Typography variant="body2" weight="bold" className="text-primary uppercase pr-1">Pembayaran</Typography>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setIsSplitPayment(!isSplitPayment)}
                             className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                         >
                             <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                                 {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {!isSplitPayment ? (
@@ -254,7 +254,7 @@ export default function PurchaseScreen() {
                                         { label: 'Trf', value: 'TRANSFER' },
                                         { label: 'Hutang Penuh', value: 'KREDIT' }
                                     ].map((m) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={m.value}
                                             onPress={() => {
                                                 setMetodeBayar(m.value);
@@ -272,7 +272,7 @@ export default function PurchaseScreen() {
                                             <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
                                                 {m.label}
                                             </Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
                             </View>
@@ -335,13 +335,13 @@ export default function PurchaseScreen() {
                                             {['TUNAI', 'TRANSFER'].map((m) => {
                                                 const label = m === 'TRANSFER' ? 'Trf' : 'Cash';
                                                 return (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         key={m}
                                                         onPress={() => handleUpdatePaymentRow(p.id, 'metode', m)}
                                                         className={`flex-1 items-center justify-center ${p.metode === m ? 'bg-primary' : 'bg-transparent'}`}
                                                     >
                                                         <Typography weight="bold" className={`text-[9px] ${p.metode === m ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 );
                                             })}
                                         </View>
@@ -357,21 +357,21 @@ export default function PurchaseScreen() {
                                             onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
                                         />
                                     </View>
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => handleRemovePaymentRow(p.id)}
                                         className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
                                     >
                                         <Trash2 size={14} color="#F43F5E" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             ))}
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleAddPaymentRow}
                                 className="flex-row items-center justify-center py-2.5 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                             >
                                 <Plus size={14} color="#023C69" />
                                 <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
                             <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-2xl border border-primary/10 mt-2">
                                 <View>
@@ -402,22 +402,22 @@ export default function PurchaseScreen() {
                         <Package size={18} color="#023C69" />
                         <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
                     </View>
-                    <TouchableOpacity onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                    <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                         <Plus size={14} color="#023C69" />
                         <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {items.map((item, index) => (
                     <Card key={item.id} className="mb-4 p-4 border border-gray-100 shadow-sm">
                         <View className="flex-row justify-between items-start mb-3">
                             <Typography variant="caption" weight="bold" className="text-primary">ITEM #{index + 1}</Typography>
-                            <TouchableOpacity onPress={() => handleRemoveItem(item.id)} className="bg-red-50 p-1.5 rounded-lg">
+                            <Pressable onPress={() => handleRemoveItem(item.id)} className="bg-red-50 p-1.5 rounded-lg">
                                 <Trash2 size={16} color="#EE2737" />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => {
                                 setActiveItemIndex(index);
                                 setIsPartModalOpen(true);
@@ -433,7 +433,7 @@ export default function PurchaseScreen() {
                                     endIcon={<Search size={18} color="#9CA3AF" />}
                                 />
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
 
                         <View className="flex-row space-x-3">
                             <Input
@@ -467,9 +467,9 @@ export default function PurchaseScreen() {
                     <View className="items-center py-8 border-2 border-dashed border-gray-200 rounded-xl mb-6">
                         <Truck size={32} color="#D1D5DB" />
                         <Typography className="text-gray-400 mt-2">Belum ada barang dipilih</Typography>
-                        <TouchableOpacity onPress={handleAddItem} className="mt-2">
+                        <Pressable onPress={handleAddItem} className="mt-2">
                             <Typography weight="bold" className="text-primary">Tambah Barang</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
 
@@ -512,7 +512,7 @@ export default function PurchaseScreen() {
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={() => setIsPartModalOpen(false)} activeOpacity={1} />
+                    <Pressable style={{ flex: 1 }} onPress={() => setIsPartModalOpen(false)} activeOpacity={1} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View className="p-6 flex-1">
                             <View className="items-center mb-2">
@@ -520,9 +520,9 @@ export default function PurchaseScreen() {
                             </View>
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography variant="h3" weight="bold">Pilih Sparepart</Typography>
-                                <TouchableOpacity onPress={() => setIsPartModalOpen(false)}>
+                                <Pressable onPress={() => setIsPartModalOpen(false)}>
                                     <X size={24} color="#6B7280" />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
                             <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
@@ -545,7 +545,7 @@ export default function PurchaseScreen() {
                                     keyExtractor={(item: any) => item.id.toString()}
                                     showsVerticalScrollIndicator={false}
                                     renderItem={({ item }: { item: any }) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={() => handleSelectPart(item)}
                                             className="mb-3"
                                         >
@@ -563,7 +563,7 @@ export default function PurchaseScreen() {
                                                     <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
                                                 </View>
                                             </Card>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                     ListEmptyComponent={
                                         <Typography className="text-center text-gray-500 mt-4">

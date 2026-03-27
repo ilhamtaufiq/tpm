@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Platform } from 'react-native';
+import { View, Pressable, Platform } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { Home, History, Banknote, User } from 'lucide-react-native';
@@ -60,7 +60,7 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                 };
 
                 return (
-                    <TouchableOpacity
+                    <Pressable
                         key={index}
                         accessibilityRole="button"
                         accessibilityState={isFocused ? { selected: true } : {}}
@@ -91,7 +91,7 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                         {isFocused && (
                             <View className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full" />
                         )}
-                    </TouchableOpacity>
+                    </Pressable>
                 );
             })}
         </View>

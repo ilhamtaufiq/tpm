@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Bluetooth, RefreshCw, Printer, Search, CheckCircle, XCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -171,17 +171,17 @@ export default function BluetoothSettingsScreen() {
         <SafeAreaView className="flex-1 bg-background" edges={['top']}>
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
-                <TouchableOpacity
+                <Pressable
                     onPress={() => router.back()}
                     className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center mr-4"
                 >
                     <ChevronLeft size={24} color="#374151" />
-                </TouchableOpacity>
+                </Pressable>
                 <View className="flex-1">
                     <Typography variant="h3" weight="bold">Printer Bluetooth</Typography>
                     <Typography variant="caption" className="text-textGray">Scan dan hubungkan printer thermal</Typography>
                 </View>
-                <TouchableOpacity
+                <Pressable
                     onPress={handleScan}
                     disabled={scanning}
                     className={`w-10 h-10 ${scanning ? 'bg-gray-100' : 'bg-blue-50'} rounded-full items-center justify-center`}
@@ -191,7 +191,7 @@ export default function BluetoothSettingsScreen() {
                     ) : (
                         <RefreshCw size={20} color="#3B82F6" />
                     )}
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <ScrollView className="flex-1 p-6">
@@ -210,16 +210,16 @@ export default function BluetoothSettingsScreen() {
                                     <Typography variant="caption" className="text-emerald-700">{connectedDevice.inner_mac_address}</Typography>
                                 </View>
                             </View>
-                            <TouchableOpacity onPress={handleDisconnect}>
+                            <Pressable onPress={handleDisconnect}>
                                 <XCircle size={24} color="#EF4444" />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleTestPrint}
                             className="mt-3 bg-white border border-gray-200 py-3 rounded-xl items-center"
                         >
                             <Typography weight="semibold" className="text-text">Test Print</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
 
@@ -235,7 +235,7 @@ export default function BluetoothSettingsScreen() {
                 ) : (
                     <View className="space-y-3">
                         {devices.map((device, index) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={device.inner_mac_address || index}
                                 onPress={() => handleConnect(device)}
                                 disabled={connecting === device.inner_mac_address}
@@ -253,7 +253,7 @@ export default function BluetoothSettingsScreen() {
                                 {connecting === device.inner_mac_address && (
                                     <ActivityIndicator size="small" color="#3B82F6" />
                                 )}
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
                 )}

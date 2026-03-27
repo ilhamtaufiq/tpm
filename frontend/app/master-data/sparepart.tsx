@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, FlatList, ActivityIndicator, Image, Platform, Modal, TextInput } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, FlatList, ActivityIndicator, Image, Platform, Modal, TextInput } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -202,7 +202,7 @@ export default function SparePartMasterScreen() {
     const renderItem = ({ item }: { item: any }) => {
         const isLowStock = item.stok <= item.stok_minimum;
         return (
-            <TouchableOpacity onPress={() => handleOpenSheet(item)}>
+            <Pressable onPress={() => handleOpenSheet(item)}>
                 <View className={`p-5 rounded-[32px] mb-4 shadow-sm flex-row items-center ${isLowStock ? 'bg-red-50/50 border border-red-200' : 'bg-white border border-gray-50'}`}>
                     <View className={`w-16 h-16 rounded-[24px] items-center justify-center mr-4 ${isLowStock ? 'bg-red-100' : 'bg-emerald-50 border border-emerald-100/50'}`}>
                         <Package size={32} color={isLowStock ? '#EF4444' : '#10B981'} />
@@ -235,7 +235,7 @@ export default function SparePartMasterScreen() {
                         </View>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -245,9 +245,9 @@ export default function SparePartMasterScreen() {
                 <Typography variant="h2" weight="bold">
                     {isEditing ? 'Edit Sparepart' : 'Tambah Sparepart'}
                 </Typography>
-                <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                     <X size={20} color="#6B7280" />
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <View className="space-y-4">
@@ -391,23 +391,23 @@ export default function SparePartMasterScreen() {
             <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Sparepart</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Stok & Harga Barang</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => refetch()}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {isRefetching ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Dashboard Stats (Glassmorphism) - Inside Header */}
@@ -492,13 +492,13 @@ export default function SparePartMasterScreen() {
             )}
 
             {/* FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => handleOpenSheet()}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
                 activeOpacity={0.8}
             >
                 <Plus size={32} color="white" />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Form UI - Platform Specific */}
             {Platform.OS === 'web' ? (
@@ -509,7 +509,7 @@ export default function SparePartMasterScreen() {
                     onRequestClose={handleCloseSheet}
                 >
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <TouchableOpacity
+                        <Pressable
                             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                             onPress={handleCloseSheet}
                             activeOpacity={1}

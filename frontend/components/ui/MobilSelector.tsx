@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -53,7 +53,7 @@ export const MobilSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="bold" className="text-textGray/40 text-[10px] uppercase tracking-widest mb-2 px-1">{label}</Typography>}
 
-            <TouchableOpacity onPress={handleOpen}>
+            <Pressable onPress={handleOpen}>
                 <View className="bg-gray-50 rounded-2xl px-4 py-4 border border-gray-100 flex-row items-center">
                     <Car size={20} color={value ? '#3B82F6' : '#9CA3AF'} />
 
@@ -71,12 +71,12 @@ export const MobilSelector = ({
                     </View>
 
                     {value && (
-                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
+                        <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
                             <X size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Modal for Search */}
             <Modal
@@ -87,7 +87,7 @@ export const MobilSelector = ({
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
+                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
                     <View className="bg-white rounded-t-[40px] h-[85%] overflow-hidden">
                         <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
                             <View className="items-center mb-4">
@@ -96,9 +96,9 @@ export const MobilSelector = ({
 
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h3" weight="bold" className="text-primary tracking-tight text-xl">Cari Mobil</Typography>
-                                <TouchableOpacity onPress={handleClose} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                                <Pressable onPress={handleClose} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                                     <X size={20} color="#6B7280" />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
                             <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 mb-6">
@@ -121,7 +121,7 @@ export const MobilSelector = ({
                                     keyExtractor={(item) => item.id.toString()}
                                     showsVerticalScrollIndicator={false}
                                     renderItem={({ item }) => (
-                                        <TouchableOpacity onPress={() => handleSelect(item)} activeOpacity={0.7}>
+                                        <Pressable onPress={() => handleSelect(item)} activeOpacity={0.7}>
                                             <Card className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px] flex-row items-center justify-between">
                                                 <View className="flex-1 mr-4">
                                                     <Typography weight="bold" className="text-textMain text-base tracking-tight">{item.merek} {item.model}</Typography>
@@ -140,7 +140,7 @@ export const MobilSelector = ({
                                                     </View>
                                                 )}
                                             </Card>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                     ListEmptyComponent={
                                         searchQuery.length > 0 ? (

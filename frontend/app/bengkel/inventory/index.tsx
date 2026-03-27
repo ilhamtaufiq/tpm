@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -17,7 +17,7 @@ import {
     Printer,
     Edit3
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useSparePartsList, useLowStockParts, useUpdateSparePart } from '../../../hooks/useBengkel';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -30,7 +30,6 @@ import { Barcode } from '../../../components/ui/Barcode';
 import * as Print from 'expo-print';
 
 export default function InventoryScreen() {
-    const router = useRouter();
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPart, setSelectedPart] = useState<any>(null);
@@ -57,18 +56,22 @@ export default function InventoryScreen() {
                     <head>
                         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
                         <style>
-                            body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: 'Helvetica', sans-serif; margin: 0; padding: 20px; }
-                            h1 { font-size: 32px; margin-bottom: 5px; text-align: center; }
-                            p { font-size: 20px; color: #666; margin-bottom: 30px; }
-                            img { max-width: 100%; height: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px; }
-                            .footer { margin-top: 40px; font-size: 12px; color: #aaa; }
+                            body { 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center; 
+                                height: 100vh; 
+                                margin: 0; 
+                                padding: 0; 
+                            }
+                            img { 
+                                max-width: 90%; 
+                                height: auto; 
+                            }
                         </style>
                     </head>
                     <body>
-                        <h1>${selectedPart.nama}</h1>
-                        <p>${selectedPart.kode}</p>
                         <img src="${imageSource}" />
-                        <div class="footer">TPM Inventory System Management</div>
                     </body>
                 </html>
             `;
@@ -157,18 +160,18 @@ export default function InventoryScreen() {
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={handleBack} className="mr-4">
+                    <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <Typography variant="h2" weight="bold">Stok Sparepart</Typography>
                 </View>
-                <TouchableOpacity
+                <Pressable
                     onPress={() => router.push('/bengkel/purchase')}
                     className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center"
                 >
                     <Plus size={16} color="#023C69" />
                     <Typography className="text-primary text-xs font-bold ml-1">Restock</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <View className="p-6 pb-0">
@@ -183,9 +186,9 @@ export default function InventoryScreen() {
                             onChangeText={setSearch}
                         />
                     </View>
-                    <TouchableOpacity className="w-12 h-12 bg-gray-100 rounded-2xl items-center justify-center">
+                    <Pressable className="w-12 h-12 bg-gray-100 rounded-2xl items-center justify-center">
                         <Filter size={20} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Low Stock Banner */}
@@ -248,12 +251,12 @@ export default function InventoryScreen() {
 
                             <View className="items-end">
                                 <Typography variant="body2" weight="bold">{formatCurrency(part.harga_jual)}</Typography>
-                                <TouchableOpacity
+                                <Pressable
                                     className="mt-2 bg-gray-50 px-2 py-1 rounded-md"
                                     onPress={() => handleOpenDetail(part)}
                                 >
                                     <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         </Card>
                     ))
@@ -356,20 +359,20 @@ export default function InventoryScreen() {
                                             icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
                                         />
                                         <View className="flex-row space-x-3">
-                                            <TouchableOpacity 
+                                            <Pressable 
                                                 onPress={() => { setCodeType('QR'); setShowCode(true); }}
                                                 className="flex-1 bg-primary/5 border border-primary/10 rounded-2xl py-4 items-center justify-center"
                                             >
                                                 <QrCode size={20} color="#023C69" />
                                                 <Typography variant="caption" weight="bold" className="text-primary mt-1">QR Code</Typography>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity 
+                                            </Pressable>
+                                            <Pressable 
                                                 onPress={() => { setCodeType('BARCODE'); setShowCode(true); }}
                                                 className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl py-4 items-center justify-center"
                                             >
                                                 <BarcodeIcon size={20} color="#10B981" />
                                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mt-1">Barcode</Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
                                     </View>
                                 )}
@@ -406,18 +409,40 @@ export default function InventoryScreen() {
                                 Gunakan label ini pada kemasan fisik sparepart untuk memudahkan scan saat transaksi.
                             </Typography>
 
-                            <View className="w-full space-y-3 px-1">
-                                <Button
-                                    title={`Cetak ${codeType}`}
+                            <View style={{ width: '100%', paddingHorizontal: 8, marginTop: 16 }}>
+                                <Pressable
                                     onPress={handlePrint}
-                                    icon={<Printer size={20} color="white" style={{ marginRight: 8 }} />}
-                                />
-                                <Button
-                                    title="Kembali ke Detail"
-                                    variant="outline"
-                                    className="border-gray-200"
+                                    activeOpacity={0.8}
+                                    style={{ 
+                                        backgroundColor: '#023C69', 
+                                        borderRadius: 16, 
+                                        height: 56, 
+                                        flexDirection: 'row', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        marginBottom: 12,
+                                        width: '100%'
+                                    }}
+                                >
+                                    <Printer size={20} color="#FFFFFF" strokeWidth={2} />
+                                    <Typography variant="body1" weight="bold" style={{ color: '#FFFFFF', marginLeft: 10 }}>Cetak {codeType}</Typography>
+                                </Pressable>
+
+                                <Pressable
                                     onPress={() => setShowCode(false)}
-                                />
+                                    activeOpacity={0.7}
+                                    style={{ 
+                                        borderWidth: 1, 
+                                        borderColor: '#D1D5DB', 
+                                        borderRadius: 16, 
+                                        height: 56, 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        width: '100%'
+                                    }}
+                                >
+                                    <Typography variant="body1" weight="bold" style={{ color: '#4B5563' }}>Kembali ke Detail</Typography>
+                                </Pressable>
                             </View>
                         </View>
                     )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
     PieChart,
@@ -311,18 +311,18 @@ export default function LaporanKeuanganScreen() {
                 showBackButton
                 onBackButtonPress={() => router.back()}
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setIsSetupModalVisible(true)}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <Settings size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             >
                 {/* Report Selector Tab */}
                 <View className="flex-row bg-black/20 p-1.5 rounded-3xl border border-white/5 mt-2">
                     {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={type}
                             onPress={() => setReportType(type)}
                             className={`flex-1 py-3 items-center rounded-2xl ${reportType === type ? 'bg-white shadow-sm' : ''}`}
@@ -333,7 +333,7 @@ export default function LaporanKeuanganScreen() {
                             >
                                 {type.replace('_', ' ')}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
             </Header>
@@ -593,7 +593,7 @@ export default function LaporanKeuanganScreen() {
                 }
             >
                 {/* Date Filter View */}
-                <TouchableOpacity
+                <Pressable
                     onPress={() => setIsDateModalVisible(true)}
                     className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
                 >
@@ -604,7 +604,7 @@ export default function LaporanKeuanganScreen() {
                     <View className="bg-primary/5 px-2 py-1 rounded-lg">
                         <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
                     </View>
-                </TouchableOpacity>
+                </Pressable>
 
                 {isLoading && !isRefreshing ? (
                     <View className="flex-1 items-center justify-center py-20">
@@ -627,13 +627,13 @@ export default function LaporanKeuanganScreen() {
                     {/* Setup Modal */}
                     <Modal visible={isSetupModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
-                            <TouchableOpacity className="absolute inset-0" onPress={() => setIsSetupModalVisible(false)} />
+                            <Pressable className="absolute inset-0" onPress={() => setIsSetupModalVisible(false)} />
                             <View style={styles.webModalContent}>
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Migrasi Data Awal</Typography>
-                                    <TouchableOpacity onPress={() => setIsSetupModalVisible(false)}>
+                                    <Pressable onPress={() => setIsSetupModalVisible(false)}>
                                         <X size={24} color="#6B7280" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                                 <ScrollView showsVerticalScrollIndicator={false}>
                                     {renderSetupContent()}
@@ -645,13 +645,13 @@ export default function LaporanKeuanganScreen() {
                     {/* Date Modal */}
                     <Modal visible={isDateModalVisible} transparent animationType="fade">
                         <View style={styles.modalOverlay}>
-                            <TouchableOpacity className="absolute inset-0" onPress={() => setIsDateModalVisible(false)} />
+                            <Pressable className="absolute inset-0" onPress={() => setIsDateModalVisible(false)} />
                             <View style={styles.webModalContent}>
                                 <View className="flex-row justify-between items-center mb-6">
                                     <Typography variant="h2" weight="bold">Pilih Periode Laporan</Typography>
-                                    <TouchableOpacity onPress={() => setIsDateModalVisible(false)}>
+                                    <Pressable onPress={() => setIsDateModalVisible(false)}>
                                         <X size={24} color="#6B7280" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                                 {renderDateContent()}
                             </View>

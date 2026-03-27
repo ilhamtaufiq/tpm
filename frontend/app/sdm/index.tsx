@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -56,23 +56,23 @@ export default function SDMScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">SDM & Payroll</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Aset Manusia</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={20} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Employee Insight Card (Glassmorphism) */}
@@ -140,7 +140,7 @@ export default function SDMScreen() {
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Navigasi Cepat</Typography>
                 <View className="flex-row flex-wrap justify-between mb-10">
                     {QUICK_ACTIONS.map((action) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={action.id}
                             onPress={() => router.push(action.route as any)}
                             activeOpacity={0.7}
@@ -155,7 +155,7 @@ export default function SDMScreen() {
                             <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest text-center" numberOfLines={1}>
                                 {action.label}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
 
@@ -163,7 +163,7 @@ export default function SDMScreen() {
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Modul Operasional</Typography>
 
                 <View className="space-y-6">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/sdm/karyawan')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-6"
@@ -176,9 +176,9 @@ export default function SDMScreen() {
                             <Typography variant="caption" className="text-textGray">Kelola profil & dokumen sdm</Typography>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/sdm/absensi')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
@@ -191,9 +191,9 @@ export default function SDMScreen() {
                             <Typography variant="caption" className="text-textGray">Rekap kehadiran & lembur staff</Typography>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/sdm/kasbon')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
@@ -206,9 +206,9 @@ export default function SDMScreen() {
                             <Typography variant="caption" className="text-textGray">Pinjaman & cicilan karyawan</Typography>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/sdm/slip-gaji')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
@@ -221,7 +221,7 @@ export default function SDMScreen() {
                             <Typography variant="caption" className="text-textGray">Otomasi penggajian & laporan</Typography>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </ScrollView>
         </View>

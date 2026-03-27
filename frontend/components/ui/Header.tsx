@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Bell, User, X, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { Typography } from './Typography';
-import { TouchableOpacity, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform } from 'react-native';
+import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform } from 'react-native';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -89,12 +89,12 @@ export const Header = ({
                 <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center flex-1">
                         {showBackButton && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleBack}
                                 className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                             >
                                 <ChevronLeft size={24} color="white" />
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
 
                         {leftElement && (
@@ -133,7 +133,7 @@ export const Header = ({
                     <View className="flex-row items-center gap-2">
                         {rightElement}
                         {showProfile && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => router.push('/(tabs)/profile')}
                                 className="w-11 h-11 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden ml-2"
                             >
@@ -144,13 +144,13 @@ export const Header = ({
                                         <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                                     )}
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                     </View>
                 </View>
 
                 {showSearch && (
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setIsSearchOpen(true)}
                         activeOpacity={0.9}
                         className="bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md mt-2"
@@ -159,7 +159,7 @@ export const Header = ({
                         <Typography className="text-white/60 ml-3 font-medium text-sm flex-1" numberOfLines={1}>
                             {searchPlaceholder}
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
 
                 {children && <View className="mt-4">{children}</View>}
@@ -186,14 +186,14 @@ export const Header = ({
                                 placeholderTextColor="#9CA3AF"
                             />
                             {query.length > 0 && (
-                                <TouchableOpacity onPress={() => setQuery('')}>
+                                <Pressable onPress={() => setQuery('')}>
                                     <X size={18} color="#9CA3AF" />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
-                        <TouchableOpacity onPress={() => setIsSearchOpen(false)} className="ml-4">
+                        <Pressable onPress={() => setIsSearchOpen(false)} className="ml-4">
                             <Typography weight="bold" className="text-primary pr-2">Batal</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Results Container */}
@@ -212,7 +212,7 @@ export const Header = ({
                                 {filteredRoutes.map((route) => {
                                     const Icon = route.icon;
                                     return (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
                                             className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
@@ -228,7 +228,7 @@ export const Header = ({
                                             <View className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
                                                 <ChevronRight size={16} color="#D1D5DB" />
                                             </View>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     );
                                 })}
                             </View>

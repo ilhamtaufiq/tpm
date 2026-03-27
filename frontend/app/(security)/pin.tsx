@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Vibration, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, Platform, Vibration, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
 import { useSetupPin, useVerifyPin, useChangePin, useDisablePin } from '../../hooks/useSecurityAPI';
@@ -211,10 +211,10 @@ export default function PinScreen() {
             )}
             <View className="absolute top-12 left-6">
                 {(currentMode === 'setup' || currentMode === 'confirm' || action === 'change_pin' || action === 'disable_pin') && (
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2" disabled={isLoading}>
+                    <Pressable onPress={() => router.back()} className="p-2 -ml-2" disabled={isLoading}>
                         <LucideChevronLeft size={28} color="#1e293b" />
 
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
             </View>
 
@@ -253,39 +253,39 @@ export default function PinScreen() {
 
             <View className="w-full max-w-sm flex-row flex-wrap justify-between px-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                    <TouchableOpacity
+                    <Pressable
                         key={num}
                         onPress={() => handlePress(num.toString())}
                         className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
                     >
                         <Text className="text-3xl font-semibold text-slate-800">{num}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                 ))}
 
                 <View className="w-[28%] aspect-square mb-6 items-center justify-center">
                     {currentMode === 'verify' && useBiometrics && (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBiometrics}
                             className="w-full h-full items-center justify-center rounded-full"
                         >
                             <LucideFingerprint size={32} color="#3b82f6" />
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
 
-                <TouchableOpacity
+                <Pressable
                     onPress={() => handlePress('0')}
                     className="w-[28%] aspect-square items-center justify-center rounded-full mb-6 bg-slate-50 border border-slate-100"
                 >
                     <Text className="text-3xl font-semibold text-slate-800">0</Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                     onPress={handleDelete}
                     className="w-[28%] aspect-square items-center justify-center rounded-full mb-6"
                 >
                     <LucideDelete size={32} color="#64748b" />
-                </TouchableOpacity>
+                </Pressable>
             </View>
         </View>
     );

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -192,7 +192,7 @@ export default function UserManagementScreen() {
         const RoleIcon = roleInfo.icon;
 
         return (
-            <TouchableOpacity onPress={() => openDetail(item)}>
+            <Pressable onPress={() => openDetail(item)}>
                 <View className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center">
                     <View className="w-16 h-16 rounded-[20px] bg-gray-50 border border-gray-100 items-center justify-center mr-4">
                         <RoleIcon size={32} color={roleInfo.color} />
@@ -216,7 +216,7 @@ export default function UserManagementScreen() {
                         <MoreVertical size={16} color="#9CA3AF" />
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -229,9 +229,9 @@ export default function UserManagementScreen() {
                 <View className="p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Profil User</Typography>
-                        <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     <View className="items-center mb-8">
@@ -310,9 +310,9 @@ export default function UserManagementScreen() {
                     <Typography variant="h2" weight="bold">
                         {selectedUser ? 'Edit User' : 'Tambah User'}
                     </Typography>
-                    <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="space-y-4 pb-10">
@@ -364,7 +364,7 @@ export default function UserManagementScreen() {
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Role / Jabatan</Typography>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                             {ROLE_OPTIONS.map((role) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={role.value}
                                     onPress={() => setFormData({ ...formData, role: role.value })}
                                     style={formData.role === role.value ? { backgroundColor: themeColors.primary, borderColor: themeColors.primary } : {}}
@@ -376,7 +376,7 @@ export default function UserManagementScreen() {
                                             {role.label}
                                         </Typography>
                                     </View>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </ScrollView>
                     </View>
@@ -410,23 +410,23 @@ export default function UserManagementScreen() {
 
                 <View className="flex-row items-center justify-between mb-10 relative z-10">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.back()}
                             className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/20"
                         >
                             <ChevronLeft size={28} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h1" className="text-white text-3xl tracking-tighter leading-tight font-black">User Base</Typography>
                             <Typography className="text-white/50 text-[10px] font-black uppercase tracking-[3px] mt-0.5">Control Center</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity 
+                    <Pressable 
                         onPress={onRefresh} 
                         className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center border border-white/20"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Bento Stats Row */}
@@ -458,13 +458,13 @@ export default function UserManagementScreen() {
                             placeholderTextColor="#9CA3AF"
                         />
                     </View>
-                    <TouchableOpacity 
+                    <Pressable 
                         onPress={openAddForm}
                         style={{ backgroundColor: themeColors.primary }}
                         className="ml-3 w-16 h-16 rounded-2xl items-center justify-center shadow-2xl shadow-primary/20"
                     >
                         <Plus size={28} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 

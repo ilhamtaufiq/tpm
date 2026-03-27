@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, ActivityIndicator, View, Pressable as RNPressable, PressableProps, Platform } from 'react-native';
-import { Pressable as GHPressable } from 'react-native-gesture-handler';
+import { TouchableOpacity as GHPressable } from 'react-native-gesture-handler';
 import { cssInterop } from 'nativewind';
 import { cn } from './Card';
 import { useUIStore } from '../../store/useUIStore';
@@ -10,7 +10,7 @@ import { useUIStore } from '../../store/useUIStore';
 cssInterop(GHPressable, {
     className: 'style',
 });
-const Pressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<PressableProps>;
+const WrappedPressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<PressableProps>;
 
 export interface ButtonProps extends Omit<PressableProps, 'className'> {
     title: string;
@@ -37,7 +37,7 @@ export const Button = ({
     const isDisabled = disabled || loading;
     const { themeColors } = useUIStore();
 
-    const Wrapper = (Platform.OS === 'web' || forceNative) ? RNPressable : Pressable;
+    const Wrapper = (Platform.OS === 'web' || forceNative) ? RNPressable : WrappedPressable;
 
     return (
         <Wrapper

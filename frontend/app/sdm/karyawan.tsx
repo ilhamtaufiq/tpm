@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -292,7 +292,7 @@ export default function KaryawanScreen() {
     const renderKaryawanItem = ({ item }: { item: Karyawan }) => {
         const statusBadge = getStatusBadge(item.status);
         return (
-            <TouchableOpacity onPress={() => openDetail(item)}>
+            <Pressable onPress={() => openDetail(item)}>
                 <View>
                     <Card className="mb-3 p-4 border border-gray-100">
                         <View className="flex-row items-center justify-between">
@@ -315,7 +315,7 @@ export default function KaryawanScreen() {
                         </View>
                     </Card>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -335,23 +335,23 @@ export default function KaryawanScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Personalia</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Basis Data Karyawan</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Database Quick Summary (Glassmorphism) - Inside Header */}
@@ -374,7 +374,7 @@ export default function KaryawanScreen() {
                 <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={filter.key}
                                 onPress={() => setSelectedFilter(filter.key as EmployeeStatus | 'all')}
                                 className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.key ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
@@ -388,7 +388,7 @@ export default function KaryawanScreen() {
                                         {filter.label}
                                     </Typography>
                                 </View>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </ScrollView>
 
@@ -412,7 +412,7 @@ export default function KaryawanScreen() {
                     const { item } = props;
                     const statusBadge = getStatusBadge(item.status);
                     return (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => openDetail(item)}
                             activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
@@ -444,7 +444,7 @@ export default function KaryawanScreen() {
                             <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100">
                                 <MoreVertical size={18} color="#D1D5DB" />
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     );
                 }}
                 keyExtractor={(item: Karyawan) => item.id.toString()}
@@ -461,19 +461,19 @@ export default function KaryawanScreen() {
             />
 
             {/* Redesigned FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={openAddForm}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* UI - Platform Specific Bottom Sheets */}
             {Platform.OS === 'web' ? (
                 <Modal visible={isSheetOpen} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                     <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                        <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                         <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView className="px-8 flex-1">
@@ -528,9 +528,9 @@ export default function KaryawanScreen() {
                         <View className="w-1 h-6 bg-primary rounded-full mr-3" />
                         <Typography variant="h2" weight="bold" className="text-2xl tracking-tight">Detail Pegawai</Typography>
                     </View>
-                    <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="items-center mb-10">
@@ -594,31 +594,31 @@ export default function KaryawanScreen() {
                 )}
 
                 <View className="flex-row space-x-4 mb-4">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => openEditForm(karyawan)}
                         className="flex-1 bg-primary h-14 rounded-2xl items-center justify-center shadow-lg shadow-primary/20"
                     >
                         <Typography weight="bold" className="text-white">Edit Profil</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => handleSetStatus(karyawan.status === 'AKTIF' ? 'TIDAK_AKTIF' : 'AKTIF')}
                         className={`flex-1 ${karyawan.status === 'AKTIF' ? 'bg-rose-50 border border-rose-100' : 'bg-emerald-50 border border-emerald-100'} h-14 rounded-2xl items-center justify-center`}
                     >
                         <Typography weight="bold" className={karyawan.status === 'AKTIF' ? 'text-rose-600' : 'text-emerald-600'}>
                             {karyawan.status === 'AKTIF' ? 'Non-aktifkan' : 'Aktifkan'}
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Delete Button */}
-                <TouchableOpacity
+                <Pressable
                     onPress={() => handleDeleteRequest(karyawan)}
                     className="w-full bg-red-50 border border-red-100 h-14 rounded-2xl items-center justify-center flex-row"
                 >
                     <Trash2 size={18} color="#DC2626" />
                     <Typography weight="bold" className="text-red-600 ml-2">Hapus Karyawan</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
         );
     }
@@ -637,9 +637,9 @@ export default function KaryawanScreen() {
                             {selectedKaryawan ? 'Update Data' : 'Tambah Staff'}
                         </Typography>
                     </View>
-                    <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="space-y-6">
@@ -730,14 +730,14 @@ export default function KaryawanScreen() {
                         />
                     </View>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleSubmit}
                         className="bg-primary h-16 rounded-2xl items-center justify-center shadow-xl shadow-primary/30 mt-4"
                     >
                         <Typography weight="bold" className="text-white text-lg">
                             {selectedKaryawan ? 'Update Database' : 'Tambahkan Karyawan'}
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </KeyboardAvoidingView>
         );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
@@ -71,12 +71,12 @@ export default function FinanceTab() {
                 showBackButton
                 onBackButtonPress={handleGoBack}
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <RefreshCw size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             >
                 {/* Main Profit Card (Bento Style) */}
@@ -178,7 +178,7 @@ export default function FinanceTab() {
 
                     {/* Piutang & Hutang Row */}
                     <View className="flex-row justify-between">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push('/finance/piutang')}
                             className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
                             activeOpacity={0.8}
@@ -197,9 +197,9 @@ export default function FinanceTab() {
                                     {piutangSummary?.jumlah_belum_lunas || 0} akun
                                 </Typography>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push('/finance/hutang')}
                             className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
                             activeOpacity={0.8}
@@ -218,13 +218,13 @@ export default function FinanceTab() {
                                     {hutangSummary?.jumlah_belum_lunas || dashboard?.hutang?.jumlah_belum_lunas || 0} akun
                                 </Typography>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
                 {/* Piutang Alert Overlay */}
                 {piutangSummary && piutangSummary.jumlah_overdue > 0 && (
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/finance/piutang')}
                         className="bg-rose-50 p-5 rounded-[32px] mb-4 border border-rose-100/50 flex-row items-center"
                     >
@@ -240,12 +240,12 @@ export default function FinanceTab() {
                         <View className="w-10 h-10 bg-rose-100 rounded-xl items-center justify-center">
                             <ChevronRight size={20} color="#EF4444" />
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
 
                 {/* Investor Payout Alert */}
                 {investorSummary && investorSummary.pending_count > 0 && (
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/finance/pencairan-investor')}
                         className="bg-amber-50 p-5 rounded-[32px] mb-8 border border-amber-100/50 flex-row items-center"
                     >
@@ -261,7 +261,7 @@ export default function FinanceTab() {
                         <View className="w-10 h-10 bg-amber-100 rounded-xl items-center justify-center">
                             <ChevronRight size={20} color="#F59E0B" />
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
 
                 {/* Circular Glass Quick Actions */}
@@ -278,7 +278,7 @@ export default function FinanceTab() {
                             { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
                             { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
                         ].map((action, idx) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={idx}
                                 className="mr-6 items-center"
                                 onPress={() => router.push(action.path as any)}
@@ -287,7 +287,7 @@ export default function FinanceTab() {
                                     <action.icon size={26} color={action.color} />
                                 </View>
                                 <Typography className="text-textMain text-[10px] font-bold uppercase tracking-wider">{action.label}</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </ScrollView>
                 </View>
@@ -297,7 +297,7 @@ export default function FinanceTab() {
                     <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Ringkasan Unit Bisnis</Typography>
 
                     {/* Bengkel */}
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/bengkel')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
@@ -316,10 +316,10 @@ export default function FinanceTab() {
                                 {dashboard?.bengkel?.total_transaksi || 0} Transaksi • Laba Kotor
                             </Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {/* Jual Beli Mobil */}
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/mobil')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
@@ -338,10 +338,10 @@ export default function FinanceTab() {
                                 {dashboard?.mobil?.total_transaksi || 0} Transaksi • Laba TPM
                             </Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {/* Jasa Angkut */}
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/jasa-angkut')}
                         activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
@@ -360,7 +360,7 @@ export default function FinanceTab() {
                                 {dashboard?.jasa_angkut?.total_transaksi || 0} Transaksi • Laba TPM
                             </Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
                 <View className="h-40" />
             </ScrollView>

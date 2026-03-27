@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Switch, Platform, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, Switch, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -122,12 +122,12 @@ export default function SecurityFeaturesScreen() {
         <SafeAreaView className="flex-1 bg-background">
             {/* Header */}
             <View className="px-6 pt-4 pb-6 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <TouchableOpacity
+                <Pressable
                     onPress={() => router.back()}
                     className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center"
                 >
                     <ChevronLeft size={24} color="#1E293B" />
-                </TouchableOpacity>
+                </Pressable>
                 <Typography variant="h3" weight="bold" className="text-slate-800">Keamanan Halaman</Typography>
                 <View className="w-10" />
             </View>

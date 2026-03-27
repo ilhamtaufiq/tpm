@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { AlertCircle } from 'lucide-react-native';
 
 interface ErrorBoundaryState {
@@ -123,7 +123,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
                     {/* Action Buttons */}
                     <View style={{ width: '100%', gap: 12 }}>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={this.handleReset}
                             style={{
                                 backgroundColor: '#023C69',
@@ -145,10 +145,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                             }}>
                                 Coba Lagi
                             </Text>
-                        </TouchableOpacity>
+                        </Pressable>
 
                         {__DEV__ && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     console.clear();
                                     this.handleReset();
@@ -170,7 +170,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                 }}>
                                     Clear Console & Retry
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                     </View>
 

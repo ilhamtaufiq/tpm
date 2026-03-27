@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, ScrollView, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, RotateCcw, Palette, Paintbrush, Camera, Trash2, Image as ImageIcon } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
@@ -93,21 +93,21 @@ export default function ThemeSettingsScreen() {
             <View className="flex-1">
                 {/* Header */}
                 <View className="flex-row items-center px-6 py-4">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.back()}
                         className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
                     >
                         <ChevronLeft size={24} color={themeColors.text} />
-                    </TouchableOpacity>
+                    </Pressable>
                     <View className="flex-1 ml-4">
                         <Typography variant="h3" weight="bold">Tampilan</Typography>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={resetTheme}
                         className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
                     >
                         <RotateCcw size={20} color={themeColors.secondary} />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
@@ -137,7 +137,7 @@ export default function ThemeSettingsScreen() {
                             {/* Presets */}
                             <View className="flex-row flex-wrap gap-3 mb-5">
                                 {presets.map((color) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={color}
                                         onPress={() => setThemeColor(option.key as any, color)}
                                         className="w-8 h-8 rounded-full border border-gray-100 shadow-sm"
@@ -203,23 +203,23 @@ export default function ThemeSettingsScreen() {
                         </View>
 
                         <View className="flex-row gap-3">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={pickBackground}
                                 disabled={isUploading}
                                 className="flex-1 bg-primary h-12 rounded-2xl flex-row items-center justify-center"
                             >
                                 <Camera size={18} color="white" />
                                 <Typography weight="bold" className="text-white ml-2">Pilih Gambar</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
                             {user?.home_background && (
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={handleRemoveBackground}
                                     disabled={isUploading}
                                     className="w-12 h-12 bg-rose-50 rounded-2xl items-center justify-center border border-rose-100"
                                 >
                                     <Trash2 size={18} color="#EF4444" />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
                         <Typography variant="caption" className="text-text/30 mt-4 px-2 text-center">

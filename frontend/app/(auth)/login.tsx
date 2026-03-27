@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, TouchableOpacity } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -118,25 +118,25 @@ export default function LoginScreen() {
                                 onChangeText={setPassword}
                                 startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
                                 endIcon={
-                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                    <Pressable onPress={() => setShowPassword(!showPassword)}>
                                         {showPassword ? (
                                             <EyeOff size={18} color="#023C69" opacity={0.6} />
                                         ) : (
                                             <Eye size={18} color="#023C69" opacity={0.6} />
                                         )}
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 }
                                 containerClassName="mb-1"
                             />
 
-                            <TouchableOpacity 
+                            <Pressable 
                                 onPress={() => router.push('/(auth)/forgot-password')}
                                 className="items-end mb-4 pr-1"
                             >
                                 <Typography variant="caption" weight="medium" className="text-primary/70">
                                     Lupa Password?
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
                             <Button
                                 title="Masuk Sekarang"

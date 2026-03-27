@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Dimensions, Pressable, ActivityIndicator } from 'react-native';
 import { Typography } from './ui/Typography';
 import { useLowStockParts, useTransaksiBengkelSummary } from '../hooks/useBengkel';
 import { useMuatanSummary } from '../hooks/useJasaAngkut';
@@ -75,9 +75,9 @@ export const StatsSlider = () => {
         <View className="mt-8">
             <View className="px-6 flex-row justify-between items-center mb-4">
                 <Typography variant="h3" weight="bold">Ringkasan Bisnis</Typography>
-                <TouchableOpacity>
+                <Pressable>
                     <Typography variant="caption" weight="bold" className="text-primary">Detail</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
             <ScrollView
                 horizontal
@@ -89,7 +89,7 @@ export const StatsSlider = () => {
                 {SLIDES.map((slide) => {
                     const Icon = slide.icon;
                     return (
-                        <TouchableOpacity
+                        <Pressable
                             key={slide.id}
                             activeOpacity={0.9}
                             style={{ width: SLIDE_WIDTH, height: 160, backgroundColor: slide.color }}
@@ -118,7 +118,7 @@ export const StatsSlider = () => {
 
                             {/* Abstract background shape */}
                             <View className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
-                        </TouchableOpacity>
+                        </Pressable>
                     );
                 })}
             </ScrollView>

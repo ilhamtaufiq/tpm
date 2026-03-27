@@ -1,6 +1,6 @@
 import { ArrowUp, Plus, History, Wallet, MoreHorizontal, Users } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
-import { TouchableOpacity, ActivityIndicator, View } from 'react-native';
+import { Pressable, ActivityIndicator, View } from 'react-native';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
 import { router } from 'expo-router';
@@ -18,7 +18,7 @@ export const WalletSection = () => {
             >
                 <View className="flex-row items-center p-4">
                     {/* Balance Area */}
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/finance/mutasi')}
                         className="bg-white rounded-2xl p-3 flex-1 flex-row items-center justify-between mr-4 shadow-sm"
                     >
@@ -46,11 +46,11 @@ export const WalletSection = () => {
                         >
                             KLIK
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {/* Quick Actions */}
                     <View className="flex-row items-center space-x-5 px-1">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push({ pathname: '/finance/mutasi', params: { action: 'modal' } })}
                             className="items-center"
                         >
@@ -58,9 +58,9 @@ export const WalletSection = () => {
                                 <Plus size={20} color="white" strokeWidth={3} />
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Masuk</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push('/bengkel/expenses')}
                             className="items-center"
                         >
@@ -68,7 +68,7 @@ export const WalletSection = () => {
                                 <ArrowUp size={20} color="white" strokeWidth={3} />
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Keluar</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
 
                     </View>
                 </View>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, TouchableOpacity, Modal, TextInput, FlatList, SectionList } from 'react-native';
-// import { TouchableOpacity } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
+import { NavigationContext } from '@react-navigation/native';
+import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList } from 'react-native';
+// import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
@@ -460,7 +461,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         { key: 'jasa_angkut', label: 'Jasa Angkut', icon: Truck, color: '#10B981' },
                         { key: 'jual_beli_mobil', label: 'Jual Beli Mobil', icon: Car, color: '#3B82F6' },
                     ] as const).map((cat) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={cat.key}
                             onPress={() => {
                                 setKategori(cat.key);
@@ -482,7 +483,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             >
                                 {cat.label}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
             </View>
@@ -517,7 +518,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     </Typography>
 
                     {/* Search Trigger Button */}
-                    <TouchableOpacity onPress={() => { setMobilSearchQuery(''); setMobilSearchOpen(true); }}>
+                    <Pressable onPress={() => { setMobilSearchQuery(''); setMobilSearchOpen(true); }}>
                         <View className={`rounded-2xl px-4 py-3 border-2 flex-row items-center ${selectedMobil ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-transparent'
                             }`}>
                             {selectedMobil ? (
@@ -540,19 +541,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 )}
                             </View>
                             {selectedMobil ? (
-                                <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedMobil(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                <Pressable onPress={(e) => { e.stopPropagation(); setSelectedMobil(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <X size={18} color="#EF4444" />
-                                </TouchableOpacity>
+                                </Pressable>
                             ) : (
                                 <ChevronRight size={18} color="#9CA3AF" />
                             )}
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {/* Search Modal */}
                     <Modal visible={mobilSearchOpen} transparent animationType="slide" onRequestClose={() => setMobilSearchOpen(false)} statusBarTranslucent>
                         <View className="flex-1 justify-end bg-black/50">
-                            <TouchableOpacity style={{ flex: 1 }} onPress={() => setMobilSearchOpen(false)} activeOpacity={1} />
+                            <Pressable style={{ flex: 1 }} onPress={() => setMobilSearchOpen(false)} />
                             <View className="bg-white rounded-t-[32px] h-[80%] overflow-hidden">
                                 <View style={{ padding: 24, flex: 1 }}>
                                     <View className="items-center mb-2">
@@ -560,9 +561,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     </View>
                                     <View className="flex-row justify-between items-center mb-4">
                                         <Typography variant="h3" weight="bold">Cari Mobil</Typography>
-                                        <TouchableOpacity onPress={() => setMobilSearchOpen(false)}>
+                                        <Pressable onPress={() => setMobilSearchOpen(false)}>
                                             <X size={24} color="#6B7280" />
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     </View>
                                     <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
                                         <Search size={20} color="#9CA3AF" />
@@ -586,7 +587,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             keyExtractor={(item: any) => item.id.toString()}
                                             showsVerticalScrollIndicator={false}
                                             renderItem={({ item }: { item: any }) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     onPress={() => {
                                                         setSelectedMobil(item);
                                                         if (item.nomor_plat) setNomorPlat(item.nomor_plat);
@@ -613,7 +614,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                             </View>
                                                         )}
                                                     </Card>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             )}
                                             ListEmptyComponent={
                                                 mobilSearchQuery.length > 0 ? (
@@ -663,7 +664,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             <Typography variant="caption" weight="bold" className="text-gray-400 uppercase mb-3">Kendaraan Terdaftar</Typography>
                             <View className="flex-row flex-wrap gap-2">
                                 {selectedCustomer.vehicles.map((v) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={v.id}
                                         onPress={() => {
                                             setSelectedVehicle(v);
@@ -679,7 +680,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             </Typography>
                                             <Typography className="text-[10px] text-gray-400">{v.jenis_unit}</Typography>
                                         </View>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 ))}
                             </View>
                         </View>
@@ -714,7 +715,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             {/* TABS SWITCHER */}
             <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
-                <TouchableOpacity
+                <Pressable
                     onPress={() => setActiveTab('service')}
                     className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
                         activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'
@@ -735,9 +736,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             </Typography>
                         </View>
                     )}
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                     onPress={() => setActiveTab('sparepart')}
                     className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
                         activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'
@@ -758,7 +759,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             </Typography>
                         </View>
                     )}
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {/* Jasa Section */}
@@ -769,10 +770,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             <Wrench size={18} color="#023C69" />
                             <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
                         </View>
-                        <TouchableOpacity onPress={addService} className="flex-row items-center">
+                        <Pressable onPress={addService} className="flex-row items-center">
                             <Plus size={16} color="#023C69" />
                             <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {services.map((service, index) => (
@@ -803,7 +804,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     />
                                 </View>
                                 {services.length > 1 && (
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => setServices(services.filter(s => s.id !== service.id))}
                                         hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                                         style={{
@@ -814,7 +815,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         className="items-center justify-center bg-red-50 rounded-2xl"
                                     >
                                         <Trash2 size={22} color="#EE2737" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 )}
                             </View>
                         </Card>
@@ -831,17 +832,37 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
                         </View>
                         <View className="flex-row items-center">
-                            <TouchableOpacity 
+                            <Pressable 
                                 onPress={() => setIsScannerOpen(true)} 
-                                className="flex-row items-center mr-4 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100"
+                                style={({ pressed }) => ({
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    marginRight: 16,
+                                    backgroundColor: '#EFF6FF',
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 4,
+                                    borderRadius: 8,
+                                    borderWidth: 1,
+                                    borderColor: '#DBEAFE',
+                                    opacity: pressed ? 0.7 : 1
+                                })}
                             >
                                 <QrCode size={16} color="#2563EB" />
-                                <Typography className="text-blue-600 text-xs ml-1 font-bold">Scan</Typography>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={addPart} className="flex-row items-center">
+                                <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 4, fontWeight: '700' }}>Scan</Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={addPart} 
+                                style={({ pressed }) => ({
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 4,
+                                    opacity: pressed ? 0.7 : 1
+                                })}
+                            >
                                 <Plus size={16} color="#2563EB" />
-                                <Typography className="text-blue-600 text-xs ml-1 font-bold">Tambah</Typography>
-                            </TouchableOpacity>
+                                <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 4, fontWeight: '700' }}>Tambah</Typography>
+                            </Pressable>
                         </View>
                     </View>
 
@@ -904,7 +925,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     />
                                 </View>
                                 {parts.length > 1 && (
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => setParts(parts.filter(p => p.id !== part.id))}
                                         hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                                         style={{
@@ -919,7 +940,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         }}
                                     >
                                         <Trash2 size={20} color="#EE2737" />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 )}
                             </View>
                         </Card>
@@ -951,7 +972,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         <>
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography weight="semibold">Metode Pembayaran</Typography>
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => {
                                         setIsSplitPayment(!isSplitPayment);
                                         // Reset payments to a single empty entry if switching from split to single
@@ -964,7 +985,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
                             {/* Basic Mode: Single Payment */}
@@ -974,7 +995,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         <Typography variant="caption" weight="medium" className="text-textGray mb-2 ml-1">Metode</Typography>
                                         <View className="flex-row space-x-1">
                                             {['Tunai', 'Transfer'].map((m) => (
-                                                <TouchableOpacity
+                                                <Pressable
                                                     key={m}
                                                     onPress={() => {
                                                         const newP = [...payments];
@@ -985,7 +1006,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
                                                 >
                                                     <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-textGray text-[10px]'}>{m}</Typography>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))}
                                         </View>
                                     </View>
@@ -1019,7 +1040,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     {['Tunai', 'Trf'].map((m, mIdx) => {
                                                         const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
                                                         return (
-                                                            <TouchableOpacity
+                                                            <Pressable
                                                                 key={m}
                                                                 onPress={() => {
                                                                     const newP = [...payments];
@@ -1029,7 +1050,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                                 className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
                                                             >
                                                                 <Typography className={`text-[9px] font-bold ${p.metode === longM ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
-                                                            </TouchableOpacity>
+                                                            </Pressable>
                                                         );
                                                     })}
                                                 </View>
@@ -1049,7 +1070,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     }}
                                                 />
                                             </View>
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => {
                                                     if (payments.length > 1) {
                                                         setPayments(payments.filter(pay => pay.id !== p.id));
@@ -1061,16 +1082,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
                                             >
                                                 <Trash2 size={14} color="#F43F5E" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
                                     ))}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => setPayments([...payments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />
                                         <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             )}
                         </>
@@ -1164,60 +1185,64 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     // Web version with regular ScrollView
     if (Platform.OS === 'web') {
         return (
-            <View style={styles.webContainer}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                </View>
+            <NavigationContext.Provider value={null as any}>
+                <View style={styles.webContainer}>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                    </View>
 
-                {/* Scrollable Content */}
-                <ScrollView
-                    style={styles.webScrollView}
-                    contentContainerStyle={styles.webScrollContent}
-                    showsVerticalScrollIndicator={true}
-                >
-                    {renderFormContent()}
-                </ScrollView>
-                <BarcodeScannerModal 
-                    visible={isScannerOpen} 
-                    onClose={() => setIsScannerOpen(false)} 
-                    onScan={handleScanSparePart} 
-                />
-            </View>
+                    {/* Scrollable Content */}
+                    <ScrollView
+                        style={styles.webScrollView}
+                        contentContainerStyle={styles.webScrollContent}
+                        showsVerticalScrollIndicator={true}
+                    >
+                        {renderFormContent()}
+                    </ScrollView>
+                    <BarcodeScannerModal 
+                        visible={isScannerOpen} 
+                        onClose={() => setIsScannerOpen(false)} 
+                        onScan={handleScanSparePart} 
+                    />
+                </View>
+            </NavigationContext.Provider>
         );
     }
 
     // Mobile version with BottomSheetScrollView
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <View style={styles.mobileContainer}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                </View>
+        <NavigationContext.Provider value={null as any}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            >
+                <View style={styles.mobileContainer}>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                    </View>
 
-                {/* Scrollable Content for BottomSheet */}
-                <BottomSheetScrollView
-                    style={styles.mobileScrollView}
-                    contentContainerStyle={styles.mobileScrollContent}
-                    showsVerticalScrollIndicator={true}
-                    bounces={true}
-                >
-                    {renderFormContent()}
-                </BottomSheetScrollView>
-                <BarcodeScannerModal 
-                    visible={isScannerOpen} 
-                    onClose={() => setIsScannerOpen(false)} 
-                    onScan={handleScanSparePart} 
-                />
-            </View>
-        </KeyboardAvoidingView>
+                    {/* Scrollable Content for BottomSheet */}
+                    <BottomSheetScrollView
+                        style={styles.mobileScrollView}
+                        contentContainerStyle={styles.mobileScrollContent}
+                        showsVerticalScrollIndicator={true}
+                        bounces={true}
+                    >
+                        {renderFormContent()}
+                    </BottomSheetScrollView>
+                    <BarcodeScannerModal 
+                        visible={isScannerOpen} 
+                        onClose={() => setIsScannerOpen(false)} 
+                        onScan={handleScanSparePart} 
+                    />
+                </View>
+            </KeyboardAvoidingView>
+        </NavigationContext.Provider>
     );
 };
 

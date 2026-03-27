@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
-    View, ScrollView, TouchableOpacity, StatusBar,
+    View, ScrollView, Pressable, StatusBar,
     RefreshControl as RNRefreshControl, ActivityIndicator,
     TextInput, Alert, Modal
 } from 'react-native';
@@ -166,20 +166,20 @@ export default function PembelianMobilReportScreen() {
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={handleBack} className="mr-4">
+                    <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <Typography variant="h2" weight="bold">Laporan Pembelian Mobil</Typography>
                 </View>
                 <View className="flex-row items-center">
                     <Badge variant="info" label="Inventory" className="px-3 py-1 mr-2" />
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setShowExportMenu(true)}
                         disabled={isExporting}
                         className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100"
                     >
                         <Download size={20} color="#023C69" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -187,7 +187,7 @@ export default function PembelianMobilReportScreen() {
             <View className="px-6 py-4 bg-white border-b border-gray-100">
                 <View className="flex-row bg-gray-100 p-1 rounded-xl mb-4">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={type}
                             onPress={() => {
                                 setFilterType(type);
@@ -202,18 +202,18 @@ export default function PembelianMobilReportScreen() {
                             >
                                 {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
 
                 <View className="flex-row justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handlePrev}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color="#374151" />
-                    </TouchableOpacity>
+                    </Pressable>
 
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#4B5563" className="mr-2" />
@@ -222,13 +222,13 @@ export default function PembelianMobilReportScreen() {
                         </Typography>
                     </View>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleNext}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color="#374151" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -287,7 +287,7 @@ export default function PembelianMobilReportScreen() {
                             </View>
                         ) : (
                             mobils.map((item) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={item.id}
                                     activeOpacity={0.7}
                                     onPress={() => handlePressMobil(item)}
@@ -321,7 +321,7 @@ export default function PembelianMobilReportScreen() {
                                             </View>
                                         </View>
                                     </Card>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))
                         )}
                     </View>
@@ -347,9 +347,9 @@ export default function PembelianMobilReportScreen() {
                             <Typography variant="h2" weight="bold">Detail Unit</Typography>
                             <Typography className="text-gray-400 text-xs mt-1">Informasi lengkap kendaraan</Typography>
                         </View>
-                        <TouchableOpacity onPress={handleCloseModal} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
                             <X size={16} color="#4B5563" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {detailLoading ? (
@@ -490,7 +490,7 @@ export default function PembelianMobilReportScreen() {
                 animationType="fade"
                 onRequestClose={() => setShowExportMenu(false)}
             >
-                <TouchableOpacity
+                <Pressable
                     className="flex-1 bg-black/50 justify-end"
                     activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
@@ -501,13 +501,13 @@ export default function PembelianMobilReportScreen() {
                                 <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
                                 <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                             </View>
-                            <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
                                 <X size={20} color="#64748B" />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <View className="flex-row gap-4">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={async () => {
                                     setShowExportMenu(false);
                                     if (!summary) return;
@@ -579,9 +579,9 @@ export default function PembelianMobilReportScreen() {
                                 </View>
                                 <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
                                 <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
 
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={async () => {
                                     setShowExportMenu(false);
                                     if (!summary) return;
@@ -654,10 +654,10 @@ export default function PembelianMobilReportScreen() {
                                 </View>
                                 <Typography weight="bold" className="text-primary-dark">Download</Typography>
                                 <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </Pressable>
             </Modal>
         </SafeAreaView>
     );

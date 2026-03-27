@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { Card } from '../ui/Card';
 import { Typography } from '../ui/Typography';
 import { Badge } from '../ui/Badge';
@@ -13,7 +13,7 @@ interface DriverCardProps {
 
 export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
     return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        <Pressable onPress={onPress} activeOpacity={0.7}>
             <Card className="mb-3">
                 <View className="flex-row justify-between items-start">
                     <View className="flex-1">
@@ -75,6 +75,6 @@ export const DriverCard = ({ supir, onPress }: DriverCardProps) => {
                     </View>
                 </View>
             </Card>
-        </TouchableOpacity>
+        </Pressable>
     );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, Image, Platform } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Printer, Image as ImageIcon, Save, RefreshCw } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
@@ -177,12 +177,12 @@ export default function PrintSettingsScreen() {
             {/* Header */}
             <View className="p-6 bg-surface pb-8 rounded-b-[32px] shadow-sm">
                 <View className="flex-row items-center mb-6">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleGoBack}
                         className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4"
                     >
                         <ChevronLeft size={24} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <View className="flex-1">
                         <Typography variant="h2" weight="bold">Pengaturan Cetak</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
@@ -263,7 +263,7 @@ export default function PrintSettingsScreen() {
                             />
                         </View>
                     ) : (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={pickLogo}
                             className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl p-8 items-center"
                         >
@@ -276,7 +276,7 @@ export default function PrintSettingsScreen() {
                             <Typography variant="caption" className="text-textGray/60 mt-1">
                                 Ukuran maksimal 1MB
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </Card>
 

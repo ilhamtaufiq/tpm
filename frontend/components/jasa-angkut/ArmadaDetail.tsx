@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { Typography } from '../ui/Typography';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -252,7 +252,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
                 {/* Tab Switcher */}
                 <View className="flex-row bg-gray-100 p-1 rounded-2xl mb-6">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setActiveTab('trips')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'trips' ? 'bg-white shadow-sm' : ''}`}
                     >
@@ -260,8 +260,8 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         <Typography weight={activeTab === 'trips' ? 'bold' : 'medium'} className={activeTab === 'trips' ? 'text-primary' : 'text-gray-400'}>
                             Riwayat Trip
                         </Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                         onPress={() => setActiveTab('repairs')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'repairs' ? 'bg-white shadow-sm' : ''}`}
                     >
@@ -269,8 +269,8 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         <Typography weight={activeTab === 'repairs' ? 'bold' : 'medium'} className={activeTab === 'repairs' ? 'text-primary' : 'text-gray-400'}>
                             Perbaikan
                         </Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                         onPress={() => setActiveTab('expenses')}
                         className={`flex-1 py-3 rounded-xl items-center flex-row justify-center space-x-2 ${activeTab === 'expenses' ? 'bg-white shadow-sm' : ''}`}
                     >
@@ -278,7 +278,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                         <Typography weight={activeTab === 'expenses' ? 'bold' : 'medium'} className={activeTab === 'expenses' ? 'text-primary' : 'text-gray-400'}>
                             Biaya Ops
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {(() => {
@@ -380,13 +380,13 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 <View className="space-y-4 pb-10">
                                     <View className="flex-row justify-between items-center mb-2">
                                         <Typography weight="bold" className="text-gray-500">Daftar Biaya Operasional</Typography>
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={() => setShowExpenseModal(true)}
                                             className="bg-primary px-3 py-1.5 rounded-xl flex-row items-center"
                                         >
                                             <Plus size={14} color="white" />
                                             <Typography variant="caption" weight="bold" className="text-white ml-1.5">Tambah</Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     </View>
 
                                     {(() => {
@@ -499,14 +499,14 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                     <View className="bg-white rounded-t-[32px] p-6 pb-12">
                         <View className="flex-row justify-between items-center mb-6">
                             <Typography variant="h3" weight="bold">Input Biaya Operasional</Typography>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={toggleSplitPayment}
                                 className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
                             >
                                 <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                                     {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <ScrollView className="max-h-[70vh]" showsVerticalScrollIndicator={false}>
@@ -522,30 +522,30 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                     <View className="mb-4">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest">Alokasi Pembayaran</Typography>
-                                            <TouchableOpacity onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                                            <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                                 <PlusCircle size={14} color="#023C69" />
                                                 <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
 
                                         {payments.map((p, idx) => (
                                             <View key={p.id} className="mb-3 p-4 border border-gray-100 rounded-2xl bg-gray-50/50">
                                                 <View className="flex-row justify-between items-center mb-3">
                                                     <Typography variant="caption" weight="bold" className="text-primary">Metode #{idx + 1}</Typography>
-                                                    <TouchableOpacity onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
+                                                    <Pressable onPress={() => removePaymentRow(p.id)} className="w-6 h-6 items-center justify-center bg-red-50 rounded-full">
                                                         <Trash2 size={12} color="#EF4444" />
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 </View>
 
                                                 <View className="flex-row flex-wrap gap-2 mb-3">
                                                     {['TUNAI', 'TRANSFER'].map((m) => (
-                                                        <TouchableOpacity
+                                                        <Pressable
                                                             key={m}
                                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
                                                             className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                                         >
                                                             <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
-                                                        </TouchableOpacity>
+                                                        </Pressable>
                                                     ))}
                                                 </View>
 
@@ -570,13 +570,13 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
                                             <View className="flex-row flex-wrap gap-2">
                                                 {['TUNAI', 'TRANSFER'].map((m) => (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         key={m}
                                                         onPress={() => setExpenseForm(prev => ({ ...prev, metode_bayar: m }))}
                                                         className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
                                                     >
                                                         <Typography variant="caption" weight="bold" className={expenseForm.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 ))}
                                             </View>
                                         </View>

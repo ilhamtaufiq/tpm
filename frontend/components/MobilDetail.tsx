@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput } from 'react-native';
+import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -201,7 +201,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             />
                         </View>
                     ) : (
-                        <TouchableOpacity
+                        <Pressable
                             activeOpacity={0.9}
                             onPress={() => setSelectedImage(fullUrl)}
                             className="flex-1"
@@ -211,12 +211,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 className="w-full h-full"
                                 resizeMode="cover"
                             />
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
 
                 {/* Delete Button - Glass Style */}
-                <TouchableOpacity
+                <Pressable
                     onPress={() => {
                         console.log('[MobilDetail] Delete pressed for media:', item.id);
                         setDeleteDialog({ visible: true, mediaId: item.id });
@@ -226,7 +226,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     style={{ elevation: 5 }}
                 >
                     <Trash2 size={18} color="white" />
-                </TouchableOpacity>
+                </Pressable>
             </View>
         );
     };
@@ -237,12 +237,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
                 {/* Fixed Header Overlay (Mobile Style) */}
                 <View className="absolute top-6 left-6 right-6 z-10 flex-row justify-between items-center">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onClose}
                         className="w-11 h-11 bg-black/40 backdrop-blur-md rounded-2xl items-center justify-center border border-white/20"
                     >
                         <X size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <View className="flex-row gap-2">
                         <View style={{ backgroundColor: getStatusColor(activeUnit.status) + 'E6' }} className="backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-lg">
                             <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
@@ -301,7 +301,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     )}
 
                     {/* Media Quick Action */}
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handlePickMedia}
                         disabled={uploadMediaAction.isPending}
                         className="absolute bottom-6 right-6 w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-2xl border border-gray-100"
@@ -311,7 +311,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         ) : (
                             <Plus size={24} color="#023C69" strokeWidth={3} />
                         )}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="flex-1 bg-white -mt-8 rounded-t-[48px] px-6 pt-10">
@@ -482,7 +482,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     )}
 
                                     {/* Cancel Booking Button */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         activeOpacity={0.8}
                                         onPress={() => {
                                             setCancelPenalti('');
@@ -495,7 +495,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     >
                                         <Ban size={18} color="#EF4444" />
                                         <Typography weight="bold" className="text-red-500 text-base ml-2">Batalkan Booking</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             </Card>
                         </View>
@@ -519,23 +519,23 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     {/* Primary Support Action */}
                     <View className="flex-row space-x-3 mb-6">
                         {activeUnit.status?.toUpperCase() === 'TERSEDIA' && (
-                            <TouchableOpacity
+                            <Pressable
                                 activeOpacity={0.8}
                                 onPress={() => onSell?.(activeUnit)}
                                 className="flex-1 bg-emerald-600 flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-emerald-900/20"
                             >
                                 <CircleDollarSign size={20} color="white" />
                                 <Typography weight="bold" className="text-white text-lg ml-3">Jual Unit</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
-                        <TouchableOpacity
+                        <Pressable
                             activeOpacity={0.8}
                             onPress={onEdit}
                             className={`flex-1 bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 ${!(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') ? 'w-full' : ''}`}
                         >
                             <Edit size={20} color="white" />
                             <Typography weight="bold" className="text-white text-lg ml-3">Edit Data</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Extra Bottom Padding */}
@@ -564,12 +564,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                 onRequestClose={() => setSelectedImage(null)}
             >
                 <View className="flex-1 bg-black/95 items-center justify-center">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setSelectedImage(null)}
                         className="absolute top-12 right-6 z-20 w-12 h-12 bg-white/10 rounded-full items-center justify-center border border-white/20"
                     >
                         <X size={24} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {selectedImage && (
                         <Image
@@ -603,7 +603,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <Typography variant="h2" weight="bold" className="text-red-600">Batalkan Booking</Typography>
                                 <Typography variant="caption" className="text-gray-400 mt-1">{activeTx?.nomor_transaksi}</Typography>
                             </View>
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     setShowCancelModal(false);
                                     setCancelSuccess(false);
@@ -611,7 +611,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 className="w-10 h-10 bg-gray-100 rounded-2xl items-center justify-center"
                             >
                                 <X size={18} color="#6B7280" />
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         {cancelSuccess ? (
@@ -621,7 +621,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-red-600 mb-2">Booking Dibatalkan</Typography>
                                 <Typography className="text-gray-400 text-center">Mobil kembali ke status TERSEDIA</Typography>
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => {
                                         setShowCancelModal(false);
                                         setCancelSuccess(false);
@@ -629,7 +629,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                     className="mt-6 bg-gray-800 px-8 py-4 rounded-2xl"
                                 >
                                     <Typography weight="bold" className="text-white">Tutup</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         ) : (
                             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
@@ -709,7 +709,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 <Typography variant="caption" className="text-textGray">Refund dengan beberapa metode</Typography>
                                             </View>
                                         </View>
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={() => {
                                                 setUseRefundSplit(!useRefundSplit);
                                                 if (useRefundSplit) {
@@ -721,7 +721,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             className={`w-12 h-7 rounded-full px-1 justify-center ${useRefundSplit ? 'bg-primary' : 'bg-gray-300'}`}
                                         >
                                             <View className={`w-5 h-5 bg-white rounded-full shadow-sm ${useRefundSplit ? 'self-end' : 'self-start'}`} />
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     </View>
                                 )}
 
@@ -732,7 +732,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             <Typography weight="bold" className="text-textMain mb-3">Metode Refund</Typography>
                                             <View className="flex-row space-x-3">
                                                 {['TUNAI', 'TRANSFER'].map((method) => (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         key={method}
                                                         onPress={() => setRefundSplits([{ metode: method, nominal: String(Math.max(0, parseFloat(String(activeTx?.dp || 0)) - (parseFloat(cancelPenalti) || 0))) }])}
                                                         className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${refundSplits[0]?.metode === method
@@ -742,7 +742,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                     >
                                                         {method === 'TUNAI' ? <Banknote size={20} color={refundSplits[0]?.metode === 'TUNAI' ? '#10B981' : '#9CA3AF'} /> : <CreditCard size={20} color={refundSplits[0]?.metode === 'TRANSFER' ? '#3B82F6' : '#9CA3AF'} />}
                                                         <Typography weight="bold" className={`ml-2 ${refundSplits[0]?.metode === method ? (method === 'TUNAI' ? 'text-emerald-600' : 'text-blue-600') : 'text-gray-400'}`}>{method === 'TUNAI' ? 'Tunai' : 'Transfer'}</Typography>
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 ))}
                                             </View>
                                         </View>
@@ -758,7 +758,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                         </View>
                                                         <View className="flex-row space-x-1">
                                                             {['TUNAI', 'TRANSFER'].map((m) => (
-                                                                <TouchableOpacity
+                                                                <Pressable
                                                                     key={m}
                                                                     onPress={() => {
                                                                         const next = [...refundSplits];
@@ -768,7 +768,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                                     className={`px-3 py-1 rounded-full border ${split.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
                                                                 >
                                                                     <Typography className={`text-[9px] font-bold ${split.metode === m ? 'text-white' : 'text-gray-400'}`}>{m}</Typography>
-                                                                </TouchableOpacity>
+                                                                </Pressable>
                                                             ))}
                                                         </View>
                                                     </View>
@@ -806,7 +806,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </View>
 
                                 {/* Submit Button */}
-                                <TouchableOpacity
+                                <Pressable
                                     activeOpacity={0.8}
                                     disabled={cancelMutation.isPending}
                                     onPress={() => {
@@ -877,7 +877,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                             <Typography weight="bold" className="text-white text-base ml-2">Proses Pembatalan</Typography>
                                         </>
                                     )}
-                                </TouchableOpacity>
+                                </Pressable>
                             </ScrollView>
                         )}
                     </View>

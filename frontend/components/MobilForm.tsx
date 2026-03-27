@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TextInput, Alert, ActivityIndicator, Platform, StyleSheet, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TextInput, Alert, ActivityIndicator, Platform, StyleSheet, KeyboardAvoidingView, Pressable } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
@@ -220,13 +220,13 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         <Typography variant="body2" className="text-textGray mb-1 font-medium">Transmisi</Typography>
                         <View className="flex-row bg-gray-100 rounded-xl p-1">
                             {['AT', 'MT'].map((t) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={t}
                                     onPress={() => setTransmisi(t)}
                                     className={`flex-1 py-2 rounded-lg items-center ${transmisi === t ? 'bg-white shadow-sm' : ''}`}
                                 >
                                     <Typography weight={transmisi === t ? 'bold' : 'medium'} className={transmisi === t ? 'text-primary' : 'text-gray-400'}>{t}</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
                     </View>
@@ -260,7 +260,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                         { label: 'Lunas', value: 'LUNAS' },
                                         { label: 'Hutang', value: 'BELUM_LUNAS' }
                                     ].map((s) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={s.value}
                                             onPress={() => setStatusBayar(s.value)}
                                             className={`flex-1 py-2 rounded-xl items-center justify-center ${statusBayar === s.value ? 'bg-white shadow-sm' : ''}`}
@@ -268,7 +268,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                             <Typography variant="caption" weight="bold" className={`text-center ${statusBayar === s.value ? 'text-primary' : 'text-gray-400'}`}>
                                                 {s.label}
                                             </Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
                             </View>
@@ -290,7 +290,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                             { label: 'Transfer', value: 'TRANSFER' },
                                             { label: 'Split', value: 'SPLIT' }
                                         ].map((m) => (
-                                            <TouchableOpacity
+                                            <Pressable
                                                 key={m.value}
                                                 onPress={() => {
                                                     setMetodeBayar(m.value);
@@ -300,7 +300,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                 <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
                                                     {m.label}
                                                 </Typography>
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         ))}
                                     </View>
                                 </View>
@@ -340,7 +340,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                     {['Tunai', 'Trf'].map((m) => {
                                                         const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
                                                         return (
-                                                            <TouchableOpacity
+                                                            <Pressable
                                                                 key={m}
                                                                 onPress={() => {
                                                                     const newP = [...payments];
@@ -355,7 +355,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                                 >
                                                                     {m}
                                                                 </Typography>
-                                                            </TouchableOpacity>
+                                                            </Pressable>
                                                         );
                                                     })}
                                                 </View>
@@ -381,7 +381,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                             </View>
 
                                             {/* Column: Action */}
-                                            <TouchableOpacity
+                                            <Pressable
                                                 onPress={() => {
                                                     if (payments.length > 1) {
                                                         setPayments(payments.filter(pay => pay.id !== p.id));
@@ -390,18 +390,18 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                 className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
                                             >
                                                 <Trash2 size={14} color="#F43F5E" />
-                                            </TouchableOpacity>
+                                            </Pressable>
                                         </View>
                                     ))}
 
                                     {/* Add Button */}
-                                    <TouchableOpacity
+                                    <Pressable
                                         onPress={() => setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />
                                         <Typography weight="bold" className="text-primary text-[10px] ml-1 text-center">Tambah Metode Pembayaran</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
 
                                     {/* Summary Split */}
                                     <View className="mt-6 pt-4 border-t border-gray-100 flex-row justify-between items-center px-1">

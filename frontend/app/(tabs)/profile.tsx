@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, Alert, TouchableOpacity, Platform, Image, StatusBar } from 'react-native';
+import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint } from 'lucide-react-native';
 
@@ -111,12 +111,12 @@ export default function ProfileScreen() {
                     </View>
                 }
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/settings/profile')}
                         className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center border border-white/5 active:bg-white/20"
                     >
                         <Settings size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             />
 
@@ -128,7 +128,7 @@ export default function ProfileScreen() {
             >
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-4">
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/profile')}
                     >
@@ -139,9 +139,9 @@ export default function ProfileScreen() {
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Ubah Profil</Typography>
                             <Typography variant="caption" className="text-text/40 text-[10px]">Nama & Biodata</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => {
                             if (isPinEnabled) {
@@ -162,12 +162,12 @@ export default function ProfileScreen() {
                                 {isPinEnabled ? 'Ubah atau Matikan' : 'Kunci Aplikasi'}
                             </Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* ACCESSIBILITY - BENTO GRID ROW */}
                 <View className="flex-row gap-4 mb-6">
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/print')}
                     >
@@ -178,9 +178,9 @@ export default function ProfileScreen() {
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Struk</Typography>
                             <Typography variant="caption" className="text-text/40 text-[10px]">Konfigurasi Printer</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/bluetooth')}
                     >
@@ -191,12 +191,12 @@ export default function ProfileScreen() {
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Bluetooth</Typography>
                             <Typography variant="caption" className="text-text/40 text-[10px]">Sync Perangkat</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* THEME SETTINGS - NEW SECTION */}
                 <View className="flex-row gap-4 mb-8">
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={async () => {
                             if (!isPinEnabled) {
@@ -220,9 +220,9 @@ export default function ProfileScreen() {
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Biometrik</Typography>
                             <Typography variant="caption" className="text-text/40 text-[10px]">{useBiometrics ? 'Aktif' : 'Klik Aktifkan'}</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                         onPress={() => router.push('/settings/theme')}
                     >
@@ -233,13 +233,13 @@ export default function ProfileScreen() {
                             <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Tampilan</Typography>
                             <Typography variant="caption" className="text-text/40 text-[10px]">Kustom UI</Typography>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* FEATURE PROTECTION SETTINGS - NEW SECTION */}
                 <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>
 
-                <TouchableOpacity
+                <Pressable
                     className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
                     onPress={() => router.push('/settings/security-features')}
                 >
@@ -251,9 +251,9 @@ export default function ProfileScreen() {
                         <Typography variant="caption" className="text-text/40">Atur proteksi PIN per menu</Typography>
                     </View>
                     <ChevronRight size={20} color={themeColors.textGray} />
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                     className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
                     onPress={() => router.push('/settings/smtp')}
                 >
@@ -265,13 +265,13 @@ export default function ProfileScreen() {
                         <Typography variant="caption" className="text-text/40">Konfigurasi Gmail Server</Typography>
                     </View>
                     <ChevronRight size={20} color={themeColors.textGray} />
-                </TouchableOpacity>
+                </Pressable>
 
 
                 {/* DANGER ZONE & SESSION */}
                 <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>
 
-                <TouchableOpacity
+                <Pressable
                     className="bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-4"
                     onPress={handleReset}
                     disabled={isResetting}
@@ -286,9 +286,9 @@ export default function ProfileScreen() {
                         <Typography variant="caption" className="text-text/40">Hapus database lokal (Danger)</Typography>
                     </View>
                     <ChevronRight size={18} color="#EF4444" opacity={0.5} />
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                     className="bg-surface/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-8"
                     onPress={handleLogout}
                 >
@@ -300,7 +300,7 @@ export default function ProfileScreen() {
                         <Typography variant="caption" className="text-text/40">Akhiri sesi aplikasi</Typography>
                     </View>
                     <ChevronRight size={18} color="#9CA3AF" />
-                </TouchableOpacity>
+                </Pressable>
 
                 <View className="items-center pb-10">
                     <Typography variant="caption" className="text-text/20">Version 1.0.0 Alpha • TPM Engine</Typography>
@@ -328,7 +328,7 @@ export default function ProfileScreen() {
                         Pilih tindakan untuk pengaturan PIN keamanan Anda.
                     </Typography>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => {
                             setPinActionVisible(false);
                             router.push({
@@ -348,9 +348,9 @@ export default function ProfileScreen() {
                         <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
                             <ChevronRight size={16} color="#3B82F6" />
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => {
                             setPinActionVisible(false);
                             router.push({
@@ -370,7 +370,7 @@ export default function ProfileScreen() {
                         <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
                             <ChevronRight size={16} color="#EF4444" />
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </BaseModal>
         </View>

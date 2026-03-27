@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView } from 'react-native';
 import { ChevronLeft, Lock, Eye, EyeOff, Save, ShieldCheck } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
@@ -107,12 +107,12 @@ export default function ChangePasswordScreen() {
 
                 <View className="flex-row items-center justify-between mb-8 z-10">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Kata Sandi</Typography>
                             <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Keamanan Akun</Typography>
@@ -155,9 +155,9 @@ export default function ChangePasswordScreen() {
                                         value={currentPassword}
                                         onChangeText={setCurrentPassword}
                                     />
-                                    <TouchableOpacity onPress={() => setShowCurrent(!showCurrent)}>
+                                    <Pressable onPress={() => setShowCurrent(!showCurrent)}>
                                         {showCurrent ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             </View>
 
@@ -175,9 +175,9 @@ export default function ChangePasswordScreen() {
                                         value={newPassword}
                                         onChangeText={setNewPassword}
                                     />
-                                    <TouchableOpacity onPress={() => setShowNew(!showNew)}>
+                                    <Pressable onPress={() => setShowNew(!showNew)}>
                                         {showNew ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             </View>
 
@@ -193,9 +193,9 @@ export default function ChangePasswordScreen() {
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                     />
-                                    <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
+                                    <Pressable onPress={() => setShowConfirm(!showConfirm)}>
                                         {showConfirm ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 </View>
                             </View>
                         </View>
@@ -215,7 +215,7 @@ export default function ChangePasswordScreen() {
 
             {/* Bottom Floating Action Button */}
             <View className="absolute bottom-10 left-6 right-6">
-                <TouchableOpacity
+                <Pressable
                     onPress={handleSave}
                     disabled={isSaving}
                     activeOpacity={0.8}
@@ -225,7 +225,7 @@ export default function ChangePasswordScreen() {
                     <Typography weight="bold" className="text-white text-lg ml-3">
                         {isSaving ? 'Memperbarui...' : 'Perbarui Kata Sandi'}
                     </Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <AlertDialog

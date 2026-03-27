@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, Switch, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, Switch, ActivityIndicator, Alert, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Save, Trash2 } from 'lucide-react-native';
@@ -141,15 +141,15 @@ export default function ArmadaFormScreen() {
             {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4">
+                    <Pressable onPress={() => router.back()} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
-                    </TouchableOpacity>
+                    </Pressable>
                     <Typography variant="h2" weight="bold">{isEdit ? 'Edit Armada' : 'Armada Baru'}</Typography>
                 </View>
                 {isEdit && (
-                    <TouchableOpacity onPress={handleDelete} className="w-10 h-10 bg-red-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleDelete} className="w-10 h-10 bg-red-50 rounded-full items-center justify-center">
                         <Trash2 size={20} color="#EF4444" />
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
             </View>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
@@ -277,7 +277,7 @@ export default function HutangUsahaScreen() {
                 <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Sumber Hutang</Typography>
                 <View className="flex-row flex-wrap gap-2">
                     {Object.entries(SUMBER_LABEL).map(([key, label]) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={key}
                             onPress={() => setCreateSource(key)}
                             className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
@@ -289,7 +289,7 @@ export default function HutangUsahaScreen() {
                             >
                                 {label}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
             </View>
@@ -297,26 +297,26 @@ export default function HutangUsahaScreen() {
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
                     <Typography className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">Metode Penerimaan (Opsional)</Typography>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setIsCreateSplitPayment(!isCreateSplitPayment)}
                         className={`px-3 py-1.5 rounded-full border ${isCreateSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
                     >
                         <Typography className={`text-[9px] font-bold ${isCreateSplitPayment ? 'text-amber-600' : 'text-gray-400'}`}>
                             {isCreateSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                         </Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {!isCreateSplitPayment ? (
                     <View className="flex-row space-x-2 gap-2">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setCreateMethod(undefined)}
                             className={`flex-1 py-3.5 items-center rounded-2xl border ${!createMethod ? 'border-gray-400 bg-gray-100' : 'border-gray-100 bg-gray-50/50'}`}
                         >
                             <Typography className={!createMethod ? 'text-gray-700 font-bold' : 'text-gray-400'} variant="caption">Tidak Ada</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                         {['TUNAI', 'TRANSFER'].map((m) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={m}
                                 onPress={() => setCreateMethod(m as 'TUNAI' | 'TRANSFER')}
                                 className={`flex-1 py-3.5 items-center rounded-2xl border ${createMethod === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
@@ -327,7 +327,7 @@ export default function HutangUsahaScreen() {
                                 >
                                     {m}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
                 ) : (
@@ -339,24 +339,24 @@ export default function HutangUsahaScreen() {
                                         <Typography variant="caption" weight="bold" className="text-primary text-[9px] uppercase tracking-widest">Metode #{idx + 1}</Typography>
                                     </View>
                                     {createPayments.length > 1 && (
-                                        <TouchableOpacity
+                                        <Pressable
                                             onPress={() => setCreatePayments(createPayments.filter(item => item.id !== p.id))}
                                             className="w-8 h-8 items-center justify-center bg-rose-50 rounded-xl"
                                         >
                                             <Trash2 size={14} color="#EF4444" />
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                 </View>
 
                                 <View className="flex-row space-x-2 mb-4 gap-2">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={m}
                                             onPress={() => setCreatePayments(createPayments.map(item => item.id === p.id ? { ...item, metode: m } : item))}
                                             className={`flex-1 py-3 items-center rounded-xl border ${p.metode === m ? 'border-primary bg-primary' : 'border-gray-200 bg-white'}`}
                                         >
                                             <Typography variant="caption" weight="bold" className={p.metode === m ? 'text-white' : 'text-gray-400'}>{m}</Typography>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
 
@@ -370,13 +370,13 @@ export default function HutangUsahaScreen() {
                             </Card>
                         ))}
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
                             className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />
                             <Typography weight="bold" className="text-gray-500 text-xs">Tambah Metode Penerimaan</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 )}
             </View>
@@ -516,12 +516,12 @@ export default function HutangUsahaScreen() {
                 showBackButton
                 onBackButtonPress={handleGoBack}
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleOpenCreate}
                         className="w-11 h-11 bg-white rounded-2xl items-center justify-center shadow-lg shadow-white/20"
                     >
                         <Plus size={20} color="#023C69" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             >
                 {/* Summary Card */}
@@ -552,7 +552,7 @@ export default function HutangUsahaScreen() {
                     <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                             {STATUS_FILTERS.map((filter) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={filter.value}
                                     onPress={() => setSelectedFilter(filter.value)}
                                     className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
@@ -564,7 +564,7 @@ export default function HutangUsahaScreen() {
                                     >
                                         {filter.label}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </ScrollView>
 
@@ -594,7 +594,7 @@ export default function HutangUsahaScreen() {
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
                     renderItem={({ item }) => (
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => handleOpenDetail(item)}
                             activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
@@ -624,7 +624,7 @@ export default function HutangUsahaScreen() {
                                     <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(item.sisa_hutang)}</Typography>
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                     ListEmptyComponent={<EmptyState title="Tidak ada data hutang" icon={CircleDollarSign} />}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

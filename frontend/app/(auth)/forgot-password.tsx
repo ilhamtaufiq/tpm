@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, TouchableOpacity } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -51,12 +51,12 @@ export default function ForgotPasswordScreen() {
                         <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
                         <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
 
-                        <TouchableOpacity 
+                        <Pressable 
                             onPress={() => router.back()}
                             className="absolute top-16 left-6 p-2 rounded-full bg-white/10"
                         >
                             <ArrowLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
 
                         <View className="w-20 h-20 bg-white/10 rounded-[28px] items-center justify-center mb-6 border border-white/20">
                             <Mail size={40} color="white" strokeWidth={1.5} />

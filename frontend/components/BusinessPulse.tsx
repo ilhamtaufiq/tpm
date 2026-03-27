@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Pressable, ActivityIndicator } from 'react-native';
 import { Truck, AlertTriangle, Wallet } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { usePiutangSummary, useDashboardSummary } from '../hooks/useKeuangan';
@@ -45,7 +45,7 @@ export const BusinessPulse = () => {
             </View>
             <View className="flex-row justify-between">
                 {stats.map((stat) => (
-                    <TouchableOpacity
+                    <Pressable
                         key={stat.id}
                         className="w-[31%] bg-white p-4 rounded-[24px] border border-gray-100 shadow-sm"
                         activeOpacity={0.7}
@@ -62,7 +62,7 @@ export const BusinessPulse = () => {
                             <Typography variant="h3" weight="bold" className="text-textMain">{stat.value}</Typography>
                         )}
                         <Typography variant="caption" className="text-textGray mt-0.5">{stat.label}</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 ))}
             </View>
         </View>

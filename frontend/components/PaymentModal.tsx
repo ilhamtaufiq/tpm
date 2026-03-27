@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { View, TouchableOpacity, ScrollView, Platform, Modal, StyleSheet, Alert } from 'react-native';
+import { View, Pressable, ScrollView, Platform, Modal, StyleSheet, Alert } from 'react-native';
 import { onlineManager } from '@tanstack/react-query';
 import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
@@ -127,14 +127,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{title}</Typography>
                     <Typography variant="caption" className="text-gray-500 font-medium">Selesaikan kewajiban pembayaran</Typography>
                 </View>
-                <TouchableOpacity
+                <Pressable
                     onPress={() => setIsSplitPayment(!isSplitPayment)}
                     className={`px-4 py-2 rounded-2xl border ${isSplitPayment ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200'}`}
                 >
                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'} uppercase tracking-widest`}>
                         {isSplitPayment ? 'Split On' : 'Split Off'}
                     </Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <Card variant="outlined" className="p-6 mb-8 border-primary/20 bg-primary/5 rounded-[32px]">
@@ -168,13 +168,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <View className="flex-row justify-between items-center mb-4 px-1">
                     <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px]">Rincian Pembayaran</Typography>
                     {isSplitPayment && (
-                        <TouchableOpacity 
+                        <Pressable 
                             onPress={addPayment} 
                             className="bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/10 flex-row items-center"
                         >
                             <Plus size={14} color="#023C69" />
                             <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
 
@@ -185,18 +185,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 <Typography weight="bold" className="text-gray-500 text-[9px] uppercase tracking-widest">Entry #{idx + 1}</Typography>
                             </View>
                             {payments.length > 1 && (
-                                <TouchableOpacity 
+                                <Pressable 
                                     onPress={() => removePayment(p.id)} 
                                     className="w-9 h-9 items-center justify-center bg-rose-50 rounded-xl"
                                 >
                                     <Trash2 size={16} color="#EF4444" strokeWidth={2.5} />
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
                         </View>
 
                         <View className="flex-row space-x-2 gap-2 mb-5">
                             {(allowedMethods || ['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT']).map((m) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={m}
                                     onPress={() => updatePayment(p.id, 'metode', m)}
                                     className={`flex-1 py-3.5 items-center rounded-2xl border ${p.metode === m ? 'border-primary bg-primary shadow-md shadow-primary/20' : 'border-gray-50 bg-gray-50'}`}
@@ -208,7 +208,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                     >
                                         {m}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
 
@@ -236,13 +236,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 ))}
 
                 {!isSplitPayment && (
-                    <TouchableOpacity
+                    <Pressable
                         onPress={addPayment}
                         className="w-full py-5 border-2 border-dashed border-gray-200 rounded-3xl items-center justify-center flex-row bg-gray-50/30"
                     >
                         <Plus size={18} color="#9CA3AF" />
                         <Typography className="text-gray-400 font-bold ml-2 text-xs uppercase tracking-widest">Gunakan Split Payment</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
             </View>
 
@@ -279,7 +279,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         return (
             <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
                 <View className="flex-1 justify-end bg-black/40">
-                    <TouchableOpacity className="absolute inset-0" onPress={onClose} />
+                    <Pressable className="absolute inset-0" onPress={onClose} />
                     <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                         <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                         <ScrollView className="flex-1">

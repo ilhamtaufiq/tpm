@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -216,23 +216,23 @@ export default function MobilInventoryScreen() {
                 <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                     <View className="flex-row items-center justify-between mb-8">
                         <View className="flex-row items-center">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={handleGoBack}
                                 className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                             >
                                 <ChevronLeft size={24} color="white" />
-                            </TouchableOpacity>
+                            </Pressable>
                             <View>
                                 <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Unit Mobil</Typography>
                                 <Typography className="text-white/50 text-xs mt-0.5">Manajemen Inventaris & Penjualan</Typography>
                             </View>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push({ pathname: '/laporan/pembelian-mobil' })}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             <TrendingUp size={20} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Bento Stats (Home Style) */}
@@ -264,16 +264,16 @@ export default function MobilInventoryScreen() {
                                 onChangeText={setSearchQuery}
                             />
                         </View>
-                        <TouchableOpacity className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
+                        <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
                             <Filter size={20} color="#023C69" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
                 {/* Tabs */}
                 <View className="flex-row px-6 mt-6 mb-2 space-x-2">
                     {['tersedia', 'booking', 'terjual'].map((tab) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={tab}
                             onPress={() => setActiveTab(tab)}
                             className={`px-5 py-2.5 rounded-2xl border ${activeTab === tab ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-white border-gray-100'}`}
@@ -281,7 +281,7 @@ export default function MobilInventoryScreen() {
                             <Typography className={`capitalize text-xs font-bold ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
                                 {tab}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
 
@@ -306,7 +306,7 @@ export default function MobilInventoryScreen() {
                         />
                     ) : (
                         mobils.map((item: any) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={item.id}
                                 activeOpacity={0.9}
                                 onPress={() => handlePresentDetailModal(item)}
@@ -393,49 +393,49 @@ export default function MobilInventoryScreen() {
                                             </View>
                                             <View className="flex-row items-center space-x-3">
                                                 {(item.status === 'tersedia' || item.status === 'booking') && (
-                                                    <TouchableOpacity
+                                                    <Pressable
                                                         className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center border border-emerald-100"
                                                         onPress={() => handlePresentSalesModal(item)}
                                                     >
                                                         <CircleDollarSign size={18} color="#10B981" />
-                                                    </TouchableOpacity>
+                                                    </Pressable>
                                                 )}
-                                                <TouchableOpacity
+                                                <Pressable
                                                     className="w-10 h-10 bg-blue-50 rounded-xl items-center justify-center border border-blue-100"
                                                     onPress={() => handlePresentCostModal(item)}
                                                 >
                                                     <TrendingUp size={18} color="#3B82F6" />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
+                                                </Pressable>
+                                                <Pressable
                                                     className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100"
                                                     onPress={() => handleDeleteMobil(item)}
                                                 >
                                                     <Trash2 size={18} color="#EF4444" />
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             </View>
                                         </View>
                                     </View>
                                 </Card>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))
                     )}
                     <View className="h-32" />
                 </ScrollView>
 
                 {/* FAB matching Home */}
-                <TouchableOpacity
+                <Pressable
                     activeOpacity={0.8}
                     onPress={handlePresentModalPress}
                     className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
                 >
                     <Plus size={32} color="white" strokeWidth={3} />
-                </TouchableOpacity>
+                </Pressable>
 
                 {/* Hybrid UI Logic modals (Web & Native) unchanged for logic consistency */}
                 {Platform.OS === 'web' ? (
                     <Modal visible={!!webModal} transparent animationType="slide" onRequestClose={() => setWebModal(null)}>
                         <View className="flex-1 justify-end bg-black/40">
-                            <TouchableOpacity className="absolute inset-0" onPress={() => setWebModal(null)} />
+                            <Pressable className="absolute inset-0" onPress={() => setWebModal(null)} />
                             <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
                                 <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
                                 {webModal === 'new' && <MobilForm onSuccess={() => { setWebModal(null); refetch(); }} />}

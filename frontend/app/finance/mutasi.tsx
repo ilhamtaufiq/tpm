@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -323,7 +323,7 @@ export default function MutasiKasScreen() {
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.dari === jenis ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
@@ -335,14 +335,14 @@ export default function MutasiKasScreen() {
                                 >
                                     {JENIS_LABEL[jenis]}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${transferForm.ke === jenis ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-200'}`}
@@ -354,7 +354,7 @@ export default function MutasiKasScreen() {
                                 >
                                     {JENIS_LABEL[jenis]}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
 
@@ -388,7 +388,7 @@ export default function MutasiKasScreen() {
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Simpan ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
                         {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}
                                 className={`px-4 py-2 rounded-full mr-2 mb-2 border ${modalForm.jenis === jenis ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-gray-200'}`}
@@ -400,7 +400,7 @@ export default function MutasiKasScreen() {
                                 >
                                     {JENIS_LABEL[jenis]}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
 
@@ -441,12 +441,12 @@ export default function MutasiKasScreen() {
                 showBackButton
                 onBackButtonPress={handleGoBack}
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <RefreshCw size={20} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             >
                 {/* Balance Insight Card (Glassmorphism) */}
@@ -465,13 +465,13 @@ export default function MutasiKasScreen() {
                             </Typography>
                             <Typography className="text-white/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => router.push('/finance/akun')}
                             className="bg-white/10 px-4 py-2 rounded-xl border border-white/10 flex-row items-center"
                         >
                             <Building2 size={16} color="white" />
                             <Typography className="text-white text-xs font-bold ml-2">Detail Akun</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     {/* Bento Stats Row Inside Header */}
@@ -521,7 +521,7 @@ export default function MutasiKasScreen() {
                 renderItem={({ item }) => {
                     const isIncome = item.tipe === 'MASUK';
                     return (
-                        <TouchableOpacity
+                        <Pressable
                             activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                         >
@@ -565,7 +565,7 @@ export default function MutasiKasScreen() {
                                     </Typography>
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
@@ -593,19 +593,19 @@ export default function MutasiKasScreen() {
             />
 
             {/* Premium FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => handleOpenSheet('transfer')}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary border-4 border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={3} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Entry UI - Platform Specific */}
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetVisible} transparent animationType="slide" onRequestClose={handleCloseSheet}>
                     <View className="flex-1 justify-end bg-black/40">
-                        <TouchableOpacity className="absolute inset-0" onPress={handleCloseSheet} />
+                        <Pressable className="absolute inset-0" onPress={handleCloseSheet} />
                         <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-0 overflow-hidden shadow-2xl relative">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             <ScrollView className="flex-1">

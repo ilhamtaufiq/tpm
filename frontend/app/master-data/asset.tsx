@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Platform, Modal } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -233,7 +233,7 @@ export default function AssetScreen() {
     };
 
     const renderAssetItem = ({ item }: { item: Asset }) => (
-        <TouchableOpacity onPress={() => openDetail(item)}>
+        <Pressable onPress={() => openDetail(item)}>
             <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                 <View className="w-16 h-16 rounded-[20px] bg-rose-50 border border-rose-100/50 items-center justify-center mr-4">
                     <Box size={32} color="#E11D48" />
@@ -254,7 +254,7 @@ export default function AssetScreen() {
                     <MoreVertical size={16} color="#9CA3AF" />
                 </View>
             </View>
-        </TouchableOpacity>
+        </Pressable>
     );
 
     const renderSheetContent = () => {
@@ -263,9 +263,9 @@ export default function AssetScreen() {
                 <View className="p-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <Typography variant="h2" weight="bold">Detail Aset</Typography>
-                        <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                        <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                             <X size={20} color="#6B7280" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     <View className="items-center mb-8">
@@ -341,9 +341,9 @@ export default function AssetScreen() {
             <View className="p-6">
                 <View className="flex-row justify-between items-center mb-6">
                     <Typography variant="h2" weight="bold">{selectedAsset ? 'Edit Aset' : 'Tambah Aset'}</Typography>
-                    <TouchableOpacity onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                    <Pressable onPress={handleCloseSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                         <X size={20} color="#6B7280" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="space-y-4">
@@ -362,13 +362,13 @@ export default function AssetScreen() {
                             <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kategori</Typography>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                                 {KATEGORI_FILTERS.filter(f => f.key !== 'all').map(f => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={f.key}
                                         onPress={() => setFormData({ ...formData, kategori: f.key })}
                                         className={`mr-2 px-3 py-2 rounded-xl border ${formData.kategori === f.key ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
                                     >
                                         <Typography className={`text-[10px] font-bold ${formData.kategori === f.key ? 'text-white' : 'text-gray-500'}`}>{f.label}</Typography>
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 ))}
                             </ScrollView>
                         </View>
@@ -452,17 +452,17 @@ export default function AssetScreen() {
             <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity onPress={handleGoBack} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5">
+                        <Pressable onPress={handleGoBack} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5">
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Aset</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Aktiva Tetap Perusahaan</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity onPress={onRefresh} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
+                    <Pressable onPress={onRefresh} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
@@ -506,7 +506,7 @@ export default function AssetScreen() {
 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4" contentContainerStyle={{ paddingRight: 20 }}>
                         {KATEGORI_FILTERS.map((filter) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={filter.key}
                                 onPress={() => setSelectedFilter(filter.key)}
                                 className={`mr-3 px-5 py-2.5 rounded-2xl border ${selectedFilter === filter.key ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
@@ -514,7 +514,7 @@ export default function AssetScreen() {
                                 <Typography className={selectedFilter === filter.key ? 'text-white' : 'text-gray-500'} weight={selectedFilter === filter.key ? 'bold' : 'medium'} variant="caption">
                                     {filter.label}
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </ScrollView>
                 </View>
@@ -535,14 +535,14 @@ export default function AssetScreen() {
                 }
             />
 
-            <TouchableOpacity onPress={openAddForm} className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl border-4 border-white/20">
+            <Pressable onPress={openAddForm} className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl border-4 border-white/20">
                 <Plus size={32} color="white" />
-            </TouchableOpacity>
+            </Pressable>
 
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetVisible} transparent={true} animationType="fade" onRequestClose={handleCloseSheet}>
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} activeOpacity={1} />
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} activeOpacity={1} />
                         <View className="bg-white rounded-t-[32px] shadow-2xl h-[90%] max-w-[640px] self-center w-full">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
                             <ScrollView className="flex-1">{renderSheetContent()}</ScrollView>

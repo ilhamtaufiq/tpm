@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -51,7 +51,7 @@ export const SparePartSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <TouchableOpacity onPress={handleOpen}>
+            <Pressable onPress={handleOpen}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     <Package size={20} color={value ? '#2563EB' : '#9CA3AF'} />
 
@@ -69,12 +69,12 @@ export const SparePartSelector = ({
                     </View>
 
                     {value && (
-                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
+                        <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
                             <X size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Modal for Search */}
             <Modal
@@ -85,7 +85,7 @@ export const SparePartSelector = ({
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
+                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
                             <View className="items-center mb-2">
@@ -94,9 +94,9 @@ export const SparePartSelector = ({
 
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h3" weight="bold">Cari Sparepart</Typography>
-                                <TouchableOpacity onPress={handleClose}>
+                                <Pressable onPress={handleClose}>
                                     <X size={24} color="#6B7280" />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
                             <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
@@ -119,7 +119,7 @@ export const SparePartSelector = ({
                                     keyExtractor={(item) => item.id.toString()}
                                     showsVerticalScrollIndicator={false}
                                     renderItem={({ item }) => (
-                                        <TouchableOpacity onPress={() => handleSelect(item)}>
+                                        <Pressable onPress={() => handleSelect(item)}>
                                             <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
                                                 <View className="flex-1 mr-4">
                                                     <Typography weight="semibold" className="text-base">{item.nama}</Typography>
@@ -140,7 +140,7 @@ export const SparePartSelector = ({
                                                     <Check size={20} color="#2563EB" />
                                                 )}
                                             </Card>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                     ListEmptyComponent={
                                         searchQuery.length > 0 ? (

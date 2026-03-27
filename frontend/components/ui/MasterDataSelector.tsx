@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Input } from './Input';
 import { Button } from './Button';
@@ -85,7 +85,7 @@ export const MasterDataSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <TouchableOpacity onPress={handleOpen}>
+            <Pressable onPress={handleOpen}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     {type === 'customer' ? (
                         <User size={20} color={value ? '#2563EB' : '#9CA3AF'} />
@@ -111,12 +111,12 @@ export const MasterDataSelector = ({
                     </View>
 
                     {value && (
-                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
+                        <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
                             <X size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
+                        </Pressable>
                     )}
                 </View>
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Modal Replacement for BottomSheet */}
             <Modal
@@ -127,7 +127,7 @@ export const MasterDataSelector = ({
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
+                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
                     <View className="bg-white rounded-t-[32px] h-[90%] overflow-hidden">
                         <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
                             <View className="items-center mb-2">
@@ -136,9 +136,9 @@ export const MasterDataSelector = ({
 
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h3" weight="bold">Cari {type === 'customer' ? 'Customer' : 'Supplier'}</Typography>
-                                <TouchableOpacity onPress={handleClose}>
+                                <Pressable onPress={handleClose}>
                                     <X size={24} color="#6B7280" />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
 
                             <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
@@ -154,7 +154,7 @@ export const MasterDataSelector = ({
                             </View>
 
                             {allowGuest && searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={handleGuestSelect} className="mb-4">
+                                <Pressable onPress={handleGuestSelect} className="mb-4">
                                     <Card className="p-4 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
                                         <Plus size={20} color="#4B5563" />
                                         <View className="ml-3">
@@ -162,7 +162,7 @@ export const MasterDataSelector = ({
                                             <Typography variant="caption" className="text-gray-500">sebagai Guest / Non-Member</Typography>
                                         </View>
                                     </Card>
-                                </TouchableOpacity>
+                                </Pressable>
                             )}
 
                             {isLoading ? (
@@ -173,7 +173,7 @@ export const MasterDataSelector = ({
                                     keyExtractor={(item) => item.id.toString()}
                                     showsVerticalScrollIndicator={false}
                                     renderItem={({ item }) => (
-                                        <TouchableOpacity onPress={() => handleSelect(item)}>
+                                        <Pressable onPress={() => handleSelect(item)}>
                                             <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
                                                 <View className="flex-1 mr-2">
                                                     <Typography weight="semibold">{item.nama}</Typography>
@@ -197,7 +197,7 @@ export const MasterDataSelector = ({
                                                     variant="neutral"
                                                 />
                                             </Card>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     )}
                                     ListEmptyComponent={
                                         searchQuery.length > 1 ? (

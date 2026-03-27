@@ -1,16 +1,15 @@
 import React from 'react';
-import { View, TouchableOpacity, Platform } from 'react-native';
+import { View, Pressable as RNPressable, Platform } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { cssInterop } from 'nativewind';
-import { Pressable as GHPressable } from 'react-native-gesture-handler';
-import { Pressable as RNPressable } from 'react-native';
+import { TouchableOpacity as GHPressable } from 'react-native-gesture-handler';
 
 // Use same pressable logic as Button for consistency
 cssInterop(GHPressable, {
     className: 'style',
 });
-const Pressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<any>;
+const WrappedPressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<any>;
 
 interface TabItem {
     label: string;
@@ -48,7 +47,7 @@ export const Tabs = ({
                 const Icon = item.icon;
 
                 return (
-                    <TouchableOpacity
+                    <WrappedPressable
                         key={item.value}
                         onPress={() => onChange(item.value)}
                         activeOpacity={0.7}
@@ -78,7 +77,7 @@ export const Tabs = ({
                         >
                             {item.label}
                         </Typography>
-                    </TouchableOpacity>
+                    </WrappedPressable>
                 );
             })}
         </View>

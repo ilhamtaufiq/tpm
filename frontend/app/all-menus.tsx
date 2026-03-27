@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StatusBar, TextInput, Dimensions, Image } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, TextInput, Dimensions, Image } from 'react-native';
 import {
     ChevronLeft,
     Wrench,
@@ -80,7 +80,7 @@ const MenuIcon = ({ label, icon: Icon, color, path, index }: {
             style={{ width: '25%' }} 
             className="items-center mb-6 px-1"
         >
-            <TouchableOpacity
+            <Pressable
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
                 onPress={() => router.push(path as any)}
@@ -116,7 +116,7 @@ const MenuIcon = ({ label, icon: Icon, color, path, index }: {
                 >
                     {label}
                 </Typography>
-            </TouchableOpacity>
+            </Pressable>
         </Animated.View>
     );
 };

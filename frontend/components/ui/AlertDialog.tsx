@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Modal, TouchableOpacity, Text, Dimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Modal, Pressable, Text, Dimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
 import { Typography } from './Typography';
-// import { Button } from './Button'; // Removed to use native TouchableOpacity implementation
+// import { Button } from './Button'; // Removed to use native Pressable implementation
 import { AlertCircle, CheckCircle, Info, XCircle, LucideIcon } from 'lucide-react-native';
 
 interface AlertDialogProps {
@@ -17,7 +17,7 @@ interface AlertDialogProps {
     loading?: boolean;
 }
 
-// Internal Button component using basic TouchableOpacity to avoid Modal interaction issues
+// Internal Button component using basic Pressable to avoid Modal interaction issues
 const DialogButton = ({
     onPress,
     title,
@@ -50,7 +50,7 @@ const DialogButton = ({
     const loaderColor = isOutline ? '#4B5563' : 'white';
 
     return (
-        <TouchableOpacity
+        <Pressable
             onPress={onPress}
             disabled={loading}
             activeOpacity={0.7}
@@ -71,7 +71,7 @@ const DialogButton = ({
                     {title}
                 </Typography>
             )}
-        </TouchableOpacity>
+        </Pressable>
     );
 };
 

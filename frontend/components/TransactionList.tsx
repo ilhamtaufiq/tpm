@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Pressable, ActivityIndicator } from 'react-native';
 import { Wrench, CarFront, Truck, Wallet, Receipt, User, HelpCircle, ArrowRight } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { Badge } from './ui/Badge';
@@ -94,9 +94,9 @@ export const TransactionList = () => {
         <View className="px-6 mt-8 pb-32">
             <View className="flex-row justify-between items-center mb-6">
                 <Typography variant="h3" weight="bold">Aktivitas Terkini</Typography>
-                <TouchableOpacity onPress={() => router.push('/history')}>
+                <Pressable onPress={() => router.push('/history')}>
                     <Typography variant="caption" weight="bold" className="text-primary">Lihat Riwayat</Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             {list.length === 0 ? (
@@ -110,7 +110,7 @@ export const TransactionList = () => {
                     const badge = getStatusBadge(item.status);
 
                     return (
-                        <TouchableOpacity
+                        <Pressable
                             key={item.id}
                             className="flex-row items-center bg-white p-4 rounded-3xl mb-3 border border-gray-100 shadow-sm"
                             activeOpacity={0.8}
@@ -149,7 +149,7 @@ export const TransactionList = () => {
                                     className="mt-1 transform scale-75 origin-right"
                                 />
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     );
                 })
             )}

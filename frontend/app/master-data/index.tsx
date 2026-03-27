@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import {
@@ -83,23 +83,23 @@ export default function MasterDataScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleGoBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Master Data</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Pusat Data & Inventori</Typography>
                         </View>
                     </View>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={onRefresh}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={20} color="white" />}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {/* Database Summary (Glassmorphism) - Inside Header */}
@@ -139,7 +139,7 @@ export default function MasterDataScreen() {
             >
                 {/* Menu Items */}
                 <View className="pt-2 pb-10">
-                    <TouchableOpacity onPress={() => router.push('/master-data/customer')}>
+                    <Pressable onPress={() => router.push('/master-data/customer')}>
                         <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-blue-50 rounded-[20px] items-center justify-center mr-4 border border-blue-100/50">
                                 <Users size={32} color="#3B82F6" />
@@ -159,9 +159,9 @@ export default function MasterDataScreen() {
                                 <ChevronRight size={16} color="#9CA3AF" />
                             </View>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity onPress={() => router.push('/master-data/supplier')}>
+                    <Pressable onPress={() => router.push('/master-data/supplier')}>
                         <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
                                 <Building2 size={32} color="#F59E0B" />
@@ -181,9 +181,9 @@ export default function MasterDataScreen() {
                                 <ChevronRight size={16} color="#9CA3AF" />
                             </View>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity onPress={() => router.push('/master-data/sparepart')}>
+                    <Pressable onPress={() => router.push('/master-data/sparepart')}>
                         <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
                                 <Wrench size={32} color="#059669" />
@@ -203,9 +203,9 @@ export default function MasterDataScreen() {
                                 <ChevronRight size={16} color="#9CA3AF" />
                             </View>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity onPress={() => router.push('/master-data/jasa-servis')}>
+                    <Pressable onPress={() => router.push('/master-data/jasa-servis')}>
                         <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-purple-50 rounded-[20px] items-center justify-center mr-4 border border-purple-100/50">
                                 <Tag size={32} color="#8B5CF6" />
@@ -225,9 +225,9 @@ export default function MasterDataScreen() {
                                 <ChevronRight size={16} color="#9CA3AF" />
                             </View>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    <TouchableOpacity onPress={() => router.push('/master-data/asset')}>
+                    <Pressable onPress={() => router.push('/master-data/asset')}>
                         <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
                             <View className="w-16 h-16 bg-rose-50 rounded-[20px] items-center justify-center mr-4 border border-rose-100/50">
                                 <Box size={32} color="#E11D48" />
@@ -247,7 +247,7 @@ export default function MasterDataScreen() {
                                 <ChevronRight size={16} color="#9CA3AF" />
                             </View>
                         </View>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </ScrollView>
         </View>

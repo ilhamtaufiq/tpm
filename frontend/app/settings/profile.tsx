@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, TextInput, StatusBar, Platform, KeyboardAvoidingView, Image, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, Image, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
@@ -151,12 +151,12 @@ export default function ProfileSettingsScreen() {
 
                 <View className="flex-row items-center justify-between mb-8 z-10">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Ubah Profil</Typography>
                             <Typography className="text-white/50 text-[10px] uppercase tracking-widest font-bold mt-0.5">Edit Data Akun</Typography>
@@ -179,13 +179,13 @@ export default function ProfileSettingsScreen() {
                                 </View>
                             )}
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={pickImage}
                             disabled={isPicking}
                             className="absolute bottom-0 right-0 w-10 h-10 bg-secondary rounded-2xl items-center justify-center border-2 border-white shadow-lg"
                         >
                             <Camera size={20} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </Animated.View>
             </View>
@@ -284,7 +284,7 @@ export default function ProfileSettingsScreen() {
 
             {/* Bottom Floating Action Button */}
             <View className="absolute bottom-10 left-6 right-6">
-                <TouchableOpacity
+                <Pressable
                     onPress={handleSave}
                     disabled={isSaving}
                     activeOpacity={0.8}
@@ -294,7 +294,7 @@ export default function ProfileSettingsScreen() {
                     <Typography weight="bold" className="text-white text-lg ml-3">
                         {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
                     </Typography>
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <AlertDialog

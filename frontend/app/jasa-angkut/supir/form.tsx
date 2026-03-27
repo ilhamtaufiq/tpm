@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Typography } from '../../../components/ui/Typography';
 import { Input } from '../../../components/ui/Input';
@@ -229,7 +229,7 @@ export default function SupirFormScreen() {
                     ) : (
                         <View className="flex-row flex-wrap mb-4">
                             {activeArmada.map(a => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={a.id}
                                     onPress={() => updateField('armada_default_id', a.id.toString())}
                                     className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${formData.armada_default_id === a.id.toString()
@@ -246,9 +246,9 @@ export default function SupirFormScreen() {
                                             {a.nama}
                                         </Typography>
                                     </View>
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => updateField('armada_default_id', '')}
                                 className={`px-3 py-1.5 rounded-full mr-2 mb-2 border ${!formData.armada_default_id
                                     ? 'bg-gray-600 border-gray-600'
@@ -262,7 +262,7 @@ export default function SupirFormScreen() {
                                 >
                                     Tidak Ada
                                 </Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
 

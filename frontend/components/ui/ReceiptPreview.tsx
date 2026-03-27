@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Modal, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, ScrollView, Modal, Pressable, Platform, Image } from 'react-native';
 import { X, Printer, Download, ZoomIn, ZoomOut } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Button } from './Button';
@@ -64,27 +64,27 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                 <View className="bg-surface px-6 py-4 flex-row items-center justify-between border-b border-gray-200">
                     <Typography variant="h3" weight="bold">Preview Struk</Typography>
                     <View className="flex-row items-center" style={{ gap: 12 }}>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setZoom(Math.max(0.5, zoom - 0.25))}
                             className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
                         >
                             <ZoomOut size={20} color="#374151" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <Typography variant="caption" weight="medium" className="text-textGray">
                             {Math.round(zoom * 100)}%
                         </Typography>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setZoom(Math.min(2, zoom + 0.25))}
                             className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center"
                         >
                             <ZoomIn size={20} color="#374151" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </Pressable>
+                        <Pressable
                             onPress={onClose}
                             className="w-10 h-10 bg-gray-100 rounded-xl items-center justify-center ml-2"
                         >
                             <X size={20} color="#374151" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 

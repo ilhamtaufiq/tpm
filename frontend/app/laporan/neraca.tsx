@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
@@ -449,12 +449,12 @@ export default function NeracaScreen() {
             <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={handleBack}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
                         >
                             <ChevronLeft size={24} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                         <View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Neraca</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Laporan Posisi Keuangan</Typography>
@@ -466,13 +466,13 @@ export default function NeracaScreen() {
                                 {getHeaderDate()}
                             </Typography>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => setShowExportMenu(true)}
                             disabled={isExporting}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             <Download size={22} color="white" />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
 
@@ -506,7 +506,7 @@ export default function NeracaScreen() {
                 {/* Filter Tabs */}
                 <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <TouchableOpacity
+                        <Pressable
                             key={type}
                             onPress={() => {
                                 setFilterType(type);
@@ -521,20 +521,20 @@ export default function NeracaScreen() {
                             >
                                 {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
                             </Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     ))}
                 </View>
             </View>
             {/* Date Navigator */}
             <View className="px-6 -mt-6 z-10">
                 <View className="bg-surface p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handlePrev}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color={themeColors.text} />
-                    </TouchableOpacity>
+                    </Pressable>
 
                     <View className="flex-1 flex-row items-center justify-center">
                         <Calendar size={18} color={themeColors.primary} className="mr-2" />
@@ -543,13 +543,13 @@ export default function NeracaScreen() {
                         </Typography>
                     </View>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleNext}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color={themeColors.text} />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -606,7 +606,7 @@ export default function NeracaScreen() {
             animationType="fade"
             onRequestClose={() => setShowExportMenu(false)}
         >
-            <TouchableOpacity
+            <Pressable
                 className="flex-1 bg-black/50 justify-end"
                 activeOpacity={1}
                 onPress={() => setShowExportMenu(false)}
@@ -617,13 +617,13 @@ export default function NeracaScreen() {
                             <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
                             <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                         </View>
-                        <TouchableOpacity onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                        <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
                             <X size={20} color={themeColors.textGray} />
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
 
                     <View className="flex-row gap-4">
-                        <TouchableOpacity
+                        <Pressable
                             onPress={async () => {
                                 setShowExportMenu(false);
                                 if (!report) return;
@@ -748,9 +748,9 @@ export default function NeracaScreen() {
                             </View>
                             <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
                             <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={async () => {
                                 setShowExportMenu(false);
                                 if (!report) return;
@@ -875,10 +875,10 @@ export default function NeracaScreen() {
                             </View>
                             <Typography weight="bold" className="text-primary-dark">Download</Typography>
                             <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         </Modal>
         </SafeAreaView>
     );

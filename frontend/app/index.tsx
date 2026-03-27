@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
-import { View, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useUIStore } from '../store/useUIStore';
 
@@ -89,7 +89,7 @@ export default function Index() {
 
                 {/* Debug button - only shows after 3 seconds */}
                 {forceNav === false && (
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleForceLogin}
                         style={{
                             marginTop: 32,
@@ -102,7 +102,7 @@ export default function Index() {
                         <Text style={{ fontSize: 12, color: '#6B7280' }}>
                             Tap if stuck (Debug)
                         </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                 )}
             </View>
         );

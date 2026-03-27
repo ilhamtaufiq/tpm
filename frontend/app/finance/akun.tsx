@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, ScrollView, TouchableOpacity, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
     Wallet,
@@ -188,7 +188,7 @@ export default function AkunKeuanganScreen() {
         if (shouldHide) return null;
 
         return (
-            <TouchableOpacity
+            <Pressable
                 key={jenis}
                 onPress={() => handleAdjustClick(jenis)}
                 className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
@@ -230,16 +230,16 @@ export default function AkunKeuanganScreen() {
                                 {formatCurrency(currentBalance)}
                             </Typography>
                         </View>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => handleAdjustClick(jenis)}
                             className="bg-primary/10 px-4 py-2 rounded-xl flex-row items-center"
                         >
                             <RefreshCw size={14} color="#023C69" />
                             <Typography className="text-primary text-xs font-bold ml-2">Ubah</Typography>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -254,7 +254,7 @@ export default function AkunKeuanganScreen() {
         if (!data) return null;
 
         return (
-            <TouchableOpacity
+            <Pressable
                 key={type}
                 onPress={() => router.push(isPiutang ? '/finance/piutang' : '/finance/hutang')}
                 className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
@@ -296,7 +296,7 @@ export default function AkunKeuanganScreen() {
                         </View>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
@@ -379,12 +379,12 @@ export default function AkunKeuanganScreen() {
                 showBackButton
                 onBackButtonPress={() => router.back()}
                 rightElement={
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/finance/laporan')}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <BarChart3 size={24} color="white" />
-                    </TouchableOpacity>
+                    </Pressable>
                 }
             >
                 {/* Total Balance Bento */}
@@ -450,13 +450,13 @@ export default function AkunKeuanganScreen() {
             >
                 <View className="mb-6 flex-row items-center justify-between">
                     <Typography variant="h3" weight="bold" className="text-gray-800">Daftar Rekening</Typography>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => router.push('/finance/laporan')}
                         className="flex-row items-center bg-primary/5 px-3 py-1.5 rounded-full"
                     >
                         <FileText size={12} color="#023C69" />
                         <Typography className="text-primary text-[10px] font-bold ml-1.5 uppercase">Buka Laporan</Typography>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
                 {isLoading ? (
@@ -482,14 +482,14 @@ export default function AkunKeuanganScreen() {
                         <View className="mb-4">
                             <View className="flex-row items-center justify-between mb-4 px-1">
                                 <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => setShowAllAccounts(!showAllAccounts)}
                                     className="bg-primary/5 px-2 py-1 rounded-lg"
                                 >
                                     <Typography className="text-primary text-[10px] font-bold">
                                         {showAllAccounts ? 'Sembunyikan Saldo 0' : 'Tampilkan Semua'}
                                     </Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                             {DUMMY_ACCOUNTS.map(renderAccountItem)}
                         </View>
@@ -503,13 +503,13 @@ export default function AkunKeuanganScreen() {
             {Platform.OS === 'web' ? (
                 <Modal visible={isAdjustModalVisible} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
-                        <TouchableOpacity className="absolute inset-0" onPress={() => setIsAdjustModalVisible(false)} />
+                        <Pressable className="absolute inset-0" onPress={() => setIsAdjustModalVisible(false)} />
                         <View style={styles.webModalContent}>
                             <View className="flex-row justify-between items-center mb-6">
                                 <Typography variant="h2" weight="bold">Penyesuaian Saldo</Typography>
-                                <TouchableOpacity onPress={() => setIsAdjustModalVisible(false)}>
+                                <Pressable onPress={() => setIsAdjustModalVisible(false)}>
                                     <X size={24} color="#6B7280" />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                             <ScrollView showsVerticalScrollIndicator={false}>
                                 {renderAdjustContent()}
