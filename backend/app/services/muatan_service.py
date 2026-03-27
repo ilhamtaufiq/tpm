@@ -879,19 +879,29 @@ class MuatanService:
             func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya"),
             func.sum(MuatanJasaAngkut.laba_kotor).label("total_laba_kotor"),
             func.sum(MuatanJasaAngkut.laba_tpm).label("total_laba_tpm"),
-            func.sum(
-                MuatanJasaAngkut.biaya_bbm + 
-                MuatanJasaAngkut.biaya_tol + 
-                MuatanJasaAngkut.biaya_makan + 
-                MuatanJasaAngkut.biaya_parkir + 
-                MuatanJasaAngkut.biaya_lainnya
-            ).label("total_biaya_static"),
         ).first()
 
-        # Net Profit Calculation (Simplified for summary row)
-        # In a real dashboard update, you'd want the detailed cost breakdown too.
         total_pendapatan = float(aggregates.total_pendapatan or 0)
+        total_biaya_all = float(aggregates.total_biaya or 0)
+
+        # Breakdown for Report Details
+        # 1. Biaya Bengkel (Part services + Perawatan Bengkel category)
+        bengkel_parts = self.db.query(func.sum(JasaAngkutPartService.total)).join(MuatanJasaAngkut).filter(
+            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: bengkel_parts = bengkel_parts.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_parts = bengkel_parts.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
+        bengkel_tambahan = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).join(MuatanJasaAngkut).filter(
+            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL,
+            JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
+        )
+        if tanggal_dari: bengkel_tambahan = bengkel_tambahan.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_tambahan = bengkel_tambahan.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        
+        total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
+        total_biaya_lainnya = total_biaya_all - total_biaya_bengkel
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -901,6 +911,11 @@ class MuatanService:
             "total_pendapatan": total_pendapatan,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
+            "details": {
+                "gross_share_tpm": total_pendapatan,
+                "biaya_lainnya": total_biaya_lainnya,
+                "biaya_bengkel": total_biaya_bengkel
+            }
         }
 
 

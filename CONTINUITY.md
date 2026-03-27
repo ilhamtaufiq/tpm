@@ -32,7 +32,8 @@
   - Added `kode` input field to `master-data/sparepart.tsx`.
   - Fixed `ModuleNotFoundError: No module named 'app.models.piutang'` in `muatan_service.py`.
 - Now:
-  - Completed urgent fixes.
+  - Fixing discrepancy in Jasa Angkut Laba Rugi report (missing details breakdown).
+  - Completed urgent fixes for Jasa Angkut syntax errors and muatan_service imports.
 - Next:
   - Implement auto-refresh in Dashboard and Financial Reports UI components.
   - Finalize barcode scanning logic in `BengkelForm` to use the `kode` field.
