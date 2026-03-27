@@ -262,10 +262,11 @@ export const jasaAngkutService = {
         return response.data;
     },
 
-    getMuatanSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string }) => {
+    getMuatanSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string; search?: string }) => {
         const response = await api.get('/muatan/summary', { params });
         return response.data;
     },
+
 
     getDriverRecentTrips: async (supirId: number, limit: number = 5) => {
         const response = await api.get(`/muatan/supir/${supirId}/recent`, { params: { limit } });

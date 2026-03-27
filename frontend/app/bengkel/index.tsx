@@ -630,13 +630,17 @@ export default function BengkelScreen() {
                         className="rounded-2xl h-14 bg-[#00ADEF] shadow-lg shadow-[#00ADEF]/30"
                     />
 
-                    <Button
-                        variant="secondary"
-                        title="Edit Transaksi"
-                        onPress={() => setView('edit')}
-                        icon={<Edit2 size={20} color="white" />}
-                        className="rounded-2xl h-14 bg-amber-500 shadow-lg shadow-amber-500/30"
-                    />
+                    {selectedItem.status_bayar !== 'lunas' && selectedItem.status_bayar !== 'LUNAS' && 
+                     selectedItem.status_bayar !== 'batal' && selectedItem.status_bayar !== 'BATAL' && (
+                        <Button
+                            variant="secondary"
+                            title="Edit Transaksi"
+                            onPress={() => setView('edit')}
+                            icon={<Edit2 size={20} color="white" />}
+                            className="rounded-2xl h-14 bg-amber-500 shadow-lg shadow-amber-500/30"
+                        />
+                    )}
+
 
                     <Button
                         variant="outline-danger"
@@ -1017,15 +1021,19 @@ export default function BengkelScreen() {
                                                 {formatCurrency(item.grand_total)}
                                             </Typography>
                                         )}
-                                        <Pressable 
-                                            onPress={(e) => {
-                                                e.stopPropagation();
-                                                handlePresentModalPress('edit', item);
-                                            }}
-                                            className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center border border-primary/10"
-                                        >
-                                            <Edit2 size={14} color="#023C69" />
-                                        </Pressable>
+                                        {item.status_bayar !== 'lunas' && item.status_bayar !== 'LUNAS' && 
+                                         item.status_bayar !== 'batal' && item.status_bayar !== 'BATAL' && (
+                                            <Pressable 
+                                                onPress={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePresentModalPress('edit', item);
+                                                }}
+                                                className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center border border-primary/10"
+                                            >
+                                                <Edit2 size={14} color="#023C69" />
+                                            </Pressable>
+                                        )}
+
                                     </View>
                                 </View>
 

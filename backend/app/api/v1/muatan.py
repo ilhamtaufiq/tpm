@@ -64,10 +64,12 @@ def get_summary(
     current_user: ManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    search: Optional[str] = None,
 ):
     """Get transport load summary statistics."""
     service = MuatanService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    return service.get_summary(tanggal_dari, tanggal_sampai, search)
+
 
 
 @router.get("/supir/{supir_id}/summary")

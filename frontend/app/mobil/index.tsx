@@ -28,7 +28,7 @@ import { MobilCostForm } from '../../components/MobilCostForm';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { useMobilList, useDeleteMobil } from '../../hooks/useMobil';
+import { useMobilList, useDeleteMobil, usePenjualanSummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { formatCurrency } from '../../utils/format';
 import { Platform, Modal } from 'react-native';
@@ -69,50 +69,55 @@ export default function MobilInventoryScreen() {
         }
     };
 
-    // Fetch Data
+    // API Hooks
     const { data, isLoading, refetch } = useMobilList({
         status: activeTab,
         search: searchQuery
     });
 
+    const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({ search: searchQuery });
+
     const deleteMutation = useDeleteMobil();
 
-    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM'>('ALL');
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
 
     const mobilsData = data?.data || [];
 
-    const paymentStats = useMemo(() => {
-        let lunas = 0;
-        let belum = 0;
-        mobilsData.forEach((m: any) => {
-            let isLunas = false;
-            if (activeTab === 'tersedia') {
-                isLunas = m.status_bayar_beli === 'lunas' || m.status_bayar_beli === 'LUNAS';
-            } else {
-                isLunas = m.status_bayar_jual === 'lunas' || m.status_bayar_jual === 'LUNAS' || m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS';
-            }
-
-            if (isLunas) lunas++;
-            else belum++;
-        });
-        return { lunas, belum, total: mobilsData.length };
-    }, [mobilsData, activeTab]);
+    const stats = useMemo(() => {
+        if (summaryData) {
+            return {
+                total: summaryData.total_transaksi || 0,
+                lunas: summaryData.lunas_count || 0,
+                partial: summaryData.partial_count || 0,
+                unpaid: summaryData.unpaid_count || 0,
+                batal: summaryData.batal_count || 0,
+                total_penjualan: summaryData.total_penjualan || 0,
+                laba_tpm: summaryData.total_laba_tpm || 0
+            };
+        }
+        return { total: 0, lunas: 0, partial: 0, unpaid: 0, batal: 0, total_penjualan: 0, laba_tpm: 0 };
+    }, [summaryData]);
 
     const mobils = useMemo(() => {
         let result = mobilsData;
         if (paymentFilter === 'LUNAS') {
-            result = result.filter((m: any) => {
-                if (activeTab === 'tersedia') return m.status_bayar_beli === 'lunas' || m.status_bayar_beli === 'LUNAS';
-                return m.status_bayar_jual === 'lunas' || m.status_bayar_jual === 'LUNAS' || m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS';
-            });
-        } else if (paymentFilter === 'BELUM') {
-             result = result.filter((m: any) => {
-                if (activeTab === 'tersedia') return m.status_bayar_beli !== 'lunas' && m.status_bayar_beli !== 'LUNAS';
-                return m.status_bayar_jual !== 'lunas' && m.status_bayar_jual !== 'LUNAS' && m.status_bayar !== 'lunas' && m.status_bayar !== 'LUNAS';
-            });
+            result = result.filter((m: any) => m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS');
+        } else if (paymentFilter === 'PARTIAL') {
+            result = result.filter((m: any) => 
+                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS' || m.status_bayar === 'cicilan' || m.status_bayar === 'CICILAN') && 
+                (Number(m.dp || 0) > 0)
+            );
+        } else if (paymentFilter === 'UNPAID') {
+            result = result.filter((m: any) => 
+                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS') && 
+                (Number(m.dp || 0) === 0)
+            );
+        } else if (paymentFilter === 'BATAL') {
+            result = result.filter((m: any) => m.status_bayar === 'batal' || m.status_bayar === 'BATAL');
         }
         return result;
-    }, [mobilsData, paymentFilter, activeTab]);
+    }, [mobilsData, paymentFilter]);
+
 
     // Bottom Sheet Logic (Registration)
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -234,13 +239,13 @@ export default function MobilInventoryScreen() {
         }
     };
 
-    const stats = useMemo(() => {
+    const unitStats = useMemo(() => {
         return {
-            total: mobils.length,
-            tersedia: mobils.filter((m: any) => m.status === 'tersedia').length,
-            terjual: mobils.filter((m: any) => m.status === 'terjual').length
+            total: mobilsData.length,
+            tersedia: mobilsData.filter((m: any) => m.status === 'tersedia').length,
+            terjual: mobilsData.filter((m: any) => m.status === 'terjual').length
         };
-    }, [mobils]);
+    }, [mobilsData]);
 
     return (
         <BottomSheetModalProvider>
@@ -270,67 +275,116 @@ export default function MobilInventoryScreen() {
                         </Pressable>
                     </View>
 
-                    {/* Bento Stats (Home Style) */}
-                    <View className="flex-row justify-between">
-                        <View className="flex-1 bg-white/10 p-4 rounded-[24px] mr-2 border border-white/5">
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1">Total Unit</Typography>
-                            <Typography weight="bold" className="text-white text-xl">{stats.total}</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/10 p-4 rounded-[24px] mr-2 border border-white/5">
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1">Tersedia</Typography>
-                            <Typography weight="bold" className="text-emerald-400 text-xl">{stats.tersedia}</Typography>
-                        </View>
-                        <View className="flex-1 bg-emerald-500 p-4 rounded-[24px] border border-white/10">
-                            <Typography className="text-white/60 text-[10px] uppercase font-bold mb-1">Terjual</Typography>
-                            <Typography weight="bold" className="text-white text-xl">{stats.terjual}</Typography>
-                        </View>
-                    </View>
+                    {/* Row 1: Operational Status (Inventory) */}
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        className="flex-row -mx-6 px-6 mb-4"
+                    >
+                        {[
+                            { label: 'Total Unit', key: 'total', value: unitStats.total, color: 'white' },
+                            { label: 'Tersedia', key: 'tersedia', value: unitStats.tersedia, color: '#10B981' },
+                            { label: 'Terjual', key: 'terjual', value: unitStats.terjual, color: '#3B82F6' },
+                        ].map((stat, idx) => (
+                            <View
+                                key={stat.key}
+                                style={{ width: 100 }}
+                                className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
+                            >
+                                <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
+                                <View className="flex-row items-baseline">
+                                    <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
+                                    <Typography className="text-white/30 text-[8px] ml-1 font-bold">UNIT</Typography>
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+
+                    {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
+                    <ScrollView 
+                        horizontal 
+                        showsHorizontalScrollIndicator={false}
+                        className="flex-row -mx-6 px-6"
+                    >
+                        {[
+                            { label: 'Total', key: 'total_trx', value: stats.total, color: 'white' },
+                            { label: 'Lunas', key: 'lunas', value: stats.lunas, color: '#10B981' },
+                            { label: 'Belum Lunas', key: 'partial', value: stats.partial, color: '#3B82F6' },
+                            { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, color: '#F59E0B' },
+                            { label: 'Batal', key: 'batal', value: stats.batal, color: '#EF4444' },
+                        ].map((stat, idx) => (
+                            <View
+                                key={stat.key}
+                                style={{ width: 100 }}
+                                className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
+                            >
+                                <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
+                                <View className="flex-row items-baseline">
+                                    <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
+                                    <Typography className="text-white/30 text-[8px] ml-1 font-bold">TRX</Typography>
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
                 </View>
 
-                {/* Filters & Search */}
-                <View className="px-6 -mt-6">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl flex-col border border-gray-50">
-                        <View className="flex-row items-center">
-                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                                <Search size={18} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-sm font-medium text-textMain"
-                                    placeholder="Cari unit..."
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                />
-                            </View>
-                            <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                                <Filter size={20} color="#023C69" />
-                            </Pressable>
+                {/* Filters & Search - Floating Overlay */}
+                <View className="px-6 -mt-8 z-10">
+                    <View className="bg-white p-3 rounded-[32px] shadow-2xl space-y-3 border border-gray-100">
+                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-[20px] border border-gray-100">
+                            <Search size={20} color="#6B7280" />
+                            <TextInput
+                                className="flex-1 ml-3 text-textMain text-sm font-medium h-full"
+                                placeholder="Cari unit..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor="#9CA3AF"
+                            />
                         </View>
-                        {/* Status Bayar Chips */}
-                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 space-x-2">
+
+                        {/* Payment Filter Chips (Row 2 logic matched) */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
                             <Pressable 
                                 onPress={() => setPaymentFilter('ALL')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
                             >
                                 <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                    Semua ({paymentStats.total})
+                                    Semua ({stats.total})
                                 </Typography>
                             </Pressable>
                             <Pressable 
                                 onPress={() => setPaymentFilter('LUNAS')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
                             >
                                 <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                    Lunas ({paymentStats.lunas})
+                                    Lunas ({stats.lunas})
                                 </Typography>
                             </Pressable>
                             <Pressable 
-                                onPress={() => setPaymentFilter('BELUM')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BELUM' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                                onPress={() => setPaymentFilter('PARTIAL')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
                             >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BELUM' ? 'text-white' : 'text-rose-700'}>
-                                    Belum Lunas ({paymentStats.belum})
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                    Belum Lunas ({stats.partial})
                                 </Typography>
                             </Pressable>
-                        </View>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('UNPAID')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                    Belum Bayar ({stats.unpaid})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('BATAL')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                    Batal ({stats.batal})
+                                </Typography>
+                            </Pressable>
+                        </ScrollView>
                     </View>
                 </View>
 

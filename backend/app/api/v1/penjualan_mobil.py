@@ -89,10 +89,12 @@ def get_summary(
     current_user: ManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    search: Optional[str] = None,
 ):
     """Get car sales summary statistics."""
     service = PenjualanMobilService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    return service.get_summary(tanggal_dari, tanggal_sampai, search)
+
 
 
 @router.get("/investor-report")

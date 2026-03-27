@@ -40,27 +40,53 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
 
 export default function JasaAngkutScreen() {
-
-    // API Hooks
-    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
-    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary();
-    const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
-
+    // UI States (Moved up to prevent use-before-declaration)
+    const [searchQuery, setSearchQuery] = useState('');
+    const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
     const [view, setView] = useState<'form' | 'detail'>('form');
-    const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM'>('ALL');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+    // API Hooks
+    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
+    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({ search: searchQuery });
+    const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
+
+    // Payment Filter Logic (Reactive)
+    const stats = useMemo(() => {
+        if (summaryData) {
+            return {
+                total: summaryData.total_transaksi || 0,
+                lunas: summaryData.lunas_count || 0,
+                partial: summaryData.partial_count || 0,
+                unpaid: summaryData.unpaid_count || 0,
+                batal: summaryData.batal_count || 0,
+                revenue: summaryData.total_pendapatan || 0,
+                profit: summaryData.laba_tpm || 0
+            };
+        }
+        return { total: 0, lunas: 0, partial: 0, unpaid: 0, batal: 0, revenue: 0, profit: 0 };
+    }, [summaryData]);
 
     const recentTrips = useMemo(() => {
         let trips = muatanData?.data || [];
         
         if (paymentFilter === 'LUNAS') {
             trips = trips.filter((t: any) => t.status_bayar === 'lunas' || t.status_bayar === 'LUNAS');
-        } else if (paymentFilter === 'BELUM') {
-            trips = trips.filter((t: any) => t.status_bayar !== 'lunas' && t.status_bayar !== 'LUNAS');
+        } else if (paymentFilter === 'PARTIAL') {
+            trips = trips.filter((t: any) => 
+                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') && 
+                (Number(t.jumlah_bayar) > 0)
+            );
+        } else if (paymentFilter === 'UNPAID') {
+            trips = trips.filter((t: any) => 
+                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') && 
+                (Number(t.jumlah_bayar) === 0 || !t.jumlah_bayar)
+            );
+        } else if (paymentFilter === 'BATAL') {
+            trips = trips.filter((t: any) => t.status_bayar === 'batal' || t.status_bayar === 'BATAL');
         }
 
         if (searchQuery) {
@@ -76,6 +102,7 @@ export default function JasaAngkutScreen() {
         }
         return trips;
     }, [muatanData, searchQuery, paymentFilter]);
+
 
     // Group trips by armada type OR driver
     const groupedTrips = useMemo(() => {
@@ -199,48 +226,9 @@ export default function JasaAngkutScreen() {
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
 
-    const stats = useMemo(() => {
-        const backendStats = summaryData || {};
-        
-        // If backend summary has data, use it
-        if (backendStats.total_transaksi > 0) {
-            return {
-                total: backendStats.total_transaksi || 0,
-                lunas: (backendStats.total_transaksi || 0) - (backendStats.hutang_supir_count || 0),
-                pending: backendStats.hutang_supir_count || 0,
-                revenue: backendStats.total_pendapatan || 0,
-                profit: backendStats.laba_tpm || 0
-            };
-        }
-
-        // Fallback calculation from current list data
-        const trips = muatanData?.data || [];
-        if (trips.length === 0) {
-            return {
-                total: 0,
-                lunas: 0,
-                pending: 0,
-                revenue: 0,
-                profit: 0
-            };
-        }
-
-        const total = trips.length;
-        const pending = trips.filter((t: any) => t.status_bayar !== 'LUNAS').length;
-        const lunas = total - pending;
-        const revenue = trips.reduce((acc: number, t: any) => acc + (Number(t.pendapatan_kotor || 0) - Number(t.laba_supir || 0)), 0);
-        const profit = trips.reduce((acc: number, t: any) => acc + Number(t.laba_tpm || 0), 0);
-
-        return {
-            total,
-            lunas,
-            pending,
-            revenue,
-            profit
-        };
-    }, [summaryData, muatanData]);
 
     const handleGoBack = () => {
+
         if (router.canGoBack()) {
             router.back();
         } else {
@@ -547,46 +535,35 @@ export default function JasaAngkutScreen() {
                     </View>
                 </View>
 
-                {/* Main Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Profit TPM</Typography>
+                {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    className="flex-row -mx-6 px-6 mb-8"
+                >
+                    {[
+                        { label: 'Total', key: 'total', value: stats.total, color: 'white' },
+                        { label: 'Lunas', key: 'lunas', value: stats.lunas, color: '#10B981' },
+                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, color: '#3B82F6' },
+                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, color: '#F59E0B' },
+                        { label: 'Batal', key: 'batal', value: stats.batal, color: '#EF4444' },
+                    ].map((stat, idx) => (
+                        <View
+                            key={stat.key}
+                            style={{ width: 100 }}
+                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
+                        >
+                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
+                            <View className="flex-row items-baseline">
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
+                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">TRX</Typography>
+                            </View>
                         </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Stats Bulan Ini</Typography>
-                    </View>
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                {formatCurrency(stats.profit)}
-                            </Typography>
-                            <Typography className="text-white/40 text-xs mt-1">Estimasi Laba Masuk</Typography>
-                        </View>
-                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                            <ArrowUpRight size={24} color="white" />
-                        </View>
-                    </View>
-
-                    {/* Bento Stats Inside Header */}
-                    <View className="h-[1px] bg-white/10 my-6" />
-                    <View className="flex-row justify-between">
-                        <View className="flex-1">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Trip</Typography>
-                            <Typography weight="bold" className="text-white text-lg">{stats.total}</Typography>
-                        </View>
-                        <View className="flex-1 items-center border-x border-white/5">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Revenue</Typography>
-                            <Typography weight="bold" className="text-white text-lg">{formatCurrency(stats.revenue)}</Typography>
-                        </View>
-                        <View className="flex-1 items-end">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Pending</Typography>
-                            <Typography weight="bold" className="text-amber-400 text-lg">{stats.pending}</Typography>
-                        </View>
-                    </View>
-                </View>
+                    ))}
+                </ScrollView>
             </View>
 
-            {/* Floating Search & Filter Overlay */}
+            {/* Filter Search Overlay */}
             {(!isFormOpen && !isDetailOpen && sheetIndex === -1) && (
                 <View className="px-6 -mt-8 z-10">
                     <View className="bg-white p-3 rounded-[32px] shadow-2xl space-y-3 border border-gray-100">
@@ -602,13 +579,13 @@ export default function JasaAngkutScreen() {
                             />
                             {searchQuery.length > 0 && (
                                 <Pressable onPress={() => setSearchQuery('')}>
-                                    <Clock size={16} color="#9CA3AF" />
+                                    <X size={16} color="#9CA3AF" />
                                 </Pressable>
                             )}
                         </View>
 
-                        {/* Filter & Group Controls */}
-                        <View className="flex-col px-1 mt-2 space-y-3">
+                        {/* Group Controls & Filter Chips */}
+                        <View className="space-y-3">
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row bg-gray-100 p-1 rounded-2xl">
                                     <Pressable
@@ -628,10 +605,11 @@ export default function JasaAngkutScreen() {
                                 </View>
                             </View>
 
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                            {/* Payment Filter Chips */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
                                 <Pressable 
                                     onPress={() => setPaymentFilter('ALL')}
-                                    className={`mr-2 px-4 py-1.5 rounded-full border ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
                                 >
                                     <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
                                         Semua ({stats.total})
@@ -639,18 +617,34 @@ export default function JasaAngkutScreen() {
                                 </Pressable>
                                 <Pressable 
                                     onPress={() => setPaymentFilter('LUNAS')}
-                                    className={`mr-2 px-4 py-1.5 rounded-full border ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
                                 >
                                     <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
                                         Lunas ({stats.lunas})
                                     </Typography>
                                 </Pressable>
                                 <Pressable 
-                                    onPress={() => setPaymentFilter('BELUM')}
-                                    className={`mr-2 px-4 py-1.5 rounded-full border ${paymentFilter === 'BELUM' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                                    onPress={() => setPaymentFilter('PARTIAL')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
                                 >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'BELUM' ? 'text-white' : 'text-rose-700'}>
-                                        Belum Lunas ({stats.pending})
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                        Belum Lunas ({stats.partial})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable 
+                                    onPress={() => setPaymentFilter('UNPAID')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                        Belum Bayar ({stats.unpaid})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable 
+                                    onPress={() => setPaymentFilter('BATAL')}
+                                    className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                        Batal ({stats.batal})
                                     </Typography>
                                 </Pressable>
                             </ScrollView>

@@ -163,10 +163,10 @@ export const useInventorySummary = (options?: any) => {
     });
 };
 
-export const usePenjualanSummary = (options?: any) => {
+export const usePenjualanSummary = (params?: any) => {
     return useQuery<PenjualanSummary>({
-        queryKey: ['penjualan_mobil_summary'],
-        queryFn: () => mobilService.getPenjualanSummary(),
-        ...options
+        queryKey: ['penjualan_mobil_summary', params],
+        queryFn: () => mobilService.getPenjualanSummary(params),
     });
 };
+

@@ -119,12 +119,13 @@ export const useMuatanList = (params?: any) => {
     });
 };
 
-export const useMuatanSummary = () => {
+export const useMuatanSummary = (params?: any) => {
     return useQuery({
-        queryKey: ['muatan_summary'],
-        queryFn: () => jasaAngkutService.getMuatanSummary(),
+        queryKey: ['muatan_summary', params],
+        queryFn: () => jasaAngkutService.getMuatanSummary(params),
     });
 };
+
 
 export const useMuatanBySupir = (supirId: number) => {
     return useQuery({

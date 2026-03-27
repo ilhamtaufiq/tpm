@@ -16,13 +16,16 @@ export interface InventorySummary {
 }
 
 export interface PenjualanSummary {
-    total_units_sold?: number;
     total_transaksi?: number;
-    total_revenue?: number;
+    lunas_count?: number;
+    partial_count?: number;
+    unpaid_count?: number;
+    batal_count?: number;
     total_penjualan?: number;
-    total_profit?: number;
     total_laba_tpm?: number;
+    piutang_nilai?: number;
 }
+
 
 export const mobilService = {
     getMobils: async (params?: any) => {

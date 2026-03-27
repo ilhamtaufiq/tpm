@@ -844,9 +844,10 @@ class PenjualanMobilService:
         self,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
+        search: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get sales summary statistics."""
-        # Base query (All)
+        # Base query
         query = self.db.query(TransaksiPenjualanMobil)
 
         if tanggal_dari:
@@ -854,14 +855,31 @@ class PenjualanMobilService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
 
-        # Total successful transactions (exclude BATAL)
-        total_count = query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL).count()
+        if search:
+            q = f"%{search}%"
+            query = query.outerjoin(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+                or_(
+                    TransaksiPenjualanMobil.nomor_transaksi.ilike(q),
+                    Mobil.nama_pembeli.ilike(q),
+                    Mobil.nomor_plat.ilike(q),
+                    Mobil.merek.ilike(q),
+                    Mobil.model.ilike(q),
+                )
+            )
 
-        # Aggregate values
-        # We use outerjoin because cancelled transactions (BATAL) have mobil_id = None
-        # They are included to capture the 'penalti' profit in total_laba_kotor
+        # Total transactions
+        total_count = query.count()
+
+        # Payment Status Counts
+        lunas_count = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS).count()
+        partial_count = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.CICILAN).count()
+        unpaid_count = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.BELUM_LUNAS).count()
+        batal_count = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL).count()
+
+        # Aggregate values (Excluding BATAL for financial totals)
         aggregates = (
-            query.outerjoin(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
+            .outerjoin(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
             .with_entities(
                 func.sum(TransaksiPenjualanMobil.harga_jual).label("total_penjualan"),
                 func.sum(TransaksiPenjualanMobil.total_modal).label("total_modal"),
@@ -872,7 +890,7 @@ class PenjualanMobilService:
             ).first()
         )
         
-        # Recalculate component for parts realized (only for active sales)
+        # Realized parts (active sales only)
         realized_parts_q = (
             query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
             .join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
@@ -881,47 +899,20 @@ class PenjualanMobilService:
         )
         total_parts_realized = float(realized_parts_q.with_entities(func.sum(MobilBiayaLainnya.jumlah)).scalar() or 0)
 
-        # By ownership type (active only)
-        by_ownership = (
-            query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
-            .with_entities(
-                TransaksiPenjualanMobil.tipe_kepemilikan,
-                func.count(TransaksiPenjualanMobil.id).label("count"),
-                func.sum(TransaksiPenjualanMobil.harga_jual).label("total"),
-                func.sum(TransaksiPenjualanMobil.laba_kotor).label("laba"),
-            )
-            .group_by(TransaksiPenjualanMobil.tipe_kepemilikan)
-            .all()
-        )
-
-        ownership_summary = {}
-        for row in by_ownership:
-            ownership_summary[row.tipe_kepemilikan.value] = {
-                "count": row.count,
-                "total_penjualan": float(row.total or 0),
-                "laba_kotor": float(row.laba or 0),
-            }
-
-        # Unpaid transactions (Excluding BATAL)
-        unpaid_query = query.filter(
-            TransaksiPenjualanMobil.status_bayar.in_([PaymentStatus.BELUM_LUNAS, PaymentStatus.CICILAN])
-        )
-        unpaid_count = unpaid_query.count()
+        # Unpaid values (Sisa Bayar)
         unpaid_value = (
-            unpaid_query.with_entities(
-                func.sum(TransaksiPenjualanMobil.sisa_bayar)
-            ).scalar()
+            query.filter(TransaksiPenjualanMobil.status_bayar.in_([PaymentStatus.BELUM_LUNAS, PaymentStatus.CICILAN]))
+            .with_entities(func.sum(TransaksiPenjualanMobil.sisa_bayar))
+            .scalar()
             or Decimal("0")
         )
 
-        # Penalty statistics
-        penalty_query = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL)
-        total_penalty = float(penalty_query.with_entities(func.sum(TransaksiPenjualanMobil.laba_kotor)).scalar() or 0)
-        penalty_count = penalty_query.count()
-
-
         return {
             "total_transaksi": total_count,
+            "lunas_count": lunas_count,
+            "partial_count": partial_count,
+            "unpaid_count": unpaid_count,
+            "batal_count": batal_count,
             "total_penjualan": float(aggregates.total_penjualan or 0),
             "total_modal": float(aggregates.total_modal or 0),
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
@@ -929,13 +920,9 @@ class PenjualanMobilService:
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "total_dp": float(aggregates.total_dp or 0),
             "total_parts_realized": total_parts_realized,
-            "total_modal_excluding_parts": float(aggregates.total_modal or 0) - total_parts_realized,
-            "per_kepemilikan": ownership_summary,
-            "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
-            "penalti_batal": total_penalty,
-            "jumlah_batal": penalty_count,
         }
+
 
     def get_investor_report(
         self,
