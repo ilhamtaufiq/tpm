@@ -6,25 +6,30 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
-import { jasaAngkutService, Supir } from '../../services/jasaAngkut';
+import { jasaAngkutService, Supir, Armada } from '../../services/jasaAngkut';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { Plus, Trash2, Truck, PlusCircle } from 'lucide-react-native';
+import { Plus, Trash2, Truck, PlusCircle, MapPin } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { onlineManager } from '@tanstack/react-query';
+import {
+    useActiveArmada,
+    useActiveSupir,
+    usePayMuatanSplit,
+    useRouteSuggestions
+} from '../../hooks/useJasaAngkut';
 
 interface MuatanFormProps {
     onSuccess?: () => void;
     initialData?: any; // Data for edit mode
 }
 
+const MAX_SUGGESTIONS = 5;
+
 export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const isEditMode = !!initialData;
     const [submitting, setSubmitting] = useState(false);
-    const [activeDrivers, setActiveDrivers] = useState<Supir[]>([]);
-    const [loadingDrivers, setLoadingDrivers] = useState(true);
-    const [driverMode, setDriverMode] = useState<'registered' | 'manual'>('registered');
 
     const [formData, setFormData] = useState({
         tanggal: new Date().toISOString().split('T')[0],
@@ -40,9 +45,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         harga_beli: '',
         harga_jual: '',
         status_bayar: 'BELUM_LUNAS',
+        status: 'PROSES',
         metode_bayar: 'TUNAI',
         catatan: ''
     });
+
+    // Hooks for data fetching
+    const { data: activeArmada = [], isLoading: loadingArmada } = useActiveArmada(formData.tanggal);
+    const { data: activeDrivers = [], isLoading: loadingDrivers } = useActiveSupir();
+    const { data: asalSuggestions = [] } = useRouteSuggestions('asal', formData.asal);
+    const { data: tujuanSuggestions = [] } = useRouteSuggestions('tujuan', formData.tujuan);
+
+    const [driverMode, setDriverMode] = useState<'registered' | 'manual'>('registered');
+    const [armadaMode, setArmadaMode] = useState<'registered' | 'manual'>('registered');
+    const [driverSearch, setDriverSearch] = useState('');
+    const [armadaSearch, setArmadaSearch] = useState('');
 
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
@@ -58,18 +75,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         message: '',
         variant: 'info'
     });
-
-    const [activeArmada, setActiveArmada] = useState<any[]>([]);
-    const [loadingArmada, setLoadingArmada] = useState(true);
-    const [armadaMode, setArmadaMode] = useState<'registered' | 'manual'>('registered');
-
-    const [driverSearch, setDriverSearch] = useState('');
-    const [armadaSearch, setArmadaSearch] = useState('');
-
-    useEffect(() => {
-        loadDrivers();
-        loadArmada();
-    }, []);
 
     // Initialize form with edit data
     useEffect(() => {
@@ -88,6 +93,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
                 status_bayar: initialData.status_bayar === 'LUNAS' ? 'LUNAS' : 'BELUM_LUNAS',
+                status: initialData.status || 'PROSES',
                 metode_bayar: initialData.metode_bayar?.toUpperCase() || 'TUNAI',
                 catatan: initialData.catatan || ''
             });
@@ -107,34 +113,11 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         }
     }, [initialData]);
 
-
-    const loadDrivers = async () => {
-        try {
-            const drivers = await jasaAngkutService.getActiveSupir();
-            setActiveDrivers(drivers);
-        } catch (e) {
-            console.error('Failed to load drivers:', e);
-        } finally {
-            setLoadingDrivers(false);
-        }
-    };
-
-    const loadArmada = async () => {
-        try {
-            const data = await jasaAngkutService.getActiveArmada();
-            setActiveArmada(data);
-        } catch (e) {
-            console.error('Failed to load armada:', e);
-        } finally {
-            setLoadingArmada(false);
-        }
-    };
-
     const updateField = (key: string, value: string) => {
         if (['harga_beli', 'harga_jual'].includes(key)) {
             setFormData(prev => ({ ...prev, [key]: formatNumber(value) }));
         } else if (key === 'supir_id') {
-            const selectedSupir = activeDrivers.find(d => d.id.toString() === value);
+            const selectedSupir = (activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === value);
             setFormData(prev => ({
                 ...prev,
                 [key]: value,
@@ -144,7 +127,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 info_kendaraan: selectedSupir?.info_kendaraan || prev.info_kendaraan
             }));
         } else if (key === 'armada_id') {
-            const selectedArmada = activeArmada.find(a => a.id.toString() === value);
+            const selectedArmada = (activeArmada as Armada[]).find((a: Armada) => a.id.toString() === value);
             setFormData(prev => ({
                 ...prev,
                 [key]: value,
@@ -196,22 +179,25 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     }, [formData.harga_beli, formData.harga_jual]);
 
     const filteredDrivers = useMemo(() => {
-        if (!driverSearch) return activeDrivers;
+        if (!driverSearch) return activeDrivers as Supir[];
         const query = driverSearch.toLowerCase();
-        return activeDrivers.filter(d =>
+        return (activeDrivers as Supir[]).filter((d: Supir) =>
             d.nama.toLowerCase().includes(query) ||
             (d.kode && d.kode.toLowerCase().includes(query))
         );
     }, [activeDrivers, driverSearch]);
 
     const filteredArmada = useMemo(() => {
-        if (!armadaSearch) return activeArmada;
+        // Filter only ready armadas, but include the one currently selected in this form
+        const armadas = (activeArmada as Armada[]).filter((a: Armada) => a.is_ready || a.id.toString() === formData.armada_id);
+
+        if (!armadaSearch) return armadas;
         const query = armadaSearch.toLowerCase();
-        return activeArmada.filter(a =>
+        return armadas.filter((a: Armada) =>
             a.nama.toLowerCase().includes(query) ||
             a.nopol.toLowerCase().includes(query)
         );
-    }, [activeArmada, armadaSearch]);
+    }, [activeArmada, armadaSearch, formData.armada_id]);
 
     const updateJenisMuatan = (index: number, value: string) => {
         const newList = [...formData.jenis_muatan_list];
@@ -435,7 +421,25 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     </View>
                                 )}
                                 {armadaSearch.length === 0 && (
-                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari armada dari database...</Typography>
+                                    <View>
+                                        <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi (Ready)</Typography>
+                                        <View className="flex-row flex-wrap mb-2">
+                                            {activeArmada.filter(a => a.is_ready).slice(0, 5).map(a => (
+                                                <Pressable
+                                                    key={a.id}
+                                                    onPress={() => {
+                                                        updateField('armada_id', a.id.toString());
+                                                        updateField('nopol', a.nopol);
+                                                        updateField('info_kendaraan', a.jenis || '');
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50 border border-blue-100"
+                                                >
+                                                    <Typography variant="caption" weight="bold" className="text-blue-700">{a.nama}</Typography>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                        <Typography variant="caption" className="text-gray-400 italic ml-1">Atau cari armada lain di atas...</Typography>
+                                    </View>
                                 )}
                             </View>
                         )}
@@ -490,11 +494,11 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
-                                        <Typography weight="bold" className="text-primary">{activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
+                                        <Typography weight="bold" className="text-primary">{(activeDrivers as Supir[]).find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
                                     </View>
                                     <View>
                                         <Typography weight="bold" className="text-textMain">
-                                            {activeDrivers.find(d => d.id.toString() === formData.supir_id)?.nama}
+                                             {(activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === formData.supir_id)?.nama}
                                         </Typography>
                                         <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
                                     </View>
@@ -522,7 +526,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 {driverSearch.length > 0 && (
                                     <View className="flex-row flex-wrap mb-4">
                                         {filteredDrivers.length > 0 ? (
-                                            filteredDrivers.map(d => (
+                                             filteredDrivers.map((d: Supir) => (
                                                 <Pressable
                                                     key={d.id}
                                                     onPress={() => {
@@ -546,7 +550,24 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     </View>
                                 )}
                                 {driverSearch.length === 0 && (
-                                    <Typography variant="caption" className="text-gray-400 mb-4 italic ml-1">Cari supir dari database...</Typography>
+                                    <View>
+                                        <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi Supir (Ready)</Typography>
+                                        <View className="flex-row flex-wrap mb-2">
+                                            {activeDrivers.filter((d: Supir) => d.is_ready || d.id.toString() === formData.supir_id).slice(0, 5).map((d: Supir) => (
+                                                <Pressable
+                                                    key={d.id}
+                                                    onPress={() => {
+                                                        updateField('supir_id', d.id.toString());
+                                                        setDriverSearch('');
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-emerald-50 border border-emerald-100"
+                                                >
+                                                    <Typography variant="caption" weight="bold" className="text-emerald-700">{d.nama}</Typography>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                        <Typography variant="caption" className="text-gray-400 italic ml-1 text-[10px]">Atau cari supir lain di atas...</Typography>
+                                    </View>
                                 )}
                             </View>
                         )}
@@ -577,6 +598,20 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         value={formData.asal}
                         onChangeText={v => updateField('asal', v)}
                     />
+                    {asalSuggestions.length > 0 && asalSuggestions[0] !== formData.asal && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-1 mb-2">
+                            {asalSuggestions.map((suggestion, idx) => (
+                                <Pressable
+                                    key={`asal-${idx}`}
+                                    onPress={() => updateField('asal', suggestion)}
+                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 border border-blue-100 flex-row items-center"
+                                >
+                                    <MapPin size={10} color="#2563EB" />
+                                    <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
+                                </Pressable>
+                            ))}
+                        </ScrollView>
+                    )}
                 </View>
                 <View className="flex-1">
                     <Input
@@ -585,6 +620,20 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         value={formData.tujuan}
                         onChangeText={v => updateField('tujuan', v)}
                     />
+                    {tujuanSuggestions.length > 0 && tujuanSuggestions[0] !== formData.tujuan && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-1 mb-2">
+                            {tujuanSuggestions.map((suggestion, idx) => (
+                                <Pressable
+                                    key={`tujuan-${idx}`}
+                                    onPress={() => updateField('tujuan', suggestion)}
+                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 border border-blue-100 flex-row items-center"
+                                >
+                                    <MapPin size={10} color="#2563EB" />
+                                    <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
+                                </Pressable>
+                            ))}
+                        </ScrollView>
+                    )}
                 </View>
             </View>
 
@@ -673,6 +722,46 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         {formatCurrency(calculations.tpmShare)}
                     </Typography>
                 </View>
+            </View>
+
+            {/* Status Ritase */}
+            <View className="flex-row items-center justify-between mb-2 mt-4">
+                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Status Ritase (Trip Status)</Typography>
+            </View>
+
+            <View className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-4">
+                <View className="flex-row justify-between items-center">
+                    <Typography variant="body2">Status Perjalanan</Typography>
+                    <View className="flex-row bg-white rounded-lg p-1 border border-blue-100">
+                        <Pressable
+                            onPress={() => updateField('status', 'PROSES')}
+                            className={`px-4 py-1.5 rounded-md ${formData.status === 'PROSES' ? 'bg-blue-100' : ''}`}
+                        >
+                            <Typography
+                                variant="caption"
+                                weight={formData.status === 'PROSES' ? 'bold' : 'medium'}
+                                className={formData.status === 'PROSES' ? 'text-blue-700' : 'text-gray-500'}
+                            >
+                                PROSES
+                            </Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => updateField('status', 'SELESAI')}
+                            className={`px-4 py-1.5 rounded-md ${formData.status === 'SELESAI' ? 'bg-green-100' : ''}`}
+                        >
+                            <Typography
+                                variant="caption"
+                                weight={formData.status === 'SELESAI' ? 'bold' : 'medium'}
+                                className={formData.status === 'SELESAI' ? 'text-green-700' : 'text-gray-500'}
+                            >
+                                SELESAI
+                            </Typography>
+                        </Pressable>
+                    </View>
+                </View>
+                <Typography variant="caption" className="text-gray-400 mt-2 italic text-[10px]">
+                    * Armada tidak dapat digunakan di ritase lain selama status masih 'PROSES'
+                </Typography>
             </View>
 
             {/* Status & Metode Pembayaran */}

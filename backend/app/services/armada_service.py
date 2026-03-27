@@ -15,7 +15,7 @@ from app.schemas.jasa_angkut import (
 from decimal import Decimal
 from app.models.jasa_angkut import JasaAngkutBiayaLainnya
 from app.services.kas_bank_integration import create_kas_entry
-from app.utils.constants import KasBankType, KasBankSource, PaymentMethod, TRANSACTION_PREFIXES, ExpenseCategory
+from app.utils.constants import KasBankType, KasBankSource, PaymentMethod, TRANSACTION_PREFIXES, ExpenseCategory, MuatanStatus
 from datetime import date, datetime
 
 class ArmadaService:
@@ -154,12 +154,27 @@ class ArmadaService:
         self.db.commit()
         return True
 
-    def get_active_armada(self) -> List[ArmadaJasaAngkut]:
-        """Get all active armada for dropdown."""
-        return self.db.query(ArmadaJasaAngkut).filter(
+    def get_active_armada(self, on_date: Optional[date] = None) -> List[ArmadaJasaAngkut]:
+        """Get all active armada for dropdown, checking for availability (no PROSES trips)."""
+        query = self.db.query(ArmadaJasaAngkut).filter(
             ArmadaJasaAngkut.deleted_at.is_(None),
             ArmadaJasaAngkut.is_active == True
-        ).order_by(ArmadaJasaAngkut.nama.asc()).all()
+        ).order_by(ArmadaJasaAngkut.nama.asc())
+        
+        armadas = query.all()
+        
+        # Find all armada IDs that are currently on a trip (status = PROSES)
+        busy_armada_ids = self.db.query(MuatanJasaAngkut.armada_id).filter(
+            MuatanJasaAngkut.status == MuatanStatus.PROSES,
+            MuatanJasaAngkut.armada_id.isnot(None)
+        ).all()
+        busy_ids = {uid[0] for uid in busy_armada_ids}
+        
+        for a in armadas:
+            # If armada has a PROSES trip, it's NOT ready
+            a.is_ready = a.id not in busy_ids
+                
+        return armadas
 
     def get_detail(self, armada_id: int) -> Dict[str, Any]:
         """Get exhaustive detail for an armada."""

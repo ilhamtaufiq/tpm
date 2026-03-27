@@ -12,7 +12,7 @@ from app.schemas.jasa_angkut import (
     MuatanPaymentSplit,
 )
 from app.services.muatan_service import MuatanService
-from app.utils.constants import PaymentStatus, PaymentMethod
+from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus
 
 
 router = APIRouter(prefix="/muatan", tags=["Muatan Jasa Angkut"])
@@ -69,6 +69,19 @@ def get_summary(
     """Get transport load summary statistics."""
     service = MuatanService(db)
     return service.get_summary(tanggal_dari, tanggal_sampai, search)
+
+
+@router.get("/suggestions/{field}")
+def get_route_suggestions(
+    field: str,
+    db: DBSession,
+    current_user: CurrentUser,
+    q: Optional[str] = None,
+    limit: int = Query(10, ge=1, le=50),
+):
+    """Get unique suggestions for route fields (asal/tujuan) with search."""
+    service = MuatanService(db)
+    return service.get_route_suggestions(field, q, limit)
 
 
 
@@ -145,6 +158,20 @@ def mark_paid_split(
     # Ensure ID matches
     data.muatan_id = muatan_id
     return service.mark_paid_split(data, current_user.id)
+
+
+@router.patch("/{muatan_id}/status", response_model=MuatanResponse)
+def update_status(
+    muatan_id: int,
+    status: MuatanStatus,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Update transport load status (PROSES/SELESAI)."""
+    service = MuatanService(db)
+    # Use update method with status field only
+    from app.schemas.jasa_angkut import MuatanUpdate
+    return service.update(muatan_id, MuatanUpdate(status=status))
 
 
 @router.delete("/{muatan_id}")

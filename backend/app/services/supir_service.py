@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 
 from app.models.jasa_angkut import Supir, MuatanJasaAngkut
 from app.schemas.jasa_angkut import SupirCreate, SupirUpdate
-from app.utils.constants import PaymentStatus
+from app.utils.constants import PaymentStatus, MuatanStatus
 
 
 class SupirService:
@@ -282,8 +282,8 @@ class SupirService:
         return q.order_by(Supir.nama.asc()).limit(limit).all()
 
     def get_active_drivers(self) -> List[Supir]:
-        """Get all active drivers."""
-        return (
+        """Get all active drivers with readiness status."""
+        drivers = (
             self.db.query(Supir)
             .filter(
                 Supir.deleted_at.is_(None),
@@ -292,3 +292,17 @@ class SupirService:
             .order_by(Supir.nama.asc())
             .all()
         )
+
+        # Drivers currently having 'PROSES' trips
+        busy_driver_ids = {
+            uid[0] for uid in self.db.query(MuatanJasaAngkut.supir_id)
+            .filter(
+                MuatanJasaAngkut.status == MuatanStatus.PROSES,
+                MuatanJasaAngkut.supir_id.is_not(None)
+            ).all()
+        }
+
+        for driver in drivers:
+            driver.is_ready = driver.id not in busy_driver_ids
+
+        return drivers

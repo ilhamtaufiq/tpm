@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share, Alert } from 'react-native';
 import { NavigationContext } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -11,6 +11,7 @@ import {
     Plus,
     Search,
     Filter,
+    Calendar,
     Wrench,
     Clock,
     CheckCircle2,
@@ -36,7 +37,7 @@ import { PaymentModal } from '../../components/PaymentModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, startOfMonth, isValid, parse } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
@@ -51,15 +52,28 @@ export default function BengkelScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
 
-    // API Hooks - Auto refresh every 5s and on Focus
+    // Filters
+    const [dateRange, setDateRange] = useState({
+        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        sampai: format(new Date(), 'yyyy-MM-dd')
+    });
+    const [isDateModalVisible, setIsDateModalVisible] = useState(false);
+    const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
+    const dateSheetRef = useRef<BottomSheet>(null);
+    const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
+
     const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
         search: searchQuery || undefined,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
     }, {
         refetchInterval: 5000
     });
     
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
-        search: searchQuery || undefined
+        search: searchQuery || undefined,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
     }, {
         refetchInterval: 5000
     });
@@ -439,6 +453,64 @@ export default function BengkelScreen() {
             }
         });
     };
+
+    const handleApplyDate = () => {
+        const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
+        const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
+        
+        if (!dariValid || !sampaiValid) {
+            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            return;
+        }
+
+        setDateRange(tempDateRange);
+        setIsDateModalVisible(false);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.close();
+        }
+    };
+
+    const renderDateContent = () => (
+        <View className="p-0">
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
+            <View className="space-y-4">
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Dari Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.dari}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Sampai Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.sampai}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+            </View>
+
+            <View className="flex-row mt-8 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => setIsDateModalVisible(false)}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Terapkan"
+                        onPress={handleApplyDate}
+                    />
+                </View>
+            </View>
+        </View>
+    );
 
     const renderDetailContent = () => {
         if (!selectedItem) return null;
@@ -904,10 +976,32 @@ export default function BengkelScreen() {
                     <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
+                {/* Date Filter Selection */}
+                <Pressable
+                    onPress={() => {
+                        setTempDateRange(dateRange);
+                        setIsDateModalVisible(true);
+                        if (Platform.OS !== 'web') {
+                            dateSheetRef.current?.expand();
+                        }
+                    }}
+                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
+                >
+                    <View className="flex-row items-center">
+                        <Calendar size={18} color="#023C69" />
+                        <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
+                    </View>
+                    <View className="bg-primary/5 px-2 py-1 rounded-lg">
+                        <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
+                    </View>
+                </Pressable>
+
                 {/* Section Header */}
                 <View className="flex-row justify-between items-center mb-6">
                     <View>
-                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Antrian Hari Ini</Typography>
+                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">
+                            {dateRange.dari === dateRange.sampai && dateRange.dari === format(new Date(), 'yyyy-MM-dd') ? 'Antrian Hari Ini' : 'Daftar Antrian'}
+                        </Typography>
                         <Typography variant="caption" className="text-textGray">Monitoring pengerjaan bengkel</Typography>
                     </View>
                 </View>
@@ -1074,6 +1168,40 @@ export default function BengkelScreen() {
                     onChange={setSheetIndex}
                 >
                     {renderBottomSheetContent()}
+                </BottomSheet>
+            )}
+
+            {/* Date Selection Modal (Hybrid) */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={isDateModalVisible} transparent animationType="fade">
+                    <View className="flex-1 bg-black/50 justify-center items-center p-6">
+                        <View className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Typography variant="h2" weight="bold">Pilih Periode</Typography>
+                                <Pressable onPress={() => setIsDateModalVisible(false)}>
+                                    <X size={24} color="#6B7280" />
+                                </Pressable>
+                            </View>
+                            {renderDateContent()}
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={dateSheetRef}
+                    index={-1}
+                    snapPoints={dateSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    onClose={() => setIsDateModalVisible(false)}
+                >
+                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <View className="px-8 py-2">
+                            <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode</Typography>
+                            {renderDateContent()}
+                        </View>
+                    </BottomSheetScrollView>
                 </BottomSheet>
             )}
 

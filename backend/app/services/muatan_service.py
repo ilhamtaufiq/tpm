@@ -159,6 +159,28 @@ class MuatanService:
             "laba_supir": laba_supir,
         }
 
+    def get_route_suggestions(self, field: str, query: Optional[str] = None, limit: int = 10) -> List[str]:
+        """Get unique suggestions for route fields (asal/tujuan) with optional search."""
+        if field not in ["asal", "tujuan"]:
+            return []
+
+        column = getattr(MuatanJasaAngkut, field)
+        
+        q = self.db.query(column, func.count(column).label("popularity")).filter(column.is_not(None), column != "")
+
+        if query:
+            q = q.filter(column.ilike(f"%{query}%"))
+
+        # Get most frequent recent locations
+        results = (
+            q.group_by(column)
+            .order_by(func.count(column).desc())
+            .limit(limit)
+            .all()
+        )
+        
+        return [r[0] for r in results]
+
     def create(
         self,
         data: MuatanCreate,

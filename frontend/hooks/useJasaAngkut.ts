@@ -60,10 +60,10 @@ export const useArmadaList = (params?: any) => {
     });
 };
 
-export const useActiveArmada = () => {
+export const useActiveArmada = (tanggal?: string) => {
     return useQuery({
-        queryKey: ['armada_active'],
-        queryFn: () => jasaAngkutService.getActiveArmada(),
+        queryKey: ['armada_active', tanggal],
+        queryFn: () => jasaAngkutService.getActiveArmada(tanggal),
     });
 };
 
@@ -127,6 +127,14 @@ export const useMuatanSummary = (params?: any) => {
 };
 
 
+export const useRouteSuggestions = (field: 'asal' | 'tujuan', query?: string) => {
+    return useQuery({
+        queryKey: ['muatan_suggestions', field, query],
+        queryFn: () => jasaAngkutService.getRouteSuggestions(field, query),
+        staleTime: 60 * 1000, // 1 minute
+    });
+};
+
 export const useMuatanBySupir = (supirId: number) => {
     return useQuery({
         queryKey: ['muatan_supir', supirId],
@@ -186,6 +194,21 @@ export const useAddMuatanCost = () => {
             jasaAngkutService.addMuatanCost(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['muatan'] });
+        },
+    });
+};
+
+export const useUpdateMuatanStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status }: { id: number; status: 'PROSES' | 'SELESAI' }) =>
+            jasaAngkutService.updateMuatanStatus(id, status),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['muatan'] });
+            queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_active'] });
+            queryClient.invalidateQueries({ queryKey: ['supir_active'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_detail'] });
         },
     });
 };

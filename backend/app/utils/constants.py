@@ -57,6 +57,22 @@ class WorkshopStatus(str, Enum):
         return None
 
 
+class MuatanStatus(str, Enum):
+    """Transport load (ritase) status."""
+
+    PROSES = "PROSES"
+    SELESAI = "SELESAI"
+
+    @classmethod
+    def _missing_(cls, value: object) -> "MuatanStatus | None":
+        if isinstance(value, str):
+            upper = value.upper()
+            for member in cls:
+                if member.value == upper:
+                    return member
+        return None
+
+
 class PaymentStatus(str, Enum):
     """Payment status for transactions."""
 

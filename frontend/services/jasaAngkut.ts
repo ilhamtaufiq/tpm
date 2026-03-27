@@ -18,6 +18,7 @@ export interface Supir {
     info_kendaraan?: string;
     tanggal_bergabung: string;
     is_active: boolean;
+    is_ready?: boolean;
     catatan?: string;
     created_at: string;
     updated_at: string;
@@ -37,6 +38,7 @@ export interface Armada {
     nopol: string;
     jenis?: string;
     is_active: boolean;
+    is_ready?: boolean;
     catatan?: string;
     created_at: string;
     updated_at: string;
@@ -72,6 +74,7 @@ export interface Muatan {
     persentase_tpm: number;
     laba_tpm: number;
     laba_supir: number;
+    status: 'PROSES' | 'SELESAI';
     status_bayar: 'LUNAS' | 'BELUM_LUNAS';
     metode_bayar?: PaymentMethod;
     tanggal_bayar?: string;
@@ -97,6 +100,7 @@ export interface MuatanCreate {
     biaya_parkir?: number;
     biaya_lainnya?: number;
     persentase_tpm?: number; // Default 50
+    status?: 'PROSES' | 'SELESAI';
     status_bayar?: 'LUNAS' | 'BELUM_LUNAS';
     metode_bayar?: PaymentMethod;
     biaya_operasional?: any[];
@@ -185,8 +189,8 @@ export const jasaAngkutService = {
         return response.data;
     },
 
-    getActiveArmada: async () => {
-        const response = await api.get('/armada/active');
+    getActiveArmada: async (tanggal?: string) => {
+        const response = await api.get('/armada/active', { params: { tanggal } });
         return response.data;
     },
 
@@ -257,6 +261,11 @@ export const jasaAngkutService = {
         return response.data;
     },
 
+    updateMuatanStatus: async (id: number, status: 'PROSES' | 'SELESAI') => {
+        const response = await api.patch(`/muatan/${id}/status`, null, { params: { status } });
+        return response.data;
+    },
+
     deleteMuatan: async (id: number) => {
         const response = await api.delete(`/muatan/${id}`);
         return response.data;
@@ -264,6 +273,11 @@ export const jasaAngkutService = {
 
     getMuatanSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string; search?: string }) => {
         const response = await api.get('/muatan/summary', { params });
+        return response.data;
+    },
+
+    getRouteSuggestions: async (field: 'asal' | 'tujuan', query?: string, limit: number = 10): Promise<string[]> => {
+        const response = await api.get(`/muatan/suggestions/${field}`, { params: { q: query, limit } });
         return response.data;
     },
 

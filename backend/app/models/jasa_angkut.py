@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, TimestampMixin, SoftDeleteMixin
-from app.utils.constants import PaymentStatus, PaymentMethod, JASA_ANGKUT_PROFIT_SPLIT
+from app.utils.constants import PaymentStatus, PaymentMethod, JASA_ANGKUT_PROFIT_SPLIT, MuatanStatus
 
 
 class Supir(Base, TimestampMixin, SoftDeleteMixin):
@@ -132,7 +132,12 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     laba_tpm: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     laba_supir: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
-    # Payment
+    # Status & Payment
+    status: Mapped[MuatanStatus] = mapped_column(
+        SQLEnum(MuatanStatus),
+        default=MuatanStatus.PROSES,
+        index=True
+    )
     status_bayar: Mapped[PaymentStatus] = mapped_column(
         SQLEnum(PaymentStatus),
         default=PaymentStatus.BELUM_LUNAS,

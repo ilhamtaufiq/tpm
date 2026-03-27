@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Optional, List
 from fastapi import APIRouter, Query, status
 
@@ -46,10 +47,11 @@ def list_armada(
 def get_active_armada(
     db: DBSession,
     current_user: CurrentUser,
+    tanggal: Optional[date] = None,
 ):
     """Get all active armada for dropdown selection."""
     service = ArmadaService(db)
-    return service.get_active_armada()
+    return service.get_active_armada(on_date=tanggal)
 
 @router.get("/{armada_id}", response_model=ArmadaResponse)
 def get_armada(

@@ -16,7 +16,8 @@ import {
     CircleDollarSign,
     Calculator,
     TrendingUp,
-    Trash2
+    Trash2,
+    X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { onlineManager } from '@tanstack/react-query';
@@ -28,6 +29,7 @@ import { MobilCostForm } from '../../components/MobilCostForm';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
+import { format, startOfMonth, isValid, parse } from 'date-fns';
 import { useMobilList, useDeleteMobil, usePenjualanSummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { formatCurrency } from '../../utils/format';
@@ -35,6 +37,16 @@ import { Platform, Modal } from 'react-native';
 
 export default function MobilInventoryScreen() {
     const router = useRouter();
+    // Filters
+    const [dateRange, setDateRange] = useState({
+        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        sampai: format(new Date(), 'yyyy-MM-dd')
+    });
+    const [isDateModalVisible, setIsDateModalVisible] = useState(false);
+    const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
+    const dateSheetRef = useRef<BottomSheetModal>(null);
+    const dateSnapPoints = useMemo(() => ['50%', '75%'], []);
+
     const [activeTab, setActiveTab] = useState('tersedia');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
@@ -72,10 +84,16 @@ export default function MobilInventoryScreen() {
     // API Hooks
     const { data, isLoading, refetch } = useMobilList({
         status: activeTab,
-        search: searchQuery
+        search: searchQuery,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
     });
 
-    const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({ search: searchQuery });
+    const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({ 
+        search: searchQuery,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
+    });
 
     const deleteMutation = useDeleteMobil();
 
@@ -238,6 +256,67 @@ export default function MobilInventoryScreen() {
             default: return '#EE2737';
         }
     };
+
+    const handleApplyDate = () => {
+        const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
+        const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
+        
+        if (!dariValid || !sampaiValid) {
+            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            return;
+        }
+
+        setDateRange(tempDateRange);
+        setIsDateModalVisible(false);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.dismiss();
+        }
+    };
+
+    const renderDateContent = () => (
+        <View className="p-0">
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
+            <View className="space-y-4">
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Dari Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.dari}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Sampai Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.sampai}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+            </View>
+
+            <View className="flex-row mt-8 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => {
+                            setIsDateModalVisible(false);
+                            if (Platform.OS !== 'web') dateSheetRef.current?.dismiss();
+                        }}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Terapkan"
+                        onPress={handleApplyDate}
+                    />
+                </View>
+            </View>
+        </View>
+    );
 
     const unitStats = useMemo(() => {
         return {
@@ -410,6 +489,28 @@ export default function MobilInventoryScreen() {
                         <RefreshControl refreshing={isLoading && mobils.length > 0} onRefresh={refetch} colors={['#023C69']} />
                     }
                 >
+                    {/* Date Filter Selection */}
+                    <Pressable
+                        onPress={() => {
+                            setTempDateRange(dateRange);
+                            setIsDateModalVisible(true);
+                            if (Platform.OS === 'web') {
+                                // Handled by state
+                            } else {
+                                dateSheetRef.current?.present();
+                            }
+                        }}
+                        className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
+                    >
+                        <View className="flex-row items-center">
+                            <Calendar size={18} color="#023C69" />
+                            <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
+                        </View>
+                        <View className="bg-primary/5 px-2 py-1 rounded-lg">
+                            <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
+                        </View>
+                    </Pressable>
+
                     {isLoading && mobils.length === 0 ? (
                         <View className="space-y-4">
                             <SkeletonCard />
@@ -589,7 +690,37 @@ export default function MobilInventoryScreen() {
                                 {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
+                        <BottomSheetModal
+                            ref={dateSheetRef}
+                            index={0}
+                            snapPoints={dateSnapPoints}
+                            enablePanDownToClose
+                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            onDismiss={() => setIsDateModalVisible(false)}
+                        >
+                            <BottomSheetView className="flex-1 px-8 py-2">
+                                <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode</Typography>
+                                {renderDateContent()}
+                            </BottomSheetView>
+                        </BottomSheetModal>
                     </>
+                )}
+
+                {/* Date Modal for Web */}
+                {Platform.OS === 'web' && isDateModalVisible && (
+                    <Modal visible={true} transparent animationType="fade">
+                        <View className="flex-1 bg-black/50 justify-center items-center p-6">
+                            <View className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+                                <View className="flex-row justify-between items-center mb-6">
+                                    <Typography variant="h2" weight="bold">Pilih Periode</Typography>
+                                    <Pressable onPress={() => setIsDateModalVisible(false)}>
+                                        <X size={24} color="#6B7280" />
+                                    </Pressable>
+                                </View>
+                                {renderDateContent()}
+                            </View>
+                        </View>
+                    </Modal>
                 )}
             </View>
             <AlertDialog

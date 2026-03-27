@@ -11,7 +11,9 @@ import {
     Search,
     Truck,
     Clock,
-    CheckCircle2,
+    CheckCircle,
+    RotateCcw,
+    Calendar,
     Users,
     Wallet,
     ArrowUpRight,
@@ -24,12 +26,19 @@ import {
     Share2
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
-import { onlineManager } from '@tanstack/react-query';
+import { onlineManager, useQueryClient } from '@tanstack/react-query';
+import { format, startOfMonth, isValid, parse } from 'date-fns';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
-import { useMuatanList, useMuatanSummary, useActiveArmada, usePayMuatanSplit } from '../../hooks/useJasaAngkut';
+import { 
+    useMuatanList, 
+    useMuatanSummary, 
+    useActiveArmada, 
+    usePayMuatanSplit,
+    useUpdateMuatanStatus
+} from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -49,10 +58,30 @@ export default function JasaAngkutScreen() {
     const [view, setView] = useState<'form' | 'detail'>('form');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
+    // Filters
+    const [dateRange, setDateRange] = useState({
+        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        sampai: format(new Date(), 'yyyy-MM-dd')
+    });
+    const [isDateModalVisible, setIsDateModalVisible] = useState(false);
+    const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
+    const dateSheetRef = useRef<BottomSheet>(null);
+    const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
+
     // API Hooks
-    const { data: muatanData, isLoading, refetch } = useMuatanList({ limit: 100 });
-    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({ search: searchQuery });
+    const { data: muatanData, isLoading, refetch } = useMuatanList({ 
+        limit: 100,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
+    });
+    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({ 
+        search: searchQuery,
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
+    });
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
+    const updateStatusMutation = useUpdateMuatanStatus();
+    const queryClient = useQueryClient();
 
     // Payment Filter Logic (Reactive)
     const stats = useMemo(() => {
@@ -380,6 +409,116 @@ export default function JasaAngkutScreen() {
         });
     };
 
+    const handleApplyDate = () => {
+        const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
+        const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
+        
+        if (!dariValid || !sampaiValid) {
+            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            return;
+        }
+
+        setDateRange(tempDateRange);
+        setIsDateModalVisible(false);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.close();
+        }
+    };
+
+    const renderDateContent = () => (
+        <View className="p-0">
+            <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
+            <View className="space-y-4">
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Dari Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.dari}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, dari: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+                <View>
+                    <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Sampai Tanggal</Typography>
+                    <TextInput
+                        className="bg-gray-50 h-12 px-4 rounded-xl border border-gray-100 text-sm font-bold text-primary"
+                        value={tempDateRange.sampai}
+                        onChangeText={(v) => setTempDateRange({ ...tempDateRange, sampai: v })}
+                        placeholder="YYYY-MM-DD"
+                    />
+                </View>
+            </View>
+
+            <View className="flex-row mt-8 space-x-3 pb-8">
+                <View className="flex-1">
+                    <Button
+                        variant="outline"
+                        title="Batal"
+                        onPress={() => setIsDateModalVisible(false)}
+                    />
+                </View>
+                <View className="flex-1">
+                    <Button
+                        title="Terapkan"
+                        onPress={handleApplyDate}
+                    />
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderBottomSheetContent = () => (
+        <View style={{ flex: 1 }}>
+            {view === 'form' ? (
+                <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
+            ) : selectedTrip ? (
+                renderDetailContent(selectedTrip)
+            ) : null}
+        </View>
+    );
+
+    const handleUpdateStatus = async (tripId: number, currentStatus: string) => {
+        const nextStatus = currentStatus === 'PROSES' ? 'SELESAI' : 'PROSES';
+        const confirmMessage = currentStatus === 'PROSES' 
+            ? 'Tandai muatan ini sebagai Selesai? Armada akan tersedia kembali untuk ritase lain.'
+            : 'Kembalikan status muatan ke Proses?';
+
+        setDialogConfig({
+            visible: true,
+            title: "Update Status",
+            message: confirmMessage,
+            variant: 'info',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    setActionLoading(true);
+                    await updateStatusMutation.mutateAsync({ id: tripId, status: nextStatus as any });
+                    
+                    // Update the local selected trip state if open
+                    if (selectedTrip && selectedTrip.id === tripId) {
+                        setSelectedTrip({ ...selectedTrip, status: nextStatus as any });
+                    }
+                    
+                    refetch();
+                    closeDialog();
+                } catch (error) {
+                    console.error("Gagal update status:", error);
+                    setTimeout(() => {
+                        setDialogConfig({
+                            visible: true,
+                            title: "Error",
+                            message: getErrorMessage(error, "Gagal memperbarui status muatan"),
+                            variant: 'error',
+                            type: 'alert'
+                        });
+                    }, 500);
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
     const closeDialog = () => {
         setDialogConfig(prev => ({ ...prev, visible: false }));
     };
@@ -397,10 +536,16 @@ export default function JasaAngkutScreen() {
                                 #{trip.nomor_transaksi}
                             </Typography>
                         </View>
-                        <Badge
-                            label={trip.status_bayar.toUpperCase()}
-                            variant={trip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
-                        />
+                            <View className="flex-row space-x-2">
+                                <Badge
+                                    label={trip.status.toUpperCase()}
+                                    variant={trip.status === 'SELESAI' ? 'success' : 'info'}
+                                />
+                                <Badge
+                                    label={trip.status_bayar.toUpperCase()}
+                                    variant={trip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
+                                />
+                            </View>
                     </View>
 
                     <Card variant="outlined" className="p-6 border-gray-100 mb-6 bg-gray-50/50 rounded-[32px]">
@@ -457,12 +602,32 @@ export default function JasaAngkutScreen() {
                         </View>
                     </Card>
 
+                    <View className="mb-4">
+                        {trip.status === 'PROSES' ? (
+                            <Pressable
+                                onPress={() => handleUpdateStatus(trip.id, trip.status)}
+                                className="flex-row items-center justify-center bg-emerald-100 py-4 rounded-3xl border border-emerald-200"
+                            >
+                                <CheckCircle size={20} color="#059669" />
+                                <Typography weight="bold" className="text-emerald-700 ml-2">Selesaikan Ritase (Ready-kan Armada)</Typography>
+                            </Pressable>
+                        ) : (
+                            <Pressable
+                                onPress={() => handleUpdateStatus(trip.id, trip.status)}
+                                className="flex-row items-center justify-center bg-blue-50 py-4 rounded-3xl border border-blue-100"
+                            >
+                                <RotateCcw size={20} color="#2563EB" />
+                                <Typography weight="bold" className="text-blue-700 ml-2">Reset ke Status Proses</Typography>
+                            </Pressable>
+                        )}
+                    </View>
+
                     <View className="space-y-4">
                         <Button
                             variant="outline"
                             title="Edit Muatan"
                             onPress={() => handleEdit(trip)}
-                            className="rounded-2xl h-14"
+                            className="rounded-3xl h-14"
                             icon={<Edit size={20} color="#023C69" />}
                         />
                         {trip.piutang_id && trip.status_bayar !== 'LUNAS' && (
@@ -658,13 +823,35 @@ export default function JasaAngkutScreen() {
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
+                {/* Date Filter Selection */}
+                <Pressable
+                    onPress={() => {
+                        setTempDateRange(dateRange);
+                        setIsDateModalVisible(true);
+                        if (Platform.OS !== 'web') {
+                            dateSheetRef.current?.expand();
+                        }
+                    }}
+                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
+                >
+                    <View className="flex-row items-center">
+                        <Calendar size={18} color="#023C69" />
+                        <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
+                    </View>
+                    <View className="bg-primary/5 px-2 py-1 rounded-lg">
+                        <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
+                    </View>
+                </Pressable>
+
                 {/* Section Title */}
                 <View className="flex-row justify-between items-center mb-6">
                     <View>
-                        <Typography variant="h3" weight="bold" className="tracking-tight">Riwayat Ritase</Typography>
-                        <Typography variant="caption" className="text-textGray mt-0.5">Aktivitas pemuatan terakhir</Typography>
+                        <Typography variant="h3" weight="bold" className="tracking-tight">
+                            {dateRange.dari === dateRange.sampai && dateRange.dari === format(new Date(), 'yyyy-MM-dd') ? 'Ritase Hari Ini' : 'Riwayat Ritase'}
+                        </Typography>
+                        <Typography variant="caption" className="text-textGray mt-0.5">Aktivitas pemuatan kendaraan</Typography>
                     </View>
-                    <Badge variant="neutral" label="TERBARU" />
+                    <Badge variant="neutral" label="DATA" />
                 </View>
 
                 {/* Trip List Grouped by Armada */}
@@ -760,10 +947,17 @@ export default function JasaAngkutScreen() {
                                                                     {trip.ritase} Rit
                                                                 </Typography>
                                                             </View>
-                                                            <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
-                                                                <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[9px]" : "text-amber-600 text-[9px]"}>
-                                                                    {trip.status_bayar.toUpperCase()}
-                                                                </Typography>
+                                                            <View className="flex-row space-x-1">
+                                                                <View className={trip.status === 'SELESAI' ? "bg-green-100 px-2 py-0.5 rounded-lg border border-green-200" : "bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200"}>
+                                                                    <Typography weight="bold" className={trip.status === 'SELESAI' ? "text-green-700 text-[8px]" : "text-blue-700 text-[8px]"}>
+                                                                        {trip.status.toUpperCase()}
+                                                                    </Typography>
+                                                                </View>
+                                                                <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
+                                                                    <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[8px]" : "text-amber-600 text-[8px]"}>
+                                                                        {trip.status_bayar.toUpperCase()}
+                                                                    </Typography>
+                                                                </View>
                                                             </View>
                                                         </View>
 
@@ -839,13 +1033,41 @@ export default function JasaAngkutScreen() {
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
                 >
-                    <View style={{ flex: 1 }}>
-                        {view === 'form' ? (
-                            <MuatanForm onSuccess={handleFormSuccess} initialData={editData} />
-                        ) : selectedTrip ? (
-                            renderDetailContent(selectedTrip)
-                        ) : null}
+                    {renderBottomSheetContent()}
+                </BottomSheet>
+            )}
+
+            {/* Date Selection Modal (Hybrid) */}
+            {Platform.OS === 'web' ? (
+                <Modal visible={isDateModalVisible} transparent animationType="fade">
+                    <View className="flex-1 bg-black/50 justify-center items-center p-6">
+                        <View className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Typography variant="h2" weight="bold">Pilih Periode</Typography>
+                                <Pressable onPress={() => setIsDateModalVisible(false)}>
+                                    <X size={24} color="#6B7280" />
+                                </Pressable>
+                            </View>
+                            {renderDateContent()}
+                        </View>
                     </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={dateSheetRef}
+                    index={-1}
+                    snapPoints={dateSnapPoints}
+                    enablePanDownToClose
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    onClose={() => setIsDateModalVisible(false)}
+                >
+                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <View className="px-8 py-2">
+                            <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode</Typography>
+                            {renderDateContent()}
+                        </View>
+                    </BottomSheetScrollView>
                 </BottomSheet>
             )}
 

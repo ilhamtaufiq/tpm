@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
-from app.utils.constants import PaymentStatus, PaymentMethod
+from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus
 from app.schemas.keuangan import PaymentDetail
 from app.schemas.bengkel import PengeluaranBengkelResponse
 
@@ -54,6 +54,7 @@ class ArmadaResponse(ArmadaBase):
     """Schema for armada response."""
 
     id: int
+    is_ready: Optional[bool] = True  # Calculated field
     created_at: datetime
     updated_at: datetime
 
@@ -129,6 +130,7 @@ class SupirResponse(BaseModel):
     tanggal_bergabung: date
     is_active: bool
     catatan: Optional[str] = None
+    is_ready: Optional[bool] = True
     created_at: datetime
     updated_at: datetime
 
@@ -212,6 +214,7 @@ class MuatanCreate(BaseModel):
     biaya_lainnya: Decimal = Field(default=Decimal("0"), ge=0)
     
     persentase_tpm: Decimal = Field(default=Decimal("100"), ge=0, le=100)
+    status: Optional[MuatanStatus] = MuatanStatus.PROSES
     status_bayar: Optional[PaymentStatus] = PaymentStatus.BELUM_LUNAS
     metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
     payments: Optional[List[PaymentDetail]] = None
@@ -247,7 +250,8 @@ class MuatanUpdate(BaseModel):
     biaya_parkir: Optional[Decimal] = Field(None, ge=0)
     biaya_lainnya: Optional[Decimal] = Field(None, ge=0)
     
-    persentase_tpm: Optional[Decimal] = Field(None, ge=0, le=100)
+    persentase_tpm: Optional[Decimal] = None
+    status: Optional[MuatanStatus] = None
     payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
@@ -286,6 +290,7 @@ class MuatanResponse(BaseModel):
     persentase_tpm: Decimal
     laba_tpm: Decimal
     laba_supir: Decimal
+    status: MuatanStatus
     status_bayar: PaymentStatus
     tanggal_bayar: Optional[date] = None
     biaya_tambahan: List[BiayaTambahanResponse] = []

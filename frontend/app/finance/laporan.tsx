@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { format, startOfMonth, isValid, parse } from 'date-fns';
 import { Stack, useRouter } from 'expo-router';
 import {
     PieChart,
@@ -44,8 +45,8 @@ export default function LaporanKeuanganScreen() {
 
     // Filters
     const [dateRange, setDateRange] = useState({
-        dari: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-        sampai: new Date().toISOString().split('T')[0]
+        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        sampai: format(new Date(), 'yyyy-MM-dd')
     });
 
     // Setup Modal state
@@ -192,6 +193,14 @@ export default function LaporanKeuanganScreen() {
     };
 
     const handleApplyDate = () => {
+        const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
+        const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
+        
+        if (!dariValid || !sampaiValid) {
+            Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
+            return;
+        }
+
         setDateRange(tempDateRange);
         setIsDateModalVisible(false);
     };
