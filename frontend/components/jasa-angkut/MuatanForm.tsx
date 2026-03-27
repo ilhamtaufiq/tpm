@@ -56,8 +56,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const { data: asalSuggestions = [] } = useRouteSuggestions('asal', formData.asal);
     const { data: tujuanSuggestions = [] } = useRouteSuggestions('tujuan', formData.tujuan);
 
-    const [driverMode, setDriverMode] = useState<'registered' | 'manual'>('registered');
-    const [armadaMode, setArmadaMode] = useState<'registered' | 'manual'>('registered');
     const [driverSearch, setDriverSearch] = useState('');
     const [armadaSearch, setArmadaSearch] = useState('');
 
@@ -98,18 +96,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 catatan: initialData.catatan || ''
             });
 
-            // Set driver mode based on whether supir_id exists
-            if (initialData.supir_id) {
-                setDriverMode('registered');
-            } else {
-                setDriverMode('manual');
-            }
-
-            if (initialData.armada_id) {
-                setArmadaMode('registered');
-            } else {
-                setArmadaMode('manual');
-            }
         }
     }, [initialData]);
 
@@ -216,16 +202,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     };
 
     const handleSubmit = async () => {
-        if (armadaMode === 'registered' && !formData.armada_id) {
+        if (!formData.armada_id) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih armada terlebih dahulu', variant: 'warning' });
             return;
         }
-        if (driverMode === 'registered' && !formData.supir_id) {
+        if (!formData.supir_id) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih supir terlebih dahulu', variant: 'warning' });
-            return;
-        }
-        if (driverMode === 'manual' && !formData.supir_nama) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: 'Masukkan nama supir', variant: 'warning' });
             return;
         }
         if (!formData.asal || !formData.tujuan) {
@@ -260,9 +242,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 jenis_muatan: formData.jenis_muatan_list.filter(item => item.trim() !== '').join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
                 metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
-                supir_id: driverMode === 'registered' ? parseInt(formData.supir_id) : undefined,
-                supir_nama: driverMode === 'manual' ? formData.supir_nama : undefined,
-                armada_id: armadaMode === 'registered' ? parseInt(formData.armada_id) : undefined,
+                supir_id: parseInt(formData.supir_id),
+                armada_id: parseInt(formData.armada_id),
                 ritase: parseInt(formData.ritase) || 1,
                 harga_beli: parseNumber(formData.harga_beli),
                 harga_jual: parseNumber(formData.harga_jual),
@@ -328,26 +309,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         <View className="p-6 pb-24">
             <Typography variant="h2" weight="bold" className="mb-6">{isEditMode ? 'Edit Muatan' : 'Input Muatan Baru'}</Typography>
 
-            {/* Armada Section (Moved to First) */}
-            <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="medium">Identitas Armada *</Typography>
-                <View className="flex-row bg-gray-100 rounded-lg p-1">
-                    <Pressable
-                        onPress={() => setArmadaMode('registered')}
-                        className={`px-3 py-1 rounded-md ${armadaMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={armadaMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => setArmadaMode('manual')}
-                        className={`px-3 py-1 rounded-md ${armadaMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={armadaMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
-                    </Pressable>
-                </View>
-            </View>
+            {/* Armada Section */}
+            <Typography variant="caption" weight="medium" className="mb-2 mt-4">Identitas Armada *</Typography>
 
-            {armadaMode === 'registered' ? (
+            {
                 loadingArmada ? (
                     <ActivityIndicator className="my-4" />
                 ) : (
@@ -445,47 +410,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         )}
                     </View>
                 )
-            ) : (
-                <View className="flex-row space-x-2">
-                    <View className="flex-1">
-                        <Input
-                            label="Nomor Polisi"
-                            placeholder="Plat nomor"
-                            value={formData.nopol}
-                            onChangeText={v => updateField('nopol', v)}
-                        />
-                    </View>
-                    <View className="flex-[2]">
-                        <Input
-                            label="Info Armada"
-                            placeholder="Contoh: CD Biru"
-                            value={formData.info_kendaraan}
-                            onChangeText={v => updateField('info_kendaraan', v)}
-                        />
-                    </View>
-                </View>
-            )}
+            }
 
             {/* Driver Section (Moved to Second) */}
-            <View className="flex-row items-center justify-between mb-2 mt-4">
-                <Typography variant="caption" weight="medium">Pilih Supir Handal *</Typography>
-                <View className="flex-row bg-gray-100 rounded-lg p-1">
-                    <Pressable
-                        onPress={() => setDriverMode('registered')}
-                        className={`px-3 py-1 rounded-md ${driverMode === 'registered' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={driverMode === 'registered' ? 'bold' : 'normal'}>Terdaftar</Typography>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => setDriverMode('manual')}
-                        className={`px-3 py-1 rounded-md ${driverMode === 'manual' ? 'bg-white shadow-sm' : ''}`}
-                    >
-                        <Typography variant="caption" weight={driverMode === 'manual' ? 'bold' : 'normal'}>Manual</Typography>
-                    </Pressable>
-                </View>
-            </View>
+            <Typography variant="caption" weight="medium" className="mb-2 mt-4">Pilih Supir Handal *</Typography>
 
-            {driverMode === 'registered' ? (
+            {
                 loadingDrivers ? (
                     <ActivityIndicator className="my-4" />
                 ) : (
@@ -573,14 +503,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         )}
                     </View>
                 )
-            ) : (
-                <Input
-                    label="Nama Supir"
-                    placeholder="Masukkan nama supir"
-                    value={formData.supir_nama}
-                    onChangeText={v => updateField('supir_nama', v)}
-                />
-            )}
+            }
 
             <View className="h-[1px] bg-gray-100 my-4" />
 
