@@ -66,6 +66,7 @@ export default function BengkelScreen() {
     const voidMutation = useVoidTransaksiBengkel();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM'>('ALL');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
     const [view, setView] = React.useState<'form' | 'detail' | 'edit'>('form');
     const [refreshing, setRefreshing] = React.useState(false);
@@ -94,18 +95,42 @@ export default function BengkelScreen() {
 
     const queue = queueData?.data || [];
 
-    // Filtered queue based on search query
+    // Filtered queue based on search query and payment filter
     const filteredQueue = useMemo(() => {
-        if (!searchQuery.trim()) return queue;
-        const q = searchQuery.toLowerCase().trim();
-        return queue.filter((item: any) => {
-            const plate = (item.nomor_plat || '').toLowerCase();
-            const customer = (item.nama_customer || '').toLowerCase();
-            const vehicle = (item.jenis_kendaraan || '').toLowerCase();
-            const status = (item.status_pengerjaan || '').toLowerCase();
-            return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || status.includes(q);
+        let result = queue;
+        
+        if (paymentFilter === 'LUNAS') {
+            result = result.filter((item: any) => item.status_bayar === 'lunas' || item.status_bayar === 'LUNAS');
+        } else if (paymentFilter === 'BELUM') {
+            result = result.filter((item: any) => item.status_bayar !== 'lunas' && item.status_bayar !== 'LUNAS');
+        }
+
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            result = result.filter((item: any) => {
+                const plate = (item.nomor_plat || '').toLowerCase();
+                const customer = (item.nama_customer || '').toLowerCase();
+                const vehicle = (item.jenis_kendaraan || '').toLowerCase();
+                const status = (item.status_pengerjaan || '').toLowerCase();
+                return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || status.includes(q);
+            });
+        }
+        return result;
+    }, [queue, searchQuery, paymentFilter]);
+
+    // Calculate Lunas/Belum stats from queue
+    const paymentStats = useMemo(() => {
+        let lunas = 0;
+        let belum = 0;
+        queue.forEach((item: any) => {
+            if (item.status_bayar === 'lunas' || item.status_bayar === 'LUNAS') {
+                lunas++;
+            } else {
+                belum++;
+            }
         });
-    }, [queue, searchQuery]);
+        return { lunas, belum, total: queue.length };
+    }, [queue]);
 
     // Load print settings
     React.useEffect(() => {
@@ -534,7 +559,6 @@ export default function BengkelScreen() {
                                     key={s.id}
                                     onPress={() => updateStatus(selectedItem.id, s.id)}
                                     disabled={updateStatsMutation.isPending}
-                                    activeOpacity={0.7}
                                     style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
                                     className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${isActive ? 'shadow-lg' : 'bg-white border-gray-100 shadow-sm'}`}
                                 >
@@ -685,7 +709,6 @@ export default function BengkelScreen() {
                 <View className="flex-row justify-between mb-8">
                     <Pressable
                         onPress={() => router.push('/bengkel/inventory')}
-                        activeOpacity={0.9}
                         className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center mr-2"
                     >
                         <View className="bg-amber-400 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-amber-400/20">
@@ -699,7 +722,6 @@ export default function BengkelScreen() {
 
                     <Pressable
                         onPress={() => router.push('/bengkel/expenses')}
-                        activeOpacity={0.9}
                         className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center"
                     >
                         <View className="bg-rose-400 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-rose-400/20">
@@ -739,28 +761,57 @@ export default function BengkelScreen() {
             {/* Filter Search Overlay */}
             {sheetIndex === -1 && (
                 <View className="px-6 -mt-6 z-1">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <TextInput
-                                className="flex-1 ml-3 text-sm font-medium text-textMain"
-                                placeholder="Cari antrian (Plat, Customer)..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                                autoCorrect={false}
-                                autoCapitalize="none"
-                                returnKeyType="search"
-                            />
-                            {searchQuery.length > 0 && (
-                                <Pressable onPress={() => setSearchQuery('')} className="ml-1">
-                                    <X size={18} color="#9CA3AF" />
-                                </Pressable>
-                            )}
+                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                        <View className="flex-row items-center">
+                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                                <Search size={18} color="#9CA3AF" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                                    placeholder="Cari antrian (Plat, Customer)..."
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    placeholderTextColor="#9CA3AF"
+                                    autoCorrect={false}
+                                    autoCapitalize="none"
+                                    returnKeyType="search"
+                                />
+                                {searchQuery.length > 0 && (
+                                    <Pressable onPress={() => setSearchQuery('')} className="ml-1">
+                                        <X size={18} color="#9CA3AF" />
+                                    </Pressable>
+                                )}
+                            </View>
+                            <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
+                                <Filter size={20} color="#023C69" />
+                            </Pressable>
                         </View>
-                        <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <Filter size={20} color="#023C69" />
-                        </Pressable>
+                        {/* Status Bayar Chips */}
+                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 space-x-2">
+                            <Pressable 
+                                onPress={() => setPaymentFilter('ALL')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                    Semua ({paymentStats.total})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('LUNAS')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                    Lunas ({paymentStats.lunas})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('BELUM')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BELUM' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BELUM' ? 'text-white' : 'text-rose-700'}>
+                                    Belum Lunas ({paymentStats.belum})
+                                </Typography>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
             )}
@@ -821,7 +872,6 @@ export default function BengkelScreen() {
                         <Pressable
                             key={item.id}
                             onPress={() => handlePresentModalPress('detail', item)}
-                            activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                         >
                             <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
@@ -900,7 +950,6 @@ export default function BengkelScreen() {
             {/* Floating Action Button (Design System) */}
             <Pressable
                 onPress={() => handlePresentModalPress('form')}
-                activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={3} />
@@ -910,7 +959,7 @@ export default function BengkelScreen() {
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetIndex !== -1} transparent animationType="slide" onRequestClose={handleClosePress}>
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} activeOpacity={1} />
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} />
                         <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '85%', alignSelf: 'center' }}>
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
                             {renderBottomSheetContent()}

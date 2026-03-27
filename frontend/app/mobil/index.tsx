@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -77,7 +77,42 @@ export default function MobilInventoryScreen() {
 
     const deleteMutation = useDeleteMobil();
 
-    const mobils = data?.data || [];
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM'>('ALL');
+
+    const mobilsData = data?.data || [];
+
+    const paymentStats = useMemo(() => {
+        let lunas = 0;
+        let belum = 0;
+        mobilsData.forEach((m: any) => {
+            let isLunas = false;
+            if (activeTab === 'tersedia') {
+                isLunas = m.status_bayar_beli === 'lunas' || m.status_bayar_beli === 'LUNAS';
+            } else {
+                isLunas = m.status_bayar_jual === 'lunas' || m.status_bayar_jual === 'LUNAS' || m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS';
+            }
+
+            if (isLunas) lunas++;
+            else belum++;
+        });
+        return { lunas, belum, total: mobilsData.length };
+    }, [mobilsData, activeTab]);
+
+    const mobils = useMemo(() => {
+        let result = mobilsData;
+        if (paymentFilter === 'LUNAS') {
+            result = result.filter((m: any) => {
+                if (activeTab === 'tersedia') return m.status_bayar_beli === 'lunas' || m.status_bayar_beli === 'LUNAS';
+                return m.status_bayar_jual === 'lunas' || m.status_bayar_jual === 'LUNAS' || m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS';
+            });
+        } else if (paymentFilter === 'BELUM') {
+             result = result.filter((m: any) => {
+                if (activeTab === 'tersedia') return m.status_bayar_beli !== 'lunas' && m.status_bayar_beli !== 'LUNAS';
+                return m.status_bayar_jual !== 'lunas' && m.status_bayar_jual !== 'LUNAS' && m.status_bayar !== 'lunas' && m.status_bayar !== 'LUNAS';
+            });
+        }
+        return result;
+    }, [mobilsData, paymentFilter, activeTab]);
 
     // Bottom Sheet Logic (Registration)
     const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -254,19 +289,48 @@ export default function MobilInventoryScreen() {
 
                 {/* Filters & Search */}
                 <View className="px-6 -mt-6">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <TextInput
-                                className="flex-1 ml-3 text-sm font-medium text-textMain"
-                                placeholder="Cari unit..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
+                    <View className="bg-white p-2 rounded-3xl shadow-xl flex-col border border-gray-50">
+                        <View className="flex-row items-center">
+                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                                <Search size={18} color="#9CA3AF" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                                    placeholder="Cari unit..."
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                            </View>
+                            <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
+                                <Filter size={20} color="#023C69" />
+                            </Pressable>
                         </View>
-                        <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
-                            <Filter size={20} color="#023C69" />
-                        </Pressable>
+                        {/* Status Bayar Chips */}
+                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 space-x-2">
+                            <Pressable 
+                                onPress={() => setPaymentFilter('ALL')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                    Semua ({paymentStats.total})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('LUNAS')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                    Lunas ({paymentStats.lunas})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('BELUM')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BELUM' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BELUM' ? 'text-white' : 'text-rose-700'}>
+                                    Belum Lunas ({paymentStats.belum})
+                                </Typography>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
 
@@ -308,7 +372,6 @@ export default function MobilInventoryScreen() {
                         mobils.map((item: any) => (
                             <Pressable
                                 key={item.id}
-                                activeOpacity={0.9}
                                 onPress={() => handlePresentDetailModal(item)}
                                 className="mb-6"
                             >
@@ -424,7 +487,6 @@ export default function MobilInventoryScreen() {
 
                 {/* FAB matching Home */}
                 <Pressable
-                    activeOpacity={0.8}
                     onPress={handlePresentModalPress}
                     className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
                 >
