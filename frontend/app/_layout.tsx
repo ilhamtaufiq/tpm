@@ -121,9 +121,13 @@ function RootLayoutContent() {
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
-            if (nextAppState.match(/inactive|background/) && isPinEnabled) {
+            // Only lock if PIN is enabled AND we are NOT in development mode
+            // This avoids annoying locks while developer is testing/switching windows
+            if (nextAppState.match(/inactive|background/) && isPinEnabled && !__DEV__) {
                 console.log('LAYOUT: App going to background, locking...');
                 lock();
+            } else if (__DEV__ && nextAppState.match(/inactive|background/)) {
+                console.log('LAYOUT: App backgrounded (Locking skipped in DEV mode)');
             }
         };
 
