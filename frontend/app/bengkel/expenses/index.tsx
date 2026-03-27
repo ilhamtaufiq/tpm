@@ -54,10 +54,10 @@ export default function ExpensesScreen() {
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
-    
+
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
-    const [payMetode, setPayMetode] = useState('TUNAI');
+    const [payMetode, setPayMetode] = useState('');
     const [splitPayments, setSplitPayments] = useState([
         { metode: 'TUNAI', jumlah: '' },
         { metode: 'TRANSFER', jumlah: '' },
@@ -87,6 +87,11 @@ export default function ExpensesScreen() {
     const handleSave = async () => {
         if (!jumlah || !deskripsi) {
             Alert.alert('Validasi', 'Mohon isi jumlah dan keterangan');
+            return;
+        }
+
+        if (!payMetode) {
+            Alert.alert('Validasi', 'Mohon pilih metode pembayaran');
             return;
         }
 
@@ -403,8 +408,8 @@ export default function ExpensesScreen() {
                                         <View className="flex-row justify-between items-center mt-2 pt-3 border-t border-gray-200 border-dashed">
                                             <Typography className="text-xs text-textGray">Total Terinput:</Typography>
                                             <Typography weight="bold" className={`text-sm ${splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0) === parseNumber(jumlah)
-                                                    ? 'text-green-600'
-                                                    : 'text-orange-500'
+                                                ? 'text-green-600'
+                                                : 'text-orange-500'
                                                 }`}>
                                                 {formatCurrency(splitPayments.reduce((acc, curr) => acc + parseNumber(curr.jumlah), 0))}
                                             </Typography>
