@@ -252,6 +252,17 @@ export default function SparePartMasterScreen() {
 
             <View className="space-y-4">
                 <View>
+                    <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kode Barang / Barcode</Typography>
+                    <TextInput
+                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                        placeholder="Contoh: 123456789 (Kosongkan jika tidak ada)"
+                        placeholderTextColor="#9CA3AF"
+                        value={form.kode}
+                        onChangeText={(t) => setForm({ ...form, kode: t })}
+                    />
+                </View>
+
+                <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Nama Barang *</Typography>
                     <TextInput
                         className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
@@ -495,7 +506,6 @@ export default function SparePartMasterScreen() {
             <Pressable
                 onPress={() => handleOpenSheet()}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-                activeOpacity={0.8}
             >
                 <Plus size={32} color="white" />
             </Pressable>
@@ -512,7 +522,6 @@ export default function SparePartMasterScreen() {
                         <Pressable
                             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                             onPress={handleCloseSheet}
-                            activeOpacity={1}
                         />
                         <View
                             className="bg-white rounded-t-[32px] shadow-2xl h-[90%]"

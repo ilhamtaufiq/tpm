@@ -1,7 +1,7 @@
 # Continuity Ledger
 
 ## Goal
-- Design and plan the "Operational Balance" (Saldo BOP) feature.
+- Design and plan the "Operational Balance" (Saldo BOP) file.
 - Implement Barcode/QR Code scanning in BengkelForm for spare parts.
 - Implement real-time data refresh mechanism for reports (Dashboard, Neraca, etc.) using React Query polling.
 - **NEW**: Add Lunas/Belum Lunas stats and filter to Bengkel, Jasa Angkut, and Mobil list pages.
@@ -15,6 +15,7 @@
 1.  **Scanner Library**: Using `expo-camera` (CameraView API).
 2.  **UI Integration**: Added "Scan" button in BengkelForm's spare part tab.
 3.  **Bug Fix (Jasa Angkut)**: Consolidated `handleEdit`, added missing `useActiveArmada` hook, fixed `searchQuery` declaration order, and repaired broken JSX blocks in the filter overlay.
+4.  **Master Data (Sparepart)**: Added `Kode Barang / Barcode` input field to the form to support barcode-based lookups and scanning.
 
 ## State
 - Done:
@@ -26,11 +27,12 @@
   - Corrected `dashboard.py` reports to filter out `BATAL` receivables and handle detached transaction profit.
   - Added Lunas/Belum Lunas stats and `paymentFilter` to Bengkel, Jasa Angkut, and Mobil list pages.
   - Fixed `SyntaxError` and multiple logic bugs in `frontend/app/jasa-angkut/index.tsx`.
+  - Added `kode` input field to `master-data/sparepart.tsx`.
 - Now:
-  - Verifying if `kode` input exists in `sparepart.tsx` for Barcode scanning usage.
+  - Completed urgent fixes.
 - Next:
-  - Add input field for `kode` (Kode Barang/Barcode) in `sparepart.tsx`.
   - Implement auto-refresh in Dashboard and Financial Reports UI components.
+  - Finalize barcode scanning logic in `BengkelForm` to use the `kode` field.
 
 ## Open questions (UNCONFIRMED if needed)
 - Does the user want the `kode` field to be auto-generated or manually typed/scanned in the master data form?
@@ -38,3 +40,4 @@
 ## Working set (files/ids/commands)
 - `c:\laragon\www\tpm\frontend\app\jasa-angkut\index.tsx`
 - `c:\laragon\www\tpm\frontend\app\master-data\sparepart.tsx`
+- `c:\laragon\www\tpm\CONTINUITY.md`
