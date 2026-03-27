@@ -1,0 +1,13 @@
+- Goal: Fix TypeScript errors in `neraca.tsx` where `activeOpacity` is incorrectly used on `Pressable` components.
+- Constraints/Assumptions:
+    - Use React Native / Expo best practices.
+    - Standardize on `Pressable` or fix the props for the current component.
+- Key decisions:
+    - Replace invalid `activeOpacity` props with `Pressable` style functions or state-based styling.
+- State:
+  - Done: Fixed lines 548, 563, and 625 by removing `activeOpacity` and using NativeWind `active:opacity-70`.
+  - Now: Task complete.
+  - Next: None.
+- Open questions (UNCONFIRMED if needed): None.
+- Working set (files/ids/commands):
+    - `c:\laragon\www\tpm\frontend\app\laporan\neraca.tsx`

@@ -334,8 +334,15 @@ export default function NeracaScreen() {
                 </View>
 
                 {/* Prive */}
-                <View className="mb-3 bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
-                    <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
+                <View className="mb-3 space-y-2">
+                    <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
+                        <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
+                    </View>
+                    {data.pencairan_investor > 0 && (
+                        <View className="bg-orange-50/50 rounded-2xl p-3 border border-orange-100/50">
+                            <Row label="Pengembalian Modal Investor" value={data.pencairan_investor} isNegative />
+                        </View>
+                    )}
                 </View>
 
                 {/* Reconciliation Info */}
@@ -531,7 +538,6 @@ export default function NeracaScreen() {
                     <Pressable
                         onPress={handlePrev}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color={themeColors.text} />
                     </Pressable>
@@ -546,7 +552,6 @@ export default function NeracaScreen() {
                     <Pressable
                         onPress={handleNext}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color={themeColors.text} />
                     </Pressable>
@@ -608,7 +613,6 @@ export default function NeracaScreen() {
         >
             <Pressable
                 className="flex-1 bg-black/50 justify-end"
-                activeOpacity={1}
                 onPress={() => setShowExportMenu(false)}
             >
                 <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">

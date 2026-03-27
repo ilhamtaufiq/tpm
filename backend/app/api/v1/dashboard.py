@@ -1070,9 +1070,19 @@ def get_neraca(
     # Ini menjamin neraca SELALU seimbang
     total_modal = total_aktiva - total_hutang
     
+    # 3. Investor capital returns (if recorded in JUAL_BELI_MOBIL but originally from Setoran)
+    # We subtract the capital part that has been paid out since it reduces the equity components
+    paid_inv_cap = float(db.query(func.sum(Mobil.nominal_investor)).join(
+        TransaksiPenjualanMobil, Mobil.id == TransaksiPenjualanMobil.mobil_id
+    ).filter(
+        TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+        TransaksiPenjualanMobil.status_pencairan == InvestorDisbursementStatus.DICAIRKAN
+    ).scalar() or 0)
+
     # Selisih antara perhitungan komponen vs identity (untuk transparansi)
-    modal_komponen = setoran_modal + laba_ditahan - prive
+    modal_komponen = setoran_modal + laba_ditahan - prive - paid_inv_cap
     selisih_modal = round(total_modal - modal_komponen, 2)
+
 
     modal = {
         "setoran_modal": float(setoran_modal),
@@ -1085,10 +1095,12 @@ def get_neraca(
         "total_beban": float(total_beban),
         "laba_ditahan": float(laba_ditahan),
         "prive": float(prive),
+        "pencairan_investor": float(paid_inv_cap),
         "total_modal": float(total_modal),
         "modal_komponen": float(modal_komponen),
         "selisih_modal": float(selisih_modal),
     }
+
 
 
     # ==========================================
