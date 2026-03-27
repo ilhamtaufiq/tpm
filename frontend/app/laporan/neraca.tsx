@@ -5,7 +5,7 @@ import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
     ChevronLeft, ChevronRight, Calendar, Wallet, Building2,
     Car, CreditCard, Landmark, TrendingUp, ArrowUpRight,
-    ArrowDownLeft, DollarSign, Scale, CheckCircle, AlertTriangle, Banknote, Package, Box, 
+    ArrowDownLeft, DollarSign, Scale, CheckCircle, AlertTriangle, Banknote, Package, Box,
     Printer, Download, Eye, Share2, X
 } from 'lucide-react-native';
 import { Modal } from 'react-native';
@@ -310,6 +310,11 @@ export default function NeracaScreen() {
                     <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
                         <Row label="Setoran Modal" value={data.setoran_modal} />
                     </View>
+                    {data.pencairan_investor > 0 && (
+                        <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
+                            <Row label="Pengembalian Modal Investor Mobil" value={data.pencairan_investor} isNegative />
+                        </View>
+                    )}
                 </View>
 
                 {/* Laba Ditahan */}
@@ -338,11 +343,7 @@ export default function NeracaScreen() {
                     <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
                         <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
                     </View>
-                    {data.pencairan_investor > 0 && (
-                        <View className="bg-orange-50/50 rounded-2xl p-3 border border-orange-100/50">
-                            <Row label="Pengembalian Modal Investor" value={data.pencairan_investor} isNegative />
-                        </View>
-                    )}
+
                 </View>
 
                 {/* Reconciliation Info */}
@@ -604,35 +605,35 @@ export default function NeracaScreen() {
                 )}
             </ScrollView>
 
-        {/* Export Action Menu */}
-        <Modal
-            visible={showExportMenu}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowExportMenu(false)}
-        >
-            <Pressable
-                className="flex-1 bg-black/50 justify-end"
-                onPress={() => setShowExportMenu(false)}
+            {/* Export Action Menu */}
+            <Modal
+                visible={showExportMenu}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowExportMenu(false)}
             >
-                <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                    <View className="flex-row justify-between items-center mb-8">
-                        <View>
-                            <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                            <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                <Pressable
+                    className="flex-1 bg-black/50 justify-end"
+                    onPress={() => setShowExportMenu(false)}
+                >
+                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
+                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                            </View>
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
+                                <X size={20} color={themeColors.textGray} />
+                            </Pressable>
                         </View>
-                        <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
-                            <X size={20} color={themeColors.textGray} />
-                        </Pressable>
-                    </View>
 
-                    <View className="flex-row gap-4">
-                        <Pressable
-                            onPress={async () => {
-                                setShowExportMenu(false);
-                                if (!report) return;
-                                try {
-                                    const html = `
+                        <View className="flex-row gap-4">
+                            <Pressable
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!report) return;
+                                    try {
+                                        const html = `
                                         <div class="section-header">AKTIVA (ASSETS)</div>
                                         <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
                                         <div class="row-item">
@@ -737,29 +738,29 @@ export default function NeracaScreen() {
                                         </div>
                                     `;
 
-                                    await printReportHTML(html, {
-                                        title: 'Laporan Neraca',
-                                        dateRange: getFormattedDate()
-                                    });
-                                } catch (e) {
-                                    Alert.alert('Error', 'Gagal mencetak laporan');
-                                }
-                            }}
-                            className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
-                        >
-                            <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
-                                <Eye size={28} color="white" />
-                            </View>
-                            <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
-                            <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                        </Pressable>
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Neraca',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal mencetak laporan');
+                                    }
+                                }}
+                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                    <Eye size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
+                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                            </Pressable>
 
-                        <Pressable
-                            onPress={async () => {
-                                setShowExportMenu(false);
-                                if (!report) return;
-                                try {
-                                    const html = `
+                            <Pressable
+                                onPress={async () => {
+                                    setShowExportMenu(false);
+                                    if (!report) return;
+                                    try {
+                                        const html = `
                                         <div class="section-header">AKTIVA (ASSETS)</div>
                                         <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
                                         <div class="row-item">
@@ -864,26 +865,26 @@ export default function NeracaScreen() {
                                         </div>
                                     `;
 
-                                    await printReportHTML(html, {
-                                        title: 'Laporan Neraca',
-                                        dateRange: getFormattedDate()
-                                    });
-                                } catch (e) {
-                                    Alert.alert('Error', 'Gagal membuat PDF');
-                                }
-                            }}
-                            className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
-                        >
-                            <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
-                                <Share2 size={28} color="white" />
-                            </View>
-                            <Typography weight="bold" className="text-primary-dark">Download</Typography>
-                            <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                        </Pressable>
+                                        await printReportHTML(html, {
+                                            title: 'Laporan Neraca',
+                                            dateRange: getFormattedDate()
+                                        });
+                                    } catch (e) {
+                                        Alert.alert('Error', 'Gagal membuat PDF');
+                                    }
+                                }}
+                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                            >
+                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
+                                    <Share2 size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
+                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                            </Pressable>
+                        </View>
                     </View>
-                </View>
-            </Pressable>
-        </Modal>
+                </Pressable>
+            </Modal>
         </SafeAreaView>
     );
 }
