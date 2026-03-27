@@ -248,6 +248,7 @@ class MobilService:
                 joinedload(Mobil.part_services),
                 joinedload(Mobil.bengkel_perbaikan),
                 joinedload(Mobil.pengeluaran_bengkel),
+                joinedload(Mobil.penjualan),
             )
             .filter(
                 Mobil.id == mobil_id,

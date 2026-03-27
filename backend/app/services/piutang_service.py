@@ -162,7 +162,7 @@ class PiutangService:
         """Get list of receivables with pagination and filters."""
         query = self.db.query(PiutangUsaha).options(
             joinedload(PiutangUsaha.pembayaran)
-        )
+        ).filter(PiutangUsaha.status != PiutangStatus.BATAL)
 
         # Search filter
         if search:
@@ -423,7 +423,7 @@ class PiutangService:
         # Base query for Piutang created up to tanggal_sampai
         # (tanggal_dari is used for reporting 'New Piutang in period', 
         # but for Balance Sheet/Neraca, we usually just need till tanggal_sampai)
-        query = self.db.query(PiutangUsaha)
+        query = self.db.query(PiutangUsaha).filter(PiutangUsaha.status != PiutangStatus.BATAL)
         
         # If calculating snapshot, we only care about records created BEFORE or ON tanggal_sampai
         if tanggal_sampai:
@@ -461,6 +461,7 @@ class PiutangService:
             # Gross for this source
             src_gross = self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
                 PiutangUsaha.sumber == src,
+                PiutangUsaha.status != PiutangStatus.BATAL,
                 PiutangUsaha.tanggal <= (tanggal_sampai or date.max)
             ).scalar() or 0
             
@@ -469,6 +470,7 @@ class PiutangService:
                 PiutangUsaha, PembayaranPiutang.piutang_id == PiutangUsaha.id
             ).filter(
                 PiutangUsaha.sumber == src,
+                PiutangUsaha.status != PiutangStatus.BATAL,
                 PiutangUsaha.tanggal <= (tanggal_sampai or date.max)
             )
             if tanggal_sampai:

@@ -143,7 +143,7 @@ class TransaksiMobilResponse(BaseModel):
     id: int
     nomor_transaksi: str
     tanggal: date
-    mobil_id: int
+    mobil_id: Optional[int] = None
     mobil_info: Optional[str] = None  # "Merek Model (Plat)"
     customer_id: Optional[int] = None
     nama_pembeli: str

@@ -553,17 +553,27 @@ class PenjualanMobilService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        mobil_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Get list of transactions with pagination and filters."""
+        # Base query (use outerjoin for mobil because BATAL transactions are detached)
         query = self.db.query(TransaksiPenjualanMobil).options(
             joinedload(TransaksiPenjualanMobil.mobil),
             joinedload(TransaksiPenjualanMobil.customer),
         )
 
+        # Apply default status filter if not explicitly provided
+        if not status_bayar:
+            # Exclude BATAL from general list unless specifically requested
+            query = query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
+        else:
+            query = query.filter(TransaksiPenjualanMobil.status_bayar == status_bayar)
+
         # Search filter
         if search:
             search_filter = f"%{search}%"
-            query = query.join(TransaksiPenjualanMobil.mobil).filter(
+            # Use outerjoin to allow searching for cancelled transactions too
+            query = query.outerjoin(TransaksiPenjualanMobil.mobil).filter(
                 or_(
                     TransaksiPenjualanMobil.nomor_transaksi.ilike(search_filter),
                     TransaksiPenjualanMobil.nama_pembeli.ilike(search_filter),
@@ -576,9 +586,9 @@ class PenjualanMobilService:
         if customer_id:
             query = query.filter(TransaksiPenjualanMobil.customer_id == customer_id)
 
-        # Payment status filter
-        if status_bayar:
-            query = query.filter(TransaksiPenjualanMobil.status_bayar == status_bayar)
+        # Mobil filter
+        if mobil_id:
+            query = query.filter(TransaksiPenjualanMobil.mobil_id == mobil_id)
 
         # Ownership filter
         if tipe_kepemilikan:
@@ -746,19 +756,29 @@ class PenjualanMobilService:
 
         refund = dp_terbayar - penalti
 
-        # 1. Revert car status to TERSEDIA
+        # 1. Revert car status to TERSEDIA and DETACH transaction
         mobil.status = CarStatus.TERSEDIA
         mobil.tanggal_terjual = None
-
-        # 2. Mark transaction as cancelled
-        transaksi.status_bayar = PaymentStatus.BELUM_LUNAS
+        
+        # 2. Update transaction status and detach from mobil
+        transaksi.status_bayar = PaymentStatus.BATAL
+        transaksi.mobil_id = None  # Crucial: Allow car to be sold again
+        
+        # Adjust financial values to reflect only the penalty
+        transaksi.harga_jual = penalti
+        transaksi.total_modal = Decimal("0")
+        transaksi.laba_kotor = penalti
+        transaksi.laba_investor = Decimal("0") # Penalty usually stays with TPM unless split
+        transaksi.laba_tpm = penalti
+        transaksi.dp = penalti
+        transaksi.sisa_bayar = Decimal("0")
+        
         catatan_batal = f"DIBATALKAN - Penalti: {penalti}, Refund: {refund}"
         if alasan:
             catatan_batal += f" | Alasan: {alasan}"
         transaksi.catatan = catatan_batal
-        transaksi.sisa_bayar = transaksi.harga_jual  # Reset sisa
 
-        # 3. Close piutang (mark as LUNAS with 0 sisa since booking is cancelled)
+        # 3. Mark piutang as BATAL (if any)
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
@@ -768,27 +788,16 @@ class PenjualanMobilService:
             .first()
         )
         if piutang:
-            piutang.status = PiutangStatus.LUNAS
+            piutang.status = PiutangStatus.BATAL
             piutang.sisa_piutang = Decimal("0")
-            piutang.catatan = f"Piutang ditutup - Booking dibatalkan. {catatan_batal}"
+            piutang.catatan = f"Booking dibatalkan. {catatan_batal}"
 
         self.db.commit()
         self.db.refresh(transaksi)
 
-        # 4. Record penalty as income (if > 0)
-        if penalti > 0:
-            create_kas_entry(
-                db=self.db,
-                tanggal=date.today(),
-                tipe=KasBankType.MASUK,
-                nominal=penalti,
-                sumber=KasBankSource.JUAL_BELI_MOBIL,
-                metode_bayar=PaymentMethod.TUNAI,  # penalty kept in cash
-                referensi_id=transaksi.id,
-                nomor_referensi=transaksi.nomor_transaksi,
-                keterangan=f"Penalti pembatalan booking mobil {transaksi.nomor_transaksi}",
-                user_id=user_id,
-            )
+        # 4. Note: We DO NOT record a new MASUK for the penalty because it is
+        # already in the bank from the original DP. We only record the REFUND (KELUAR).
+        # This prevents double-counting the penalty money in KasBank.
 
         # 5. Record refund as expense (if > 0)
         if refund > 0:
@@ -796,7 +805,6 @@ class PenjualanMobilService:
                 # Fallback to cash if no entries provided
                 refund_entries = [(PaymentMethod.TUNAI, refund)]
             
-            # If any entry has None as nominal, it means it's the only entry or we use the calculated refund
             prepared_refunds = []
             for metode, nominal in refund_entries:
                 if nominal is None:
@@ -823,9 +831,12 @@ class PenjualanMobilService:
                         metode_bayar=metode,
                         referensi_id=transaksi.id,
                         nomor_referensi=transaksi.nomor_transaksi,
-                        keterangan=f"Refund pembatalan booking mobil {transaksi.nomor_transaksi} kepada {transaksi.nama_pembeli} ({metode})",
+                        keterangan=f"Refund pembatalan booking {transaksi.nomor_transaksi} ({metode})",
                         user_id=user_id,
                     )
+
+        return transaksi
+
 
         return transaksi
 
@@ -843,12 +854,14 @@ class PenjualanMobilService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
 
-        # Total transactions (All)
-        total_count = query.count()
+        # Total successful transactions (exclude BATAL)
+        total_count = query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL).count()
 
-        # Aggregate values (All transactions in period)
+        # Aggregate values
+        # We use outerjoin because cancelled transactions (BATAL) have mobil_id = None
+        # They are included to capture the 'penalti' profit in total_laba_kotor
         aggregates = (
-            query.join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            query.outerjoin(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
             .with_entities(
                 func.sum(TransaksiPenjualanMobil.harga_jual).label("total_penjualan"),
                 func.sum(TransaksiPenjualanMobil.total_modal).label("total_modal"),
@@ -856,25 +869,22 @@ class PenjualanMobilService:
                 func.sum(TransaksiPenjualanMobil.laba_investor).label("total_laba_investor"),
                 func.sum(TransaksiPenjualanMobil.laba_tpm).label("total_laba_tpm"),
                 func.sum(TransaksiPenjualanMobil.dp).label("total_dp"),
-                # Calculate realized parts (sum of the total_part_service of sold cars)
-                # Note: Mobil.total_part_service is a hybrid property or similar, 
-                # but we can sum the component values if needed. 
-                # Let's use func.sum(Mobil.biaya_persiapan) or similar if available, 
-                # but better to rely on what was recorded in total_modal.
             ).first()
         )
         
-        # Recalculate component for parts realized by joining with Mobil and its additional costs
+        # Recalculate component for parts realized (only for active sales)
         realized_parts_q = (
-            query.join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
+            .join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
             .join(MobilBiayaLainnya, Mobil.id == MobilBiayaLainnya.mobil_id)
             .filter(MobilBiayaLainnya.kategori == "Perawatan Bengkel")
         )
         total_parts_realized = float(realized_parts_q.with_entities(func.sum(MobilBiayaLainnya.jumlah)).scalar() or 0)
 
-        # By ownership type
+        # By ownership type (active only)
         by_ownership = (
-            query.with_entities(
+            query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
+            .with_entities(
                 TransaksiPenjualanMobil.tipe_kepemilikan,
                 func.count(TransaksiPenjualanMobil.id).label("count"),
                 func.sum(TransaksiPenjualanMobil.harga_jual).label("total"),
@@ -892,9 +902,9 @@ class PenjualanMobilService:
                 "laba_kotor": float(row.laba or 0),
             }
 
-        # Unpaid transactions (Still keep for separation if needed)
+        # Unpaid transactions (Excluding BATAL)
         unpaid_query = query.filter(
-            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS
+            TransaksiPenjualanMobil.status_bayar.in_([PaymentStatus.BELUM_LUNAS, PaymentStatus.CICILAN])
         )
         unpaid_count = unpaid_query.count()
         unpaid_value = (
@@ -903,6 +913,12 @@ class PenjualanMobilService:
             ).scalar()
             or Decimal("0")
         )
+
+        # Penalty statistics
+        penalty_query = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL)
+        total_penalty = float(penalty_query.with_entities(func.sum(TransaksiPenjualanMobil.laba_kotor)).scalar() or 0)
+        penalty_count = penalty_query.count()
+
 
         return {
             "total_transaksi": total_count,
@@ -917,6 +933,8 @@ class PenjualanMobilService:
             "per_kepemilikan": ownership_summary,
             "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
+            "penalti_batal": total_penalty,
+            "jumlah_batal": penalty_count,
         }
 
     def get_investor_report(

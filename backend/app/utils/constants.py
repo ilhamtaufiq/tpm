@@ -63,6 +63,7 @@ class PaymentStatus(str, Enum):
     LUNAS = "LUNAS"
     BELUM_LUNAS = "BELUM_LUNAS"
     CICILAN = "CICILAN"
+    BATAL = "BATAL"
 
     @classmethod
     def _missing_(cls, value: object) -> "PaymentStatus | None":
@@ -191,6 +192,8 @@ class PiutangStatus(str, Enum):
     BELUM_LUNAS = "BELUM_LUNAS"
     LUNAS = "LUNAS"
     SEBAGIAN = "SEBAGIAN"
+    BATAL = "BATAL"
+
 
     @classmethod
     def _missing_(cls, value: object) -> "PiutangStatus | None":
@@ -208,6 +211,8 @@ class HutangStatus(str, Enum):
     BELUM_LUNAS = "BELUM_LUNAS"
     LUNAS = "LUNAS"
     SEBAGIAN = "SEBAGIAN"
+    BATAL = "BATAL"
+
 
     @classmethod
     def _missing_(cls, value: object) -> "HutangStatus | None":

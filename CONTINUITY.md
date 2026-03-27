@@ -14,20 +14,23 @@
 
 ## State
 - Done:
-  - Created `BarcodeScannerModal.tsx`.
-  - Integrated scanner into `BengkelForm.tsx`.
-  - Created branch `release/v2.1.0` and merged into `main`.
+  - Created `BarcodeScannerModal.tsx` and integrated into `BengkelForm.tsx`.
+  - Added `BATAL` status to `PaymentStatus`, `PiutangStatus`, and `HutangStatus`.
+  - Updated `TransaksiPenjualanMobil` model to allow nullable `mobil_id`.
+  - Fixed `PenjualanMobilService.cancel_booking` logic (detachment, financial correction, non-redundant cash logging).
+  - Updated `PenjualanMobilService.get_summary` and `get_list` to handle `BATAL` transactions.
+  - Corrected `dashboard.py` reports to filter out `BATAL` receivables and handle detached transaction profit.
 - Now:
-  - Development continuing on `main` branch.
+  - Verified booking cancellation flow and its impact on financial reports.
 - Next:
-  - User to install `expo-camera`.
-  - Verify scan logic with real data.
+  - User to verify the fix in the UI.
 
 ## Open questions (UNCONFIRMED if needed)
-- Does the user prefer a different scanner library? `UNCONFIRMED`
+- None
 
 ## Working set (files/ids/commands)
-- `c:\laragon\www\tpm\frontend\components\BengkelForm.tsx`
-- `c:\laragon\www\tpm\frontend\components\ui\BarcodeScannerModal.tsx`
-- `c:\laragon\www\tpm\frontend\package.json`
+- `c:\laragon\www\tpm\backend\app\services\penjualan_mobil_service.py`
+- `c:\laragon\www\tpm\backend\app\api\v1\dashboard.py`
+- `c:\laragon\www\tpm\backend\app\utils\constants.py`
+- `c:\laragon\www\tpm\frontend\components\MobilDetail.tsx`
 

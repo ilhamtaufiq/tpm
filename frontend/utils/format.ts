@@ -68,9 +68,19 @@ export const formatNumber = (value: string | number): string => {
     return cleanNumber.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 };
 
-export const parseNumber = (value: string): number => {
-    if (!value) return 0;
-    return parseInt(value.replace(/\./g, ''), 10) || 0;
+export const parseNumber = (value: any): number => {
+    if (value === undefined || value === null || value === '') return 0;
+    const strValue = String(value);
+    
+    // Check if it's an API float format (e.g., "600000.00")
+    // If it has a point followed by 1 or 2 digits AND no other points,
+    // it's likely a standard decimal string from the API.
+    if (/^\d+\.\d{1,2}$/.test(strValue)) {
+        return Math.round(parseFloat(strValue));
+    }
+    
+    // Otherwise, treat as Indonesian format where dots are thousand separators
+    return parseInt(strValue.replace(/\./g, ''), 10) || 0;
 };
 
 export const formatDate = (dateString: string): string => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput } from 'react-native';
+import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -74,22 +74,24 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     ]);
     const [cancelAlasan, setCancelAlasan] = useState('');
     const [cancelSuccess, setCancelSuccess] = useState(false);
+    const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
+    const [cancelError, setCancelError] = useState<string | null>(null);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [hutangModalVisible, setHutangModalVisible] = useState(false);
 
     const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
 
-    // Fetch penjualan data for booking units
+    // Fetch penjualan data as fallback if not pre-joined (e.g. from general list)
     const { data: penjualanData } = usePenjualanMobilList(
-        isBooking ? { search: activeUnit?.nomor_plat } : undefined
+        isBooking && !activeUnit?.penjualan ? { mobil_id: activeUnit?.id } : undefined
+    );
+
+    // The active transaction is pre-joined by backend OR fallback to manual fetch
+    const activeTx = activeUnit?.penjualan || penjualanData?.data?.find(
+        (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'LUNAS' && tx.status_bayar !== 'BATAL'
     );
     const cancelMutation = useCancelBookingMobil();
-
-    // Find the active transaction for this car
-    const activeTx = penjualanData?.data?.find(
-        (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'LUNAS'
-    );
 
     // Fetch purchase debt if any
     const { data: hutangData } = useHutangList(
@@ -202,7 +204,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </View>
                     ) : (
                         <Pressable
-                            activeOpacity={0.9}
                             onPress={() => setSelectedImage(fullUrl)}
                             className="flex-1"
                         >
@@ -483,7 +484,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                                     {/* Cancel Booking Button */}
                                     <Pressable
-                                        activeOpacity={0.8}
                                         onPress={() => {
                                             setCancelPenalti('');
                                             setCancelAlasan('');
@@ -520,7 +520,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     <View className="flex-row space-x-3 mb-6">
                         {activeUnit.status?.toUpperCase() === 'TERSEDIA' && (
                             <Pressable
-                                activeOpacity={0.8}
                                 onPress={() => onSell?.(activeUnit)}
                                 className="flex-1 bg-emerald-600 flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-emerald-900/20"
                             >
@@ -529,7 +528,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </Pressable>
                         )}
                         <Pressable
-                            activeOpacity={0.8}
                             onPress={onEdit}
                             className={`flex-1 bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 ${!(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') ? 'w-full' : ''}`}
                         >
@@ -614,7 +612,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                             </Pressable>
                         </View>
 
-                        {cancelSuccess ? (
+                        {!activeTx && !cancelSuccess ? (
+                            <View className="items-center py-20">
+                                <ActivityIndicator size="large" color="#EF4444" />
+                                <Typography className="text-gray-400 mt-6 text-center px-10">
+                                    Mengambil data transaksi...{'\n'}Silakan tunggu sebentar.
+                                </Typography>
+                            </View>
+                        ) : cancelSuccess ? (
                             <View className="items-center py-8">
                                 <View className="w-20 h-20 bg-red-100 rounded-full items-center justify-center mb-4">
                                     <Ban size={40} color="#EF4444" />
@@ -632,15 +637,21 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 </Pressable>
                             </View>
                         ) : (
-                            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 500 }}>
-                                {/* Warning Card */}
-                                <View className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100 flex-row items-start">
-                                    <AlertTriangle size={20} color="#EF4444" />
-                                    <View className="ml-3 flex-1">
-                                        <Typography weight="bold" className="text-red-600 mb-1">Perhatian</Typography>
-                                        <Typography variant="caption" className="text-red-500 leading-relaxed">Pembatalan akan mengembalikan mobil ke status TERSEDIA. Anda bisa menentukan penalti dari DP yang sudah dibayar.</Typography>
+                            <View className="h-full max-h-[600px]">
+                                {cancelError && (
+                                    <View className="bg-red-50 p-4 rounded-xl mb-4 border border-red-200">
+                                        <Typography className="text-red-600 text-sm">{cancelError}</Typography>
                                     </View>
-                                </View>
+                                )}
+                                <ScrollView showsVerticalScrollIndicator={false} className="flex-1 pb-4">
+                                    {/* Warning Card */}
+                                    <View className="bg-red-50 p-5 rounded-2xl mb-6 border border-red-100 flex-row items-start">
+                                        <AlertTriangle size={20} color="#EF4444" />
+                                        <View className="ml-3 flex-1">
+                                            <Typography weight="bold" className="text-red-600 mb-1">Perhatian</Typography>
+                                            <Typography variant="caption" className="text-red-500 leading-relaxed">Pembatalan akan mengembalikan mobil ke status TERSEDIA. Anda bisa menentukan penalti dari DP yang sudah dibayar.</Typography>
+                                        </View>
+                                    </View>
 
                                 {/* DP Summary */}
                                 <View className="bg-amber-50 p-5 rounded-2xl mb-6 border border-amber-100">
@@ -804,85 +815,117 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         style={{ minHeight: 80 }}
                                     />
                                 </View>
+                                </ScrollView>
 
-                                {/* Submit Button */}
-                                <Pressable
-                                    activeOpacity={0.8}
-                                    disabled={cancelMutation.isPending}
-                                    onPress={() => {
-                                        if (!activeTx) return;
-                                        const dp = parseFloat(String(activeTx.dp));
-                                        const penaltiVal = parseFloat(cancelPenalti) || 0;
-                                        const totalRefundNeeded = dp - penaltiVal;
-
-                                        if (penaltiVal > dp) {
-                                            Alert.alert('Error', `Penalti tidak boleh melebihi DP (${formatCurrency(dp)})`);
-                                            return;
-                                        }
-
-                                        const refundPayments = refundSplits
-                                            .filter(p => parseNumber(p.nominal) > 0)
-                                            .map(p => ({
-                                                metode: p.metode,
-                                                nominal: parseNumber(p.nominal)
-                                            }));
-
-                                        const totalRefundInput = refundPayments.reduce((acc, curr) => acc + curr.nominal, 0);
-
-                                        if (totalRefundNeeded > 0 && totalRefundInput !== totalRefundNeeded) {
-                                            Alert.alert('Error', `Total refund (${formatCurrency(totalRefundInput)}) harus sama dengan sisa DP (${formatCurrency(totalRefundNeeded)})`);
-                                            return;
-                                        }
-
-                                        Alert.alert(
-                                            'Konfirmasi Pembatalan',
-                                            `Anda akan membatalkan booking ini.\n\nPenalti: ${formatCurrency(penaltiVal)}\nRefund: ${formatCurrency(totalRefundNeeded)}\n\nLanjutkan?`,
-                                            [
-                                                { text: 'Batal', style: 'cancel' },
-                                                {
-                                                    text: 'Ya, Batalkan',
-                                                    style: 'destructive',
-                                                    onPress: () => {
-                                                        cancelMutation.mutate(
-                                                            {
-                                                                id: activeTx.id,
-                                                                data: {
-                                                                    penalti: penaltiVal,
-                                                                    metode_refund: !useRefundSplit ? refundSplits[0]?.metode : undefined,
-                                                                    refund_payments: useRefundSplit ? refundPayments : undefined,
-                                                                    alasan: cancelAlasan,
-                                                                },
-                                                            },
-                                                            {
-                                                                onSuccess: () => {
-                                                                    setCancelSuccess(true);
-                                                                },
-                                                                onError: (err: any) => {
-                                                                    Alert.alert('Error', err?.response?.data?.detail || 'Gagal membatalkan booking');
-                                                                },
-                                                            },
-                                                        );
-                                                    },
-                                                },
-                                            ],
-                                        );
-                                    }}
-                                    className={`flex-row items-center justify-center py-5 rounded-2xl shadow-lg ${cancelMutation.isPending ? 'bg-gray-300' : 'bg-red-600 shadow-red-900/20'}`}
-                                >
-                                    {cancelMutation.isPending ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <>
-                                            <Ban size={20} color="white" />
-                                            <Typography weight="bold" className="text-white text-base ml-2">Proses Pembatalan</Typography>
-                                        </>
+                                {/* Submit Button - Fixed at bottom */}
+                                <View className="pt-6 border-t border-gray-100 mt-2">
+                                    {isConfirmingCancel && (
+                                        <View className="bg-red-50 p-5 rounded-2xl mb-4 border border-red-100">
+                                            <View className="flex-row items-center mb-2">
+                                                <AlertTriangle size={18} color="#EF4444" />
+                                                <Typography weight="bold" className="text-red-600 ml-2">Konfirmasi Terakhir</Typography>
+                                            </View>
+                                            <Typography variant="caption" className="text-red-500 leading-relaxed">
+                                                Anda akan membatalkan booking ini dengan penalti {formatCurrency(parseNumber(cancelPenalti))}. 
+                                                Tindakan ini tidak dapat dibatalkan.
+                                            </Typography>
+                                            <TouchableOpacity 
+                                                onPress={() => setIsConfirmingCancel(false)}
+                                                className="mt-3"
+                                            >
+                                                <Typography weight="bold" className="text-gray-500 text-xs">Ubah rincian pembatalan</Typography>
+                                            </TouchableOpacity>
+                                        </View>
                                     )}
-                                </Pressable>
-                            </ScrollView>
+
+                                    <TouchableOpacity
+                                        disabled={cancelMutation.isPending || !activeTx}
+                                        onPress={() => {
+                                            try {
+                                                if (!activeTx) {
+                                                    const msg = 'Data transaksi booking tidak ditemukan. Silakan refresh halaman.';
+                                                    setCancelError(msg);
+                                                    if (Platform.OS === 'web') window.alert(msg);
+                                                    else Alert.alert('Error', msg);
+                                                    return;
+                                                }
+
+                                                const penaltiVal = parseNumber(cancelPenalti) || 0;
+                                                const dpVal = Math.round(parseFloat(String(activeTx.dp || 0)));
+                                                const totalRefundNeeded = Math.max(0, dpVal - penaltiVal);
+
+                                                const refundPayments = refundSplits
+                                                    .filter(p => parseNumber(p.nominal) > 0)
+                                                    .map(p => ({
+                                                        metode: p.metode,
+                                                        nominal: parseNumber(p.nominal)
+                                                    }));
+
+                                                const totalRefundInput = refundPayments.reduce((acc, curr) => acc + curr.nominal, 0);
+
+                                                if (totalRefundNeeded > 0 && Math.abs(totalRefundInput - totalRefundNeeded) > 1) {
+                                                    const msg = `Total refund (${formatCurrency(totalRefundInput)}) harus sama dengan sisa DP (${formatCurrency(totalRefundNeeded)})`;
+                                                    setCancelError(msg);
+                                                    if (Platform.OS === 'web') window.alert(msg);
+                                                    else Alert.alert('Error', msg);
+                                                    return;
+                                                }
+
+                                                setCancelError(null);
+
+                                                if (!isConfirmingCancel) {
+                                                    setIsConfirmingCancel(true);
+                                                } else {
+                                                    cancelMutation.mutate(
+                                                        {
+                                                            id: activeTx.id,
+                                                            data: {
+                                                                penalti: penaltiVal,
+                                                                metode_refund: !useRefundSplit ? refundSplits[0]?.metode : undefined,
+                                                                refund_payments: useRefundSplit ? refundPayments : undefined,
+                                                                alasan: cancelAlasan,
+                                                            },
+                                                        },
+                                                        {
+                                                            onSuccess: () => {
+                                                                setCancelSuccess(true);
+                                                                setIsConfirmingCancel(false);
+                                                            },
+                                                            onError: (err: any) => {
+                                                                const detail = err?.response?.data?.detail;
+                                                                const errorMsg = typeof detail === 'string' ? detail : (detail?.message || JSON.stringify(detail) || 'Gagal membatalkan booking');
+                                                                setCancelError(errorMsg);
+                                                                if (Platform.OS === 'web') window.alert(errorMsg);
+                                                                else Alert.alert('Error', errorMsg);
+                                                            },
+                                                        },
+                                                    );
+                                                }
+                                            } catch (e: any) {
+                                                console.error('[Cancel Error]:', e);
+                                                setCancelError(`Terjadi kesalahan sistem: ${e.message || 'Unknown error'}`);
+                                            }
+                                        }}
+                                        className={`flex-row items-center justify-center py-5 rounded-2xl shadow-lg ${(cancelMutation.isPending || !activeTx) ? 'bg-gray-300' : 'bg-red-600 shadow-red-900/20'}`}
+                                    >
+                                        {cancelMutation.isPending ? (
+                                            <ActivityIndicator size="small" color="white" />
+                                        ) : (
+                                            <>
+                                                {isConfirmingCancel ? <CheckCircle2 size={20} color="white" /> : <Ban size={20} color="white" />}
+                                                <Typography weight="bold" className="text-white text-base ml-2">
+                                                    {isConfirmingCancel ? 'Ya, Batalkan Booking Sekarang' : 'Proses Pembatalan'}
+                                                </Typography>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         )}
                     </View>
                 </View>
             </Modal>
+
 
             {activeTx && activeTx.piutang_id && (
                 <PaymentModal

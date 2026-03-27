@@ -64,6 +64,7 @@ def list_transaksi(
     tanggal_sampai: Optional[date] = None,
     sort_by: str = "tanggal",
     sort_order: str = "desc",
+    mobil_id: Optional[int] = None,
 ):
     """Get list of car sales transactions with pagination and filters."""
     service = PenjualanMobilService(db)
@@ -78,6 +79,7 @@ def list_transaksi(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        mobil_id=mobil_id,
     )
 
 

@@ -449,7 +449,8 @@ def get_capital_report(
     # Only muatans that generated a PiutangUsaha record are counted.
     # Muatans that were LUNAS from the start bypass this table and are handled by direct Kas Masuk.
     q_ja_gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
-        PiutangModel.sumber == PiutangSource.JASA_ANGKUT
+        PiutangModel.sumber == PiutangSource.JASA_ANGKUT,
+        PiutangModel.status != PiutangStatus.BATAL
     )
     if tanggal_dari: q_ja_gross = q_ja_gross.filter(PiutangModel.tanggal >= tanggal_dari)
     if tanggal_sampai: q_ja_gross = q_ja_gross.filter(PiutangModel.tanggal <= tanggal_sampai)
@@ -479,7 +480,8 @@ def get_capital_report(
         .filter(
             KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
             KasBank.tipe == KasBankType.MASUK,
-            PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL
+            PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL,
+            PiutangModel.status != PiutangStatus.BATAL
         )
     )
     if tanggal_dari: q_jb_mobil_direct_cash = q_jb_mobil_direct_cash.filter(KasBank.tanggal >= tanggal_dari)
@@ -492,6 +494,7 @@ def get_capital_report(
     from app.models.keuangan import PembayaranPiutang as PaymentModel
     q_usaha_gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
         PiutangModel.sumber == PiutangSource.BENGKEL,
+        PiutangModel.status != PiutangStatus.BATAL,
     )
     if tanggal_dari: q_usaha_gross = q_usaha_gross.filter(PiutangModel.tanggal >= tanggal_dari)
     if tanggal_sampai: q_usaha_gross = q_usaha_gross.filter(PiutangModel.tanggal <= tanggal_sampai)
@@ -812,6 +815,7 @@ def get_neraca(
         # 1. Gross Piutang (nominal) created up to tanggal_sampai
         gross = db.query(func.sum(PiutangModel.nominal_piutang)).filter(
             PiutangModel.sumber == src,
+            PiutangModel.status != PiutangStatus.BATAL,
             PiutangModel.tanggal <= (tanggal_sampai or date.max)
         ).scalar() or 0
         

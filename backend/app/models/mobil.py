@@ -96,7 +96,7 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         back_populates="mobil",
         cascade="all, delete-orphan",
     )
-    transaksi_penjualan: Mapped[Optional["TransaksiPenjualanMobil"]] = relationship(
+    penjualan: Mapped[Optional["TransaksiPenjualanMobil"]] = relationship(
         back_populates="mobil",
         uselist=False,
     )
@@ -237,7 +237,7 @@ class TransaksiPenjualanMobil(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_transaksi: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
-    mobil_id: Mapped[int] = mapped_column(ForeignKey("mobil.id"), unique=True)
+    mobil_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mobil.id"), unique=True, nullable=True)
     customer_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("customers.id"),
         nullable=True,
@@ -290,7 +290,7 @@ class TransaksiPenjualanMobil(Base, TimestampMixin):
     )
 
     # Relationships
-    mobil: Mapped["Mobil"] = relationship(back_populates="transaksi_penjualan")
+    mobil: Mapped["Mobil"] = relationship(back_populates="penjualan")
     customer: Mapped[Optional["Customer"]] = relationship(
         back_populates="transaksi_mobil"
     )
