@@ -17,11 +17,11 @@ export default function FinanceTab() {
     const [refreshing, setRefreshing] = useState(false);
     const { user } = useAuthStore();
 
-    // API Hooks
-    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary();
-    const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary();
+    // API Hooks - Enable auto-refresh every 60 seconds
+    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(undefined, { refetchInterval: 60000 });
+    const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary(undefined, { refetchInterval: 60000 });
     const { data: hutangSummary, isLoading: isLoadingHutang, refetch: refetchHutang } = useHutangSummary();
-    const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary();
+    const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary(undefined, { refetchInterval: 60000 });
 
     const handleGoBack = () => {
         if (router.canGoBack()) {

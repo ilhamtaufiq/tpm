@@ -5,14 +5,30 @@ import { WifiOff, CloudSync } from 'lucide-react-native';
 import { useIsFetching, useIsMutating } from '@tanstack/react-query';
 
 export const ConnectivityBanner = () => {
+    // Default to true (online) initially to avoid flicker
+    const [isOffline, setIsOffline] = React.useState(false);
+    
     const isFetching = useIsFetching();
     const isMutating = useIsMutating();
-    const isSyncing = isFetching > 0 || isMutating > 0;
-    const [isOffline, setIsOffline] = React.useState(false);
-
+    const isSyncing = (isFetching > 0 || isMutating > 0) && !isOffline;
+    
     React.useEffect(() => {
+        // Get initial state immediately
+        NetInfo.fetch().then(state => {
+            setIsOffline(!(state.isConnected));
+        });
+
         const unsubscribe = NetInfo.addEventListener((state) => {
-            setIsOffline(!(state.isConnected && state.isInternetReachable));
+            // Use isConnected only. isInternetReachable is slow (uses pings) and causes delay.
+            const offline = !(state.isConnected);
+            
+            // Add a small 1s debounce for "offline" to avoid flickering on micro-disconnects
+            if (offline) {
+                const timer = setTimeout(() => setIsOffline(true), 1000);
+                return () => clearTimeout(timer);
+            } else {
+                setIsOffline(false);
+            }
         });
 
         return () => unsubscribe();

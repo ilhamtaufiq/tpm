@@ -2,12 +2,12 @@ import React from 'react';
 import { View, Pressable, ActivityIndicator } from 'react-native';
 import { Truck, AlertTriangle, Wallet } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
-import { usePiutangSummary, useDashboardSummary } from '../hooks/useKeuangan';
+import { usePiutangSummary, useDashboardSummary, useHutangSummary, useInvestorDisbursementSummary } from '../hooks/useKeuangan';
 import { useLowStockParts } from '../hooks/useBengkel';
 
 export const BusinessPulse = () => {
-    const { data: piutang, isLoading: piutangLoading, isRefetching: piutangRefetching } = usePiutangSummary();
-    const { data: dashboard, isLoading: dashboardLoading, isRefetching: dashboardRefetching } = useDashboardSummary();
+    const { data: piutang, isLoading: piutangLoading, isRefetching: piutangRefetching } = usePiutangSummary(undefined, { refetchInterval: 60000 });
+    const { data: dashboard, isLoading: dashboardLoading, isRefetching: dashboardRefetching } = useDashboardSummary(undefined, { refetchInterval: 60000 });
     const { data: lowStock, isLoading: lowStockLoading, isRefetching: lowStockRefetching } = useLowStockParts();
 
     const stats = [
@@ -48,7 +48,6 @@ export const BusinessPulse = () => {
                     <Pressable
                         key={stat.id}
                         className="w-[31%] bg-white p-4 rounded-[24px] border border-gray-100 shadow-sm"
-                        activeOpacity={0.7}
                     >
                         <View
                             style={{ backgroundColor: `${stat.color}15` }}

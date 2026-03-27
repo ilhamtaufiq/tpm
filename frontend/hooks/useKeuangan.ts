@@ -4,10 +4,11 @@ import { keuanganService } from '../services/keuangan';
 // =============================================
 // KAS & BANK
 // =============================================
-export const useKasBankBalances = () => {
+export const useKasBankBalances = (options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['kas_bank_balances'],
         queryFn: () => keuanganService.getKasBankBalances(),
+        ...options
     });
 };
 
@@ -53,10 +54,11 @@ export const usePiutangList = (params?: any) => {
     });
 };
 
-export const usePiutangSummary = (params?: any) => {
+export const usePiutangSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['piutang_summary', params],
         queryFn: () => keuanganService.getPiutangSummary(params),
+        ...options
     });
 };
 
@@ -114,10 +116,11 @@ export const useHutangList = (params?: any) => {
     });
 };
 
-export const useHutangSummary = (params?: any) => {
+export const useHutangSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['hutang_summary', params],
         queryFn: () => keuanganService.getHutangSummary(params),
+        ...options
     });
 };
 
@@ -166,17 +169,19 @@ export const useCreateHutang = () => {
 // =============================================
 // DASHBOARD & REPORTS
 // =============================================
-export const useDashboardSummary = (params?: any) => {
+export const useDashboardSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['dashboard_summary', params],
         queryFn: () => keuanganService.getDashboardSummary(params),
+        ...options
     });
 };
 
-export const useRecentActivity = (limit: number = 10) => {
+export const useRecentActivity = (limit: number = 10, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['recent_activity', limit],
         queryFn: () => keuanganService.getRecentActivity(limit),
+        ...options
     });
 };
 
@@ -194,17 +199,19 @@ export const useKasBankMonthlySummary = (tahun: number, bulan: number) => {
     });
 };
 
-export const useCapitalReport = (params?: any) => {
+export const useCapitalReport = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['capital_report', params],
         queryFn: () => keuanganService.getCapitalReport(params),
+        ...options
     });
 };
 
-export const useNeracaReport = (params?: any) => {
+export const useNeracaReport = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['neraca_report', params],
         queryFn: () => keuanganService.getNeracaReport(params),
+        ...options
     });
 };
 // =============================================
@@ -217,10 +224,11 @@ export const usePendingInvestorDisbursements = (namaInvestor?: string) => {
     });
 };
 
-export const useInvestorDisbursementSummary = (params?: any) => {
+export const useInvestorDisbursementSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['investor_disbursement_summary', params],
         queryFn: () => keuanganService.getInvestorDisbursementSummary(params),
+        ...options
     });
 };
 

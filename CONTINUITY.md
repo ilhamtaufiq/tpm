@@ -2,7 +2,8 @@
 
 ## Goal
 - Design and plan the "Operational Balance" (Saldo BOP) feature.
-- **NEW**: Implement Barcode/QR Code scanning in BengkelForm for spare parts.
+- Implement Barcode/QR Code scanning in BengkelForm for spare parts.
+- **NEW**: Implement real-time data refresh mechanism for reports (Dashboard, Neraca, etc.) using React Query polling.
 
 ## Constraints/Assumptions
 - Scanner requires a physical device and `expo-camera` library.
@@ -21,9 +22,10 @@
   - Updated `PenjualanMobilService.get_summary` and `get_list` to handle `BATAL` transactions.
   - Corrected `dashboard.py` reports to filter out `BATAL` receivables and handle detached transaction profit.
 - Now:
-  - Verified booking cancellation flow and its impact on financial reports.
+  - Analyzing `useKeuangan.ts` and `dashboard.py` to implement real-time refresh via React Query `refetchInterval`.
 - Next:
-  - User to verify the fix in the UI.
+  - Modify `useKeuangan.ts` to allow optional polling for report hooks.
+  - Implement auto-refresh in Dashboard and Financial Reports UI components.
 
 ## Open questions (UNCONFIRMED if needed)
 - None

@@ -37,10 +37,13 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             // Data in cache is considered fresh for 10 minutes
-            // Increase staleTime to avoid background re-fetching when offline
             staleTime: 1000 * 60 * 10,
             // 24 hours until garbage collected from storage
             gcTime: 1000 * 60 * 60 * 24,
+            // Disable noisy refetching on window focus/reconnect to avoid storms.
+            // We use controlled refetchInterval (polling) in critical screens instead.
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
             // Don't retry queries when offline
             retry: (failureCount, error: any) => {
                 if (error?.message?.includes('network')) return false;

@@ -19,9 +19,10 @@ from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
-from sqlalchemy import func, or_
+from app.utils.cache import build_key, get_cached, set_cached, invalidate_cache_prefix
+from sqlalchemy import func, or_, case
 
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
@@ -35,6 +36,13 @@ def get_dashboard_summary(
     tanggal_sampai: Optional[date] = None,
 ):
     """Get comprehensive dashboard summary."""
+    # ── Cache check (30-second TTL) ───────────────────────────────────
+    _cache_key = build_key("dashboard_summary", tanggal_dari, tanggal_sampai)
+    _cached = get_cached(_cache_key)
+    if _cached is not None:
+        return _cached
+    # ─────────────────────────────────────────────────────────────────
+
     # Bengkel sales
     bengkel_service = TransaksiBengkelService(db)
     bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -66,7 +74,7 @@ def get_dashboard_summary(
     kas_bank_service = KasBankService(db)
     kas_bank_summary = kas_bank_service.get_all_balances()
 
-    return {
+    result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
             "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
@@ -104,8 +112,10 @@ def get_dashboard_summary(
             "jumlah_belum_lunas": hutang_summary["jumlah_belum_lunas"],
         },
         "kas_bank": kas_bank_summary,
-        "active_trips": muatan_summary["hutang_supir_count"], # For BusinessPulse
+        "active_trips": muatan_summary["hutang_supir_count"],  # For BusinessPulse
     }
+    set_cached(_cache_key, result)
+    return result
 
 
 @router.get("/daily/{tanggal}")
@@ -165,6 +175,12 @@ def get_profit_summary(
     tanggal_sampai: Optional[date] = None,
 ):
     """Get profit summary across all business units."""
+    # ── Cache check (60-second TTL) ───────────────────────────────────
+    _cache_key = build_key("profit_summary", tanggal_dari, tanggal_sampai)
+    _cached = get_cached(_cache_key)
+    if _cached is not None:
+        return _cached
+    # ─────────────────────────────────────────────────────────────────
     # Bengkel
     bengkel_service = TransaksiBengkelService(db)
     bengkel = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -230,7 +246,7 @@ def get_profit_summary(
     )
     laba_bersih = total_laba_kotor - total_pengeluaran
 
-    return {
+    result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
             "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
@@ -261,6 +277,8 @@ def get_profit_summary(
         "pengeluaran_details": pengeluaran_details,
         "laba_bersih": laba_bersih,
     }
+    set_cached(_cache_key, result)
+    return result
 
 
 @router.get("/recent-activity")
@@ -270,6 +288,12 @@ def get_recent_activity(
     limit: int = 10,
 ):
     """Get unified recent activity feed (Financial + Operational)."""
+    # ── Cache check (30-second TTL) ───────────────────────────────────
+    _cache_key = build_key("recent_activity", limit)
+    _cached = get_cached(_cache_key)
+    if _cached is not None:
+        return _cached
+    # ─────────────────────────────────────────────────────────────────
 
     # 1. Fetch recent transactions (KasBank)
     kas_bank_service = KasBankService(db)
@@ -347,7 +371,9 @@ def get_recent_activity(
 
     # 5. Sort and Slice
     activities.sort(key=lambda x: x["timestamp"], reverse=True)
-    return activities[:limit]
+    result = activities[:limit]
+    set_cached(_cache_key, result)
+    return result
 
 
 @router.get("/capital-report")
@@ -358,7 +384,13 @@ def get_capital_report(
     tanggal_sampai: Optional[date] = None,
 ):
     """Get capital change report (Laporan Perubahan Modal)."""
-    
+    # ── Cache check (60-second TTL) ───────────────────────────────────
+    _cache_key = build_key("capital_report", tanggal_dari, tanggal_sampai)
+    _cached = get_cached(_cache_key)
+    if _cached is not None:
+        return _cached
+    # ─────────────────────────────────────────────────────────────────
+
     # Helpers
     def get_kas_sum(sumber, tipe, method_filter=None):
         q = db.query(func.sum(KasBank.nominal)).filter(
@@ -719,7 +751,7 @@ def get_capital_report(
     print(f"DEBUG RECON DETAIL B: lainnya={p_lainnya_net}, mobil={p_mobil_net}, part={p_part_jual_mobil}, JA={p_supir_ja_net}, kary={p_karyawan_net}, usaha={p_usaha_net}")
     print(f"DEBUG RECON DETAIL C: beli_part={total_beli_part}, beli_mobil={total_beli_mobil}, jb_cash={jb_mobil_cash}, jb_transfer={jb_mobil_transfer}, opr={biaya_opr}, gaji={biaya_gaji}, prive={prive}, lainnya={lainnya_net_out}")
     print(f"DEBUG RECON DETAIL: internal_bilateral_keluar={internal_bilateral_keluar}")
-    return {
+    result = {
         "section_a": section_a,
         "section_b": section_b,
         "section_c": section_c,
@@ -727,6 +759,8 @@ def get_capital_report(
         "section_e": section_e,
         "grand_total": total_kas
     }
+    set_cached(_cache_key, result)
+    return result
 
 
 @router.get("/neraca")
@@ -752,6 +786,12 @@ def get_neraca(
       - Hutang (Liabilities): all outstanding payables
       - Modal (Equity): setoran modal, laba ditahan, prive
     """
+    # ── Cache check (60-second TTL) ───────────────────────────────────
+    _cache_key = build_key("neraca", tanggal_dari, tanggal_sampai)
+    _cached = get_cached(_cache_key)
+    if _cached is not None:
+        return _cached
+    # ─────────────────────────────────────────────────────────────────
 
     # Helpers
     def get_kas_sum(sumber, tipe, method_filter=None):
@@ -915,35 +955,36 @@ def get_neraca(
     sparepart_summary = sparepart_service.get_stock_value()
     persediaan_sparepart = sparepart_summary.get("total_value", 0)
 
-    # 4. Stok Mobil (Inventory)
-    # Get all available units with eager loaded relationships
-    from sqlalchemy.orm import joinedload
-    available_cars = (
-        db.query(Mobil)
-        .options(
-            joinedload(Mobil.biaya_lainnya),
-            joinedload(Mobil.pengeluaran_bengkel)
-        )
-        .filter(Mobil.status != CarStatus.TERJUAL, Mobil.deleted_at.is_(None))
-        .all()
+    # 4. Stok Mobil (Inventory) — SQL aggregation (avoids loading N car objects into Python)
+
+    q_harga_beli = db.query(
+        func.sum(Mobil.harga_beli)
+    ).filter(Mobil.status != CarStatus.TERJUAL, Mobil.deleted_at.is_(None))
+    harga_beli_total = float(q_harga_beli.scalar() or 0)
+
+    q_biaya_lain = db.query(
+        func.sum(MobilBiayaLainnya.jumlah)
+    ).join(Mobil, MobilBiayaLainnya.mobil_id == Mobil.id).filter(
+        Mobil.status != CarStatus.TERJUAL,
+        Mobil.deleted_at.is_(None),
+        MobilBiayaLainnya.kategori != "Perawatan Bengkel"
     )
-    
-    stok_mobil_total = 0.0
-    for car in available_cars:
-        # Include ALL records from 'biaya_lainnya' (except Perawatan Bengkel)
-        # and ALL records from 'pengeluaran_bengkel' assigned to this car.
-        # This reflects the "Manajemen Biaya Unit" screen without keyword filtering.
-        biaya_lain = sum(
-            float(b.jumlah or 0) for b in car.biaya_lainnya
-            if b.kategori != "Perawatan Bengkel"
-        ) if car.biaya_lainnya else 0.0
-        
-        biaya_pengeluaran = sum(
-            float(p.jumlah or 0) for p in car.pengeluaran_bengkel
-        ) if car.pengeluaran_bengkel else 0.0
-        
-        stok_mobil_total += float(car.harga_beli or 0) + biaya_lain + biaya_pengeluaran
-    
+    biaya_lain_total = float(q_biaya_lain.scalar() or 0)
+
+    from app.models.bengkel import PengeluaranBengkel
+    # Sum of bengkel workshop costs assigned to unsold cars
+    q_biaya_pengeluaran = (
+        db.query(func.sum(PengeluaranBengkel.jumlah))
+        .join(Mobil, PengeluaranBengkel.mobil_id == Mobil.id)
+        .filter(
+            Mobil.status != CarStatus.TERJUAL,
+            Mobil.deleted_at.is_(None)
+        )
+    )
+    biaya_pengeluaran_total = float(q_biaya_pengeluaran.scalar() or 0)
+
+    stok_mobil_total = harga_beli_total + biaya_lain_total + biaya_pengeluaran_total
+
     total_aktiva_lancar = float(total_kas_bank or 0) + float(total_piutang or 0) + float(persediaan_sparepart or 0) + stok_mobil_total
     
     aktiva_lancar = {
@@ -1118,7 +1159,7 @@ def get_neraca(
     print(f"DEBUG NERACA KOMPONEN: Setoran={setoran_modal}, Laba={laba_ditahan}, Prive={prive}, Komponen={modal_komponen}, SelisihModal={selisih_modal}")
     print(f"DEBUG NERACA AKTIVA: Kas={total_kas_bank}, Piutang={total_piutang}, Persediaan={persediaan_sparepart}, Mobil={stok_mobil_total}")
 
-    return {
+    result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
             "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
@@ -1137,3 +1178,5 @@ def get_neraca(
         "selisih": float(selisih),
         "is_balanced": abs(selisih) < 0.1
     }
+    set_cached(_cache_key, result)
+    return result
