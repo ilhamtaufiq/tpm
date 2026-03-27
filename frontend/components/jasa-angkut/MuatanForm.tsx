@@ -62,6 +62,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([]);
 
+    const readyArmada = useMemo(() => {
+        return (activeArmada as Armada[]).filter(a => a.is_ready || a.id.toString() === formData.armada_id).slice(0, 5);
+    }, [activeArmada, formData.armada_id]);
+
+    const readyDrivers = useMemo(() => {
+        return (activeDrivers as Supir[]).filter(d => d.is_ready || d.id.toString() === formData.supir_id).slice(0, 5);
+    }, [activeDrivers, formData.supir_id]);
+
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -322,10 +330,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 <View className="flex-row justify-between items-center mb-3">
                                     <View>
                                         <Typography weight="bold" className="text-blue-900">
-                                            {activeArmada.find(a => a.id.toString() === formData.armada_id)?.nama}
+                                            {(activeArmada as Armada[]).find((a: Armada) => a.id.toString() === formData.armada_id)?.nama}
                                         </Typography>
                                         <Typography variant="caption" className="text-blue-700 font-bold">
-                                            {activeArmada.find(a => a.id.toString() === formData.armada_id)?.nopol}
+                                            {(activeArmada as Armada[]).find((a: Armada) => a.id.toString() === formData.armada_id)?.nopol}
                                         </Typography>
                                     </View>
                                     <Pressable
@@ -389,19 +397,23 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View>
                                         <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi (Ready)</Typography>
                                         <View className="flex-row flex-wrap mb-2">
-                                            {activeArmada.filter(a => a.is_ready).slice(0, 5).map(a => (
-                                                <Pressable
-                                                    key={a.id}
-                                                    onPress={() => {
-                                                        updateField('armada_id', a.id.toString());
-                                                        updateField('nopol', a.nopol);
-                                                        updateField('info_kendaraan', a.jenis || '');
-                                                    }}
-                                                    className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50 border border-blue-100"
-                                                >
-                                                    <Typography variant="caption" weight="bold" className="text-blue-700">{a.nama}</Typography>
-                                                </Pressable>
-                                            ))}
+                                            {readyArmada.length > 0 ? (
+                                                readyArmada.map(a => (
+                                                    <Pressable
+                                                        key={a.id}
+                                                        onPress={() => {
+                                                            updateField('armada_id', a.id.toString());
+                                                            updateField('nopol', a.nopol);
+                                                            updateField('info_kendaraan', a.jenis || '');
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50 border border-blue-100"
+                                                    >
+                                                        <Typography variant="caption" weight="bold" className="text-blue-700">{a.nama}</Typography>
+                                                    </Pressable>
+                                                ))
+                                            ) : (
+                                                <Typography variant="caption" className="text-gray-400 italic mb-2 ml-1">Semua armada sedang bertugas</Typography>
+                                            )}
                                         </View>
                                         <Typography variant="caption" className="text-gray-400 italic ml-1">Atau cari armada lain di atas...</Typography>
                                     </View>
@@ -424,7 +436,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
-                                        <Typography weight="bold" className="text-primary">{(activeDrivers as Supir[]).find(d => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
+                                        <Typography weight="bold" className="text-primary">{(activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
                                     </View>
                                     <View>
                                         <Typography weight="bold" className="text-textMain">
@@ -483,18 +495,22 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View>
                                         <Typography variant="caption" className="text-gray-400 font-bold mb-2 ml-1">Rekomendasi Supir (Ready)</Typography>
                                         <View className="flex-row flex-wrap mb-2">
-                                            {activeDrivers.filter((d: Supir) => d.is_ready || d.id.toString() === formData.supir_id).slice(0, 5).map((d: Supir) => (
-                                                <Pressable
-                                                    key={d.id}
-                                                    onPress={() => {
-                                                        updateField('supir_id', d.id.toString());
-                                                        setDriverSearch('');
-                                                    }}
-                                                    className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-emerald-50 border border-emerald-100"
-                                                >
-                                                    <Typography variant="caption" weight="bold" className="text-emerald-700">{d.nama}</Typography>
-                                                </Pressable>
-                                            ))}
+                                            {readyDrivers.length > 0 ? (
+                                                readyDrivers.map((d: Supir) => (
+                                                    <Pressable
+                                                        key={d.id}
+                                                        onPress={() => {
+                                                            updateField('supir_id', d.id.toString());
+                                                            setDriverSearch('');
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-emerald-50 border border-emerald-100"
+                                                    >
+                                                        <Typography variant="caption" weight="bold" className="text-emerald-700">{d.nama}</Typography>
+                                                    </Pressable>
+                                                ))
+                                            ) : (
+                                                <Typography variant="caption" className="text-gray-400 italic mb-2 ml-1">Semua supir sedang bertugas</Typography>
+                                            )}
                                         </View>
                                         <Typography variant="caption" className="text-gray-400 italic ml-1 text-[10px]">Atau cari supir lain di atas...</Typography>
                                     </View>

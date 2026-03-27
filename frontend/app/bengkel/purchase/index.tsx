@@ -18,6 +18,8 @@ import {
     X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { QrCode } from 'lucide-react-native';
+import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { useQueryClient, onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList } from '../../../hooks/useBengkel';
@@ -41,6 +43,7 @@ export default function PurchaseScreen() {
 
     // Modal State
     const [isPartModalOpen, setIsPartModalOpen] = useState(false);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [partSearchQuery, setPartSearchQuery] = useState('');
     const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null); // Track which item row triggered the modal
 
@@ -124,6 +127,40 @@ export default function PurchaseScreen() {
             setIsPartModalOpen(false);
             setActiveItemIndex(null);
             setPartSearchQuery('');
+        }
+    };
+
+    const handleScanPart = (data: string) => {
+        const cleanData = data.trim();
+        const availableParts = spareParts || []; 
+        // Better logic: use the hook that fetches all for search but maybe we need a dedicated search by code.
+        
+        let part = availableParts.find((p: any) => p.kode === cleanData);
+        if (!part) {
+            const strippedData = cleanData.replace(/^0+/, '');
+            part = availableParts.find((p: any) => (p.kode || '').replace(/^0+/, '') === strippedData);
+        }
+
+        if (part) {
+            // Check if already in items
+            const existingIndex = items.findIndex(i => i.spare_part_id === part.id);
+            if (existingIndex !== -1) {
+                const newItems = [...items];
+                newItems[existingIndex].qty = (Number(newItems[existingIndex].qty) + 1).toString();
+                setItems(newItems);
+            } else {
+                setItems([...items, {
+                    id: Date.now(),
+                    spare_part_id: part.id,
+                    name: part.nama,
+                    qty: '1',
+                    price: formatNumber(part.harga_beli.toString())
+                }]);
+            }
+            setIsScannerOpen(false);
+        } else {
+            setIsScannerOpen(false);
+            alert(`Part dengan kode "${data}" tidak ditemukan.`);
         }
     };
 
@@ -402,10 +439,19 @@ export default function PurchaseScreen() {
                         <Package size={18} color="#023C69" />
                         <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
                     </View>
-                    <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                        <Plus size={14} color="#023C69" />
-                        <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
-                    </Pressable>
+                    <View className="flex-row items-center">
+                        <Pressable 
+                            onPress={() => setIsScannerOpen(true)} 
+                            className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl mr-2 border border-blue-100"
+                        >
+                            <QrCode size={14} color="#2563EB" />
+                            <Typography weight="bold" className="text-blue-700 text-[10px] ml-1.5 uppercase">Scan</Typography>
+                        </Pressable>
+                        <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                            <Plus size={14} color="#023C69" />
+                            <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
+                        </Pressable>
+                    </View>
                 </View>
 
                 {items.map((item, index) => (
@@ -512,7 +558,7 @@ export default function PurchaseScreen() {
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={() => setIsPartModalOpen(false)} activeOpacity={1} />
+                    <Pressable style={{ flex: 1 }} onPress={() => setIsPartModalOpen(false)} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View className="p-6 flex-1">
                             <View className="items-center mb-2">
@@ -576,6 +622,12 @@ export default function PurchaseScreen() {
                     </View>
                 </View>
             </Modal>
+            
+            <BarcodeScannerModal 
+                visible={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScan={handleScanPart} 
+            />
         </SafeAreaView >
     );
 }

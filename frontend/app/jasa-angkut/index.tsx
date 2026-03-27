@@ -499,7 +499,14 @@ export default function JasaAngkutScreen() {
                         setSelectedTrip({ ...selectedTrip, status: nextStatus as any });
                     }
                     
+                    // Invalidate ALL related queries to ensure resource readiness (Armada/Supir) is recalculated
+                    queryClient.invalidateQueries({ queryKey: ['muatan-list'] });
+                    queryClient.invalidateQueries({ queryKey: ['muatan-summary'] });
+                    queryClient.invalidateQueries({ queryKey: ['active-armada'] });
+                    queryClient.invalidateQueries({ queryKey: ['active-drivers'] });
+                    
                     refetch();
+                    refetchSummary();
                     closeDialog();
                 } catch (error) {
                     console.error("Gagal update status:", error);

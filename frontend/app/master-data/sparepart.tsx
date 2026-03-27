@@ -18,6 +18,8 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
+import { QrCode } from 'lucide-react-native';
 import {
     useSparePartsList,
     useCreateSparePart,
@@ -89,6 +91,7 @@ export default function SparePartMasterScreen() {
     // Form State
     const [form, setForm] = useState<SparePartForm>(INITIAL_FORM);
     const [isEditing, setIsEditing] = useState(false);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     const [sheetVisible, setSheetVisible] = useState(false);
     const bottomSheetRef = useRef<BottomSheet>(null);
@@ -140,6 +143,11 @@ export default function SparePartMasterScreen() {
 
         setForm(INITIAL_FORM);
         setIsEditing(false);
+    };
+
+    const handleScanCode = (data: string) => {
+        setForm(prev => ({ ...prev, kode: data }));
+        setIsScannerOpen(false);
     };
 
     const handleSubmit = async () => {
@@ -253,13 +261,32 @@ export default function SparePartMasterScreen() {
             <View className="space-y-4">
                 <View>
                     <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Kode Barang / Barcode</Typography>
-                    <TextInput
-                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
-                        placeholder="Contoh: 123456789 (Kosongkan jika tidak ada)"
-                        placeholderTextColor="#9CA3AF"
-                        value={form.kode}
-                        onChangeText={(t) => setForm({ ...form, kode: t })}
-                    />
+                    <View className="flex-row items-center space-x-3">
+                        <View className="flex-1">
+                            <TextInput
+                                className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                                placeholder="Contoh: 123456789 (Kosongkan jika tidak ada)"
+                                placeholderTextColor="#9CA3AF"
+                                value={form.kode}
+                                onChangeText={(t) => setForm({ ...form, kode: t })}
+                            />
+                        </View>
+                        <Pressable 
+                            onPress={() => setIsScannerOpen(true)}
+                            style={({ pressed }) => ({
+                                width: 50,
+                                height: 50,
+                                backgroundColor: pressed ? '#EEF2FF' : '#F5F7FF',
+                                borderRadius: 16,
+                                borderWidth: 1,
+                                borderColor: '#E0E7FF',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            })}
+                        >
+                            <QrCode size={22} color="#4F46E5" />
+                        </Pressable>
+                    </View>
                 </View>
 
                 <View>
@@ -555,6 +582,12 @@ export default function SparePartMasterScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
+
+            <BarcodeScannerModal 
+                visible={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScan={handleScanCode} 
+            />
         </View>
     );
 }

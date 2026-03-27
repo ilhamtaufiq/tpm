@@ -3,7 +3,8 @@ import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from '
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { Search, Package, X, Check } from 'lucide-react-native';
+import { Search, Package, X, Check, QrCode } from 'lucide-react-native';
+import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { bengkelService } from '../../services/bengkel';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ export const SparePartSelector = ({
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     // Spare Part Search Query
     const { data: searchResults, isLoading } = useQuery({
@@ -45,6 +47,15 @@ export const SparePartSelector = ({
     const handleSelect = (item: any) => {
         onSelect(item);
         handleClose();
+    };
+
+    const handleScan = (data: string) => {
+        // Since we don't have all results here, we can set it as search query 
+        // OR better, use a dedicated find-by-code if the service supports it.
+        // For now, we'll just set it as search query and let the user pick, 
+        // but if there's exactly one match, we could auto-select.
+        setSearchQuery(data);
+        setIsScannerOpen(false);
     };
 
     return (
@@ -99,16 +110,24 @@ export const SparePartSelector = ({
                                 </Pressable>
                             </View>
 
-                            <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                <Search size={20} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-base text-text font-outfit"
-                                    placeholder="Ketik nama sparepart..."
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    autoFocus
-                                    placeholderTextColor="#9CA3AF"
-                                />
+                            <View className="flex-row items-center space-x-2 mb-4">
+                                <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
+                                    <Search size={20} color="#9CA3AF" />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-base text-text font-outfit"
+                                        placeholder="Ketik nama sparepart..."
+                                        value={searchQuery}
+                                        onChangeText={setSearchQuery}
+                                        autoFocus
+                                        placeholderTextColor="#9CA3AF"
+                                    />
+                                </View>
+                                <Pressable 
+                                    onPress={() => setIsScannerOpen(true)}
+                                    className="bg-blue-50 w-12 h-12 rounded-xl items-center justify-center border border-blue-100"
+                                >
+                                    <QrCode size={20} color="#2563EB" />
+                                </Pressable>
                             </View>
 
                             {isLoading ? (
@@ -159,6 +178,12 @@ export const SparePartSelector = ({
                     </View>
                 </View>
             </Modal>
+            
+            <BarcodeScannerModal 
+                visible={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScan={handleScan} 
+            />
         </View>
     );
 };

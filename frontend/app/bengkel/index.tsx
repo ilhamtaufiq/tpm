@@ -28,12 +28,14 @@ import {
     Car,
     Share2,
     ShoppingCart,
-    Edit2
+    Edit2,
+    QrCode
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
+import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -51,6 +53,7 @@ export default function BengkelScreen() {
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState('');
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
 
     // Filters
     const [dateRange, setDateRange] = useState({
@@ -468,6 +471,11 @@ export default function BengkelScreen() {
         if (Platform.OS !== 'web') {
             dateSheetRef.current?.close();
         }
+    };
+
+    const handleScanBarcode = (data: string) => {
+        setSearchQuery(data);
+        setIsScannerOpen(false);
     };
 
     const renderDateContent = () => (
@@ -917,6 +925,12 @@ export default function BengkelScreen() {
                                     </Pressable>
                                 )}
                             </View>
+                            <Pressable 
+                                onPress={() => setIsScannerOpen(true)}
+                                className="ml-2 w-12 h-12 bg-blue-500 rounded-2xl items-center justify-center shadow-lg shadow-blue-500/20"
+                            >
+                                <QrCode size={20} color="white" />
+                            </Pressable>
                             <Pressable className="ml-2 w-12 h-12 bg-primary/10 rounded-2xl items-center justify-center">
                                 <Filter size={20} color="#023C69" />
                             </Pressable>
@@ -1204,6 +1218,12 @@ export default function BengkelScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
+
+            <BarcodeScannerModal 
+                visible={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScan={handleScanBarcode} 
+            />
 
             <AlertDialogComponent
                 visible={dialogConfig.visible}
