@@ -5,6 +5,8 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+import io
+import openpyxl
 
 from app.models.bengkel import SparePart
 from app.schemas.bengkel import SparePartCreate, SparePartUpdate
@@ -16,7 +18,7 @@ class SparePartService:
     def __init__(self, db: Session):
         self.db = db
 
-    def _generate_kode(self) -> str:
+    def generate_next_kode(self) -> str:
         """Generate unique spare part code."""
         today = datetime.now()
         prefix = "SPR"
@@ -55,7 +57,7 @@ class SparePartService:
             )
 
         # Generate kode if not provided
-        kode = data.kode if data.kode else self._generate_kode()
+        kode = data.kode if data.kode else self.generate_next_kode()
 
         # Check duplicate kode
         existing_kode = self.db.query(SparePart).filter(SparePart.kode == kode).first()
@@ -68,6 +70,7 @@ class SparePartService:
         spare_part = SparePart(
             kode=kode,
             nama=data.nama,
+            kode_part=data.kode_part,
             kategori=data.kategori,
             merek=data.merek,
             satuan=data.satuan,
@@ -134,6 +137,7 @@ class SparePartService:
                 or_(
                     SparePart.nama.ilike(search_filter),
                     SparePart.kode.ilike(search_filter),
+                    SparePart.kode_part.ilike(search_filter),
                     SparePart.merek.ilike(search_filter),
                 )
             )
@@ -320,6 +324,7 @@ class SparePartService:
                 or_(
                     SparePart.nama.ilike(search_filter),
                     SparePart.kode.ilike(search_filter),
+                    SparePart.kode_part.ilike(search_filter),
                 ),
             )
             .order_by(SparePart.nama.asc())
@@ -352,3 +357,110 @@ class SparePartService:
             .all()
         )
         return [b[0] for b in brands if b[0]]
+
+    def import_from_excel(self, file_content: bytes) -> Dict[str, Any]:
+        """Import spare parts from Excel file.
+        
+        Expected columns (Fixed Order):
+        A: Kode Barang (Internal)
+        B: Nama (Required) 
+        C: Kode Part (OEM / Mfg Code)
+        D: Kategori
+        E: Merek
+        F: Satuan
+        G: Stok
+        H: Stok Minimum
+        I: Harga Beli
+        J: Harga Jual
+        K: Lokasi Rak
+        L: Catatan
+        """
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
+            sheet = wb.active
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Gagal membaca file Excel: {str(e)}"
+            )
+
+        results = {
+            "total": 0,
+            "success": 0,
+            "updated": 0,
+            "failed": 0,
+            "errors": []
+        }
+
+        # Skip header (starting from row 2)
+        for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
+            # Column mapping
+            # A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10
+            if not any(row): continue  # Skip empty rows
+            
+            results["total"] += 1
+            kode = str(row[0]).strip() if row[0] else None
+            nama = str(row[1]).strip() if row[1] else None
+            
+            if not nama:
+                results["failed"] += 1
+                results["errors"].append(f"Baris {row_idx}: Nama spare part wajib diisi")
+                continue
+
+            # Data parsing with defaults
+            try:
+                data = {
+                    "nama": nama,
+                    "kode_part": str(row[2]).strip() if row[2] else None,
+                    "kategori": str(row[3]) if row[3] else "Umum",
+                    "merek": str(row[4]) if row[4] else None,
+                    "satuan": str(row[5]) if row[5] else "pcs",
+                    "stok": int(row[6]) if row[6] is not None else 0,
+                    "stok_minimum": int(row[7]) if row[7] is not None else 5,
+                    "harga_beli": Decimal(str(row[8] or 0)),
+                    "harga_jual": Decimal(str(row[9] or 0)),
+                    "lokasi_rak": str(row[10]) if row[10] else None,
+                    "catatan": str(row[11]) if row[11] else None
+                }
+            except (ValueError, TypeError, Decimal.InvalidOperation) as e:
+                results["failed"] += 1
+                results["errors"].append(f"Baris {row_idx}: Format data numerik tidak valid ({str(e)})")
+                continue
+
+            # Check if exists by kode or nama
+            spare_part = None
+            if kode:
+                spare_part = self.db.query(SparePart).filter(SparePart.kode == kode).first()
+            
+            if not spare_part:
+                # Try finding by exact name (non-deleted)
+                spare_part = self.db.query(SparePart).filter(
+                    SparePart.nama == nama,
+                    SparePart.deleted_at.is_(None)
+                ).first()
+
+            try:
+                if spare_part:
+                    # Update existing
+                    for key, value in data.items():
+                        setattr(spare_part, key, value)
+                    results["updated"] += 1
+                else:
+                    # Create new
+                    new_spare_part = SparePart(
+                        kode=kode if kode else self.generate_next_kode(),
+                        **data
+                    )
+                    self.db.add(new_spare_part)
+                    results["success"] += 1
+                
+                # Commit every few rows or at the end? For safety, let's commit often but flush first
+                self.db.flush()
+            except Exception as e:
+                self.db.rollback()
+                results["failed"] += 1
+                results["errors"].append(f"Baris {row_idx}: Terjadi kesalahan database ({str(e)})")
+                continue
+
+        self.db.commit()
+        return results

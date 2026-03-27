@@ -1,7 +1,7 @@
 from typing import Optional, List
 from decimal import Decimal
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, status, File, UploadFile
 
 from app.api.deps import DBSession, CurrentUser, ManagerUser
 from app.schemas.bengkel import (
@@ -16,6 +16,16 @@ from app.services.spare_part_service import SparePartService
 router = APIRouter(prefix="/spare-parts", tags=["Spare Parts"])
 
 
+@router.get("/next-kode")
+def get_next_kode(
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Generate the next unique spare part code."""
+    service = SparePartService(db)
+    return {"kode": service.generate_next_kode()}
+
+
 @router.post("", response_model=SparePartResponse, status_code=status.HTTP_201_CREATED)
 def create_spare_part(
     data: SparePartCreate,
@@ -25,6 +35,24 @@ def create_spare_part(
     """Create a new spare part."""
     service = SparePartService(db)
     return service.create(data, current_user.id)
+
+
+@router.post("/import", status_code=status.HTTP_200_OK)
+async def import_spare_parts(
+    db: DBSession,
+    current_user: ManagerUser,
+    file: UploadFile = File(...),
+):
+    """Import spare parts from Excel file."""
+    if not file.filename.endswith((".xlsx", ".xls")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File harus berformat Excel (.xlsx atau .xls)"
+        )
+    
+    contents = await file.read()
+    service = SparePartService(db)
+    return service.import_from_excel(contents)
 
 
 @router.get("", response_model=SparePartList)
@@ -132,7 +160,7 @@ def update_spare_part(
 @router.patch("/{spare_part_id}/stock", response_model=SparePartResponse)
 def update_stock(
     spare_part_id: int,
-    quantity: int,
+    quantity: int = Query(...),
     operation: str = Query(..., regex="^(add|subtract)$"),
     db: DBSession = None,
     current_user: ManagerUser = None,

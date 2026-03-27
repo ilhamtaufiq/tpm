@@ -33,6 +33,7 @@ class SparePart(Base, TimestampMixin, SoftDeleteMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     kode: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     nama: Mapped[str] = mapped_column(String(150), index=True)
+    kode_part: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
     kategori: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     merek: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     satuan: Mapped[str] = mapped_column(String(20), default="pcs")

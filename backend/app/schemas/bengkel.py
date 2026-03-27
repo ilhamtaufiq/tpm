@@ -16,6 +16,7 @@ class SparePartBase(BaseModel):
     """Base spare part schema."""
 
     nama: str = Field(..., min_length=2, max_length=150)
+    kode_part: Optional[str] = Field(None, max_length=50)
     kategori: Optional[str] = Field(None, max_length=50)
     merek: Optional[str] = Field(None, max_length=50)
     satuan: str = Field(default="pcs", max_length=20)
@@ -37,6 +38,7 @@ class SparePartUpdate(BaseModel):
     """Schema for updating spare part."""
 
     nama: Optional[str] = Field(None, min_length=2, max_length=150)
+    kode_part: Optional[str] = Field(None, max_length=50)
     kategori: Optional[str] = Field(None, max_length=50)
     merek: Optional[str] = Field(None, max_length=50)
     satuan: Optional[str] = Field(None, max_length=20)
@@ -54,6 +56,7 @@ class SparePartResponse(BaseModel):
     id: int
     kode: str
     nama: str
+    kode_part: Optional[str] = None
     kategori: Optional[str] = None
     merek: Optional[str] = None
     satuan: str

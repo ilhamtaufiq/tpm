@@ -186,7 +186,7 @@ class MuatanCreate(BaseModel):
 
     tanggal: date
     supir_id: Optional[int] = None
-    supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    supir_nama: Optional[str] = Field(None, max_length=100)
     armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
     info_kendaraan: Optional[str] = Field(None, max_length=255)
@@ -226,7 +226,7 @@ class MuatanUpdate(BaseModel):
 
     tanggal: Optional[date] = None
     supir_id: Optional[int] = None
-    supir_nama: Optional[str] = Field(None, min_length=2, max_length=100)
+    supir_nama: Optional[str] = Field(None, max_length=100)
     armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
     info_kendaraan: Optional[str] = Field(None, max_length=255)

@@ -114,8 +114,8 @@ export const useCreateSparePart = () => {
 export const useUpdateSparePartStock = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, data }: { id: number; data: any }) =>
-            bengkelService.updateSparePartStock(id, data),
+        mutationFn: ({ id, quantity, operation }: { id: number; quantity: number; operation: 'add' | 'subtract' }) => 
+            bengkelService.updateSparePartStock(id, quantity, operation),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
             queryClient.invalidateQueries({ queryKey: ['spare_parts_low_stock'] });
@@ -143,6 +143,25 @@ export const useDeleteSparePart = () => {
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
             queryClient.invalidateQueries({ queryKey: ['spare_parts_low_stock'] });
         },
+    });
+};
+
+export const useImportSpareParts = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (formData: FormData) => bengkelService.importSpareParts(formData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['spare_parts_low_stock'] });
+        },
+    });
+};
+
+export const useNextSparePartKode = () => {
+    return useQuery({
+        queryKey: ['spare_parts_next_kode'],
+        queryFn: () => bengkelService.getNextSparePartKode(),
+        enabled: false,
     });
 };
 

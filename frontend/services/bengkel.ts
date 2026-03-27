@@ -138,18 +138,34 @@ export const bengkelService = {
         return response.data;
     },
 
-    updateSparePartStock: async (id: number, data: any) => {
-        const response = await api.patch(`/spare-parts/${id}/stock`, data);
-        return response.data;
-    },
-
     updateSparePart: async (id: number, data: any) => {
         const response = await api.put(`/spare-parts/${id}`, data);
+        return response.data;
+    },
+    
+    updateSparePartStock: async (id: number, quantity: number, operation: 'add' | 'subtract') => {
+        const response = await api.patch(`/spare-parts/${id}/stock`, null, { 
+            params: { quantity, operation } 
+        });
         return response.data;
     },
 
     deleteSparePart: async (id: number) => {
         const response = await api.delete(`/spare-parts/${id}`);
+        return response.data;
+    },
+
+    importSpareParts: async (formData: FormData) => {
+        const response = await api.post('/spare-parts/import', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
+    getNextSparePartKode: async () => {
+        const response = await api.get('/spare-parts/next-kode');
         return response.data;
     },
 

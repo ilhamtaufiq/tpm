@@ -236,13 +236,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         const cleanData = scannedData.trim();
         const availableParts = sparePartsData?.data || [];
         
-        // Try exact match first
-        let part = availableParts.find((p: any) => p.kode === cleanData);
+        // Try exact match on internal kode or manufacturer kode_part
+        let part = availableParts.find((p: any) => p.kode === cleanData || p.kode_part === cleanData);
         
         // If not found, try matching without leading zeros (common in some barcode systems)
         if (!part) {
             const strippedData = cleanData.replace(/^0+/, '');
-            part = availableParts.find((p: any) => (p.kode || '').replace(/^0+/, '') === strippedData);
+            part = availableParts.find((p: any) => 
+                (p.kode || '').replace(/^0+/, '') === strippedData || 
+                (p.kode_part || '').replace(/^0+/, '') === strippedData
+            );
         }
         
         if (part) {
@@ -306,7 +309,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             setDialogConfig({
                 visible: true,
                 title: 'Tidak Ditemukan',
-                message: `Sparepart dengan kode "${scannedData}" tidak ditemukan.`,
+                message: `Kode "${scannedData}" tidak terdaftar sebagai Kode Part Pabrik maupun Kode Stok Internal.`,
                 variant: 'warning'
             });
             // Auto hide the warning after a while so they can keep scanning
@@ -902,7 +905,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     <View className="flex-row justify-between items-center mb-3">
                         <View className="flex-row items-center">
                             <Package size={18} color="#2563EB" />
-                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
+                            <View className="ml-2">
+                                <Typography variant="body2" weight="semibold">Daftar Sparepart</Typography>
+                                <Typography style={{ fontSize: 9, color: '#94A3B8' }}>Scan Kode Pabrik / Stok Internal</Typography>
+                            </View>
                         </View>
                         <View className="flex-row items-center">
                             <Pressable 

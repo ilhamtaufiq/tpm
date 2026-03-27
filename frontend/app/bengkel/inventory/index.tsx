@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Alert, RefreshControl as RNRefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
@@ -15,10 +15,12 @@ import {
     QrCode,
     Barcode as BarcodeIcon,
     Printer,
-    Edit3
+    Edit3,
+    Minus,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useSparePartsList, useLowStockParts, useUpdateSparePart } from '../../../hooks/useBengkel';
+import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock } from '../../../hooks/useBengkel';
+import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { formatCurrency } from '../../../utils/format';
@@ -26,7 +28,7 @@ import { BaseModal } from '../../../components/ui/BaseModal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
 import QRCode from 'react-native-qrcode-svg';
-import { Barcode } from '../../../components/ui/Barcode';
+import { Barcode as BarcodeGenerator } from '../../../components/ui/Barcode';
 import * as Print from 'expo-print';
 
 export default function InventoryScreen() {
@@ -38,6 +40,14 @@ export default function InventoryScreen() {
     const [showCode, setShowCode] = useState(false);
     const [codeType, setCodeType] = useState<'QR' | 'BARCODE'>('QR');
     const qrRef = React.useRef<any>(null);
+    
+    // Quick Stock States
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [isQuickStockVisible, setIsQuickStockVisible] = useState(false);
+    const [scannedPart, setScannedPart] = useState<any>(null);
+    const [stockChange, setStockChange] = useState('0');
+    const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
+    const updateStockMutation = useUpdateSparePartStock();
 
     const handlePrint = async () => {
         if (!selectedPart) return;
@@ -139,6 +149,42 @@ export default function InventoryScreen() {
         }
     };
 
+    const handleScanForStockUpdate = (scannedData: string) => {
+        setIsScannerOpen(false);
+        const cleanData = scannedData.trim();
+        // search for part locally
+        const part = parts.find((p: any) => 
+            p.kode === cleanData || 
+            (p.kode_part && p.kode_part === cleanData)
+        );
+
+        if (part) {
+            setScannedPart(part);
+            setStockChange('1');
+            setStockOp('add');
+            setIsQuickStockVisible(true);
+        } else {
+            Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
+        }
+    };
+
+    const handleQuickStockUpdate = async () => {
+        if (!scannedPart || !stockChange) return;
+        
+        try {
+            await updateStockMutation.mutateAsync({
+                id: scannedPart.id,
+                quantity: parseInt(stockChange) || 0,
+                operation: stockOp
+            });
+            setIsQuickStockVisible(false);
+            setScannedPart(null);
+            refetch();
+        } catch (error) {
+            Alert.alert('Error', 'Gagal memperbarui stok.');
+        }
+    };
+
     const handleBack = () => {
         if (router.canGoBack()) {
             router.back();
@@ -165,13 +211,21 @@ export default function InventoryScreen() {
                     </Pressable>
                     <Typography variant="h2" weight="bold">Stok Sparepart</Typography>
                 </View>
-                <Pressable
-                    onPress={() => router.push('/bengkel/purchase')}
-                    className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center"
-                >
-                    <Plus size={16} color="#023C69" />
-                    <Typography className="text-primary text-xs font-bold ml-1">Restock</Typography>
-                </Pressable>
+                <View className="flex-row items-center">
+                    <Pressable
+                        onPress={() => setIsScannerOpen(true)}
+                        className="bg-primary/5 p-2 rounded-full mr-2"
+                    >
+                        <BarcodeIcon size={22} color="#023C69" />
+                    </Pressable>
+                    <Pressable
+                        onPress={() => router.push('/bengkel/purchase')}
+                        className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center"
+                    >
+                        <Plus size={16} color="#023C69" />
+                        <Typography className="text-primary text-xs font-bold ml-1">Restock</Typography>
+                    </Pressable>
+                </View>
             </View>
 
             <View className="p-6 pb-0">
@@ -397,7 +451,7 @@ export default function InventoryScreen() {
                                         getRef={(ref) => (qrRef.current = ref)}
                                     />
                                 ) : (
-                                    <Barcode
+                                    <BarcodeGenerator
                                         value={selectedPart?.kode || ''}
                                         width={260}
                                         height={120}
@@ -410,7 +464,7 @@ export default function InventoryScreen() {
                             </Typography>
 
                             <View style={{ width: '100%', paddingHorizontal: 8, marginTop: 16 }}>
-                                <Pressable
+                                <TouchableOpacity
                                     onPress={handlePrint}
                                     activeOpacity={0.8}
                                     style={{ 
@@ -426,9 +480,9 @@ export default function InventoryScreen() {
                                 >
                                     <Printer size={20} color="#FFFFFF" strokeWidth={2} />
                                     <Typography variant="body1" weight="bold" style={{ color: '#FFFFFF', marginLeft: 10 }}>Cetak {codeType}</Typography>
-                                </Pressable>
+                                </TouchableOpacity>
 
-                                <Pressable
+                                <TouchableOpacity
                                     onPress={() => setShowCode(false)}
                                     activeOpacity={0.7}
                                     style={{ 
@@ -442,12 +496,80 @@ export default function InventoryScreen() {
                                     }}
                                 >
                                     <Typography variant="body1" weight="bold" style={{ color: '#4B5563' }}>Kembali ke Detail</Typography>
-                                </Pressable>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     )}
                 </View>
             </BaseModal>
+            {/* Quick Stock Modal */}
+            <BaseModal
+                visible={isQuickStockVisible}
+                onClose={() => setIsQuickStockVisible(false)}
+                title="Update Stok Cepat"
+            >
+                <View className="p-1">
+                    <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
+                        <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
+                        <Typography variant="caption" className="text-textGray mt-1">
+                            Kode: {scannedPart?.kode} • Stok Saat Ini: {scannedPart?.stok} {scannedPart?.satuan || 'pcs'}
+                        </Typography>
+                    </Card>
+
+                    <View className="flex-row space-x-3 mb-6">
+                        <Pressable 
+                            onPress={() => setStockOp('add')}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-100'}`}
+                        >
+                            <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
+                            <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-gray-400'}`}>Tambah</Typography>
+                        </Pressable>
+                        <Pressable 
+                            onPress={() => setStockOp('subtract')}
+                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-white border-gray-100'}`}
+                        >
+                            <Minus size={20} color={stockOp === 'subtract' ? '#F43F5E' : '#94A3B8'} />
+                            <Typography className={`ml-2 font-bold ${stockOp === 'subtract' ? 'text-rose-700' : 'text-gray-400'}`}>Kurang</Typography>
+                        </Pressable>
+                    </View>
+
+                    <Typography variant="caption" weight="bold" className="text-textGray mb-2 ml-1">Jumlah Perubahan</Typography>
+                    <View className="flex-row items-center space-x-4 mb-8">
+                        <Pressable 
+                            onPress={() => setStockChange(prev => Math.max(0, parseInt(prev) - 1).toString())}
+                            className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
+                        >
+                            <Minus size={20} color="#4B5563" />
+                        </Pressable>
+                        <View className="flex-1">
+                            <TextInput
+                                keyboardType="numeric"
+                                value={stockChange}
+                                onChangeText={setStockChange}
+                                className="h-12 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl font-bold font-outfit"
+                            />
+                        </View>
+                        <Pressable 
+                            onPress={() => setStockChange(prev => (parseInt(prev || '0') + 1).toString())}
+                            className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
+                        >
+                            <Plus size={20} color="#4B5563" />
+                        </Pressable>
+                    </View>
+
+                    <Button
+                        title={`Konfirmasi ${stockOp === 'add' ? 'Penambahan' : 'Pengurangan'}`}
+                        onPress={handleQuickStockUpdate}
+                        loading={updateStockMutation.isPending}
+                    />
+                </View>
+            </BaseModal>
+
+            <BarcodeScannerModal 
+                visible={isScannerOpen} 
+                onClose={() => setIsScannerOpen(false)} 
+                onScan={handleScanForStockUpdate} 
+            />
         </SafeAreaView>
     );
 }
