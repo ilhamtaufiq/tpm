@@ -1,34 +1,40 @@
 # Continuity Ledger
 
 ## Goal
-- Analysis of `backend/app/api/v1/dashboard.py` to understand financial logic, reporting structures, and identify potential issues.
-- Design and plan the "Operational Balance" (Saldo BOP) feature.
-- Implement Barcode/QR Code scanning in BengkelForm for spare parts.
-- Implement real-time data refresh mechanism for reports (Dashboard, Neraca, etc.) using React Query polling.
+- Create an automatic semantic versioning script (SemVer).
+- (Previous) Analysis of `backend/app/api/v1/dashboard.py` to understand financial logic.
+- (Previous) Design and plan the "Operational Balance" (Saldo BOP) feature.
+- (Previous) Implement Barcode/QR Code scanning.
 
 ## Constraints/Assumptions
-- Dashboard logic involves multiple business units: Bengkel, Jasa Angkut, Jual Beli Mobil.
-- Caching is implemented with 30-60s TTL.
-- Financial reports (Neraca, Capital Report) involve complex reconciliation across multiple tables.
+- Project involves both Frontend (React/Expo/TSX) and Backend (Python/FastAPI).
+- Versioning is synchronized between `package.json` and `backend/app/config.py`.
+- Environment: Windows/Laragon with `backend/venv`.
 
 ## Key decisions
 1. **Persona**: Operating as **Horizon**, AI prompt optimization specialist.
-2. **Analysis Mode**: DETAIL mode selected due to the complexity of the backend code and its financial implications.
+2. **Analysis Mode**: DETAIL mode selected for the SemVer script request due to environment dependencies.
+3. **Implementation**: Standalone Python script (`semver_bump.py`) at root, executed via backend venv.
 
 ## State
 - Done:
-  - Fixed `supir_nama` validation error in Jasa Angkut.
-  - Implemented "Import from Excel" feature for Spare Parts (Backend logic, API, Frontend hooks, and UI).
-  - Initiated `expo-document-picker` installation in the frontend.
+  - Fixed `supir_nama` validation error.
+  - Implemented Excel Import for Spare Parts.
+  - **Implemented `semver_bump.py` script for automatic versioning.**
 - Now:
-  - Waiting for dependency installation and verifying the import workflow.
+  - Script is ready for use.
 - Next:
-  - Perform the dashboard analysis.
+  - Perform the dashboard analysis of `backend/app/api/v1/dashboard.py`.
+  - Design the "Operational Balance" (Saldo BOP) feature.
 
 ## Open questions (UNCONFIRMED if needed)
-- What specific focus is required for the analysis? (e.g., Logic verification, Performance, Security, or refactoring for Saldo BOP).
-- Does the user want the analysis performed immediately after prompt optimization?
+- Does the user want a script to push tags to remote automatically?
+- Should we consider a different versioning source of truth for the API?
 
 ## Working set (files/ids/commands)
-- `c:\laragon\www\tpm\backend\app\api\v1\dashboard.py`
 - `c:\laragon\www\tpm\CONTINUITY.md`
+- `c:\laragon\www\tpm\semver_bump.py`
+- `c:\laragon\www\tpm\frontend\package.json`
+- `c:\laragon\www\tpm\backend\app\config.py`
+
+
