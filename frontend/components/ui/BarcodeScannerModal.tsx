@@ -9,12 +9,32 @@ interface BarcodeScannerModalProps {
     visible: boolean;
     onClose: () => void;
     onScan: (data: string) => void;
+    scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
 }
 
-export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visible, onClose, onScan }) => {
+export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visible, onClose, onScan, scanLog = [] }) => {
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [torch, setTorch] = useState(false);
+    const [laserPos, setLaserPos] = useState(0);
+    const [movingDown, setMovingDown] = useState(true);
+
+    // Laser Animation Effect
+    useEffect(() => {
+        if (!visible) return;
+        const interval = setInterval(() => {
+            setLaserPos(prev => {
+                if (movingDown) {
+                    if (prev >= 240) { setMovingDown(false); return 240; }
+                    return prev + 5;
+                } else {
+                    if (prev <= 10) { setMovingDown(true); return 10; }
+                    return prev - 5;
+                }
+            });
+        }, 30);
+        return () => clearInterval(interval);
+    }, [visible, movingDown]);
 
     useEffect(() => {
         if (visible && !permission?.granted) {
@@ -85,6 +105,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
                                         <View style={[styles.corner, styles.topRight]} />
                                         <View style={[styles.corner, styles.bottomLeft]} />
                                         <View style={[styles.corner, styles.bottomRight]} />
+                                        
+                                        {/* Laser Line */}
+                                        <View style={[styles.laser, { top: laserPos }]} />
+
                                         {scanned && (
                                             <View style={styles.scannedIndicator}>
                                                 <Typography weight="bold" style={{ color: 'white' }}>Terdeteksi!</Typography>
@@ -94,9 +118,36 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
                                     <View style={styles.unfocusedContainer}></View>
                                 </View>
                                 <View style={styles.unfocusedContainer}>
-                                    <Typography className="text-white text-center mt-10" style={{ opacity: 0.7 }}>
-                                        Posisikan barcode/QR code di dalam kotak
-                                    </Typography>
+                                    <View className="items-center mt-6">
+                                        <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
+                                            Posisikan barcode/QR code di dalam kotak
+                                        </Typography>
+
+                                        {/* Scanner Log Overlay */}
+                                        {scanLog.length > 0 && (
+                                            <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
+                                                <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
+                                                {scanLog.slice(0, 3).map((item, idx) => (
+                                                    <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
+                                                        <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
+                                                        <View className="flex-1">
+                                                            <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
+                                                            {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
+                                                        </View>
+                                                        <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
+                                                    </View>
+                                                ))}
+                                                <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
+                                                
+                                                <Button 
+                                                    title="Selesai & Tutup" 
+                                                    variant="primary"
+                                                    onPress={onClose}
+                                                    className="h-12 rounded-2xl"
+                                                />
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                             </View>
                         </CameraView>
@@ -209,5 +260,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 16,
+    },
+    laser: {
+        position: 'absolute',
+        left: 10,
+        right: 10,
+        height: 2,
+        backgroundColor: '#3B82F6',
+        shadowColor: "#3B82F6",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+        elevation: 10,
     }
 });

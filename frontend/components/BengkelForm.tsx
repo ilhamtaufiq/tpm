@@ -65,6 +65,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [catatan, setCatatan] = useState('');
     const [activeTab, setActiveTab] = useState<'service' | 'sparepart'>('service');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [scannerMode, setScannerMode] = useState<'sparepart' | 'plate' | 'vessel'>('sparepart');
+    const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
@@ -245,7 +247,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         
         if (part) {
             // Success vibration if available or just proceed
-            setIsScannerOpen(false);
+            // NOTE: We don't close the scanner immediately to allow continuous scanning of multiple parts
+            // unless the user clicks "Selesai" in the modal
             
             // Logic to add or increment part
             const existingPartIndex = parts.findIndex(p => p.spare_part_id === part.id);
@@ -282,6 +285,14 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 }
             }
 
+            // Add to scan log
+            setScanLog(prev => [{
+                id: Math.random().toString(),
+                title: part.nama,
+                subtitle: `Kode: ${part.kode} • Stok: ${part.stok}`,
+                timestamp: Date.now()
+            }, ...prev]);
+
             setDialogConfig({
                 visible: true,
                 title: 'Part Ditemukan',
@@ -290,14 +301,65 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             });
             setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 1200);
         } else {
-            setIsScannerOpen(false);
+            // For not found, we don't close either, just show alert or skip
+            // setIsScannerOpen(false); 
             setDialogConfig({
                 visible: true,
                 title: 'Tidak Ditemukan',
                 message: `Sparepart dengan kode "${scannedData}" tidak ditemukan.`,
                 variant: 'warning'
             });
+            // Auto hide the warning after a while so they can keep scanning
+            setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 2000);
         }
+    };
+
+    const handleScanPlate = (scannedData: string) => {
+        const cleanData = scannedData.trim().toUpperCase();
+        setIsScannerOpen(false);
+        
+        // If it's the jasa_angkut category, try to match with Armada
+        if (kategori === 'jasa_angkut') {
+            const armada = muatanList.find((m: any) => m.nopol === cleanData || (m.nomor_transaksi === cleanData));
+            if (armada) {
+                // If we found a muatan/armada, select it
+                setSelectedArmada({ id: armada.armada_id, nopol: armada.nopol, nama: armada.armada?.nama } as any);
+                setNomorPlat(armada.nopol);
+                setJenisKendaraan(armada.info_kendaraan || '');
+                return;
+            }
+        }
+        
+        // If it's jual_beli_mobil, try to match with Mobil
+        if (kategori === 'jual_beli_mobil') {
+            const mobil = mobilList.find((m: any) => m.nomor_plat === cleanData);
+            if (mobil) {
+                setSelectedMobil(mobil);
+                setNomorPlat(mobil.nomor_plat);
+                setJenisKendaraan(`${mobil.merek} ${mobil.model}`);
+                return;
+            }
+        }
+
+        // Default: just set the plate number
+        setNomorPlat(cleanData);
+        
+        // Try to find if this plate belongs to an existing vehicle in customer's list
+        if (selectedCustomer && selectedCustomer.vehicles) {
+            const v = selectedCustomer.vehicles.find(v => v.plat_nomor === cleanData);
+            if (v) {
+                setSelectedVehicle(v);
+                setJenisKendaraan(v.jenis_unit);
+            }
+        }
+
+        // Add to scan log
+        setScanLog(prev => [{
+            id: Math.random().toString(),
+            title: `Plat: ${cleanData}`,
+            subtitle: 'Data kendaraan diperbarui',
+            timestamp: Date.now()
+        }, ...prev]);
     };
 
     const handleSubmit = async () => {
@@ -692,15 +754,26 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 <View className="mb-6">
                     <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Informasi Kendaraan</Typography>
                     <View className="flex-row space-x-3">
-                        <Input
-                            label="Nomor Plat"
-                            placeholder="B 1234 ABC"
-                            containerClassName="flex-1"
-                            value={nomorPlat}
-                            onChangeText={setNomorPlat}
-                            editable={!selectedCustomer || (selectedCustomer?.vehicles && selectedCustomer.vehicles.length === 0)}
-                            autoCapitalize="characters"
-                        />
+                        <View className="flex-1 relative">
+                            <Input
+                                label="Nomor Plat"
+                                placeholder="B 1234 ABC"
+                                containerClassName="mb-0"
+                                value={nomorPlat}
+                                onChangeText={setNomorPlat}
+                                editable={!selectedCustomer || (selectedCustomer?.vehicles && selectedCustomer.vehicles.length === 0)}
+                                autoCapitalize="characters"
+                            />
+                            {(!selectedCustomer || (selectedCustomer?.vehicles && selectedCustomer.vehicles.length === 0)) && (
+                                <Pressable 
+                                    onPress={() => { setScannerMode('plate'); setIsScannerOpen(true); }}
+                                    className="absolute right-3 top-9"
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <QrCode size={18} color="#023C69" />
+                                </Pressable>
+                            )}
+                        </View>
                         <Input
                             label="Jenis Unit"
                             placeholder="Honda Vario"
@@ -833,7 +906,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         </View>
                         <View className="flex-row items-center">
                             <Pressable 
-                                onPress={() => setIsScannerOpen(true)} 
+                                onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }} 
                                 style={({ pressed }) => ({
                                     flexDirection: 'row',
                                     alignItems: 'center',
@@ -1204,7 +1277,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     <BarcodeScannerModal 
                         visible={isScannerOpen} 
                         onClose={() => setIsScannerOpen(false)} 
-                        onScan={handleScanSparePart} 
+                        onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                        scanLog={scanLog}
                     />
                 </View>
             </NavigationContext.Provider>
@@ -1238,7 +1312,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     <BarcodeScannerModal 
                         visible={isScannerOpen} 
                         onClose={() => setIsScannerOpen(false)} 
-                        onScan={handleScanSparePart} 
+                        onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                        scanLog={scanLog}
                     />
                 </View>
             </KeyboardAvoidingView>
