@@ -880,6 +880,7 @@ def get_neraca(
                 KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
                 KasBank.tipe == KasBankType.MASUK,
                 PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL,
+                PiutangModel.status != PiutangStatus.BATAL,
                 PiutangModel.tanggal <= (tanggal_sampai or date.max),
                 KasBank.tanggal <= (tanggal_sampai or date.max)
             )
@@ -899,6 +900,8 @@ def get_neraca(
         .join(Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id)
         .filter(
             TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            Mobil.deleted_at.is_(None),
             TransaksiPenjualanBengkel.tanggal <= (tanggal_sampai or date.max),
             or_(
                 Mobil.tanggal_terjual.is_(None),
@@ -920,6 +923,7 @@ def get_neraca(
         db.query(func.sum(PiutangModel.nominal_piutang))
         .filter(
             PiutangModel.sumber == PiutangSource.BENGKEL,
+            PiutangModel.status != PiutangStatus.BATAL,
             PiutangModel.nomor_referensi.in_(jb_mobil_trx_ids),
             PiutangModel.tanggal <= (tanggal_sampai or date.max)
         )
