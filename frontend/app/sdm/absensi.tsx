@@ -285,7 +285,7 @@ export default function AbsensiScreen() {
                         renderItem={({ item }) => (
                             <Pressable
                                 onPress={() => setSelectedKaryawan(item)}
-                                activeOpacity={0.9}
+                                
                                 className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
                             >
                                 <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 shadow-inner">

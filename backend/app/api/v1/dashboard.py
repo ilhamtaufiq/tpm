@@ -503,22 +503,27 @@ def get_capital_report(
     if tanggal_sampai: q_part_mobil = q_part_mobil.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
     p_part_jual_mobil = float(q_part_mobil.scalar() or 0)
 
-    # DIRECT PAYMENTS (DP & Partials) for Car Sales
-    # These often use JUAL_BELI_MOBIL source instead of PIUTANG source in KasBank entries.
-    # We must subtract them from p_mobil_gross to get the correct net outstanding change.
-    q_jb_mobil_direct_cash = (
-        db.query(func.sum(KasBank.nominal))
-        .join(PiutangModel, PiutangModel.nomor_referensi == KasBank.nomor_referensi)
-        .filter(
-            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
-            KasBank.tipe == KasBankType.MASUK,
-            PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL,
-            PiutangModel.status != PiutangStatus.BATAL
+    # DIRECT PAYMENTS (DP & Partials) 
+    # These often use operational sources instead of PIUTANG source in KasBank entries.
+    # We must subtract them from gross piutang to get the correct net outstanding change.
+    def get_direct_cash(src, kb_src):
+        q = (
+            db.query(func.sum(KasBank.nominal))
+            .join(PiutangModel, PiutangModel.nomor_referensi == KasBank.nomor_referensi)
+            .filter(
+                KasBank.sumber == kb_src,
+                KasBank.tipe == KasBankType.MASUK,
+                PiutangModel.sumber == src,
+                PiutangModel.status != PiutangStatus.BATAL
+            )
         )
-    )
-    if tanggal_dari: q_jb_mobil_direct_cash = q_jb_mobil_direct_cash.filter(KasBank.tanggal >= tanggal_dari)
-    if tanggal_sampai: q_jb_mobil_direct_cash = q_jb_mobil_direct_cash.filter(KasBank.tanggal <= tanggal_sampai)
-    p_mobil_direct_cash = float(q_jb_mobil_direct_cash.scalar() or 0)
+        if tanggal_dari: q = q.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai: q = q.filter(KasBank.tanggal <= tanggal_sampai)
+        return float(q.scalar() or 0)
+
+    p_mobil_direct_cash = get_direct_cash(PiutangSource.JUAL_BELI_MOBIL, KasBankSource.JUAL_BELI_MOBIL)
+    p_bengkel_direct_cash = get_direct_cash(PiutangSource.BENGKEL, KasBankSource.BENGKEL)
+    p_ja_direct_cash = get_direct_cash(PiutangSource.JASA_ANGKUT, KasBankSource.JASA_ANGKUT)
 
     p_karyawan_gross = p_by_sumber.get(PiutangSource.KASBON_KARYAWAN.value, {}).get("total_piutang", 0)
     
@@ -555,12 +560,12 @@ def get_capital_report(
     
     repayments_by_source = {s.value if hasattr(s, "value") else s: float(n) for s, n in q_repayments_source.group_by(PiutangModel.sumber).all()}
 
-    # Calculate net items for display (Gross Created in period - Payments Received in period)
+    # Calculate net items for display (Gross Created in period - Payments Received in period - DPs Received)
     p_lainnya_net = p_lainnya_gross - repayments_by_source.get(PiutangSource.LAINNYA.value, 0)
     p_mobil_net = p_mobil_gross - p_mobil_direct_cash - repayments_by_source.get(PiutangSource.JUAL_BELI_MOBIL.value, 0)
-    p_supir_ja_net = p_supir_ja - repayments_by_source.get(PiutangSource.JASA_ANGKUT.value, 0)
+    p_supir_ja_net = p_supir_ja - p_ja_direct_cash - repayments_by_source.get(PiutangSource.JASA_ANGKUT.value, 0)
     p_karyawan_net = p_karyawan_gross - repayments_by_source.get(PiutangSource.KASBON_KARYAWAN.value, 0)
-    p_usaha_net = p_usaha_gross - repayments_by_source.get(PiutangSource.BENGKEL.value, 0)
+    p_usaha_net = p_usaha_gross - p_bengkel_direct_cash - repayments_by_source.get(PiutangSource.BENGKEL.value, 0)
     
     # Total B = Net Change in Piutang asset this period.
     # Note: p_part_jual_mobil is internal (reclassification), so we usually keep it separate 
@@ -868,18 +873,27 @@ def get_neraca(
             PaymentModel.tanggal <= (tanggal_sampai or date.max)
         ).scalar() or 0
         
-        # 3. Direct Payments via KasBank (for JUAL_BELI_MOBIL specific cases)
-        # This matches the logic in get_capital_report (p_mobil_direct_cash)
+        # 3. Direct Payments via KasBank (DPs/Partials recorded outside PembayaranPiutang table)
+        # We find payments in KasBank with the same nomor_referensi and appropriate source
+        from app.models.keuangan import KasBank
+        from app.utils.constants import KasBankSource, KasBankType
+        
+        # Map PiutangSource to corresponding KasBankSource
+        source_map = {
+            PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
+            PiutangSource.BENGKEL: KasBankSource.BENGKEL,
+            PiutangSource.JASA_ANGKUT: KasBankSource.JASA_ANGKUT
+        }
+        
         direct_paid = 0
-        if src == PiutangSource.JUAL_BELI_MOBIL:
-            from app.models.keuangan import KasBank
-            from app.utils.constants import KasBankSource, KasBankType
+        if src in source_map:
+            kb_src = source_map[src]
             q_direct = db.query(func.sum(KasBank.nominal)).join(
                 PiutangModel, PiutangModel.nomor_referensi == KasBank.nomor_referensi
             ).filter(
-                KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+                KasBank.sumber == kb_src,
                 KasBank.tipe == KasBankType.MASUK,
-                PiutangModel.sumber == PiutangSource.JUAL_BELI_MOBIL,
+                PiutangModel.sumber == src,
                 PiutangModel.status != PiutangStatus.BATAL,
                 PiutangModel.tanggal <= (tanggal_sampai or date.max),
                 KasBank.tanggal <= (tanggal_sampai or date.max)

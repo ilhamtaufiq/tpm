@@ -343,14 +343,14 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         const isInternalTransaction = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
         if (!isInternalTransaction) {
             if (!isSplitPayment) {
-                if (!payments[0]?.metode || Number(parseNumber(payments[0]?.nominal)) <= 0) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran dan isi nominal pembayaran.', variant: 'warning' });
+                if (!payments[0]?.metode) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran.', variant: 'warning' });
                     return;
                 }
             } else {
-                const hasInvalidSplitPayment = payments.some(p => !p.metode || Number(parseNumber(p.nominal)) <= 0);
+                const hasInvalidSplitPayment = payments.some(p => !p.metode);
                 if (hasInvalidSplitPayment) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran dan isi nominal untuk setiap baris split payment.', variant: 'warning' });
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk setiap baris split payment.', variant: 'warning' });
                     return;
                 }
             }
@@ -391,10 +391,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             payments: isInternalJasaAngkut
                 ? [{ metode: 'INTERNAL', jumlah: grandTotal }]
                 : payments
-                    .filter(p => Number(parseNumber(p.nominal)) > 0)
+                    .filter(p => p.metode)
                     .map(p => ({
                         metode: p.metode.toUpperCase(),
-                        jumlah: Number(parseNumber(p.nominal)),
+                        jumlah: Number(parseNumber(p.nominal)) || 0,
                         catatan: p.catatan || ''
                     })),
             jumlah_bayar: isInternalJasaAngkut

@@ -610,7 +610,7 @@ export default function KasbonScreen() {
 
                         return (
                             <Pressable
-                                activeOpacity={0.9}
+                                
                                 onPress={() => handleOpenDetail(item)}
                                 className="bg-white p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
                             >
@@ -680,7 +680,7 @@ export default function KasbonScreen() {
             {/* Redesigned FAB */}
             <Pressable
                 onPress={openAddForm}
-                activeOpacity={0.8}
+                
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />

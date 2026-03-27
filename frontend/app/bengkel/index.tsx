@@ -47,11 +47,20 @@ import { FILE_URL } from '../../utils/api';
 
 export default function BengkelScreen() {
 
+    // Search & Filter State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
+
     // API Hooks - Auto refresh every 5s and on Focus
-    const { data: queueData, isLoading, refetch } = useTransaksiBengkelList(undefined, {
+    const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
+        search: searchQuery || undefined,
+    }, {
         refetchInterval: 5000
     });
+    
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
+        search: searchQuery || undefined
+    }, {
         refetchInterval: 5000
     });
 
@@ -59,14 +68,12 @@ export default function BengkelScreen() {
         React.useCallback(() => {
             refetch();
             refetchSummary();
-        }, [])
+        }, [searchQuery])
     );
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
     const voidMutation = useVoidTransaksiBengkel();
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM'>('ALL');
     const [selectedItem, setSelectedItem] = React.useState<any | null>(null);
     const [view, setView] = React.useState<'form' | 'detail' | 'edit'>('form');
     const [refreshing, setRefreshing] = React.useState(false);
@@ -101,8 +108,18 @@ export default function BengkelScreen() {
         
         if (paymentFilter === 'LUNAS') {
             result = result.filter((item: any) => item.status_bayar === 'lunas' || item.status_bayar === 'LUNAS');
-        } else if (paymentFilter === 'BELUM') {
-            result = result.filter((item: any) => item.status_bayar !== 'lunas' && item.status_bayar !== 'LUNAS');
+        } else if (paymentFilter === 'PARTIAL') {
+            result = result.filter((item: any) => 
+                (item.status_bayar === 'belum_lunas' || item.status_bayar === 'BELUM_LUNAS') && 
+                (Number(item.jumlah_bayar) > 0)
+            );
+        } else if (paymentFilter === 'UNPAID') {
+            result = result.filter((item: any) => 
+                (item.status_bayar === 'belum_lunas' || item.status_bayar === 'BELUM_LUNAS') && 
+                (Number(item.jumlah_bayar) === 0)
+            );
+        } else if (paymentFilter === 'BATAL') {
+            result = result.filter((item: any) => item.status_bayar === 'batal' || item.status_bayar === 'BATAL');
         }
 
         if (searchQuery.trim()) {
@@ -111,26 +128,37 @@ export default function BengkelScreen() {
                 const plate = (item.nomor_plat || '').toLowerCase();
                 const customer = (item.nama_customer || '').toLowerCase();
                 const vehicle = (item.jenis_kendaraan || '').toLowerCase();
-                const status = (item.status_pengerjaan || '').toLowerCase();
-                return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || status.includes(q);
+                const trno = (item.nomor_transaksi || '').toLowerCase();
+                return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || trno.includes(q);
             });
         }
         return result;
     }, [queue, searchQuery, paymentFilter]);
 
-    // Calculate Lunas/Belum stats from queue
-    const paymentStats = useMemo(() => {
-        let lunas = 0;
-        let belum = 0;
+    // Calculate counters for UI Pills (using values from summary API if available, else local)
+    const stats = useMemo(() => {
+        if (summary) {
+            return {
+                total: summary.total_transaksi || 0,
+                lunas: summary.lunas_count || 0,
+                partial: summary.belum_lunas_count || 0,
+                unpaid: summary.belum_bayar_count || 0,
+                batal: summary.batal_count || 0
+            };
+        }
+        
+        // Fallback to local calculation if summary not yet loaded
+        let lunas = 0, partial = 0, unpaid = 0, batal = 0;
         queue.forEach((item: any) => {
-            if (item.status_bayar === 'lunas' || item.status_bayar === 'LUNAS') {
-                lunas++;
-            } else {
-                belum++;
-            }
+            const s = (item.status_bayar || '').toUpperCase();
+            const paidNum = Number(item.jumlah_bayar || 0);
+            if (s === 'LUNAS') lunas++;
+            else if (s === 'BATAL') batal++;
+            else if (paidNum > 0) partial++;
+            else unpaid++;
         });
-        return { lunas, belum, total: queue.length };
-    }, [queue]);
+        return { total: queue.length, lunas, partial, unpaid, batal };
+    }, [queue, summary]);
 
     // Load print settings
     React.useEffect(() => {
@@ -734,28 +762,60 @@ export default function BengkelScreen() {
                     </Pressable>
                 </View>
 
-                {/* Bento Stats (Glass Style) */}
-                <View className="flex-row justify-between">
+                {/* Row 1: Operational Status (Antre, Proses, Selesai) */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    className="flex-row -mx-6 px-6 mb-4"
+                >
                     {[
                         { label: 'Antre', key: 'antre', color: '#F59E0B' },
                         { label: 'Proses', key: 'proses', color: '#3B82F6' },
                         { label: 'Selesai', key: 'selesai', color: '#10B981' },
-                    ].map((stat, idx) => {
-                        const count = summary ? summary[stat.key] : 0;
-                        return (
-                            <View
-                                key={stat.key}
-                                className={`flex-1 bg-white/10 p-4 rounded-[24px] border border-white/5 ${idx < 2 ? 'mr-2' : ''}`}
-                            >
-                                <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1">{stat.label}</Typography>
-                                <View className="flex-row items-baseline">
-                                    <Typography weight="bold" className="text-white text-xl">{count || 0}</Typography>
-                                    <Typography className="text-white/30 text-[10px] ml-1 font-bold">UNIT</Typography>
-                                </View>
+                    ].map((stat, idx) => (
+                        <View
+                            key={stat.key}
+                            style={{ width: 100 }}
+                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
+                        >
+                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
+                            <View className="flex-row items-baseline">
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{summary ? summary[stat.key] : 0}</Typography>
+                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">UNIT</Typography>
                             </View>
-                        );
-                    })}
-                </View>
+                        </View>
+                    ))}
+                </ScrollView>
+
+                {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    className="flex-row -mx-6 px-6"
+                >
+                    {[
+                        { label: 'Total', key: 'total', value: stats.total, color: 'white' },
+                        { label: 'Lunas', key: 'lunas', value: stats.lunas, color: '#10B981' },
+                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, color: '#3B82F6' },
+                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, color: '#F59E0B' },
+                        { label: 'Batal', key: 'batal', value: stats.batal, color: '#EF4444' },
+                    ].map((stat, idx) => (
+                        <View
+                            key={stat.key}
+                            style={{ width: 100 }}
+                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
+                        >
+                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
+                            <View className="flex-row items-baseline">
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
+                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">TRX</Typography>
+                            </View>
+                        </View>
+                    ))}
+                </ScrollView>
+
+
+
             </View>
 
             {/* Filter Search Overlay */}
@@ -785,33 +845,50 @@ export default function BengkelScreen() {
                                 <Filter size={20} color="#023C69" />
                             </Pressable>
                         </View>
-                        {/* Status Bayar Chips */}
-                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 space-x-2">
+                        {/* Status Bayar Chips Filters */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100 space-x-2">
                             <Pressable 
                                 onPress={() => setPaymentFilter('ALL')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
                             >
                                 <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                    Semua ({paymentStats.total})
+                                    Semua ({stats.total})
                                 </Typography>
                             </Pressable>
                             <Pressable 
                                 onPress={() => setPaymentFilter('LUNAS')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
                             >
                                 <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                    Lunas ({paymentStats.lunas})
+                                    Lunas ({stats.lunas})
                                 </Typography>
                             </Pressable>
                             <Pressable 
-                                onPress={() => setPaymentFilter('BELUM')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BELUM' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                                onPress={() => setPaymentFilter('PARTIAL')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
                             >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BELUM' ? 'text-white' : 'text-rose-700'}>
-                                    Belum Lunas ({paymentStats.belum})
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                    Belum Lunas ({stats.partial})
                                 </Typography>
                             </Pressable>
-                        </View>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('UNPAID')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                    Belum Bayar ({stats.unpaid})
+                                </Typography>
+                            </Pressable>
+                            <Pressable 
+                                onPress={() => setPaymentFilter('BATAL')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                    Batal ({stats.batal})
+                                </Typography>
+                            </Pressable>
+                        </ScrollView>
+
                     </View>
                 </View>
             )}
@@ -934,12 +1011,24 @@ export default function BengkelScreen() {
                                     <Typography variant="caption" className="ml-1.5 text-textGray/60 font-medium">
                                         {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
                                     </Typography>
-                                    {item.grand_total > 0 && (
-                                        <Typography weight="bold" className="text-primary text-xs ml-auto">
-                                            {formatCurrency(item.grand_total)}
-                                        </Typography>
-                                    )}
+                                    <View className="flex-row items-center ml-auto">
+                                        {item.grand_total > 0 && (
+                                            <Typography weight="bold" className="text-primary text-xs mr-3">
+                                                {formatCurrency(item.grand_total)}
+                                            </Typography>
+                                        )}
+                                        <Pressable 
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                handlePresentModalPress('edit', item);
+                                            }}
+                                            className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center border border-primary/10"
+                                        >
+                                            <Edit2 size={14} color="#023C69" />
+                                        </Pressable>
+                                    </View>
                                 </View>
+
                             </View>
                         </Pressable>
                     ))

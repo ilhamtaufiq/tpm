@@ -143,7 +143,7 @@ export default function SDMScreen() {
                         <Pressable
                             key={action.id}
                             onPress={() => router.push(action.route as any)}
-                            activeOpacity={0.7}
+                            
                             className="w-[22%] items-center"
                         >
                             <View
@@ -165,7 +165,7 @@ export default function SDMScreen() {
                 <View className="space-y-6">
                     <Pressable
                         onPress={() => router.push('/sdm/karyawan')}
-                        activeOpacity={0.9}
+                        
                         className="bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-6"
                     >
                         <View className="w-14 h-14 rounded-2xl bg-blue-50 items-center justify-center mr-4 border border-blue-100/50">
@@ -180,7 +180,7 @@ export default function SDMScreen() {
 
                     <Pressable
                         onPress={() => router.push('/sdm/absensi')}
-                        activeOpacity={0.9}
+                        
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
                     >
                         <View className="w-14 h-14 rounded-2xl bg-emerald-50 items-center justify-center mr-4 border border-emerald-100/50">
@@ -195,7 +195,7 @@ export default function SDMScreen() {
 
                     <Pressable
                         onPress={() => router.push('/sdm/kasbon')}
-                        activeOpacity={0.9}
+                        
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
                     >
                         <View className="w-14 h-14 rounded-2xl bg-amber-50 items-center justify-center mr-4 border border-amber-100/50">
@@ -210,7 +210,7 @@ export default function SDMScreen() {
 
                     <Pressable
                         onPress={() => router.push('/sdm/slip-gaji')}
-                        activeOpacity={0.9}
+                        
                         className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
                     >
                         <View className="w-14 h-14 rounded-2xl bg-purple-50 items-center justify-center mr-4 border border-purple-100/50">

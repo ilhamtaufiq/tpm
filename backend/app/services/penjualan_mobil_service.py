@@ -354,8 +354,8 @@ class PenjualanMobilService:
                 sumber=PiutangSource.JUAL_BELI_MOBIL,
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
-                nominal_piutang=data.harga_jual,
-                total_dibayar=data.dp,
+                nominal_piutang=sisa_bayar,
+                total_dibayar=Decimal("0"),
                 sisa_piutang=sisa_bayar,
                 status=PiutangStatus.BELUM_LUNAS if data.dp == 0 else PiutangStatus.SEBAGIAN,
                 catatan=f"Piutang penjualan mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",

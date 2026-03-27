@@ -42,9 +42,10 @@ def list_transaksi(
     status_bayar: Optional[PaymentStatus] = None,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
-    sort_by: str = "tanggal",
+    sort_by: str = "id",
     sort_order: str = "desc",
 ):
+
     """Get list of workshop transactions with pagination and filters."""
     service = TransaksiBengkelService(db)
     return service.get_list(
@@ -68,10 +69,22 @@ def get_transaksi_summary(
     current_user: ManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    search: Optional[str] = None,
+    customer_id: Optional[int] = None,
+    mobil_id: Optional[int] = None,
+    muatan_id: Optional[int] = None,
 ):
-    """Get workshop sales summary statistics."""
+    """Get workshop sales summary statistics with active filters."""
     service = TransaksiBengkelService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    return service.get_summary(
+        tanggal_dari=tanggal_dari,
+        tanggal_sampai=tanggal_sampai,
+        search=search,
+        customer_id=customer_id,
+        mobil_id=mobil_id,
+        muatan_id=muatan_id
+    )
+
 
 
 @router.get("/daily/{tanggal}")

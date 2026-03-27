@@ -414,7 +414,7 @@ export default function KaryawanScreen() {
                     return (
                         <Pressable
                             onPress={() => openDetail(item)}
-                            activeOpacity={0.9}
+                            
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                         >
                             <View className="w-14 h-14 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100/50">
@@ -463,7 +463,7 @@ export default function KaryawanScreen() {
             {/* Redesigned FAB */}
             <Pressable
                 onPress={openAddForm}
-                activeOpacity={0.8}
+                
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />

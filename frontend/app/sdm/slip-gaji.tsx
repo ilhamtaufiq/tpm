@@ -471,7 +471,7 @@ export default function SlipGajiScreen() {
     const renderHistoryItem = ({ item }: { item: SlipGaji }) => {
         const isLunas = item.status?.toUpperCase() === 'LUNAS';
         return (
-            <Pressable onPress={() => openDetail(item)} activeOpacity={0.7}>
+            <Pressable onPress={() => openDetail(item)} >
                 <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center flex-1">
@@ -547,7 +547,7 @@ export default function SlipGajiScreen() {
                 {/* Date Selection Card - PREMIUM */}
                 <Pressable
                     onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
-                    activeOpacity={0.9}
+                    
                     className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center"
                 >
                     <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">

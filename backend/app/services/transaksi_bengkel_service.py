@@ -290,6 +290,7 @@ class TransaksiBengkelService:
             if is_internal_mobil:
                 debtor_name = f"JB MOBIL - {data.nomor_plat}"
 
+            out_amount = grand_total
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
@@ -300,9 +301,10 @@ class TransaksiBengkelService:
                 sumber=PiutangSource.BENGKEL,
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
-                nominal_piutang=grand_total,
-                sisa_piutang=max(grand_total - total_pembayaran, Decimal("0")),
-                status=PiutangStatus.BELUM_LUNAS if total_pembayaran == 0 else PiutangStatus.SEBAGIAN,
+                nominal_piutang=out_amount,
+                total_dibayar=Decimal("0"),
+                sisa_piutang=out_amount,
+                status=PiutangStatus.BELUM_LUNAS,
                 catatan=f"Piutang Internal JB Mobil dari transaksi bengkel {nomor_transaksi}" if is_internal_mobil else f"Piutang dari transaksi bengkel {nomor_transaksi}",
                 created_by=user_id,
             )
@@ -311,6 +313,50 @@ class TransaksiBengkelService:
 
         self.db.commit()
         self.db.refresh(transaksi)
+
+        # Update Piutang's referensi_id and process DP if any
+        if not is_internal_jasa_angkut:
+            piutang_record = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.nomor_referensi == nomor_transaksi,
+                PiutangUsaha.sumber == PiutangSource.BENGKEL
+            ).first()
+            if piutang_record:
+                piutang_record.referensi_id = transaksi.id
+                
+                # Check for DP - Record it as a payment to the piutang
+                if total_pembayaran > 0:
+                    from app.services.piutang_service import PiutangService
+                    from app.schemas.keuangan import PembayaranPiutangSplit
+                    
+                    p_service = PiutangService(self.db)
+                    payment_items = []
+                    if data.payments:
+                        for p in data.payments:
+                            if p.jumlah > 0:
+                                payment_items.append({
+                                    "metode": p.metode,
+                                    "nominal": p.jumlah,
+                                    "catatan": "DP Pembelian Bengkel"
+                                })
+                    else:
+                        payment_items.append({
+                            "metode": data.metode_bayar,
+                            "nominal": data.jumlah_bayar,
+                            "catatan": "DP Pembelian Bengkel"
+                        })
+                        
+                    if payment_items:
+                        p_service.process_payment_split(
+                            PembayaranPiutangSplit(
+                                piutang_id=piutang_record.id,
+                                tanggal=data.tanggal,
+                                payments=payment_items,
+                                catatan=f"DP Transaksi {nomor_transaksi}"
+                            ),
+                            user_id=user_id
+                        )
+                self.db.commit()
+
 
         # Link to Mobil if category is jual_beli_mobil (Add to HPP)
         if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:
@@ -380,26 +426,14 @@ class TransaksiBengkelService:
                 muatan.calculate_profit()
                 self.db.commit() # Persist recalculated profit
 
-        # Update piutang referensi_id
-        if status_bayar != PaymentStatus.LUNAS and customer:
-            piutang_record = (
-                self.db.query(PiutangUsaha)
-                .filter(PiutangUsaha.nomor_referensi == nomor_transaksi)
-                .first()
-            )
-            if piutang_record:
-                piutang_record.referensi_id = transaksi.id
-                self.db.commit()
-
-        # Record payment to kas/bank
-        # Symmetrical entries for internal transactions (Jasa Angkut / Mobil)
+        # Record payment to kas/bank (Only for internal/integrated transactions that don't go through Piutang system)
         source_pocket = KasBankSource.BENGKEL
         if getattr(data, 'kategori', 'umum') == 'jasa_angkut':
             source_pocket = KasBankSource.JASA_ANGKUT
         elif getattr(data, 'kategori', 'umum') == 'jual_beli_mobil':
             source_pocket = KasBankSource.JUAL_BELI_MOBIL
 
-        # Helper to record MASUK and KELUAR
+        # Helper to record MASUK and KELUAR for internal flows
         def record_bilateral_payment(amount, method, ref_id, ref_num):
             # MASUK to Workshop
             create_kas_entry(
@@ -419,19 +453,15 @@ class TransaksiBengkelService:
                     user_id=user_id,
                 )
 
-        if data.payments:
-            for p in data.payments:
-                if p.jumlah > 0:
-                    record_bilateral_payment(p.jumlah, p.metode, transaksi.id, transaksi.nomor_transaksi)
-        elif data.jumlah_bayar > 0:
-            record_bilateral_payment(data.jumlah_bayar, data.metode_bayar, transaksi.id, transaksi.nomor_transaksi)
-        elif is_internal_jasa_angkut:
-            # For purely internal jasa_angkut where no payments object provided, use grand_total
+        # For internal Jasa Angkut, we record the internal transfer
+        if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
-        # Note: is_internal_mobil does NOT create bilateral KasBank entries.
-        # Cost tracked via Piutang (Bengkel → JB Mobil), settled when car is sold.
+        
+        # Note: Non-internal (UMUM) payments were already recorded via PiutangService.process_payment_split 
+        # at the top of the commit block to ensure consistency in Piutang history logs.
 
         self.db.commit()
+
         return transaksi
 
     def update(
@@ -599,6 +629,7 @@ class TransaksiBengkelService:
             debtor_name = transaksi.nama_customer or (customer.nama if customer else "Guest")
             if is_internal_mobil: debtor_name = f"JB MOBIL - {data.nomor_plat}"
             
+            out_amount = grand_total
             new_piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
@@ -610,12 +641,47 @@ class TransaksiBengkelService:
                 referensi_id=transaksi.id,
                 nomor_referensi=transaksi.nomor_transaksi,
                 nominal_piutang=grand_total,
-                sisa_piutang=max(grand_total - total_pembayaran, Decimal("0")),
-                status=PiutangStatus.BELUM_LUNAS if total_pembayaran == 0 else PiutangStatus.SEBAGIAN,
-                catatan=f"Piutang Internal JB Mobil dari (EDITED) {transaksi.nomor_transaksi}" if is_internal_mobil else f"Piutang dari (EDITED) {transaksi.nomor_transaksi}",
+                total_dibayar=Decimal("0"),
+                sisa_piutang=grand_total,
+                status=PiutangStatus.BELUM_LUNAS,
+                catatan=f"Piutang Internal JB Mobil from (EDITED) {transaksi.nomor_transaksi}" if is_internal_mobil else f"Piutang from (EDITED) {transaksi.nomor_transaksi}",
                 created_by=user_id,
             )
             self.db.add(new_piutang)
+            self.db.flush() # Get ID for payment processing
+            
+            # Process DP if any
+            if total_pembayaran > 0:
+                from app.services.piutang_service import PiutangService
+                from app.schemas.keuangan import PembayaranPiutangSplit
+                
+                p_service = PiutangService(self.db)
+                payment_items = []
+                if data.payments:
+                    for p in data.payments:
+                        if p.jumlah > 0:
+                            payment_items.append({
+                                "metode": p.metode,
+                                "nominal": p.jumlah,
+                                "catatan": "DP (EDITED) Bengkel"
+                            })
+                else:
+                    payment_items.append({
+                        "metode": data.metode_bayar,
+                        "nominal": data.jumlah_bayar,
+                        "catatan": "DP (EDITED) Bengkel"
+                    })
+                
+                if payment_items:
+                    p_service.process_payment_split(
+                        PembayaranPiutangSplit(
+                            piutang_id=new_piutang.id,
+                            tanggal=data.tanggal,
+                            payments=payment_items,
+                            catatan=f"DP (EDITED) Transaksi {transaksi.nomor_transaksi}"
+                        ),
+                        user_id=user_id
+                    )
 
         # Link entries (Mobil & Jasa Angkut)
         if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:
@@ -632,7 +698,7 @@ class TransaksiBengkelService:
              for detail in detail_services_records:
                 self.db.add(JasaAngkutPartService(muatan_id=transaksi.muatan_id, tanggal=transaksi.tanggal, tipe='service', deskripsi=f"Service: {detail.nama_jasa}", qty=detail.qty, harga_satuan=detail.harga, total=detail.subtotal, catatan=f"Trans Bengkel (EDIT): {transaksi.nomor_transaksi}"))
 
-        # KasBank Entries
+        # KasBank Entries (Only for internal/integrated transactions)
         source_pocket = KasBankSource.BENGKEL
         if data.kategori == 'jasa_angkut': source_pocket = KasBankSource.JASA_ANGKUT
         elif data.kategori == 'jual_beli_mobil': source_pocket = KasBankSource.JUAL_BELI_MOBIL
@@ -642,15 +708,11 @@ class TransaksiBengkelService:
             if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
-        if data.payments:
-            for p in data.payments:
-                if p.jumlah > 0: record_bilateral_payment(p.jumlah, p.metode, transaksi.id, transaksi.nomor_transaksi)
-        elif data.jumlah_bayar > 0:
-            record_bilateral_payment(data.jumlah_bayar, data.metode_bayar, transaksi.id, transaksi.nomor_transaksi)
-        elif is_internal_jasa_angkut:
+        if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
 
         self.db.commit()
+
         self.db.refresh(transaksi)
         return transaksi
 
@@ -774,8 +836,9 @@ class TransaksiBengkelService:
 
         # Sorting
         sort_column = getattr(
-            TransaksiPenjualanBengkel, sort_by, TransaksiPenjualanBengkel.tanggal
+            TransaksiPenjualanBengkel, sort_by, TransaksiPenjualanBengkel.id
         )
+
         if sort_order == "desc":
             query = query.order_by(sort_column.desc())
         else:
@@ -816,28 +879,57 @@ class TransaksiBengkelService:
         self,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
+        search: Optional[str] = None,
+        customer_id: Optional[int] = None,
+        mobil_id: Optional[int] = None,
+        muatan_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Get sales summary statistics."""
-        from app.models.mobil import Mobil
-        from app.utils.constants import CarStatus
-
+        """Get sales summary statistics with the same filters as get_list."""
         # Base query
         query = self.db.query(TransaksiPenjualanBengkel)
 
+        # Apply the same filters as get_list for consistency
+        if search:
+            search_filter = f"%{search}%"
+            query = query.filter(
+                or_(
+                    TransaksiPenjualanBengkel.nomor_transaksi.ilike(search_filter),
+                    TransaksiPenjualanBengkel.nama_customer.ilike(search_filter),
+                    TransaksiPenjualanBengkel.nomor_plat.ilike(search_filter),
+                )
+            )
+        if customer_id:
+            query = query.filter(TransaksiPenjualanBengkel.customer_id == customer_id)
+        if mobil_id:
+            query = query.filter(TransaksiPenjualanBengkel.mobil_id == mobil_id)
+        if muatan_id:
+            query = query.filter(TransaksiPenjualanBengkel.muatan_id == muatan_id)
         if tanggal_dari:
             query = query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
-        # Internal jual_beli_mobil transactions ARE included in bengkel summary.
-        # HPP and laba are recognized immediately. The unpaid amount becomes
-        # PIUTANG PART JUAL MOBIL (settled when car is sold).
-
-        # Total transactions (All)
         total_count = query.count()
+        
+        # Payment status counts
+        lunas_count = query.filter(TransaksiPenjualanBengkel.status_bayar == PaymentStatus.LUNAS).count()
+        
+        # Belum Lunas (Partial): Some paid, some unpaid
+        belum_lunas_partial = query.filter(
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
+            TransaksiPenjualanBengkel.jumlah_bayar > 0
+        ).count()
+        
+        # Belum Bayar (Full Debt): Zero paid
+        belum_bayar_full = query.filter(
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS,
+            TransaksiPenjualanBengkel.jumlah_bayar == 0
+        ).count()
+        
+        batal_count = query.filter(TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BATAL).count()
 
-        # Aggregate values (All transactions in period)
-        aggregates = query.with_entities(
+        # Aggregate values (Excluding cancelled for financial totals)
+        aggregates = query.filter(TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL).with_entities(
             func.sum(TransaksiPenjualanBengkel.grand_total).label("total_penjualan"),
             func.sum(TransaksiPenjualanBengkel.total_parts).label("total_parts"),
             func.sum(TransaksiPenjualanBengkel.total_jasa).label("total_jasa"),
@@ -846,9 +938,10 @@ class TransaksiBengkelService:
             func.sum(TransaksiPenjualanBengkel.diskon).label("total_diskon"),
         ).first()
 
+
         # Unpaid transactions (For Separated Stats)
         unpaid_query = query.filter(
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS
+            TransaksiPenjualanBengkel.status_bayar == PaymentStatus.BELUM_LUNAS
         )
         unpaid_count = unpaid_query.count()
         unpaid_value = (
@@ -861,7 +954,7 @@ class TransaksiBengkelService:
             or Decimal("0")
         )
 
-        # Status counts (Operational - Keep all)
+        # Status counts (Operational)
         status_counts = (
             self.db.query(
                 TransaksiPenjualanBengkel.status_pengerjaan,
@@ -870,10 +963,14 @@ class TransaksiBengkelService:
             .group_by(TransaksiPenjualanBengkel.status_pengerjaan)
             .all()
         )
-        status_map = {s.name.lower(): count for s, count in status_counts}
+        status_map = {s.name.lower() if hasattr(s, "name") else str(s).lower(): count for s, count in status_counts}
 
         return {
             "total_transaksi": total_count,
+            "lunas_count": lunas_count,
+            "belum_lunas_count": belum_lunas_partial,
+            "belum_bayar_count": belum_bayar_full,
+            "batal_count": batal_count,
             "antre": status_map.get("antre", 0),
             "proses": status_map.get("proses", 0),
             "selesai": status_map.get("selesai", 0),
@@ -886,6 +983,7 @@ class TransaksiBengkelService:
             "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
         }
+
 
     def get_daily_summary(self, tanggal: date) -> Dict[str, Any]:
         """Get daily sales summary."""
@@ -1011,7 +1109,7 @@ class TransaksiBengkelService:
             if spare_part:
                 spare_part.stok += detail.qty
 
-        # 2. Get related Piutang
+        # 2. Void related Piutang
         piutang = (
             self.db.query(PiutangUsaha)
             .filter(
@@ -1021,28 +1119,33 @@ class TransaksiBengkelService:
             .first()
         )
 
-        # 3. Delete related KasBank entries (Direct Payments & Piutang Payments)
-        # 3.a Direct payments
+        # 3. Delete related KasBank entries (Financial Balance)
+        # Direct payments
         self.db.query(KasBank).filter(
             KasBank.referensi_id == transaksi.id,
             KasBank.sumber == KasBankSource.BENGKEL,
         ).delete(synchronize_session=False)
 
-        # 3.b Piutang and its payments
+        # Piutang and its payments
         if piutang:
             # Delete payments entries in KasBank for this Piutang
             pembayaran_ids = [p.id for p in piutang.pembayaran]
             if pembayaran_ids:
                 self.db.query(KasBank).filter(
                     KasBank.referensi_id.in_(pembayaran_ids),
-                    KasBank.sumber == KasBankSource.PIUTANG,
-                    KasBank.nomor_referensi == piutang.nomor_piutang
+                    KasBank.sumber == KasBankSource.PIUTANG
                 ).delete(synchronize_session=False)
             
-            # PembayaranPiutang records will be deleted via cascade on PiutangUsaha
-            self.db.delete(piutang)
+            # Additional check for payments by nomor_referensi
+            self.db.query(KasBank).filter(
+                KasBank.nomor_referensi == piutang.nomor_piutang
+            ).delete(synchronize_session=False)
+            
+            # Set Piutang status to BATAL instead of deleting
+            piutang.status = PiutangStatus.BATAL
+            piutang.sisa = 0
 
-        # 4. Delete linked costs (Mobil & Jasa Angkut)
+        # 4. Remove linked costs (Mobil & Jasa Angkut)
         self.db.query(MobilPartService).filter(
             MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)
@@ -1051,11 +1154,14 @@ class TransaksiBengkelService:
             JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)
 
-        # 5. Delete transaction (cascade will delete details)
-        self.db.delete(transaksi)
+        # 5. VOID Transaction instead of deleting
+        transaksi.status_pengerjaan = WorkshopStatus.BATAL
+        transaksi.status_bayar = PaymentStatus.BATAL
+        
         self.db.commit()
 
         return True
+
 
     def get_by_customer(
         self,

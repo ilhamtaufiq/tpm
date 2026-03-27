@@ -12,10 +12,10 @@ export const useTransaksiBengkelList = (params?: any, options?: any) => {
     });
 };
 
-export const useTransaksiBengkelSummary = (options?: any) => {
+export const useTransaksiBengkelSummary = (params?: any, options?: any) => {
     return useQuery<any>({
-        queryKey: ['transaksi_bengkel_summary'],
-        queryFn: () => bengkelService.getTransaksiSummary(),
+        queryKey: ['transaksi_bengkel_summary', params],
+        queryFn: () => bengkelService.getTransaksiSummary(params),
         ...options
     });
 };
@@ -27,6 +27,8 @@ export const useCreateTransaksiBengkel = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
         },
     });
 };
@@ -39,6 +41,8 @@ export const useUpdateTransaksiBengkel = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
         },
     });
 };
@@ -74,6 +78,8 @@ export const useVoidTransaksiBengkel = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
         },
     });
 };
