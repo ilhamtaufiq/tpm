@@ -839,7 +839,7 @@ class MuatanService:
         # Partially paid (status_bayar is BELUM_LUNAS but some amount is paid)
         # However, for Jasa Angkut, payment is tracked via Piutang if not cash.
         # We'll use a simplified check for now or join with Piutang.
-        from app.models.piutang import PiutangUsaha
+        from app.models.keuangan import PiutangUsaha
         from app.utils.constants import PiutangSource
         
         # We need a subquery for piutang info if we want precise partial vs unpaid
