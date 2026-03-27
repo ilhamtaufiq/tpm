@@ -44,30 +44,16 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
 
     const handleBarCodeScanned = (result: { type: string, data: string }) => {
         if (scanned) return;
-        console.log(`[Scanner] Scanned ${result.type}: ${result.data}`);
+        // console.log(`[Scanner] Scanned type: ${result.type}, data: ${result.data}`);
         setScanned(true);
         onScan(result.data);
         // Reset scanned state after a delay to allow another scan if needed
         setTimeout(() => setScanned(false), 2000);
     };
 
-    // Stable settings object to prevent unnecessary re-renders/scanner resets
-    const scannerSettings = React.useMemo(() => ({
-        barcodeTypes: [
-            "qr", 
-            "ean13", 
-            "ean8", 
-            "code128", 
-            "code39", 
-            "code93",
-            "upc_a", 
-            "upc_e", 
-            "itf14",
-            "pdf417",
-            "aztec",
-            "datamatrix"
-        ] as any[],
-    }), []);
+    // We'll omit the explicit settings to allow the system to pick the best defaults 
+    // for the platform, which usually includes all common 1D and 2D codes.
+    const scannerSettings = undefined;
 
     if (!visible) return null;
 
