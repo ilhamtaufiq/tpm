@@ -40,6 +40,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
         if (visible && !permission?.granted) {
             requestPermission();
         }
+        
+        // Browser compatibility check for 1D barcodes
+        if (visible && Platform.OS === 'web' && (window as any).BarcodeDetector) {
+            (window as any).BarcodeDetector.getSupportedFormats().then((formats: string[]) => {
+                console.log(`[Scanner] Browser natively supports: ${formats.join(', ')}`);
+            }).catch(console.error);
+        }
     }, [visible, permission]);
 
     const handleBarCodeScanned = (result: { type: string, data: string }) => {
@@ -51,9 +58,21 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ visibl
         setTimeout(() => setScanned(false), 2000);
     };
 
-    // We'll omit the explicit settings to allow the system to pick the best defaults 
-    // for the platform, which usually includes all common 1D and 2D codes.
-    const scannerSettings = undefined;
+    // Stable settings object to prevent unnecessary re-renders/scanner resets
+    // Some browsers on Web require explicit types to activate the 1D detection engine
+    const scannerSettings = React.useMemo(() => ({
+        barcodeTypes: [
+            "qr", 
+            "ean13", 
+            "ean8", 
+            "code128", 
+            "code39", 
+            "upc_a", 
+            "upc_e", 
+            "datamatrix",
+            "pdf417"
+        ] as any[],
+    }), []);
 
     if (!visible) return null;
 
