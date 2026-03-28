@@ -14,14 +14,14 @@ export const WalletSection = () => {
     const bopBalance = useMemo(() => {
         if (!balances) return 0;
         return (balances.bop_jasa_angkut_cash?.saldo || 0) +
-               (balances.bop_jasa_angkut_bca?.saldo || 0) +
-               (balances.bop_mobil_cash?.saldo || 0) +
-               (balances.bop_mobil_bca?.saldo || 0);
+            (balances.bop_jasa_angkut_bca?.saldo || 0) +
+            (balances.bop_mobil_cash?.saldo || 0) +
+            (balances.bop_mobil_bca?.saldo || 0);
     }, [balances]);
 
     return (
         <View className="px-6 mt-4">
-            <View 
+            <View
                 style={{ backgroundColor: themeColors.primary }}
                 className="rounded-3xl overflow-hidden shadow-lg shadow-black/10"
             >
@@ -33,7 +33,7 @@ export const WalletSection = () => {
                             className="bg-white rounded-2xl p-3 flex-row items-center justify-between shadow-sm mb-2"
                         >
                             <View className="flex-row items-center">
-                                <View 
+                                <View
                                     style={{ backgroundColor: `${themeColors.primary}10` }}
                                     className="p-1.5 rounded-lg mr-2"
                                 >
@@ -50,39 +50,11 @@ export const WalletSection = () => {
                                     )}
                                 </View>
                             </View>
-                            <Typography 
+                            <Typography
                                 style={{ color: themeColors.primary, backgroundColor: `${themeColors.primary}10` }}
                                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
                             >
                                 TRX
-                            </Typography>
-                        </Pressable>
-
-                        <Pressable
-                            onPress={() => router.push('/finance/mutasi')}
-                            className="bg-sky-50 rounded-2xl p-3 flex-row items-center justify-between shadow-sm"
-                        >
-                            <View className="flex-row items-center">
-                                <View 
-                                    className="bg-sky-100 p-1.5 rounded-lg mr-2"
-                                >
-                                    <Users size={14} color="#0EA5E9" />
-                                </View>
-                                <View>
-                                    <Typography variant="caption" weight="bold" className="text-sky-800 tracking-tight h-3 text-[9px] uppercase">Saldo BOP</Typography>
-                                    {isLoading || isRefetching ? (
-                                        <ActivityIndicator size="small" color="#0EA5E9" style={{ height: 16 }} />
-                                    ) : (
-                                        <Typography variant="body2" weight="bold" className="text-sky-950 text-xs">
-                                            {formatCurrency(bopBalance)}
-                                        </Typography>
-                                    )}
-                                </View>
-                            </View>
-                            <Typography 
-                                className="text-[9px] font-bold px-1.5 py-0.5 rounded-md text-sky-600 bg-sky-200/50"
-                            >
-                                BOP
                             </Typography>
                         </Pressable>
                     </View>

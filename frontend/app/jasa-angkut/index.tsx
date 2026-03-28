@@ -32,10 +32,10 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { Muatan, jasaAngkutService } from '../../services/jasaAngkut';
 import { MuatanForm } from '../../components/jasa-angkut/MuatanForm';
-import { 
-    useMuatanList, 
-    useMuatanSummary, 
-    useActiveArmada, 
+import {
+    useMuatanList,
+    useMuatanSummary,
+    useActiveArmada,
     usePayMuatanSplit,
     useUpdateMuatanStatus
 } from '../../hooks/useJasaAngkut';
@@ -69,12 +69,12 @@ export default function JasaAngkutScreen() {
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
 
     // API Hooks
-    const { data: muatanData, isLoading, refetch } = useMuatanList({ 
+    const { data: muatanData, isLoading, refetch } = useMuatanList({
         limit: 100,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     });
-    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({ 
+    const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({
         search: searchQuery,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
@@ -102,17 +102,17 @@ export default function JasaAngkutScreen() {
 
     const recentTrips = useMemo(() => {
         let trips = muatanData?.data || [];
-        
+
         if (paymentFilter === 'LUNAS') {
             trips = trips.filter((t: any) => t.status_bayar === 'lunas' || t.status_bayar === 'LUNAS');
         } else if (paymentFilter === 'PARTIAL') {
-            trips = trips.filter((t: any) => 
-                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') && 
+            trips = trips.filter((t: any) =>
+                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') &&
                 (Number(t.jumlah_bayar) > 0)
             );
         } else if (paymentFilter === 'UNPAID') {
-            trips = trips.filter((t: any) => 
-                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') && 
+            trips = trips.filter((t: any) =>
+                (t.status_bayar === 'belum_lunas' || t.status_bayar === 'BELUM_LUNAS') &&
                 (Number(t.jumlah_bayar) === 0 || !t.jumlah_bayar)
             );
         } else if (paymentFilter === 'BATAL') {
@@ -413,7 +413,7 @@ export default function JasaAngkutScreen() {
     const handleApplyDate = () => {
         const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
         const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
-        
+
         if (!dariValid || !sampaiValid) {
             Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
             return;
@@ -480,7 +480,7 @@ export default function JasaAngkutScreen() {
 
     const handleUpdateStatus = async (tripId: number, currentStatus: string) => {
         const nextStatus = currentStatus === 'PROSES' ? 'SELESAI' : 'PROSES';
-        const confirmMessage = currentStatus === 'PROSES' 
+        const confirmMessage = currentStatus === 'PROSES'
             ? 'Tandai muatan ini sebagai Selesai? Armada akan tersedia kembali untuk ritase lain.'
             : 'Kembalikan status muatan ke Proses?';
 
@@ -494,18 +494,18 @@ export default function JasaAngkutScreen() {
                 try {
                     setActionLoading(true);
                     await updateStatusMutation.mutateAsync({ id: tripId, status: nextStatus as any });
-                    
+
                     // Update the local selected trip state if open
                     if (selectedTrip && selectedTrip.id === tripId) {
                         setSelectedTrip({ ...selectedTrip, status: nextStatus as any });
                     }
-                    
+
                     // Invalidate ALL related queries to ensure resource readiness (Armada/Supir) is recalculated
                     queryClient.invalidateQueries({ queryKey: ['muatan-list'] });
                     queryClient.invalidateQueries({ queryKey: ['muatan-summary'] });
                     queryClient.invalidateQueries({ queryKey: ['active-armada'] });
                     queryClient.invalidateQueries({ queryKey: ['active-drivers'] });
-                    
+
                     refetch();
                     refetchSummary();
                     closeDialog();
@@ -544,16 +544,16 @@ export default function JasaAngkutScreen() {
                                 #{trip.nomor_transaksi}
                             </Typography>
                         </View>
-                            <View className="flex-row space-x-2">
-                                <Badge
-                                    label={trip.status.toUpperCase()}
-                                    variant={trip.status === 'SELESAI' ? 'success' : 'info'}
-                                />
-                                <Badge
-                                    label={trip.status_bayar.toUpperCase()}
-                                    variant={trip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
-                                />
-                            </View>
+                        <View className="flex-row space-x-2">
+                            <Badge
+                                label={trip.status.toUpperCase()}
+                                variant={trip.status === 'SELESAI' ? 'success' : 'info'}
+                            />
+                            <Badge
+                                label={trip.status_bayar.toUpperCase()}
+                                variant={trip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
+                            />
+                        </View>
                     </View>
 
                     <Card variant="outlined" className="p-6 border-gray-100 mb-6 bg-gray-50/50 rounded-[32px]">
@@ -715,8 +715,8 @@ export default function JasaAngkutScreen() {
                 </View>
 
                 {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
-                <ScrollView 
-                    horizontal 
+                <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     className="flex-row -mx-6 px-6 mb-8"
                 >
@@ -726,7 +726,7 @@ export default function JasaAngkutScreen() {
                         { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
                         { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
                         { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                        { label: 'Saldo BOP', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
+                        { label: 'Biaya Operasional', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
                     ].map((stat, idx) => (
                         <View
                             key={stat.key}
@@ -774,8 +774,8 @@ export default function JasaAngkutScreen() {
                                         <TouchableOpacity
                                             onPress={() => setGroupBy('armada')}
                                             activeOpacity={0.7}
-                                            style={{ 
-                                                flexDirection: 'row', 
+                                            style={{
+                                                flexDirection: 'row',
                                                 alignItems: 'center',
                                                 paddingHorizontal: 16,
                                                 paddingVertical: 8,
@@ -789,8 +789,8 @@ export default function JasaAngkutScreen() {
                                         <TouchableOpacity
                                             onPress={() => setGroupBy('supir')}
                                             activeOpacity={0.7}
-                                            style={{ 
-                                                flexDirection: 'row', 
+                                            style={{
+                                                flexDirection: 'row',
                                                 alignItems: 'center',
                                                 paddingHorizontal: 16,
                                                 paddingVertical: 8,

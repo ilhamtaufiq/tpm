@@ -89,7 +89,7 @@ export default function MobilInventoryScreen() {
         tanggal_sampai: dateRange.sampai
     });
 
-    const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({ 
+    const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
         search: searchQuery,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
@@ -122,13 +122,13 @@ export default function MobilInventoryScreen() {
         if (paymentFilter === 'LUNAS') {
             result = result.filter((m: any) => m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS');
         } else if (paymentFilter === 'PARTIAL') {
-            result = result.filter((m: any) => 
-                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS' || m.status_bayar === 'cicilan' || m.status_bayar === 'CICILAN') && 
+            result = result.filter((m: any) =>
+                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS' || m.status_bayar === 'cicilan' || m.status_bayar === 'CICILAN') &&
                 (Number(m.dp || 0) > 0)
             );
         } else if (paymentFilter === 'UNPAID') {
-            result = result.filter((m: any) => 
-                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS') && 
+            result = result.filter((m: any) =>
+                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS') &&
                 (Number(m.dp || 0) === 0)
             );
         } else if (paymentFilter === 'BATAL') {
@@ -261,7 +261,7 @@ export default function MobilInventoryScreen() {
     const handleApplyDate = () => {
         const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
         const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
-        
+
         if (!dariValid || !sampaiValid) {
             Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
             return;
@@ -356,8 +356,8 @@ export default function MobilInventoryScreen() {
                     </View>
 
                     {/* Row 1: Operational Status (Inventory) */}
-                    <ScrollView 
-                        horizontal 
+                    <ScrollView
+                        horizontal
                         showsHorizontalScrollIndicator={false}
                         className="flex-row -mx-6 px-6 mb-4"
                     >
@@ -381,8 +381,8 @@ export default function MobilInventoryScreen() {
                     </ScrollView>
 
                     {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
-                    <ScrollView 
-                        horizontal 
+                    <ScrollView
+                        horizontal
                         showsHorizontalScrollIndicator={false}
                         className="flex-row -mx-6 px-6"
                     >
@@ -392,7 +392,7 @@ export default function MobilInventoryScreen() {
                             { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
                             { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
                             { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                            { label: 'Saldo BOP', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
+                            { label: 'Biaya Operasional', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
                         ].map((stat, idx) => (
                             <View
                                 key={stat.key}
@@ -427,7 +427,7 @@ export default function MobilInventoryScreen() {
 
                         {/* Payment Filter Chips (Row 2 logic matched) */}
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-                            <Pressable 
+                            <Pressable
                                 onPress={() => setPaymentFilter('ALL')}
                                 className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
                             >
@@ -435,7 +435,7 @@ export default function MobilInventoryScreen() {
                                     Semua ({stats.total})
                                 </Typography>
                             </Pressable>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => setPaymentFilter('LUNAS')}
                                 className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
                             >
@@ -443,7 +443,7 @@ export default function MobilInventoryScreen() {
                                     Lunas ({stats.lunas})
                                 </Typography>
                             </Pressable>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => setPaymentFilter('PARTIAL')}
                                 className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
                             >
@@ -451,7 +451,7 @@ export default function MobilInventoryScreen() {
                                     Belum Lunas ({stats.partial})
                                 </Typography>
                             </Pressable>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => setPaymentFilter('UNPAID')}
                                 className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
                             >
@@ -459,7 +459,7 @@ export default function MobilInventoryScreen() {
                                     Belum Bayar ({stats.unpaid})
                                 </Typography>
                             </Pressable>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => setPaymentFilter('BATAL')}
                                 className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
                             >
