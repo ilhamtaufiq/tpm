@@ -53,10 +53,10 @@ const { data, isLoading } = useMuatanList({
 ```
 
 ## 3. Tahap Implementasi
-1. [ ] **Fase 1**: Ubah konfigurasi global `staleTime` dan `refetchOnWindowFocus` di `_layout.tsx`.
-2. [ ] **Fase 2**: Implementasi `refetchInterval` pada hook `useKasBankBalances` (Dashboard Utama).
-3. [ ] **Fase 3**: Implementasi `refetchInterval` pada dashboard Jasa Angkut dan Showroom.
-4. [ ] **Fase 4**: Pengujian konsumsi baterai dan beban server (API monitoring).
+1. [x] **Fase 1**: Ubah konfigurasi global `staleTime` dan `refetchOnWindowFocus` di `_layout.tsx`. (Done)
+2. [x] **Fase 2**: Implementasi `refetchInterval` pada hook `useKasBankBalances` (Dashboard Utama). (Done)
+3. [x] **Fase 3**: Implementasi `refetchInterval` pada dashboard Jasa Angkut dan Showroom. (Done)
+4. [x] **Fase 4**: Pengujian konsumsi baterai dan beban server (API monitoring). (Enabled & Testing)
 
 ## 4. Keuntungan
 - **Tanpa Delay**: Pengguna tidak perlu me-refresh halaman secara manual.

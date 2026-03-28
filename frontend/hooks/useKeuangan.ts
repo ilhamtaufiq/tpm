@@ -8,6 +8,8 @@ export const useKasBankBalances = (options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['kas_bank_balances'],
         queryFn: () => keuanganService.getKasBankBalances(),
+        // Polling every 5 seconds for near real-time balance updates
+        refetchInterval: 5000, 
         ...options
     });
 };

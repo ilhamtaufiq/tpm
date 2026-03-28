@@ -112,17 +112,19 @@ export const useArmadaDetail = (id: number) => {
 // =============================================
 // MUATAN
 // =============================================
-export const useMuatanList = (params?: any) => {
+export const useMuatanList = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['muatan', params],
         queryFn: () => jasaAngkutService.getMuatanList(params),
+        ...options
     });
 };
 
-export const useMuatanSummary = (params?: any) => {
+export const useMuatanSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['muatan_summary', params],
         queryFn: () => jasaAngkutService.getMuatanSummary(params),
+        ...options
     });
 };
 

@@ -15,12 +15,15 @@
     - Verified backend API routes and frontend data fetching strategy.
     - Updated financial services and interfaces to include `saldo_bop`.
     - Integrated BOP balance displays across Main Dashboard, Jasa Angkut, and Mobil modules.
-    - Enhanced Jasa Angkut `MuatanForm` with individual buying (`harga_beli`) and selling (`harga_jual`) prices per load type, with automatic accumulation in the finance section.
+    - Enhanced Jasa Angkut `MuatanForm` with individual buying (`harga_beli`) and selling (`harga_jual`) prices per load type.
+    - Implemented Global `QueryClient` settings (staleTime 10s, refetch on focus).
+    - Added targeted polling (refetchInterval) to Wallet, Jasa Angkut, and Mobil dashboards.
   - Now:
-    - Task completed.
+    - Implementation complete.
   - Next:
-    - Monitor for further refinements to the transport service module.
+    - Monitor performance and server load under new near real-time configuration.
 - Open questions (UNCONFIRMED if needed):
+  - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?
 - Working set (files/ids/commands):
   - `frontend/components/jasa-angkut/MuatanForm.tsx`
   - `backend/app/main.py`

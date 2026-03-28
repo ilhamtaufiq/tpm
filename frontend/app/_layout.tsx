@@ -36,18 +36,18 @@ onlineManager.setEventListener((setOnline) => {
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
-            // Data in cache is considered fresh for 10 minutes
-            staleTime: 1000 * 60 * 10,
+            // "Near Real-time": Data is considered fresh for only 10 seconds.
+            // This ensures data stays synced across multiple devices/users with minimal delay.
+            staleTime: 1000 * 10, 
             // 24 hours until garbage collected from storage
             gcTime: 1000 * 60 * 60 * 24,
-            // Disable noisy refetching on window focus/reconnect to avoid storms.
-            // We use controlled refetchInterval (polling) in critical screens instead.
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            // Don't retry queries when offline
+            // Re-sync data automatically when user returns to the app (foregrounding).
+            refetchOnWindowFocus: true,
+            refetchOnReconnect: true,
+            // Standard retry logic
             retry: (failureCount, error: any) => {
                 if (error?.message?.includes('network')) return false;
-                return failureCount < 3;
+                return failureCount < 2;
             },
         },
     },

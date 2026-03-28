@@ -64,21 +64,134 @@ def create_app() -> FastAPI:
     # Include API router
     app.include_router(api_router)
 
+    # Monitoring Endpoints
+    from app.middleware.logging import metrics
+    from fastapi.responses import HTMLResponse
+
+    @app.get("/api/v1/monitor/stats", tags=["Monitoring"])
+    def get_monitor_stats():
+        """Get real-time server metrics."""
+        return metrics.get_stats()
+
+    @app.get("/monitor", response_class=HTMLResponse, tags=["Monitoring"])
+    def monitor_dashboard():
+        """Standalone monitoring dashboard (Outside the app)."""
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>TPM Server Monitor</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+                .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+                .stat-value { font-size: 2rem; font-weight: 800; color: #38bdf8; }
+                .status-ok { color: #4ade80; }
+                .status-err { color: #f87171; }
+                .table { color: #cbd5e1; }
+                .table th { border-bottom-color: #334155; }
+                .progress { height: 8px; background: #334155; }
+            </style>
+        </head>
+        <body class="p-4">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 fw-bold m-0 underline">SYSTEM MONITOR <span class="badge bg-primary fs-6">V2.2.0</span></h1>
+                    <div id="last-update" class="text-secondary small">Initializing...</div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card p-4 h-100">
+                            <div class="text-secondary small fw-bold">TOTAL REQUESTS</div>
+                            <div id="total-req" class="stat-value">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-4 h-100">
+                            <div class="text-secondary small fw-bold">AVG LATENCY</div>
+                            <div class="stat-value"><span id="avg-lat">0</span><small class="fs-6">ms</small></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-4 h-100">
+                            <div class="text-secondary small fw-bold">ERROR COUNT</div>
+                            <div id="total-err" class="stat-value status-err">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-4 h-100">
+                            <div class="text-secondary small fw-bold">SERVER STATUS</div>
+                            <div class="stat-value status-ok">HEALTHY</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4 overflow-hidden">
+                    <div class="card-header bg-dark border-bottom border-secondary p-3">
+                        <h5 class="m-0 small fw-bold">RECENT TRAFFIC (LAST 50)</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover m-0">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>Path</th>
+                                    <th>Status</th>
+                                    <th>Duration</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                async function updateStats() {
+                    try {
+                        const res = await fetch('/api/v1/monitor/stats');
+                        const data = await res.json();
+                        
+                        document.getElementById('total-req').innerText = data.total_requests;
+                        document.getElementById('avg-lat').innerText = (data.avg_latency * 1000).toFixed(1);
+                        document.getElementById('total-err').innerText = data.total_errors;
+                        document.getElementById('last-update').innerText = 'Last sync: ' + new Date().toLocaleTimeString();
+
+                        const tbody = document.getElementById('history-body');
+                        tbody.innerHTML = data.recent_history.reverse().map(req => `
+                            <tr>
+                                <td><span class="badge ${req.status >= 400 ? 'bg-danger' : 'bg-success'}">${req.method}</span></td>
+                                <td class="text-info font-monospace small">${req.path}</td>
+                                <td>${req.status}</td>
+                                <td>${(req.duration * 1000).toFixed(1)}ms</td>
+                                <td class="text-secondary small">${new Date(req.timestamp * 1000).toLocaleTimeString()}</td>
+                            </tr>
+                        `).join('');
+                    } catch (e) {
+                        console.error('Failed to sync monitor:', e);
+                    }
+                }
+
+                setInterval(updateStats, 2000);
+                updateStats();
+            </script>
+        </body>
+        </html>
+        """
+
     # Serve Frontend Static Files (from frontend/dist)
-    # Ensure this is after api_router so API calls take precedence
-    # frontend/dist is at backend/../frontend/dist (relative to app/)
     frontend_dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
     
     if os.path.exists(frontend_dist_path):
         app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="frontend")
         
-        # SPA Catch-all: Redirect unknown routes to index.html for client-side routing
         @app.exception_handler(404)
         async def spa_catch_all(request, exc):
             from fastapi.responses import FileResponse
             return FileResponse(os.path.join(frontend_dist_path, "index.html"))
-    else:
-        print(f"Warning: Frontend dist folder not found at {frontend_dist_path}")
 
     # Health check endpoint
     @app.get("/health", tags=["Health"])
@@ -101,7 +214,9 @@ def create_app() -> FastAPI:
             "version": settings.app_version,
             "docs": "/docs" if settings.debug else "disabled",
             "health": "/health",
+            "monitor": "/monitor"
         }
+
 
     return app
 

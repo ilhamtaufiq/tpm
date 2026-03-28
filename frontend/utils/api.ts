@@ -1,6 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import Constants from 'expo-constants';
 import { useAuthStore } from '../store/useAuthStore';
+import { useMonitorStore } from '../store/useMonitorStore';
 
 // For physical devices, use your computer's IP address instead of localhost
 const debuggerHost = Constants.expoConfig?.hostUri?.split(`:`)[0];
@@ -47,13 +48,33 @@ const api = axios.create({
     timeout: 15000,
 });
 
-// Add a request interceptor to attach the token
+// Add a request interceptor to attach the token and log for monitoring
+interface MonitoringConfig extends InternalAxiosRequestConfig {
+    _monitorId?: string;
+    _startTime?: number;
+}
+
 api.interceptors.request.use(
-    (config) => {
+    (config: InternalAxiosRequestConfig) => {
+        const monitoringConfig = config as MonitoringConfig;
         const token = useAuthStore.getState().token;
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        
+        if (token && monitoringConfig.headers) {
+            monitoringConfig.headers.Authorization = `Bearer ${token}`;
         }
+        
+        // Monitoring start
+        monitoringConfig._startTime = Date.now();
+        const id = Math.random().toString(36).substring(7);
+        monitoringConfig._monitorId = id;
+        
+        useMonitorStore.getState().logRequest({
+            id: id,
+            method: monitoringConfig.method?.toUpperCase() || 'GET',
+            url: monitoringConfig.url || '/',
+            timestamp: Date.now(),
+        });
+        
         return config;
     },
     (error) => {
@@ -61,11 +82,39 @@ api.interceptors.request.use(
     }
 );
 
-// Add a response interceptor to handle token expiration
+// Add a response interceptor to handle token expiration and monitor performance
 api.interceptors.response.use(
-    (response) => response,
+    (response: AxiosResponse) => {
+        const config = response.config as MonitoringConfig;
+        const duration = Date.now() - (config._startTime || Date.now());
+        const delta = response.data ? JSON.stringify(response.data).length : 0;
+        
+        if (config._monitorId) {
+            useMonitorStore.getState().updateResponse(
+                config._monitorId, 
+                response.status, 
+                duration, 
+                delta
+            );
+        }
+        
+        return response;
+    },
     (error) => {
-        if (error.response?.status === 401) {
+        const config = error.config as MonitoringConfig | undefined;
+        const duration = Date.now() - (config?._startTime || Date.now());
+        const status = error.response?.status || 0;
+        
+        if (config?._monitorId) {
+            useMonitorStore.getState().updateResponse(
+                config._monitorId, 
+                status, 
+                duration, 
+                0
+            );
+        }
+        
+        if (status === 401) {
             // Token expired or invalid
             useAuthStore.getState().logout();
         }
@@ -74,3 +123,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

@@ -87,12 +87,16 @@ export default function MobilInventoryScreen() {
         search: searchQuery,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
+    }, {
+        refetchInterval: 15000 // Polling every 15 seconds
     });
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
         search: searchQuery,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
+    }, {
+        refetchInterval: 15000 // Polling every 15 seconds
     });
 
     const deleteMutation = useDeleteMobil();

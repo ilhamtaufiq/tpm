@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mobilService, InventorySummary, PenjualanSummary } from '../services/mobil';
 
-export const useMobilList = (params?: any) => {
+export const useMobilList = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['mobils', params],
         queryFn: () => mobilService.getMobils(params),
+        ...options
     });
 };
 
@@ -163,10 +164,11 @@ export const useInventorySummary = (options?: any) => {
     });
 };
 
-export const usePenjualanSummary = (params?: any) => {
+export const usePenjualanSummary = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery<PenjualanSummary>({
         queryKey: ['penjualan_mobil_summary', params],
         queryFn: () => mobilService.getPenjualanSummary(params),
+        ...options
     });
 };
 
