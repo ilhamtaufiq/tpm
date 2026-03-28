@@ -83,6 +83,7 @@ def get_dashboard_summary(
             "total_penjualan": bengkel_summary["total_penjualan"],
             "total_transaksi": bengkel_summary["total_transaksi"],
             "laba_kotor": bengkel_summary["total_laba_kotor"],
+            "saldo_cash": float(kas_bank_summary.get("kas_unit_bengkel", {}).get("saldo", 0)),
         },
         "pengeluaran": {
             "total": pengeluaran_summary["total_pengeluaran"] + gaji_summary["total"],
@@ -94,16 +95,14 @@ def get_dashboard_summary(
             "laba_kotor": float(mobil_summary["laba_tpm"]),
             "laba_tpm": float(mobil_summary["laba_tpm"]),
             "total_modal_tersedia": float(mobil_summary.get("total_modal_tersedia", 0)),
-            "saldo_bop": float(kas_bank_summary.get("bop_mobil_cash", {}).get("saldo", 0) + 
-                               kas_bank_summary.get("bop_mobil_bca", {}).get("saldo", 0)),
+            "saldo_cash": float(kas_bank_summary.get("kas_unit_mobil", {}).get("saldo", 0)),
         },
         "jasa_angkut": {
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
             "laba_tpm": float(muatan_summary["laba_tpm"]),
             "active_trips": muatan_summary["hutang_supir_count"],
-            "saldo_bop": float(kas_bank_summary.get("bop_jasa_angkut_cash", {}).get("saldo", 0) + 
-                               kas_bank_summary.get("bop_jasa_angkut_bca", {}).get("saldo", 0)),
+            "saldo_cash": float(kas_bank_summary.get("kas_unit_jasa_angkut", {}).get("saldo", 0)),
         },
         "piutang": {
             "total_piutang": float(piutang_summary["total_piutang"]),
@@ -732,12 +731,29 @@ def get_capital_report(
 
     # --- D. Sisa Laba dan Modal (Cash Position) ---
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    posisi_cash = balances.get(KasBankJenis.CASH.value.lower(), {}).get("saldo", 0)
     
+    unit_keys = [
+        KasBankJenis.KAS_UNIT_BENGKEL.value.lower(),
+        KasBankJenis.KAS_UNIT_JASA_ANGKUT.value.lower(),
+        KasBankJenis.KAS_UNIT_MOBIL.value.lower(),
+    ]
+    main_cash_keys = [
+        KasBankJenis.CASH.value.lower(),
+        KasBankJenis.KAS_UTAMA.value.lower(),
+    ]
+    
+    posisi_cash = 0
     posisi_transfer = 0
+    
     for k, v in balances.items():
-        if k != KasBankJenis.CASH.value.lower() and isinstance(v, dict):
-            posisi_transfer += v.get("saldo", 0)
+        if not isinstance(v, dict): continue
+        saldo = v.get("saldo", 0)
+        
+        if k in main_cash_keys or k in unit_keys:
+            posisi_cash += saldo
+        elif k not in ["total_saldo"]:
+            # Bank accounts and BOP accounts classified as transfer for macro-reconciliation
+            posisi_transfer += saldo
 
     total_kas = posisi_cash + posisi_transfer
     
@@ -839,12 +855,15 @@ def get_neraca(
     # ==========================================
 
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
-    kas_tunai = balances.get(KasBankJenis.CASH.value.lower(), {}).get("saldo", 0)
     
-    kas_bank = 0
-    kas_operasional = 0
+    kas_tunai = 0 # Main Cash (Utama)
+    kas_bank = 0 # Bank Accounts
+    kas_operasional = 0 # BOP Accounts
+    unit_cash = 0 # Unit-specific Cash
+    
     bank_details = {}
     operasional_details = {}
+    unit_details = {}
     
     bop_keys = [
         KasBankJenis.BOP_JASA_ANGKUT_CASH.value.lower(),
@@ -852,13 +871,27 @@ def get_neraca(
         KasBankJenis.BOP_MOBIL_CASH.value.lower(),
         KasBankJenis.BOP_MOBIL_BCA.value.lower(),
     ]
+    
+    unit_keys = [
+        KasBankJenis.KAS_UNIT_BENGKEL.value.lower(),
+        KasBankJenis.KAS_UNIT_JASA_ANGKUT.value.lower(),
+        KasBankJenis.KAS_UNIT_MOBIL.value.lower(),
+    ]
+    
+    main_cash_keys = [
+        KasBankJenis.CASH.value.lower(),
+        KasBankJenis.KAS_UTAMA.value.lower(),
+    ]
 
     for k, v in balances.items():
         if not isinstance(v, dict): continue
         saldo = v.get("saldo", 0)
         
-        if k == KasBankJenis.CASH.value.lower():
-            continue
+        if k in main_cash_keys:
+            kas_tunai += saldo
+        elif k in unit_keys:
+            unit_cash += saldo
+            unit_details[k] = saldo
         elif k in bop_keys:
             kas_operasional += saldo
             operasional_details[k] = saldo
@@ -866,7 +899,7 @@ def get_neraca(
             kas_bank += saldo
             bank_details[k] = saldo
     
-    total_kas_bank_all = kas_tunai + kas_bank + kas_operasional
+    total_kas_bank_all = kas_tunai + kas_bank + kas_operasional + unit_cash
 
     # 2. Piutang (Snapshot logic)
     # We need to replicate the exact buckets from Perubahan Modal Section B
@@ -1031,6 +1064,8 @@ def get_neraca(
         "bank_details": {k: float(v or 0) for k, v in bank_details.items()},
         "kas_operasional": float(kas_operasional or 0),
         "operasional_details": {k: float(v or 0) for k, v in operasional_details.items()},
+        "unit_cash": float(unit_cash or 0),
+        "unit_details": {k: float(v or 0) for k, v in unit_details.items()},
         "total_kas_bank": float(total_kas_bank_all or 0),
         "piutang_usaha": float(piutang_usaha or 0),
         "piutang_part_mobil": float(piutang_part_mobil or 0),

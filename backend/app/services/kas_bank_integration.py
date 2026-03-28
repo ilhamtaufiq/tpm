@@ -22,24 +22,36 @@ from app.utils.constants import (
 )
 
 
-def get_kas_jenis(metode_bayar: PaymentMethod) -> KasBankJenis:
-    """Map payment method to kas/bank account type.
+def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] = None) -> KasBankJenis:
+    """Map payment method and source to kas/bank account type.
 
     Args:
         metode_bayar: The payment method used
+        sumber: The transaction source (e.g. BENGKEL, JASA_ANGKUT)
 
     Returns:
         KasBankJenis indicating which account to use
     """
-    # Ensure it's the Enum member for comparison (handles case-insensitive strings)
+    # Ensure it's the Enum member for comparison
     try:
         method = PaymentMethod(metode_bayar)
     except (ValueError, TypeError):
         method = PaymentMethod.TUNAI
 
+    # Transfer always goes to Bank Utama (BCA)
     if method == PaymentMethod.TRANSFER:
         return KasBankJenis.BANK_BCA
-    return KasBankJenis.CASH
+
+    # Cash mapping based on business unit
+    if sumber == KasBankSource.BENGKEL:
+        return KasBankJenis.KAS_UNIT_BENGKEL
+    elif sumber == KasBankSource.JASA_ANGKUT:
+        return KasBankJenis.KAS_UNIT_JASA_ANGKUT
+    elif sumber == KasBankSource.JUAL_BELI_MOBIL:
+        return KasBankJenis.KAS_UNIT_MOBIL
+
+    # Default to Main Cash for non-unit specific or legacy entries
+    return KasBankJenis.KAS_UTAMA
 
 
 def create_kas_entry(
@@ -56,30 +68,14 @@ def create_kas_entry(
     kas_jenis: Optional[KasBankJenis] = None,
 ) -> KasBank:
     """Create a kas/bank entry for financial transactions.
-
+    
     This function automatically records financial transactions to the kas_bank
     ledger, ensuring all money movements are tracked through the cash/bank system.
-
-    Args:
-        db: Database session
-        tanggal: Transaction date
-        tipe: Transaction type (MASUK for incoming, KELUAR for outgoing)
-        nominal: Transaction amount (must be positive)
-        sumber: Source of the transaction (BENGKEL, GAJI, KASBON, etc.)
-        metode_bayar: Payment method (TUNAI or TRANSFER)
-        referensi_id: ID of the source transaction (optional)
-        nomor_referensi: Reference number of the source transaction
-        keterangan: Description of the transaction
-        user_id: ID of the user creating the transaction (optional)
-        kas_jenis: Explicit account type to use (overrides mapping from metode_bayar)
-
-    Returns:
-        The created KasBank record
     """
     service = KasBankService(db)
 
-    # Use explicit kas_jenis if provided, otherwise map from payment method
-    selected_jenis = kas_jenis if kas_jenis else get_kas_jenis(metode_bayar)
+    # Use explicit kas_jenis if provided, otherwise map from payment method and source
+    selected_jenis = kas_jenis if kas_jenis else get_kas_jenis(metode_bayar, sumber)
 
     data = KasBankCreate(
         tanggal=tanggal,

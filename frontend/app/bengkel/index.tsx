@@ -43,6 +43,7 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { useKasBankBalances } from '../../hooks/useKeuangan';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
@@ -115,6 +116,9 @@ export default function BengkelScreen() {
     });
 
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+
+    const { data: balances } = useKasBankBalances();
+    const unitBalance = balances?.kas_unit_bengkel?.saldo || 0;
 
     const queue = queueData?.data || [];
 
@@ -773,7 +777,13 @@ export default function BengkelScreen() {
                             <ChevronLeft size={24} color="white" />
                         </Pressable>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Bengkel & POS</Typography>
+                            <View className="flex-row items-center">
+                                <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Bengkel & POS</Typography>
+                                <View className="bg-white/20 px-2 py-0.5 rounded-lg ml-3 flex-row items-center border border-white/10 shadow-sm">
+                                    <View className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 shadow-sm" />
+                                    <Typography className="text-white text-[10px] font-bold">{formatCurrency(unitBalance)}</Typography>
+                                </View>
+                            </View>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Antrian & Inventori</Typography>
                         </View>
                     </View>

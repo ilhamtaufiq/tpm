@@ -33,6 +33,7 @@ import { format, startOfMonth, isValid, parse } from 'date-fns';
 import { useMobilList, useDeleteMobil, usePenjualanSummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { formatCurrency } from '../../utils/format';
+import { useKasBankBalances } from '../../hooks/useKeuangan';
 import { Platform, Modal } from 'react-native';
 
 export default function MobilInventoryScreen() {
@@ -98,6 +99,9 @@ export default function MobilInventoryScreen() {
     }, {
         refetchInterval: 15000 // Polling every 15 seconds
     });
+
+    const { data: balancesData } = useKasBankBalances();
+    const unitBalance = balancesData?.kas_unit_mobil?.saldo || 0;
 
     const deleteMutation = useDeleteMobil();
 
@@ -347,7 +351,13 @@ export default function MobilInventoryScreen() {
                                 <ChevronLeft size={24} color="white" />
                             </Pressable>
                             <View>
-                                <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Unit Mobil</Typography>
+                                <View className="flex-row items-center">
+                                    <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Unit Mobil</Typography>
+                                    <View className="bg-white/20 px-2 py-0.5 rounded-lg ml-3 flex-row items-center border border-white/10 shadow-sm">
+                                        <View className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 shadow-sm" />
+                                        <Typography className="text-white text-[10px] font-bold">{formatCurrency(unitBalance)}</Typography>
+                                    </View>
+                                </View>
                                 <Typography className="text-white/50 text-xs mt-0.5">Manajemen Inventaris & Penjualan</Typography>
                             </View>
                         </View>
@@ -396,16 +406,15 @@ export default function MobilInventoryScreen() {
                             { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
                             { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
                             { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                            { label: 'Biaya Operasional', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
                         ].map((stat, idx) => (
                             <View
                                 key={stat.key}
-                                style={{ width: stat.isWide ? 160 : 100 }}
+                                style={{ width: 100 }}
                                 className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
                             >
                                 <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
                                 <View className="flex-row items-baseline">
-                                    <Typography weight="bold" style={{ color: stat.color }} className={stat.isWide ? "text-lg" : "text-xl"}>{stat.value || 0}</Typography>
+                                    <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
                                     {stat.unit ? (
                                         <Typography className="text-white/30 text-[8px] ml-1 font-bold">{stat.unit}</Typography>
                                     ) : null}

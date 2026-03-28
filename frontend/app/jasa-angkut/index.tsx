@@ -45,6 +45,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 import { PaymentModal } from '../../components/PaymentModal';
+import { useKasBankBalances } from '../../hooks/useKeuangan';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
 
@@ -86,6 +87,9 @@ export default function JasaAngkutScreen() {
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
     const updateStatusMutation = useUpdateMuatanStatus();
     const queryClient = useQueryClient();
+
+    const { data: balances } = useKasBankBalances();
+    const unitBalance = balances?.kas_unit_jasa_angkut?.saldo || 0;
 
     // Payment Filter Logic (Reactive)
     const stats = useMemo(() => {
@@ -686,7 +690,13 @@ export default function JasaAngkutScreen() {
                             <ChevronLeft size={24} color="white" />
                         </Pressable>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
+                            <View className="flex-row items-center">
+                                <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
+                                <View className="bg-white/20 px-2 py-0.5 rounded-lg ml-3 flex-row items-center border border-white/10 shadow-sm">
+                                    <View className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 shadow-sm" />
+                                    <Typography className="text-white text-[10px] font-bold">{formatCurrency(unitBalance)}</Typography>
+                                </View>
+                            </View>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
                         </View>
                     </View>
@@ -730,7 +740,6 @@ export default function JasaAngkutScreen() {
                         { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
                         { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
                         { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                        { label: 'Biaya Operasional', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
                     ].map((stat, idx) => (
                         <View
                             key={stat.key}

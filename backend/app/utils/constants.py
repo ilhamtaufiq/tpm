@@ -396,6 +396,15 @@ class KasBankJenis(str, Enum):
     BOP_JASA_ANGKUT_BCA = "BOP_JASA_ANGKUT_BCA"
     BOP_MOBIL_CASH = "BOP_MOBIL_CASH"
     BOP_MOBIL_BCA = "BOP_MOBIL_BCA"
+    
+    # --- New Unit-Specific Cash Accounts ---
+    KAS_UNIT_BENGKEL = "KAS_UNIT_BENGKEL"
+    KAS_UNIT_JASA_ANGKUT = "KAS_UNIT_JASA_ANGKUT"
+    KAS_UNIT_MOBIL = "KAS_UNIT_MOBIL"
+    
+    # --- Main/Central Accounts ---
+    KAS_UTAMA = "KAS_UTAMA"
+    BANK_UTAMA = "BANK_UTAMA"
 
     @classmethod
     def _missing_(cls, value: object) -> "KasBankJenis | None":

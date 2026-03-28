@@ -1,8 +1,9 @@
 # Continuity Ledger
 
 - Goal: 
-  - Integrate Operational BOP (Biaya Operasional) balances into the TPM Super App's financial summaries and dashboards across Jasa Angkut, Showroom (Mobil), and the Main Dashboard.
-  - Implement real-time/near real-time data synchronization for critical dashboard metrics to avoid delays in data updates.
+  - Implement a new per-unit financial flow: Bengkel (Cash only), Jasa Angkut (Cash only), and Mobil (Cash only), with a central Main Account (Akun Utama) supporting both Cash and Transfer/Bank.
+  - Enable seamless balance movement from units to the Main Account.
+  - Integrate real-time/near real-time data synchronization for critical dashboard metrics to avoid delays in data updates.
 - Constraints/Assumptions:
   - Backend provides REST endpoints with standard JSON responses (no native WebSockets/SSE currently).
   - Frontend uses `@tanstack/react-query` with a 10-minute cache (`staleTime`).
@@ -12,6 +13,10 @@
   - Recommended using React Query polling (`refetchInterval`) and window focus refetching as a practical "real-time" solution over a full WebSocket migration.
 - State:
   - Done:
+    - Successfully implemented segregated per-unit financial flow (Bengkel, JA, Mobil) with a central Main Account.
+    - Updated `KasBankJenis` and automated routing logic in `kas_bank_integration.py`.
+    - Refactored `get_neraca` and `get_dashboard_summary` to support multi-account grouping.
+    - Updated Mobile Frontend `WalletSection.tsx` with balance breakdown and 'Setoran' action.
     - Fixed `NameError: name 'total_kas_bank' is not defined` in `get_neraca` by correcting the variable name to `total_kas_bank_all`.
     - Increased `jenis_muatan`, `asal`, and `tujuan` character limits to 1000 in `MuatanUpdate` and `MuatanCreate` schemas.
     - Verified backend API routes and frontend data fetching strategy.
@@ -23,8 +28,9 @@
     - Restructured `MuatanForm` to move origin (`asal`) and destination (`tujuan`) into the `jenis_muatan_list`, allowing each load to have its own unique route.
     - Polished `MuatanForm` UI using Premium Bento-style layout for load items, including grouped fields, visual route connectors (arrows), and contextual background tints.
   - Now:
-    - Monitoring performance and server load under new near real-time configuration.
+    - Monitoring the new financial flow and automated routing in production-like scenarios.
   - Next:
+    - Verify 'Setoran ke Pusat' manual transfer flow in the mobile app.
     - Continue with WebSocket implementation strategy as planned.
 - Open questions (UNCONFIRMED if needed):
   - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?

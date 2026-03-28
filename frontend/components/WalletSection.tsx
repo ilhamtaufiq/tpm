@@ -11,12 +11,13 @@ export const WalletSection = () => {
     const { data: balances, isLoading, isRefetching } = useKasBankBalances();
     const { themeColors } = useUIStore();
 
-    const bopBalance = useMemo(() => {
-        if (!balances) return 0;
-        return (balances.bop_jasa_angkut_cash?.saldo || 0) +
-            (balances.bop_jasa_angkut_bca?.saldo || 0) +
-            (balances.bop_mobil_cash?.saldo || 0) +
-            (balances.bop_mobil_bca?.saldo || 0);
+    const units = useMemo(() => {
+        if (!balances) return [];
+        return [
+            { id: 'bengkel', label: 'Bengkel', value: balances.kas_unit_bengkel?.saldo || 0, color: '#3B82F6' },
+            { id: 'jasa_angkut', label: 'JA', value: balances.kas_unit_jasa_angkut?.saldo || 0, color: '#10B981' },
+            { id: 'mobil', label: 'Mobil', value: balances.kas_unit_mobil?.saldo || 0, color: '#F59E0B' },
+        ].filter(u => u.value > 0);
     }, [balances]);
 
     return (
@@ -25,62 +26,63 @@ export const WalletSection = () => {
                 style={{ backgroundColor: themeColors.primary }}
                 className="rounded-3xl overflow-hidden shadow-lg shadow-black/10"
             >
-                <View className="flex-row items-center p-4">
-                    {/* Balance Area */}
-                    <View className="flex-1 mr-4">
-                        <Pressable
-                            onPress={() => router.push('/finance/mutasi')}
-                            className="bg-white rounded-2xl p-3 flex-row items-center justify-between shadow-sm mb-2"
-                        >
-                            <View className="flex-row items-center">
-                                <View
-                                    style={{ backgroundColor: `${themeColors.primary}10` }}
-                                    className="p-1.5 rounded-lg mr-2"
-                                >
-                                    <Wallet size={14} color={themeColors.primary} />
-                                </View>
-                                <View>
-                                    <Typography variant="caption" weight="bold" className="text-text tracking-tight h-3 text-[9px] uppercase">Total Saldo</Typography>
-                                    {isLoading || isRefetching ? (
-                                        <ActivityIndicator size="small" color={themeColors.primary} style={{ height: 16 }} />
-                                    ) : (
-                                        <Typography variant="body2" weight="bold" className="text-text text-xs">
-                                            {formatCurrency(balances?.total_saldo || 0)}
-                                        </Typography>
-                                    )}
-                                </View>
-                            </View>
-                            <Typography
-                                style={{ color: themeColors.primary, backgroundColor: `${themeColors.primary}10` }}
-                                className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                            >
-                                TRX
-                            </Typography>
-                        </Pressable>
-                    </View>
+                <View className="items-center px-4 pt-4 pb-2">
+                    <Typography variant="caption" className="text-white/70 font-bold uppercase tracking-wider mb-1">
+                        Kas Utama & Bank
+                    </Typography>
+                    {isLoading || isRefetching ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Typography variant="h2" weight="bold" className="text-white text-2xl">
+                            {formatCurrency(balances?.total_saldo || 0)}
+                        </Typography>
+                    )}
+                </View>
 
+                {/* Unit Breakdown */}
+                {units.length > 0 && (
+                    <View className="flex-row items-center justify-center space-x-4 mb-4 px-4">
+                        {units.map((unit) => (
+                            <View key={unit.id} className="items-center bg-black/10 px-2.5 py-1 rounded-xl">
+                                <Typography className="text-white/60 text-[8px] font-bold uppercase">{unit.label}</Typography>
+                                <Typography className="text-white text-[10px] font-bold">{formatCurrency(unit.value)}</Typography>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                <View className="flex-row items-center justify-between p-4 bg-white/10">
                     {/* Quick Actions */}
-                    <View className="flex-row items-center space-x-5 px-1">
+                    <View className="flex-row items-center space-x-6 flex-1 justify-around">
                         <Pressable
                             onPress={() => router.push({ pathname: '/finance/mutasi', params: { action: 'modal' } })}
                             className="items-center"
                         >
-                            <View className="bg-white/20 w-8 h-8 rounded-xl items-center justify-center mb-1">
+                            <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center mb-1">
                                 <Plus size={20} color="white" strokeWidth={3} />
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Masuk</Typography>
                         </Pressable>
 
                         <Pressable
+                            onPress={() => router.push('/finance/mutasi')}
+                            className="items-center"
+                        >
+                            <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center mb-1">
+                                <History size={20} color="white" strokeWidth={3} />
+                            </View>
+                            <Typography className="text-white text-[10px] font-bold">Setoran</Typography>
+                        </Pressable>
+
+                        <Pressable
                             onPress={() => router.push('/bengkel/expenses')}
                             className="items-center"
                         >
-                            <View className="bg-white/20 w-8 h-8 rounded-xl items-center justify-center mb-1">
+                            <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center mb-1">
                                 <ArrowUp size={20} color="white" strokeWidth={3} />
                             </View>
                             <Typography className="text-white text-[10px] font-bold">Keluar</Typography>
                         </Pressable>
-
                     </View>
                 </View>
             </View>
