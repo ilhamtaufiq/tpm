@@ -192,7 +192,7 @@ class MuatanCreate(BaseModel):
     info_kendaraan: Optional[str] = Field(None, max_length=255)
     asal: str = Field(..., min_length=2, max_length=100)
     tujuan: str = Field(..., min_length=2, max_length=100)
-    jenis_muatan: Optional[str] = Field(None, max_length=100)
+    jenis_muatan: Optional[str] = Field(None, max_length=1000)
     ritase: int = Field(default=1, ge=1)
     berat_muatan: Optional[str] = Field(None, max_length=50)
     
@@ -232,7 +232,7 @@ class MuatanUpdate(BaseModel):
     info_kendaraan: Optional[str] = Field(None, max_length=255)
     asal: Optional[str] = Field(None, min_length=2, max_length=100)
     tujuan: Optional[str] = Field(None, min_length=2, max_length=100)
-    jenis_muatan: Optional[str] = Field(None, max_length=100)
+    jenis_muatan: Optional[str] = Field(None, max_length=500)
     ritase: Optional[int] = Field(None, ge=1)
     berat_muatan: Optional[str] = Field(None, max_length=50)
     

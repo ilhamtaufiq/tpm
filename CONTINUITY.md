@@ -24,7 +24,8 @@
     - MuatanForm redesign and polish complete.
   - Next:
     - Monitor performance and server load under new near real-time configuration.
-    - Verify that backend correctly handles the new `jenis_muatan` string format `[Asal -> Tujuan] ...`.
+    - Increase backend `jenis_muatan` character limit to 500 in Pydantic schemas (`MuatanCreate`, `MuatanUpdate`) to accommodate the new `[Asal -> Tujuan] ...` format.
+    - Verified that database column for `jenis_muatan` is already `Text` (unlimited).
 - Open questions (UNCONFIRMED if needed):
   - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?
 - Working set (files/ids/commands):
