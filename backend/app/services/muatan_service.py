@@ -16,6 +16,8 @@ from app.utils.constants import (
     PaymentMethod,
     PaymentStatus,
     MuatanStatus,
+    PiutangSource,
+    PiutangStatus,
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 

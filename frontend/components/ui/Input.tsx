@@ -6,11 +6,12 @@ interface InputProps extends TextInputProps {
     label?: string;
     error?: string;
     containerClassName?: string;
+    innerContainerClassName?: string;
     startIcon?: React.ReactNode;
     endIcon?: React.ReactNode;
 }
 
-export const Input = ({ label, error, containerClassName, className, startIcon, endIcon, ...props }: InputProps) => {
+export const Input = ({ label, error, containerClassName, innerContainerClassName, className, startIcon, endIcon, ...props }: InputProps) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -21,6 +22,7 @@ export const Input = ({ label, error, containerClassName, className, startIcon, 
                     'bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center',
                     isFocused && 'border-primary bg-white',
                     error && 'border-secondary',
+                    innerContainerClassName
                 )}
             >
                 {startIcon && <View className="mr-2">{startIcon}</View>}

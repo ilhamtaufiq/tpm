@@ -40,7 +40,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         info_kendaraan: '',
         asal: '',
         tujuan: '',
-        jenis_muatan_list: [{ jenis: '', ritase: '1' }], // Multiple load types with individual ritase
+        jenis_muatan_list: [{ jenis: '', ritase: '1', harga: '' }], // Multiple load types with individual ritase and price
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
@@ -96,10 +96,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 tujuan: initialData.tujuan || '',
                 jenis_muatan_list: initialData.jenis_muatan ?
                     initialData.jenis_muatan.split(', ').map((item: string) => {
-                        const match = item.match(/(.+)\s\((\d+)\sRit\)/);
-                        if (match) return { jenis: match[1], ritase: match[2] };
-                        return { jenis: item, ritase: '1' };
-                    }) : [{ jenis: '', ritase: '1' }],
+                        const match = item.match(/(.+)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+))?/);
+                        if (match) return { 
+                            jenis: match[1], 
+                            ritase: match[2],
+                            harga: match[3] || ''
+                        };
+                        return { jenis: item, ritase: '1', harga: '' };
+                    }) : [{ jenis: '', ritase: '1', harga: '' }],
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
@@ -112,11 +116,27 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         }
     }, [initialData]);
 
-    // Sync total ritase
+    // Sync total ritase and harga_beli
     useEffect(() => {
         const totalRitase = formData.jenis_muatan_list.reduce((acc, item) => acc + (parseInt(item.ritase) || 0), 0);
+        const totalHargaBeli = formData.jenis_muatan_list.reduce((acc, item) => 
+            acc + (parseNumber(item.ritase) || 0) * (parseNumber(item.harga) || 0), 0);
+        
+        let updates: any = {};
+        
         if (totalRitase > 0 && totalRitase.toString() !== formData.ritase) {
-            setFormData(prev => ({ ...prev, ritase: totalRitase.toString() }));
+            updates.ritase = totalRitase.toString();
+        }
+        
+        if (totalHargaBeli > 0 || formData.jenis_muatan_list.some(item => item.harga !== '')) {
+            const formattedTotal = formatNumber(totalHargaBeli.toString());
+            if (formattedTotal !== formData.harga_beli) {
+                updates.harga_beli = formattedTotal;
+            }
+        }
+        
+        if (Object.keys(updates).length > 0) {
+            setFormData(prev => ({ ...prev, ...updates }));
         }
     }, [formData.jenis_muatan_list]);
 
@@ -206,20 +226,23 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }, [activeArmada, armadaSearch, formData.armada_id]);
 
-    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase', value: string) => {
+    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase' | 'harga', value: string) => {
         const newList = [...formData.jenis_muatan_list];
-        newList[index] = { ...newList[index], [field]: value };
+        newList[index] = { 
+            ...newList[index], 
+            [field]: field === 'harga' ? formatNumber(value) : value 
+        };
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
     };
 
     const addJenisMuatan = () => {
-        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1' }] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1', harga: '' }] }));
     };
 
     const removeJenisMuatan = (index: number) => {
         const newList = [...formData.jenis_muatan_list];
         newList.splice(index, 1);
-        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1' }] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga: '' }] }));
     };
 
     const handleSubmit = async () => {
@@ -262,7 +285,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ...formData,
                 jenis_muatan: formData.jenis_muatan_list
                     .filter(item => item.jenis.trim() !== '')
-                    .map(item => `${item.jenis} (${item.ritase} Rit)`)
+                    .map(item => {
+                        const hargaStr = item.harga ? ` @ Rp ${item.harga}` : '';
+                        return `${item.jenis} (${item.ritase} Rit)${hargaStr}`;
+                    })
                     .join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
                 metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
@@ -618,19 +644,28 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 {formData.jenis_muatan_list.map((item, index) => (
                     <View key={index} className="flex-row items-center space-x-2">
                         <Input
-                            placeholder="Contoh: Pasir, Semen, Besi"
+                            placeholder="Muatan"
                             value={item.jenis}
                             onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
-                            containerClassName="mb-0 flex-1"
-                            className="h-11"
+                            containerClassName="mb-0 flex-1 w-auto"
+                            className="h-11 outline-none"
                         />
                         <Input
                             placeholder="Rit"
                             keyboardType="numeric"
                             value={item.ritase}
                             onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
-                            containerClassName="mb-0 w-32"
-                            className="h-11 text-center"
+                            containerClassName="mb-0 flex-[0.6] w-auto"
+                            innerContainerClassName="px-1"
+                            className="h-11 text-center outline-none"
+                        />
+                        <Input
+                            placeholder="Harga (Rp)"
+                            keyboardType="numeric"
+                            value={item.harga}
+                            onChangeText={v => updateJenisMuatan(index, 'harga', v)}
+                            containerClassName="mb-0 flex-[1.3] w-auto"
+                            className="h-11 outline-none"
                         />
                         {formData.jenis_muatan_list.length > 1 && (
                             <Pressable
@@ -658,7 +693,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             value={formData.harga_beli}
                             onChangeText={v => updateField('harga_beli', v)}
                             containerClassName="mb-0"
-                            className="bg-white"
+                            className="bg-white outline-none"
                         />
                     </View>
                     <View className="flex-1">
@@ -669,7 +704,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             value={formData.harga_jual}
                             onChangeText={v => updateField('harga_jual', v)}
                             containerClassName="mb-0"
-                            className="bg-white"
+                            className="bg-white outline-none"
                         />
                     </View>
                 </View>
