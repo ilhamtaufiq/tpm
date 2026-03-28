@@ -40,7 +40,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         info_kendaraan: '',
         asal: '',
         tujuan: '',
-        jenis_muatan_list: [{ jenis: '', ritase: '1', harga: '' }], // Multiple load types with individual ritase and price
+        jenis_muatan_list: [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }], // Multiple load types with individual prices
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
@@ -96,14 +96,17 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 tujuan: initialData.tujuan || '',
                 jenis_muatan_list: initialData.jenis_muatan ?
                     initialData.jenis_muatan.split(', ').map((item: string) => {
-                        const match = item.match(/(.+)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+))?/);
-                        if (match) return { 
-                            jenis: match[1], 
+                        // Match old format: Jenis (1 Rit) @ Rp 1.000
+                        // Match format: Jenis (1 Rit) @ Rp 1.000 / Rp 1.500
+                        const match = item.match(/(.+?)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+)(?:\s\/\sRp\s([\d.,]+))?)?/);
+                        if (match) return {
+                            jenis: match[1]?.trim(),
                             ritase: match[2],
-                            harga: match[3] || ''
+                            harga_beli: match[3] || '',
+                            harga_jual: match[4] || ''
                         };
-                        return { jenis: item, ritase: '1', harga: '' };
-                    }) : [{ jenis: '', ritase: '1', harga: '' }],
+                        return { jenis: item, ritase: '1', harga_beli: '', harga_jual: '' };
+                    }) : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }],
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
@@ -116,25 +119,30 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         }
     }, [initialData]);
 
-    // Sync total ritase and harga_beli
+    // Sync total ritase, harga_beli, and harga_jual
     useEffect(() => {
         const totalRitase = formData.jenis_muatan_list.reduce((acc, item) => acc + (parseInt(item.ritase) || 0), 0);
-        const totalHargaBeli = formData.jenis_muatan_list.reduce((acc, item) => 
-            acc + (parseNumber(item.ritase) || 0) * (parseNumber(item.harga) || 0), 0);
-        
+        const totalHargaBeli = formData.jenis_muatan_list.reduce((acc, item) =>
+            acc + (parseNumber(item.ritase) || 0) * (parseNumber(item.harga_beli) || 0), 0);
+        const totalHargaJual = formData.jenis_muatan_list.reduce((acc, item) =>
+            acc + (parseNumber(item.ritase) || 0) * (parseNumber(item.harga_jual) || 0), 0);
+
         let updates: any = {};
-        
+
         if (totalRitase > 0 && totalRitase.toString() !== formData.ritase) {
             updates.ritase = totalRitase.toString();
         }
-        
-        if (totalHargaBeli > 0 || formData.jenis_muatan_list.some(item => item.harga !== '')) {
-            const formattedTotal = formatNumber(totalHargaBeli.toString());
-            if (formattedTotal !== formData.harga_beli) {
-                updates.harga_beli = formattedTotal;
-            }
+
+        const formattedBeli = formatNumber(totalHargaBeli.toString());
+        if (formattedBeli !== formData.harga_beli) {
+            updates.harga_beli = formattedBeli;
         }
-        
+
+        const formattedJual = formatNumber(totalHargaJual.toString());
+        if (formattedJual !== formData.harga_jual) {
+            updates.harga_jual = formattedJual;
+        }
+
         if (Object.keys(updates).length > 0) {
             setFormData(prev => ({ ...prev, ...updates }));
         }
@@ -226,23 +234,23 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }, [activeArmada, armadaSearch, formData.armada_id]);
 
-    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase' | 'harga', value: string) => {
+    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase' | 'harga_beli' | 'harga_jual', value: string) => {
         const newList = [...formData.jenis_muatan_list];
-        newList[index] = { 
-            ...newList[index], 
-            [field]: field === 'harga' ? formatNumber(value) : value 
+        newList[index] = {
+            ...newList[index],
+            [field]: (field === 'harga_beli' || field === 'harga_jual') ? formatNumber(value) : value
         };
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
     };
 
     const addJenisMuatan = () => {
-        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1', harga: '' }] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }] }));
     };
 
     const removeJenisMuatan = (index: number) => {
         const newList = [...formData.jenis_muatan_list];
         newList.splice(index, 1);
-        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga: '' }] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }] }));
     };
 
     const handleSubmit = async () => {
@@ -286,8 +294,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 jenis_muatan: formData.jenis_muatan_list
                     .filter(item => item.jenis.trim() !== '')
                     .map(item => {
-                        const hargaStr = item.harga ? ` @ Rp ${item.harga}` : '';
-                        return `${item.jenis} (${item.ritase} Rit)${hargaStr}`;
+                        const hargaBeliStr = item.harga_beli ? `@ Rp ${item.harga_beli}` : '';
+                        const hargaJualStr = item.harga_jual ? ` / Rp ${item.harga_jual}` : '';
+                        return `${item.jenis} (${item.ritase} Rit) ${hargaBeliStr}${hargaJualStr}`.replace(/\s+/g, ' ').trim();
                     })
                     .join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
@@ -633,50 +642,82 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             </View>
 
             {/* Multiple Load Types UI */}
-            <View className="flex-row justify-between items-center mb-2 mt-2">
-                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Jenis Muatan (Load Types)</Typography>
-                <Pressable onPress={addJenisMuatan}>
-                    <Typography variant="caption" weight="bold" className="text-primary">+ Tambah</Typography>
+            <View className="flex-row items-center justify-between mb-2 mt-4">
+                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Daftar Muatan (Rit & Harga)</Typography>
+                <Pressable onPress={addJenisMuatan} className="flex-row items-center bg-primary/5 px-2 py-1 rounded-lg">
+                    <Plus size={14} color="#023C69" />
+                    <Typography variant="caption" weight="bold" className="text-primary ml-1">Tambah</Typography>
                 </Pressable>
             </View>
 
-            <View className="space-y-3 mb-4">
-                {formData.jenis_muatan_list.map((item, index) => (
-                    <View key={index} className="flex-row items-center space-x-2">
-                        <Input
-                            placeholder="Muatan"
-                            value={item.jenis}
-                            onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
-                            containerClassName="mb-0 flex-1 w-auto"
-                            className="h-11 outline-none"
-                        />
-                        <Input
-                            placeholder="Rit"
-                            keyboardType="numeric"
-                            value={item.ritase}
-                            onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
-                            containerClassName="mb-0 flex-[0.6] w-auto"
-                            innerContainerClassName="px-1"
-                            className="h-11 text-center outline-none"
-                        />
-                        <Input
-                            placeholder="Harga (Rp)"
-                            keyboardType="numeric"
-                            value={item.harga}
-                            onChangeText={v => updateJenisMuatan(index, 'harga', v)}
-                            containerClassName="mb-0 flex-[1.3] w-auto"
-                            className="h-11 outline-none"
-                        />
-                        {formData.jenis_muatan_list.length > 1 && (
-                            <Pressable
-                                onPress={() => removeJenisMuatan(index)}
-                                className="w-11 h-11 items-center justify-center bg-red-50 rounded-xl"
-                            >
-                                <Trash2 size={18} color="#EF4444" />
-                            </Pressable>
-                        )}
-                    </View>
-                ))}
+            <View className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-4">
+                <View className="space-y-4">
+                    {formData.jenis_muatan_list.map((item, index) => (
+                        <View key={index} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                            <View className="flex-row items-center space-x-2 mb-3">
+                                <View className="flex-1">
+                                    <Typography variant="caption" weight="bold" className="text-gray-400 mb-1 ml-1 uppercase text-[9px]">Muatan #{index + 1}</Typography>
+                                    <Input
+                                        placeholder="Contoh: Pasir, Batu, dll"
+                                        value={item.jenis}
+                                        onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-sm"
+                                    />
+                                </View>
+                                <View className="w-20">
+                                    <Typography variant="caption" weight="bold" className="text-gray-400 mb-1 uppercase text-[9px] text-center">Ritase</Typography>
+                                    <Input
+                                        placeholder="1"
+                                        keyboardType="numeric"
+                                        value={item.ritase}
+                                        onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-sm text-left font-bold"
+                                        style={{ textAlign: 'left' }}
+                                    />
+                                </View>
+                                {formData.jenis_muatan_list.length > 1 && (
+                                    <View className="pt-4">
+                                        <Pressable
+                                            onPress={() => removeJenisMuatan(index)}
+                                            className="w-10 h-10 items-center justify-center bg-red-50 rounded-lg"
+                                        >
+                                            <Trash2 size={16} color="#EF4444" />
+                                        </Pressable>
+                                    </View>
+                                )}
+                            </View>
+
+                            <View className="flex-row items-center space-x-2">
+                                <View className="flex-1">
+                                    <Typography variant="caption" weight="bold" className="text-green-600 mb-1 ml-1 uppercase text-[9px]">Harga Beli / Rit</Typography>
+                                    <Input
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        value={item.harga_beli}
+                                        onChangeText={v => updateJenisMuatan(index, 'harga_beli', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-sm"
+                                        startIcon={<Typography className="text-green-600 text-[10px] font-bold">Rp</Typography>}
+                                    />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography variant="caption" weight="bold" className="text-blue-600 mb-1 ml-1 uppercase text-[9px]">Harga Jual / Rit</Typography>
+                                    <Input
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        value={item.harga_jual}
+                                        onChangeText={v => updateJenisMuatan(index, 'harga_jual', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-sm"
+                                        startIcon={<Typography className="text-blue-600 text-[10px] font-bold">Rp</Typography>}
+                                    />
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+                </View>
             </View>
 
 

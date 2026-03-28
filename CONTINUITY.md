@@ -1,29 +1,29 @@
 # Continuity Ledger
 
-- Goal: Integrate Operational BOP (Biaya Operasional) balances into the TPM Super App's financial summaries and dashboards across Jasa Angkut, Showroom (Mobil), and the Main Dashboard.
+- Goal: 
+  - Integrate Operational BOP (Biaya Operasional) balances into the TPM Super App's financial summaries and dashboards across Jasa Angkut, Showroom (Mobil), and the Main Dashboard.
+  - Implement real-time/near real-time data synchronization for critical dashboard metrics to avoid delays in data updates.
 - Constraints/Assumptions:
-  - Backend provides `saldo_bop` in summary responses by aggregating `BOP_JASA_ANGKUT_CASH/BCA` or `BOP_MOBIL_CASH/BCA`.
-  - Frontend displays these as part of the "Bento-style" stats header and the Main Wallet section.
+  - Backend provides REST endpoints with standard JSON responses (no native WebSockets/SSE currently).
+  - Frontend uses `@tanstack/react-query` with a 10-minute cache (`staleTime`).
+  - Mobile environment requires balancing real-time updates with battery and data usage.
 - Key decisions:
-  - Mirrored the logic from Jasa Angkut to the Showroom module.
-  - Calculated the global BOP balance on the main dashboard by summing all four BOP accounts from the `kas_bank_balances` response.
+  - Summed all four BOP accounts (Jasa Angkut Cash/BCA, Mobil Cash/BCA) for a global dashboard total.
+  - Recommended using React Query polling (`refetchInterval`) and window focus refetching as a practical "real-time" solution over a full WebSocket migration.
 - State:
   - Done:
-    - Updated `MuatanService.get_summary` (Jasa Angkut) to include `saldo_bop`.
-    - Updated `PenjualanMobilService.get_summary` (Mobil) to include `saldo_bop`.
-    - Integrated `Saldo BOP` display in `frontend/app/jasa-angkut/index.tsx`.
-    - Integrated `Saldo BOP` display in `frontend/app/mobil/index.tsx`.
-    - Integrated `Saldo BOP` display in `frontend/components/WalletSection.tsx` (Main Dashboard).
-    - Updated `PenjualanSummary` and `MuatanSummary` interfaces in `frontend/services/` to support `saldo_bop`.
-    - Fixed lint errors in `frontend/app/finance/mutasi.tsx`.
-  - Now: Integration complete.
-  - Next: User verification and end-to-end testing of BOP transfers and expenses.
+    - Verified backend API routes and frontend data fetching strategy.
+    - Updated financial services and interfaces to include `saldo_bop`.
+    - Integrated BOP balance displays across Main Dashboard, Jasa Angkut, and Mobil modules.
+    - Enhanced Jasa Angkut `MuatanForm` with individual buying (`harga_beli`) and selling (`harga_jual`) prices per load type, with automatic accumulation in the finance section.
+  - Now:
+    - Task completed.
+  - Next:
+    - Monitor for further refinements to the transport service module.
 - Open questions (UNCONFIRMED if needed):
 - Working set (files/ids/commands):
-  - `backend/app/services/muatan_service.py`
-  - `backend/app/services/penjualan_mobil_service.py`
-  - `frontend/app/jasa-angkut/index.tsx`
-  - `frontend/app/mobil/index.tsx`
+  - `frontend/components/jasa-angkut/MuatanForm.tsx`
+  - `backend/app/main.py`
+  - `frontend/app/_layout.tsx`
+  - `frontend/hooks/useKeuangan.ts`
   - `frontend/components/WalletSection.tsx`
-  - `frontend/services/mobil.ts`
-  - `frontend/services/jasaAngkut.ts`
