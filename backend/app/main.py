@@ -67,11 +67,89 @@ def create_app() -> FastAPI:
     # Monitoring Endpoints
     from app.middleware.logging import metrics
     from fastapi.responses import HTMLResponse
+    from app.database.connection import SessionLocal
+    from sqlalchemy import text
+
+    def get_db_stats():
+        """Fetch database statistics from MySQL with intelligent discovery."""
+        try:
+            db = SessionLocal()
+            
+            # Step 1: Detect current DB name
+            current_db_res = db.execute(text("SELECT DATABASE()")).fetchone()
+            detected_db = current_db_res[0] if current_db_res else settings.db_name
+            
+            # Step 2: Try to find tables in detected DB first, then fallback to config
+            schemas_to_try = [detected_db, settings.db_name]
+            
+            final_tables = []
+            final_db_name = detected_db
+
+            for schema in schemas_to_try:
+                if not schema: continue
+                
+                query = text("""
+                    SELECT 
+                        table_name as `name`, 
+                        CAST(IFNULL(table_rows, 0) AS SIGNED) as `row_count`,
+                        CAST(ROUND(((IFNULL(data_length, 0) + IFNULL(index_length, 0)) / 1024 / 1024), 2) AS DECIMAL(10,2)) as `size_mb`
+                    FROM information_schema.tables 
+                    WHERE table_schema = :db_name
+                    AND table_type = 'BASE TABLE'
+                    ORDER BY `row_count` DESC
+                """)
+                
+                result = db.execute(query, {"db_name": schema})
+                records = result.fetchall()
+                
+                if records:
+                    final_tables = [
+                        {"name": r[0], "rows": int(r[1]), "size_mb": float(r[2])} 
+                        for r in records
+                    ]
+                    final_db_name = schema
+                    break
+
+            # If still nothing, try to find any schema that has a 'users' table
+            if not final_tables:
+                fallback_query = text("""
+                    SELECT table_schema 
+                    FROM information_schema.tables 
+                    WHERE table_name = 'users' 
+                    LIMIT 1
+                """)
+                res = db.execute(fallback_query).fetchone()
+                if res and res[0]:
+                    # Run the same query with this discovered schema
+                    schema = res[0]
+                    result = db.execute(query, {"db_name": schema})
+                    records = result.fetchall()
+                    if records:
+                        final_tables = [
+                            {"name": r[0], "rows": int(r[1]), "size_mb": float(r[2])} 
+                            for r in records
+                        ]
+                        final_db_name = schema
+
+            total_size = sum(t['size_mb'] for t in final_tables)
+            db.close()
+            
+            return {
+                "tables": final_tables,
+                "total_size_mb": round(float(total_size), 2),
+                "table_count": len(final_tables),
+                "current_db": final_db_name
+            }
+        except Exception as e:
+            print(f"[Monitor] DB Audit Error: {str(e)}")
+            return {"error": str(e), "tables": [], "table_count": 0, "total_size_mb": 0}
 
     @app.get("/api/v1/monitor/stats", tags=["Monitoring"])
     def get_monitor_stats():
-        """Get real-time server metrics."""
-        return metrics.get_stats()
+        """Get real-time server metrics including DB stats."""
+        stats = metrics.get_stats()
+        stats["database"] = get_db_stats()
+        return stats
 
     @app.get("/monitor", response_class=HTMLResponse, tags=["Monitoring"])
     def monitor_dashboard():
@@ -116,8 +194,8 @@ def create_app() -> FastAPI:
                     </div>
                     <div class="col-md-3">
                         <div class="card p-4 h-100">
-                            <div class="text-secondary small fw-bold">ERROR COUNT</div>
-                            <div id="total-err" class="stat-value status-err">0</div>
+                            <div class="text-secondary small fw-bold">DATABASE SIZE</div>
+                            <div class="stat-value"><span id="db-size">0</span><small class="fs-6">MB</small></div>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -128,23 +206,45 @@ def create_app() -> FastAPI:
                     </div>
                 </div>
 
-                <div class="card mb-4 overflow-hidden">
-                    <div class="card-header bg-dark border-bottom border-secondary p-3">
-                        <h5 class="m-0 small fw-bold">RECENT TRAFFIC (LAST 50)</h5>
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100 overflow-hidden">
+                            <div class="card-header bg-dark border-bottom border-secondary p-3 d-flex justify-content-between">
+                                <h5 class="m-0 small fw-bold">DATABASE TABLES</h5>
+                                <span id="table-count" class="badge bg-primary">0 Tables</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-dark table-sm m-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Table</th>
+                                            <th class="text-end">Rows</th>
+                                            <th class="text-end">Size</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="db-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover m-0">
-                            <thead>
-                                <tr>
-                                    <th>Method</th>
-                                    <th>Path</th>
-                                    <th>Status</th>
-                                    <th>Duration</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-body"></tbody>
-                        </table>
+                    <div class="col-md-6">
+                        <div class="card h-100 overflow-hidden">
+                            <div class="card-header bg-dark border-bottom border-secondary p-3">
+                                <h5 class="m-0 small fw-bold">RECENT TRAFFIC (LAST 50)</h5>
+                            </div>
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-dark table-hover m-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="small">Path</th>
+                                            <th class="small">Dur</th>
+                                            <th class="small">Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="history-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -157,17 +257,32 @@ def create_app() -> FastAPI:
                         
                         document.getElementById('total-req').innerText = data.total_requests;
                         document.getElementById('avg-lat').innerText = (data.avg_latency * 1000).toFixed(1);
-                        document.getElementById('total-err').innerText = data.total_errors;
                         document.getElementById('last-update').innerText = 'Last sync: ' + new Date().toLocaleTimeString();
+
+                        // DB Stats
+                        if (data.database && !data.database.error) {
+                            document.getElementById('db-size').innerText = data.database.total_size_mb;
+                            document.getElementById('table-count').innerText = data.database.table_count + ' Tables';
+                            
+                            const dbBody = document.getElementById('db-body');
+                            dbBody.innerHTML = data.database.tables.map(table => `
+                                <tr>
+                                    <td class="small fw-bold text-info">${table.name}</td>
+                                    <td class="text-end small">${table.rows.toLocaleString()}</td>
+                                    <td class="text-end small text-secondary">${table.size_mb} MB</td>
+                                </tr>
+                            `).join('');
+                        }
 
                         const tbody = document.getElementById('history-body');
                         tbody.innerHTML = data.recent_history.reverse().map(req => `
                             <tr>
-                                <td><span class="badge ${req.status >= 400 ? 'bg-danger' : 'bg-success'}">${req.method}</span></td>
-                                <td class="text-info font-monospace small">${req.path}</td>
-                                <td>${req.status}</td>
-                                <td>${(req.duration * 1000).toFixed(1)}ms</td>
-                                <td class="text-secondary small">${new Date(req.timestamp * 1000).toLocaleTimeString()}</td>
+                                <td class="text-info font-monospace x-small" style="font-size: 11px;">
+                                    <span class="badge ${req.status >= 400 ? 'bg-danger' : 'bg-success'}">${req.method}</span>
+                                    ${req.path.substring(0, 30)}...
+                                </td>
+                                <td class="small">${(req.duration * 1000).toFixed(0)}ms</td>
+                                <td class="text-secondary small" style="font-size: 10px;">${new Date(req.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</td>
                             </tr>
                         `).join('');
                     } catch (e) {
