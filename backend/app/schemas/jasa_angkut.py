@@ -186,15 +186,15 @@ class MuatanCreate(BaseModel):
 
     tanggal: date
     supir_id: Optional[int] = None
-    supir_nama: Optional[str] = Field(None, max_length=100)
+    supir_nama: Optional[str] = Field(None, max_length=1000)
     armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
-    info_kendaraan: Optional[str] = Field(None, max_length=255)
-    asal: str = Field(..., min_length=2, max_length=100)
-    tujuan: str = Field(..., min_length=2, max_length=100)
+    info_kendaraan: Optional[str] = Field(None, max_length=1000)
+    asal: str = Field(..., min_length=2, max_length=1000)
+    tujuan: str = Field(..., min_length=2, max_length=1000)
     jenis_muatan: Optional[str] = Field(None, max_length=1000)
     ritase: int = Field(default=1, ge=1)
-    berat_muatan: Optional[str] = Field(None, max_length=50)
+    berat_muatan: Optional[str] = Field(None, max_length=1000)
     
     # Trading values
     harga_beli: Decimal = Field(default=Decimal("0"), ge=0)
