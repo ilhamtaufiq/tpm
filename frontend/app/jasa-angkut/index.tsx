@@ -686,24 +686,30 @@ export default function JasaAngkutScreen() {
                         </View>
                     </View>
                     <View className="flex-row items-center">
-                        <Pressable
-                            onPress={() => router.push('/jasa-angkut/armada')}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
-                        >
-                            <Truck size={22} color="white" />
-                        </Pressable>
-                        <Pressable
-                            onPress={() => router.push('/jasa-angkut/supir')}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
-                        >
-                            <Users size={22} color="white" />
-                        </Pressable>
-                        <Pressable
-                            onPress={() => onRefresh()}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            <RefreshCw size={20} color="white" />
-                        </Pressable>
+                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2">
+                            <Pressable
+                                onPress={() => router.push('/jasa-angkut/armada')}
+                                hitSlop={8}
+                            >
+                                <Truck size={22} color="white" />
+                            </Pressable>
+                        </View>
+                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2">
+                            <Pressable
+                                onPress={() => router.push('/jasa-angkut/supir')}
+                                hitSlop={8}
+                            >
+                                <Users size={22} color="white" />
+                            </Pressable>
+                        </View>
+                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
+                            <Pressable
+                                onPress={() => onRefresh()}
+                                hitSlop={8}
+                            >
+                                <RefreshCw size={20} color="white" />
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
 
@@ -760,65 +766,66 @@ export default function JasaAngkutScreen() {
                         <View className="space-y-3">
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-                                    <Pressable
-                                        onPress={() => setGroupBy('armada')}
-                                        className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}
-                                    >
-                                        <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
-                                        <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={() => setGroupBy('supir')}
-                                        className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}
-                                    >
-                                        <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
-                                        <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
-                                    </Pressable>
+                                    <View className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}>
+                                        <Pressable
+                                            onPress={() => setGroupBy('armada')}
+                                            hitSlop={8}
+                                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                                        >
+                                            <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
+                                            <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
+                                        </Pressable>
+                                    </View>
+                                    <View className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}>
+                                        <Pressable
+                                            onPress={() => setGroupBy('supir')}
+                                            hitSlop={8}
+                                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                                        >
+                                            <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
+                                            <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
 
                             {/* Payment Filter Chips */}
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-                                <Pressable 
-                                    onPress={() => setPaymentFilter('ALL')}
-                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                                >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                        Semua ({stats.total})
-                                    </Typography>
-                                </Pressable>
-                                <Pressable 
-                                    onPress={() => setPaymentFilter('LUNAS')}
-                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
-                                >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                        Lunas ({stats.lunas})
-                                    </Typography>
-                                </Pressable>
-                                <Pressable 
-                                    onPress={() => setPaymentFilter('PARTIAL')}
-                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
-                                >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
-                                        Belum Lunas ({stats.partial})
-                                    </Typography>
-                                </Pressable>
-                                <Pressable 
-                                    onPress={() => setPaymentFilter('UNPAID')}
-                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
-                                >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
-                                        Belum Bayar ({stats.unpaid})
-                                    </Typography>
-                                </Pressable>
-                                <Pressable 
-                                    onPress={() => setPaymentFilter('BATAL')}
-                                    className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
-                                >
-                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
-                                        Batal ({stats.batal})
-                                    </Typography>
-                                </Pressable>
+                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}>
+                                    <Pressable onPress={() => setPaymentFilter('ALL')} hitSlop={8}>
+                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                            Semua ({stats.total})
+                                        </Typography>
+                                    </Pressable>
+                                </View>
+                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}>
+                                    <Pressable onPress={() => setPaymentFilter('LUNAS')} hitSlop={8}>
+                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                            Lunas ({stats.lunas})
+                                        </Typography>
+                                    </Pressable>
+                                </View>
+                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}>
+                                    <Pressable onPress={() => setPaymentFilter('PARTIAL')} hitSlop={8}>
+                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                            Belum Lunas ({stats.partial})
+                                        </Typography>
+                                    </Pressable>
+                                </View>
+                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
+                                    <Pressable onPress={() => setPaymentFilter('UNPAID')} hitSlop={8}>
+                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                            Belum Bayar ({stats.unpaid})
+                                        </Typography>
+                                    </Pressable>
+                                </View>
+                                <View className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}>
+                                    <Pressable onPress={() => setPaymentFilter('BATAL')} hitSlop={8}>
+                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                            Batal ({stats.batal})
+                                        </Typography>
+                                    </Pressable>
+                                </View>
                             </ScrollView>
                         </View>
                     </View>

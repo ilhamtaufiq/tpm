@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
 import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
@@ -734,32 +733,28 @@ export default function BengkelScreen() {
         );
     };
     const renderBottomSheetContent = () => (
-        <NavigationIndependentTree>
-            <NavigationContainer>
-                <View style={{ flex: 1 }}>
-                    {view === 'form' || view === 'edit' ? (
-                        <BengkelForm 
-                            initialData={view === 'edit' ? selectedItem : null} 
-                            onSuccess={handleClosePress} 
-                        />
-                    ) : selectedItem ? (
-                        Platform.OS === 'web' ? (
-                            <ScrollView className="flex-1">
-                                <View className="p-8 pb-32">
-                                    {renderDetailContent()}
-                                </View>
-                            </ScrollView>
-                        ) : (
-                            <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                                <View className="p-8 pb-32">
-                                    {renderDetailContent()}
-                                </View>
-                            </BottomSheetScrollView>
-                        )
-                    ) : null}
-                </View>
-            </NavigationContainer>
-        </NavigationIndependentTree>
+        <View style={{ flex: 1 }}>
+            {view === 'form' || view === 'edit' ? (
+                <BengkelForm 
+                    initialData={view === 'edit' ? selectedItem : null} 
+                    onSuccess={handleClosePress} 
+                />
+            ) : selectedItem ? (
+                Platform.OS === 'web' ? (
+                    <ScrollView className="flex-1">
+                        <View className="p-8 pb-32">
+                            {renderDetailContent()}
+                        </View>
+                    </ScrollView>
+                ) : (
+                    <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                        <View className="p-8 pb-32">
+                            {renderDetailContent()}
+                        </View>
+                    </BottomSheetScrollView>
+                )
+            ) : null}
+        </View>
     );
 
 

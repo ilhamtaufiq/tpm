@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
 import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
@@ -792,51 +791,55 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             {/* TABS SWITCHER */}
             <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
-                <Pressable
-                    onPress={() => setActiveTab('service')}
-                    className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
-                        activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'
-                    }`}
-                >
-                    <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
-                    <Typography 
-                        variant="caption" 
-                        weight={activeTab === 'service' ? 'bold' : 'medium'} 
-                        className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
+                <View className={`flex-1 rounded-[18px] ${activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
+                    <Pressable
+                        onPress={() => setActiveTab('service')}
+                        hitSlop={8}
+                        className="flex-row items-center justify-center py-3 px-4"
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
                     >
-                        Jasa (Service)
-                    </Typography>
-                    {serviceCount > 0 && (
-                        <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'service' ? 'bg-primary' : 'bg-gray-200'}`}>
-                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
-                                {serviceCount}
-                            </Typography>
-                        </View>
-                    )}
-                </Pressable>
+                        <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
+                        <Typography 
+                            variant="caption" 
+                            weight={activeTab === 'service' ? 'bold' : 'medium'} 
+                            className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
+                        >
+                            Jasa (Service)
+                        </Typography>
+                        {serviceCount > 0 && (
+                            <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'service' ? 'bg-primary' : 'bg-gray-200'}`}>
+                                <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
+                                    {serviceCount}
+                                </Typography>
+                            </View>
+                        )}
+                    </Pressable>
+                </View>
 
-                <Pressable
-                    onPress={() => setActiveTab('sparepart')}
-                    className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-[18px] ${
-                        activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'
-                    }`}
-                >
-                    <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
-                    <Typography 
-                        variant="caption" 
-                        weight={activeTab === 'sparepart' ? 'bold' : 'medium'} 
-                        className={`ml-2 ${activeTab === 'sparepart' ? 'text-blue-600' : 'text-gray-400'}`}
+                <View className={`flex-1 rounded-[18px] ${activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
+                    <Pressable
+                        onPress={() => setActiveTab('sparepart')}
+                        hitSlop={8}
+                        className="flex-row items-center justify-center py-3 px-4"
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
                     >
-                        Sparepart
-                    </Typography>
-                    {partCount > 0 && (
-                        <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'sparepart' ? 'bg-blue-600' : 'bg-gray-200'}`}>
-                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
-                                {partCount}
-                            </Typography>
-                        </View>
-                    )}
-                </Pressable>
+                        <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
+                        <Typography 
+                            variant="caption" 
+                            weight={activeTab === 'sparepart' ? 'bold' : 'medium'} 
+                            className={`ml-2 ${activeTab === 'sparepart' ? 'text-blue-600' : 'text-gray-400'}`}
+                        >
+                            Sparepart
+                        </Typography>
+                        {partCount > 0 && (
+                            <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'sparepart' ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                                <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
+                                    {partCount}
+                                </Typography>
+                            </View>
+                        )}
+                    </Pressable>
+                </View>
             </View>
 
             {/* Jasa Section */}
@@ -912,37 +915,57 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             </View>
                         </View>
                         <View className="flex-row items-center">
-                            <Pressable 
-                                onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }} 
-                                style={({ pressed }) => ({
+                            <View 
+                                style={{
                                     flexDirection: 'row',
                                     alignItems: 'center',
                                     marginRight: 16,
                                     backgroundColor: '#EFF6FF',
                                     paddingHorizontal: 8,
-                                    paddingVertical: 4,
-                                    borderRadius: 8,
+                                    paddingVertical: 5,
+                                    borderRadius: 10,
                                     borderWidth: 1,
                                     borderColor: '#DBEAFE',
-                                    opacity: pressed ? 0.7 : 1
-                                })}
+                                }}
                             >
-                                <QrCode size={16} color="#2563EB" />
-                                <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 4, fontWeight: '700' }}>Scan</Typography>
-                            </Pressable>
-                            <Pressable 
-                                onPress={addPart} 
-                                style={({ pressed }) => ({
+                                <Pressable 
+                                    onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }} 
+                                    hitSlop={8}
+                                    style={({ pressed }) => ({
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        opacity: pressed ? 0.6 : 1
+                                    })}
+                                >
+                                    <QrCode size={16} color="#2563EB" />
+                                    <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Scan</Typography>
+                                </Pressable>
+                            </View>
+                            <View
+                                style={{
                                     flexDirection: 'row',
                                     alignItems: 'center',
+                                    backgroundColor: '#EFF6FF',
                                     paddingHorizontal: 8,
-                                    paddingVertical: 4,
-                                    opacity: pressed ? 0.7 : 1
-                                })}
+                                    paddingVertical: 5,
+                                    borderRadius: 10,
+                                    borderWidth: 1,
+                                    borderColor: '#DBEAFE',
+                                }}
                             >
-                                <Plus size={16} color="#2563EB" />
-                                <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 4, fontWeight: '700' }}>Tambah</Typography>
-                            </Pressable>
+                                <Pressable 
+                                    onPress={addPart} 
+                                    hitSlop={8}
+                                    style={({ pressed }) => ({
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        opacity: pressed ? 0.6 : 1
+                                    })}
+                                >
+                                    <Plus size={16} color="#2563EB" />
+                                    <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Tambah</Typography>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
 
@@ -1265,70 +1288,62 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     // Web version with regular ScrollView
     if (Platform.OS === 'web') {
         return (
-            <NavigationIndependentTree>
-                <NavigationContainer>
-                    <View style={styles.webContainer}>
-                        {/* Header */}
-                        <View style={styles.header}>
-                            <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                            <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                        </View>
+            <View style={styles.webContainer}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                </View>
 
-                        {/* Scrollable Content */}
-                        <ScrollView
-                            style={styles.webScrollView}
-                            contentContainerStyle={styles.webScrollContent}
-                            showsVerticalScrollIndicator={true}
-                        >
-                            {renderFormContent()}
-                        </ScrollView>
-                        <BarcodeScannerModal 
-                            visible={isScannerOpen} 
-                            onClose={() => setIsScannerOpen(false)} 
-                            onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
-                            scanLog={scanLog}
-                        />
-                    </View>
-                </NavigationContainer>
-            </NavigationIndependentTree>
+                {/* Scrollable Content */}
+                <ScrollView
+                    style={styles.webScrollView}
+                    contentContainerStyle={styles.webScrollContent}
+                    showsVerticalScrollIndicator={true}
+                >
+                    {renderFormContent()}
+                </ScrollView>
+                <BarcodeScannerModal 
+                    visible={isScannerOpen} 
+                    onClose={() => setIsScannerOpen(false)} 
+                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                    scanLog={scanLog}
+                />
+            </View>
         );
     }
 
     // Mobile version with BottomSheetScrollView
     return (
-        <NavigationIndependentTree>
-            <NavigationContainer>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={{ flex: 1 }}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-                >
-                    <View style={styles.mobileContainer}>
-                        {/* Header */}
-                        <View style={styles.header}>
-                            <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                            <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                        </View>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        >
+            <View style={styles.mobileContainer}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                </View>
 
-                        {/* Scrollable Content for BottomSheet */}
-                        <BottomSheetScrollView
-                            style={styles.mobileScrollView}
-                            contentContainerStyle={styles.mobileScrollContent}
-                            showsVerticalScrollIndicator={true}
-                            bounces={true}
-                        >
-                            {renderFormContent()}
-                        </BottomSheetScrollView>
-                        <BarcodeScannerModal 
-                            visible={isScannerOpen} 
-                            onClose={() => setIsScannerOpen(false)} 
-                            onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
-                            scanLog={scanLog}
-                        />
-                    </View>
-                </KeyboardAvoidingView>
-            </NavigationContainer>
-        </NavigationIndependentTree>
+                {/* Scrollable Content for BottomSheet */}
+                <BottomSheetScrollView
+                    style={styles.mobileScrollView}
+                    contentContainerStyle={styles.mobileScrollContent}
+                    showsVerticalScrollIndicator={true}
+                    bounces={true}
+                >
+                    {renderFormContent()}
+                </BottomSheetScrollView>
+                <BarcodeScannerModal 
+                    visible={isScannerOpen} 
+                    onClose={() => setIsScannerOpen(false)} 
+                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                    scanLog={scanLog}
+                />
+            </View>
+        </KeyboardAvoidingView>
     );
 };
 

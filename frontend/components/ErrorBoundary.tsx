@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { AlertCircle } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { AlertCircle, Repeat } from 'lucide-react-native';
 
 interface ErrorBoundaryState {
     hasError: boolean;
@@ -81,19 +81,69 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                         fontSize: 14,
                         color: '#6B7280',
                         textAlign: 'center',
-                        marginBottom: 24,
+                        marginBottom: 32,
                         paddingHorizontal: 16
                     }}>
                         Aplikasi mengalami error yang tidak terduga. Silakan coba lagi atau hubungi tim support.
                     </Text>
 
-                    {/* Error Details */}
+                    {/* Action Buttons */}
+                    <View style={{ width: '100%', gap: 12 }}>
+                        <TouchableOpacity
+                            onPress={this.handleReset}
+                            activeOpacity={0.8}
+                            style={{
+                                backgroundColor: '#023C69', // primary color
+                                paddingVertical: 18,
+                                paddingHorizontal: 32,
+                                borderRadius: 20,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                shadowColor: '#023C69',
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 10,
+                                elevation: 8,
+                            }}
+                        >
+                            <Repeat size={20} color="white" />
+                            <Text style={{
+                                color: 'white',
+                                fontWeight: '700',
+                                fontSize: 16,
+                                marginLeft: 10
+                            }}>
+                                COBA LAGI SEKARANG
+                            </Text>
+                        </TouchableOpacity>
+
+                        {__DEV__ && (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    console.clear();
+                                    this.handleReset();
+                                }}
+                                style={{
+                                    backgroundColor: '#F3F4F6',
+                                    paddingVertical: 16,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    marginTop: 12
+                                }}
+                            >
+                                <Text style={{ color: '#4B5563', fontWeight: '600' }}>Bersihkan Log & Reset</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    {/* Error Details (Only Dev) */}
                     {__DEV__ && this.state.error && (
                         <ScrollView
                             style={{
                                 width: '100%',
                                 maxHeight: 200,
-                                marginBottom: 24,
+                                marginTop: 40,
                                 backgroundColor: '#F9FAFB',
                                 borderRadius: 12,
                                 padding: 16,
@@ -104,8 +154,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                             <Text style={{
                                 fontSize: 12,
                                 color: '#DC2626',
-                                fontFamily: 'monospace',
-                                marginBottom: 8
+                                fontWeight: 'bold',
+                                marginBottom: 4
                             }}>
                                 {this.state.error.name}: {this.state.error.message}
                             </Text>
@@ -113,76 +163,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                 <Text style={{
                                     fontSize: 10,
                                     color: '#6B7280',
-                                    fontFamily: 'monospace'
+                                    lineHeight: 14
                                 }}>
                                     {this.state.error.stack}
                                 </Text>
                             )}
                         </ScrollView>
                     )}
-
-                    {/* Action Buttons */}
-                    <View style={{ width: '100%', gap: 12 }}>
-                        <Pressable
-                            onPress={this.handleReset}
-                            style={{
-                                backgroundColor: '#023C69',
-                                paddingVertical: 16,
-                                paddingHorizontal: 32,
-                                borderRadius: 12,
-                                alignItems: 'center',
-                                shadowColor: '#023C69',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.2,
-                                shadowRadius: 8,
-                                elevation: 4,
-                            }}
-                        >
-                            <Text style={{
-                                color: 'white',
-                                fontWeight: '700',
-                                fontSize: 16
-                            }}>
-                                Coba Lagi
-                            </Text>
-                        </Pressable>
-
-                        {__DEV__ && (
-                            <Pressable
-                                onPress={() => {
-                                    console.clear();
-                                    this.handleReset();
-                                }}
-                                style={{
-                                    backgroundColor: '#F3F4F6',
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 32,
-                                    borderRadius: 12,
-                                    alignItems: 'center',
-                                    borderWidth: 1,
-                                    borderColor: '#E5E7EB'
-                                }}
-                            >
-                                <Text style={{
-                                    color: '#6B7280',
-                                    fontWeight: '600',
-                                    fontSize: 14
-                                }}>
-                                    Clear Console & Retry
-                                </Text>
-                            </Pressable>
-                        )}
-                    </View>
-
-                    {/* Help Text */}
-                    <Text style={{
-                        fontSize: 12,
-                        color: '#9CA3AF',
-                        marginTop: 24,
-                        textAlign: 'center'
-                    }}>
-                        Jika masalah terus berlanjut, hubungi tim support
-                    </Text>
                 </View>
             );
         }
