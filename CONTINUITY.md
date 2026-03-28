@@ -18,10 +18,13 @@
     - Enhanced Jasa Angkut `MuatanForm` with individual buying (`harga_beli`) and selling (`harga_jual`) prices per load type.
     - Implemented Global `QueryClient` settings (staleTime 10s, refetch on focus).
     - Added targeted polling (refetchInterval) to Wallet, Jasa Angkut, and Mobil dashboards.
+    - Restructured `MuatanForm` to move origin (`asal`) and destination (`tujuan`) into the `jenis_muatan_list`, allowing each load to have its own unique route.
+    - Polished `MuatanForm` UI using Premium Bento-style layout for load items, including grouped fields, visual route connectors (arrows), and contextual background tints.
   - Now:
-    - Implementation complete.
+    - MuatanForm redesign and polish complete.
   - Next:
     - Monitor performance and server load under new near real-time configuration.
+    - Verify that backend correctly handles the new `jenis_muatan` string format `[Asal -> Tujuan] ...`.
 - Open questions (UNCONFIRMED if needed):
   - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?
 - Working set (files/ids/commands):

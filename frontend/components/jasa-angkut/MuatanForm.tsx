@@ -8,7 +8,7 @@ import { Card } from '../ui/Card';
 import { ProfitSplitCard } from './ProfitSplitCard';
 import { jasaAngkutService, Supir, Armada } from '../../services/jasaAngkut';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { Plus, Trash2, Truck, PlusCircle, MapPin } from 'lucide-react-native';
+import { Plus, Trash2, Truck, PlusCircle, MapPin, ArrowRight } from 'lucide-react-native';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AlertDialog } from '../ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -38,9 +38,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         armada_id: '',
         nopol: '',
         info_kendaraan: '',
-        asal: '',
-        tujuan: '',
-        jenis_muatan_list: [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }], // Multiple load types with individual prices
+        jenis_muatan_list: [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '', asal: '', tujuan: '' }], // Multiple load types with individual prices
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
@@ -53,8 +51,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     // Hooks for data fetching
     const { data: activeArmada = [], isLoading: loadingArmada } = useActiveArmada(formData.tanggal);
     const { data: activeDrivers = [], isLoading: loadingDrivers } = useActiveSupir();
-    const { data: asalSuggestions = [] } = useRouteSuggestions('asal', formData.asal);
-    const { data: tujuanSuggestions = [] } = useRouteSuggestions('tujuan', formData.tujuan);
+    const [activeSuggestionField, setActiveSuggestionField] = useState<{ index: number; field: 'asal' | 'tujuan' } | null>(null);
+    const suggestionQuery = useMemo(() => {
+        if (!activeSuggestionField) return '';
+        return formData.jenis_muatan_list[activeSuggestionField.index][activeSuggestionField.field] || '';
+    }, [activeSuggestionField, formData.jenis_muatan_list]);
+
+    const { data: suggestions = [] } = useRouteSuggestions(activeSuggestionField?.field || 'asal', suggestionQuery);
 
     const [driverSearch, setDriverSearch] = useState('');
     const [armadaSearch, setArmadaSearch] = useState('');
@@ -92,21 +95,39 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 armada_id: initialData.armada_id?.toString() || '',
                 nopol: initialData.nopol || '',
                 info_kendaraan: initialData.info_kendaraan || '',
-                asal: initialData.asal || '',
-                tujuan: initialData.tujuan || '',
                 jenis_muatan_list: initialData.jenis_muatan ?
                     initialData.jenis_muatan.split(', ').map((item: string) => {
-                        // Match old format: Jenis (1 Rit) @ Rp 1.000
-                        // Match format: Jenis (1 Rit) @ Rp 1.000 / Rp 1.500
-                        const match = item.match(/(.+?)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+)(?:\s\/\sRp\s([\d.,]+))?)?/);
+                        // Match format: [Asal -> Tujuan] Jenis (1 Rit) @ Rp 1.000 / Rp 1.500
+                        const match = item.match(/\[(.*?) -> (.*?)\]\s+(.*?)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+)(?:\s\/\sRp\s([\d.,]+))?)?/);
                         if (match) return {
-                            jenis: match[1]?.trim(),
-                            ritase: match[2],
-                            harga_beli: match[3] || '',
-                            harga_jual: match[4] || ''
+                            asal: match[1]?.trim(),
+                            tujuan: match[2]?.trim(),
+                            jenis: match[3]?.trim(),
+                            ritase: match[4],
+                            harga_beli: match[5] || '',
+                            harga_jual: match[6] || ''
                         };
-                        return { jenis: item, ritase: '1', harga_beli: '', harga_jual: '' };
-                    }) : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }],
+
+                        // Fallback for old format
+                        const oldMatch = item.match(/(.+?)\s\((\d+)\sRit\)(?:\s@\sRp\s([\d.,]+)(?:\s\/\sRp\s([\d.,]+))?)?/);
+                        if (oldMatch) return {
+                            asal: initialData.asal || '',
+                            tujuan: initialData.tujuan || '',
+                            jenis: oldMatch[1]?.trim(),
+                            ritase: oldMatch[2],
+                            harga_beli: oldMatch[3] || '',
+                            harga_jual: oldMatch[4] || ''
+                        };
+
+                        return {
+                            jenis: item,
+                            ritase: '1',
+                            harga_beli: '',
+                            harga_jual: '',
+                            asal: initialData.asal || '',
+                            tujuan: initialData.tujuan || ''
+                        };
+                    }) : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '', asal: '', tujuan: '' }],
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
@@ -234,23 +255,38 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }, [activeArmada, armadaSearch, formData.armada_id]);
 
-    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase' | 'harga_beli' | 'harga_jual', value: string) => {
+    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase' | 'harga_beli' | 'harga_jual' | 'asal' | 'tujuan', value: string) => {
         const newList = [...formData.jenis_muatan_list];
         newList[index] = {
             ...newList[index],
             [field]: (field === 'harga_beli' || field === 'harga_jual') ? formatNumber(value) : value
         };
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
+
+        if (field === 'asal' || field === 'tujuan') {
+            setActiveSuggestionField({ index, field });
+        }
     };
 
     const addJenisMuatan = () => {
-        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }] }));
+        const lastItem = formData.jenis_muatan_list[formData.jenis_muatan_list.length - 1];
+        setFormData(prev => ({
+            ...prev,
+            jenis_muatan_list: [...prev.jenis_muatan_list, {
+                jenis: '',
+                ritase: '1',
+                harga_beli: '',
+                harga_jual: '',
+                asal: lastItem?.asal || '',
+                tujuan: lastItem?.tujuan || ''
+            }]
+        }));
     };
 
     const removeJenisMuatan = (index: number) => {
         const newList = [...formData.jenis_muatan_list];
         newList.splice(index, 1);
-        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '' }] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '', asal: '', tujuan: '' }] }));
     };
 
     const handleSubmit = async () => {
@@ -262,8 +298,9 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Pilih supir terlebih dahulu', variant: 'warning' });
             return;
         }
-        if (!formData.asal || !formData.tujuan) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: 'Asal dan Tujuan wajib diisi', variant: 'warning' });
+        const hasInvalidRoute = formData.jenis_muatan_list.some(item => !item.asal || !item.tujuan);
+        if (hasInvalidRoute) {
+            setDialogConfig({ visible: true, title: 'Validasi', message: 'Setiap muatan wajib memiliki Asal dan Tujuan', variant: 'warning' });
             return;
         }
 
@@ -290,19 +327,25 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             setSubmitting(true);
 
             const payload: any = {
-                ...formData,
+                tanggal: formData.tanggal,
+                supir_id: parseInt(formData.supir_id),
+                armada_id: parseInt(formData.armada_id),
+                nopol: formData.nopol,
+                info_kendaraan: formData.info_kendaraan,
+                catatan: formData.catatan,
+                status: formData.status,
+                status_bayar: formData.status_bayar?.toUpperCase(),
+                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
+                asal: formData.jenis_muatan_list[0]?.asal || '',
+                tujuan: formData.jenis_muatan_list[0]?.tujuan || '',
                 jenis_muatan: formData.jenis_muatan_list
                     .filter(item => item.jenis.trim() !== '')
                     .map(item => {
                         const hargaBeliStr = item.harga_beli ? `@ Rp ${item.harga_beli}` : '';
                         const hargaJualStr = item.harga_jual ? ` / Rp ${item.harga_jual}` : '';
-                        return `${item.jenis} (${item.ritase} Rit) ${hargaBeliStr}${hargaJualStr}`.replace(/\s+/g, ' ').trim();
+                        return `[${item.asal} -> ${item.tujuan}] ${item.jenis} (${item.ritase} Rit) ${hargaBeliStr}${hargaJualStr}`.replace(/\s+/g, ' ').trim();
                     })
                     .join(', '),
-                status_bayar: formData.status_bayar?.toUpperCase(),
-                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
-                supir_id: parseInt(formData.supir_id),
-                armada_id: parseInt(formData.armada_id),
                 ritase: parseInt(formData.ritase) || 1,
                 harga_beli: parseNumber(formData.harga_beli),
                 harga_jual: parseNumber(formData.harga_jual),
@@ -586,59 +629,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 )
             }
 
-            <View className="h-[1px] bg-gray-100 my-4" />
-
-            <Input
-                label="Tanggal Transaksi"
-                value={formData.tanggal}
-                onChangeText={v => updateField('tanggal', v)}
-            />
-
-            <View className="flex-row space-x-2">
-                <View className="flex-1">
-                    <Input
-                        label="Asal *"
-                        placeholder="Kota asal"
-                        value={formData.asal}
-                        onChangeText={v => updateField('asal', v)}
-                    />
-                    {asalSuggestions.length > 0 && asalSuggestions[0] !== formData.asal && (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-1 mb-2">
-                            {asalSuggestions.map((suggestion, idx) => (
-                                <Pressable
-                                    key={`asal-${idx}`}
-                                    onPress={() => updateField('asal', suggestion)}
-                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 flex-row items-center"
-                                >
-                                    <MapPin size={10} color="#2563EB" />
-                                    <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
-                                </Pressable>
-                            ))}
-                        </ScrollView>
-                    )}
-                </View>
-                <View className="flex-1">
-                    <Input
-                        label="Tujuan *"
-                        placeholder="Kota tujuan"
-                        value={formData.tujuan}
-                        onChangeText={v => updateField('tujuan', v)}
-                    />
-                    {tujuanSuggestions.length > 0 && tujuanSuggestions[0] !== formData.tujuan && (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-1 mb-2">
-                            {tujuanSuggestions.map((suggestion, idx) => (
-                                <Pressable
-                                    key={`tujuan-${idx}`}
-                                    onPress={() => updateField('tujuan', suggestion)}
-                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 flex-row items-center"
-                                >
-                                    <MapPin size={10} color="#2563EB" />
-                                    <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
-                                </Pressable>
-                            ))}
-                        </ScrollView>
-                    )}
-                </View>
+            <View className="mb-2">
+                <Input
+                    label="Tanggal Transaksi"
+                    value={formData.tanggal}
+                    onChangeText={v => updateField('tanggal', v)}
+                />
             </View>
 
             {/* Multiple Load Types UI */}
@@ -651,78 +647,130 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             </View>
 
             <View className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-4">
-                <View className="space-y-4">
-                    {formData.jenis_muatan_list.map((item, index) => (
-                        <View key={index} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                            <View className="flex-row items-center space-x-2 mb-3">
-                                <View className="flex-1">
-                                    <Typography variant="caption" weight="bold" className="text-gray-400 mb-1 ml-1 uppercase text-[9px]">Muatan #{index + 1}</Typography>
-                                    <Input
-                                        placeholder="Contoh: Pasir, Batu, dll"
-                                        value={item.jenis}
-                                        onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
-                                        containerClassName="mb-0"
-                                        className="h-10 text-sm"
-                                    />
+                {formData.jenis_muatan_list.map((item, index) => (
+                    <View key={index} className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-row items-center">
+                                <View className="w-8 h-8 bg-primary/10 rounded-xl items-center justify-center mr-3">
+                                    <Typography weight="bold" className="text-primary text-xs">{index + 1}</Typography>
                                 </View>
-                                <View className="w-20">
-                                    <Typography variant="caption" weight="bold" className="text-gray-400 mb-1 uppercase text-[9px] text-center">Ritase</Typography>
-                                    <Input
-                                        placeholder="1"
-                                        keyboardType="numeric"
-                                        value={item.ritase}
-                                        onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
-                                        containerClassName="mb-0"
-                                        className="h-10 text-sm text-left font-bold"
-                                        style={{ textAlign: 'left' }}
-                                    />
-                                </View>
-                                {formData.jenis_muatan_list.length > 1 && (
-                                    <View className="pt-4">
-                                        <Pressable
-                                            onPress={() => removeJenisMuatan(index)}
-                                            className="w-10 h-10 items-center justify-center bg-red-50 rounded-lg"
-                                        >
-                                            <Trash2 size={16} color="#EF4444" />
-                                        </Pressable>
-                                    </View>
-                                )}
+                                <Typography variant="body1" weight="bold" className="text-gray-800">Detail Muatan</Typography>
                             </View>
+                            {formData.jenis_muatan_list.length > 1 && (
+                                <Pressable
+                                    onPress={() => removeJenisMuatan(index)}
+                                    className="w-8 h-8 items-center justify-center bg-red-50 rounded-full"
+                                >
+                                    <Trash2 size={14} color="#EF4444" />
+                                </Pressable>
+                            )}
+                        </View>
 
-                            <View className="flex-row items-center space-x-2">
-                                <View className="flex-1">
-                                    <Typography variant="caption" weight="bold" className="text-green-600 mb-1 ml-1 uppercase text-[9px]">Harga Beli / Rit</Typography>
-                                    <Input
-                                        placeholder="0"
-                                        keyboardType="numeric"
-                                        value={item.harga_beli}
-                                        onChangeText={v => updateJenisMuatan(index, 'harga_beli', v)}
-                                        containerClassName="mb-0"
-                                        className="h-10 text-sm"
-                                        startIcon={<Typography className="text-green-600 text-[10px] font-bold">Rp</Typography>}
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Typography variant="caption" weight="bold" className="text-blue-600 mb-1 ml-1 uppercase text-[9px]">Harga Jual / Rit</Typography>
-                                    <Input
-                                        placeholder="0"
-                                        keyboardType="numeric"
-                                        value={item.harga_jual}
-                                        onChangeText={v => updateJenisMuatan(index, 'harga_jual', v)}
-                                        containerClassName="mb-0"
-                                        className="h-10 text-sm"
-                                        startIcon={<Typography className="text-blue-600 text-[10px] font-bold">Rp</Typography>}
-                                    />
-                                </View>
+                        <View className="flex-row gap-3 mb-4">
+                            <View className="flex-[3]">
+                                <Typography variant="caption" weight="bold" className="text-gray-400 mb-1.5 uppercase text-[10px] tracking-widest">Jenis Muatan</Typography>
+                                <Input
+                                    placeholder="Contoh: Pasir, Batu"
+                                    value={item.jenis}
+                                    onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
+                                    containerClassName="mb-0"
+                                    className="h-12 bg-gray-50/50 border-gray-100"
+                                />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="caption" weight="bold" className="text-gray-400 mb-1.5 uppercase text-[10px] tracking-widest text-center">Rit</Typography>
+                                <Input
+                                    placeholder="1"
+                                    keyboardType="numeric"
+                                    value={item.ritase}
+                                    onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
+                                    containerClassName="mb-0"
+                                    className="h-12 bg-gray-50/50 border-gray-100 text-left font-bold text-primary"
+                                    style={{ textAlign: 'left' }}
+                                />
                             </View>
                         </View>
-                    ))}
-                </View>
+
+                        <View className="mb-4 p-4 bg-gray-50 rounded-[24px]">
+                            <Typography variant="caption" weight="bold" className="text-gray-400 mb-2 uppercase text-[10px] tracking-widest">Rute Pengiriman</Typography>
+                            <View className="flex-row items-center gap-2">
+                                <View className="flex-1">
+                                    <Input
+                                        placeholder="Asal"
+                                        value={item.asal}
+                                        onChangeText={v => updateJenisMuatan(index, 'asal', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-[12px] border-transparent"
+                                        startIcon={<MapPin size={14} color="#023C69" />}
+                                    />
+                                </View>
+                                <ArrowRight size={16} color="#CBD5E1" />
+                                <View className="flex-1">
+                                    <Input
+                                        placeholder="Tujuan"
+                                        value={item.tujuan}
+                                        onChangeText={v => updateJenisMuatan(index, 'tujuan', v)}
+                                        containerClassName="mb-0"
+                                        className="h-10 text-[12px] border-transparent"
+                                        startIcon={<MapPin size={14} color="#10B981" />}
+                                    />
+                                </View>
+                            </View>
+
+                            {activeSuggestionField?.index === index && suggestions.length > 0 && suggestions[0] !== item[activeSuggestionField.field] && (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3">
+                                    {suggestions.map((suggestion, idx) => (
+                                        <Pressable
+                                            key={`${activeSuggestionField.field}-${idx}`}
+                                            onPress={() => {
+                                                updateJenisMuatan(index, activeSuggestionField.field, suggestion);
+                                                setActiveSuggestionField(null);
+                                            }}
+                                            className="px-3 py-1.5 rounded-full mr-2 bg-white border border-gray-100 flex-row items-center shadow-sm"
+                                        >
+                                            <Typography variant="caption" weight="bold" className="text-primary text-[10px]">{suggestion}</Typography>
+                                        </Pressable>
+                                    ))}
+                                    <Pressable
+                                        onPress={() => setActiveSuggestionField(null)}
+                                        className="px-2 py-1.5 rounded-lg bg-gray-100"
+                                    >
+                                        <Typography variant="caption" className="text-gray-400 text-[10px]">Tutup</Typography>
+                                    </Pressable>
+                                </ScrollView>
+                            )}
+                        </View>
+
+                        <View className="flex-row gap-3 pt-4 border-t border-gray-50">
+                            <View className="flex-1">
+                                <Typography variant="caption" weight="bold" className="text-emerald-600 mb-1.5 uppercase text-[10px] tracking-widest">Harga Beli</Typography>
+                                <Input
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    value={item.harga_beli}
+                                    onChangeText={v => updateJenisMuatan(index, 'harga_beli', v)}
+                                    containerClassName="mb-0"
+                                    className="h-11 bg-emerald-50/30 border-emerald-50 text-emerald-700"
+                                    startIcon={<Typography weight="bold" className="text-emerald-500 text-[10px]">Rp</Typography>}
+                                />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="caption" weight="bold" className="text-primary mb-1.5 uppercase text-[10px] tracking-widest">Harga Jual</Typography>
+                                <Input
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    value={item.harga_jual}
+                                    onChangeText={v => updateJenisMuatan(index, 'harga_jual', v)}
+                                    containerClassName="mb-0"
+                                    className="h-11 bg-primary/5 border-primary/5 text-primary"
+                                    startIcon={<Typography weight="bold" className="text-primary/40 text-[10px]">Rp</Typography>}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                ))}
             </View>
 
-
-
-            {/* Financials */}
             <Typography variant="caption" weight="bold" className="mb-2 text-gray-500 mt-2">KEUANGAN & MARGIN</Typography>
             <View className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                 <View className="flex-row space-x-2">
