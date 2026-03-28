@@ -12,6 +12,8 @@
   - Recommended using React Query polling (`refetchInterval`) and window focus refetching as a practical "real-time" solution over a full WebSocket migration.
 - State:
   - Done:
+    - Fixed `NameError: name 'total_kas_bank' is not defined` in `get_neraca` by correcting the variable name to `total_kas_bank_all`.
+    - Increased `jenis_muatan`, `asal`, and `tujuan` character limits to 1000 in `MuatanUpdate` and `MuatanCreate` schemas.
     - Verified backend API routes and frontend data fetching strategy.
     - Updated financial services and interfaces to include `saldo_bop`.
     - Integrated BOP balance displays across Main Dashboard, Jasa Angkut, and Mobil modules.
@@ -21,11 +23,9 @@
     - Restructured `MuatanForm` to move origin (`asal`) and destination (`tujuan`) into the `jenis_muatan_list`, allowing each load to have its own unique route.
     - Polished `MuatanForm` UI using Premium Bento-style layout for load items, including grouped fields, visual route connectors (arrows), and contextual background tints.
   - Now:
-    - MuatanForm redesign and polish complete.
+    - Monitoring performance and server load under new near real-time configuration.
   - Next:
-    - Monitor performance and server load under new near real-time configuration.
-    - Increase backend `jenis_muatan` character limit to 500 in Pydantic schemas (`MuatanCreate`, `MuatanUpdate`) to accommodate the new `[Asal -> Tujuan] ...` format.
-    - Verified that database column for `jenis_muatan` is already `Text` (unlimited).
+    - Continue with WebSocket implementation strategy as planned.
 - Open questions (UNCONFIRMED if needed):
   - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?
 - Working set (files/ids/commands):

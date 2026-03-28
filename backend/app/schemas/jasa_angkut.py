@@ -230,9 +230,9 @@ class MuatanUpdate(BaseModel):
     armada_id: Optional[int] = None
     nopol: Optional[str] = Field(None, max_length=20)
     info_kendaraan: Optional[str] = Field(None, max_length=255)
-    asal: Optional[str] = Field(None, min_length=2, max_length=100)
-    tujuan: Optional[str] = Field(None, min_length=2, max_length=100)
-    jenis_muatan: Optional[str] = Field(None, max_length=500)
+    asal: Optional[str] = Field(None, min_length=2, max_length=1000)
+    tujuan: Optional[str] = Field(None, min_length=2, max_length=1000)
+    jenis_muatan: Optional[str] = Field(None, max_length=1000)
     ritase: Optional[int] = Field(None, ge=1)
     berat_muatan: Optional[str] = Field(None, max_length=50)
     
