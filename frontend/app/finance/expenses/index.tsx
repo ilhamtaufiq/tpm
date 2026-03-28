@@ -330,14 +330,15 @@ export default function ExpensesScreen() {
                                             <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
                                             <View className="flex-row space-x-2">
                                                 {[
-                                                    { label: 'Kantor', value: null },
+                                                    { label: 'Kantor', value: 'KAS_UTAMA' },
                                                     ...(bisnisKategori === 'jasa_angkut' ? [
-                                                        { label: 'BOP Cash', value: 'BOP_JASA_ANGKUT_CASH' },
-                                                        { label: 'BOP Transfer', value: 'BOP_JASA_ANGKUT_BCA' },
+                                                        { label: 'Unit JA', value: 'KAS_UNIT_JASA_ANGKUT' },
                                                     ] : bisnisKategori === 'jual_beli_mobil' ? [
-                                                        { label: 'BOP Cash', value: 'BOP_MOBIL_CASH' },
-                                                        { label: 'BOP Transfer', value: 'BOP_MOBIL_BCA' },
-                                                    ] : [])
+                                                        { label: 'Unit Mobil', value: 'KAS_UNIT_MOBIL' },
+                                                    ] : bisnisKategori === 'bengkel' ? [
+                                                        { label: 'Unit Bengkel', value: 'KAS_UNIT_BENGKEL' },
+                                                    ] : []),
+                                                    { label: 'Bank', value: 'BANK_UTAMA' }
                                                 ].map((opt) => (
                                                     <Pressable
                                                         key={opt.value || 'null'}

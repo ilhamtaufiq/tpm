@@ -858,19 +858,10 @@ def get_neraca(
     
     kas_tunai = 0 # Main Cash (Utama)
     kas_bank = 0 # Bank Accounts
-    kas_operasional = 0 # BOP Accounts
     unit_cash = 0 # Unit-specific Cash
     
     bank_details = {}
-    operasional_details = {}
     unit_details = {}
-    
-    bop_keys = [
-        KasBankJenis.BOP_JASA_ANGKUT_CASH.value.lower(),
-        KasBankJenis.BOP_JASA_ANGKUT_BCA.value.lower(),
-        KasBankJenis.BOP_MOBIL_CASH.value.lower(),
-        KasBankJenis.BOP_MOBIL_BCA.value.lower(),
-    ]
     
     unit_keys = [
         KasBankJenis.KAS_UNIT_BENGKEL.value.lower(),
@@ -892,14 +883,12 @@ def get_neraca(
         elif k in unit_keys:
             unit_cash += saldo
             unit_details[k] = saldo
-        elif k in bop_keys:
-            kas_operasional += saldo
-            operasional_details[k] = saldo
         else:
+            # All other accounts are treated as Bank/Central
             kas_bank += saldo
             bank_details[k] = saldo
     
-    total_kas_bank_all = kas_tunai + kas_bank + kas_operasional + unit_cash
+    total_kas_bank_all = kas_tunai + kas_bank + unit_cash
 
     # 2. Piutang (Snapshot logic)
     # We need to replicate the exact buckets from Perubahan Modal Section B
@@ -1062,8 +1051,6 @@ def get_neraca(
         "kas_tunai": float(kas_tunai or 0),
         "kas_bank": float(kas_bank or 0),
         "bank_details": {k: float(v or 0) for k, v in bank_details.items()},
-        "kas_operasional": float(kas_operasional or 0),
-        "operasional_details": {k: float(v or 0) for k, v in operasional_details.items()},
         "unit_cash": float(unit_cash or 0),
         "unit_details": {k: float(v or 0) for k, v in unit_details.items()},
         "total_kas_bank": float(total_kas_bank_all or 0),

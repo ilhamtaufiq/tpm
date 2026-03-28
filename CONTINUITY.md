@@ -1,42 +1,33 @@
 # Continuity Ledger
 
-- Goal: 
-  - Implement a new per-unit financial flow: Bengkel (Cash only), Jasa Angkut (Cash only), and Mobil (Cash only), with a central Main Account (Akun Utama) supporting both Cash and Transfer/Bank.
-  - Enable seamless balance movement from units to the Main Account.
-  - Integrate real-time/near real-time data synchronization for critical dashboard metrics to avoid delays in data updates.
-- Constraints/Assumptions:
-  - Backend provides REST endpoints with standard JSON responses (no native WebSockets/SSE currently).
-  - Frontend uses `@tanstack/react-query` with a 10-minute cache (`staleTime`).
-  - Mobile environment requires balancing real-time updates with battery and data usage.
-- Key decisions:
-  - Summed all four BOP accounts (Jasa Angkut Cash/BCA, Mobil Cash/BCA) for a global dashboard total.
-  - Recommended using React Query polling (`refetchInterval`) and window focus refetching as a practical "real-time" solution over a full WebSocket migration.
-- State:
-  - Done:
-    - Successfully implemented segregated per-unit financial flow (Bengkel, JA, Mobil) with a central Main Account.
-    - Updated `KasBankJenis` and automated routing logic in `kas_bank_integration.py`.
-    - Refactored `get_neraca` and `get_dashboard_summary` to support multi-account grouping.
-    - Updated Mobile Frontend `WalletSection.tsx` with balance breakdown and 'Setoran' action.
-    - Fixed `NameError: name 'total_kas_bank' is not defined` in `get_neraca` by correcting the variable name to `total_kas_bank_all`.
-    - Increased `jenis_muatan`, `asal`, and `tujuan` character limits to 1000 in `MuatanUpdate` and `MuatanCreate` schemas.
-    - Verified backend API routes and frontend data fetching strategy.
-    - Updated financial services and interfaces to include `saldo_bop`.
-    - Integrated BOP balance displays across Main Dashboard, Jasa Angkut, and Mobil modules.
-    - Enhanced Jasa Angkut `MuatanForm` with individual buying (`harga_beli`) and selling (`harga_jual`) prices per load type.
-    - Implemented Global `QueryClient` settings (staleTime 10s, refetch on focus).
-    - Added targeted polling (refetchInterval) to Wallet, Jasa Angkut, and Mobil dashboards.
-    - Restructured `MuatanForm` to move origin (`asal`) and destination (`tujuan`) into the `jenis_muatan_list`, allowing each load to have its own unique route.
-    - Polished `MuatanForm` UI using Premium Bento-style layout for load items, including grouped fields, visual route connectors (arrows), and contextual background tints.
-  - Now:
-    - Monitoring the new financial flow and automated routing in production-like scenarios.
-  - Next:
-    - Verify 'Setoran ke Pusat' manual transfer flow in the mobile app.
-    - Continue with WebSocket implementation strategy as planned.
-- Open questions (UNCONFIRMED if needed):
-  - Should the global `staleTime` (10s) be applied to all endpoints, or are there some that should remain cached longer?
-- Working set (files/ids/commands):
-  - `frontend/components/jasa-angkut/MuatanForm.tsx`
-  - `backend/app/main.py`
-  - `frontend/app/_layout.tsx`
-  - `frontend/hooks/useKeuangan.ts`
-  - `frontend/components/WalletSection.tsx`
+## Goal
+Resolve the zero-balance issue in the workshop dashboard, remove legacy BOP categories, and enhance the workshop wallet modal for transaction-level transparency and easy cash adjustments.
+
+## Status
+- **Done**: 
+    - Implemented automatic `KasBank` recording for `LUNAS` workshop transactions in `TransaksiBengkelService`.
+    - Performed retroactive data sync (Verified `KAS_UNIT_BENGKEL` balance is correct).
+    - Removed `BOP_...` legacy accounts from backend (`constants.py`, `dashboard.py`) and frontend (`keuangan.ts`, `expenses/index.tsx`, `mutasi.tsx`).
+    - Fixed `AttributeError: BOP_MOBIL_CASH` in `PenjualanMobilService.get_summary` by mapping it to `KAS_UNIT_MOBIL`.
+    - **Header Cleanup**: Removed the balance pill from the workshop dashboard header for a cleaner UI.
+    - **Wallet Modal Enhancement**:
+        - Integrated transaction-level summary (Total Tunai vs Total Transfer) based on selected period filters.
+        - Implemented **Dual-Mode Adjustment Form** (Dana Keluar vs Dana Masuk) to support both expenses and manual cash corrections.
+        - Refined "Setoran Unit" and "Catat Biaya" actions for better clarity.
+    - **Summary Enhancement**: Updated `TransaksiBengkelService.get_summary` to include `total_dana_masuk` and `total_dana_keluar` tracking.
+    - **Backend API Fix**: Resolved a `NameError (KasBankJenis)` that was causing the `/summary` API to crash and return 0 for all totals (Total Tunai, Transfer, Dana Masuk).
+    - **Balance Transparency**: Adjusted the UI to only show `Total Dana Masuk Utama` per user request, hiding the office balance.
+- **Now**: Verify real-time testing—totals should now correctly populate automatically.
+- **Next**: Monitor real-time balance updates during new workshop transactions.
+
+## Key Decisions
+- **Unit-Level Liquidity**: Each unit (Bengkel, Jasa Angkut, Mobil) handles its own cash for operational needs before depositing to `BANK_UTAMA`.
+- **Flexible Adjustments**: Provided a direct way for managers to correct workshop cash balances (In/Out) without navigating through complex finance modules.
+
+## Open Questions (UNCONFIRMED)
+- None.
+
+## Working Set
+- `backend/app/services/transaksi_bengkel_service.py`
+- `frontend/app/bengkel/index.tsx`
+- `CONTINUITY.md`

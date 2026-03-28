@@ -39,22 +39,24 @@ import { getErrorMessage } from '../../utils/error';
 
 const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
     { label: 'Semua', value: 'all' },
-    { label: 'Cash', value: 'CASH' },
-    { label: 'BCA', value: 'BANK_BCA' },
-    { label: 'BOP Jasa Angkut', value: 'BOP_JASA_ANGKUT_CASH' },
-    { label: 'BOP Mobil', value: 'BOP_MOBIL_CASH' },
+    { label: 'Kas Utama', value: 'KAS_UTAMA' },
+    { label: 'Bank Utama', value: 'BANK_UTAMA' },
+    { label: 'Bengkel', value: 'KAS_UNIT_BENGKEL' },
+    { label: 'Jasa Angkut', value: 'KAS_UNIT_JASA_ANGKUT' },
+    { label: 'Mobil', value: 'KAS_UNIT_MOBIL' },
 ];
 
 const JENIS_LABEL: Record<KasBankJenis, string> = {
-    CASH: 'Cash Utama',
-    BANK_BCA: 'Bank BCA Utama',
+    CASH: 'Cash Lama (CASH)',
+    BANK_BCA: 'BCA Lama (BANK_BCA)',
     BANK_MANDIRI: 'Bank Mandiri',
     BANK_BRI: 'Bank BRI',
     BANK_LAINNYA: 'Bank Lainnya',
-    BOP_JASA_ANGKUT_CASH: 'BOP Jasa Angkut (Cash)',
-    BOP_JASA_ANGKUT_BCA: 'BOP Jasa Angkut (BCA)',
-    BOP_MOBIL_CASH: 'BOP Mobil (Cash)',
-    BOP_MOBIL_BCA: 'BOP Mobil (BCA)',
+    KAS_UNIT_BENGKEL: 'Bengkel (Cash)',
+    KAS_UNIT_JASA_ANGKUT: 'Jasa Angkut (Cash)',
+    KAS_UNIT_MOBIL: 'Mobil (Cash)',
+    KAS_UTAMA: 'Kas Kantor Utama',
+    BANK_UTAMA: 'Bank Utama (BCA)',
 };
 
 export default function MutasiKasScreen() {
@@ -328,7 +330,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
@@ -347,7 +349,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
@@ -393,7 +395,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Simpan ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}

@@ -2,7 +2,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 
@@ -26,6 +26,7 @@ from app.utils.constants import (
     WorkshopStatus,
     KasBankType,
     KasBankSource,
+    KasBankJenis,
 )
 from app.services.kas_bank_integration import create_kas_entry
 
@@ -990,6 +991,43 @@ class TransaksiBengkelService:
         )
         status_map = {s.name.lower() if hasattr(s, "name") else str(s).lower(): count for s, count in status_counts}
 
+        # Payment type totals (Collected funds)
+        payment_aggregates = query.filter(TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL).with_entities(
+            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.TUNAI, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_tunai"),
+            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.TRANSFER, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_transfer"),
+            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.INTERNAL, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_internal"),
+        ).first()
+
+        # Manual Inflows/Outflows from KasBank (excluding automated BENGKEL sales to avoid double counting)
+        kas_query = self.db.query(KasBank).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_BENGKEL
+        )
+        if tanggal_dari:
+            kas_query = kas_query.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            kas_query = kas_query.filter(KasBank.tanggal <= tanggal_sampai)
+            
+        manual_inflow = (
+            kas_query.filter(
+                KasBank.tipe == KasBankType.MASUK,
+                KasBank.sumber != KasBankSource.BENGKEL
+            ).with_entities(func.sum(KasBank.nominal)).scalar() or Decimal("0")
+        )
+
+        # Funds specifically from KAS_UTAMA
+        dana_dari_utama = (
+            kas_query.filter(
+                KasBank.tipe == KasBankType.MASUK,
+                KasBank.keterangan.ilike("%Transfer dari KAS_UTAMA%")
+            ).with_entities(func.sum(KasBank.nominal)).scalar() or Decimal("0")
+        )
+        
+        manual_outflow = (
+            kas_query.filter(
+                KasBank.tipe == KasBankType.KELUAR
+            ).with_entities(func.sum(KasBank.nominal)).scalar() or Decimal("0")
+        )
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -1005,6 +1043,12 @@ class TransaksiBengkelService:
             "total_diskon": float(aggregates.total_diskon or 0),
             "total_hpp": float(aggregates.total_hpp or 0),
             "total_laba_kotor": float(aggregates.total_laba or 0),
+            "total_tunai": float(payment_aggregates.total_tunai or 0),
+            "total_transfer": float(payment_aggregates.total_transfer or 0),
+            "total_internal": float(payment_aggregates.total_internal or 0),
+            "total_dana_masuk": float(manual_inflow),
+            "total_dana_dari_utama": float(dana_dari_utama),
+            "total_dana_keluar": float(manual_outflow),
             "piutang_count": unpaid_count,
             "piutang_nilai": float(unpaid_value),
         }

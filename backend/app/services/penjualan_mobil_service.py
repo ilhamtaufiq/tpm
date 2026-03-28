@@ -923,8 +923,7 @@ class PenjualanMobilService:
             "total_dp": float(aggregates.total_dp or 0),
             "total_parts_realized": total_parts_realized,
             "piutang_nilai": float(unpaid_value),
-            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.BOP_MOBIL_CASH) + 
-                             KasBank.get_current_balance(self.db, KasBankJenis.BOP_MOBIL_BCA)),
+            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_MOBIL)),
         }
 
 

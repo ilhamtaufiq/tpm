@@ -334,9 +334,15 @@ class KasBankAllSummary(BaseModel):
     """Schema for all cash/bank summary."""
 
     cash: KasBankSummary
+    kas_unit_bengkel: Optional[KasBankSummary] = None
+    kas_unit_jasa_angkut: Optional[KasBankSummary] = None
+    kas_unit_mobil: Optional[KasBankSummary] = None
+    kas_utama: Optional[KasBankSummary] = None
+    bank_utama: Optional[KasBankSummary] = None
     bank_bca: Optional[KasBankSummary] = None
     bank_mandiri: Optional[KasBankSummary] = None
     bank_bri: Optional[KasBankSummary] = None
+    bank_lainnya: Optional[KasBankSummary] = None
     total_saldo: Decimal
 
 

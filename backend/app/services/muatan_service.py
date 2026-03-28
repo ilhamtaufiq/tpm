@@ -935,8 +935,7 @@ class MuatanService:
             "total_pendapatan": total_pendapatan,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
-            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.BOP_JASA_ANGKUT_CASH) + 
-                             KasBank.get_current_balance(self.db, KasBankJenis.BOP_JASA_ANGKUT_BCA)),
+            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_JASA_ANGKUT)),
             "details": {
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": total_biaya_lainnya,
