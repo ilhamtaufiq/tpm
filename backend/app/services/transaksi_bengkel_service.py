@@ -426,7 +426,8 @@ class TransaksiBengkelService:
                 muatan.calculate_profit()
                 self.db.commit() # Persist recalculated profit
 
-        # Record payment to kas/bank (Only for internal/integrated transactions that don't go through Piutang system)
+        # Record payment to kas/bank
+        # 1. Handle Internal/Integrated Transactions
         source_pocket = KasBankSource.BENGKEL
         if getattr(data, 'kategori', 'umum') == 'jasa_angkut':
             source_pocket = KasBankSource.JASA_ANGKUT
@@ -453,12 +454,36 @@ class TransaksiBengkelService:
                     user_id=user_id,
                 )
 
-        # For internal Jasa Angkut, we record the internal transfer
+        # Record internal transfer for integrated units
         if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
         
-        # Note: Non-internal (UMUM) payments were already recorded via PiutangService.process_payment_split 
-        # at the top of the commit block to ensure consistency in Piutang history logs.
+        # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
+        # (Internal Mobil and non-internal partial payments are already handled via Piutang system)
+        elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
+            if total_pembayaran > 0:
+                # If multiple payments exist, record each one
+                if data.payments:
+                    for p in data.payments:
+                        if p.jumlah > 0:
+                            create_kas_entry(
+                                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                                nominal=p.jumlah, sumber=KasBankSource.BENGKEL, 
+                                metode_bayar=p.metode,
+                                referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
+                                keterangan=f"Pembayaran Bengkel: {nomor_transaksi} ({p.metode})",
+                                user_id=user_id,
+                            )
+                else:
+                    # Single payment
+                    create_kas_entry(
+                        db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                        nominal=total_pembayaran, sumber=KasBankSource.BENGKEL, 
+                        metode_bayar=metode_utama,
+                        referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
+                        keterangan=f"Pembayaran Lunas Bengkel: {nomor_transaksi}",
+                        user_id=user_id,
+                    )
 
         self.db.commit()
 

@@ -1108,8 +1108,13 @@ export default function BengkelScreen() {
                                     </View>
                                 </View>
 
-                                <Typography variant="caption" className="text-textGray font-medium">
+                                <Typography variant="caption" className="text-textGray font-medium flex-row items-center">
                                     {item.jenis_kendaraan} • {item.nama_customer || 'Umum'}
+                                    {item.metode_bayar && item.metode_bayar !== 'KREDIT' && (
+                                        <Typography variant="caption" className={`font-black ${item.metode_bayar === 'TRANSFER' ? 'text-blue-600' : 'text-emerald-600'} text-[9px] uppercase tracking-widest ml-1`}>
+                                            • {item.metode_bayar}
+                                        </Typography>
+                                    )}
                                 </Typography>
 
                                 <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50/50">
