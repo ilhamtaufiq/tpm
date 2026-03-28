@@ -86,6 +86,17 @@ export interface Muatan {
     created_at: string;
 }
 
+export interface MuatanSummary {
+    total_transaksi?: number;
+    lunas_count?: number;
+    partial_count?: number;
+    unpaid_count?: number;
+    batal_count?: number;
+    total_pendapatan?: number;
+    laba_tpm?: number;
+    saldo_bop?: number;
+}
+
 export interface MuatanCreate {
     tanggal: string; // YYYY-MM-DD
     supir_id: number;
@@ -271,7 +282,7 @@ export const jasaAngkutService = {
         return response.data;
     },
 
-    getMuatanSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string; search?: string }) => {
+    getMuatanSummary: async (params?: { tanggal_dari?: string; tanggal_sampai?: string; search?: string }): Promise<MuatanSummary> => {
         const response = await api.get('/muatan/summary', { params });
         return response.data;
     },

@@ -93,10 +93,11 @@ export default function JasaAngkutScreen() {
                 unpaid: summaryData.unpaid_count || 0,
                 batal: summaryData.batal_count || 0,
                 revenue: summaryData.total_pendapatan || 0,
-                profit: summaryData.laba_tpm || 0
+                profit: summaryData.laba_tpm || 0,
+                saldo_bop: summaryData.saldo_bop || 0
             };
         }
-        return { total: 0, lunas: 0, partial: 0, unpaid: 0, batal: 0, revenue: 0, profit: 0 };
+        return { total: 0, lunas: 0, partial: 0, unpaid: 0, batal: 0, revenue: 0, profit: 0, saldo_bop: 0 };
     }, [summaryData]);
 
     const recentTrips = useMemo(() => {
@@ -720,21 +721,24 @@ export default function JasaAngkutScreen() {
                     className="flex-row -mx-6 px-6 mb-8"
                 >
                     {[
-                        { label: 'Total', key: 'total', value: stats.total, color: 'white' },
-                        { label: 'Lunas', key: 'lunas', value: stats.lunas, color: '#10B981' },
-                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, color: '#3B82F6' },
-                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, color: '#F59E0B' },
-                        { label: 'Batal', key: 'batal', value: stats.batal, color: '#EF4444' },
+                        { label: 'Total', key: 'total', value: stats.total, unit: 'TRX', color: 'white' },
+                        { label: 'Lunas', key: 'lunas', value: stats.lunas, unit: 'TRX', color: '#10B981' },
+                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
+                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
+                        { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
+                        { label: 'Saldo BOP', key: 'saldo_bop', value: formatCurrency(stats.saldo_bop), unit: '', color: '#38BDF8', isWide: true },
                     ].map((stat, idx) => (
                         <View
                             key={stat.key}
-                            style={{ width: 100 }}
+                            style={{ width: stat.isWide ? 160 : 100 }}
                             className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
                         >
                             <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
                             <View className="flex-row items-baseline">
-                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
-                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">TRX</Typography>
+                                <Typography weight="bold" style={{ color: stat.color }} className={stat.isWide ? "text-lg" : "text-xl"}>{stat.value || 0}</Typography>
+                                {stat.unit ? (
+                                    <Typography className="text-white/30 text-[8px] ml-1 font-bold">{stat.unit}</Typography>
+                                ) : null}
                             </View>
                         </View>
                     ))}

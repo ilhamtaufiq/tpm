@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -41,14 +41,20 @@ const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
     { label: 'Semua', value: 'all' },
     { label: 'Cash', value: 'CASH' },
     { label: 'BCA', value: 'BANK_BCA' },
+    { label: 'BOP Jasa Angkut', value: 'BOP_JASA_ANGKUT_CASH' },
+    { label: 'BOP Mobil', value: 'BOP_MOBIL_CASH' },
 ];
 
 const JENIS_LABEL: Record<KasBankJenis, string> = {
-    CASH: 'Cash',
-    BANK_BCA: 'Bank BCA',
+    CASH: 'Cash Utama',
+    BANK_BCA: 'Bank BCA Utama',
     BANK_MANDIRI: 'Bank Mandiri',
     BANK_BRI: 'Bank BRI',
     BANK_LAINNYA: 'Bank Lainnya',
+    BOP_JASA_ANGKUT_CASH: 'BOP Jasa Angkut (Cash)',
+    BOP_JASA_ANGKUT_BCA: 'BOP Jasa Angkut (BCA)',
+    BOP_MOBIL_CASH: 'BOP Mobil (Cash)',
+    BOP_MOBIL_BCA: 'BOP Mobil (BCA)',
 };
 
 export default function MutasiKasScreen() {
@@ -322,7 +328,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
@@ -341,7 +347,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
+                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
@@ -387,7 +393,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Simpan ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['CASH', 'BANK_BCA', 'BOP_JASA_ANGKUT_CASH', 'BOP_JASA_ANGKUT_BCA', 'BOP_MOBIL_CASH', 'BOP_MOBIL_BCA'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}
@@ -521,7 +527,7 @@ export default function MutasiKasScreen() {
                 renderItem={({ item }) => {
                     const isIncome = item.tipe === 'MASUK';
                     return (
-                        <Pressable
+                        <TouchableOpacity
                             activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                         >
@@ -565,7 +571,7 @@ export default function MutasiKasScreen() {
                                     </Typography>
                                 </View>
                             </View>
-                        </Pressable>
+                        </TouchableOpacity>
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
@@ -593,13 +599,13 @@ export default function MutasiKasScreen() {
             />
 
             {/* Premium FAB */}
-            <Pressable
+            <TouchableOpacity
                 onPress={() => handleOpenSheet('transfer')}
                 activeOpacity={0.8}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary border-4 border-white/20"
             >
                 <Plus size={32} color="white" strokeWidth={3} />
-            </Pressable>
+            </TouchableOpacity>
 
             {/* Entry UI - Platform Specific */}
             {Platform.OS === 'web' ? (

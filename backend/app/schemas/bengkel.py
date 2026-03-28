@@ -4,7 +4,13 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
-from app.utils.constants import PaymentStatus, PaymentMethod, ExpenseCategory, WorkshopStatus
+from app.utils.constants import (
+    PaymentStatus, 
+    PaymentMethod, 
+    ExpenseCategory, 
+    WorkshopStatus,
+    KasBankJenis
+)
 from app.schemas.master import SupplierResponse
 
 
@@ -377,6 +383,7 @@ class PengeluaranBengkelCreate(BaseModel):
     deskripsi: str = Field(..., min_length=2, max_length=255)
     jumlah: Decimal = Field(..., gt=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
     payments: List[PaymentItem] = []
     catatan: Optional[str] = None
 
@@ -393,6 +400,7 @@ class PengeluaranBengkelUpdate(BaseModel):
     deskripsi: Optional[str] = Field(None, min_length=2, max_length=255)
     jumlah: Optional[Decimal] = Field(None, gt=0)
     metode_bayar: Optional[PaymentMethod] = None
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 

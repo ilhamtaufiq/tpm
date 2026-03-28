@@ -392,6 +392,10 @@ class KasBankJenis(str, Enum):
     BANK_MANDIRI = "BANK_MANDIRI"
     BANK_BRI = "BANK_BRI"
     BANK_LAINNYA = "BANK_LAINNYA"
+    BOP_JASA_ANGKUT_CASH = "BOP_JASA_ANGKUT_CASH"
+    BOP_JASA_ANGKUT_BCA = "BOP_JASA_ANGKUT_BCA"
+    BOP_MOBIL_CASH = "BOP_MOBIL_CASH"
+    BOP_MOBIL_BCA = "BOP_MOBIL_BCA"
 
     @classmethod
     def _missing_(cls, value: object) -> "KasBankJenis | None":

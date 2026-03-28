@@ -110,6 +110,7 @@ class PengeluaranService:
                     nomor_referensi=pengeluaran.nomor_transaksi,
                     keterangan=f"Pengeluaran {data.kategori.value} (Split {p.metode.value}): {data.deskripsi}",
                     user_id=user_id,
+                    kas_jenis=data.kas_jenis, # Using provided BOP account if any
                 )
         elif metode_bayar_enum != PaymentMethod.KREDIT:
             # Determine source based on category
@@ -128,6 +129,7 @@ class PengeluaranService:
                 nomor_referensi=pengeluaran.nomor_transaksi,
                 keterangan=f"Pengeluaran {data.kategori.value}: {data.deskripsi}",
                 user_id=user_id,
+                kas_jenis=data.kas_jenis,
             )
 
         return pengeluaran

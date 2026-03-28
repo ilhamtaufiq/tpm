@@ -1,20 +1,29 @@
 # Continuity Ledger
 
-- Goal: Display vehicle license plate number below the fleet name in the "available fleet pills" within `MuatanForm.tsx`.
+- Goal: Integrate Operational BOP (Biaya Operasional) balances into the TPM Super App's financial summaries and dashboards across Jasa Angkut, Showroom (Mobil), and the Main Dashboard.
 - Constraints/Assumptions:
-  - Working in `frontend/components/jasa-angkut/MuatanForm.tsx`.
-  - The fleet data object should contain a plate number field (e.g., `plat_nomor`, `no_plat`, etc.).
+  - Backend provides `saldo_bop` in summary responses by aggregating `BOP_JASA_ANGKUT_CASH/BCA` or `BOP_MOBIL_CASH/BCA`.
+  - Frontend displays these as part of the "Bento-style" stats header and the Main Wallet section.
 - Key decisions:
+  - Mirrored the logic from Jasa Angkut to the Showroom module.
+  - Calculated the global BOP balance on the main dashboard by summing all four BOP accounts from the `kas_bank_balances` response.
 - State:
-  - Done: 
-    - Added license plate number and vehicle type display below fleet names in selection pills.
-    - Modified load type (jenis muatan) to have individual ritase fields.
-    - Implemented automatic total ritase calculation.
-    - Removed the redundant "Total Ritase" UI field.
-    - Optimized layout for load and ritase fields (narrower ritase input).
-    - Fixed "Couldn't find a navigation context" error by implementing **React Navigation v7's `NavigationIndependentTree`** in `BengkelForm.tsx` and `app/bengkel/index.tsx`.
-  - Now: Finished changes.
-  - Next:
+  - Done:
+    - Updated `MuatanService.get_summary` (Jasa Angkut) to include `saldo_bop`.
+    - Updated `PenjualanMobilService.get_summary` (Mobil) to include `saldo_bop`.
+    - Integrated `Saldo BOP` display in `frontend/app/jasa-angkut/index.tsx`.
+    - Integrated `Saldo BOP` display in `frontend/app/mobil/index.tsx`.
+    - Integrated `Saldo BOP` display in `frontend/components/WalletSection.tsx` (Main Dashboard).
+    - Updated `PenjualanSummary` and `MuatanSummary` interfaces in `frontend/services/` to support `saldo_bop`.
+    - Fixed lint errors in `frontend/app/finance/mutasi.tsx`.
+  - Now: Integration complete.
+  - Next: User verification and end-to-end testing of BOP transfers and expenses.
 - Open questions (UNCONFIRMED if needed):
 - Working set (files/ids/commands):
-  - `frontend/components/jasa-angkut/MuatanForm.tsx`
+  - `backend/app/services/muatan_service.py`
+  - `backend/app/services/penjualan_mobil_service.py`
+  - `frontend/app/jasa-angkut/index.tsx`
+  - `frontend/app/mobil/index.tsx`
+  - `frontend/components/WalletSection.tsx`
+  - `frontend/services/mobil.ts`
+  - `frontend/services/jasaAngkut.ts`

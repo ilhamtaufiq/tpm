@@ -53,6 +53,7 @@ def create_kas_entry(
     nomor_referensi: str,
     keterangan: str,
     user_id: Optional[int] = None,
+    kas_jenis: Optional[KasBankJenis] = None,
 ) -> KasBank:
     """Create a kas/bank entry for financial transactions.
 
@@ -70,15 +71,19 @@ def create_kas_entry(
         nomor_referensi: Reference number of the source transaction
         keterangan: Description of the transaction
         user_id: ID of the user creating the transaction (optional)
+        kas_jenis: Explicit account type to use (overrides mapping from metode_bayar)
 
     Returns:
         The created KasBank record
     """
     service = KasBankService(db)
 
+    # Use explicit kas_jenis if provided, otherwise map from payment method
+    selected_jenis = kas_jenis if kas_jenis else get_kas_jenis(metode_bayar)
+
     data = KasBankCreate(
         tanggal=tanggal,
-        jenis=get_kas_jenis(metode_bayar),
+        jenis=selected_jenis,
         tipe=tipe,
         nominal=nominal,
         sumber=sumber,

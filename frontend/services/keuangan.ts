@@ -6,7 +6,7 @@ export type PiutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
 export type HutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
 export type PiutangSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'KASBON_KARYAWAN' | 'LAINNYA';
 export type HutangSource = 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'LAINNYA';
-export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA';
+export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA' | 'BOP_JASA_ANGKUT_CASH' | 'BOP_JASA_ANGKUT_BCA' | 'BOP_MOBIL_CASH' | 'BOP_MOBIL_BCA';
 export type KasBankType = 'MASUK' | 'KELUAR';
 export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'HUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
 export type PaymentMethod = 'TUNAI' | 'TRANSFER' | 'KREDIT' | 'DEBIT' | 'SPLIT' | 'INTERNAL' | 'POTONG_GAJI' | 'OTHER';
@@ -188,6 +188,10 @@ export interface KasBankAllBalances {
     bank_bca?: KasBankBalance;
     bank_mandiri?: KasBankBalance;
     bank_bri?: KasBankBalance;
+    bop_jasa_angkut_cash?: KasBankBalance;
+    bop_jasa_angkut_bca?: KasBankBalance;
+    bop_mobil_cash?: KasBankBalance;
+    bop_mobil_bca?: KasBankBalance;
     total_saldo: number;
 }
 

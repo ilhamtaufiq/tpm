@@ -1,5 +1,5 @@
 from app.services.kas_bank_integration import create_kas_entry
-from app.utils.constants import KasBankType, KasBankSource
+from app.utils.constants import KasBankType, KasBankSource, KasBankJenis, TRANSACTION_PREFIXES
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
@@ -13,13 +13,10 @@ from app.models.bengkel import SparePart
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang
 from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate, MuatanPaymentSplit
 from app.utils.constants import (
-    PaymentStatus,
-    PiutangStatus,
-    PiutangSource,
-    TRANSACTION_PREFIXES,
-    JASA_ANGKUT_PROFIT_SPLIT,
     PaymentMethod,
+    PaymentStatus,
 )
+from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 
 
 class MuatanService:
@@ -933,6 +930,8 @@ class MuatanService:
             "total_pendapatan": total_pendapatan,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
+            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.BOP_JASA_ANGKUT_CASH) + 
+                             KasBank.get_current_balance(self.db, KasBankJenis.BOP_JASA_ANGKUT_BCA)),
             "details": {
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": total_biaya_lainnya,

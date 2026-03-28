@@ -30,6 +30,8 @@ from app.utils.constants import (
     KasBankSource,
 )
 from app.services.kas_bank_integration import create_kas_entry
+from app.utils.constants import KasBankJenis
+from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource, KasBank
 
 
 class PenjualanMobilService:
@@ -921,6 +923,8 @@ class PenjualanMobilService:
             "total_dp": float(aggregates.total_dp or 0),
             "total_parts_realized": total_parts_realized,
             "piutang_nilai": float(unpaid_value),
+            "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.BOP_MOBIL_CASH) + 
+                             KasBank.get_current_balance(self.db, KasBankJenis.BOP_MOBIL_BCA)),
         }
 
 

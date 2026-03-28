@@ -67,9 +67,10 @@ export default function ExpensesScreen() {
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
     const [payMetode, setPayMetode] = useState('');
+    const [kasJenis, setKasJenis] = useState<string | null>(null);
     const [splitPayments, setSplitPayments] = useState([
-        { metode: 'TUNAI', jumlah: '' },
-        { metode: 'TRANSFER', jumlah: '' },
+        { metode: 'TUNAI', jumlah: '', kas_jenis: null },
+        { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
     ]);
 
     // API Hooks
@@ -117,6 +118,7 @@ export default function ExpensesScreen() {
             jumlah: totalAmount,
             deskripsi,
             metode_bayar: payMetode,
+            kas_jenis: kasJenis,
         };
 
         if (payMetode === 'SPLIT') {
@@ -141,14 +143,16 @@ export default function ExpensesScreen() {
                 setShowForm(false);
                 setJumlah('');
                 setDeskripsi('');
+                setKategori('BIAYA_OPERASIONAL');
                 setBisnisKategori('umum');
+                setKasJenis(null);
                 setSelectedMuatan(null);
                 setSelectedMobil(null);
                 setSelectedArmada(null);
                 setPayMetode('');
                 setSplitPayments([
-                    { metode: 'TUNAI', jumlah: '' },
-                    { metode: 'TRANSFER', jumlah: '' },
+                    { metode: 'TUNAI', jumlah: '', kas_jenis: null },
+                    { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
                 ]);
                 showAlert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
                 return;
@@ -158,14 +162,16 @@ export default function ExpensesScreen() {
             setShowForm(false);
             setJumlah('');
             setDeskripsi('');
+            setKategori('BIAYA_OPERASIONAL');
             setBisnisKategori('umum');
+            setKasJenis(null);
             setSelectedMuatan(null);
             setSelectedMobil(null);
             setSelectedArmada(null);
             setPayMetode('');
             setSplitPayments([
-                { metode: 'TUNAI', jumlah: '' },
-                { metode: 'TRANSFER', jumlah: '' },
+                { metode: 'TUNAI', jumlah: '', kas_jenis: null },
+                { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
             ]);
             showAlert('Sukses', 'Pengeluaran berhasil dicatat');
         } catch (error: any) {
@@ -278,6 +284,7 @@ export default function ExpensesScreen() {
                                                         setSelectedMobil(null);
                                                         setSelectedArmada(null);
                                                     }
+                                                    setKasJenis(null); // Reset when business category changes
                                                 }}
                                                 className={`flex-1 p-3 rounded-2xl border items-center ${bisnisKategori === cat.value
                                                     ? 'bg-primary border-primary shadow-sm'
@@ -315,6 +322,40 @@ export default function ExpensesScreen() {
                                                 value={selectedMobil}
                                                 onSelect={setSelectedMobil}
                                             />
+                                        </View>
+                                    )}
+                                    {bisnisKategori !== 'umum' && (
+                                        <View className="mb-6">
+                                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
+                                            <View className="flex-row space-x-2">
+                                                {[
+                                                    { label: 'Kantor', value: null },
+                                                    ...(bisnisKategori === 'jasa_angkut' ? [
+                                                        { label: 'BOP Cash', value: 'BOP_JASA_ANGKUT_CASH' },
+                                                        { label: 'BOP Transfer', value: 'BOP_JASA_ANGKUT_BCA' },
+                                                    ] : bisnisKategori === 'jual_beli_mobil' ? [
+                                                        { label: 'BOP Cash', value: 'BOP_MOBIL_CASH' },
+                                                        { label: 'BOP Transfer', value: 'BOP_MOBIL_BCA' },
+                                                    ] : [])
+                                                ].map((opt) => (
+                                                    <Pressable
+                                                        key={opt.value || 'null'}
+                                                        onPress={() => setKasJenis(opt.value)}
+                                                        className={`flex-1 p-3 rounded-2xl border items-center ${kasJenis === opt.value
+                                                            ? 'bg-primary/5 border-primary shadow-sm'
+                                                            : 'bg-gray-50 border-gray-100'
+                                                            }`}
+                                                    >
+                                                        <Typography
+                                                            weight={kasJenis === opt.value ? 'bold' : 'medium'}
+                                                            className={`text-[9px] tracking-tighter ${kasJenis === opt.value ? 'text-primary' : 'text-textGray'}`}
+                                                            numberOfLines={1}
+                                                        >
+                                                            {opt.label}
+                                                        </Typography>
+                                                    </Pressable>
+                                                ))}
+                                            </View>
                                         </View>
                                     )}
                                 </View>
@@ -367,7 +408,7 @@ export default function ExpensesScreen() {
                                         <View className="flex-row justify-between items-center mb-1">
                                             <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">Detail Pembayaran</Typography>
                                             <Pressable
-                                                onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '' }])}
+                                                onPress={() => setSplitPayments([...splitPayments, { metode: 'TUNAI', jumlah: '', kas_jenis: null }])}
                                                 className="bg-white border border-gray-200 p-2 rounded-xl"
                                             >
                                                 <Plus size={14} color="#023C69" />

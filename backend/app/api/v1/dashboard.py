@@ -94,12 +94,16 @@ def get_dashboard_summary(
             "laba_kotor": float(mobil_summary["laba_tpm"]),
             "laba_tpm": float(mobil_summary["laba_tpm"]),
             "total_modal_tersedia": float(mobil_summary.get("total_modal_tersedia", 0)),
+            "saldo_bop": float(kas_bank_summary.get("bop_mobil_cash", {}).get("saldo", 0) + 
+                               kas_bank_summary.get("bop_mobil_bca", {}).get("saldo", 0)),
         },
         "jasa_angkut": {
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
             "laba_tpm": float(muatan_summary["laba_tpm"]),
             "active_trips": muatan_summary["hutang_supir_count"],
+            "saldo_bop": float(kas_bank_summary.get("bop_jasa_angkut_cash", {}).get("saldo", 0) + 
+                               kas_bank_summary.get("bop_jasa_angkut_bca", {}).get("saldo", 0)),
         },
         "piutang": {
             "total_piutang": float(piutang_summary["total_piutang"]),
@@ -834,19 +838,35 @@ def get_neraca(
     # A. AKTIVA LANCAR (Current Assets)
     # ==========================================
 
-    # 1. Kas & Bank (cumulative balance up to date)
     balances = kas_service.get_all_balances(as_of=tanggal_sampai)
     kas_tunai = balances.get(KasBankJenis.CASH.value.lower(), {}).get("saldo", 0)
     
     kas_bank = 0
+    kas_operasional = 0
     bank_details = {}
+    operasional_details = {}
+    
+    bop_keys = [
+        KasBankJenis.BOP_JASA_ANGKUT_CASH.value.lower(),
+        KasBankJenis.BOP_JASA_ANGKUT_BCA.value.lower(),
+        KasBankJenis.BOP_MOBIL_CASH.value.lower(),
+        KasBankJenis.BOP_MOBIL_BCA.value.lower(),
+    ]
+
     for k, v in balances.items():
-        if k != KasBankJenis.CASH.value.lower() and isinstance(v, dict):
-            saldo = v.get("saldo", 0)
+        if not isinstance(v, dict): continue
+        saldo = v.get("saldo", 0)
+        
+        if k == KasBankJenis.CASH.value.lower():
+            continue
+        elif k in bop_keys:
+            kas_operasional += saldo
+            operasional_details[k] = saldo
+        else:
             kas_bank += saldo
             bank_details[k] = saldo
     
-    total_kas_bank = kas_tunai + kas_bank
+    total_kas_bank_all = kas_tunai + kas_bank + kas_operasional
 
     # 2. Piutang (Snapshot logic)
     # We need to replicate the exact buckets from Perubahan Modal Section B
@@ -1003,13 +1023,15 @@ def get_neraca(
 
     stok_mobil_total = harga_beli_total + biaya_lain_total + biaya_pengeluaran_total
 
-    total_aktiva_lancar = float(total_kas_bank or 0) + float(total_piutang or 0) + float(persediaan_sparepart or 0) + stok_mobil_total
+    total_aktiva_lancar = float(total_kas_bank_all or 0) + float(total_piutang or 0) + float(persediaan_sparepart or 0) + stok_mobil_total
     
     aktiva_lancar = {
         "kas_tunai": float(kas_tunai or 0),
         "kas_bank": float(kas_bank or 0),
         "bank_details": {k: float(v or 0) for k, v in bank_details.items()},
-        "total_kas_bank": float(total_kas_bank or 0),
+        "kas_operasional": float(kas_operasional or 0),
+        "operasional_details": {k: float(v or 0) for k, v in operasional_details.items()},
+        "total_kas_bank": float(total_kas_bank_all or 0),
         "piutang_usaha": float(piutang_usaha or 0),
         "piutang_part_mobil": float(piutang_part_mobil or 0),
         "piutang_mobil": float(piutang_mobil or 0),
