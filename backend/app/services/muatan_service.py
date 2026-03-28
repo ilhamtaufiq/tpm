@@ -15,6 +15,7 @@ from app.schemas.jasa_angkut import MuatanCreate, MuatanUpdate, MuatanPaymentSpl
 from app.utils.constants import (
     PaymentMethod,
     PaymentStatus,
+    MuatanStatus,
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 
@@ -854,6 +855,7 @@ class MuatanService:
         # Payment Status Counts
         lunas_count = query.filter(MuatanJasaAngkut.status_bayar == PaymentStatus.LUNAS).count()
         batal_count = query.filter(MuatanJasaAngkut.status_bayar == PaymentStatus.BATAL).count()
+        active_count = query.filter(MuatanJasaAngkut.status == MuatanStatus.PROSES).count()
         
         # Partially paid (status_bayar is BELUM_LUNAS but some amount is paid)
         # However, for Jasa Angkut, payment is tracked via Piutang if not cash.
@@ -927,6 +929,7 @@ class MuatanService:
             "partial_count": partial_count,
             "unpaid_count": unpaid_count,
             "batal_count": batal_count,
+            "hutang_supir_count": active_count, # Mapped as active_trips in dashboard
             "total_pendapatan": total_pendapatan,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
