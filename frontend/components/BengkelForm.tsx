@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList } from 'react-native';
+import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList, TouchableOpacity } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { Typography } from './ui/Typography';
@@ -792,11 +792,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             {/* TABS SWITCHER */}
             <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
                 <View className={`flex-1 rounded-[18px] ${activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-                    <Pressable
+                    <TouchableOpacity
                         onPress={() => setActiveTab('service')}
-                        hitSlop={8}
-                        className="flex-row items-center justify-center py-3 px-4"
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
                     >
                         <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
                         <Typography 
@@ -813,15 +812,14 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 </Typography>
                             </View>
                         )}
-                    </Pressable>
+                    </TouchableOpacity>
                 </View>
 
                 <View className={`flex-1 rounded-[18px] ${activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-                    <Pressable
+                    <TouchableOpacity
                         onPress={() => setActiveTab('sparepart')}
-                        hitSlop={8}
-                        className="flex-row items-center justify-center py-3 px-4"
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
                     >
                         <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
                         <Typography 
@@ -838,7 +836,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 </Typography>
                             </View>
                         )}
-                    </Pressable>
+                    </TouchableOpacity>
                 </View>
             </View>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal, TouchableOpacity } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -62,7 +62,7 @@ export const SparePartSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <Pressable onPress={handleOpen}>
+            <Pressable onPress={handleOpen} hitSlop={8}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     <Package size={20} color={value ? '#2563EB' : '#9CA3AF'} />
 
@@ -96,7 +96,7 @@ export const SparePartSelector = ({
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
+                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
                             <View className="items-center mb-2">
@@ -122,12 +122,25 @@ export const SparePartSelector = ({
                                         placeholderTextColor="#9CA3AF"
                                     />
                                 </View>
-                                <Pressable 
-                                    onPress={() => setIsScannerOpen(true)}
-                                    className="bg-blue-50 w-12 h-12 rounded-xl items-center justify-center border border-blue-100"
+                                <View 
+                                    style={{
+                                        backgroundColor: '#EFF6FF',
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 12,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderWidth: 1,
+                                        borderColor: '#DBEAFE',
+                                    }}
                                 >
-                                    <QrCode size={20} color="#2563EB" />
-                                </Pressable>
+                                    <Pressable 
+                                        onPress={() => setIsScannerOpen(true)}
+                                        hitSlop={8}
+                                    >
+                                        <QrCode size={20} color="#2563EB" />
+                                    </Pressable>
+                                </View>
                             </View>
 
                             {isLoading ? (

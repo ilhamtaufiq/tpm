@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal, TouchableOpacity } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -54,7 +54,7 @@ export const JasaSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <Pressable onPress={handleOpen}>
+            <Pressable onPress={handleOpen} hitSlop={8}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     <Wrench size={20} color={value ? '#8B5CF6' : '#9CA3AF'} />
 
@@ -88,7 +88,7 @@ export const JasaSelector = ({
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
+                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
                             <View className="items-center mb-2">

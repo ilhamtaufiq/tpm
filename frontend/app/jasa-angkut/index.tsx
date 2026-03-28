@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, Alert } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, Platform, Modal, TextInput, Share, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -766,25 +766,35 @@ export default function JasaAngkutScreen() {
                         <View className="space-y-3">
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-                                    <View className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}>
-                                        <Pressable
+                                    <View className={`rounded-xl ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}>
+                                        <TouchableOpacity
                                             onPress={() => setGroupBy('armada')}
-                                            hitSlop={8}
-                                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                                            activeOpacity={0.7}
+                                            style={{ 
+                                                flexDirection: 'row', 
+                                                alignItems: 'center',
+                                                paddingHorizontal: 16,
+                                                paddingVertical: 8,
+                                            }}
                                         >
                                             <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
                                             <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
-                                        </Pressable>
+                                        </TouchableOpacity>
                                     </View>
-                                    <View className={`px-4 py-2 rounded-xl flex-row items-center ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}>
-                                        <Pressable
+                                    <View className={`rounded-xl ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}>
+                                        <TouchableOpacity
                                             onPress={() => setGroupBy('supir')}
-                                            hitSlop={8}
-                                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                                            activeOpacity={0.7}
+                                            style={{ 
+                                                flexDirection: 'row', 
+                                                alignItems: 'center',
+                                                paddingHorizontal: 16,
+                                                paddingVertical: 8,
+                                            }}
                                         >
                                             <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
                                             <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
-                                        </Pressable>
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
                             </View>
