@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
 import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share, Alert } from 'react-native';
-import { NavigationContext } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -733,54 +733,35 @@ export default function BengkelScreen() {
             </>
         );
     };
-
     const renderBottomSheetContent = () => (
-        <NavigationContext.Provider value={null as any}>
-            <View style={{ flex: 1 }}>
-            {view === 'form' || view === 'edit' ? (
-                <BengkelForm 
-                    initialData={view === 'edit' ? selectedItem : null} 
-                    onSuccess={handleClosePress} 
-                />
-            ) : selectedItem ? (
-                Platform.OS === 'web' ? (
-                    <ScrollView className="flex-1">
-                        <View className="p-8 pb-32">
-                            {renderDetailContent()}
-                        </View>
-                    </ScrollView>
-                ) : (
-                    <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                        <View className="p-8 pb-32">
-                            {renderDetailContent()}
-                        </View>
-                    </BottomSheetScrollView>
-                )
-            ) : null}
+        <NavigationIndependentTree>
+            <NavigationContainer>
+                <View style={{ flex: 1 }}>
+                    {view === 'form' || view === 'edit' ? (
+                        <BengkelForm 
+                            initialData={view === 'edit' ? selectedItem : null} 
+                            onSuccess={handleClosePress} 
+                        />
+                    ) : selectedItem ? (
+                        Platform.OS === 'web' ? (
+                            <ScrollView className="flex-1">
+                                <View className="p-8 pb-32">
+                                    {renderDetailContent()}
+                                </View>
+                            </ScrollView>
+                        ) : (
+                            <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                                <View className="p-8 pb-32">
+                                    {renderDetailContent()}
+                                </View>
+                            </BottomSheetScrollView>
+                        )
+                    ) : null}
+                </View>
+            </NavigationContainer>
+        </NavigationIndependentTree>
+    );
 
-            {selectedItem && selectedItem.piutang_id && (
-                <PaymentModal
-                    visible={paymentModalVisible}
-                    onClose={() => setPaymentModalVisible(false)}
-                    onSuccess={() => {
-                        setDialogConfig({
-                            visible: true,
-                            title: 'Sukses',
-                            message: 'Pembayaran berhasil dicatat',
-                            variant: 'success',
-                            type: 'alert'
-                        });
-                        refetch();
-                        refetchSummary();
-                        handleClosePress();
-                    }}
-                    id={selectedItem.piutang_id}
-                    initialAmount={selectedItem.grand_total - (selectedItem.jumlah_bayar || 0)}
-                />
-            )}
-        </View>
-    </NavigationContext.Provider>
-);
 
     return (
         <View className="flex-1 bg-surface">

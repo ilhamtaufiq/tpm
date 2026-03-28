@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { NavigationContext } from '@react-navigation/native';
+import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
 import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList } from 'react-native';
 // import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
@@ -140,7 +140,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         variant: 'info'
     });
 
-    const availableParts = sparePartsData?.data || [];
+    const availableParts = useMemo(() => {
+        return sparePartsData?.pages.flatMap(page => (page as any).data || []) || [];
+    }, [sparePartsData]);
 
     useEffect(() => {
         const serviceTotal = services.reduce((acc, s) => acc + (Number(parseNumber(s.harga.toString())) * (Number(s.qty) || 1)), 0);
@@ -234,7 +236,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
     const handleScanSparePart = (scannedData: string) => {
         const cleanData = scannedData.trim();
-        const availableParts = sparePartsData?.data || [];
         
         // Try exact match on internal kode or manufacturer kode_part
         let part = availableParts.find((p: any) => p.kode === cleanData || p.kode_part === cleanData);
@@ -1264,66 +1265,70 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     // Web version with regular ScrollView
     if (Platform.OS === 'web') {
         return (
-            <NavigationContext.Provider value={null as any}>
-                <View style={styles.webContainer}>
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                    </View>
+            <NavigationIndependentTree>
+                <NavigationContainer>
+                    <View style={styles.webContainer}>
+                        {/* Header */}
+                        <View style={styles.header}>
+                            <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                            <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                        </View>
 
-                    {/* Scrollable Content */}
-                    <ScrollView
-                        style={styles.webScrollView}
-                        contentContainerStyle={styles.webScrollContent}
-                        showsVerticalScrollIndicator={true}
-                    >
-                        {renderFormContent()}
-                    </ScrollView>
-                    <BarcodeScannerModal 
-                        visible={isScannerOpen} 
-                        onClose={() => setIsScannerOpen(false)} 
-                        onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
-                        scanLog={scanLog}
-                    />
-                </View>
-            </NavigationContext.Provider>
+                        {/* Scrollable Content */}
+                        <ScrollView
+                            style={styles.webScrollView}
+                            contentContainerStyle={styles.webScrollContent}
+                            showsVerticalScrollIndicator={true}
+                        >
+                            {renderFormContent()}
+                        </ScrollView>
+                        <BarcodeScannerModal 
+                            visible={isScannerOpen} 
+                            onClose={() => setIsScannerOpen(false)} 
+                            onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                            scanLog={scanLog}
+                        />
+                    </View>
+                </NavigationContainer>
+            </NavigationIndependentTree>
         );
     }
 
     // Mobile version with BottomSheetScrollView
     return (
-        <NavigationContext.Provider value={null as any}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-            >
-                <View style={styles.mobileContainer}>
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
-                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                    </View>
+        <NavigationIndependentTree>
+            <NavigationContainer>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+                >
+                    <View style={styles.mobileContainer}>
+                        {/* Header */}
+                        <View style={styles.header}>
+                            <Typography variant="h3" weight="bold">{initialData ? 'Edit Transaksi' : 'Input Order Baru'}</Typography>
+                            <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                        </View>
 
-                    {/* Scrollable Content for BottomSheet */}
-                    <BottomSheetScrollView
-                        style={styles.mobileScrollView}
-                        contentContainerStyle={styles.mobileScrollContent}
-                        showsVerticalScrollIndicator={true}
-                        bounces={true}
-                    >
-                        {renderFormContent()}
-                    </BottomSheetScrollView>
-                    <BarcodeScannerModal 
-                        visible={isScannerOpen} 
-                        onClose={() => setIsScannerOpen(false)} 
-                        onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
-                        scanLog={scanLog}
-                    />
-                </View>
-            </KeyboardAvoidingView>
-        </NavigationContext.Provider>
+                        {/* Scrollable Content for BottomSheet */}
+                        <BottomSheetScrollView
+                            style={styles.mobileScrollView}
+                            contentContainerStyle={styles.mobileScrollContent}
+                            showsVerticalScrollIndicator={true}
+                            bounces={true}
+                        >
+                            {renderFormContent()}
+                        </BottomSheetScrollView>
+                        <BarcodeScannerModal 
+                            visible={isScannerOpen} 
+                            onClose={() => setIsScannerOpen(false)} 
+                            onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                            scanLog={scanLog}
+                        />
+                    </View>
+                </KeyboardAvoidingView>
+            </NavigationContainer>
+        </NavigationIndependentTree>
     );
 };
 

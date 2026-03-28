@@ -7,11 +7,12 @@
 - Key decisions:
 - State:
   - Done: 
-    - Added license plate number display below fleet name in available fleet pills.
+    - Added license plate number and vehicle type display below fleet names in selection pills.
     - Modified load type (jenis muatan) to have individual ritase fields.
     - Implemented automatic total ritase calculation.
     - Removed the redundant "Total Ritase" UI field.
     - Optimized layout for load and ritase fields (narrower ritase input).
+    - Fixed "Couldn't find a navigation context" error by implementing **React Navigation v7's `NavigationIndependentTree`** in `BengkelForm.tsx` and `app/bengkel/index.tsx`.
   - Now: Finished changes.
   - Next:
 - Open questions (UNCONFIRMED if needed):

@@ -94,7 +94,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 info_kendaraan: initialData.info_kendaraan || '',
                 asal: initialData.asal || '',
                 tujuan: initialData.tujuan || '',
-                jenis_muatan_list: initialData.jenis_muatan ? 
+                jenis_muatan_list: initialData.jenis_muatan ?
                     initialData.jenis_muatan.split(', ').map((item: string) => {
                         const match = item.match(/(.+)\s\((\d+)\sRit\)/);
                         if (match) return { jenis: match[1], ritase: match[2] };
@@ -349,7 +349,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                             {(activeArmada as Armada[]).find((a: Armada) => a.id.toString() === formData.armada_id)?.nama}
                                         </Typography>
                                         <Typography variant="caption" className="text-blue-700 font-bold">
-                                            {(activeArmada as Armada[]).find((a: Armada) => a.id.toString() === formData.armada_id)?.nopol}
+                                            {(() => {
+                                                const a = (activeArmada as Armada[]).find((x: Armada) => x.id.toString() === formData.armada_id);
+                                                return a ? `${a.nopol} ${a.jenis ? `• ${a.jenis}` : ''}` : '';
+                                            })()}
                                         </Typography>
                                     </View>
                                     <Pressable
@@ -407,7 +410,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                             variant="caption"
                                                             className="text-gray-400 font-bold text-[10px]"
                                                         >
-                                                            {a.nopol}
+                                                            {a.nopol} {a.jenis ? `• ${a.jenis}` : ''}
                                                         </Typography>
                                                     </View>
                                                 </Pressable>
@@ -430,10 +433,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                             updateField('nopol', a.nopol);
                                                             updateField('info_kendaraan', a.jenis || '');
                                                         }}
-                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50 border border-blue-100"
+                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50"
                                                     >
                                                         <Typography variant="caption" weight="bold" className="text-blue-700">{a.nama}</Typography>
-                                                        <Typography variant="caption" className="text-blue-500 font-bold text-[10px]">{a.nopol}</Typography>
+                                                        <Typography variant="caption" className="text-blue-500 font-bold text-[10px]">
+                                                            {a.nopol} {a.jenis ? `• ${a.jenis}` : ''}
+                                                        </Typography>
                                                     </Pressable>
                                                 ))
                                             ) : (
@@ -458,14 +463,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ) : (
                     <View>
                         {formData.supir_id ? (
-                            <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl border border-primary/10 mb-4">
+                            <View className="flex-row items-center justify-between bg-primary/5 p-3 rounded-xl">
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 bg-primary/10 rounded-full items-center justify-center mr-3">
                                         <Typography weight="bold" className="text-primary">{(activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === formData.supir_id)?.nama.charAt(0)}</Typography>
                                     </View>
                                     <View>
                                         <Typography weight="bold" className="text-textMain">
-                                             {(activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === formData.supir_id)?.nama}
+                                            {(activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === formData.supir_id)?.nama}
                                         </Typography>
                                         <Typography variant="caption" className="text-textGray">Supir Terdaftar</Typography>
                                     </View>
@@ -475,7 +480,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                         updateField('supir_id', '');
                                         setDriverSearch('');
                                     }}
-                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-100"
+                                    className="bg-white px-3 py-1.5 rounded-lg shadow-sm"
                                 >
                                     <Typography variant="caption" weight="bold" className="text-primary">Ganti</Typography>
                                 </Pressable>
@@ -493,14 +498,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 {driverSearch.length > 0 && (
                                     <View className="flex-row flex-wrap mb-4">
                                         {filteredDrivers.length > 0 ? (
-                                             filteredDrivers.map((d: Supir) => (
+                                            filteredDrivers.map((d: Supir) => (
                                                 <Pressable
                                                     key={d.id}
                                                     onPress={() => {
                                                         updateField('supir_id', d.id.toString());
                                                         setDriverSearch('');
                                                     }}
-                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50 flex-row items-center"
+                                                    className="px-4 py-2.5 rounded-xl mr-2 mb-2 bg-gray-50 flex-row items-center"
                                                 >
                                                     <Typography
                                                         variant="caption"
@@ -528,7 +533,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                             updateField('supir_id', d.id.toString());
                                                             setDriverSearch('');
                                                         }}
-                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-emerald-50 border border-emerald-100"
+                                                        className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-emerald-50"
                                                     >
                                                         <Typography variant="caption" weight="bold" className="text-emerald-700">{d.nama}</Typography>
                                                     </Pressable>
@@ -568,7 +573,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 <Pressable
                                     key={`asal-${idx}`}
                                     onPress={() => updateField('asal', suggestion)}
-                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 border border-blue-100 flex-row items-center"
+                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 flex-row items-center"
                                 >
                                     <MapPin size={10} color="#2563EB" />
                                     <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
@@ -590,7 +595,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 <Pressable
                                     key={`tujuan-${idx}`}
                                     onPress={() => updateField('tujuan', suggestion)}
-                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 border border-blue-100 flex-row items-center"
+                                    className="px-3 py-1.5 rounded-lg mr-2 bg-blue-50 flex-row items-center"
                                 >
                                     <MapPin size={10} color="#2563EB" />
                                     <Typography variant="caption" weight="bold" className="text-blue-700 ml-1.5">{suggestion}</Typography>
