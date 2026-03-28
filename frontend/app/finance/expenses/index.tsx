@@ -39,6 +39,7 @@ const CATEGORIES = [
 
 const BISNIS_KATEGORI = [
     { label: 'Umum', value: 'umum', icon: Info, color: '#6B7280' },
+    { label: 'Bengkel', value: 'bengkel', icon: Wrench, color: '#F59E0B' },
     { label: 'Jasa Angkut', value: 'jasa_angkut', icon: Truck, color: '#10B981' },
     { label: 'Jual Beli Mobil', value: 'jual_beli_mobil', icon: Car, color: '#3B82F6' },
 ];
@@ -84,7 +85,7 @@ export default function ExpensesScreen() {
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/bengkel');
+            router.replace('/(tabs)/finance');
         }
     };
 

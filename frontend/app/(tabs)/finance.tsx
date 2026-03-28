@@ -5,7 +5,7 @@ import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users } from 'lucide-react-native';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUp } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
@@ -181,7 +181,6 @@ export default function FinanceTab() {
                         <Pressable
                             onPress={() => router.push('/finance/piutang')}
                             className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
-                            activeOpacity={0.8}
                         >
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-amber-50 rounded-xl items-center justify-center mr-2.5">
@@ -202,7 +201,6 @@ export default function FinanceTab() {
                         <Pressable
                             onPress={() => router.push('/finance/hutang')}
                             className="w-[48%] bg-white p-4 rounded-[24px] border border-gray-50 shadow-sm"
-                            activeOpacity={0.8}
                         >
                             <View className="flex-row items-center mb-3">
                                 <View className="w-9 h-9 bg-rose-50 rounded-xl items-center justify-center mr-2.5">
@@ -270,6 +268,7 @@ export default function FinanceTab() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
                         {[
                             { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
+                            { label: 'Keluar', icon: ArrowUp, color: '#EF4444', path: '/finance/expenses' },
                             { label: 'Cash User', icon: Users, color: '#06b6d4', path: '/finance/user-cash' },
 
 
@@ -299,7 +298,6 @@ export default function FinanceTab() {
                     {/* Bengkel */}
                     <Pressable
                         onPress={() => router.push('/bengkel')}
-                        activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-amber-50 rounded-[20px] items-center justify-center mr-4 border border-amber-100/50">
@@ -312,16 +310,20 @@ export default function FinanceTab() {
                                     {formatCurrency(dashboard?.bengkel?.laba_kotor || 0)}
                                 </Typography>
                             </View>
-                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                {dashboard?.bengkel?.total_transaksi || 0} Transaksi • Laba Kotor
-                            </Typography>
+                            <View className="flex-row items-center justify-between">
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                    {dashboard?.bengkel?.total_transaksi || 0} TRX • Laba Kotor
+                                </Typography>
+                                <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
+                                    <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.bengkel?.saldo_cash || 0)}</Typography>
+                                </View>
+                            </View>
                         </View>
                     </Pressable>
 
                     {/* Jual Beli Mobil */}
                     <Pressable
                         onPress={() => router.push('/mobil')}
-                        activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-blue-50 rounded-[20px] items-center justify-center mr-4 border border-blue-100/50">
@@ -334,16 +336,20 @@ export default function FinanceTab() {
                                     {formatCurrency(dashboard?.mobil?.laba_tpm || 0)}
                                 </Typography>
                             </View>
-                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                {dashboard?.mobil?.total_transaksi || 0} Transaksi • Laba TPM
-                            </Typography>
+                            <View className="flex-row items-center justify-between">
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                    {dashboard?.mobil?.total_transaksi || 0} TRX • Laba TPM
+                                </Typography>
+                                <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
+                                    <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.mobil?.saldo_cash || 0)}</Typography>
+                                </View>
+                            </View>
                         </View>
                     </Pressable>
 
                     {/* Jasa Angkut */}
                     <Pressable
                         onPress={() => router.push('/jasa-angkut')}
-                        activeOpacity={0.9}
                         className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
                     >
                         <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
@@ -356,9 +362,14 @@ export default function FinanceTab() {
                                     {formatCurrency(dashboard?.jasa_angkut?.laba_tpm || 0)}
                                 </Typography>
                             </View>
-                            <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                {dashboard?.jasa_angkut?.total_transaksi || 0} Transaksi • Laba TPM
-                            </Typography>
+                            <View className="flex-row items-center justify-between">
+                                <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
+                                    {dashboard?.jasa_angkut?.total_transaksi || 0} TRX • Laba TPM
+                                </Typography>
+                                <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
+                                    <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.jasa_angkut?.saldo_cash || 0)}</Typography>
+                                </View>
+                            </View>
                         </View>
                     </Pressable>
                 </View>

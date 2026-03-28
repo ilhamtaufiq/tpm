@@ -743,12 +743,12 @@ export default function JasaAngkutScreen() {
                     ].map((stat, idx) => (
                         <View
                             key={stat.key}
-                            style={{ width: stat.isWide ? 160 : 100 }}
+                            style={{ width: 100 }}
                             className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
                         >
                             <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
                             <View className="flex-row items-baseline">
-                                <Typography weight="bold" style={{ color: stat.color }} className={stat.isWide ? "text-lg" : "text-xl"}>{stat.value || 0}</Typography>
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
                                 {stat.unit ? (
                                     <Typography className="text-white/30 text-[8px] ml-1 font-bold">{stat.unit}</Typography>
                                 ) : null}

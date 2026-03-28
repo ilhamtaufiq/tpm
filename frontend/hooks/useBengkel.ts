@@ -249,6 +249,8 @@ export const useCreatePengeluaran = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pengeluaran'] });
             queryClient.invalidateQueries({ queryKey: ['pengeluaran_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
         },
     });
 };

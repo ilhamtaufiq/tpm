@@ -28,14 +28,20 @@ import {
     Share2,
     ShoppingCart,
     Edit2,
-    QrCode
+    QrCode,
+    Wallet,
+    ArrowUpCircle,
+    ArrowDownCircle,
+    TrendingDown,
+    TrendingUp,
+    CircleDollarSign
 } from 'lucide-react-native';
 import { useRouter, router, useFocusEffect } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
-import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel } from '../../hooks/useBengkel';
+import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel, useCreatePengeluaran } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDistanceToNow, format, startOfMonth, isValid, parse } from 'date-fns';
@@ -115,7 +121,16 @@ export default function BengkelScreen() {
         loading: false
     });
 
-    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [paymentModalVisible, setPaymentModalVisible] = React.useState(false);
+    const [showWalletModal, setShowWalletModal] = React.useState(false);
+
+    // Inline Expense Form State
+    const [isRecordingExpense, setIsRecordingExpense] = React.useState(false);
+    const [expenseAmount, setExpenseAmount] = React.useState('');
+    const [expenseNote, setExpenseNote] = React.useState('');
+    const [expensePaymentMethod, setExpensePaymentMethod] = React.useState<'TUNAI' | 'TRANSFER'>('TUNAI');
+
+    const createExpenseMutation = useCreatePengeluaran();
 
     const { data: balances } = useKasBankBalances();
     const unitBalance = balances?.kas_unit_bengkel?.saldo || 0;
@@ -790,6 +805,12 @@ export default function BengkelScreen() {
                     <View className="flex-row space-x-2">
                         <Pressable
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            onPress={() => setShowWalletModal(true)}
+                        >
+                            <Wallet size={22} color="white" />
+                        </Pressable>
+                        <Pressable
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                             onPress={() => router.push('/bengkel/purchase')}
                         >
                             <ShoppingCart size={22} color="white" />
@@ -807,27 +828,14 @@ export default function BengkelScreen() {
                 <View className="flex-row justify-between mb-8">
                     <Pressable
                         onPress={() => router.push('/bengkel/inventory')}
-                        className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center mr-2"
+                        className="w-full bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center"
                     >
                         <View className="bg-amber-400 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-amber-400/20">
                             <Package size={20} color="white" />
                         </View>
                         <View>
-                            <Typography weight="bold" className="text-white text-sm">Stok Part</Typography>
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold">Inventori</Typography>
-                        </View>
-                    </Pressable>
-
-                    <Pressable
-                        onPress={() => router.push('/bengkel/expenses')}
-                        className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center"
-                    >
-                        <View className="bg-rose-400 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-rose-400/20">
-                            <Receipt size={20} color="white" />
-                        </View>
-                        <View>
-                            <Typography weight="bold" className="text-white text-sm">Biaya Ops</Typography>
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold">Pengeluaran</Typography>
+                            <Typography weight="bold" className="text-white text-sm">Stok Part & Inventori</Typography>
+                            <Typography className="text-white/40 text-[10px] uppercase font-bold">Stok Opname</Typography>
                         </View>
                     </Pressable>
                 </View>
@@ -1221,6 +1229,199 @@ export default function BengkelScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={dialogConfig.loading || printing}
             />
+            {/* Wallet Modal (Unit Level) */}
+            <Modal
+                visible={showWalletModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowWalletModal(false)}
+            >
+                <View className="flex-1 justify-end bg-black/60">
+                    <Pressable 
+                        className="flex-1" 
+                        onPress={() => setShowWalletModal(false)} 
+                    />
+                    <View className="bg-white rounded-t-[48px] pt-16 px-9 pb-12 shadow-2xl relative">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <View>
+                                <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Bengkel</Typography>
+                                <Typography className="text-textGray/40 text-[10px] uppercase font-black tracking-widest">Workshop Cash Liquidity</Typography>
+                            </View>
+                            <Pressable 
+                                onPress={() => setShowWalletModal(false)}
+                                className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
+                            >
+                                <X size={20} color="#6B7280" />
+                            </Pressable>
+                        </View>
+
+                        {/* Main Wallet View */}
+                        {!isRecordingExpense && (
+                            <View>
+                                {/* Balance Card */}
+                                <View className="bg-primary p-7 rounded-[32px] mb-8 shadow-xl shadow-primary/20 relative overflow-hidden">
+                                    <View className="absolute top-0 right-0 p-4">
+                                        <Wallet size={80} color="rgba(255,255,255,0.1)" strokeWidth={1} />
+                                    </View>
+                                    <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Saldo Tunai Saat Ini</Typography>
+                                    <Typography weight="bold" className="text-white text-3xl tracking-tight">
+                                        {formatCurrency(unitBalance)}
+                                    </Typography>
+                                </View>
+
+                                {/* Quick Actions Container */}
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4">Layanan Cepat</Typography>
+                                    
+                                    <View className="flex-row space-x-4 mb-6">
+                                        <Pressable
+                                            onPress={() => setIsRecordingExpense(true)}
+                                            className="flex-1 bg-white p-5 rounded-[28px] border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                                        >
+                                            <View className="w-12 h-12 bg-rose-50 rounded-2xl items-center justify-center mb-3">
+                                                <ArrowUpCircle size={24} color="#E11D48" />
+                                            </View>
+                                            <Typography weight="bold" className="text-rose-600 text-[11px] uppercase tracking-wider">Catat Biaya</Typography>
+                                            <Typography className="text-textGray/40 text-[8px] font-bold mt-1">PENGELUARAN</Typography>
+                                        </Pressable>
+
+                                        <Pressable
+                                            onPress={() => {
+                                                setShowWalletModal(false);
+                                                router.push({
+                                                    pathname: '/finance/mutasi' as any,
+                                                    params: { source: 'KAS_UNIT_BENGKEL', action: 'internal_transfer' }
+                                                });
+                                            }}
+                                            className="flex-1 bg-white p-5 rounded-[28px] border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                                        >
+                                            <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center mb-3">
+                                                <TrendingUp size={24} color="#059669" />
+                                            </View>
+                                            <Typography weight="bold" className="text-emerald-700 text-[11px] uppercase tracking-wider">Setoran Unit</Typography>
+                                            <Typography className="text-textGray/40 text-[8px] font-bold mt-1">KE PUSAT/BANK</Typography>
+                                        </Pressable>
+                                    </View>
+
+                                    <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
+                                        <View className="w-8 h-8 bg-blue-100 rounded-xl items-center justify-center mr-3">
+                                            <AlertCircle size={16} color="#2563EB" />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider">Catatan Penting</Typography>
+                                            <Typography className="text-blue-600/60 text-[9px] font-bold mt-0.5 leading-tight">
+                                                Saldo ini murni dikelola di tingkat unit sebelum disetorkan ke rekening pusat TPM.
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Expense Form View */}
+                        {isRecordingExpense && (
+                            <View>
+                                <View className="flex-row items-center mb-6">
+                                    <Pressable 
+                                        onPress={() => setIsRecordingExpense(false)}
+                                        className="mr-3"
+                                    >
+                                        <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center">
+                                            <ChevronLeft size={18} color="#6B7280" />
+                                        </View>
+                                    </Pressable>
+                                    <Typography variant="h3" weight="bold" className="text-rose-600 tracking-tight">Catat Pengeluaran</Typography>
+                                </View>
+
+                                <View className="space-y-6">
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
+                                        <TextInput
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            value={expenseAmount}
+                                            onChangeText={(val) => setExpenseAmount(formatNumber(val))}
+                                            className="bg-gray-50 p-5 rounded-3xl text-2xl font-bold text-rose-600 border border-gray-100"
+                                        />
+                                    </View>
+
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
+                                        <TextInput
+                                            placeholder="Contoh: Beli bensin, Aqua, dll..."
+                                            value={expenseNote}
+                                            onChangeText={setExpenseNote}
+                                            className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
+                                        />
+                                    </View>
+
+                                    <View>
+                                        <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Saldo</Typography>
+                                        <View className="flex-row space-x-3">
+                                            {[
+                                                { id: 'TUNAI', label: 'Kas Unit (Tunai)' },
+                                                { id: 'TRANSFER', label: 'Kas Unit (Transfer/Bank)' }
+                                            ].map((opt) => (
+                                                <Pressable
+                                                    key={opt.id}
+                                                    onPress={() => setExpensePaymentMethod(opt.id as any)}
+                                                    className={`flex-1 p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id 
+                                                        ? 'bg-primary border-primary shadow-sm' 
+                                                        : 'bg-white border-gray-100'
+                                                    }`}
+                                                >
+                                                    <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
+                                                        {opt.id}
+                                                    </Typography>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    </View>
+
+                                    <Button 
+                                        title="Catat Sekarang" 
+                                        loading={createExpenseMutation.isPending}
+                                        onPress={async () => {
+                                            if (!expenseAmount || !expenseNote) {
+                                                Alert.alert('Gagal', 'Mohon isi nominal dan keterangan');
+                                                return;
+                                            }
+
+                                            try {
+                                                await createExpenseMutation.mutateAsync({
+                                                    tanggal: new Date().toISOString().split('T')[0],
+                                                    jumlah: parseNumber(expenseAmount),
+                                                    deskripsi: expenseNote,
+                                                    metode_bayar: expensePaymentMethod,
+                                                    bisnis_kategori: 'bengkel',
+                                                    kategori: 'BIAYA_OPERASIONAL'
+                                                });
+
+                                                setExpenseAmount('');
+                                                setExpenseNote('');
+                                                setIsRecordingExpense(false);
+                                                setShowWalletModal(false);
+                                                
+                                                setDialogConfig({
+                                                    visible: true,
+                                                    title: 'Sukses',
+                                                    message: 'Biaya operasional bengkel berhasil dicatat',
+                                                    variant: 'success',
+                                                    type: 'alert'
+                                                });
+                                            } catch (e: any) {
+                                                Alert.alert('Gagal', e?.response?.data?.detail || 'Gagal mencatat pengeluaran');
+                                            }
+                                        }}
+                                        className="h-16 rounded-[28px] mt-2 bg-rose-600 shadow-xl shadow-rose-600/30" 
+                                    />
+                                </View>
+                            </View>
+                        )}
+                        <View className="h-4" />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
