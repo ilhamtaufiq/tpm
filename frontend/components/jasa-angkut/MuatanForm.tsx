@@ -40,7 +40,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         info_kendaraan: '',
         asal: '',
         tujuan: '',
-        jenis_muatan_list: [''], // Multiple load types
+        jenis_muatan_list: [{ jenis: '', ritase: '1' }], // Multiple load types with individual ritase
         ritase: '1',
         harga_beli: '',
         harga_jual: '',
@@ -94,7 +94,12 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 info_kendaraan: initialData.info_kendaraan || '',
                 asal: initialData.asal || '',
                 tujuan: initialData.tujuan || '',
-                jenis_muatan_list: initialData.jenis_muatan ? initialData.jenis_muatan.split(', ') : [''],
+                jenis_muatan_list: initialData.jenis_muatan ? 
+                    initialData.jenis_muatan.split(', ').map((item: string) => {
+                        const match = item.match(/(.+)\s\((\d+)\sRit\)/);
+                        if (match) return { jenis: match[1], ritase: match[2] };
+                        return { jenis: item, ritase: '1' };
+                    }) : [{ jenis: '', ritase: '1' }],
                 ritase: initialData.ritase?.toString() || '1',
                 harga_beli: formatNumber(initialData.harga_beli?.toString() || ''),
                 harga_jual: formatNumber(initialData.harga_jual?.toString() || ''),
@@ -106,6 +111,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
         }
     }, [initialData]);
+
+    // Sync total ritase
+    useEffect(() => {
+        const totalRitase = formData.jenis_muatan_list.reduce((acc, item) => acc + (parseInt(item.ritase) || 0), 0);
+        if (totalRitase > 0 && totalRitase.toString() !== formData.ritase) {
+            setFormData(prev => ({ ...prev, ritase: totalRitase.toString() }));
+        }
+    }, [formData.jenis_muatan_list]);
 
     const updateField = (key: string, value: string) => {
         if (['harga_beli', 'harga_jual'].includes(key)) {
@@ -193,20 +206,20 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         );
     }, [activeArmada, armadaSearch, formData.armada_id]);
 
-    const updateJenisMuatan = (index: number, value: string) => {
+    const updateJenisMuatan = (index: number, field: 'jenis' | 'ritase', value: string) => {
         const newList = [...formData.jenis_muatan_list];
-        newList[index] = value;
+        newList[index] = { ...newList[index], [field]: value };
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList }));
     };
 
     const addJenisMuatan = () => {
-        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, ''] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: [...prev.jenis_muatan_list, { jenis: '', ritase: '1' }] }));
     };
 
     const removeJenisMuatan = (index: number) => {
         const newList = [...formData.jenis_muatan_list];
         newList.splice(index, 1);
-        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [''] }));
+        setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1' }] }));
     };
 
     const handleSubmit = async () => {
@@ -247,7 +260,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
             const payload: any = {
                 ...formData,
-                jenis_muatan: formData.jenis_muatan_list.filter(item => item.trim() !== '').join(', '),
+                jenis_muatan: formData.jenis_muatan_list
+                    .filter(item => item.jenis.trim() !== '')
+                    .map(item => `${item.jenis} (${item.ritase} Rit)`)
+                    .join(', '),
                 status_bayar: formData.status_bayar?.toUpperCase(),
                 metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
                 supir_id: parseInt(formData.supir_id),
@@ -379,13 +395,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                     }}
                                                     className="px-4 py-2.5 rounded-xl mr-2 mb-2 border border-gray-100 bg-gray-50"
                                                 >
-                                                    <Typography
-                                                        variant="caption"
-                                                        weight="bold"
-                                                        className="text-gray-700"
-                                                    >
-                                                        {a.nama} ({a.nopol})
-                                                    </Typography>
+                                                    <View>
+                                                        <Typography
+                                                            variant="caption"
+                                                            weight="bold"
+                                                            className="text-gray-700"
+                                                        >
+                                                            {a.nama}
+                                                        </Typography>
+                                                        <Typography
+                                                            variant="caption"
+                                                            className="text-gray-400 font-bold text-[10px]"
+                                                        >
+                                                            {a.nopol}
+                                                        </Typography>
+                                                    </View>
                                                 </Pressable>
                                             ))
                                         ) : (
@@ -409,6 +433,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                                         className="px-3 py-1.5 rounded-lg mr-2 mb-2 bg-blue-50 border border-blue-100"
                                                     >
                                                         <Typography variant="caption" weight="bold" className="text-blue-700">{a.nama}</Typography>
+                                                        <Typography variant="caption" className="text-blue-500 font-bold text-[10px]">{a.nopol}</Typography>
                                                     </Pressable>
                                                 ))
                                             ) : (
@@ -587,15 +612,21 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             <View className="space-y-3 mb-4">
                 {formData.jenis_muatan_list.map((item, index) => (
                     <View key={index} className="flex-row items-center space-x-2">
-                        <View className="flex-1">
-                            <Input
-                                placeholder="Contoh: Pasir, Semen, Besi"
-                                value={item}
-                                onChangeText={v => updateJenisMuatan(index, v)}
-                                containerClassName="mb-0"
-                                className="h-11"
-                            />
-                        </View>
+                        <Input
+                            placeholder="Contoh: Pasir, Semen, Besi"
+                            value={item.jenis}
+                            onChangeText={v => updateJenisMuatan(index, 'jenis', v)}
+                            containerClassName="mb-0 flex-1"
+                            className="h-11"
+                        />
+                        <Input
+                            placeholder="Rit"
+                            keyboardType="numeric"
+                            value={item.ritase}
+                            onChangeText={v => updateJenisMuatan(index, 'ritase', v)}
+                            containerClassName="mb-0 w-32"
+                            className="h-11 text-center"
+                        />
                         {formData.jenis_muatan_list.length > 1 && (
                             <Pressable
                                 onPress={() => removeJenisMuatan(index)}
@@ -608,19 +639,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 ))}
             </View>
 
-            <View className="flex-row space-x-2">
-                <View className="flex-1">
-                    <Input
-                        label="Ritase"
-                        keyboardType="numeric"
-                        value={formData.ritase}
-                        onChangeText={v => updateField('ritase', v)}
-                    />
-                </View>
-                <View className="flex-1">
-                    {/* Empty placeholder or other field */}
-                </View>
-            </View>
+
 
             {/* Financials */}
             <Typography variant="caption" weight="bold" className="mb-2 text-gray-500 mt-2">KEUANGAN & MARGIN</Typography>

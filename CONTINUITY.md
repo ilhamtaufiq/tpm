@@ -1,42 +1,19 @@
 # Continuity Ledger
 
-## Goal
-- Create an automatic semantic versioning script (SemVer).
-- (Previous) Analysis of `backend/app/api/v1/dashboard.py` to understand financial logic.
-- (Previous) Design and plan the "Operational Balance" (Saldo BOP) feature.
-- (Previous) Implement Barcode/QR Code scanning.
-
-## Constraints/Assumptions
-- Project involves both Frontend (React/Expo/TSX) and Backend (Python/FastAPI).
-- Versioning is synchronized between `package.json` and `backend/app/config.py`.
-- Environment: Windows/Laragon with `backend/venv`.
-
-## Key decisions
-1. **Persona**: Operating as **Horizon**, AI prompt optimization specialist.
-2. **Analysis Mode**: DETAIL mode selected for the SemVer script request due to environment dependencies.
-3. **Implementation**: Standalone Python script (`semver_bump.py`) at root, executed via backend venv.
-
-## State
-- Done:
-  - Fixed `supir_nama` validation error.
-  - Implemented Excel Import for Spare Parts (Backend & Hooks).
-  - **Implemented `semver_bump.py` script for automatic versioning.**
-  - **Fixed critical DB error (Unknown column 'kode_part') by applying missing migration.**
-  - **Added missing Import Excel button (FileUp icon) to Sparepart header UI.**
-- Now:
-  - Base features are stable.
-- Next:
-  - Perform the dashboard analysis of `backend/app/api/v1/dashboard.py`.
-  - Design the "Operational Balance" (Saldo BOP) feature.
-
-## Open questions (UNCONFIRMED if needed)
-- Does the user want a script to push tags to remote automatically?
-- Should we consider a different versioning source of truth for the API?
-
-## Working set (files/ids/commands)
-- `c:\laragon\www\tpm\CONTINUITY.md`
-- `c:\laragon\www\tpm\semver_bump.py`
-- `c:\laragon\www\tpm\frontend\package.json`
-- `c:\laragon\www\tpm\backend\app\config.py`
-
-
+- Goal: Display vehicle license plate number below the fleet name in the "available fleet pills" within `MuatanForm.tsx`.
+- Constraints/Assumptions:
+  - Working in `frontend/components/jasa-angkut/MuatanForm.tsx`.
+  - The fleet data object should contain a plate number field (e.g., `plat_nomor`, `no_plat`, etc.).
+- Key decisions:
+- State:
+  - Done: 
+    - Added license plate number display below fleet name in available fleet pills.
+    - Modified load type (jenis muatan) to have individual ritase fields.
+    - Implemented automatic total ritase calculation.
+    - Removed the redundant "Total Ritase" UI field.
+    - Optimized layout for load and ritase fields (narrower ritase input).
+  - Now: Finished changes.
+  - Next:
+- Open questions (UNCONFIRMED if needed):
+- Working set (files/ids/commands):
+  - `frontend/components/jasa-angkut/MuatanForm.tsx`
