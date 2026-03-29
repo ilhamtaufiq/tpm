@@ -101,22 +101,26 @@ export const ServiceGrid = () => {
 
     const filteredMenus = MENUS.filter(menu => {
         const role = user?.role;
+        const isAdmin = role === 'ADMIN' || role === 'MANAGER';
         
         // Admin and Manager see everything
-        if (role === 'ADMIN' || role === 'MANAGER') return true;
+        if (isAdmin) return true;
+        
+        // Non-admins cannot see 'Semua Menu'
+        if (menu.id === 'menus') return false;
         
         // Unit-specific roles
         if (role === 'BENGKEL') {
-            return menu.id === 'bengkel' || menu.id === 'menus';
+            return menu.id === 'bengkel';
         }
         if (role === 'JASA_ANGKUT') {
-            return menu.id === 'logistik' || menu.id === 'menus';
+            return menu.id === 'logistik';
         }
         if (role === 'MOBIL') {
-            return menu.id === 'mobil' || menu.id === 'menus';
+            return menu.id === 'mobil';
         }
         
-        // Default: allow (or restrict further if needed for other roles)
+        // Default: allow (or restrict further if needed)
         return true;
     });
 

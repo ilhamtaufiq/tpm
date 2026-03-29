@@ -13,9 +13,9 @@ export default function OTPScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { setAuth } = useAuthStore();
-    
+
     const { user_id, email } = params;
-    
+
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -62,7 +62,7 @@ export default function OTPScreen() {
                         <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
                         <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
 
-                        <Pressable 
+                        <Pressable
                             onPress={() => router.back()}
                             className="absolute top-16 left-6 p-2 rounded-full bg-white/10"
                         >
@@ -76,7 +76,7 @@ export default function OTPScreen() {
                         <Typography variant="h2" weight="bold" className="text-white text-center leading-tight">
                             Verifikasi OTP
                         </Typography>
-                        <Typography className="text-white/60 text-sm mt-2 font-medium text-center px-4">
+                        <Typography className="text-white/60 text-sm mt-2 font-medium text-left px-4">
                             Masukkan kode 6 digit yang telah kami kirimkan ke email {email}.
                         </Typography>
                     </View>
@@ -86,7 +86,7 @@ export default function OTPScreen() {
                             <Typography variant="body1" weight="bold" className="text-primary mb-6 text-center uppercase tracking-widest">
                                 KODE KEAMANAN
                             </Typography>
-                            
+
                             <Input
                                 placeholder="000 000"
                                 keyboardType="number-pad"
@@ -106,8 +106,8 @@ export default function OTPScreen() {
                                 className="shadow-lg shadow-primary/30 h-14 rounded-2xl"
                                 icon={<CheckCircle2 size={20} color="white" />}
                             />
-                            
-                            <Pressable 
+
+                            <Pressable
                                 onPress={() => router.back()}
                                 className="mt-6 items-center"
                             >

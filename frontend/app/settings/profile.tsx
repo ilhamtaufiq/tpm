@@ -16,6 +16,7 @@ export default function ProfileSettingsScreen() {
     const router = useRouter();
     const { user, setAuth, token } = useAuthStore();
     const { themeColors } = useUIStore();
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
     // Form States
     const [name, setName] = useState(user?.full_name || user?.name || 'Admin TPM');
@@ -254,13 +255,14 @@ export default function ProfileSettingsScreen() {
                             {/* Role Input */}
                             <View>
                                 <Typography variant="caption" className="text-text/40 mb-2 ml-1">Jabatan / Divisi</Typography>
-                                <View className="flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100">
+                                <View className={`flex-row items-center bg-background h-14 rounded-2xl px-4 border border-gray-100 ${!isAdmin ? 'opacity-50' : ''}`}>
                                     <Briefcase size={18} color="#9CA3AF" />
                                     <TextInput
                                         className="flex-1 ml-3 text-text font-bold"
                                         placeholder="Contoh: Manager"
                                         value={jabatan}
                                         onChangeText={setJabatan}
+                                        editable={isAdmin}
                                     />
                                 </View>
                             </View>
@@ -287,7 +289,6 @@ export default function ProfileSettingsScreen() {
                 <Pressable
                     onPress={handleSave}
                     disabled={isSaving}
-                    activeOpacity={0.8}
                     className={`h-16 rounded-3xl flex-row items-center justify-center shadow-xl ${isSaving ? 'bg-primary/60' : 'bg-primary'}`}
                 >
                     <Save size={20} color="white" />
