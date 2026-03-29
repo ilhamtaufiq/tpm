@@ -1,16 +1,24 @@
 # Continuity Ledger
 
-- Goal: Fix `NameError: name 'LoginResponse' is not defined` in `backend/app/api/v1/auth.py`.
+- Goal: Implement Role-Based Access Control (RBAC) to restrict unit-specific roles (Bengkel, Jasa Angkut, Mobil) to their respective modules, while allowing Admin/Manager full access.
 - Constraints/Assumptions:
-  - Error occurs at line 40: `@router.post("/login", response_model=LoginResponse)`.
-  - `LoginResponse` is likely a Pydantic schema that is either not imported or defined after use.
+  - Role 'BENGKEL' -> only see/access 'Bengkel'
+  - Role 'JASA_ANGKUT' -> only see/access 'Logistik'
+  - Role 'MOBIL' -> only see/access 'Jual Beli Mobil'
+  - 'ADMIN'/'MANAGER' -> full access.
 - Key decisions:
-  - Initial investigation to find the definition of `LoginResponse`.
+  - Filter `ServiceGrid` on the home screen.
+  - Filter search results in `Header` based on user role.
+  - `all-menus.tsx` already has filtering logic.
 - State:
-  - Done: None
-  - Now: Researching `LoginResponse` definition and auditing `auth.py`.
-  - Next: Apply fix (import or move definition).
+  - Done:
+    - Filtered `ServiceGrid.tsx` for unit roles.
+    - Filtered `Header.tsx` (search functionality) for unit roles.
+  - Now: Verifying and finalizing RBAC implementation.
+  - Next: Address any other navigation entry points if needed.
 - Open questions (UNCONFIRMED if needed):
-  - Where is `LoginResponse` defined?
+  - Should other roles (MEKANIK, STAFF, etc.) also be restricted or should they follow 'ADMIN' defaults? (Followed user specific request for now).
 - Working set (files/ids/commands):
-  - `backend/app/api/v1/auth.py`
+  - `frontend/components/ServiceGrid.tsx`
+  - `frontend/components/ui/Header.tsx`
+  - `frontend/app/all-menus.tsx`

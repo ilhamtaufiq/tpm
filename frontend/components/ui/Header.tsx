@@ -52,13 +52,28 @@ export const Header = ({
     const filteredRoutes = useMemo(() => {
         if (!query.trim()) return [];
         const q = query.toLowerCase();
-        return APP_ROUTES.filter(route =>
-            route.label.toLowerCase().includes(q) ||
-            route.description.toLowerCase().includes(q) ||
-            route.category.toLowerCase().includes(q) ||
-            route.keywords.some(k => k.toLowerCase().includes(q))
-        ).slice(0, 10);
-    }, [query]);
+        const role = user?.role;
+
+        return APP_ROUTES.filter(route => {
+            // Role-based filtering
+            if (role !== 'ADMIN' && role !== 'MANAGER') {
+                if (role === 'BENGKEL') {
+                    if (route.category !== 'Bengkel' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                } else if (role === 'JASA_ANGKUT') {
+                    if (route.category !== 'Logistik' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                } else if (role === 'MOBIL') {
+                    if (route.category !== 'Mobil' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                }
+                // Other non-admin/manager roles might need more restrictions, but these were explicitly mentioned.
+            }
+
+            // Search query filtering
+            return route.label.toLowerCase().includes(q) ||
+                route.description.toLowerCase().includes(q) ||
+                route.category.toLowerCase().includes(q) ||
+                route.keywords.some(k => k.toLowerCase().includes(q));
+        }).slice(0, 10);
+    }, [query, user?.role]);
 
     const handleNavigate = (path: string) => {
         setIsSearchOpen(false);
@@ -152,7 +167,6 @@ export const Header = ({
                 {showSearch && (
                     <Pressable
                         onPress={() => setIsSearchOpen(true)}
-                        activeOpacity={0.9}
                         className="bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md mt-2"
                     >
                         <Search size={18} color="white" opacity={0.6} />
@@ -216,7 +230,6 @@ export const Header = ({
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
                                             className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
-                                            activeOpacity={0.7}
                                         >
                                             <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
                                                 <Icon size={24} color={themeColors.primary} />

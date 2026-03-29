@@ -3,6 +3,7 @@ import { View, Pressable } from 'react-native';
 import { Wrench, CarFront, Truck, Users, BarChart3, Database, Receipt, History, LayoutGrid } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { useUIStore } from '../store/useUIStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { router } from 'expo-router';
 import Animated, {
     useSharedValue,
@@ -89,6 +90,7 @@ const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, t
 
 export const ServiceGrid = () => {
     const { themeColors } = useUIStore();
+    const { user } = useAuthStore();
 
     const MENUS = [
         { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: themeColors.primary, path: '/bengkel' },
@@ -97,10 +99,31 @@ export const ServiceGrid = () => {
         { id: 'menus', label: 'Semua Menu', icon: LayoutGrid, color: themeColors.primary, path: '/all-menus' },
     ];
 
+    const filteredMenus = MENUS.filter(menu => {
+        const role = user?.role;
+        
+        // Admin and Manager see everything
+        if (role === 'ADMIN' || role === 'MANAGER') return true;
+        
+        // Unit-specific roles
+        if (role === 'BENGKEL') {
+            return menu.id === 'bengkel' || menu.id === 'menus';
+        }
+        if (role === 'JASA_ANGKUT') {
+            return menu.id === 'logistik' || menu.id === 'menus';
+        }
+        if (role === 'MOBIL') {
+            return menu.id === 'mobil' || menu.id === 'menus';
+        }
+        
+        // Default: allow (or restrict further if needed for other roles)
+        return true;
+    });
+
     return (
         <View className="px-5 mt-8">
             <View className="flex-row flex-wrap">
-                {MENUS.map((menu, index) => (
+                {filteredMenus.map((menu, index) => (
                     <ServiceCard key={menu.id} menu={menu} index={index} themeColors={themeColors} />
                 ))}
             </View>
