@@ -6,7 +6,7 @@ import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUp } from 'lucide-react-native';
-import { useRouter, router } from 'expo-router';
+import { useRouter, router, Redirect } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
 import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
@@ -16,6 +16,10 @@ import { EmptyState } from '../../components/ui/EmptyState';
 export default function FinanceTab() {
     const [refreshing, setRefreshing] = useState(false);
     const { user } = useAuthStore();
+
+    if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
+        return <Redirect href="/(tabs)/home" />;
+    }
 
     // API Hooks - Enable auto-refresh every 60 seconds
     const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(undefined, { refetchInterval: 60000 });

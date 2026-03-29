@@ -17,7 +17,7 @@ import {
     CarFront
 } from 'lucide-react-native';
 import { Typography } from '../components/ui/Typography';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useUIStore } from '../store/useUIStore';
 import { WalletSection } from '../components/WalletSection';
 import { TransactionList } from '../components/TransactionList';
@@ -125,6 +125,12 @@ export default function AllMenusScreen() {
     const { user } = useAuthStore();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
+
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+
+    if (!isAdmin) {
+        return <Redirect href="/(tabs)/home" />;
+    }
 
     const ALL_MENUS = [
         {

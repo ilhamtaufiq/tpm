@@ -19,7 +19,7 @@ import {
     Calendar,
     User
 } from 'lucide-react-native';
-import { useRouter, router } from 'expo-router';
+import { useRouter, router, Redirect } from 'expo-router';
 import { useRecentActivity } from '../../hooks/useKeuangan';
 import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -89,6 +89,10 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 export default function HistoryTab() {
     const [search, setSearch] = useState('');
     const { user } = useAuthStore();
+    
+    if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
+        return <Redirect href="/(tabs)/home" />;
+    }
     const [refreshing, setRefreshing] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -182,7 +186,6 @@ export default function HistoryTab() {
                         return (
                             <Pressable
                                 key={item.id}
-                                activeOpacity={0.7}
                                 className="bg-white p-4 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
                                 onPress={() => {
                                     setSelectedItem(item);
