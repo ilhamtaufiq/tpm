@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, Token
+from app.schemas.user import UserCreate, UserUpdate, UserResponse, Token, LoginResponse
 from app.utils.security import (
     hash_password,
     verify_password,

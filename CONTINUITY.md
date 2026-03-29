@@ -1,22 +1,16 @@
-- Goal: Add unit-specific roles (Bengkel, Jasa Angkut, Mobil) to the user management system.
+# Continuity Ledger
+
+- Goal: Fix `NameError: name 'LoginResponse' is not defined` in `backend/app/api/v1/auth.py`.
 - Constraints/Assumptions:
-  - Frontend is React Native (Expo).
-  - Backend uses FastAPI with MySQL.
+  - Error occurs at line 40: `@router.post("/login", response_model=LoginResponse)`.
+  - `LoginResponse` is likely a Pydantic schema that is either not imported or defined after use.
 - Key decisions:
-  - Added BENGKEL, JASA_ANGKUT, and MOBIL roles.
-  - Updated backend UserRole enum.
-  - Updated frontend ROLE_OPTIONS and icons.
-  - Performed direct DB schema update for the role Enum.
+  - Initial investigation to find the definition of `LoginResponse`.
 - State:
-  - Done:
-    - Updated `backend/app/utils/constants.py` with the new roles.
-    - Updated `frontend/app/settings/users.tsx` with icons and options.
-    - Executed `backend/fix_user_roles_enum.py` to update the DB ENUM column.
-  - Now:
-    - Verifying frontend display.
-  - Next:
+  - Done: None
+  - Now: Researching `LoginResponse` definition and auditing `auth.py`.
+  - Next: Apply fix (import or move definition).
 - Open questions (UNCONFIRMED if needed):
+  - Where is `LoginResponse` defined?
 - Working set (files/ids/commands):
-  - `frontend/app/settings/users.tsx`
-  - `backend/app/utils/constants.py`
-  - `backend/fix_user_roles_enum.py`
+  - `backend/app/api/v1/auth.py`
