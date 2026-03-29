@@ -19,7 +19,6 @@ import {
     RefreshCw,
     QrCode,
     Barcode,
-    Minus,
     Printer,
     Image as ImageIcon,
     Camera,
@@ -40,7 +39,6 @@ import {
     useUpdateSparePart,
     useDeleteSparePart,
     useImportSpareParts,
-    useUpdateSparePartStock,
     useNextSparePartKode,
     useDebounce,
     useUploadSparePartImage,
@@ -129,14 +127,7 @@ export default function SparePartMasterScreen() {
     const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part'>('kode_part');
     const importMutation = useImportSpareParts();
     const { refetch: fetchNextKode } = useNextSparePartKode();
-    const updateStockMutation = useUpdateSparePartStock();
 
-    // Quick Stock States
-    const [isGlobalScannerOpen, setIsGlobalScannerOpen] = useState(false);
-    const [isQuickStockVisible, setIsQuickStockVisible] = useState(false);
-    const [scannedPart, setScannedPart] = useState<any>(null);
-    const [stockChange, setStockChange] = useState('0');
-    const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
     const [isPrintModalVisible, setIsPrintModalVisible] = useState(false);
     const [isImportModalVisible, setIsImportModalVisible] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -247,47 +238,7 @@ export default function SparePartMasterScreen() {
         setIsScannerOpen(false);
     };
 
-    const handleGlobalScan = (scannedData: string) => {
-        setIsGlobalScannerOpen(false);
-        const cleanData = scannedData.trim();
-        const part = sparePartsList.find((p: any) =>
-            p.kode === cleanData || p.kode_part === cleanData
-        );
 
-        if (part) {
-            setScannedPart(part);
-            setStockChange('1');
-            setStockOp('add');
-            setIsQuickStockVisible(true);
-        } else {
-            if (Platform.OS === 'web') {
-                alert(`Kode "${scannedData}" tidak terdaftar di database.`);
-            } else {
-                Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
-            }
-        }
-    };
-
-    const handleQuickStockUpdate = async () => {
-        if (!scannedPart || !stockChange) return;
-
-        try {
-            await updateStockMutation.mutateAsync({
-                id: scannedPart.id,
-                quantity: parseInt(stockChange) || 0,
-                operation: stockOp
-            });
-            setIsQuickStockVisible(false);
-            setScannedPart(null);
-            // sparePartsData is refetched automatically by mutation onSuccess
-        } catch (error) {
-            if (Platform.OS === 'web') {
-                alert('Gagal memperbarui stok.');
-            } else {
-                Alert.alert('Error', 'Gagal memperbarui stok.');
-            }
-        }
-    };
 
     const handleSubmit = async () => {
         try {
@@ -955,12 +906,7 @@ export default function SparePartMasterScreen() {
                         >
                             <Printer size={20} color="white" />
                         </Pressable>
-                        <Pressable
-                            onPress={() => setIsGlobalScannerOpen(true)}
-                            className="w-11 h-11 bg-emerald-500/20 rounded-2xl items-center justify-center border border-emerald-500/30"
-                        >
-                            <Barcode size={20} color="white" />
-                        </Pressable>
+
                         <Pressable
                             onPress={() => refetch()}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
@@ -1152,75 +1098,7 @@ export default function SparePartMasterScreen() {
                 onScan={handleScanCode}
             />
 
-            <BarcodeScannerModal
-                visible={isGlobalScannerOpen}
-                onClose={() => setIsGlobalScannerOpen(false)}
-                onScan={handleGlobalScan}
-                continuous
-            />
 
-            {/* Quick Stock Modal */}
-            <BaseModal
-                visible={isQuickStockVisible}
-                onClose={() => setIsQuickStockVisible(false)}
-                title="Update Stok Cepat"
-            >
-                <View className="p-4">
-                    {scannedPart && (
-                        <View className="bg-gray-50 p-4 rounded-2xl mb-6 border border-gray-100 flex-row items-center">
-                            <View className="bg-white p-2 rounded-xl mr-4 shadow-sm">
-                                <Package size={24} color="#374151" />
-                            </View>
-                            <View className="flex-1">
-                                <Typography variant="caption" className="text-gray-400 font-bold uppercase">{scannedPart.kode}</Typography>
-                                <Typography variant="body1" weight="bold" className="text-gray-800">{scannedPart.nama}</Typography>
-                                <Typography className="text-primary text-xs font-bold mt-1">Stok Sekarang: {scannedPart.stok}</Typography>
-                            </View>
-                        </View>
-                    )}
-
-                    <View className="flex-row mb-6 bg-gray-100 p-1 rounded-2xl">
-                        <Pressable
-                            onPress={() => setStockOp('add')}
-                            className={`flex-1 py-3 items-center rounded-xl flex-row justify-center ${stockOp === 'add' ? 'bg-primary shadow-sm' : ''}`}
-                        >
-                            <Plus size={18} color={stockOp === 'add' ? 'white' : '#6B7280'} className="mr-2" />
-                            <Typography weight="bold" className={stockOp === 'add' ? 'text-white' : 'text-gray-500'}>Tambah</Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setStockOp('subtract')}
-                            className={`flex-1 py-3 items-center rounded-xl flex-row justify-center ${stockOp === 'subtract' ? 'bg-red-500 shadow-sm' : ''}`}
-                        >
-                            <Minus size={18} color={stockOp === 'subtract' ? 'white' : '#6B7280'} className="mr-2" />
-                            <Typography weight="bold" className={stockOp === 'subtract' ? 'text-white' : 'text-gray-500'}>Kurangi</Typography>
-                        </Pressable>
-                    </View>
-
-                    <View className="mb-8">
-                        <Typography className="text-gray-400 font-bold text-xs uppercase ml-1 mb-2">Jumlah Unit</Typography>
-                        <TextInput
-                            className="bg-gray-50 border border-gray-200 rounded-2xl px-6 py-4 text-center text-3xl font-bold text-gray-800"
-                            keyboardType="numeric"
-                            value={stockChange}
-                            onChangeText={setStockChange}
-                            autoFocus
-                        />
-                    </View>
-
-                    <Button
-                        title="Simpan Perubahan Stok"
-                        onPress={handleQuickStockUpdate}
-                        size="lg"
-                        className={stockOp === 'subtract' ? 'bg-red-500' : ''}
-                    />
-                    <Button
-                        title="Batal"
-                        variant="ghost"
-                        onPress={() => setIsQuickStockVisible(false)}
-                        className="mt-2"
-                    />
-                </View>
-            </BaseModal>
 
             {/* Print Selection Modal */}
             <BaseModal
