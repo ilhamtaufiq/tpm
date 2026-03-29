@@ -1,6 +1,7 @@
 # Continuity Ledger
 
 - Goal: Implement Role-Based Access Control (RBAC) to restrict unit-specific roles (Bengkel, Jasa Angkut, Mobil) to their respective modules, while allowing Admin/Manager full access.
+- Goal: Adjust `frontend/app/finance/akun.tsx` to display transaction stats (Masuk/Keluar) per account and include all active accounts in the list.
 - Constraints/Assumptions:
   - Role 'BENGKEL' -> only see/access 'Bengkel'
   - Role 'JASA_ANGKUT' -> only see/access 'Logistik'
@@ -10,15 +11,19 @@
   - Filter `ServiceGrid` on the home screen.
   - Filter search results in `Header` based on user role.
   - `all-menus.tsx` already has filtering logic.
+  - Show `total_masuk_bulan_ini` and `total_keluar_bulan_ini` in `akun.tsx` account cards.
+  - Link account cards to `mutasi.tsx` with specific filters.
+  - Include `KAS_UTAMA`, `BANK_UTAMA`, and unit-specific cashes in the account list.
 - State:
   - Done:
     - Filtered `ServiceGrid.tsx` for unit roles.
     - Filtered `Header.tsx` (search functionality) for unit roles.
-  - Now: Verifying and finalizing RBAC implementation.
-  - Next: Address any other navigation entry points if needed.
+  - Now: Refactoring `frontend/app/finance/akun.tsx` to improve financial transaction visibility.
+  - Next: Verify RBAC integration with new components.
 - Open questions (UNCONFIRMED if needed):
-  - Should other roles (MEKANIK, STAFF, etc.) also be restricted or should they follow 'ADMIN' defaults? (Followed user specific request for now).
+  - Should the "Adjustment" modal in `akun.tsx` be changed to a "Transaction Entry" modal too?
 - Working set (files/ids/commands):
   - `frontend/components/ServiceGrid.tsx`
   - `frontend/components/ui/Header.tsx`
-  - `frontend/app/all-menus.tsx`
+  - `frontend/app/finance/akun.tsx`
+  - `frontend/app/finance/mutasi.tsx`

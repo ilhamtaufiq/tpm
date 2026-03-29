@@ -14,7 +14,12 @@ import {
     Calendar,
     FileText,
     BarChart3,
-    X
+    X,
+    Building2,
+    Wrench,
+    Truck,
+    Car,
+    History
 } from 'lucide-react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { keuanganService, KasBankAllBalances, KasBankBalance, KasBankJenis } from '../../services/keuangan';
@@ -32,16 +37,26 @@ const ACCOUNT_ICONS: Record<string, any> = {
     BANK_MANDIRI: CreditCard,
     BANK_BRI: CreditCard,
     BANK_LAINNYA: Banknote,
+    KAS_UTAMA: Building2,
+    BANK_UTAMA: CreditCard,
+    KAS_UNIT_BENGKEL: Wrench,
+    KAS_UNIT_JASA_ANGKUT: Truck,
+    KAS_UNIT_MOBIL: Car,
 };
 
 const ACCOUNT_LABELS: Record<string, string> = {
-    CASH: 'Kas Tunai',
-    BANK_BCA: 'Bank BCA',
-    BANK_MANDIRI: 'Bank Mandiri',
-    BANK_BRI: 'Bank BRI',
-    BANK_LAINNYA: 'Bank Lainnya',
+    CASH: 'Kas Tunai (Lama)',
+    BANK_BCA: 'BCA (Lama)',
+    BANK_MANDIRI: 'Mandiri (Lama)',
+    BANK_BRI: 'BRI (Lama)',
+    BANK_LAINNYA: 'Lainnya (Lama)',
     PIUTANG: 'Piutang Usaha',
     HUTANG: 'Hutang Usaha',
+    KAS_UTAMA: 'Kas Kantor Utama',
+    BANK_UTAMA: 'Bank Utama (BCA)',
+    KAS_UNIT_BENGKEL: 'Bengkel (Cash)',
+    KAS_UNIT_JASA_ANGKUT: 'Jasa Angkut (Cash)',
+    KAS_UNIT_MOBIL: 'Mobil (Cash)',
 };
 
 const REPORT_CATEGORIES: Record<string, string> = {
@@ -52,6 +67,11 @@ const REPORT_CATEGORIES: Record<string, string> = {
     BANK_LAINNYA: 'Neraca: Aktiva Lancar',
     PIUTANG: 'Neraca: Aktiva Lancar',
     HUTANG: 'Neraca: Kewajiban',
+    KAS_UTAMA: 'Neraca: Aktiva Lancar',
+    BANK_UTAMA: 'Neraca: Aktiva Lancar',
+    KAS_UNIT_BENGKEL: 'Neraca: Aktiva Lancar',
+    KAS_UNIT_JASA_ANGKUT: 'Neraca: Aktiva Lancar',
+    KAS_UNIT_MOBIL: 'Neraca: Aktiva Lancar',
 };
 
 const STATEMENT_LABELS: Record<string, string> = {
@@ -62,6 +82,11 @@ const STATEMENT_LABELS: Record<string, string> = {
     BANK_LAINNYA: 'Bank & Simpanan',
     PIUTANG: 'Tagihan Pelanggan',
     HUTANG: 'Kewajiban Supplier',
+    KAS_UTAMA: 'Kas & Setara Kas',
+    BANK_UTAMA: 'Bank & Simpanan',
+    KAS_UNIT_BENGKEL: 'Unit Operasional',
+    KAS_UNIT_JASA_ANGKUT: 'Unit Operasional',
+    KAS_UNIT_MOBIL: 'Unit Operasional',
 };
 
 const ACCOUNT_CATEGORIES: Record<string, string> = {
@@ -72,7 +97,21 @@ const ACCOUNT_CATEGORIES: Record<string, string> = {
     BANK_LAINNYA: 'Perbankan',
 };
 
-const DUMMY_ACCOUNTS: KasBankJenis[] = ['CASH', 'BANK_BCA', 'BANK_MANDIRI', 'BANK_BRI', 'BANK_LAINNYA'];
+const ACTIVE_ACCOUNTS: KasBankJenis[] = [
+    'KAS_UTAMA',
+    'BANK_UTAMA',
+    'KAS_UNIT_BENGKEL',
+    'KAS_UNIT_JASA_ANGKUT',
+    'KAS_UNIT_MOBIL',
+];
+
+const LEGACY_ACCOUNTS: KasBankJenis[] = [
+    'CASH',
+    'BANK_BCA',
+    'BANK_MANDIRI',
+    'BANK_BRI',
+    'BANK_LAINNYA',
+];
 
 export default function AkunKeuanganScreen() {
     const router = useRouter();
@@ -181,9 +220,9 @@ export default function AkunKeuanganScreen() {
         const Icon = ACCOUNT_ICONS[jenis] || Banknote;
         const currentBalance = accountData?.saldo || 0;
 
-        // Visibility Logic: Always show CASH and BANK_BCA. Others only if saldo > 0 or showAll is true.
-        const isAlwaysVisible = jenis === 'CASH' || jenis === 'BANK_BCA';
-        const shouldHide = !isAlwaysVisible && currentBalance === 0 && !showAllAccounts;
+        // Visibility Logic: Always show active ones. Legacy only if saldo > 0 or showAll is true.
+        const isActive = ACTIVE_ACCOUNTS.includes(jenis);
+        const shouldHide = !isActive && currentBalance === 0 && !showAllAccounts;
 
         if (shouldHide) return null;
 
@@ -221,22 +260,48 @@ export default function AkunKeuanganScreen() {
                         )}
                     </View>
 
-                    <Typography className="text-gray-400 text-xs mb-2">Terakhir diperbarui hari ini</Typography>
+                    <Typography className="text-gray-400 text-xs mb-3">Terakhir diperbarui hari ini</Typography>
+
+                    <View className="flex-row items-center justify-between mb-4 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
+                        <View className="flex-1">
+                            <View className="flex-row items-center mb-0.5">
+                                <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
+                                <Typography className="text-emerald-600 text-[8px] font-bold uppercase">Masuk</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-emerald-700 text-xs">{formatCurrency(accountData?.total_masuk_bulan_ini || 0)}</Typography>
+                        </View>
+                        <View className="w-[1px] h-6 bg-gray-200 mx-3" />
+                        <View className="flex-1">
+                            <View className="flex-row items-center mb-0.5">
+                                <View className="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5" />
+                                <Typography className="text-rose-600 text-[8px] font-bold uppercase">Keluar</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-rose-700 text-xs">{formatCurrency(accountData?.total_keluar_bulan_ini || 0)}</Typography>
+                        </View>
+                    </View>
 
                     <View className="flex-row items-center justify-between pt-3 border-t border-gray-50">
-                        <View>
+                        <View className="flex-1">
                             <Typography className="text-gray-400 text-[10px] uppercase font-bold">Saldo Saat Ini</Typography>
                             <Typography variant="h3" weight="bold" className="text-primary mt-0.5">
                                 {formatCurrency(currentBalance)}
                             </Typography>
                         </View>
-                        <Pressable
-                            onPress={() => handleAdjustClick(jenis)}
-                            className="bg-primary/10 px-4 py-2 rounded-xl flex-row items-center"
-                        >
-                            <RefreshCw size={14} color="#023C69" />
-                            <Typography className="text-primary text-xs font-bold ml-2">Ubah</Typography>
-                        </Pressable>
+                        <View className="flex-row space-x-2">
+                            <Pressable
+                                onPress={() => router.push({ pathname: '/finance/mutasi', params: { jenis } })}
+                                className="bg-gray-100 w-10 h-10 rounded-xl items-center justify-center border border-gray-200"
+                            >
+                                <History size={18} color="#6B7280" />
+                            </Pressable>
+                            <Pressable
+                                onPress={() => handleAdjustClick(jenis)}
+                                className="bg-primary/10 px-4 py-2 rounded-xl flex-row items-center h-10"
+                            >
+                                <RefreshCw size={14} color="#023C69" />
+                                <Typography className="text-primary text-xs font-bold ml-2">Ubah</Typography>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
             </Pressable>
@@ -318,17 +383,41 @@ export default function AkunKeuanganScreen() {
                     <Typography weight="bold" className="text-gray-800">
                         {selectedAccount ? ACCOUNT_LABELS[selectedAccount] : ''}
                     </Typography>
+                    <View className="flex-1" />
+                    <View className="items-end">
+                        <Typography className="text-gray-400 text-[8px] uppercase font-bold">Saldo Sekarang</Typography>
+                        <Typography weight="bold" className="text-primary text-xs">
+                            {formatCurrency(balances ? (balances[selectedAccount?.toLowerCase() as keyof KasBankAllBalances] as any)?.saldo || 0 : 0)}
+                        </Typography>
+                    </View>
                 </View>
             </View>
 
-            <Input
-                label="SALDO TARGET BARU"
-                value={newNominal}
-                onChangeText={setNewNominal}
-                keyboardType="numeric"
-                placeholder="0"
-                startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
-            />
+            <View className="flex-row items-start space-x-4">
+                <View className="flex-1">
+                    <Input
+                        label="SALDO TARGET BARU"
+                        value={newNominal}
+                        onChangeText={setNewNominal}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        startIcon={<Typography weight="bold" className="text-gray-400">Rp</Typography>}
+                    />
+                </View>
+                <View className="w-1/3 pt-8 items-center bg-gray-50 rounded-2xl h-14 justify-center border border-dashed border-gray-300">
+                   <Typography className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Selisih</Typography>
+                   {(() => {
+                       const current = balances ? (balances[selectedAccount?.toLowerCase() as keyof KasBankAllBalances] as any)?.saldo || 0 : 0;
+                       const target = parseFloat(newNominal.replace(/[^0-9.-]+/g,"")) || 0;
+                       const diff = target - current;
+                       return (
+                           <Typography weight="bold" className={`text-xs ${diff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                               {diff >= 0 ? '+' : ''}{formatCurrency(diff).replace('Rp', '')}
+                           </Typography>
+                       );
+                   })()}
+                </View>
+            </View>
 
             <Input
                 label="TANGGAL"
@@ -411,7 +500,7 @@ export default function AkunKeuanganScreen() {
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
                                             if (typeof curr === 'object' && curr !== null && 'total_masuk_bulan_ini' in curr) {
-                                                return acc + (curr.total_masuk_bulan_ini || 0);
+                                                return acc + Number(curr.total_masuk_bulan_ini || 0);
                                             }
                                             return acc;
                                         }, 0)
@@ -429,7 +518,7 @@ export default function AkunKeuanganScreen() {
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
                                             if (typeof curr === 'object' && curr !== null && 'total_keluar_bulan_ini' in curr) {
-                                                return acc + (curr.total_keluar_bulan_ini || 0);
+                                                return acc + Number(curr.total_keluar_bulan_ini || 0);
                                             }
                                             return acc;
                                         }, 0)
@@ -491,7 +580,17 @@ export default function AkunKeuanganScreen() {
                                     </Typography>
                                 </Pressable>
                             </View>
-                            {DUMMY_ACCOUNTS.map(renderAccountItem)}
+                            {ACTIVE_ACCOUNTS.map(renderAccountItem)}
+                            
+                            {showAllAccounts && (
+                                <View className="mt-4 pt-4 border-t border-gray-100">
+                                    <View className="flex-row items-center mb-4 px-1">
+                                        <History size={14} color="#9CA3AF" />
+                                        <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest ml-2">Rekening Legacy / Lama</Typography>
+                                    </View>
+                                    {LEGACY_ACCOUNTS.map(renderAccountItem)}
+                                </View>
+                            )}
                         </View>
                     </>
                 )}
