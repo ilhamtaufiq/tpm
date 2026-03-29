@@ -178,7 +178,7 @@ export default function MutasiKasScreen() {
                     keterangan: transferForm.keterangan,
                 });
                 handleCloseSheet();
-                setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '' });
+                setTransferForm({ dari: 'CASH', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
                 setDialogConfig({
                     visible: true,
                     title: "Offline Mode",
@@ -197,7 +197,7 @@ export default function MutasiKasScreen() {
                 keterangan: transferForm.keterangan,
             });
             handleCloseSheet();
-            setTransferForm({ dari: 'CASH', ke: 'BANK_BCA', nominal: '', keterangan: '' });
+            setTransferForm({ dari: 'CASH', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",

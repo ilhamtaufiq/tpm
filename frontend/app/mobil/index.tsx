@@ -16,8 +16,16 @@ import {
     CircleDollarSign,
     Calculator,
     TrendingUp,
+    TrendingDown,
     Trash2,
-    X
+    X,
+    Wallet,
+    ArrowUpRight,
+    ArrowUpCircle,
+    ArrowDownCircle,
+    Clock,
+    Share2,
+    RefreshCw
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { onlineManager } from '@tanstack/react-query';
@@ -30,11 +38,12 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { format, startOfMonth, isValid, parse } from 'date-fns';
-import { useMobilList, useDeleteMobil, usePenjualanSummary } from '../../hooks/useMobil';
+import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
-import { formatCurrency } from '../../utils/format';
-import { useKasBankBalances } from '../../hooks/useKeuangan';
-import { Platform, Modal } from 'react-native';
+import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer } from '../../hooks/useKeuangan';
+import { useCreatePengeluaran } from '../../hooks/useBengkel';
+import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
+import { Platform, Modal, TouchableOpacity } from 'react-native';
 
 export default function MobilInventoryScreen() {
     const router = useRouter();
@@ -53,6 +62,16 @@ export default function MobilInventoryScreen() {
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
     const [selectedDetailUnit, setSelectedDetailUnit] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
+
+    const [showWalletModal, setShowWalletModal] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+    // Inline Expense Form State
+    const [isRecordingExpense, setIsRecordingExpense] = useState(false);
+    const [expenseAmount, setExpenseAmount] = useState('');
+    const [expenseNote, setExpenseNote] = useState('');
+    const [expensePaymentMethod, setExpensePaymentMethod] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
+    const [expenseMode, setExpenseMode] = useState<'KELUAR' | 'MASUK' | 'SETORAN'>('KELUAR');
 
     // Dialog State
     const [dialogConfig, setDialogConfig] = useState<{
@@ -86,10 +105,15 @@ export default function MobilInventoryScreen() {
     const { data, isLoading, refetch } = useMobilList({
         status: activeTab,
         search: searchQuery,
-        tanggal_dari: dateRange.dari,
-        tanggal_sampai: dateRange.sampai
+        // Only apply date range for Sold/Booking, show all available inventory
+        tanggal_dari: activeTab === 'tersedia' ? undefined : dateRange.dari,
+        tanggal_sampai: activeTab === 'tersedia' ? undefined : dateRange.sampai
     }, {
         refetchInterval: 15000 // Polling every 15 seconds
+    });
+
+    const { data: inventorySummary, refetch: refetchInventorySum } = useInventorySummary({
+        refetchInterval: 15000
     });
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
@@ -102,6 +126,19 @@ export default function MobilInventoryScreen() {
 
     const { data: balancesData } = useKasBankBalances();
     const unitBalance = balancesData?.kas_unit_mobil?.saldo || 0;
+
+    const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
+        jenis: 'KAS_UNIT_MOBIL',
+        limit: 20,
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
+    });
+
+    const createExpenseMutation = useCreatePengeluaran();
+    const createTransactionMutation = useCreateTransaction();
+    const transferMutation = useTransfer();
 
     const deleteMutation = useDeleteMobil();
 
@@ -327,13 +364,334 @@ export default function MobilInventoryScreen() {
         </View>
     );
 
+    const handleCloseWallet = () => {
+        if (Platform.OS === 'web') {
+            setShowWalletModal(false);
+        } else {
+            walletSheetRef.current?.dismiss();
+        }
+        setIsRecordingExpense(false);
+        setExpenseAmount('');
+        setExpenseNote('');
+    };
+
+    const walletSheetRef = useRef<BottomSheetModal>(null);
+    const walletSnapPoints = useMemo(() => ['85%', '95%'], []);
+
+    const renderWalletContent = () => (
+        <>
+            <View className="flex-row justify-between items-center mb-8">
+                <View>
+                    <Typography variant="h3" weight="bold" className="text-primary text-2xl tracking-tight">Dompet Unit Mobil</Typography>
+                    <Typography className="text-textGray/40 text-[10px] uppercase font-black tracking-widest">Inventory Cash Liquidity</Typography>
+                </View>
+                <Pressable
+                    onPress={handleCloseWallet}
+                    className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
+                >
+                    <X size={20} color="#6B7280" />
+                </Pressable>
+            </View>
+
+            {/* Main Wallet View */}
+            {!isRecordingExpense && (
+                <View>
+                    {/* Balance Card */}
+                    <View className="bg-primary p-7 rounded-[32px] mb-6 shadow-xl shadow-primary/20 relative overflow-hidden">
+                        <View className="absolute top-0 right-0 p-4">
+                            <Wallet size={80} color="rgba(255,255,255,0.1)" strokeWidth={1} />
+                        </View>
+                        <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Total Saldo Kas Unit</Typography>
+                        <Typography weight="bold" className="text-white text-3xl tracking-tight">
+                            {formatCurrency(unitBalance)}
+                        </Typography>
+
+                        {/* Balance Components Breakdown */}
+                        <View className="mt-5 pt-5 border-t border-white/10 space-y-4">
+                            <View className="flex-row">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-1 h-1 rounded-full bg-blue-400 mr-1.5" />
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Dana Masuk Utama</Typography>
+                                    </View>
+                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summaryData?.total_dana_dari_utama || 0)}</Typography>
+                                </View>
+                                <View className="flex-1 items-end">
+                                    <View className="flex-row items-center mb-1">
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet Penjualan (Tunai)</Typography>
+                                        <View className="w-1 h-1 rounded-full bg-emerald-400 ml-1.5" />
+                                    </View>
+                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summaryData?.total_tunai || 0)}</Typography>
+                                </View>
+                            </View>
+
+                            <View className="flex-row pt-1 opacity-60">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-1.5 h-1.5 rounded-full bg-orange-400 mr-2" />
+                                        <Typography variant="caption" className="text-white/60 font-medium italic text-[9px]">Omzet Penjualan (Transfer)</Typography>
+                                    </View>
+                                    <Typography className="text-white/70 text-[10px] font-bold italic pl-3">{formatCurrency(summaryData?.total_transfer || 0)}</Typography>
+                                </View>
+                                <View className="flex-1 items-end justify-center">
+                                    <Typography className="text-white/30 text-[7px] text-right italic font-medium leading-tight">*Transfer masuk ke rekening pusat,{"\n"}tidak menambah saldo unit.</Typography>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Cash Activity History */}
+                    <View className="mb-8">
+                        <View className="flex-row justify-between items-center mb-4 px-1">
+                            <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
+                            <Pressable onPress={() => setShowHistoryModal(true)}>
+                                <Typography className="text-primary text-[10px] font-bold underline">Lihat Semua</Typography>
+                            </Pressable>
+                        </View>
+
+                        {historyData?.data?.length === 0 ? (
+                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-dashed border-gray-200 items-center justify-center">
+                                <Typography className="text-gray-400 text-xs italic">Belum ada aktivitas kas</Typography>
+                            </View>
+                        ) : (
+                            <View className="space-y-3">
+                                {historyData?.data?.slice(0, 2).map((item: any) => (
+                                    <View key={item.id} className="bg-white p-4 rounded-3xl border border-gray-100 flex-row items-center shadow-sm">
+                                        <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
+                                            }`}>
+                                            {item.tipe === 'MASUK' ? (
+                                                <TrendingUp size={20} color="#10B981" />
+                                            ) : (
+                                                <TrendingDown size={20} color="#E11D48" />
+                                            )}
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
+                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
+                                                }`}>
+                                                {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Quick Actions */}
+                    <View>
+                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian & Pengeluaran Kas</Typography>
+                        <View className="flex-row space-x-2 mb-6">
+                            <Pressable
+                                onPress={() => {
+                                    setExpenseMode('KELUAR');
+                                    setIsRecordingExpense(true);
+                                    setExpenseNote('');
+                                    setExpensePaymentMethod('TUNAI');
+                                }}
+                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                            >
+                                <View className="w-8 h-8 bg-rose-50 rounded-xl items-center justify-center mb-2">
+                                    <TrendingDown size={16} color="#E11D48" />
+                                </View>
+                                <Typography weight="bold" className="text-rose-600 text-[8px] uppercase tracking-wider">Catat Biaya</Typography>
+                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA KELUAR</Typography>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => {
+                                    setExpenseMode('MASUK');
+                                    setIsRecordingExpense(true);
+                                    setExpenseNote('Terima Dana dari Akun Utama');
+                                    setExpensePaymentMethod('TUNAI');
+                                }}
+                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                            >
+                                <View className="w-8 h-8 bg-emerald-50 rounded-xl items-center justify-center mb-2">
+                                    <TrendingUp size={16} color="#10B981" />
+                                </View>
+                                <Typography weight="bold" className="text-emerald-600 text-[8px] uppercase tracking-wider">Terima Dana</Typography>
+                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA MASUK</Typography>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => {
+                                    setExpenseMode('SETORAN');
+                                    setIsRecordingExpense(true);
+                                    setExpenseNote('Setoran Tunai ke Akun Utama');
+                                    setExpensePaymentMethod('TUNAI');
+                                }}
+                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                            >
+                                <View className="w-8 h-8 bg-blue-50 rounded-xl items-center justify-center mb-2">
+                                    <ArrowUpCircle size={16} color="#2563EB" />
+                                </View>
+                                <Typography weight="bold" className="text-blue-700 text-[8px] uppercase tracking-wider">Setoran Unit</Typography>
+                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">SETOR KE PUSAT</Typography>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            )}
+
+            {/* Expense Form View */}
+            {isRecordingExpense && (
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <Pressable
+                            onPress={() => {
+                                setIsRecordingExpense(false);
+                                setExpenseAmount('');
+                                setExpenseNote('');
+                            }}
+                            className="mr-3"
+                        >
+                            <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center">
+                                <ChevronLeft size={18} color="#6B7280" />
+                            </View>
+                        </Pressable>
+                        <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} tracking-tight`}>
+                            {expenseMode === 'KELUAR' ? 'Catat Biaya Operasional' : expenseMode === 'MASUK' ? 'Terima Dana (Pusat)' : 'Setoran ke Akun Utama'}
+                        </Typography>
+                    </View>
+
+                    <View className="space-y-6">
+                        <View>
+                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Jumlah Nominal (Rp)</Typography>
+                            <TextInput
+                                placeholder="0"
+                                keyboardType="numeric"
+                                value={expenseAmount}
+                                onChangeText={(val) => setExpenseAmount(formatNumber(val))}
+                                className={`bg-gray-50 p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} border border-gray-100`}
+                            />
+                        </View>
+
+                        <View>
+                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
+                            <TextInput
+                                placeholder="Contoh: Beli bensin, Aqua, dll..."
+                                value={expenseNote}
+                                onChangeText={setExpenseNote}
+                                className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
+                            />
+                        </View>
+
+                        {expenseMode === 'SETORAN' && (
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Penyetoran</Typography>
+                                <View className="flex-row space-x-3">
+                                    {[
+                                        { id: 'TUNAI', label: 'Cash (Akun Utama)' },
+                                        { id: 'TRANSFER', label: 'Bank (BCA Utama)' }
+                                    ].map((opt) => (
+                                        <Pressable
+                                            key={opt.id}
+                                            onPress={() => setExpensePaymentMethod(opt.id as any)}
+                                            className={`flex-1 p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
+                                                ? 'bg-blue-600 border-blue-600 shadow-sm'
+                                                : 'bg-white border-gray-100'
+                                                }`}
+                                        >
+                                            <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
+                                                {opt.id === 'TUNAI' ? 'SETOR CASH' : 'SETOR BANK'}
+                                            </Typography>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        <Button
+                            title={
+                                expenseMode === 'KELUAR' ? 'Catat Pengeluaran' :
+                                    expenseMode === 'MASUK' ? 'Catat Penambahan' : 'Catat Setoran'
+                            }
+                            loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending}
+                            onPress={async () => {
+                                if (!expenseAmount || !expenseNote) {
+                                    Alert.alert('Gagal', 'Mohon isi nominal dan keterangan');
+                                    return;
+                                }
+
+                                try {
+                                    if (expenseMode === 'KELUAR') {
+                                        await createExpenseMutation.mutateAsync({
+                                            tanggal: new Date().toISOString().split('T')[0],
+                                            jumlah: parseNumber(expenseAmount),
+                                            deskripsi: expenseNote,
+                                            metode_bayar: 'TUNAI',
+                                            bisnis_kategori: 'penjualan_mobil',
+                                            kategori: 'BIAYA_OPERASIONAL',
+                                            kas_jenis: 'KAS_UNIT_MOBIL'
+                                        });
+                                    } else if (expenseMode === 'MASUK') {
+                                        await transferMutation.mutateAsync({
+                                            dari: 'KAS_UTAMA',
+                                            ke: 'KAS_UNIT_MOBIL',
+                                            nominal: parseNumber(expenseAmount),
+                                            tanggal: new Date().toISOString().split('T')[0],
+                                            keterangan: expenseNote
+                                        });
+                                    } else {
+                                        const keAccount = expensePaymentMethod === 'TUNAI' ? 'KAS_UTAMA' : 'BANK_UTAMA';
+                                        await transferMutation.mutateAsync({
+                                            dari: 'KAS_UNIT_MOBIL',
+                                            ke: keAccount as any,
+                                            nominal: parseNumber(expenseAmount),
+                                            tanggal: new Date().toISOString().split('T')[0],
+                                            keterangan: expenseNote
+                                        });
+                                    }
+
+                                    setExpenseAmount('');
+                                    setExpenseNote('');
+                                    setIsRecordingExpense(false);
+                                    handleCloseWallet();
+
+                                    setDialogConfig({
+                                        visible: true,
+                                        title: 'Sukses',
+                                        message: expenseMode === 'KELUAR'
+                                            ? 'Biaya operasional unit mobil berhasil dicatat'
+                                            : expenseMode === 'MASUK'
+                                                ? 'Dana berhasil diterima dari akun utama'
+                                                : 'Setoran ke akun utama berhasil dicatat',
+                                        variant: 'success',
+                                        type: 'alert'
+                                    });
+
+                                    refetch();
+                                    refetchSummary();
+                                } catch (error) {
+                                    Alert.alert('Gagal', getErrorMessage(error, 'Gagal mencatat transaksi'));
+                                }
+                            }}
+                        />
+                    </View>
+                </View>
+            )}
+        </>
+    );
+
+    const getErrorMessage = (error: any, defaultMsg: string) => {
+        if (typeof error === 'string') return error;
+        return error?.response?.data?.detail || error?.message || defaultMsg;
+    };
+
     const unitStats = useMemo(() => {
-        return {
-            total: mobilsData.length,
-            tersedia: mobilsData.filter((m: any) => m.status === 'tersedia').length,
-            terjual: mobilsData.filter((m: any) => m.status === 'terjual').length
-        };
-    }, [mobilsData]);
+        if (inventorySummary) {
+            return {
+                total: inventorySummary.total_mobil || 0,
+                tersedia: inventorySummary.per_status?.TERSEDIA || inventorySummary.per_status?.tersedia || 0,
+                terjual: inventorySummary.per_status?.TERJUAL || inventorySummary.per_status?.terjual || 0
+            };
+        }
+        return { total: 0, tersedia: 0, terjual: 0 };
+    }, [inventorySummary]);
 
     return (
         <BottomSheetModalProvider>
@@ -352,21 +710,30 @@ export default function MobilInventoryScreen() {
                             </Pressable>
                             <View>
                                 <View className="flex-row items-center">
-                                    <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Unit Mobil</Typography>
-                                    <View className="bg-white/20 px-2 py-0.5 rounded-lg ml-3 flex-row items-center border border-white/10 shadow-sm">
-                                        <View className="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-1.5 shadow-sm" />
-                                        <Typography className="text-white text-[10px] font-bold">{formatCurrency(unitBalance)}</Typography>
-                                    </View>
+                                    <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jual Beli Mobil</Typography>
                                 </View>
                                 <Typography className="text-white/50 text-xs mt-0.5">Manajemen Inventaris & Penjualan</Typography>
                             </View>
                         </View>
-                        <Pressable
-                            onPress={() => router.push({ pathname: '/laporan/pembelian-mobil' })}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            <TrendingUp size={20} color="white" />
-                        </Pressable>
+                        <View className="flex-row space-x-2">
+                            <Pressable
+                                onPress={() => {
+                                    setShowWalletModal(true);
+                                    if (Platform.OS !== 'web') {
+                                        walletSheetRef.current?.present();
+                                    }
+                                }}
+                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            >
+                                <Wallet size={22} color="white" />
+                            </Pressable>
+                            <Pressable
+                                onPress={() => router.push({ pathname: '/laporan/pembelian-mobil' })}
+                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            >
+                                <TrendingUp size={22} color="white" />
+                            </Pressable>
+                        </View>
                     </View>
 
                     {/* Row 1: Operational Status (Inventory) */}
@@ -489,7 +856,10 @@ export default function MobilInventoryScreen() {
                     {['tersedia', 'booking', 'terjual'].map((tab) => (
                         <Pressable
                             key={tab}
-                            onPress={() => setActiveTab(tab)}
+                            onPress={() => {
+                                setActiveTab(tab);
+                                setPaymentFilter('ALL');
+                            }}
                             className={`px-5 py-2.5 rounded-2xl border ${activeTab === tab ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-white border-gray-100'}`}
                         >
                             <Typography className={`capitalize text-xs font-bold ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
@@ -665,21 +1035,71 @@ export default function MobilInventoryScreen() {
                     <Plus size={32} color="white" strokeWidth={3} />
                 </Pressable>
 
-                {/* Hybrid UI Logic modals (Web & Native) unchanged for logic consistency */}
+                {/* Hybrid UI Logic modals (Web & Native) */}
                 {Platform.OS === 'web' ? (
-                    <Modal visible={!!webModal} transparent animationType="slide" onRequestClose={() => setWebModal(null)}>
-                        <View className="flex-1 justify-end bg-black/40">
-                            <Pressable className="absolute inset-0" onPress={() => setWebModal(null)} />
-                            <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
-                                <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
-                                {webModal === 'new' && <MobilForm onSuccess={() => { setWebModal(null); refetch(); }} />}
-                                {webModal === 'edit' && editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { setWebModal(null); refetch(); }} />}
-                                {webModal === 'sales' && selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
-                                {webModal === 'cost' && selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
-                                {webModal === 'detail' && selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => setWebModal(null)} onSell={(u) => { setWebModal('sales'); setSelectedUnit(u); }} onEdit={() => { setWebModal('edit'); setEditingUnit(selectedDetailUnit); }} />}
+                    <>
+                        <Modal visible={!!webModal} transparent animationType="slide" onRequestClose={() => setWebModal(null)}>
+                            <View className="flex-1 justify-end bg-black/40">
+                                <Pressable className="absolute inset-0" onPress={() => setWebModal(null)} />
+                                <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[90%] self-center p-0 overflow-hidden shadow-2xl relative">
+                                    <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
+                                    {webModal === 'new' && <MobilForm onSuccess={() => { setWebModal(null); refetch(); }} />}
+                                    {webModal === 'edit' && editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { setWebModal(null); refetch(); }} />}
+                                    {webModal === 'sales' && selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
+                                    {webModal === 'cost' && selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { setWebModal(null); refetch(); }} />}
+                                    {webModal === 'detail' && selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => setWebModal(null)} onSell={(u) => { setWebModal('sales'); setSelectedUnit(u); }} onEdit={() => { setWebModal('edit'); setEditingUnit(selectedDetailUnit); }} />}
+                                </View>
                             </View>
-                        </View>
-                    </Modal>
+                        </Modal>
+
+                        <Modal visible={showWalletModal} transparent animationType="slide" onRequestClose={handleCloseWallet}>
+                            <View className="flex-1 justify-end bg-black/40">
+                                <Pressable className="absolute inset-0" onPress={handleCloseWallet} />
+                                <View className="bg-white rounded-t-[48px] w-full max-w-[640px] h-[85%] self-center p-8 overflow-hidden shadow-2xl relative">
+                                    <ScrollView showsVerticalScrollIndicator={false}>
+                                        {renderWalletContent()}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </Modal>
+
+                        <Modal visible={showHistoryModal} transparent animationType="fade" onRequestClose={() => setShowHistoryModal(false)}>
+                            <View className="flex-1 bg-black/60 justify-center items-center p-6">
+                                <View className="bg-white rounded-[40px] w-full max-w-md h-[80%] overflow-hidden shadow-2xl">
+                                    <View className="p-6 border-b border-gray-100 flex-row justify-between items-center">
+                                        <Typography variant="h3" weight="bold">Riwayat Kas & Setoran</Typography>
+                                        <Pressable onPress={() => setShowHistoryModal(false)} className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center">
+                                            <X size={18} color="#64748B" />
+                                        </Pressable>
+                                    </View>
+                                    <ScrollView className="flex-1 p-6">
+                                        {historyData?.data?.map((item: any) => (
+                                            <View key={item.id} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex-row items-center mb-4">
+                                                <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                                                    {item.tipe === 'MASUK' ? <TrendingUp size={20} color="#10B981" /> : <TrendingDown size={20} color="#E11D48" />}
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
+                                                    <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                </View>
+                                                <View className="items-end">
+                                                    <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
+                                                    </Typography>
+                                                </View>
+                                            </View>
+                                        ))}
+                                        {(!historyData?.data || historyData.data.length === 0) && (
+                                            <View className="py-20 items-center">
+                                                <CircleDollarSign size={48} color="#CBD5E1" />
+                                                <Typography className="text-gray-400 mt-4 italic">Belum ada riwayat aktivitas</Typography>
+                                            </View>
+                                        )}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </Modal>
+                    </>
                 ) : (
                     <>
                         <BottomSheetModal ref={bottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
@@ -707,6 +1127,20 @@ export default function MobilInventoryScreen() {
                                 {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
+
+                        <BottomSheetModal
+                            ref={walletSheetRef}
+                            index={0}
+                            snapPoints={walletSnapPoints}
+                            enablePanDownToClose
+                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            onDismiss={handleCloseWallet}
+                        >
+                            <BottomSheetView className="flex-1 px-8 py-2">
+                                {renderWalletContent()}
+                            </BottomSheetView>
+                        </BottomSheetModal>
+
                         <BottomSheetModal
                             ref={dateSheetRef}
                             index={0}
@@ -720,6 +1154,48 @@ export default function MobilInventoryScreen() {
                                 {renderDateContent()}
                             </BottomSheetView>
                         </BottomSheetModal>
+
+                        {/* History Modal for Mobile */}
+                        <Modal visible={showHistoryModal} transparent animationType="slide" onRequestClose={() => setShowHistoryModal(false)}>
+                            <View className="flex-1 bg-black/60 justify-end">
+                                <Pressable className="flex-1" onPress={() => setShowHistoryModal(false)} />
+                                <View className="bg-white rounded-t-[48px] h-[85%] overflow-hidden">
+                                    <View className="p-8 border-b border-gray-100 flex-row justify-between items-center">
+                                        <View>
+                                            <Typography variant="h2" weight="bold">Riwayat Aktivitas Kas</Typography>
+                                            <Typography variant="caption" className="text-textGray">Unit Mobil • {dateRange.dari} s/d {dateRange.sampai}</Typography>
+                                        </View>
+                                        <Pressable onPress={() => setShowHistoryModal(false)} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                                            <X size={20} color="#64748B" />
+                                        </Pressable>
+                                    </View>
+                                    <ScrollView className="flex-1 p-8">
+                                        {historyData?.data?.map((item: any) => (
+                                            <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-4">
+                                                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                                                    {item.tipe === 'MASUK' ? <TrendingUp size={24} color="#10B981" /> : <TrendingDown size={24} color="#E11D48" />}
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
+                                                    <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                                </View>
+                                                <View className="items-end">
+                                                    <Typography weight="bold" className={`text-base ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
+                                                    </Typography>
+                                                </View>
+                                            </View>
+                                        ))}
+                                        {(!historyData?.data || historyData.data.length === 0) && (
+                                            <View className="py-20 items-center">
+                                                <CircleDollarSign size={48} color="#CBD5E1" />
+                                                <Typography className="text-gray-400 mt-4 italic">Belum ada riwayat aktivitas</Typography>
+                                            </View>
+                                        )}
+                                    </ScrollView>
+                                </View>
+                            </View>
+                        </Modal>
                     </>
                 )}
 

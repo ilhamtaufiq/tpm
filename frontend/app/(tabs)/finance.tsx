@@ -53,6 +53,39 @@ export default function FinanceTab() {
         totalPengeluaran
     ) : 0;
 
+    // Aggregate sub-accounts for summary cards
+    const aggregateCash = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.cash?.saldo || 0) +
+        (dashboard.kas_bank.kas_utama?.saldo || 0) +
+        (dashboard.kas_bank.kas_unit_bengkel?.saldo || 0) +
+        (dashboard.kas_bank.kas_unit_jasa_angkut?.saldo || 0) +
+        (dashboard.kas_bank.kas_unit_mobil?.saldo || 0)
+    ) : 0;
+
+    const aggregateBank = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.bank_bca?.saldo || 0) +
+        (dashboard.kas_bank.bank_utama?.saldo || 0) +
+        (dashboard.kas_bank.bank_mandiri?.saldo || 0) +
+        (dashboard.kas_bank.bank_bri?.saldo || 0) +
+        (dashboard.kas_bank.bank_lainnya?.saldo || 0)
+    ) : 0;
+
+    const aggregateCashIn = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.cash?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_utama?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_bengkel?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_jasa_angkut?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.kas_unit_mobil?.total_masuk_bulan_ini || 0)
+    ) : 0;
+
+    const aggregateBankIn = dashboard?.kas_bank ? (
+        (dashboard.kas_bank.bank_bca?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_utama?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_mandiri?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_bri?.total_masuk_bulan_ini || 0) +
+        (dashboard.kas_bank.bank_lainnya?.total_masuk_bulan_ini || 0)
+    ) : 0;
+
     return (
         <View className="flex-1 bg-background overflow-hidden">
             <StatusBar barStyle="dark-content" />
@@ -128,12 +161,12 @@ export default function FinanceTab() {
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Cash</Typography>
                             </View>
                             <Typography weight="bold" className="text-emerald-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
-                                {formatCurrency(dashboard?.kas_bank?.cash?.saldo || 0)}
+                                {formatCurrency(aggregateCash)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#10B981" />
                                 <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.cash?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(aggregateCashIn)}
                                 </Typography>
                             </View>
                         </View>
@@ -146,12 +179,12 @@ export default function FinanceTab() {
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-wider">Bank BCA</Typography>
                             </View>
                             <Typography weight="bold" className="text-blue-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
-                                {formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}
+                                {formatCurrency(aggregateBank)}
                             </Typography>
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#3B82F6" />
                                 <Typography className="text-blue-500 text-[9px] font-bold ml-1">
-                                    {formatCurrency(dashboard?.kas_bank?.bank_bca?.total_masuk_bulan_ini || 0)}
+                                    {formatCurrency(aggregateBankIn)}
                                 </Typography>
                             </View>
                         </View>
@@ -312,7 +345,7 @@ export default function FinanceTab() {
                             </View>
                             <View className="flex-row items-center justify-between">
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                    {dashboard?.bengkel?.total_transaksi || 0} TRX • Laba Kotor
+                                    {dashboard?.bengkel?.total_transaksi || 0} TRX • Out: {formatCurrency(dashboard?.bengkel?.total_pengeluaran || 0)}
                                 </Typography>
                                 <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
                                     <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.bengkel?.saldo_cash || 0)}</Typography>
@@ -338,7 +371,7 @@ export default function FinanceTab() {
                             </View>
                             <View className="flex-row items-center justify-between">
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                    {dashboard?.mobil?.total_transaksi || 0} TRX • Laba TPM
+                                    {dashboard?.mobil?.total_transaksi || 0} TRX • Out: {formatCurrency(dashboard?.mobil?.total_pengeluaran || 0)}
                                 </Typography>
                                 <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
                                     <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.mobil?.saldo_cash || 0)}</Typography>
@@ -364,7 +397,7 @@ export default function FinanceTab() {
                             </View>
                             <View className="flex-row items-center justify-between">
                                 <Typography className="text-textGray text-[10px] uppercase font-bold tracking-widest">
-                                    {dashboard?.jasa_angkut?.total_transaksi || 0} TRX • Laba TPM
+                                    {dashboard?.jasa_angkut?.total_transaksi || 0} TRX • Out: {formatCurrency(dashboard?.jasa_angkut?.total_pengeluaran || 0)}
                                 </Typography>
                                 <View className="bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100/50">
                                     <Typography className="text-emerald-700 text-[9px] font-bold">{formatCurrency(dashboard?.jasa_angkut?.saldo_cash || 0)}</Typography>

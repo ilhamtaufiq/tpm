@@ -267,10 +267,7 @@ class PengeluaranService:
             tanggal_sampai = today
 
         query = self.db.query(PengeluaranBengkel).filter(
-            PengeluaranBengkel.bisnis_kategori == "umum",
-            PengeluaranBengkel.mobil_id.is_(None),
-            PengeluaranBengkel.muatan_id.is_(None),
-            PengeluaranBengkel.armada_id.is_(None)
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
 
         if tanggal_dari:
@@ -283,10 +280,7 @@ class PengeluaranService:
         
         # Calculate sum separately to be safe from with_entities issues
         sum_query = self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
-            PengeluaranBengkel.bisnis_kategori == "umum",
-            PengeluaranBengkel.mobil_id.is_(None),
-            PengeluaranBengkel.muatan_id.is_(None),
-            PengeluaranBengkel.armada_id.is_(None)
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
         if tanggal_dari:
             sum_query = sum_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -301,10 +295,7 @@ class PengeluaranService:
             func.count(PengeluaranBengkel.id),
             func.sum(PengeluaranBengkel.jumlah)
         ).filter(
-            PengeluaranBengkel.bisnis_kategori == "umum",
-            PengeluaranBengkel.mobil_id.is_(None),
-            PengeluaranBengkel.muatan_id.is_(None),
-            PengeluaranBengkel.armada_id.is_(None)
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
         if tanggal_dari:
             cat_query = cat_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -339,29 +330,36 @@ class PengeluaranService:
     def get_daily_summary(self, tanggal: date) -> Dict[str, Any]:
         """Get daily expense summary."""
         query = self.db.query(PengeluaranBengkel).filter(
-            PengeluaranBengkel.tanggal == tanggal
+            PengeluaranBengkel.tanggal == tanggal,
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
 
         count = query.count()
+        
+        # Calculate sum separately
         total = (
-            query.with_entities(func.sum(PengeluaranBengkel.jumlah)).scalar()
+            self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
+                PengeluaranBengkel.tanggal == tanggal,
+                PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            ).scalar()
             or Decimal("0")
         )
 
         # By category for the day
-        by_category = (
-            query.with_entities(
-                PengeluaranBengkel.kategori,
-                func.sum(PengeluaranBengkel.jumlah).label("total"),
-            )
-            .group_by(PengeluaranBengkel.kategori)
-            .all()
-        )
+        by_category_query = self.db.query(
+            PengeluaranBengkel.kategori,
+            func.sum(PengeluaranBengkel.jumlah).label("total"),
+        ).filter(
+            PengeluaranBengkel.tanggal == tanggal,
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+        ).group_by(PengeluaranBengkel.kategori)
+        
+        by_category = by_category_query.all()
 
         category_totals = {}
         for row in by_category:
             if row.kategori:
-                category_totals[row.kategori.value] = float(row.total or 0)
+                category_totals[str(row.kategori).lower()] = float(row.total or 0)
 
         return {
             "tanggal": tanggal.isoformat(),
@@ -378,28 +376,32 @@ class PengeluaranService:
         _, last_day = monthrange(year, month)
         end_date = date(year, month, last_day)
 
-        query = self.db.query(PengeluaranBengkel).filter(
+        base_filter = [
             PengeluaranBengkel.tanggal >= start_date,
             PengeluaranBengkel.tanggal <= end_date,
-        )
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+        ]
+
+        query = self.db.query(PengeluaranBengkel).filter(*base_filter)
 
         total_count = query.count()
         total_value = (
-            query.with_entities(func.sum(PengeluaranBengkel.jumlah)).scalar()
+            self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(*base_filter).scalar()
             or Decimal("0")
         )
 
         # Daily breakdown
-        daily = (
-            query.with_entities(
+        daily_query = (
+            self.db.query(
                 PengeluaranBengkel.tanggal,
                 func.count(PengeluaranBengkel.id).label("count"),
                 func.sum(PengeluaranBengkel.jumlah).label("total"),
             )
+            .filter(*base_filter)
             .group_by(PengeluaranBengkel.tanggal)
             .order_by(PengeluaranBengkel.tanggal)
-            .all()
         )
+        daily = daily_query.all()
 
         daily_data = [
             {
@@ -411,20 +413,21 @@ class PengeluaranService:
         ]
 
         # By category
-        by_category = (
-            query.with_entities(
+        cat_query = (
+            self.db.query(
                 PengeluaranBengkel.kategori,
                 func.count(PengeluaranBengkel.id).label("count"),
                 func.sum(PengeluaranBengkel.jumlah).label("total"),
             )
+            .filter(*base_filter)
             .group_by(PengeluaranBengkel.kategori)
-            .all()
         )
+        by_category = cat_query.all()
 
         category_summary = {}
         for row in by_category:
             if row.kategori:
-                category_summary[row.kategori.value] = {
+                category_summary[str(row.kategori).lower()] = {
                     "count": row.count,
                     "total": float(row.total or 0),
                 }

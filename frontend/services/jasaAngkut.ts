@@ -95,6 +95,14 @@ export interface MuatanSummary {
     total_pendapatan?: number;
     laba_tpm?: number;
     saldo_bop?: number;
+    total_tunai?: number;
+    total_transfer?: number;
+    total_dana_dari_utama?: number;
+    details?: {
+        gross_share_tpm: number;
+        biaya_lainnya: number;
+        biaya_bengkel: number;
+    };
 }
 
 export interface MuatanCreate {

@@ -86,6 +86,8 @@ class MobilResponse(MobilBase):
     total_biaya: Decimal = Decimal("0")
     total_part_service: Decimal = Decimal("0")
     total_modal: Decimal = Decimal("0")
+    status_bayar: Optional[str] = None
+    dp: Decimal = Decimal("0")
 
     model_config = {"from_attributes": True}
 

@@ -29,6 +29,7 @@ export const useTransfer = () => {
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
         },
     });
 };

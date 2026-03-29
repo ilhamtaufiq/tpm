@@ -18,7 +18,7 @@ from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
 from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
 from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
-from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
+from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel, PengeluaranBengkel
 from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from app.utils.cache import build_key, get_cached, set_cached, invalidate_cache_prefix
@@ -36,6 +36,11 @@ def get_dashboard_summary(
     tanggal_sampai: Optional[date] = None,
 ):
     """Get comprehensive dashboard summary."""
+    # Default to current month if no dates provided
+    if not tanggal_dari and not tanggal_sampai:
+        today = date.today()
+        tanggal_dari = date(today.year, today.month, 1)
+        tanggal_sampai = today
     # ── Cache check (30-second TTL) ───────────────────────────────────
     _cache_key = build_key("dashboard_summary", tanggal_dari, tanggal_sampai)
     _cached = get_cached(_cache_key)
@@ -74,6 +79,18 @@ def get_dashboard_summary(
     kas_bank_service = KasBankService(db)
     kas_bank_summary = kas_bank_service.get_all_balances()
 
+    # Overhead breakdown by unit
+    overhead_by_unit = db.query(
+        PengeluaranBengkel.bisnis_kategori,
+        func.sum(PengeluaranBengkel.jumlah)
+    ).filter(
+        PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"]),
+        PengeluaranBengkel.tanggal >= tanggal_dari,
+        PengeluaranBengkel.tanggal <= tanggal_sampai
+    )
+    
+    overhead_data = {str(unit).lower(): float(total or 0) for unit, total in overhead_by_unit.group_by(PengeluaranBengkel.bisnis_kategori).all()}
+
     result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
@@ -83,17 +100,24 @@ def get_dashboard_summary(
             "total_penjualan": bengkel_summary["total_penjualan"],
             "total_transaksi": bengkel_summary["total_transaksi"],
             "laba_kotor": bengkel_summary["total_laba_kotor"],
+            "total_pengeluaran": overhead_data.get("bengkel", 0) + overhead_data.get("umum", 0),
             "saldo_cash": float(kas_bank_summary.get("kas_unit_bengkel", {}).get("saldo", 0)),
         },
         "pengeluaran": {
             "total": pengeluaran_summary["total_pengeluaran"] + gaji_summary["total"],
             "jumlah_transaksi": pengeluaran_summary["total_transaksi"] + gaji_summary["count"],
+            "breakdown": overhead_data
         },
         "mobil": {
             "total_penjualan": float(mobil_summary["total_penjualan"]),
             "total_transaksi": mobil_summary["total_transaksi"],
             "laba_kotor": float(mobil_summary["laba_tpm"]),
             "laba_tpm": float(mobil_summary["laba_tpm"]),
+            "total_pengeluaran": (
+                overhead_data.get("penjualan_mobil", 0) + 
+                overhead_data.get("mobil", 0) + 
+                overhead_data.get("jual_beli_mobil", 0)
+            ),
             "total_modal_tersedia": float(mobil_summary.get("total_modal_tersedia", 0)),
             "saldo_cash": float(kas_bank_summary.get("kas_unit_mobil", {}).get("saldo", 0)),
         },
@@ -101,6 +125,7 @@ def get_dashboard_summary(
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
             "laba_tpm": float(muatan_summary["laba_tpm"]),
+            "total_pengeluaran": overhead_data.get("jasa_angkut", 0),
             "active_trips": muatan_summary["hutang_supir_count"],
             "saldo_cash": float(kas_bank_summary.get("kas_unit_jasa_angkut", {}).get("saldo", 0)),
         },

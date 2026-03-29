@@ -25,6 +25,9 @@ export interface PenjualanSummary {
     total_laba_tpm?: number;
     piutang_nilai?: number;
     saldo_bop?: number;
+    total_tunai?: number;
+    total_transfer?: number;
+    total_dana_dari_utama?: number;
 }
 
 

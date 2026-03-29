@@ -109,6 +109,16 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     )
 
     @property
+    def status_bayar(self) -> Optional[str]:
+        """Expose sales payment status for convenience."""
+        return self.penjualan.status_bayar.value if self.penjualan and self.penjualan.status_bayar else None
+
+    @property
+    def dp(self) -> Decimal:
+        """Expose sales DP for convenience."""
+        return self.penjualan.dp if self.penjualan else Decimal(0)
+
+    @property
     def total_biaya(self) -> Decimal:
         """Calculate total additional expenses (BBN, pajak, etc.).
         This contributes to HPP (Harga Pokok Penjualan).

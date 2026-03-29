@@ -307,6 +307,7 @@ class MobilService:
                 joinedload(Mobil.biaya_lainnya),
                 joinedload(Mobil.part_services),
                 joinedload(Mobil.bengkel_perbaikan),
+                joinedload(Mobil.penjualan),
             )
             .filter(Mobil.deleted_at.is_(None))
         )

@@ -925,6 +925,43 @@ class MuatanService:
         total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
         total_biaya_lainnya = total_biaya_all - total_biaya_bengkel
 
+        # --- NEW CASH BREAKDOWN FOR WALLET ---
+        # 1. Total Tunai (Payments entering KAS_UNIT_JASA_ANGKUT)
+        total_tunai_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.MASUK,
+            or_(
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.sumber == KasBankSource.PIUTANG
+            )
+        ).filter(~KasBank.keterangan.ilike("%Akun Utama%"))
+        
+        # 2. Total Transfer (Payments directly to Main Bank)
+        total_transfer_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.BANK_UTAMA,
+            KasBank.tipe == KasBankType.MASUK,
+            or_(
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.sumber == KasBankSource.PIUTANG
+            )
+        )
+
+        # 3. Total Dana Dari Utama (Replenishment)
+        total_dana_dari_utama_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.MASUK,
+            KasBank.keterangan.ilike("%Akun Utama%")
+        )
+
+        if tanggal_dari:
+            total_tunai_q = total_tunai_q.filter(KasBank.tanggal >= tanggal_dari)
+            total_transfer_q = total_transfer_q.filter(KasBank.tanggal >= tanggal_dari)
+            total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            total_tunai_q = total_tunai_q.filter(KasBank.tanggal <= tanggal_sampai)
+            total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
+            total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -936,6 +973,9 @@ class MuatanService:
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_JASA_ANGKUT)),
+            "total_tunai": float(total_tunai_q.scalar() or 0),
+            "total_transfer": float(total_transfer_q.scalar() or 0),
+            "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
             "details": {
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": total_biaya_lainnya,

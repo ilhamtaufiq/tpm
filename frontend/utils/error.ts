@@ -16,20 +16,25 @@ export const getErrorMessage = (error: any, fallback: string = 'Terjadi kesalaha
 
             // Handle validation errors (array of objects)
             if (Array.isArray(data.detail)) {
-                return data.detail.map((err: any) => err.msg || JSON.stringify(err)).join(', ');
+                return data.detail.map((err: any) => err.msg || err.message || JSON.stringify(err)).join(', ');
+            }
+
+            // Handle nested errors object { errors: [...] }
+            if (typeof data.detail === 'object' && data.detail.errors && Array.isArray(data.detail.errors)) {
+                return data.detail.errors.map((err: any) => err.message || err.msg || JSON.stringify(err)).join(', ');
             }
 
             return JSON.stringify(data.detail);
         }
 
+        // Handle message field
+        if (data.message && typeof data.message === 'string') {
+            return data.message;
+        }
+
         // Handle error field (alternative format)
         if (data.error) {
             return typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
-        }
-
-        // Handle message field
-        if (data.message) {
-            return data.message;
         }
     }
 

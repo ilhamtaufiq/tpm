@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, ScrollView, Pressable, StatusBar, Platform, Modal, TextInput, RefreshControl as RNRefreshControl, Share, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -49,7 +49,7 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { useKasBankBalances, useCreateTransaction, useTransfer } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList } from '../../hooks/useKeuangan';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
@@ -94,6 +94,15 @@ export default function BengkelScreen() {
         }, [searchQuery])
     );
 
+    const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
+        jenis: 'KAS_UNIT_BENGKEL',
+        limit: 20, // Increased limit for full history
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+        tanggal_dari: dateRange.dari,
+        tanggal_sampai: dateRange.sampai
+    });
+
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
     const voidMutation = useVoidTransaksiBengkel();
 
@@ -121,8 +130,10 @@ export default function BengkelScreen() {
         loading: false
     });
 
+    const insets = useSafeAreaInsets();
     const [paymentModalVisible, setPaymentModalVisible] = React.useState(false);
     const [showWalletModal, setShowWalletModal] = React.useState(false);
+    const [showHistoryModal, setShowHistoryModal] = React.useState(false);
 
     // Inline Expense Form State
     const [isRecordingExpense, setIsRecordingExpense] = React.useState(false);
@@ -811,50 +822,88 @@ export default function BengkelScreen() {
                         <Typography weight="bold" className="text-white text-3xl tracking-tight">
                             {formatCurrency(unitBalance)}
                         </Typography>
+
+                        {/* Balance Components Breakdown (2x2 Grid) */}
+                        <View className="mt-5 pt-5 border-t border-white/10 space-y-4">
+                            {/* Row 1: Cash Components */}
+                            <View className="flex-row">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-1 h-1 rounded-full bg-emerald-400 mr-1.5" />
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Masuk (Pusat)</Typography>
+                                    </View>
+                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summary?.total_dana_dari_utama || 0)}</Typography>
+                                </View>
+                                <View className="flex-1 items-end">
+                                    <View className="flex-row items-center mb-1">
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Biaya & Setoran</Typography>
+                                        <View className="w-1 h-1 rounded-full bg-rose-400 ml-1.5" />
+                                    </View>
+                                    <Typography className="text-rose-300 text-xs font-bold">-{formatCurrency((summary?.total_dana_dari_utama || 0) + (summary?.total_tunai || 0) - unitBalance)}</Typography>
+                                </View>
+                            </View>
+
+                            {/* Row 2: Performance (Total Turnover) */}
+                            <View className="flex-row">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-1 h-1 rounded-full bg-blue-400 mr-1.5" />
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet (Tunai)</Typography>
+                                    </View>
+                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summary?.total_tunai || 0)}</Typography>
+                                </View>
+                                <View className="flex-1 items-end">
+                                    <View className="flex-row items-center mb-1">
+                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet (Transfer)</Typography>
+                                        <View className="w-1 h-1 rounded-full bg-gray-400 ml-1.5" />
+                                    </View>
+                                    <Typography className="text-white/60 text-xs font-bold italic">{formatCurrency(summary?.total_transfer || 0)}</Typography>
+                                </View>
+                            </View>
+                        </View>
                     </View>
 
-                    {/* Transaction Stats Review */}
-                    <View className="bg-gray-50/80 p-5 rounded-[32px] mb-8 border border-gray-100/50">
-                        <View className="flex-row justify-between items-center mb-4">
-                            {/* Reference Main Cash */}
-                            <View className="flex-row items-center justify-between px-6 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 shadow-sm">
-                                <View className="items-end">
-                                    <Typography className="text-emerald-600/60 text-[8px] font-black uppercase tracking-wider text-right">Total Dana Masuk Utama</Typography>
-                                    <Typography weight="bold" className="text-emerald-700 text-xs text-right">
-                                        +{formatCurrency(summary?.total_dana_dari_utama || 0)}
-                                    </Typography>
-                                </View>
-                            </View>
-
-                            <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">Ringkasan Hasil Per Periode</Typography>
-                            <View className="bg-primary/10 px-2 py-0.5 rounded-md">
-                                <Typography className="text-primary text-[8px] font-bold">LIVE DATA</Typography>
-                            </View>
+                    {/* Cash Activity History */}
+                    <View className="mb-8">
+                        <View className="flex-row justify-between items-center mb-4 px-1">
+                            <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
+                            <Pressable onPress={() => setShowHistoryModal(true)}>
+                                <Typography className="text-primary text-[10px] font-bold underline">Lihat Semua</Typography>
+                            </Pressable>
                         </View>
 
-                        <View className="flex-row space-x-3">
-                            <View className="flex-1 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                                <View className="flex-row items-center mb-2">
-                                    <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
-                                    <Typography variant="caption" weight="bold" className="text-textGray/60 uppercase tracking-tighter text-[9px]">TOTAL TUNAI</Typography>
-                                </View>
-                                <Typography weight="bold" className="text-emerald-700 text-sm tracking-tight">{formatCurrency(summary?.total_tunai || 0)}</Typography>
+                        {historyData?.data?.length === 0 ? (
+                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-dashed border-gray-200 items-center justify-center">
+                                <Typography className="text-gray-400 text-xs italic">Belum ada aktivitas kas</Typography>
                             </View>
-
-                            <View className="flex-1 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                                <View className="flex-row items-center mb-2">
-                                    <View className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2" />
-                                    <Typography variant="caption" weight="bold" className="text-textGray/60 uppercase tracking-tighter text-[9px]">TOTAL TRANSFER</Typography>
-                                </View>
-                                <Typography weight="bold" className="text-blue-700 text-sm tracking-tight">{formatCurrency(summary?.total_transfer || 0)}</Typography>
+                        ) : (
+                            <View className="space-y-3">
+                                {historyData?.data?.slice(0, 2).map((item: any) => (
+                                    <View key={item.id} className="bg-white p-4 rounded-3xl border border-gray-100 flex-row items-center shadow-sm">
+                                        <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${
+                                            item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
+                                        }`}>
+                                            {item.tipe === 'MASUK' ? (
+                                                <TrendingUp size={20} color="#10B981" />
+                                            ) : (
+                                                <TrendingDown size={20} color="#E11D48" />
+                                            )}
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className="text-textMain text-sm">{item.keterangan || item.sumber}</Typography>
+                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography weight="bold" className={`text-sm ${
+                                                item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
+                                            }`}>
+                                                {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                ))}
                             </View>
-                        </View>
-
-                        <View className="mt-4 pt-4 border-t border-gray-200/50">
-                            <Typography className="text-textGray/40 text-[8px] italic leading-tight text-center">
-                                Catatan: Total tunai di atas menunjukkan akumulasi pembayaran cash dari antrian bengkel untuk periode pencarian yang dipilih.
-                            </Typography>
-                        </View>
+                        )}
                     </View>
 
                     {/* Quick Actions Container */}
@@ -1007,8 +1056,11 @@ export default function BengkelScreen() {
                         )}
 
                         <Button
-                            title={expenseMode === 'KELUAR' ? 'Catat Pengeluaran' : 'Catat Penambahan'}
-                            loading={createExpenseMutation.isPending || createTransactionMutation.isPending}
+                            title={
+                                expenseMode === 'KELUAR' ? 'Catat Pengeluaran' :
+                                    expenseMode === 'MASUK' ? 'Catat Penambahan' : 'Catat Setoran'
+                            }
+                            loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending}
                             onPress={async () => {
                                 if (!expenseAmount || !expenseNote) {
                                     Alert.alert('Gagal', 'Mohon isi nominal dan keterangan');
@@ -1037,7 +1089,7 @@ export default function BengkelScreen() {
                                         });
                                     } else {
                                         // SETORAN (Transfer from Unit to Main)
-                                        const keAccount = expensePaymentMethod === 'TUNAI' ? 'KAS_UTAMA' : 'BANK_BCA';
+                                        const keAccount = expensePaymentMethod === 'TUNAI' ? 'KAS_UTAMA' : 'BANK_UTAMA';
                                         await transferMutation.mutateAsync({
                                             dari: 'KAS_UNIT_BENGKEL',
                                             ke: keAccount as any,
@@ -1625,6 +1677,63 @@ export default function BengkelScreen() {
                     )}
                 </BottomSheet>
             )}
+            {/* Full History Modal */}
+            <Modal
+                visible={showHistoryModal}
+                animationType="slide"
+                onRequestClose={() => setShowHistoryModal(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
+                        <View className="items-center mb-2">
+                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                        </View>
+
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Typography variant="h2" weight="bold">History Lengkap</Typography>
+                            <Pressable onPress={() => setShowHistoryModal(false)} hitSlop={12}>
+                                <View className="w-8 h-8 bg-gray-50 rounded-full items-center justify-center">
+                                    <X size={18} color="#6B7280" />
+                                </View>
+                            </Pressable>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <View className="space-y-4">
+                                {historyData?.data?.map((item: any) => (
+                                    <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center">
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
+                                            item.tipe === 'MASUK' ? 'bg-emerald-100' : 'bg-rose-100'
+                                        }`}>
+                                            {item.tipe === 'MASUK' ? (
+                                                <TrendingUp size={24} color="#059669" />
+                                            ) : (
+                                                <TrendingDown size={24} color="#DC2626" />
+                                            )}
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className="text-textMain text-base">{item.keterangan || item.sumber}</Typography>
+                                            <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'EEEE, dd MMMM yyyy', { locale: localeID })}</Typography>
+                                            <View className="flex-row mt-2">
+                                                <Badge label={item.metode_pembayaran || 'TUNAI'} variant="neutral" />
+                                                <View className="w-2" />
+                                                <Badge label={item.sumber} variant="info" />
+                                            </View>
+                                        </View>
+                                        <View className="items-end">
+                                            <Typography weight="bold" className={`text-lg ${
+                                                item.tipe === 'MASUK' ? 'text-emerald-700' : 'text-rose-700'
+                                            }`}>
+                                                {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
