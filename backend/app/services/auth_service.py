@@ -52,8 +52,12 @@ class AuthService:
 
         return user
 
-    def authenticate(self, username: str, password: str) -> Token:
-        """Authenticate user and return token."""
+    def authenticate(self, username: str, password: str) -> LoginResponse:
+        """Authenticate user and return token or OTP requirement."""
+        from app.utils.constants import UserRole
+        from app.utils.email import send_email
+        import random
+        
         user = self.get_user_by_username(username)
 
         if not user:
@@ -74,7 +78,41 @@ class AuthService:
                 detail="User account is inactive",
             )
 
-        # Update last login
+        # OTP requirement for roles other than ADMIN
+        if user.role != UserRole.ADMIN:
+            # Generate OTP
+            otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
+            user.otp_code = otp
+            user.otp_expires = datetime.now() + timedelta(minutes=10)
+            self.db.commit()
+            
+            # Send OTP email
+            subject = "Kode OTP Login TPM"
+            body = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #023C69;">Halo {user.full_name},</h2>
+                    <p>Seseorang sedang login ke akun TPM Anda. Jika ini Anda, gunakan kode OTP berikut untuk melanjutkan:</p>
+                    <div style="text-align: center; margin: 30px 0; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
+                        <span style="font-size: 32px; font-weight: bold; color: #023C69; letter-spacing: 5px;">{otp}</span>
+                    </div>
+                    <p>Kode ini akan kadaluarsa dalam 10 menit. <strong>Jangan bagikan kode ini kepada siapa pun.</strong></p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                    <p>Terima kasih,<br><strong>Tim TPM</strong></p>
+                </div>
+            </body>
+            </html>
+            """
+            send_email(self.db, user.email, subject, body, is_html=True)
+            
+            return LoginResponse(
+                otp_required=True,
+                user_id=user.id,
+                email=user.email
+            )
+
+        # Admin login (direct)
         user.last_login = datetime.now()
         self.db.commit()
 
@@ -87,7 +125,49 @@ class AuthService:
             }
         )
 
-        return Token(
+        return LoginResponse(
+            access_token=access_token,
+            user=UserResponse.model_validate(user),
+        )
+
+    def verify_otp(self, user_id: int, otp_code: str) -> LoginResponse:
+        """Verify OTP and return token if valid."""
+        user = self.get_user_by_id(user_id)
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+            
+        if not user.otp_code or user.otp_code != otp_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Kode OTP tidak valid",
+            )
+            
+        if not user.otp_expires or user.otp_expires < datetime.now():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Kode OTP sudah kadaluarsa",
+            )
+            
+        # Success - Clear OTP and return token
+        user.otp_code = None
+        user.otp_expires = None
+        user.last_login = datetime.now()
+        self.db.commit()
+        
+        # Create token
+        access_token = create_access_token(
+            data={
+                "sub": str(user.id),
+                "username": user.username,
+                "role": user.role.value,
+            }
+        )
+        
+        return LoginResponse(
             access_token=access_token,
             user=UserResponse.model_validate(user),
         )

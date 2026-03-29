@@ -106,6 +106,24 @@ class TokenPayload(BaseModel):
     exp: datetime
 
 
+class LoginResponse(BaseModel):
+    """Schema for login response, handles both direct login and OTP."""
+
+    access_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
+    user: Optional[UserResponse] = None
+    otp_required: bool = False
+    user_id: Optional[int] = None
+    email: Optional[str] = None
+
+
+class OTPVerifyRequest(BaseModel):
+    """Schema for OTP verification."""
+
+    user_id: int
+    otp_code: str
+
+
 class ForgotPasswordRequest(BaseModel):
     """Schema for forgot password request."""
 

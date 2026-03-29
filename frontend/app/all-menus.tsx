@@ -85,7 +85,6 @@ const MenuIcon = ({ label, icon: Icon, color, path, index }: {
                 onPressOut={onPressOut}
                 onPress={() => router.push(path as any)}
                 className="items-center w-full"
-                activeOpacity={1}
             >
                 <Animated.View
                     style={[
@@ -210,10 +209,36 @@ export default function AllMenusScreen() {
         },
     ];
 
-    const filteredMenus = ALL_MENUS.filter(menu => 
-        menu.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        menu.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredMenus = ALL_MENUS.filter(menu => {
+        // Search query filter
+        const matchesSearch = menu.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             menu.description.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+
+        // Role-based access control (RBAC)
+        const role = user?.role;
+        
+        // Admin and Manager can see everything
+        if (role === 'ADMIN' || role === 'MANAGER') return true;
+        
+        // Unit-specific roles
+        if (role === 'BENGKEL') {
+            return ['bengkel', 'settings'].includes(menu.id);
+        }
+        if (role === 'JASA_ANGKUT') {
+            return ['logistik', 'settings'].includes(menu.id);
+        }
+        if (role === 'MOBIL') {
+            return ['mobil', 'settings'].includes(menu.id);
+        }
+
+        // Other roles (Staff, Kasir, Mekanik, Viewer)
+        // For now, let them see everything or limit if needed
+        // The user specifically asked for Bengkel, Jasa Angkut and Mobil roles to be limited.
+        
+        return true;
+    });
 
     return (
         <View className="flex-1 bg-background overflow-hidden">

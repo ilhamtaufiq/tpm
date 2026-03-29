@@ -10,6 +10,9 @@ class UserRole(str, Enum):
     MEKANIK = "MEKANIK"
     STAFF = "STAFF"
     VIEWER = "VIEWER"
+    BENGKEL = "BENGKEL"
+    JASA_ANGKUT = "JASA_ANGKUT"
+    MOBIL = "MOBIL"
 
     @classmethod
     def _missing_(cls, value: object) -> "UserRole | None":

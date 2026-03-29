@@ -40,6 +40,10 @@ class User(Base, TimestampMixin):
     reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     reset_token_expires: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # Login OTP
+    otp_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    otp_expires: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
 

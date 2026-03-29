@@ -45,9 +45,17 @@ export default function LoginScreen() {
                 },
             });
 
-            const { access_token, user } = response.data;
-            setAuth(user, access_token);
+            const { access_token, user, otp_required, user_id, email } = response.data;
 
+            if (otp_required) {
+                router.push({
+                    pathname: '/(auth)/otp' as any,
+                    params: { user_id, email }
+                });
+                return;
+            }
+
+            setAuth(user, access_token);
             router.replace('/(tabs)/home');
         } catch (error: any) {
             console.error('Login error:', error.response?.data || error.message);

@@ -22,7 +22,11 @@ import {
     UserCircle2,
     UserSquare2,
     Wrench,
-    Wallet
+    Wallet,
+    Truck,
+    Car,
+    Warehouse,
+    Eye
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { User as UserType, UserCreateData, UserUpdateData } from '../../services/auth';
@@ -39,7 +43,11 @@ const ROLE_OPTIONS = [
     { label: 'Manager', value: 'MANAGER', color: '#F59E0B', icon: UserCircle2 },
     { label: 'Kasir', value: 'KASIR', color: '#10B981', icon: Wallet },
     { label: 'Mekanik', value: 'MEKANIK', color: '#3B82F6', icon: Wrench },
+    { label: 'Bengkel', value: 'BENGKEL', color: '#8B5CF6', icon: Warehouse },
+    { label: 'Jasa Angkut', value: 'JASA_ANGKUT', color: '#F97316', icon: Truck },
+    { label: 'Mobil', value: 'MOBIL', color: '#06B6D4', icon: Car },
     { label: 'Staff', value: 'STAFF', color: '#6B7280', icon: UserSquare2 },
+    { label: 'Viewer', value: 'VIEWER', color: '#94A3B8', icon: Eye },
 ];
 
 const UsersIcon = ({ size, color }: { size: number, color: string }) => <UserPlus size={size} color={color} />;

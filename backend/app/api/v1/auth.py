@@ -37,13 +37,13 @@ def register(
     return service.create_user(user_data)
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DBSession,
 ):
     """
-    Login and get access token.
+    Login and get access token or OTP requirement.
 
     Uses OAuth2 password flow.
     """
@@ -51,18 +51,30 @@ def login(
     return service.authenticate(form_data.username, form_data.password)
 
 
-@router.post("/login/json", response_model=Token)
+@router.post("/login/json", response_model=LoginResponse)
 def login_json(
     login_data: UserLogin,
     db: DBSession,
 ):
     """
-    Login with JSON body and get access token.
+    Login with JSON body and get access token or OTP requirement.
 
     Alternative to OAuth2 form for easier frontend integration.
     """
     service = AuthService(db)
     return service.authenticate(login_data.username, login_data.password)
+
+
+@router.post("/verify-otp", response_model=LoginResponse)
+def verify_otp(
+    data: OTPVerifyRequest,
+    db: DBSession,
+):
+    """
+    Verify OTP and get access token.
+    """
+    service = AuthService(db)
+    return service.verify_otp(data.user_id, data.otp_code)
 
 
 @router.get("/me", response_model=UserResponse)

@@ -1,23 +1,22 @@
-- Goal: Fix filters (paid status and availability status) in `frontend/app/mobil/index.tsx`.
+- Goal: Add unit-specific roles (Bengkel, Jasa Angkut, Mobil) to the user management system.
 - Constraints/Assumptions:
   - Frontend is React Native (Expo).
-  - Backend uses FastAPI.
+  - Backend uses FastAPI with MySQL.
 - Key decisions:
-  - Implement server-side filtering for payment status.
-  - Expose `status_bayar` and `dp` from `penjualan` model to `mobil` response.
-  - Reset payment filter when switching tabs.
+  - Added BENGKEL, JASA_ANGKUT, and MOBIL roles.
+  - Updated backend UserRole enum.
+  - Updated frontend ROLE_OPTIONS and icons.
+  - Performed direct DB schema update for the role Enum.
 - State:
   - Done:
-    - Wallet functionality (previous tasks).
-    - Fixed server-side filtering for car inventory.
-    - Updated Mobil model and schema to include sales payment status.
-    - Fixed variable hoisting lint error in `index.tsx`.
+    - Updated `backend/app/utils/constants.py` with the new roles.
+    - Updated `frontend/app/settings/users.tsx` with icons and options.
+    - Executed `backend/fix_user_roles_enum.py` to update the DB ENUM column.
   - Now:
-    - Verification.
+    - Verifying frontend display.
   - Next:
 - Open questions (UNCONFIRMED if needed):
 - Working set (files/ids/commands):
-  - `frontend/app/mobil/index.tsx`
-  - `backend/app/services/mobil_service.py`
-  - `backend/app/models/mobil.py`
-  - `backend/app/schemas/mobil.py`
+  - `frontend/app/settings/users.tsx`
+  - `backend/app/utils/constants.py`
+  - `backend/fix_user_roles_enum.py`
