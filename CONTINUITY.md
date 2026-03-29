@@ -1,18 +1,23 @@
 - Goal: Fix filters (paid status and availability status) in `frontend/app/mobil/index.tsx`.
 - Constraints/Assumptions:
   - Frontend is React Native (Expo).
-  - Filters for "lunas" (paid) and "tersedia/booking/terjual" (availability) are currently not functioning.
+  - Backend uses FastAPI.
 - Key decisions:
-  - Audit filtering logic in `mobil/index.tsx`.
-  - Check state management for filter values.
-  - Verify data rendering logic.
+  - Implement server-side filtering for payment status.
+  - Expose `status_bayar` and `dp` from `penjualan` model to `mobil` response.
+  - Reset payment filter when switching tabs.
 - State:
   - Done:
     - Wallet functionality (previous tasks).
+    - Fixed server-side filtering for car inventory.
+    - Updated Mobil model and schema to include sales payment status.
+    - Fixed variable hoisting lint error in `index.tsx`.
   - Now:
-    - Fixing filter functionality in `mobil/index.tsx`.
+    - Verification.
   - Next:
-    - Testing filters with real data.
 - Open questions (UNCONFIRMED if needed):
 - Working set (files/ids/commands):
   - `frontend/app/mobil/index.tsx`
+  - `backend/app/services/mobil_service.py`
+  - `backend/app/models/mobil.py`
+  - `backend/app/schemas/mobil.py`

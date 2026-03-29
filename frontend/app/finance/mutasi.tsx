@@ -47,8 +47,8 @@ const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
 ];
 
 const JENIS_LABEL: Record<KasBankJenis, string> = {
-    CASH: 'Cash Lama (CASH)',
-    BANK_BCA: 'BCA Lama (BANK_BCA)',
+    CASH: 'Kas Tunai (Lama)',
+    BANK_BCA: 'BCA (Lama)',
     BANK_MANDIRI: 'Bank Mandiri',
     BANK_BRI: 'Bank BRI',
     BANK_LAINNYA: 'Bank Lainnya',
@@ -109,14 +109,14 @@ export default function MutasiKasScreen() {
     const users = userData?.data || [];
 
     const [transferForm, setTransferForm] = useState({
-        dari: 'CASH' as KasBankJenis,
-        ke: 'BANK_BCA' as KasBankJenis,
+        dari: 'KAS_UTAMA' as KasBankJenis,
+        ke: 'BANK_UTAMA' as KasBankJenis,
         nominal: '',
         keterangan: '',
     });
 
     const [modalForm, setModalForm] = useState({
-        jenis: (jenis as KasBankJenis) || 'CASH',
+        jenis: (jenis as KasBankJenis) || 'KAS_UTAMA',
         nominal: '',
         keterangan: 'Setoran Modal',
     });
@@ -178,7 +178,7 @@ export default function MutasiKasScreen() {
                     keterangan: transferForm.keterangan,
                 });
                 handleCloseSheet();
-                setTransferForm({ dari: 'CASH', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
+                setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
                 setDialogConfig({
                     visible: true,
                     title: "Offline Mode",
@@ -197,7 +197,7 @@ export default function MutasiKasScreen() {
                 keterangan: transferForm.keterangan,
             });
             handleCloseSheet();
-            setTransferForm({ dari: 'CASH', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
+            setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -230,7 +230,7 @@ export default function MutasiKasScreen() {
                     keterangan: modalForm.keterangan,
                 });
                 handleCloseSheet();
-                setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal' });
+                setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
                 setDialogConfig({
                     visible: true,
                     title: "Offline Mode",
@@ -250,7 +250,7 @@ export default function MutasiKasScreen() {
                 keterangan: modalForm.keterangan,
             });
             handleCloseSheet();
-            setModalForm({ jenis: 'CASH', nominal: '', keterangan: 'Setoran Modal' });
+            setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
             setDialogConfig({
                 visible: true,
                 title: "Sukses",
@@ -330,7 +330,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Dari Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, dari: jenis }))}
@@ -349,7 +349,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[]).filter(j => j !== transferForm.dari).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setTransferForm((p) => ({ ...p, ke: jenis }))}
@@ -395,7 +395,7 @@ export default function MutasiKasScreen() {
 
                     <Typography variant="caption" weight="medium" className="mb-2 text-gray-500">Simpan ke Akun</Typography>
                     <View className="flex-row flex-wrap mb-4">
-                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL', 'CASH', 'BANK_BCA'] as KasBankJenis[]).map((jenis) => (
+                        {(['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[]).map((jenis) => (
                             <Pressable
                                 key={jenis}
                                 onPress={() => setModalForm((p) => ({ ...p, jenis }))}

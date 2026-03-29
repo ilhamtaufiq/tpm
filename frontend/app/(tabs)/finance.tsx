@@ -55,7 +55,6 @@ export default function FinanceTab() {
 
     // Aggregate sub-accounts for summary cards
     const aggregateCash = dashboard?.kas_bank ? (
-        (dashboard.kas_bank.cash?.saldo || 0) +
         (dashboard.kas_bank.kas_utama?.saldo || 0) +
         (dashboard.kas_bank.kas_unit_bengkel?.saldo || 0) +
         (dashboard.kas_bank.kas_unit_jasa_angkut?.saldo || 0) +
@@ -71,7 +70,6 @@ export default function FinanceTab() {
     ) : 0;
 
     const aggregateCashIn = dashboard?.kas_bank ? (
-        (dashboard.kas_bank.cash?.total_masuk_bulan_ini || 0) +
         (dashboard.kas_bank.kas_utama?.total_masuk_bulan_ini || 0) +
         (dashboard.kas_bank.kas_unit_bengkel?.total_masuk_bulan_ini || 0) +
         (dashboard.kas_bank.kas_unit_jasa_angkut?.total_masuk_bulan_ini || 0) +

@@ -59,6 +59,7 @@ export default function MobilInventoryScreen() {
 
     const [activeTab, setActiveTab] = useState('tersedia');
     const [searchQuery, setSearchQuery] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
     const [selectedDetailUnit, setSelectedDetailUnit] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
@@ -104,6 +105,7 @@ export default function MobilInventoryScreen() {
     // API Hooks
     const { data, isLoading, refetch } = useMobilList({
         status: activeTab,
+        status_bayar: paymentFilter,
         search: searchQuery,
         // Only apply date range for Sold/Booking, show all available inventory
         tanggal_dari: activeTab === 'tersedia' ? undefined : dateRange.dari,
@@ -142,8 +144,6 @@ export default function MobilInventoryScreen() {
 
     const deleteMutation = useDeleteMobil();
 
-    const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
-
     const mobilsData = data?.data || [];
 
     const stats = useMemo(() => {
@@ -162,25 +162,7 @@ export default function MobilInventoryScreen() {
         return { total: 0, lunas: 0, partial: 0, unpaid: 0, batal: 0, total_penjualan: 0, laba_tpm: 0, saldo_bop: 0 };
     }, [summaryData]);
 
-    const mobils = useMemo(() => {
-        let result = mobilsData;
-        if (paymentFilter === 'LUNAS') {
-            result = result.filter((m: any) => m.status_bayar === 'lunas' || m.status_bayar === 'LUNAS');
-        } else if (paymentFilter === 'PARTIAL') {
-            result = result.filter((m: any) =>
-                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS' || m.status_bayar === 'cicilan' || m.status_bayar === 'CICILAN') &&
-                (Number(m.dp || 0) > 0)
-            );
-        } else if (paymentFilter === 'UNPAID') {
-            result = result.filter((m: any) =>
-                (m.status_bayar === 'belum_lunas' || m.status_bayar === 'BELUM_LUNAS') &&
-                (Number(m.dp || 0) === 0)
-            );
-        } else if (paymentFilter === 'BATAL') {
-            result = result.filter((m: any) => m.status_bayar === 'batal' || m.status_bayar === 'BATAL');
-        }
-        return result;
-    }, [mobilsData, paymentFilter]);
+    const mobils = mobilsData;
 
 
     // Bottom Sheet Logic (Registration)

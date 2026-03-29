@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status, UploadFile
 from app.config import settings
 
-from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService
+from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService, TransaksiPenjualanMobil
 from app.models.bengkel import SparePart, PengeluaranBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, HutangSource, HutangStatus, ExpenseCategory
@@ -291,6 +291,7 @@ class MobilService:
         limit: int = 20,
         search: Optional[str] = None,
         status: Optional[CarStatus] = None,
+        payment_filter: Optional[str] = None,
         tipe_kepemilikan: Optional[OwnershipType] = None,
         merek: Optional[str] = None,
         tahun: Optional[int] = None,
@@ -346,6 +347,32 @@ class MobilService:
             query = query.filter(Mobil.tanggal_masuk >= tanggal_dari)
         if tanggal_sampai:
             query = query.filter(Mobil.tanggal_masuk <= tanggal_sampai)
+
+        # Payment Filter (Joined logic)
+        if payment_filter and payment_filter != 'ALL':
+            from app.models.mobil import TransaksiPenjualanMobil
+            # Use inner join for filters to avoid showing cars without a sale record when a payment filter is active
+            query = query.join(Mobil.penjualan)
+            pf = payment_filter.upper()
+            if pf == 'LUNAS':
+                query = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS)
+            elif pf == 'PARTIAL':
+                # Belum Lunas/Cicilan with DP
+                query = query.filter(
+                    or_(
+                        TransaksiPenjualanMobil.status_bayar == PaymentStatus.BELUM_LUNAS,
+                        TransaksiPenjualanMobil.status_bayar == PaymentStatus.CICILAN
+                    ),
+                    TransaksiPenjualanMobil.dp > 0
+                )
+            elif pf == 'UNPAID':
+                # Belum Lunas without DP
+                query = query.filter(
+                    TransaksiPenjualanMobil.status_bayar == PaymentStatus.BELUM_LUNAS,
+                    TransaksiPenjualanMobil.dp == 0
+                )
+            elif pf == 'BATAL':
+                query = query.filter(TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL)
 
         # Count total
         total = query.count()
