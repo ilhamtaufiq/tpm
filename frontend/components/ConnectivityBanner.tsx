@@ -1,16 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { WifiOff, CloudSync } from 'lucide-react-native';
-import { useIsFetching, useIsMutating } from '@tanstack/react-query';
+import { WifiOff } from 'lucide-react-native';
 
 export const ConnectivityBanner = () => {
     // Default to true (online) initially to avoid flicker
     const [isOffline, setIsOffline] = React.useState(false);
-    
-    const isFetching = useIsFetching();
-    const isMutating = useIsMutating();
-    const isSyncing = (isFetching > 0 || isMutating > 0) && !isOffline;
     
     React.useEffect(() => {
         // Get initial state immediately
@@ -34,25 +29,16 @@ export const ConnectivityBanner = () => {
         return () => unsubscribe();
     }, []);
 
-    if (!isOffline && !isSyncing) return null;
+    if (!isOffline) return null;
 
     return (
         <View style={[
             styles.container,
-            isOffline ? styles.offlineContainer : styles.syncingContainer
+            styles.offlineContainer
         ]}>
             <View style={styles.content}>
-                {isOffline ? (
-                    <>
-                        <WifiOff size={14} color="#fff" />
-                        <Text style={styles.text}>Mode Offline: Data yang ditampilkan berasal dari penyimpanan lokal.</Text>
-                    </>
-                ) : (
-                    <>
-                        <CloudSync size={14} color="#fff" />
-                        <Text style={styles.text}>Internet Tersambung. Mensinkronkan data terbaru...</Text>
-                    </>
-                )}
+                <WifiOff size={14} color="#fff" />
+                <Text style={styles.text}>Mode Offline: Data yang ditampilkan berasal dari penyimpanan lokal.</Text>
             </View>
         </View>
     );
@@ -67,9 +53,7 @@ const styles = StyleSheet.create({
     offlineContainer: {
         backgroundColor: '#f59e0b', // Amber
     },
-    syncingContainer: {
-        backgroundColor: '#3b82f6', // Blue
-    },
+
     content: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -1,24 +1,25 @@
 # Continuity Ledger
 
 ## Goal
-Optimize `SparePartMasterScreen` by removing the "scan tambah stok" (quick stock scan) feature as it's redundant (handled by inventory bengkel). Maintain UI consistency and clean up associated state, handlers, and components.
+Optimize `SparePartMasterScreen` by removing the "scan tambah stok" feature and clean up the UI by removing the "Online/Syncing" banner, showing only the "Offline" banner when connectivity is lost.
 
 ## Status
 - **Done**: 
-    - Initial UI visibility fixes across multiple selector components.
-    - Verified Modal behavior for search results on Android.
+    - Removed redundant stock scanning feature from `sparepart.tsx`.
+    - Cleaned up state, handlers, and modals in `sparepart.tsx`.
 - **Now**: 
-    - Removing redundant stock scanning feature from `sparepart.tsx`.
+    - Removing "Internet Tersambung" (Online/Syncing) banner from `ConnectivityBanner.tsx`.
 - **Next**: 
-    - Test the streamlined `SparePartMasterScreen`.
+    - Final UI check to ensure only the Offline banner appears when necessary.
 
 ## Key Decisions
-- **Feature Removal**: Decided to remove redundant "scan tambah stok" to simplify the Sparepart Master screen and avoid feature overlap with Inventory.
-- **Selective Modal Usage**: Re-introduced native `Modal` for selector components to avoid layout clipping on Android.
+- **Selective Connectivity Banner**: Decided to hide the "Syncing/Online" banner to reduce UI noise, keeping only the critical "Offline" status indicator.
+- **Feature Removal**: Removed "scan tambah stok" to avoid redundancy with Inventory module.
 
 ## Open Questions (UNCONFIRMED)
 - None at this time.
 
 ## Working Set
+- `frontend/components/ConnectivityBanner.tsx`
 - `frontend/app/master-data/sparepart.tsx`
 - `CONTINUITY.md`
