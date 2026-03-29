@@ -1,0 +1,14 @@
+{
+    "transactions": [
+        {
+            "id": 19,
+            "nomor": "MBL2603290001",
+            "tanggal": "2026-03-29",
+            "mobil": "Toyota Avanza (F 1121 Z)",
+            "pembeli": "olobor",
+            "harga_jual": 3000000.0,
+            "dp": 3000000.0
+        }
+    ],
+    "kas_entries": []
+}

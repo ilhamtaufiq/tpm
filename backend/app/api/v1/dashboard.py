@@ -247,14 +247,33 @@ def get_profit_summary(
     )
 
     # Merge gaji and pembelian data into pengeluaran details
-    pengeluaran_details = pengeluaran["per_kategori"]
+    per_kategori = pengeluaran["per_kategori"]
     
     # Add salaries
-    if "gaji" in pengeluaran_details:
-        pengeluaran_details["gaji"]["total"] += gaji_summary["total"]
-        pengeluaran_details["gaji"]["count"] += gaji_summary["count"]
+    if "gaji" in per_kategori:
+        per_kategori["gaji"]["total"] += gaji_summary["total"]
+        per_kategori["gaji"]["count"] += gaji_summary["count"]
     else:
-        pengeluaran_details["gaji"] = gaji_summary
+        per_kategori["gaji"] = gaji_summary
+
+    # Final summary for Category details
+    pengeluaran_details = per_kategori
+
+    # Normalize unit details for the frontend
+    pengeluaran_unit_details = {}
+    raw_units = pengeluaran.get("per_unit", {})
+    
+    # Consolidate Car-related categories
+    total_mobil_ops = (
+        raw_units.get("penjualan_mobil", 0) + 
+        raw_units.get("jual_beli_mobil", 0) + 
+        raw_units.get("mobil", 0)
+    )
+    
+    pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
+    pengeluaran_unit_details["mobil"] = total_mobil_ops
+    pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0)
+    pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
 
     # Add Purchases (as requested by user)
     if "pembelian_part" in pengeluaran_details:
@@ -303,6 +322,7 @@ def get_profit_summary(
         "jasa_angkut_details": muatan.get("details", {}),
         "pengeluaran": total_pengeluaran,
         "pengeluaran_details": pengeluaran_details,
+        "pengeluaran_unit_details": pengeluaran_unit_details,
         "laba_bersih": laba_bersih,
     }
     set_cached(_cache_key, result)

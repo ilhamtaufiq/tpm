@@ -315,12 +315,28 @@ class PengeluaranService:
                     "total": float(total or 0),
                 }
 
+        # By business unit
+        unit_query = self.db.query(
+            PengeluaranBengkel.bisnis_kategori,
+            func.sum(PengeluaranBengkel.jumlah)
+        ).filter(
+            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+        )
+        if tanggal_dari:
+            unit_query = unit_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            unit_query = unit_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
+            
+        by_unit = unit_query.group_by(PengeluaranBengkel.bisnis_kategori).all()
+        unit_summary = {row[0]: float(row[1] or 0) for row in by_unit}
+
         return {
             "total_transaksi": total_count,
             "total_pengeluaran": float(total_value),
             "total_jumlah": float(total_value),
             "count": total_count,
             "per_kategori": category_summary,
+            "per_unit": unit_summary,
             "period": {
                 "start": tanggal_dari.isoformat() if tanggal_dari else None,
                 "end": tanggal_sampai.isoformat() if tanggal_sampai else None,

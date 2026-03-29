@@ -120,14 +120,7 @@ export default function LabaRugiScreen() {
     const bengkelData = {
         penjualan: reportData?.bengkel_details?.total_penjualan || 0,
         hpp: reportData?.bengkel_details?.total_hpp || 0,
-        biayaOps: (
-            (reportData?.pengeluaran_details?.operasional?.total || 0) +
-            (reportData?.pengeluaran_details?.pemeliharaan?.total || 0) +
-            (reportData?.pengeluaran_details?.utilitas?.total || 0) +
-            (reportData?.pengeluaran_details?.lainnya?.total || 0) +
-            (reportData?.pengeluaran_details?.biaya_operasional?.total || 0) +
-            (reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)
-        ),
+        biayaOps: reportData?.pengeluaran_unit_details?.bengkel || 0,
         biayaGaji: reportData?.pengeluaran_details?.gaji?.total || 0,
     };
 
@@ -142,8 +135,8 @@ export default function LabaRugiScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
+            <View className="bg-primary pt-12 pb-10 px-6 rounded-b-[32px] shadow-2xl">
+                <View className="flex-row items-center justify-between mb-6">
                     <View className="flex-row items-center">
                         <Pressable
                             onPress={() => {
@@ -153,20 +146,20 @@ export default function LabaRugiScreen() {
                                     router.replace('/(tabs)/home');
                                 }
                             }}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                            className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center mr-3 border border-white/5"
                         >
-                            <ChevronLeft size={24} color="white" />
+                            <ChevronLeft size={22} color="white" />
                         </Pressable>
                         <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Laba Rugi</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Analisa Performa Finansial</Typography>
+                            <Typography variant="h3" weight="bold" className="text-white text-xl tracking-tighter">Laba Rugi</Typography>
+                            <Typography className="text-white/50 text-[10px] mt-0.5">Analisa Finansial</Typography>
                         </View>
                     </View>
 
                     <View className="flex-row items-center">
                         {/* Period Badge */}
-                        <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5 mr-2">
-                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
+                        <View className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/5 mr-2">
+                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[9px]">
                                 {getHeaderDate()}
                             </Typography>
                         </View>
@@ -174,44 +167,51 @@ export default function LabaRugiScreen() {
                         <Pressable
                             onPress={() => setShowExportMenu(true)}
                             disabled={isExporting}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center border border-white/5"
                         >
-                            <Download size={22} color="white" />
+                            <Download size={20} color="white" />
                         </Pressable>
                     </View>
                 </View>
 
-                {/* Net Profit Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10 mb-8">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Net Profit TPM</Typography>
+                {/* Net Profit Insight Card (Glassmorphism) - Compact Version */}
+                <View className="bg-white/10 p-5 rounded-[28px] border border-white/10 mb-6">
+                    <View className="flex-row justify-between items-center mb-4">
+                        <View className="bg-emerald-500/20 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                            <Typography className="text-emerald-400 text-[9px] font-bold uppercase tracking-widest">Net Profit TPM</Typography>
                         </View>
                         <View className="flex-row items-center">
-                            <TrendingUp size={14} color="#10B981" />
-                            <Typography className="text-emerald-400 text-[10px] font-bold ml-1">LIVE REPORT</Typography>
+                            <TrendingUp size={12} color="#10B981" />
+                            <Typography className="text-emerald-400 text-[9px] font-bold ml-1">LIVE</Typography>
                         </View>
                     </View>
 
-                    <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Total Laba Bersih</Typography>
-                    <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter mb-6">
-                        {formatCurrency(reportData?.laba_bersih || 0)}
-                    </Typography>
+                    <View className="flex-row items-end justify-between mb-4">
+                        <View>
+                            <Typography className="text-white/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-0.5">Total Laba Bersih</Typography>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
+                                {formatCurrency(reportData?.laba_bersih || 0)}
+                            </Typography>
+                        </View>
+                        <View className="items-end">
+                            <Typography className="text-emerald-300 text-[11px] font-bold">{Math.round((reportData?.laba_bersih / (reportData?.bengkel_details?.total_penjualan || 1)) * 100)}% Margin</Typography>
+                        </View>
+                    </View>
 
-                    <View className="flex-row justify-between pt-5 border-t border-white/10">
+                    <View className="flex-row justify-between pt-4 border-t border-white/10">
                         <View className="flex-1">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Laba Kotor</Typography>
-                            <Typography weight="bold" className="text-white text-sm">{formatCurrency(reportData?.laba_kotor?.total || 0)}</Typography>
+                            <Typography className="text-white/30 text-[8px] uppercase font-bold mb-0.5 tracking-widest">Laba Kotor</Typography>
+                            <Typography weight="bold" className="text-white text-xs">{formatCurrency(reportData?.laba_kotor?.total || 0)}</Typography>
                         </View>
                         <View className="flex-1 items-end">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Laba Bersih (%)</Typography>
-                            <Typography weight="bold" className="text-emerald-300 text-sm">{Math.round((reportData?.laba_bersih / (reportData?.bengkel_details?.total_penjualan || 1)) * 100)}%</Typography>
+                            <Typography className="text-white/30 text-[8px] uppercase font-bold mb-0.5 tracking-widest">Unit Performance</Typography>
+                            <Typography weight="bold" className="text-emerald-300 text-xs">Healthy</Typography>
                         </View>
                     </View>
                 </View>
 
                 {/* Date Filter Tabs (Floating in Header) */}
-                <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
+                <View className="flex-row bg-black/20 p-1 rounded-xl border border-white/5">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
                         <Pressable
                             key={type}
@@ -219,7 +219,7 @@ export default function LabaRugiScreen() {
                                 setFilterType(type);
                                 setDate(new Date());
                             }}
-                            className={`flex-1 py-2.5 items-center rounded-xl ${filterType === type ? 'bg-primary shadow-lg border border-white/10' : ''}`}
+                            className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-primary shadow-lg border border-white/10' : ''}`}
                         >
                             <Typography
                                 variant="caption"
@@ -239,7 +239,6 @@ export default function LabaRugiScreen() {
                     <Pressable
                         onPress={handlePrev}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color={themeColors.text} />
                     </Pressable>
@@ -254,7 +253,6 @@ export default function LabaRugiScreen() {
                     <Pressable
                         onPress={handleNext}
                         className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color={themeColors.text} />
                     </Pressable>
@@ -315,18 +313,19 @@ export default function LabaRugiScreen() {
 
                         <View className="space-y-1">
                             <ReportRow label="1. Penghasilan Jasa (Gross TPM)" value={reportData?.jasa_angkut_details?.gross_share_tpm || 0} />
-                            <ReportRow label="2. Biaya Lainnya" value={reportData?.jasa_angkut_details?.biaya_lainnya || 0} isNegative />
+                            <ReportRow label="2. Biaya Lainnya (Muatan)" value={reportData?.jasa_angkut_details?.biaya_lainnya || 0} isNegative />
                             <ReportRow label="3. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
+                            <ReportRow label="4. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} isNegative />
 
                             <View className="h-[1px] bg-gray-50 my-4" />
 
-                            <View className={`p-5 rounded-[24px] flex-row justify-between items-center ${(reportData?.laba_kotor?.jasa_angkut || 0) >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                            <View className={`p-5 rounded-[24px] flex-row justify-between items-center ${((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0)) >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                 <View>
-                                    <Typography variant="body2" weight="bold" className={(reportData?.laba_kotor?.jasa_angkut || 0) >= 0 ? "text-emerald-800" : "text-rose-800"}>4. Laba/Rugi Bersih</Typography>
-                                    <Typography className={(reportData?.laba_kotor?.jasa_angkut || 0) >= 0 ? "text-emerald-600/60 text-[10px] font-bold uppercase tracking-tighter" : "text-rose-600/60 text-[10px] font-bold uppercase tracking-tighter"}>Unit Jasa Angkut</Typography>
+                                    <Typography variant="body2" weight="bold" className={((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0)) >= 0 ? "text-emerald-800" : "text-rose-800"}>5. Laba/Rugi Bersih</Typography>
+                                    <Typography className={((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0)) >= 0 ? "text-emerald-600/60 text-[10px] font-bold uppercase tracking-tighter" : "text-rose-600/60 text-[10px] font-bold uppercase tracking-tighter"}>Unit Jasa Angkut</Typography>
                                 </View>
-                                <Typography variant="h3" weight="bold" className={(reportData?.laba_kotor?.jasa_angkut || 0) >= 0 ? "text-emerald-700" : "text-rose-700"}>
-                                    {formatCurrency(reportData?.laba_kotor?.jasa_angkut || 0)}
+                                <Typography variant="h3" weight="bold" className={((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0)) >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                                    {formatCurrency((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}
                                 </Typography>
                             </View>
                         </View>
@@ -340,18 +339,35 @@ export default function LabaRugiScreen() {
                         </View>
 
                         <View className="space-y-1">
-                            <ReportRow label="1. Laba Kotor Terjual" value={reportData?.mobil_details?.total_laba_kotor || 0} />
-                            <ReportRow label="2. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
+                            <ReportRow label="1. Total Penjualan (Gross)" value={reportData?.mobil_details?.total_penjualan || 0} />
+                            <ReportRow label="2. Biaya Operasional Unit" value={reportData?.pengeluaran_unit_details?.mobil || 0} isNegative />
+                            <ReportRow label="3. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
+                            
+                            {/* Credit/Receivable Info for Car Unit */}
+                            <View className={`rounded-2xl p-4 my-3 border flex-row justify-between items-center ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? 'bg-amber-50 border-amber-100/50' : 'bg-gray-50 border-gray-100/50'}`}>
+                                <View>
+                                    <View className="flex-row items-center">
+                                        <Typography className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-800 text-[9px] font-bold uppercase tracking-widest mr-2" : "text-gray-800/60 text-[9px] font-bold uppercase tracking-widest mr-2"}>4. Sisa Piutang (Belum Lunas)</Typography>
+                                        {(reportData?.mobil_details?.piutang_nilai || 0) > 0 && <View className="bg-amber-500 w-1.5 h-1.5 rounded-full" />}
+                                    </View>
+                                    <Typography className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-600/70 text-[8px]" : "text-gray-400 text-[8px]"}>
+                                        {(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "Uang penjualan yang belum tertagih" : "Semua unit periode ini sudah lunas"}
+                                    </Typography>
+                                </View>
+                                <Typography variant="body2" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-700" : "text-gray-500"}>
+                                    {formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}
+                                </Typography>
+                            </View>
 
                             <View className="h-[1px] bg-gray-50 my-4" />
 
-                            <View className={`p-5 rounded-[24px] flex-row justify-between items-center ${(reportData?.mobil_details?.laba_tpm || 0) >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                            <View className={`p-5 rounded-[24px] flex-row justify-between items-center ${((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0)) >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                 <View>
-                                    <Typography variant="body2" weight="bold" className={(reportData?.mobil_details?.laba_tpm || 0) >= 0 ? "text-emerald-800" : "text-rose-800"}>3. Laba TPM (Net)</Typography>
-                                    <Typography className={(reportData?.mobil_details?.laba_tpm || 0) >= 0 ? "text-emerald-600/60 text-[10px] font-bold uppercase tracking-tighter" : "text-rose-600/60 text-[10px] font-bold uppercase tracking-tighter"}>Unit Jual Beli Mobil</Typography>
+                                    <Typography variant="body2" weight="bold" className={((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0)) >= 0 ? "text-emerald-800" : "text-rose-800"}>5. Laba TPM (Net)</Typography>
+                                    <Typography className={((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0)) >= 0 ? "text-emerald-600/60 text-[10px] font-bold uppercase tracking-tighter" : "text-rose-600/60 text-[10px] font-bold uppercase tracking-tighter"}>Unit Jual Beli Mobil</Typography>
                                 </View>
-                                <Typography variant="h3" weight="bold" className={(reportData?.mobil_details?.laba_tpm || 0) >= 0 ? "text-emerald-700" : "text-rose-700"}>
-                                    {formatCurrency(reportData?.mobil_details?.laba_tpm || 0)}
+                                <Typography variant="h3" weight="bold" className={((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0)) >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                                    {formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}
                                 </Typography>
                             </View>
                         </View>
@@ -359,22 +375,20 @@ export default function LabaRugiScreen() {
 
                     {/* OTHER SECTIONS (Bento Small Grid) */}
                     <View className="flex-row flex-wrap justify-between mb-8">
-                        {/* Pemasukkan Lainnya */}
-                        <View className="w-[48%] bg-surface p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm">
-                            <View className="w-10 h-10 bg-teal-50 rounded-2xl items-center justify-center mb-4">
-                                <ArrowUpRight size={20} color="#14B8A6" />
-                            </View>
-                            <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Pemasukkan DP</Typography>
-                            <Typography variant="body1" weight="bold" className="text-teal-600">{formatCurrency(reportData?.mobil_details?.total_dp || 0)}</Typography>
-                        </View>
-
                         {/* Pengeluaran Lainnya */}
-                        <View className="w-[48%] bg-surface p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm">
-                            <View className="w-10 h-10 bg-rose-50 rounded-2xl items-center justify-center mb-4">
-                                <TrendingDown size={20} color="#EF4444" />
+                        <View className="w-full bg-surface p-6 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center justify-between">
+                            <View className="flex-row items-center">
+                                <View className="w-12 h-12 bg-rose-50 rounded-2xl items-center justify-center mr-4">
+                                    <TrendingDown size={24} color="#EF4444" />
+                                </View>
+                                <View>
+                                    <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Beban Lainnya</Typography>
+                                    <Typography variant="body1" weight="bold" className="text-rose-600">{formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)}</Typography>
+                                </View>
                             </View>
-                            <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-1">Beban Lainnya</Typography>
-                            <Typography variant="body1" weight="bold" className="text-rose-600">{formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)}</Typography>
+                            <View className="bg-rose-50 px-3 py-1 rounded-lg">
+                                <Typography weight="bold" className="text-rose-600 text-[10px] uppercase">Operasional</Typography>
+                            </View>
                         </View>
 
                         {/* Prive */}
@@ -438,7 +452,6 @@ export default function LabaRugiScreen() {
         >
             <Pressable
                 className="flex-1 bg-black/50 justify-end"
-                activeOpacity={1}
                 onPress={() => setShowExportMenu(false)}
             >
                 <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
@@ -503,30 +516,42 @@ export default function LabaRugiScreen() {
                                             <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
                                         </div>
                                         <div class="row-item">
-                                            <span>2. Biaya Lainnya</span>
+                                            <span>2. Biaya Lainnya (Muatan)</span>
                                             <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_lainnya || 0)})</span>
                                         </div>
                                         <div class="row-item">
                                             <span>3. Biaya Sparepart & Servis</span>
                                             <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_bengkel || 0)})</span>
                                         </div>
+                                        <div class="row-item">
+                                            <span>4. Biaya Operasional Umum</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.jasa_angkut || 0)})</span>
+                                        </div>
                                         <div class="row-item row-total">
-                                            <span>4. LABA BERSIH JASA ANGKUT</span>
-                                            <span class="font-bold">${formatCurrency(reportData?.laba_kotor?.jasa_angkut || 0)}</span>
+                                            <span>5. LABA BERSIH JASA ANGKUT</span>
+                                            <span class="font-bold">${formatCurrency((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}</span>
                                         </div>
 
                                         <div class="section-header">UNIT JUAL BELI MOBIL</div>
                                         <div class="row-item">
-                                            <span>1. Laba Kotor Terjual</span>
-                                            <span>${formatCurrency(reportData?.mobil_details?.total_laba_kotor || 0)}</span>
+                                            <span>1. Total Penjualan (Gross)</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.total_penjualan || 0)}</span>
                                         </div>
                                         <div class="row-item">
-                                            <span>2. Laba Investor</span>
+                                            <span>2. Biaya Operasional Unit</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.mobil || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>3. Laba Investor</span>
                                             <span class="text-error">(${formatCurrency(reportData?.mobil_details?.laba_investor || 0)})</span>
                                         </div>
+                                        <div class="row-item row-sub" style="color: ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? '#D97706' : '#6B7280'};">
+                                            <span>4. Sisa Piutang (Belum Lunas)</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}</span>
+                                        </div>
                                         <div class="row-item row-total">
-                                            <span>3. LABA TPM (NET)</span>
-                                            <span class="font-bold">${formatCurrency(reportData?.mobil_details?.laba_tpm || 0)}</span>
+                                            <span>5. LABA TPM (NET)</span>
+                                            <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
                                         </div>
 
                                         <div class="section-header">BEBAN & PRIVE</div>
@@ -626,30 +651,42 @@ export default function LabaRugiScreen() {
                                             <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
                                         </div>
                                         <div class="row-item">
-                                            <span>2. Biaya Lainnya</span>
+                                            <span>2. Biaya Lainnya (Muatan)</span>
                                             <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_lainnya || 0)})</span>
                                         </div>
                                         <div class="row-item">
                                             <span>3. Biaya Sparepart & Servis</span>
                                             <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_bengkel || 0)})</span>
                                         </div>
+                                        <div class="row-item">
+                                            <span>4. Biaya Operasional Umum</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.jasa_angkut || 0)})</span>
+                                        </div>
                                         <div class="row-item row-total">
-                                            <span>4. LABA BERSIH JASA ANGKUT</span>
-                                            <span class="font-bold">${formatCurrency(reportData?.laba_kotor?.jasa_angkut || 0)}</span>
+                                            <span>5. LABA BERSIH JASA ANGKUT</span>
+                                            <span class="font-bold">${formatCurrency((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}</span>
                                         </div>
 
                                         <div class="section-header">UNIT JUAL BELI MOBIL</div>
                                         <div class="row-item">
-                                            <span>1. Laba Kotor Terjual</span>
-                                            <span>${formatCurrency(reportData?.mobil_details?.total_laba_kotor || 0)}</span>
+                                            <span>1. Total Penjualan (Gross)</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.total_penjualan || 0)}</span>
                                         </div>
                                         <div class="row-item">
-                                            <span>2. Laba Investor</span>
+                                            <span>2. Biaya Operasional Unit</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.mobil || 0)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>3. Laba Investor</span>
                                             <span class="text-error">(${formatCurrency(reportData?.mobil_details?.laba_investor || 0)})</span>
                                         </div>
+                                        <div class="row-item row-sub" style="color: ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? '#D97706' : '#6B7280'};">
+                                            <span>4. Sisa Piutang (Belum Lunas)</span>
+                                            <span>${formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}</span>
+                                        </div>
                                         <div class="row-item row-total">
-                                            <span>3. LABA TPM (NET)</span>
-                                            <span class="font-bold">${formatCurrency(reportData?.mobil_details?.laba_tpm || 0)}</span>
+                                            <span>5. LABA TPM (NET)</span>
+                                            <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
                                         </div>
 
                                         <div class="section-header">BEBAN & PRIVE</div>
