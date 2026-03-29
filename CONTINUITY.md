@@ -1,5 +1,6 @@
 # Continuity Ledger
 
+- Goal: Fix thermal printing on Android to print directly without showing print preview.
 - Goal: Implement Role-Based Access Control (RBAC) to restrict unit-specific roles (Bengkel, Jasa Angkut, Mobil) to their respective modules, while allowing Admin/Manager full access.
 - Goal: Adjust `frontend/app/finance/akun.tsx` to display transaction stats (Masuk/Keluar) per account and include all active accounts in the list.
 - Constraints/Assumptions:
@@ -18,7 +19,7 @@
   - Done:
     - Filtered `ServiceGrid.tsx` for unit roles.
     - Filtered `Header.tsx` (search functionality) for unit roles.
-  - Now: Refactoring `frontend/app/finance/akun.tsx` to improve financial transaction visibility.
+  - Now: Implementing direct thermal printing logic in `frontend/utils/printReceipt.ts` and refactoring `akun.tsx`.
   - Next: Verify RBAC integration with new components.
 - Open questions (UNCONFIRMED if needed):
   - Should the "Adjustment" modal in `akun.tsx` be changed to a "Transaction Entry" modal too?

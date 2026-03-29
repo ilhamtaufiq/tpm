@@ -1,7 +1,18 @@
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings } from './printSettings';
+
+// Dynamically import thermal printer to avoid issues on non-android platforms
+let BLEPrinter: any = null;
+if (Platform.OS === 'android') {
+    try {
+        BLEPrinter = require('react-native-thermal-receipt-printer').BLEPrinter;
+    } catch (e) {
+        console.warn('Thermal Printer library not available');
+    }
+}
 
 export interface PrintReceiptItem {
     description: string;
@@ -250,6 +261,112 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
 }
 
 /**
+ * Generate text for thermal printer (ESC/POS)
+ */
+export function generateThermalText(data: PrintReceiptData, settings: PrintSettings): string {
+    const is80mm = settings.paperSize === '80mm';
+    const divider = is80mm ? '------------------------------------------------' : '--------------------------------';
+    
+    const formatCurrencyLocal = (amount: number) => {
+        return new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0
+        }).format(amount).replace('Rp', '').trim();
+    };
+
+    const formatDateLocal = (date: Date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        const h = date.getHours().toString().padStart(2, '0');
+        const min = date.getMinutes().toString().padStart(2, '0');
+        return `${d}/${m}/${y} ${h}:${min}`;
+    };
+
+    let text = `<C><B>${settings.companyName || 'TIGA PUTRA MOTOR'}</B></C>\n`;
+    text += `<C>${settings.companyAddress || 'jl.raya cianjur sukabumi km 5'}</C>\n`;
+    text += `<C>HP: ${settings.companyPhone || '087720225244'}</C>\n`;
+    text += `${divider}\n`;
+
+    text += `No Nota  : ${data.transactionNumber}\n`;
+    if (data.antrian) text += `Antrian  : ${data.antrian}\n`;
+    text += `Plgn     : ${data.customerName}\n`;
+    text += `Tanggal  : ${formatDateLocal(data.date)}\n`;
+    if (data.cashierName) text += `Kasir    : ${data.cashierName}\n`;
+    if (data.mechanicName) text += `Mekanik  : ${data.mechanicName}\n`;
+    text += `${divider}\n`;
+
+    // Items logic
+    const renderItem = (item: PrintReceiptItem) => {
+        // Adjust spacing based on paper size
+        const description = item.description.substring(0, is80mm ? 30 : 18).toUpperCase();
+        const priceStr = formatCurrencyLocal(item.unitPrice);
+        const subtotalStr = formatCurrencyLocal(item.subtotal);
+        const qtyStr = `${item.quantity} x ${priceStr}`;
+        
+        // Simple align
+        return `${description}\n  ${qtyStr}\t${subtotalStr}\n`;
+    };
+
+    let layananHTML = '';
+    const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
+    if (services.length > 0) {
+        text += `<C>LAYANAN</C>\n`;
+        services.forEach(item => {
+            text += renderItem(item);
+        });
+        text += `${divider}\n`;
+        text += `Total Layanan: ${formatCurrencyLocal(services.reduce((acc, curr) => acc + curr.subtotal, 0))}\n`;
+    }
+
+    const parts = data.parts || [];
+    if (parts.length > 0) {
+        if (text.endsWith(divider + '\n')) {
+            // avoid double divider
+        } else {
+            text += `${divider}\n`;
+        }
+        text += `<C>SPARE PART</C>\n`;
+        parts.forEach(item => {
+            text += renderItem(item);
+        });
+        text += `${divider}\n`;
+        text += `Total Part: ${formatCurrencyLocal(parts.reduce((acc, curr) => acc + curr.subtotal, 0))}\n`;
+    }
+
+    text += `${divider}\n`;
+    text += `SubTotal  : ${formatCurrencyLocal(data.subtotal)}\n`;
+    if (data.discount) text += `Diskon    : -${formatCurrencyLocal(data.discount)}\n`;
+    text += `<B>Total     : ${formatCurrencyLocal(data.total)}</B>\n`;
+
+    if (data.paid !== undefined) {
+        text += `Dibayar   : ${formatCurrencyLocal(data.paid)}\n`;
+        if (data.total > data.paid) {
+            text += `Sisa      : ${formatCurrencyLocal(data.total - data.paid)}\n`;
+        }
+    }
+    if (data.change !== undefined && data.change > 0) {
+        text += `Kembalian : ${formatCurrencyLocal(data.change)}\n`;
+    }
+
+    text += `${divider}\n`;
+    
+    if (data.paymentMethod) {
+        text += `Metode    : ${data.paymentMethod}\n`;
+        text += `${divider}\n`;
+    }
+    
+    if (data.vehiclePlate) {
+        text += `<C>${data.vehiclePlate}</C>\n`;
+        text += `${divider}\n`;
+    }
+
+    text += `<C>${settings.footer || 'Terimakasih'}</C>\n`;
+    text += `\n\n\n\n`; // Feed space
+
+    return text;
+}
+
+/**
  * Print receipt using Expo Print
  */
 export async function printReceipt(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
@@ -295,7 +412,28 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
                 }, 800);
             }
         } else {
-            // For mobile, use Expo Print
+            // For mobile, check if direct thermal printer is connected via bluetooth
+            if (Platform.OS === 'android' && BLEPrinter) {
+                try {
+                    const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
+                    if (savedPrinter) {
+                        const device = JSON.parse(savedPrinter);
+                        // Initialize and connect (even if already connected, the library handles it)
+                        await BLEPrinter.init();
+                        await BLEPrinter.connectPrinter(device.inner_mac_address);
+                        
+                        // Generate thermal text and print
+                        const thermalText = generateThermalText(data, settings);
+                        await BLEPrinter.printText(thermalText);
+                        return; // Successfully printed directly
+                    }
+                } catch (thermalError) {
+                    console.warn('Failed to print to direct thermal printer, falling back to system print:', thermalError);
+                    // Fallback to system print if direct printing fails
+                }
+            }
+
+            // Fallback for mobile: use Expo Print (which shows the preview dialog)
             await Print.printAsync({
                 html,
                 width: paperWidthPoints,
