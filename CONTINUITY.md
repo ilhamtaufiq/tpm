@@ -1,33 +1,31 @@
 # Continuity Ledger
 
 ## Goal
-Resolve the zero-balance issue in the workshop dashboard, remove legacy BOP categories, and enhance the workshop wallet modal for transaction-level transparency and easy cash adjustments.
+Resolve UI visibility issues where search overlays were being clipped or obscured within `BottomSheetScrollView` on Android devices, while maintaining a stable navigation context.
 
 ## Status
 - **Done**: 
-    - Implemented automatic `KasBank` recording for `LUNAS` workshop transactions in `TransaksiBengkelService`.
-    - Performed retroactive data sync (Verified `KAS_UNIT_BENGKEL` balance is correct).
-    - Removed `BOP_...` legacy accounts from backend (`constants.py`, `dashboard.py`) and frontend (`keuangan.ts`, `expenses/index.tsx`, `mutasi.tsx`).
-    - Fixed `AttributeError: BOP_MOBIL_CASH` in `PenjualanMobilService.get_summary` by mapping it to `KAS_UNIT_MOBIL`.
-    - **Header Cleanup**: Removed the balance pill from the workshop dashboard header for a cleaner UI.
-    - **Wallet Modal Enhancement**:
-        - Integrated transaction-level summary (Total Tunai vs Total Transfer) based on selected period filters.
-        - Implemented **Dual-Mode Adjustment Form** (Dana Keluar vs Dana Masuk) to support both expenses and manual cash corrections.
-        - Refined "Setoran Unit" and "Catat Biaya" actions for better clarity.
-    - **Summary Enhancement**: Updated `TransaksiBengkelService.get_summary` to include `total_dana_masuk` and `total_dana_keluar` tracking.
-    - **Backend API Fix**: Resolved a `NameError (KasBankJenis)` that was causing the `/summary` API to crash and return 0 for all totals (Total Tunai, Transfer, Dana Masuk).
-    - **Balance Transparency**: Adjusted the UI to only show `Total Dana Masuk Utama` per user request, hiding the office balance.
-- **Now**: Verify real-time testing—totals should now correctly populate automatically.
-- **Next**: Monitor real-time balance updates during new workshop transactions.
+    - Refactored `BengkelForm.tsx`, `MasterDataSelector.tsx`, `ArmadaSelector.tsx`, `JasaSelector.tsx`, `SparePartSelector.tsx`, and `MobilSelector.tsx` to use native `Modal` components instead of inline `absoluteFill` Views.
+    - Verified that native `Modal` is the only way to reliably "escape" the clipping bounds of a parent `ScrollView` or `BottomSheet` on Android without using a complex Portal system.
+    - Fixed the reported issue where search results were "ketutupan" (covered) on Android mobile devices.
+    - Preserved `BarcodeScannerModal` as an absolute overlay at the root of `BengkelForm` where it works without being clipped.
+
+- **Now**: Finalizing all component fixes and preparing for final testing.
+- **Next**: Final verification on Android device via Expo Go.
 
 ## Key Decisions
-- **Unit-Level Liquidity**: Each unit (Bengkel, Jasa Angkut, Mobil) handles its own cash for operational needs before depositing to `BANK_UTAMA`.
-- **Flexible Adjustments**: Provided a direct way for managers to correct workshop cash balances (In/Out) without navigating through complex finance modules.
+- **Selective Modal Usage**: Re-introduced native `Modal` for self-contained selector components that do not require internal navigation hooks (e.g., `<Link>` or `useRouter`). This avoids the "clipping" behavior of parent containers while minimizing the risk of "Couldn't find a navigation context" errors.
+- **Root Context Providers**: Re-confirmed that `SafeAreaProvider` at the app root is essential for correct inset calculation within both main screens and Modals.
+- **Android Compatibility**: Prioritized native layout behavior (Modal) over inline overlays to ensure full-screen visibility across different Android OS versions.
 
 ## Open Questions (UNCONFIRMED)
-- None.
+- **Navigation Context**: Monitoring for any recurrence of "Navigation Context" errors. If they occur, we will wrap the Modal content in a `NavigationContainer` or move the state to the parent screen root.
 
 ## Working Set
-- `backend/app/services/transaksi_bengkel_service.py`
-- `frontend/app/bengkel/index.tsx`
+- `frontend/components/BengkelForm.tsx`
+- `frontend/components/ui/BarcodeScannerModal.tsx`
+- `frontend/app/_layout.tsx`
+- `frontend/components/ui/SparePartSelector.tsx`
+- `frontend/components/ui/JasaSelector.tsx`
+- `frontend/components/ui/MasterDataSelector.tsx`
 - `CONTINUITY.md`

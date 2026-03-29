@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, Pressable, Modal, TextInput, FlatList, SectionList, TouchableOpacity } from 'react-native';
-// import { Pressable } from '@gorhom/bottom-sheet'; // Reverted for web compatibility
+import { View, ScrollView, Platform, Dimensions, StyleSheet, KeyboardAvoidingView, TextInput, FlatList, SectionList, TouchableOpacity, Pressable, GestureResponderEvent, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { Typography } from './ui/Typography';
 import { Input } from './ui/Input';
@@ -9,7 +10,6 @@ import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode } from 'lucide-react-native';
 import { BarcodeScannerModal } from './ui/BarcodeScannerModal';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useMobilList } from '../hooks/useMobil';
@@ -32,6 +32,7 @@ interface BengkelFormProps {
 }
 
 export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
+    const insets = useSafeAreaInsets();
     // Category selection
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
@@ -606,7 +607,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 )}
                             </View>
                             {selectedMobil ? (
-                                <Pressable onPress={(e) => { e.stopPropagation(); setSelectedMobil(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                <Pressable onPress={(e: GestureResponderEvent) => { e.stopPropagation(); setSelectedMobil(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                     <X size={18} color="#EF4444" />
                                 </Pressable>
                             ) : (
@@ -615,80 +616,82 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         </View>
                     </Pressable>
 
-                    {/* Search Modal */}
-                    <Modal visible={mobilSearchOpen} transparent animationType="slide" onRequestClose={() => setMobilSearchOpen(false)} statusBarTranslucent>
-                        <View className="flex-1 justify-end bg-black/50">
-                            <Pressable style={{ flex: 1 }} onPress={() => setMobilSearchOpen(false)} />
-                            <View className="bg-white rounded-t-[32px] h-[80%] overflow-hidden">
-                                <View style={{ padding: 24, flex: 1 }}>
-                                    <View className="items-center mb-2">
-                                        <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                                    </View>
-                                    <View className="flex-row justify-between items-center mb-4">
-                                        <Typography variant="h3" weight="bold">Cari Mobil</Typography>
-                                        <Pressable onPress={() => setMobilSearchOpen(false)}>
-                                            <X size={24} color="#6B7280" />
-                                        </Pressable>
-                                    </View>
-                                    <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                        <Search size={20} color="#9CA3AF" />
-                                        <TextInput
-                                            className="flex-1 ml-3 text-base text-text font-outfit"
-                                            placeholder="Ketik plat, merek, atau model"
-                                            value={mobilSearchQuery}
-                                            onChangeText={setMobilSearchQuery}
-                                            autoFocus
-                                            placeholderTextColor="#9CA3AF"
-                                            autoCapitalize="characters"
-                                        />
-                                    </View>
-                                    {mobilList.length === 0 ? (
-                                        <View className="items-center py-8">
-                                            <Typography className="text-gray-400 italic">Tidak ada data mobil tersedia</Typography>
-                                        </View>
-                                    ) : (
-                                        <FlatList
-                                            data={filteredMobil}
-                                            keyExtractor={(item: any) => item.id.toString()}
-                                            showsVerticalScrollIndicator={false}
-                                            renderItem={({ item }: { item: any }) => (
-                                                <Pressable
-                                                    onPress={() => {
-                                                        setSelectedMobil(item);
-                                                        if (item.nomor_plat) setNomorPlat(item.nomor_plat);
-                                                        if (item.merek && item.model) setJenisKendaraan(`${item.merek} ${item.model}`);
-                                                        setMobilSearchOpen(false);
-                                                    }}
-                                                >
-                                                    <Card className={`mb-3 p-4 border flex-row items-center justify-between ${selectedMobil?.id === item.id ? 'border-blue-400 bg-blue-50' : 'border-gray-100'
-                                                        }`}>
-                                                        <View className="flex-1">
-                                                            <Typography weight="bold" className="text-sm">
-                                                                {item.nomor_plat || '-'}
-                                                            </Typography>
-                                                            <Typography variant="caption" className="text-gray-500 mt-0.5">
-                                                                {item.merek} {item.model} • {item.tahun || ''}
-                                                            </Typography>
-                                                            <Typography weight="bold" className="text-xs text-blue-600 mt-1">
-                                                                {formatCurrency(item.harga_beli || 0)}
-                                                            </Typography>
-                                                        </View>
-                                                        {selectedMobil?.id === item.id && (
-                                                            <View className="bg-blue-500 rounded-full p-1">
-                                                                <Info size={14} color="#fff" />
-                                                            </View>
-                                                        )}
-                                                    </Card>
-                                                </Pressable>
-                                            )}
-                                            ListEmptyComponent={
-                                                mobilSearchQuery.length > 0 ? (
-                                                    <Typography className="text-center text-gray-400 mt-8">Tidak ditemukan</Typography>
-                                                ) : null
-                                            }
-                                        />
-                                    )}
+                    {/* Search Overlay using Modal (Fixes clipping in ScrollViews on Android) */}
+                    <Modal
+                        visible={mobilSearchOpen}
+                        animationType="slide"
+                        onRequestClose={() => setMobilSearchOpen(false)}
+                        statusBarTranslucent
+                    >
+                        <View style={{ flex: 1, backgroundColor: 'white' }}>
+                            <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
+                                <View className="items-center mb-2">
+                                    <View className="w-10 h-1 bg-gray-300 rounded-full" />
                                 </View>
+                                <View className="flex-row justify-between items-center mb-4">
+                                    <Typography variant="h3" weight="bold">Cari Mobil</Typography>
+                                    <Pressable onPress={() => setMobilSearchOpen(false)}>
+                                        <X size={24} color="#6B7280" />
+                                    </Pressable>
+                                </View>
+                                <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
+                                    <Search size={20} color="#9CA3AF" />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-base text-text font-outfit"
+                                        placeholder="Ketik plat, merek, atau model"
+                                        value={mobilSearchQuery}
+                                        onChangeText={setMobilSearchQuery}
+                                        autoFocus
+                                        placeholderTextColor="#9CA3AF"
+                                        autoCapitalize="characters"
+                                    />
+                                </View>
+                                {mobilList.length === 0 ? (
+                                    <View className="items-center py-8">
+                                        <Typography className="text-gray-400 italic">Tidak ada data mobil tersedia</Typography>
+                                    </View>
+                                ) : (
+                                    <FlatList
+                                        data={filteredMobil}
+                                        keyExtractor={(item: any) => item.id.toString()}
+                                        showsVerticalScrollIndicator={false}
+                                        renderItem={({ item }: { item: any }) => (
+                                            <Pressable
+                                                onPress={() => {
+                                                    setSelectedMobil(item);
+                                                    if (item.nomor_plat) setNomorPlat(item.nomor_plat);
+                                                    if (item.merek && item.model) setJenisKendaraan(`${item.merek} ${item.model}`);
+                                                    setMobilSearchOpen(false);
+                                                }}
+                                            >
+                                                <Card className={`mb-3 p-4 border flex-row items-center justify-between ${selectedMobil?.id === item.id ? 'border-blue-400 bg-blue-50' : 'border-gray-100'
+                                                    }`}>
+                                                    <View className="flex-1">
+                                                        <Typography weight="bold" className="text-sm">
+                                                            {item.nomor_plat || '-'}
+                                                        </Typography>
+                                                        <Typography variant="caption" className="text-gray-500 mt-0.5">
+                                                            {item.merek} {item.model} • {item.tahun || ''}
+                                                        </Typography>
+                                                        <Typography weight="bold" className="text-xs text-blue-600 mt-1">
+                                                            {formatCurrency(item.harga_beli || 0)}
+                                                        </Typography>
+                                                    </View>
+                                                    {selectedMobil?.id === item.id && (
+                                                        <View className="bg-blue-500 rounded-full p-1">
+                                                            <Info size={14} color="#fff" />
+                                                        </View>
+                                                    )}
+                                                </Card>
+                                            </Pressable>
+                                        )}
+                                        ListEmptyComponent={
+                                            mobilSearchQuery.length > 0 ? (
+                                                <Typography className="text-center text-gray-400 mt-8">Tidak ditemukan</Typography>
+                                            ) : null
+                                        }
+                                    />
+                                )}
                             </View>
                         </View>
                     </Modal>
@@ -926,18 +929,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <Pressable 
+                                <TouchableOpacity 
                                     onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }} 
-                                    hitSlop={8}
-                                    style={({ pressed }) => ({
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    activeOpacity={0.6}
+                                    style={{
                                         flexDirection: 'row',
                                         alignItems: 'center',
-                                        opacity: pressed ? 0.6 : 1
-                                    })}
+                                    }}
                                 >
                                     <QrCode size={16} color="#2563EB" />
                                     <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Scan</Typography>
-                                </Pressable>
+                                </TouchableOpacity>
                             </View>
                             <View
                                 style={{
@@ -951,18 +954,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <Pressable 
+                                <TouchableOpacity 
                                     onPress={addPart} 
-                                    hitSlop={8}
-                                    style={({ pressed }) => ({
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    activeOpacity={0.6}
+                                    style={{
                                         flexDirection: 'row',
                                         alignItems: 'center',
-                                        opacity: pressed ? 0.6 : 1
-                                    })}
+                                    }}
                                 >
                                     <Plus size={16} color="#2563EB" />
                                     <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Tambah</Typography>
-                                </Pressable>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
@@ -1325,7 +1328,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
                 </View>
 
-                {/* Scrollable Content for BottomSheet */}
+                {/* Scrollable Content for BottomSheet (using specialised scroll view for native mobile) */}
                 <BottomSheetScrollView
                     style={styles.mobileScrollView}
                     contentContainerStyle={styles.mobileScrollContent}

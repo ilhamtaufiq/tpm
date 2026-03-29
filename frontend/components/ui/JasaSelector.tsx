@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal, TouchableOpacity } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -79,84 +79,81 @@ export const JasaSelector = ({
                 </View>
             </Pressable>
 
-            {/* Modal for Search */}
+
+            {/* Search Overlay using Modal (Fixes clipping in ScrollViews on Android) */}
             <Modal
                 visible={isOpen}
-                transparent={true}
                 animationType="slide"
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
-                    <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
-                        <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
-                            <View className="items-center mb-2">
-                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                            </View>
-
-                            <View className="flex-row justify-between items-center mb-6">
-                                <Typography variant="h3" weight="bold">Cari Jasa Servis</Typography>
-                                <Pressable onPress={handleClose}>
-                                    <X size={24} color="#6B7280" />
-                                </Pressable>
-                            </View>
-
-                            <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                <Search size={20} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-base text-text font-outfit"
-                                    placeholder="Ketik nama jasa..."
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    autoFocus
-                                    placeholderTextColor="#9CA3AF"
-                                />
-                            </View>
-
-                            {isLoading ? (
-                                <ActivityIndicator className="mt-4" color="#8B5CF6" />
-                            ) : (
-                                <FlatList
-                                    data={searchResults || []}
-                                    keyExtractor={(item) => item.id.toString()}
-                                    showsVerticalScrollIndicator={false}
-                                    renderItem={({ item }) => (
-                                        <Pressable onPress={() => handleSelect(item)}>
-                                            <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
-                                                <View className="flex-1 mr-4">
-                                                    <Typography weight="semibold" className="text-base">{item.nama}</Typography>
-                                                    <View className="flex-row items-center mt-1">
-                                                        <Badge
-                                                            label={item.kategori || 'Servis'}
-                                                            variant="neutral"
-                                                            className="mr-2"
-                                                        />
-                                                        <Typography weight="bold" className="text-primary">
-                                                            {formatCurrency(item.harga)}
-                                                        </Typography>
-                                                    </View>
-                                                </View>
-                                                {value?.id === item.id && (
-                                                    <Check size={20} color="#8B5CF6" />
-                                                )}
-                                            </Card>
-                                        </Pressable>
-                                    )}
-                                    ListEmptyComponent={
-                                        searchQuery.length > 0 ? (
-                                            <View className="items-center mt-10">
-                                                <Typography className="text-gray-500">Jasa tidak ditemukan</Typography>
-                                            </View>
-                                        ) : (
-                                            <View className="items-center mt-10">
-                                                <Typography className="text-gray-400">Mulai mengetik untuk mencari...</Typography>
-                                            </View>
-                                        )
-                                    }
-                                />
-                            )}
+                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
+                        <View className="items-center mb-2">
+                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
                         </View>
+
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Typography variant="h3" weight="bold">Cari Jasa Servis</Typography>
+                            <Pressable onPress={handleClose} hitSlop={12}>
+                                <X size={24} color="#6B7280" />
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
+                            <Search size={20} color="#9CA3AF" />
+                            <TextInput
+                                className="flex-1 ml-3 text-base text-text font-outfit"
+                                placeholder="Ketik nama jasa..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                autoFocus
+                                placeholderTextColor="#9CA3AF"
+                            />
+                        </View>
+
+                        {isLoading ? (
+                            <ActivityIndicator className="mt-4" color="#8B5CF6" />
+                        ) : (
+                            <FlatList
+                                data={searchResults || []}
+                                keyExtractor={(item) => item.id.toString()}
+                                showsVerticalScrollIndicator={false}
+                                renderItem={({ item }) => (
+                                    <Pressable onPress={() => handleSelect(item)}>
+                                        <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                            <View className="flex-1 mr-4">
+                                                <Typography weight="semibold" className="text-base">{item.nama}</Typography>
+                                                <View className="flex-row items-center mt-1">
+                                                    <Badge
+                                                        label={item.kategori || 'Servis'}
+                                                        variant="neutral"
+                                                        className="mr-2"
+                                                    />
+                                                    <Typography weight="bold" className="text-primary">
+                                                        {formatCurrency(item.harga)}
+                                                    </Typography>
+                                                </View>
+                                            </View>
+                                            {value?.id === item.id && (
+                                                <Check size={20} color="#8B5CF6" />
+                                            )}
+                                        </Card>
+                                    </Pressable>
+                                )}
+                                ListEmptyComponent={
+                                    searchQuery.length > 0 ? (
+                                        <View className="items-center mt-10">
+                                            <Typography className="text-gray-500">Jasa tidak ditemukan</Typography>
+                                        </View>
+                                    ) : (
+                                        <View className="items-center mt-10">
+                                            <Typography className="text-gray-400">Mulai mengetik untuk mencari...</Typography>
+                                        </View>
+                                    )
+                                }
+                            />
+                        )}
                     </View>
                 </View>
             </Modal>

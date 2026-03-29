@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Input } from './Input';
 import { Button } from './Button';
@@ -118,98 +118,96 @@ export const MasterDataSelector = ({
                 </View>
             </Pressable>
 
-            {/* Modal Replacement for BottomSheet */}
+
+            {/* Search Overlay using Modal (Fixes clipping in ScrollViews on Android) */}
             <Modal
                 visible={isOpen}
-                transparent={true}
                 animationType="slide"
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
-                    <View className="bg-white rounded-t-[32px] h-[90%] overflow-hidden">
-                        <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
-                            <View className="items-center mb-2">
-                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                            </View>
-
-                            <View className="flex-row justify-between items-center mb-6">
-                                <Typography variant="h3" weight="bold">Cari {type === 'customer' ? 'Customer' : 'Supplier'}</Typography>
-                                <Pressable onPress={handleClose}>
-                                    <X size={24} color="#6B7280" />
-                                </Pressable>
-                            </View>
-
-                            <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                <Search size={20} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-base text-text font-outfit"
-                                    placeholder={`Ketik nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    autoFocus
-                                    placeholderTextColor="#9CA3AF"
-                                />
-                            </View>
-
-                            {allowGuest && searchQuery.length > 0 && (
-                                <Pressable onPress={handleGuestSelect} className="mb-4">
-                                    <Card className="p-4 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
-                                        <Plus size={20} color="#4B5563" />
-                                        <View className="ml-3">
-                                            <Typography weight="semibold">Gunakan "{searchQuery}"</Typography>
-                                            <Typography variant="caption" className="text-gray-500">sebagai Guest / Non-Member</Typography>
-                                        </View>
-                                    </Card>
-                                </Pressable>
-                            )}
-
-                            {isLoading ? (
-                                <ActivityIndicator className="mt-4" color="#023C69" />
-                            ) : (
-                                <FlatList
-                                    data={searchResults || []}
-                                    keyExtractor={(item) => item.id.toString()}
-                                    showsVerticalScrollIndicator={false}
-                                    renderItem={({ item }) => (
-                                        <Pressable onPress={() => handleSelect(item)}>
-                                            <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
-                                                <View className="flex-1 mr-2">
-                                                    <Typography weight="semibold">{item.nama}</Typography>
-                                                    <Typography variant="caption" className="text-gray-500">
-                                                        {item.kota ? `${item.kota} • ` : ''}{item.telepon || '-'}
-                                                    </Typography>
-                                                    {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
-                                                        <View className="flex-row flex-wrap mt-1">
-                                                            {item.vehicles.map((v: any, idx: number) => (
-                                                                <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
-                                                                    <Typography className="text-blue-700 text-[10px] font-bold">
-                                                                        {v.plat_nomor}
-                                                                    </Typography>
-                                                                </View>
-                                                            ))}
-                                                        </View>
-                                                    )}
-                                                </View>
-                                                <Badge
-                                                    label={type === 'customer' ? item.tipe : 'Vendor'}
-                                                    variant="neutral"
-                                                />
-                                            </Card>
-                                        </Pressable>
-                                    )}
-                                    ListEmptyComponent={
-                                        searchQuery.length > 1 ? (
-                                            <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
-                                        ) : null
-                                    }
-                                />
-                            )}
+                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
+                        <View className="items-center mb-2">
+                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
                         </View>
+
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Typography variant="h3" weight="bold">Cari {type === 'customer' ? 'Customer' : 'Supplier'}</Typography>
+                            <Pressable onPress={handleClose} hitSlop={12}>
+                                <X size={24} color="#6B7280" />
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
+                            <Search size={20} color="#9CA3AF" />
+                            <TextInput
+                                className="flex-1 ml-3 text-base text-text font-outfit"
+                                placeholder={`Ketik nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                autoFocus
+                                placeholderTextColor="#9CA3AF"
+                            />
+                        </View>
+
+                        {allowGuest && searchQuery.length > 0 && (
+                            <Pressable onPress={handleGuestSelect} className="mb-4">
+                                <Card className="p-4 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
+                                    <Plus size={20} color="#4B5563" />
+                                    <View className="ml-3">
+                                        <Typography weight="semibold">Gunakan "{searchQuery}"</Typography>
+                                        <Typography variant="caption" className="text-gray-500">sebagai Guest / Non-Member</Typography>
+                                    </View>
+                                </Card>
+                            </Pressable>
+                        )}
+
+                        {isLoading ? (
+                            <ActivityIndicator className="mt-4" color="#023C69" />
+                        ) : (
+                            <FlatList
+                                data={searchResults || []}
+                                keyExtractor={(item) => item.id.toString()}
+                                showsVerticalScrollIndicator={false}
+                                renderItem={({ item }) => (
+                                    <Pressable onPress={() => handleSelect(item)}>
+                                        <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                            <View className="flex-1 mr-2">
+                                                <Typography weight="semibold">{item.nama}</Typography>
+                                                <Typography variant="caption" className="text-gray-500">
+                                                    {item.kota ? `${item.kota} • ` : ''}{item.telepon || '-'}
+                                                </Typography>
+                                                {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
+                                                    <View className="flex-row flex-wrap mt-1">
+                                                        {item.vehicles.map((v: any, idx: number) => (
+                                                            <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
+                                                                <Typography className="text-blue-700 text-[10px] font-bold">
+                                                                    {v.plat_nomor}
+                                                                </Typography>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <Badge
+                                                label={type === 'customer' ? item.tipe : 'Vendor'}
+                                                variant="neutral"
+                                            />
+                                        </Card>
+                                    </Pressable>
+                                )}
+                                ListEmptyComponent={
+                                    searchQuery.length > 1 ? (
+                                        <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
+                                    ) : null
+                                }
+                            />
+                        )}
                     </View>
                 </View>
             </Modal>
         </View>
     );
 };
+

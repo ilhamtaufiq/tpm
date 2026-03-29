@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Pressable, TextInput, FlatList, ActivityIndicator, Modal, TouchableOpacity } from 'react-native';
+import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Card } from './Card';
 import { Badge } from './Badge';
@@ -88,110 +88,103 @@ export const SparePartSelector = ({
             </Pressable>
 
             {/* Modal for Search */}
+
+            {/* Search Overlay using Modal (Fixes clipping in ScrollViews on Android) */}
             <Modal
                 visible={isOpen}
-                transparent={true}
                 animationType="slide"
                 onRequestClose={handleClose}
                 statusBarTranslucent
             >
-                <View className="flex-1 justify-end bg-black/50">
-                    <TouchableOpacity style={{ flex: 1 }} onPress={handleClose} activeOpacity={1} />
-                    <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
-                        <View style={{ padding: 24, paddingBottom: insets.bottom + 24, flex: 1 }}>
-                            <View className="items-center mb-2">
-                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                            </View>
-
-                            <View className="flex-row justify-between items-center mb-6">
-                                <Typography variant="h3" weight="bold">Cari Sparepart</Typography>
-                                <Pressable onPress={handleClose}>
-                                    <X size={24} color="#6B7280" />
-                                </Pressable>
-                            </View>
-
-                            <View className="flex-row items-center space-x-2 mb-4">
-                                <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
-                                    <Search size={20} color="#9CA3AF" />
-                                    <TextInput
-                                        className="flex-1 ml-3 text-base text-text font-outfit"
-                                        placeholder="Ketik nama sparepart..."
-                                        value={searchQuery}
-                                        onChangeText={setSearchQuery}
-                                        autoFocus
-                                        placeholderTextColor="#9CA3AF"
-                                    />
-                                </View>
-                                <View 
-                                    style={{
-                                        backgroundColor: '#EFF6FF',
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        borderWidth: 1,
-                                        borderColor: '#DBEAFE',
-                                    }}
-                                >
-                                    <Pressable 
-                                        onPress={() => setIsScannerOpen(true)}
-                                        hitSlop={8}
-                                    >
-                                        <QrCode size={20} color="#2563EB" />
-                                    </Pressable>
-                                </View>
-                            </View>
-
-                            {isLoading ? (
-                                <ActivityIndicator className="mt-4" color="#2563EB" />
-                            ) : (
-                                <FlatList
-                                    data={searchResults || []}
-                                    keyExtractor={(item) => item.id.toString()}
-                                    showsVerticalScrollIndicator={false}
-                                    renderItem={({ item }) => (
-                                        <Pressable onPress={() => handleSelect(item)}>
-                                            <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
-                                                <View className="flex-1 mr-4">
-                                                    <Typography weight="semibold" className="text-base">{item.nama}</Typography>
-                                                    <View className="flex-row items-center mt-1">
-                                                        <Typography variant="caption" className="text-gray-500 mr-3">
-                                                            {item.kode}
-                                                        </Typography>
-                                                        <Badge
-                                                            label={`Stok: ${item.stok}`}
-                                                            variant={item.stok > 0 ? "success" : "error"}
-                                                        />
-                                                    </View>
-                                                    <Typography weight="bold" className="text-primary mt-1">
-                                                        {formatCurrency(item.harga_jual)}
-                                                    </Typography>
-                                                </View>
-                                                {value?.id === item.id && (
-                                                    <Check size={20} color="#2563EB" />
-                                                )}
-                                            </Card>
-                                        </Pressable>
-                                    )}
-                                    ListEmptyComponent={
-                                        searchQuery.length > 0 ? (
-                                            <View className="items-center mt-10">
-                                                <Typography className="text-gray-500">Sparepart tidak ditemukan</Typography>
-                                            </View>
-                                        ) : (
-                                            <View className="items-center mt-10">
-                                                <Typography className="text-gray-400">Mulai mengetik untuk mencari...</Typography>
-                                            </View>
-                                        )
-                                    }
-                                />
-                            )}
+                <View style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View style={{ padding: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24, flex: 1 }}>
+                        <View className="items-center mb-2">
+                            <View className="w-10 h-1 bg-gray-300 rounded-full" />
                         </View>
-                    </View>
+
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Typography variant="h3" weight="bold">Cari Sparepart</Typography>
+                            <Pressable onPress={handleClose} hitSlop={12}>
+                                <X size={24} color="#6B7280" />
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row items-center space-x-2 mb-4">
+                            <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
+                                <Search size={20} color="#9CA3AF" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-base text-text font-outfit"
+                                    placeholder="Ketik nama sparepart..."
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    autoFocus
+                                    placeholderTextColor="#9CA3AF"
+                                />
+                            </View>
+                            <TouchableOpacity 
+                                onPress={() => setIsScannerOpen(true)}
+                                style={{
+                                    backgroundColor: '#EFF6FF',
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 12,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderWidth: 1,
+                                    borderColor: '#DBEAFE',
+                                }}
+                            >
+                                <QrCode size={20} color="#2563EB" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {isLoading ? (
+                            <ActivityIndicator className="mt-4" color="#2563EB" />
+                        ) : (
+                            <FlatList
+                                data={searchResults || []}
+                                keyExtractor={(item) => item.id.toString()}
+                                showsVerticalScrollIndicator={false}
+                                renderItem={({ item }) => (
+                                    <Pressable onPress={() => handleSelect(item)}>
+                                        <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                            <View className="flex-1 mr-4">
+                                                <Typography weight="semibold" className="text-base">{item.nama}</Typography>
+                                                <View className="flex-row items-center mt-1">
+                                                    <Typography variant="caption" className="text-gray-500 mr-3">
+                                                        {item.kode}
+                                                    </Typography>
+                                                    <Badge
+                                                        label={`Stok: ${item.stok}`}
+                                                        variant={item.stok > 0 ? "success" : "error"}
+                                                    />
+                                                </View>
+                                                <Typography weight="bold" className="text-primary mt-1">
+                                                    {formatCurrency(item.harga_jual)}
+                                                </Typography>
+                                            </View>
+                                            {value?.id === item.id && (
+                                                <Check size={20} color="#2563EB" />
+                                            )}
+                                        </Card>
+                                    </Pressable>
+                                )}
+                                ListEmptyComponent={
+                                    searchQuery.length > 0 ? (
+                                        <View className="items-center mt-10">
+                                            <Typography className="text-gray-500">Sparepart tidak ditemukan</Typography>
+                                        </View>
+                                    ) : (
+                                        <View className="items-center mt-10">
+                                            <Typography className="text-gray-400">Mulai mengetik untuk mencari...</Typography>
+                                        </View>
+                                    )
+                                }
+                        />
+                    )}
                 </View>
+            </View>
             </Modal>
-            
             <BarcodeScannerModal 
                 visible={isScannerOpen} 
                 onClose={() => setIsScannerOpen(false)} 

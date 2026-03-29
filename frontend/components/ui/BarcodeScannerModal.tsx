@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Modal, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
 import { X, Zap, ZapOff } from 'lucide-react-native';
@@ -20,6 +21,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     scanLog = [],
     continuous = false
 }) => {
+    const insets = useSafeAreaInsets();
     const [permission, requestPermission] = useCameraPermissions();
     const [scanned, setScanned] = useState(false);
     const [torch, setTorch] = useState(false);
@@ -84,8 +86,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (!visible) return null;
 
     return (
-        <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-            <SafeAreaView style={styles.container}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 10000, backgroundColor: 'black' }]}>
+            <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                 <StatusBar barStyle="light-content" />
                 
                 {!permission?.granted ? (
@@ -175,8 +177,8 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                         </View>
                     </View>
                 )}
-            </SafeAreaView>
-        </Modal>
+            </View>
+        </View>
     );
 };
 

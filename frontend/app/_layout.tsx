@@ -25,6 +25,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { AppState, AppStateStatus } from 'react-native';
 import '../global.css';
 import { ConnectivityBanner } from '../components/ConnectivityBanner';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -239,20 +240,33 @@ function RootLayoutContent() {
     }
 
     return (
-        <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
-            <ConnectivityBanner />
-            <ErrorBoundary>
-                <BottomSheetModalProvider>
-                    <Stack screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name="index" options={{ headerShown: false }} />
-                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                        <Stack.Screen name="(security)" options={{ headerShown: false }} />
-                        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-                    </Stack>
-                </BottomSheetModalProvider>
-            </ErrorBoundary>
-        </GestureHandlerRootView>
+        <SafeAreaProvider>
+            <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
+                <ConnectivityBanner />
+                <ErrorBoundary>
+                    <BottomSheetModalProvider>
+                        <Stack screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name="index" options={{ headerShown: false }} />
+                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                            <Stack.Screen name="(security)" options={{ headerShown: false }} />
+                            <Stack.Screen name="bengkel" options={{ headerShown: false }} />
+                            <Stack.Screen name="finance" options={{ headerShown: false }} />
+                            <Stack.Screen name="jasa-angkut" options={{ headerShown: false }} />
+                            <Stack.Screen name="laporan" options={{ headerShown: false }} />
+                            <Stack.Screen name="master-data" options={{ headerShown: false }} />
+                            <Stack.Screen name="mobil" options={{ headerShown: false }} />
+                            <Stack.Screen name="receipt" options={{ headerShown: false }} />
+                            <Stack.Screen name="sdm" options={{ headerShown: false }} />
+                            <Stack.Screen name="settings" options={{ headerShown: false }} />
+                            <Stack.Screen name="all-menus" options={{ headerShown: false }} />
+                            <Stack.Screen name="monitor" options={{ headerShown: false }} />
+                            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+                        </Stack>
+                    </BottomSheetModalProvider>
+                </ErrorBoundary>
+            </GestureHandlerRootView>
+        </SafeAreaProvider>
     );
 }
 
