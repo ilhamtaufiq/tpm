@@ -1,24 +1,30 @@
-# Continuity Ledger - TPM Receipt Design Fix
+# Continuity Ledger - Workshop UI/UX & Financial Optimization
 
-- Goal: Fix missing logo/image in printed receipts (struk).
-- Constraints/Assumptions:
-  - Frontend: React Native (Expo).
-  - Printer: Thermal (BLE) and System Print (PDF/WebView).
-  - Library: `react-native-thermal-receipt-printer`, `expo-print`.
-- Key decisions:
-  - Change logo storage to base64 data URIs for both WebView compatibility and direct printer support.
-  - Fix missing logo printing in direct thermal receipt logic.
-- State:
-  - Done:
-    - Updated `PickLogo` to store base64 data URIs in `print.tsx`.
-    - Implemented `BLEPrinter.printPic` support in `printReceipt.ts`.
-  - Now:
-    - Ensuring backward compatibility for existing `file://` logo URIs in `printReceipt.ts`.
-  - Next:
-    - Test/Confirm with user.
-- Open questions (UNCONFIRMED if needed):
-  - Is `react-native-thermal-receipt-printer` version 1.2.0-rc.2 actually supporting `printPic` as implemented? (Assumed YES based on package.json).
-- Working set:
-  - `frontend/app/settings/print.tsx`
-  - `frontend/utils/printReceipt.ts`
-  - `frontend/utils/printSettings.ts`
+## Goal (incl. success criteria):
+- Standardize workshop financial reporting and form logic.
+- Improve UI/UX by moving administrative actions into a prominent 'Service Grid'.
+- Success: Professional, bento-style dashboard for workshop operations.
+
+## Constraints/Assumptions:
+- Business units need quick access to Wallet, Inventory, and Master Data.
+- Financial transactions must distinguish between unit cash and internal company movements.
+
+## Key decisions:
+- [UI/UX] Slimmed down the Blue Header to a minimal height, removed all statistics from it.
+- [UI/UX] Moved Unit Statistics (Antre, Proses, Selesai) into a row of three elegant, non-scrolling metric cards at the top of the content area.
+- [UI/UX] Reordered the content: Search & Filters -> Metric Cards -> Service Grid (Quick Actions) -> Section Header -> Date Picker -> Transaction List.
+- [UI/UX] Polished the Service Grid to a premium 'Bento' style: 2x2 grid, white icon containers, colored icons, and consistent labels.
+- [Backend/Finance] Map `INTERNAL` transactions to central cash (`KAS_UTAMA`) to prevent reporting discrepancies in unit-level physical cash drawers.
+
+## State:
+- Done:
+  - Finalized full dashboard UI reorganization (Slim header, content-driven stats and actions).
+  - Fixed TypeScript errors (missing `Activity` icon and invalid `black` Typography weight).
+  - Resolved `isInternalTransaction` undefined error in `BengkelForm.tsx`.
+- Now: Workspace is clean of build/linting errors and UI reorganization is complete.
+- Next: None.
+
+## Working set (files/ids/commands):
+- `frontend/app/bengkel/index.tsx`
+- `frontend/components/BengkelForm.tsx`
+- `backend/app/services/kas_bank_integration.py`

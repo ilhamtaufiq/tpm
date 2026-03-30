@@ -145,14 +145,19 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 return;
             }
 
+            const finalDp = isSplitPayment ? totalSplitAmount : parseNumber(dp);
+
             if (!isSplitPayment && !metodeBayar) {
-                setDialogConfig({
-                    visible: true,
-                    title: 'Validasi',
-                    message: 'Silakan pilih metode pembayaran (Tunai atau Transfer)',
-                    variant: 'warning'
-                });
-                return;
+                // If 100% Credit (DP = 0), we don't force Tunai/Transfer
+                if (finalDp > 0) {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Validasi',
+                        message: 'Silakan pilih metode pembayaran untuk DP (Tunai, Transfer, atau Internal)',
+                        variant: 'warning'
+                    });
+                    return;
+                }
             }
 
             if (isSplitPayment) {
@@ -168,7 +173,6 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 }
             }
 
-            const finalDp = isSplitPayment ? totalSplitAmount : parseNumber(dp);
 
             const payload = {
                 tanggal,
@@ -177,7 +181,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 telepon_pembeli: teleponPembeli || null,
                 harga_jual: parseNumber(hargaJual),
                 dp: finalDp,
-                metode_bayar: (isSplitPayment ? 'SPLIT' : (metodeBayar || '')).toUpperCase(),
+                metode_bayar: (isSplitPayment ? 'SPLIT' : (finalDp === 0 ? 'KREDIT' : (metodeBayar || ''))).toUpperCase(),
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
                     jumlah: parseNumber(p.jumlah)
@@ -311,7 +315,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 </View>
 
                                 <View className="flex-row flex-wrap gap-2 mb-3">
-                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                    {['TUNAI', 'TRANSFER', 'INTERNAL'].map((m) => (
                                         <Pressable
                                             key={m}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
@@ -383,6 +387,12 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TRANSFER' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
                             >
                                 <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-gray-400'}`}>Transfer</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setMetodeBayar('INTERNAL')}
+                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'INTERNAL' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
+                            >
+                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'INTERNAL' ? 'text-primary' : 'text-gray-400'}`}>Internal</Typography>
                             </Pressable>
                         </View>
 

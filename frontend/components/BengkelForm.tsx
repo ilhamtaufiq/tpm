@@ -165,7 +165,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             setGuestName(initialData.customer_nama || initialData.nama_customer || '');
             setDiskon(formatNumber(initialData.diskon?.toString() || '0'));
             setCatatan(initialData.catatan || '');
-            
+
             // Restore IDs for internal linking
             if (initialData.armada_id) setSelectedArmada({ id: initialData.armada_id, nopol: initialData.nomor_plat, nama: initialData.nama_customer?.replace('Armada ', '') } as any);
             if (initialData.mobil_id) setSelectedMobil({ id: initialData.mobil_id, nomor_plat: initialData.nomor_plat } as any);
@@ -185,9 +185,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     })));
                 } else {
                     setIsSplitPayment(false);
-                    setPayments([{ 
-                        id: Date.now(), 
-                        metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || ''), 
+                    setPayments([{
+                        id: Date.now(),
+                        metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || ''),
                         nominal: formatNumber(initialData.jumlah_bayar.toString()),
                         catatan: initialData.catatan_pembayaran || ''
                     }]);
@@ -197,7 +197,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
                 setIsSplitPayment(false);
             }
-            
+
             // Restore services
             if (initialData.detail_services && initialData.detail_services.length > 0) {
                 setServices(initialData.detail_services.map((s: any) => ({
@@ -225,7 +225,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             } else {
                 setParts([{ id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
             }
-            
+
             // Note: Customer, Muatan, Mobil selection restoration would require full object match / re-fetch
             // For now, we rely on the manual fields (Plat, Name) which are auto-populated
         }
@@ -236,27 +236,27 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
     const handleScanSparePart = (scannedData: string) => {
         const cleanData = scannedData.trim();
-        
+
         // Try exact match on internal kode or manufacturer kode_part
         let part = availableParts.find((p: any) => p.kode === cleanData || p.kode_part === cleanData);
-        
+
         // If not found, try matching without leading zeros (common in some barcode systems)
         if (!part) {
             const strippedData = cleanData.replace(/^0+/, '');
-            part = availableParts.find((p: any) => 
-                (p.kode || '').replace(/^0+/, '') === strippedData || 
+            part = availableParts.find((p: any) =>
+                (p.kode || '').replace(/^0+/, '') === strippedData ||
                 (p.kode_part || '').replace(/^0+/, '') === strippedData
             );
         }
-        
+
         if (part) {
             // Success vibration if available or just proceed
             // NOTE: We don't close the scanner immediately to allow continuous scanning of multiple parts
             // unless the user clicks "Selesai" in the modal
-            
+
             // Logic to add or increment part
             const existingPartIndex = parts.findIndex(p => p.spare_part_id === part.id);
-            
+
             if (existingPartIndex !== -1) {
                 const newParts = [...parts];
                 newParts[existingPartIndex].qty += 1;
@@ -321,7 +321,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const handleScanPlate = (scannedData: string) => {
         const cleanData = scannedData.trim().toUpperCase();
         setIsScannerOpen(false);
-        
+
         // If it's the jasa_angkut category, try to match with Armada
         if (kategori === 'jasa_angkut') {
             const armada = muatanList.find((m: any) => m.nopol === cleanData || (m.nomor_transaksi === cleanData));
@@ -333,7 +333,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 return;
             }
         }
-        
+
         // If it's jual_beli_mobil, try to match with Mobil
         if (kategori === 'jual_beli_mobil') {
             const mobil = mobilList.find((m: any) => m.nomor_plat === cleanData);
@@ -347,7 +347,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
         // Default: just set the plate number
         setNomorPlat(cleanData);
-        
+
         // Try to find if this plate belongs to an existing vehicle in customer's list
         if (selectedCustomer && selectedCustomer.vehicles) {
             const v = selectedCustomer.vehicles.find(v => v.plat_nomor === cleanData);
@@ -367,6 +367,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     };
 
     const handleSubmit = async () => {
+        const isInternalTransaction = (kategori === 'jasa_angkut' && !!selectedArmada) || (kategori === 'jual_beli_mobil' && !!selectedMobil);
+        const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0);
         let finalPlat = nomorPlat;
         let finalCustomer = selectedCustomer ? selectedCustomer.nama : guestName;
         let finalJenis = jenisKendaraan;
@@ -405,18 +407,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             return;
         }
 
-        // Payment validation
-        const isInternalTransaction = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
         if (!isInternalTransaction) {
+            
             if (!isSplitPayment) {
-                if (!payments[0]?.metode) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran.', variant: 'warning' });
+                // Method is required ONLY if amount is greater than 0
+                if (!payments[0]?.metode && totalPaid > 0) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk nominal yang diinput.', variant: 'warning' });
                     return;
                 }
             } else {
-                const hasInvalidSplitPayment = payments.some(p => !p.metode);
+                const hasInvalidSplitPayment = payments.some(p => (Number(parseNumber(p.nominal)) || 0) > 0 && !p.metode);
                 if (hasInvalidSplitPayment) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk setiap baris split payment.', variant: 'warning' });
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk setiap nominal split payment.', variant: 'warning' });
                     return;
                 }
             }
@@ -425,8 +427,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         const validatedPlat = finalPlat.substring(0, 15);
         const validatedCustomerName = finalCustomer.substring(0, 100);
 
-        // For jasa_angkut or jual_beli_mobil: auto-set internal payment (no cash involved)
-        const isInternalJasaAngkut = (kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil);
+        // For internal categories: auto-set internal payment (no cash involved)
 
         const payload: any = {
             tanggal: initialData ? initialData.tanggal : new Date().toISOString().split('T')[0],
@@ -438,7 +439,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: isInternalJasaAngkut ? 'INTERNAL' : (isSplitPayment ? 'SPLIT' : payments[0]?.metode?.toUpperCase() || ''),
+            metode_bayar: isInternalTransaction ? 'INTERNAL' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || '')),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
                 .map(s => ({
@@ -454,7 +455,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     harga_jual: Number(parseNumber(p.harga.toString())) || 0
                 })),
             diskon: Number(parseNumber(diskon)) || 0,
-            payments: isInternalJasaAngkut
+            payments: isInternalTransaction
                 ? [{ metode: 'INTERNAL', jumlah: grandTotal }]
                 : payments
                     .filter(p => p.metode)
@@ -464,7 +465,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         jenis_kas: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined,
                         catatan: p.catatan || ''
                     })),
-            jumlah_bayar: isInternalJasaAngkut
+            jumlah_bayar: isInternalTransaction
                 ? grandTotal
                 : payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0),
             catatan: catatan
@@ -772,7 +773,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 autoCapitalize="characters"
                             />
                             {(!selectedCustomer || (selectedCustomer?.vehicles && selectedCustomer.vehicles.length === 0)) && (
-                                <Pressable 
+                                <Pressable
                                     onPress={() => { setScannerMode('plate'); setIsScannerOpen(true); }}
                                     className="absolute right-3 top-9"
                                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -802,9 +803,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
                     >
                         <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
-                        <Typography 
-                            variant="caption" 
-                            weight={activeTab === 'service' ? 'bold' : 'medium'} 
+                        <Typography
+                            variant="caption"
+                            weight={activeTab === 'service' ? 'bold' : 'medium'}
                             className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
                         >
                             Jasa (Service)
@@ -826,9 +827,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
                     >
                         <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
-                        <Typography 
-                            variant="caption" 
-                            weight={activeTab === 'sparepart' ? 'bold' : 'medium'} 
+                        <Typography
+                            variant="caption"
+                            weight={activeTab === 'sparepart' ? 'bold' : 'medium'}
                             className={`ml-2 ${activeTab === 'sparepart' ? 'text-blue-600' : 'text-gray-400'}`}
                         >
                             Sparepart
@@ -917,7 +918,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             </View>
                         </View>
                         <View className="flex-row items-center">
-                            <View 
+                            <View
                                 style={{
                                     flexDirection: 'row',
                                     alignItems: 'center',
@@ -930,8 +931,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <TouchableOpacity 
-                                    onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }} 
+                                <TouchableOpacity
+                                    onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     activeOpacity={0.6}
                                     style={{
@@ -955,8 +956,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <TouchableOpacity 
-                                    onPress={addPart} 
+                                <TouchableOpacity
+                                    onPress={addPart}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                                     activeOpacity={0.6}
                                     style={{
@@ -1097,7 +1098,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             {!isSplitPayment && (
                                 <View className="flex-row space-x-3 mb-4">
                                     <View className="flex-[1.5]">
-                                        <Typography variant="caption" weight="medium" className="text-textGray mb-2 ml-1">Metode</Typography>
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Metode</Typography>
                                         <View className="flex-row space-x-1">
                                             {['Tunai', 'Transfer'].map((m) => (
                                                 <Pressable
@@ -1105,23 +1106,24 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     onPress={() => {
                                                         const newP = [...payments];
                                                         if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
-                                                        newP[0].metode = m;
+                                                        // Toggle selection: if already selected, unselect it
+                                                        newP[0].metode = newP[0].metode === m ? '' : m;
                                                         setPayments(newP);
                                                     }}
-                                                    className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
+                                                    className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}
                                                 >
-                                                    <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-textGray text-[10px]'}>{m}</Typography>
+                                                    <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-gray-700 text-[10px] font-medium'}>{m}</Typography>
                                                 </Pressable>
                                             ))}
                                         </View>
                                     </View>
                                     <View className="flex-1">
-                                        <Typography variant="caption" weight="medium" className="text-primary mb-2 ml-1">DP / Bayar (Rp)</Typography>
+                                        <Typography variant="caption" weight="bold" className="text-primary mb-2 ml-1">DP / Bayar (Rp)</Typography>
                                         <Input
                                             placeholder="0"
                                             keyboardType="numeric"
                                             containerClassName="mb-0"
-                                            className="h-10 text-sm border-primary/30"
+                                            className="h-10 text-sm border-gray-300"
                                             value={payments[0]?.nominal || ''}
                                             onChangeText={(val) => {
                                                 const newP = [...payments];
@@ -1149,12 +1151,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                                 key={m}
                                                                 onPress={() => {
                                                                     const newP = [...payments];
-                                                                    newP[idx].metode = longM;
+                                                                    // Toggle selection
+                                                                    newP[idx].metode = newP[idx].metode === longM ? '' : longM;
                                                                     setPayments(newP);
                                                                 }}
                                                                 className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
                                                             >
-                                                                <Typography className={`text-[9px] font-bold ${p.metode === longM ? 'text-white' : 'text-textGray'}`}>{m}</Typography>
+                                                                <Typography className={`text-[10px] font-bold ${p.metode === longM ? 'text-white' : 'text-gray-600'}`}>{m}</Typography>
                                                             </Pressable>
                                                         );
                                                     })}
@@ -1166,7 +1169,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     placeholder="0"
                                                     keyboardType="numeric"
                                                     containerClassName="mb-0"
-                                                    className="h-10 text-sm"
+                                                    className="h-10 text-sm border-gray-300 bg-white"
                                                     value={p.nominal}
                                                     onChangeText={(val) => {
                                                         const newP = [...payments];
@@ -1204,18 +1207,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
                     <View className="flex-row space-x-3 mb-4">
                         <View className="flex-1">
-                            <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Diskon Total (Rp)</Typography>
+                            <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Diskon Total (Rp)</Typography>
                             <Input
                                 placeholder="0"
                                 keyboardType="numeric"
                                 containerClassName="mb-0"
-                                className="h-10 text-sm"
+                                className="h-10 text-sm border-gray-300"
                                 value={diskon}
                                 onChangeText={(val) => setDiskon(formatNumber(val))}
                             />
                         </View>
                         <View className="flex-1 justify-end items-end pb-2">
-                            <Typography variant="caption" className="text-textGray">Subtotal: {formatCurrency(total)}</Typography>
+                            <Typography variant="caption" className="text-gray-500 font-medium">Subtotal: {formatCurrency(total)}</Typography>
                         </View>
                     </View>
 
@@ -1233,7 +1236,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         if (grandTotal > totalPaid) {
                                             return (
                                                 <Typography variant="caption" className="text-rose-600 font-bold">
-                                                    Sisa: {formatCurrency(grandTotal - totalPaid)}
+                                                    {totalPaid === 0 ? 'Piutang / Hutang 100%' : `Sisa Piutang: ${formatCurrency(grandTotal - totalPaid)}`}
                                                 </Typography>
                                             );
                                         } else if (totalPaid > grandTotal) {
@@ -1243,7 +1246,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 </Typography>
                                             );
                                         }
-                                        return <Typography variant="caption" className="text-emerald-500 font-medium">Pas / Lunas</Typography>;
+                                        return <Typography variant="caption" className="text-emerald-500 font-medium">Lunas</Typography>;
                                     })()}
                                 </View>
                             )}
@@ -1305,10 +1308,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </ScrollView>
-                <BarcodeScannerModal 
-                    visible={isScannerOpen} 
-                    onClose={() => setIsScannerOpen(false)} 
-                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                <BarcodeScannerModal
+                    visible={isScannerOpen}
+                    onClose={() => setIsScannerOpen(false)}
+                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
                 />
             </View>
@@ -1338,10 +1341,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </BottomSheetScrollView>
-                <BarcodeScannerModal 
-                    visible={isScannerOpen} 
-                    onClose={() => setIsScannerOpen(false)} 
-                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)} 
+                <BarcodeScannerModal
+                    visible={isScannerOpen}
+                    onClose={() => setIsScannerOpen(false)}
+                    onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
                 />
             </View>

@@ -334,7 +334,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 catatan: formData.catatan,
                 status: formData.status,
                 status_bayar: formData.status_bayar?.toUpperCase(),
-                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI'),
+                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.status_bayar === 'BELUM_LUNAS' ? 'KREDIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI')),
                 asal: formData.jenis_muatan_list[0]?.asal || '',
                 tujuan: formData.jenis_muatan_list[0]?.tujuan || '',
                 jenis_muatan: formData.jenis_muatan_list
@@ -957,7 +957,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View>
                                 <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2">
-                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                    {['TUNAI', 'TRANSFER', 'INTERNAL'].map((m) => (
                                         <Pressable
                                             key={m}
                                             onPress={() => updateField('metode_bayar', m)}

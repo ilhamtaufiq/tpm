@@ -17,6 +17,7 @@ import {
     Package,
     Receipt,
     Database,
+    Activity,
     ArrowRight,
     Printer,
     Download,
@@ -439,7 +440,7 @@ export default function BengkelScreen() {
         setView(type);
         if (item) setSelectedItem(item);
         else if (type === 'form') setSelectedItem(null);
-        
+
         if (Platform.OS === 'web') {
             setSheetIndex(0);
         } else {
@@ -826,46 +827,44 @@ export default function BengkelScreen() {
                         <View className="absolute top-0 right-0 p-4">
                             <Wallet size={80} color="rgba(255,255,255,0.1)" strokeWidth={1} />
                         </View>
-                        <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Total Saldo Kas Unit</Typography>
-                        <Typography weight="bold" className="text-white text-3xl tracking-tight">
+                        <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2 text-center">Total Uang Fisik Di Laci</Typography>
+                        <Typography weight="bold" className="text-white text-3xl tracking-tight text-center">
                             {formatCurrency(unitBalance)}
                         </Typography>
 
-                        {/* Balance Components Breakdown (2x2 Grid) */}
-                        <View className="mt-5 pt-5 border-t border-white/10 space-y-4">
-                            {/* Row 1: Cash Components */}
-                            <View className="flex-row">
+                        {/* Balanced Breakdown Section */}
+                        <View className="mt-5 pt-5 border-t border-white/10">
+                            <View className="flex-row justify-between mb-4">
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
-                                        <View className="w-1 h-1 rounded-full bg-emerald-400 mr-1.5" />
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Masuk (Pusat)</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Dana Masuk (Pusat)</Typography>
                                     </View>
-                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summary?.total_dana_dari_utama || 0)}</Typography>
+                                    <Typography className="text-white text-sm font-bold">{formatCurrency(summary?.total_dana_dari_utama || 0)}</Typography>
                                 </View>
                                 <View className="flex-1 items-end">
                                     <View className="flex-row items-center mb-1">
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Biaya & Setoran</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-rose-400 ml-1.5" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Total Keluar (Biaya/Setor)</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-rose-400 ml-2" />
                                     </View>
-                                    <Typography className="text-rose-300 text-xs font-bold">-{formatCurrency((summary?.total_dana_dari_utama || 0) + (summary?.total_tunai || 0) - unitBalance)}</Typography>
+                                    <Typography className="text-rose-300 text-sm font-bold">{formatCurrency((summary?.total_dana_dari_utama || 0) + (summary?.total_tunai || 0) - unitBalance)}</Typography>
                                 </View>
                             </View>
 
-                            {/* Row 2: Performance (Total Turnover) */}
-                            <View className="flex-row">
+                            <View className="flex-row justify-between pt-4 border-t border-white/5">
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
-                                        <View className="w-1 h-1 rounded-full bg-blue-400 mr-1.5" />
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet (Tunai)</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Hasil Jual (Tunai)</Typography>
                                     </View>
-                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summary?.total_tunai || 0)}</Typography>
+                                    <Typography className="text-white text-sm font-bold">{formatCurrency(summary?.total_tunai || 0)}</Typography>
                                 </View>
                                 <View className="flex-1 items-end">
-                                    <View className="flex-row items-center mb-1">
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet (Transfer)</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-gray-400 ml-1.5" />
+                                    <View className="flex-row items-center mb-1 text-right">
+                                        <Typography variant="caption" className="text-white/30 font-bold uppercase tracking-[1px] text-[7px]">Omzet (via Transfer)</Typography>
+                                        <View className="w-1 h-1 rounded-full bg-gray-500 ml-2" />
                                     </View>
-                                    <Typography className="text-white/60 text-xs font-bold italic">{formatCurrency(summary?.total_transfer || 0)}</Typography>
+                                    <Typography className="text-white/40 text-[10px] font-bold italic">{formatCurrency(summary?.total_transfer || 0)}</Typography>
                                 </View>
                             </View>
                         </View>
@@ -888,9 +887,8 @@ export default function BengkelScreen() {
                             <View className="space-y-3">
                                 {historyData?.data?.slice(0, 2).map((item: any) => (
                                     <View key={item.id} className="bg-white p-4 rounded-3xl border border-gray-100 flex-row items-center shadow-sm">
-                                        <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${
-                                            item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
-                                        }`}>
+                                        <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
+                                            }`}>
                                             {item.tipe === 'MASUK' ? (
                                                 <TrendingUp size={20} color="#10B981" />
                                             ) : (
@@ -902,9 +900,8 @@ export default function BengkelScreen() {
                                             <Typography variant="caption" className="text-textGray/60 mt-0.5">{format(new Date(item.tanggal), 'dd MMM yyyy')}</Typography>
                                         </View>
                                         <View className="items-end">
-                                            <Typography weight="bold" className={`text-sm ${
-                                                item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
-                                            }`}>
+                                            <Typography weight="bold" className={`text-sm ${item.tipe === 'MASUK' ? 'text-emerald-600' : 'text-rose-600'
+                                                }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
                                         </View>
@@ -1131,7 +1128,8 @@ export default function BengkelScreen() {
                                             nominal: parseNumber(expenseAmount),
                                             tanggal: new Date().toISOString().split('T')[0],
                                             keterangan: expenseNote
-                                        });                                     } else if (expenseMode === 'PIUTANG') {
+                                        });
+                                    } else if (expenseMode === 'PIUTANG') {
                                         // CREATE PIUTANG (Money out from Unit)
                                         await createPiutangMutation.mutateAsync({
                                             tanggal: new Date().toISOString().split('T')[0],
@@ -1222,7 +1220,7 @@ export default function BengkelScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Header Section (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+            <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <Pressable
@@ -1239,120 +1237,9 @@ export default function BengkelScreen() {
                         </View>
                     </View>
                     <View className="flex-row space-x-2">
-                        <Pressable
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                            onPress={() => {
-                                setShowWalletModal(true);
-                                if (Platform.OS !== 'web') {
-                                    walletSheetRef.current?.expand();
-                                }
-                            }}
-                        >
-                            <Wallet size={22} color="white" />
-                        </Pressable>
-                        <Pressable
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                            onPress={() => {
-                                try {
-                                    router.push('/bengkel/purchase');
-                                } catch (e) {
-                                    console.error('Nav error:', e);
-                                }
-                            }}
-                        >
-                            <ShoppingCart size={22} color="white" />
-                        </Pressable>
-                        <Pressable
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                            onPress={() => {
-                                try {
-                                    router.push('/master-data');
-                                } catch (e) {
-                                    console.error('Nav error:', e);
-                                }
-                            }}
-                        >
-                            <Database size={22} color="white" />
-                        </Pressable>
+                        {/* Icons moved to service grid below */}
                     </View>
                 </View>
-
-                {/* Bento Quick Actions (Home Style) */}
-                <View className="flex-row justify-between mb-8">
-                    <Pressable
-                        onPress={() => {
-                            try {
-                                router.push('/bengkel/inventory');
-                            } catch (e) {
-                                console.error('Nav error:', e);
-                            }
-                        }}
-                        className="w-full bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center"
-                    >
-                        <View className="bg-amber-400 w-10 h-10 rounded-2xl items-center justify-center mr-3 shadow-lg shadow-amber-400/20">
-                            <Package size={20} color="white" />
-                        </View>
-                        <View>
-                            <Typography weight="bold" className="text-white text-sm">Stok Part & Inventori</Typography>
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold">Stok Opname</Typography>
-                        </View>
-                    </Pressable>
-                </View>
-
-                {/* Row 1: Operational Status (Antre, Proses, Selesai) */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row -mx-6 px-6 mb-4"
-                >
-                    {[
-                        { label: 'Antre', key: 'antre', color: '#F59E0B' },
-                        { label: 'Proses', key: 'proses', color: '#3B82F6' },
-                        { label: 'Selesai', key: 'selesai', color: '#10B981' },
-                    ].map((stat, idx) => (
-                        <View
-                            key={stat.key}
-                            style={{ width: 100 }}
-                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
-                        >
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
-                            <View className="flex-row items-baseline">
-                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{summary ? summary[stat.key] : 0}</Typography>
-                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">UNIT</Typography>
-                            </View>
-                        </View>
-                    ))}
-                </ScrollView>
-
-                {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row -mx-6 px-6"
-                >
-                    {[
-                        { label: 'Total', key: 'total', value: stats.total, color: 'white' },
-                        { label: 'Lunas', key: 'lunas', value: stats.lunas, color: '#10B981' },
-                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, color: '#3B82F6' },
-                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, color: '#F59E0B' },
-                        { label: 'Batal', key: 'batal', value: stats.batal, color: '#EF4444' },
-                    ].map((stat, idx) => (
-                        <View
-                            key={stat.key}
-                            style={{ width: 100 }}
-                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
-                        >
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
-                            <View className="flex-row items-baseline">
-                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
-                                <Typography className="text-white/30 text-[8px] ml-1 font-bold">TRX</Typography>
-                            </View>
-                        </View>
-                    ))}
-                </ScrollView>
-
-
-
             </View>
 
             {/* Filter Search Overlay */}
@@ -1443,25 +1330,112 @@ export default function BengkelScreen() {
                     <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
-                {/* Date Filter Selection */}
-                <Pressable
-                    onPress={() => {
-                        setTempDateRange(dateRange);
-                        setIsDateModalVisible(true);
-                        if (Platform.OS !== 'web') {
-                            dateSheetRef.current?.expand();
-                        }
-                    }}
-                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
-                >
-                    <View className="flex-row items-center">
-                        <Calendar size={18} color="#023C69" />
-                        <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
-                    </View>
-                    <View className="bg-primary/5 px-2 py-1 rounded-lg">
-                        <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
-                    </View>
-                </Pressable>
+                {/* Status Pengerjaan (Metric Row) */}
+                <View className="flex-row justify-between mb-8">
+                    {[
+                        { label: 'ANTRE', key: 'antre', color: '#F59E0B', icon: Clock },
+                        { label: 'PROSES', key: 'proses', color: '#3B82F6', icon: Activity },
+                        { label: 'SELESAI', key: 'selesai', color: '#10B981', icon: CheckCircle2 },
+                    ].map((stat) => (
+                        <View key={stat.key} style={{ width: '31%' }} className="bg-white p-3 rounded-[32px] border border-gray-100 shadow-sm items-center">
+                            <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
+                                <stat.icon size={16} color={stat.color} />
+                            </View>
+                            <Typography weight="bold" style={{ color: stat.color }} className="text-xl leading-tight">{summary ? summary[stat.key] : 0}</Typography>
+                            <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
+                        </View>
+                    ))}
+                </View>
+
+                {/* Service Grid Section (Bento Style) */}
+                <View className="flex-row flex-wrap justify-between mb-8">
+                    {/* Item 1: Wallet (Dompet Unit) */}
+                    <Pressable
+                        key="grid-wallet"
+                        onPress={() => {
+                            setShowWalletModal(true);
+                            if (Platform.OS !== 'web') {
+                                walletSheetRef.current?.expand();
+                            }
+                        }}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-emerald-500/10 border border-gray-50">
+                            <Wallet size={22} color="#10B981" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Dompet</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KAS UNIT</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 2: Purchase (Pembelian Part) */}
+                    <Pressable
+                        key="grid-purchase"
+                        onPress={() => {
+                            try {
+                                router.push('/bengkel/purchase');
+                            } catch (e) {
+                                console.error('Nav error:', e);
+                            }
+                        }}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-blue-500/10 border border-gray-50">
+                            <ShoppingCart size={22} color="#3B82F6" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Beli Part</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>RESTOCK</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 3: Inventory (Stok & Opname) */}
+                    <Pressable
+                        key="grid-inventory"
+                        onPress={() => {
+                            try {
+                                router.push('/bengkel/inventory');
+                            } catch (e) {
+                                console.error('Nav error:', e);
+                            }
+                        }}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-amber-500/10 border border-gray-50">
+                            <Package size={22} color="#F59E0B" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Inventori</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>STOK OPNAME</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 4: Master Data (Database) */}
+                    <Pressable
+                        key="grid-database"
+                        onPress={() => {
+                            try {
+                                router.push('/master-data');
+                            } catch (e) {
+                                console.error('Nav error:', e);
+                            }
+                        }}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-indigo-500/10 border border-gray-50">
+                            <Database size={22} color="#6366F1" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Database</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>MASTER DATA</Typography>
+                        </View>
+                    </Pressable>
+                </View>
 
                 {/* Section Header */}
                 <View className="flex-row justify-between items-center mb-6">
@@ -1472,6 +1446,26 @@ export default function BengkelScreen() {
                         <Typography variant="caption" className="text-textGray">Monitoring pengerjaan bengkel</Typography>
                     </View>
                 </View>
+
+                {/* Date Filter Selection */}
+                <Pressable
+                    onPress={() => {
+                        setTempDateRange(dateRange);
+                        setIsDateModalVisible(true);
+                        if (Platform.OS !== 'web') {
+                            dateSheetRef.current?.expand();
+                        }
+                    }}
+                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
+                >
+                    <View className="flex-row items-center">
+                        <Calendar size={18} color="#023C69" />
+                        <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
+                    </View>
+                    <View className="bg-primary/5 px-2 py-1 rounded-lg">
+                        <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
+                    </View>
+                </Pressable>
 
                 {/* Unpaid Info Pills */}
                 {summary && summary.piutang_count > 0 ? (
@@ -1789,9 +1783,8 @@ export default function BengkelScreen() {
                             <View className="space-y-4">
                                 {historyData?.data?.map((item: any) => (
                                     <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center">
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${
-                                            item.tipe === 'MASUK' ? 'bg-emerald-100' : 'bg-rose-100'
-                                        }`}>
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-100' : 'bg-rose-100'
+                                            }`}>
                                             {item.tipe === 'MASUK' ? (
                                                 <TrendingUp size={24} color="#059669" />
                                             ) : (
@@ -1808,9 +1801,8 @@ export default function BengkelScreen() {
                                             </View>
                                         </View>
                                         <View className="items-end">
-                                            <Typography weight="bold" className={`text-lg ${
-                                                item.tipe === 'MASUK' ? 'text-emerald-700' : 'text-rose-700'
-                                            }`}>
+                                            <Typography weight="bold" className={`text-lg ${item.tipe === 'MASUK' ? 'text-emerald-700' : 'text-rose-700'
+                                                }`}>
                                                 {item.tipe === 'MASUK' ? '+' : '-'}{formatCurrency(item.nominal)}
                                             </Typography>
                                         </View>

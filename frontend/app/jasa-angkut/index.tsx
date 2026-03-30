@@ -550,40 +550,44 @@ export default function JasaAngkutScreen() {
                         <View className="absolute top-0 right-0 p-4">
                             <Wallet size={80} color="rgba(255,255,255,0.1)" strokeWidth={1} />
                         </View>
-                        <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Total Saldo Kas Unit</Typography>
-                        <Typography weight="bold" className="text-white text-3xl tracking-tight">
+                        <Typography className="text-white/60 text-[10px] font-black uppercase tracking-[2px] mb-2 text-center">Total Uang Fisik Di Laci</Typography>
+                        <Typography weight="bold" className="text-white text-3xl tracking-tight text-center">
                             {formatCurrency(unitBalance)}
                         </Typography>
 
-                        {/* Balance Components Breakdown */}
-                        <View className="mt-5 pt-5 border-t border-white/10 space-y-4">
-                            <View className="flex-row">
+                        {/* Balanced Breakdown Section */}
+                        <View className="mt-5 pt-5 border-t border-white/10">
+                            <View className="flex-row justify-between mb-4">
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
-                                        <View className="w-1 h-1 rounded-full bg-blue-400 mr-1.5" />
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Dana Masuk Utama</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Dana Masuk (Pusat)</Typography>
                                     </View>
-                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summaryData?.total_dana_dari_utama || 0)}</Typography>
+                                    <Typography className="text-white text-sm font-bold">{formatCurrency(summaryData?.total_dana_dari_utama || 0)}</Typography>
                                 </View>
                                 <View className="flex-1 items-end">
                                     <View className="flex-row items-center mb-1">
-                                        <Typography variant="caption" className="text-white/40 font-bold uppercase tracking-[2px] text-[8px]">Omzet Jasa (Tunai)</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-emerald-400 ml-1.5" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Total Keluar (Biaya/Setor)</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-rose-400 ml-2" />
                                     </View>
-                                    <Typography className="text-white text-xs font-bold">{formatCurrency(summaryData?.total_tunai || 0)}</Typography>
+                                    <Typography className="text-rose-300 text-sm font-bold">{formatCurrency((summaryData?.total_dana_dari_utama || 0) + (summaryData?.total_tunai || 0) - unitBalance)}</Typography>
                                 </View>
                             </View>
 
-                            <View className="flex-row pt-1 opacity-60">
+                            <View className="flex-row justify-between pt-4 border-t border-white/5">
                                 <View className="flex-1">
                                     <View className="flex-row items-center mb-1">
-                                        <View className="w-1.5 h-1.5 rounded-full bg-orange-400 mr-2" />
-                                        <Typography variant="caption" className="text-white/60 font-medium italic text-[9px]">Omzet Jasa (Transfer)</Typography>
+                                        <View className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2" />
+                                        <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Omzet Jasa (Tunai)</Typography>
                                     </View>
-                                    <Typography className="text-white/70 text-[10px] font-bold italic pl-3">{formatCurrency(summaryData?.total_transfer || 0)}</Typography>
+                                    <Typography className="text-white text-sm font-bold">{formatCurrency(summaryData?.total_tunai || 0)}</Typography>
                                 </View>
-                                <View className="flex-1 items-end justify-center">
-                                    <Typography className="text-white/30 text-[7px] text-right italic font-medium leading-tight">*Transfer masuk ke rekening pusat,{"\n"}tidak menambah saldo unit.</Typography>
+                                <View className="flex-1 items-end">
+                                    <View className="flex-row items-center mb-1 text-right">
+                                        <Typography variant="caption" className="text-white/30 font-bold uppercase tracking-[1px] text-[7px]">Omzet (via Transfer)</Typography>
+                                        <View className="w-1 h-1 rounded-full bg-gray-500 ml-2" />
+                                    </View>
+                                    <Typography className="text-white/40 text-[10px] font-bold italic">{formatCurrency(summaryData?.total_transfer || 0)}</Typography>
                                 </View>
                             </View>
                         </View>
