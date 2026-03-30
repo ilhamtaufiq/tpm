@@ -1220,7 +1220,7 @@ export default function BengkelScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Header Section (Design System) */}
-            <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[48px] shadow-2xl">
+            <View className="bg-primary pt-14 pb-6 px-6 rounded-b-[48px] shadow-2xl">
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <Pressable
@@ -1634,9 +1634,9 @@ export default function BengkelScreen() {
             <View style={{ position: 'absolute', bottom: 40, right: 24, zIndex: 999 }}>
                 <Pressable
                     onPress={() => handlePresentModalPress('form')}
-                    className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
+                    className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20 active:scale-95 transition-transform"
                 >
-                    <Plus size={32} color="white" strokeWidth={3} />
+                    <Plus size={32} color="white" strokeWidth={2.5} />
                 </Pressable>
             </View>
 

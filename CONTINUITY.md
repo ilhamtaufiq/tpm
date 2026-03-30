@@ -16,13 +16,14 @@
 - [UI/UX] Polished the Service Grid to a premium 'Bento' style: 2x2 grid, white icon containers, colored icons, and consistent labels.
 - [Backend/Finance] Map `INTERNAL` transactions to central cash (`KAS_UTAMA`) to prevent reporting discrepancies in unit-level physical cash drawers.
 
-## State:
-- Done:
-  - Finalized full dashboard UI reorganization (Slim header, content-driven stats and actions).
-  - Fixed TypeScript errors (missing `Activity` icon and invalid `black` Typography weight).
-  - Resolved `isInternalTransaction` undefined error in `BengkelForm.tsx`.
-- Now: Workspace is clean of build/linting errors and UI reorganization is complete.
-- Next: None.
+### State & Progress
+- **Done**:
+    - Bento-style Service Grid implementation (Bengkel, Mobil, Jasa Angkut).
+    - Header slim-down and stats relocation (Bengkel, Mobil, Jasa Angkut).
+    - TypeScript error resolution (specifically the `sheetIndex` reference error).
+    - Consistency across all business unit dashboards (Modernized FAB, Standardized Padding, Unified Layout).
+- **Now**: Work complete. Monitoring for interaction polish.
+- **Next**: Ensuring performance stability across low-end Android devices for the new layout.
 
 ## Working set (files/ids/commands):
 - `frontend/app/bengkel/index.tsx`

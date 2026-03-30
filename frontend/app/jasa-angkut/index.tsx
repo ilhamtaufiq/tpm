@@ -65,6 +65,11 @@ export default function JasaAngkutScreen() {
     const [selectedTrip, setSelectedTrip] = useState<Muatan | null>(null);
     const [view, setView] = useState<'form' | 'detail'>('form');
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [sheetIndex, setSheetIndex] = useState(-1);
+
+    const handleSheetChanges = useCallback((index: number) => {
+        setSheetIndex(index);
+    }, []);
 
     const [showWalletModal, setShowWalletModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -294,7 +299,6 @@ export default function JasaAngkutScreen() {
     const [actionLoading, setActionLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [sheetIndex, setSheetIndex] = useState(-1);
     const [editData, setEditData] = useState<Muatan | null>(null);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
@@ -1088,9 +1092,9 @@ export default function JasaAngkutScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
+            {/* Slim Header */}
+            <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[48px] shadow-2xl">
+                <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
                         <Pressable
                             onPress={handleGoBack}
@@ -1099,180 +1103,84 @@ export default function JasaAngkutScreen() {
                             <ChevronLeft size={24} color="white" />
                         </Pressable>
                         <View>
-                            <View className="flex-row items-center">
-                                <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
-                            </View>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
                         </View>
                     </View>
-                    <View className="flex-row items-center">
-                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2">
-                            <Pressable
-                                onPress={() => {
-                                    setShowWalletModal(true);
-                                    if (Platform.OS !== 'web') {
-                                        walletSheetRef.current?.expand();
-                                    }
-                                }}
-                                hitSlop={8}
-                            >
-                                <Wallet size={22} color="white" />
-                            </Pressable>
-                        </View>
-                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2">
-                            <Pressable
-                                onPress={() => router.push('/jasa-angkut/armada')}
-                                hitSlop={8}
-                            >
-                                <Truck size={22} color="white" />
-                            </Pressable>
-                        </View>
-                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2">
-                            <Pressable
-                                onPress={() => router.push('/jasa-angkut/supir')}
-                                hitSlop={8}
-                            >
-                                <Users size={22} color="white" />
-                            </Pressable>
-                        </View>
-                        <View className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
-                            <Pressable
-                                onPress={() => onRefresh()}
-                                hitSlop={8}
-                            >
-                                <RefreshCw size={20} color="white" />
-                            </Pressable>
-                        </View>
-                    </View>
+                    <Pressable onPress={() => onRefresh()} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
+                        <RefreshCw size={20} color="white" />
+                    </Pressable>
                 </View>
-
-                {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row -mx-6 px-6 mb-8"
-                >
-                    {[
-                        { label: 'Total', key: 'total', value: stats.total, unit: 'TRX', color: 'white' },
-                        { label: 'Lunas', key: 'lunas', value: stats.lunas, unit: 'TRX', color: '#10B981' },
-                        { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
-                        { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
-                        { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                    ].map((stat, idx) => (
-                        <View
-                            key={stat.key}
-                            style={{ width: 100 }}
-                            className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
-                        >
-                            <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
-                            <View className="flex-row items-baseline">
-                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
-                                {stat.unit ? (
-                                    <Typography className="text-white/30 text-[8px] ml-1 font-bold">{stat.unit}</Typography>
-                                ) : null}
-                            </View>
-                        </View>
-                    ))}
-                </ScrollView>
             </View>
 
             {/* Filter Search Overlay */}
-            {(!isFormOpen && !isDetailOpen && sheetIndex === -1) && (
-                <View className="px-6 -mt-8 z-10">
-                    <View className="bg-white p-3 rounded-[32px] shadow-2xl space-y-3 border border-gray-100">
-                        {/* Search Input */}
-                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-[20px] border border-gray-100">
-                            <Search size={20} color="#6B7280" />
-                            <TextInput
-                                className="flex-1 ml-3 text-textMain text-sm font-medium h-full"
-                                placeholder="Cari rute, supir, armada"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                            {searchQuery.length > 0 && (
-                                <Pressable onPress={() => setSearchQuery('')}>
-                                    <X size={16} color="#9CA3AF" />
-                                </Pressable>
-                            )}
-                        </View>
-
-                        {/* Group Controls & Filter Chips */}
-                        <View className="space-y-3">
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row bg-gray-100 p-1 rounded-2xl">
-                                    <View className={`rounded-xl ${groupBy === 'armada' ? 'bg-white shadow-sm' : ''}`}>
-                                        <TouchableOpacity
-                                            onPress={() => setGroupBy('armada')}
-                                            activeOpacity={0.7}
-                                            style={{
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                paddingHorizontal: 16,
-                                                paddingVertical: 8,
-                                            }}
-                                        >
-                                            <Truck size={14} color={groupBy === 'armada' ? '#023C69' : '#6B7280'} />
-                                            <Typography variant="caption" weight={groupBy === 'armada' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'armada' ? 'text-primary' : 'text-textGray'}`}>Armada</Typography>
-                                        </TouchableOpacity>
-                                    </View>
-                                    <View className={`rounded-xl ${groupBy === 'supir' ? 'bg-white shadow-sm' : ''}`}>
-                                        <TouchableOpacity
-                                            onPress={() => setGroupBy('supir')}
-                                            activeOpacity={0.7}
-                                            style={{
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                paddingHorizontal: 16,
-                                                paddingVertical: 8,
-                                            }}
-                                        >
-                                            <Users size={14} color={groupBy === 'supir' ? '#023C69' : '#6B7280'} />
-                                            <Typography variant="caption" weight={groupBy === 'supir' ? 'bold' : 'medium'} className={`ml-2 ${groupBy === 'supir' ? 'text-primary' : 'text-textGray'}`}>Supir</Typography>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
+            {sheetIndex === -1 && (
+                <View className="px-6 -mt-6 z-1">
+                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                        <View className="flex-row items-center">
+                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                                <Search size={18} color="#9CA3AF" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                                    placeholder="Cari Ritase (Rute, Supir)..."
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    placeholderTextColor="#9CA3AF"
+                                    autoCorrect={false}
+                                    autoCapitalize="none"
+                                    returnKeyType="search"
+                                />
+                                {searchQuery.length > 0 && (
+                                    <Pressable onPress={() => setSearchQuery('')} className="ml-1">
+                                        <X size={18} color="#9CA3AF" />
+                                    </Pressable>
+                                )}
                             </View>
-
-                            {/* Payment Filter Chips */}
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}>
-                                    <Pressable onPress={() => setPaymentFilter('ALL')} hitSlop={8}>
-                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                            Semua ({stats.total})
-                                        </Typography>
-                                    </Pressable>
-                                </View>
-                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}>
-                                    <Pressable onPress={() => setPaymentFilter('LUNAS')} hitSlop={8}>
-                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                            Lunas ({stats.lunas})
-                                        </Typography>
-                                    </Pressable>
-                                </View>
-                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}>
-                                    <Pressable onPress={() => setPaymentFilter('PARTIAL')} hitSlop={8}>
-                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
-                                            Belum Lunas ({stats.partial})
-                                        </Typography>
-                                    </Pressable>
-                                </View>
-                                <View className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}>
-                                    <Pressable onPress={() => setPaymentFilter('UNPAID')} hitSlop={8}>
-                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
-                                            Belum Bayar ({stats.unpaid})
-                                        </Typography>
-                                    </Pressable>
-                                </View>
-                                <View className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}>
-                                    <Pressable onPress={() => setPaymentFilter('BATAL')} hitSlop={8}>
-                                        <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
-                                            Batal ({stats.batal})
-                                        </Typography>
-                                    </Pressable>
-                                </View>
-                            </ScrollView>
                         </View>
+                        {/* Status Bayar Chips Filters */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100 space-x-2">
+                            <Pressable
+                                onPress={() => setPaymentFilter('ALL')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                    Semua ({stats.total})
+                                </Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setPaymentFilter('LUNAS')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                    Lunas ({stats.lunas})
+                                </Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setPaymentFilter('PARTIAL')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                    Belum Lunas ({stats.partial})
+                                </Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setPaymentFilter('UNPAID')}
+                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                    Belum Bayar ({stats.unpaid})
+                                </Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setPaymentFilter('BATAL')}
+                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                            >
+                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                    Batal ({stats.batal})
+                                </Typography>
+                            </Pressable>
+                        </ScrollView>
+
                     </View>
                 </View>
             )}
@@ -1280,8 +1188,127 @@ export default function JasaAngkutScreen() {
             <ScrollView
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                }
             >
+                {/* Ritase Metrics (Metric Row) */}
+                <View className="flex-row justify-between mb-8">
+                    {[
+                        { label: 'RITASE', value: stats.total, color: '#3B82F6', icon: Truck },
+                        { label: 'PROFIT', value: formatCurrency(stats.profit), color: '#10B981', icon: TrendingUp },
+                        { label: 'SALDO', value: formatCurrency(stats.saldo_bop), color: '#F59E0B', icon: Wallet },
+                    ].map((stat, idx) => (
+                        <View key={idx} style={{ width: '31%' }} className="bg-white p-3 rounded-[32px] border border-gray-100 shadow-sm items-center">
+                            <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
+                                <stat.icon size={16} color={stat.color} />
+                            </View>
+                            <Typography weight="bold" style={{ color: stat.color }} className={`${typeof stat.value === 'string' && stat.value.length > 10 ? 'text-[10px]' : 'text-sm'} leading-tight`} numberOfLines={1}>
+                                {stat.value}
+                            </Typography>
+                            <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
+                        </View>
+                    ))}
+                </View>
+
+                {/* Service Grid Section (Bento Style) */}
+                <View className="flex-row flex-wrap justify-between mb-8">
+                    {/* Item 1: Wallet (Dompet Unit) */}
+                    <Pressable
+                        key="grid-wallet"
+                        onPress={() => {
+                            setShowWalletModal(true);
+                            if (Platform.OS !== 'web') {
+                                walletSheetRef.current?.expand();
+                            }
+                        }}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-emerald-500/10 border border-gray-50">
+                            <Wallet size={22} color="#10B981" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Dompet</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KAS UNIT</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 2: Armada (Daftar Armada) */}
+                    <Pressable
+                        key="grid-armada"
+                        onPress={() => router.push('/jasa-angkut/armada')}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-blue-500/10 border border-gray-50">
+                            <Truck size={22} color="#3B82F6" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Armada</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KENDARAAN</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 3: Supir (Daftar Supir) */}
+                    <Pressable
+                        key="grid-supir"
+                        onPress={() => router.push('/jasa-angkut/supir')}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-amber-500/10 border border-gray-50">
+                            <Users size={22} color="#F59E0B" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Supir</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>STAFF DRIVER</Typography>
+                        </View>
+                    </Pressable>
+
+                    {/* Item 4: Register (Tambah Muatan) */}
+                    <Pressable
+                        key="grid-register"
+                        onPress={() => handlePresentModal('form')}
+                        style={{ width: '48.5%' }}
+                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                    >
+                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-indigo-500/10 border border-gray-50">
+                            <Plus size={22} color="#6366F1" strokeWidth={2.5} />
+                        </View>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Tambah Rit</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>MUAT BARU</Typography>
+                        </View>
+                    </Pressable>
+                </View>
+
+                {/* Section Header */}
+                <View className="flex-row justify-between items-center mb-6">
+                    <View>
+                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Daftar Ritase Angkutan</Typography>
+                        <Typography variant="caption" className="text-textGray">Management pengiriman dan logistik</Typography>
+                    </View>
+                </View>
+
+                {/* Grouping Toggle */}
+                <View className="flex-row bg-gray-100/50 p-1.5 rounded-[24px] mb-8">
+                    {[
+                        { label: 'Berdasarkan Armada', key: 'armada' },
+                        { label: 'Berdasarkan Supir', key: 'supir' },
+                    ].map((mode) => (
+                        <Pressable
+                            key={mode.key}
+                            onPress={() => setGroupBy(mode.key as any)}
+                            className={`flex-1 py-3.5 rounded-[20px] items-center ${groupBy === mode.key ? 'bg-white shadow-sm shadow-black/5 border border-gray-200/50' : ''}`}
+                        >
+                            <Typography weight="bold" className={`text-xs ${groupBy === mode.key ? 'text-primary' : 'text-textGray'}`}>
+                                {mode.label}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </View>
+
                 {/* Date Filter Selection */}
                 <Pressable
                     onPress={() => {
@@ -1291,7 +1318,7 @@ export default function JasaAngkutScreen() {
                             dateSheetRef.current?.expand();
                         }
                     }}
-                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
+                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
                 >
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#023C69" />
@@ -1302,152 +1329,142 @@ export default function JasaAngkutScreen() {
                     </View>
                 </Pressable>
 
-                {/* Section Title */}
-                <View className="flex-row justify-between items-center mb-6">
-                    <View>
-                        <Typography variant="h3" weight="bold" className="tracking-tight">
-                            {dateRange.dari === dateRange.sampai && dateRange.dari === format(new Date(), 'yyyy-MM-dd') ? 'Ritase Hari Ini' : 'Riwayat Ritase'}
-                        </Typography>
-                        <Typography variant="caption" className="text-textGray mt-0.5">Aktivitas pemuatan kendaraan</Typography>
-                    </View>
-                    <Badge variant="neutral" label="DATA" />
-                </View>
-
-                {/* Trip List Grouped by Armada */}
-                {isLoading || isLoadingArmada ? (
-                    <View className="space-y-6">
-                        <SkeletonCard className="rounded-[32px] h-32" />
-                        <SkeletonCard className="rounded-[32px] h-32" />
-                        <SkeletonCard className="rounded-[32px] h-32" />
-                    </View>
-                ) : groupedTrips.length === 0 ? (
-                    <View className="mt-10">
-                        <EmptyState
-                            title="Belum ada data"
-                            description="Mulai catat transaksi muatan pertama Anda hari ini."
-                            icon={Truck}
-                        />
-                    </View>
-                ) : (
-                    groupedTrips.map((group) => {
-                        const isCollapsed = !collapsedGroups.has(group.key); // Changed logic to be collapsed by default
-                        return (
-                            <View key={group.key} className="mb-6">
-                                {/* Group Header - Enhanced Card style */}
-                                <Pressable
-                                    onPress={() => toggleGroupCollapse(group.key)}
-                                    className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
-                                >
-                                    <View className="flex-row items-center flex-1">
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-gray-50 border-gray-100') : 'bg-orange-100 border-orange-200'}`}>
-                                            {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
-                                        </View>
-                                        <View className="flex-1">
-                                            <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
-                                                {group.title}
-                                            </Typography>
-                                            <Typography variant="caption" className="text-textGray">
-                                                {group.subtitle ? `${group.subtitle} • ` : ''}{group.trips.length} Transaksi
-                                            </Typography>
-                                        </View>
-                                    </View>
-                                    <View className="flex-row items-center">
-                                        {group.trips.length > 0 && (
-                                            <View className="bg-primary/5 px-3 py-1.5 rounded-full mr-3 border border-primary/5">
-                                                <Typography variant="caption" weight="bold" className="text-primary text-[10px]">
-                                                    {formatCurrency(group.totalPendapatanTPM)}
+                {/* Main Content (Trips List) */}
+                <View className="pb-32">
+                    {isLoading || isLoadingArmada ? (
+                        <View className="space-y-6">
+                            <SkeletonCard className="rounded-[32px] h-32" />
+                            <SkeletonCard className="rounded-[32px] h-32" />
+                            <SkeletonCard className="rounded-[32px] h-32" />
+                        </View>
+                    ) : groupedTrips.length === 0 ? (
+                        <View className="mt-10">
+                            <EmptyState
+                                title="Belum ada data"
+                                description="Mulai catat transaksi muatan pertama Anda hari ini."
+                                icon={Truck}
+                            />
+                        </View>
+                    ) : (
+                        groupedTrips.map((group) => {
+                            const isCollapsed = !collapsedGroups.has(group.key); // Changed logic to be collapsed by default
+                            return (
+                                <View key={group.key} className="mb-6">
+                                    {/* Group Header - Enhanced Card style */}
+                                    <Pressable
+                                        onPress={() => toggleGroupCollapse(group.key)}
+                                        className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
+                                    >
+                                        <View className="flex-row items-center flex-1">
+                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-gray-50 border-gray-100') : 'bg-orange-100 border-orange-200'}`}>
+                                                {groupBy === 'armada' ? <Truck size={22} color={!isCollapsed ? '#023C69' : '#94A3B8'} /> : <Users size={22} color="#C2410C" />}
+                                            </View>
+                                            <View className="flex-1">
+                                                <Typography weight="bold" className={`text-base tracking-tight ${!isCollapsed ? 'text-primary' : 'text-textMain'}`}>
+                                                    {group.title}
+                                                </Typography>
+                                                <Typography variant="caption" className="text-textGray">
+                                                    {group.subtitle ? `${group.subtitle} • ` : ''}{group.trips.length} Transaksi
                                                 </Typography>
                                             </View>
-                                        )}
-                                        {groupBy === 'armada' && group.id && (
-                                            <Pressable
-                                                onPress={() => handlePresentModal('armada_detail', { id: group.id })}
-                                                className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-2 border border-gray-100"
-                                            >
-                                                <ArrowUpRight size={18} color="#023C69" />
-                                            </Pressable>
-                                        )}
-                                        <ChevronLeft
-                                            size={20}
-                                            color={!isCollapsed ? "#023C69" : "#9CA3AF"}
-                                            style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
-                                        />
-                                    </View>
-                                </Pressable>
-
-                                {/* Group Content (Trips) */}
-                                {!isCollapsed && (
-                                    <View className="space-y-4 pt-4 px-2">
-                                        {group.trips.length === 0 ? (
-                                            <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 ml-4">
-                                                <Typography variant="caption" className="text-gray-400 italic">Belum ada aktivitas transaksi</Typography>
-                                            </View>
-                                        ) : (
-                                            group.trips.map((trip: any) => (
+                                        </View>
+                                        <View className="flex-row items-center">
+                                            {group.trips.length > 0 && (
+                                                <View className="bg-primary/5 px-3 py-1.5 rounded-full mr-3 border border-primary/5">
+                                                    <Typography variant="caption" weight="bold" className="text-primary text-[10px]">
+                                                        {formatCurrency(group.totalPendapatanTPM)}
+                                                    </Typography>
+                                                </View>
+                                            )}
+                                            {groupBy === 'armada' && group.id && (
                                                 <Pressable
-                                                    key={trip.id}
-                                                    onPress={() => handlePresentModal('detail', trip)}
-                                                    className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
+                                                    onPress={() => handlePresentModal('armada_detail', { id: group.id })}
+                                                    className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-2 border border-gray-100"
                                                 >
-                                                    {/* Visual ID Slot - Smaller for nested items */}
-                                                    <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
-                                                        <MapPin size={20} color="#6B7280" />
-                                                    </View>
-
-                                                    <View className="flex-1">
-                                                        {/* Main Info + Status */}
-                                                        <View className="flex-row items-center justify-between mb-1">
-                                                            <View className="flex-1 mr-2 flex-row items-center">
-                                                                <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
-                                                                    {trip.asal} → {trip.tujuan}
-                                                                </Typography>
-                                                                <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
-                                                                <Typography variant="caption" weight="bold" className="text-primary italic">
-                                                                    {trip.ritase} Rit
-                                                                </Typography>
-                                                            </View>
-                                                            <View className="flex-row space-x-1">
-                                                                <View className={trip.status === 'SELESAI' ? "bg-green-100 px-2 py-0.5 rounded-lg border border-green-200" : "bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200"}>
-                                                                    <Typography weight="bold" className={trip.status === 'SELESAI' ? "text-green-700 text-[8px]" : "text-blue-700 text-[8px]"}>
-                                                                        {trip.status.toUpperCase()}
-                                                                    </Typography>
-                                                                </View>
-                                                                <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
-                                                                    <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[8px]" : "text-amber-600 text-[8px]"}>
-                                                                        {trip.status_bayar.toUpperCase()}
-                                                                    </Typography>
-                                                                </View>
-                                                            </View>
-                                                        </View>
-
-                                                        {/* Trip Details */}
-                                                        <Typography variant="caption" className="text-textGray mb-2 text-xs">
-                                                            {trip.supir_nama || trip.supir_nama_manual} • {trip.jenis_muatan || 'Muatan Umum'}
-                                                        </Typography>
-
-                                                        {/* Footer Row */}
-                                                        <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
-                                                            <View className="flex-row items-center">
-                                                                <Clock size={10} color="#9CA3AF" />
-                                                                <Typography className="text-textGray/60 text-[9px] ml-1 font-bold uppercase tracking-widest">
-                                                                    {formatDate(trip.tanggal)}
-                                                                </Typography>
-                                                            </View>
-                                                            <Typography weight="bold" className="text-primary text-xs">
-                                                                {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
-                                                            </Typography>
-                                                        </View>
-                                                    </View>
+                                                    <ArrowUpRight size={18} color="#023C69" />
                                                 </Pressable>
-                                            ))
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-                        );
-                    })
-                )}
-                <View className="h-32" />
+                                            )}
+                                            <ChevronLeft
+                                                size={20}
+                                                color={!isCollapsed ? "#023C69" : "#9CA3AF"}
+                                                style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '90deg' }] }}
+                                            />
+                                        </View>
+                                    </Pressable>
+
+                                    {/* Group Content (Trips) */}
+                                    {!isCollapsed && (
+                                        <View className="space-y-4 pt-4 px-2">
+                                            {group.trips.length === 0 ? (
+                                                <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 ml-4">
+                                                    <Typography variant="caption" className="text-gray-400 italic">Belum ada aktivitas transaksi</Typography>
+                                                </View>
+                                            ) : (
+                                                group.trips.map((trip: any) => (
+                                                    <Pressable
+                                                        key={trip.id}
+                                                        onPress={() => handlePresentModal('detail', trip)}
+                                                        className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
+                                                    >
+                                                        {/* Visual ID Slot - Smaller for nested items */}
+                                                        <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
+                                                            <MapPin size={20} color="#6B7280" />
+                                                        </View>
+
+                                                        <View className="flex-1">
+                                                            {/* Main Info + Status */}
+                                                            <View className="flex-row items-center justify-between mb-1">
+                                                                <View className="flex-1 mr-2 flex-row items-center">
+                                                                    <Typography variant="body2" weight="bold" className="text-textMain tracking-tight" numberOfLines={1}>
+                                                                        {trip.asal} → {trip.tujuan}
+                                                                    </Typography>
+                                                                    <View className="mx-2 w-1 h-1 bg-gray-300 rounded-full" />
+                                                                    <Typography variant="caption" weight="bold" className="text-primary italic">
+                                                                        {trip.ritase} Rit
+                                                                    </Typography>
+                                                                </View>
+                                                                <View className="flex-row space-x-1">
+                                                                    <View className={trip.status === 'SELESAI' ? "bg-green-100 px-2 py-0.5 rounded-lg border border-green-200" : "bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200"}>
+                                                                        <Typography weight="bold" className={trip.status === 'SELESAI' ? "text-green-700 text-[8px]" : "text-blue-700 text-[8px]"}>
+                                                                            {trip.status.toUpperCase()}
+                                                                        </Typography>
+                                                                    </View>
+                                                                    <View className={trip.status_bayar === 'LUNAS' ? "bg-emerald-50 px-2 py-0.5 rounded-lg" : "bg-amber-50 px-2 py-0.5 rounded-lg"}>
+                                                                        <Typography weight="bold" className={trip.status_bayar === 'LUNAS' ? "text-emerald-600 text-[8px]" : "text-amber-600 text-[8px]"}>
+                                                                            {trip.status_bayar.toUpperCase()}
+                                                                        </Typography>
+                                                                    </View>
+                                                                </View>
+                                                            </View>
+
+                                                            {/* Trip Details */}
+                                                            <Typography variant="caption" className="text-textGray mb-2 text-xs">
+                                                                {trip.supir_nama || trip.supir_nama_manual} • {trip.jenis_muatan || 'Muatan Umum'}
+                                                            </Typography>
+
+                                                            {/* Footer Row */}
+                                                            <View className="flex-row items-center justify-between pt-2 border-t border-gray-50/50">
+                                                                <View className="flex-row items-center">
+                                                                    <Clock size={10} color="#9CA3AF" />
+                                                                    <Typography className="text-textGray/60 text-[9px] ml-1 font-bold uppercase tracking-widest">
+                                                                        {formatDate(trip.tanggal)}
+                                                                    </Typography>
+                                                                </View>
+                                                                <Typography weight="bold" className="text-primary text-xs">
+                                                                    {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
+                                                                </Typography>
+                                                            </View>
+                                                        </View>
+                                                    </Pressable>
+                                                ))
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })
+                    )}
+                </View>
             </ScrollView>
 
             {/* Floating Action Button */}
@@ -1632,6 +1649,15 @@ export default function JasaAngkutScreen() {
                 </BottomSheet>
             )}
 
+            {/* Floating Action Button matching Bento style */}
+            <View style={{ position: 'absolute', bottom: 40, right: 24, zIndex: 999 }}>
+                <Pressable
+                    onPress={() => handlePresentModal('form')}
+                    className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20 active:scale-95 transition-transform"
+                >
+                    <Plus size={32} color="white" strokeWidth={2.5} />
+                </Pressable>
+            </View>
 
             <AlertDialog
                 visible={dialogConfig.visible}

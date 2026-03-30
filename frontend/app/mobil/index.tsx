@@ -64,6 +64,11 @@ export default function MobilInventoryScreen() {
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
     const [selectedDetailUnit, setSelectedDetailUnit] = useState<any>(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const [sheetIndex, setSheetIndex] = useState(-1);
+
+    const handleSheetChanges = useCallback((index: number) => {
+        setSheetIndex(index);
+    }, []);
 
     const [showWalletModal, setShowWalletModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -752,213 +757,250 @@ export default function MobilInventoryScreen() {
             <View className="flex-1 bg-surface">
                 <StatusBar barStyle="light-content" />
 
-                {/* Header Section (Home Style) */}
-                <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                    <View className="flex-row items-center justify-between mb-8">
+                {/* Slim Header */}
+                <View className="bg-primary pt-14 pb-6 px-6 rounded-b-[32px]">
+                    <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center">
-                            <Pressable
-                                onPress={handleGoBack}
-                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                            >
-                                <ChevronLeft size={24} color="white" />
+                            <Pressable onPress={handleGoBack} className="w-10 h-10 bg-white/10 rounded-2xl items-center justify-center mr-4">
+                                <ChevronLeft size={20} color="white" />
                             </Pressable>
                             <View>
-                                <View className="flex-row items-center">
-                                    <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jual Beli Mobil</Typography>
-                                </View>
-                                <Typography className="text-white/50 text-xs mt-0.5">Manajemen Inventaris & Penjualan</Typography>
+                                <Typography variant="h3" weight="bold" className="text-white">Jual Beli Mobil</Typography>
+                                <Typography className="text-white/60 text-[10px] uppercase tracking-widest">Manajemen Unit</Typography>
                             </View>
                         </View>
-                        <View className="flex-row space-x-2">
-                            <Pressable
-                                onPress={() => {
-                                    setShowWalletModal(true);
-                                    if (Platform.OS !== 'web') {
-                                        walletSheetRef.current?.present();
-                                    }
-                                }}
-                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                            >
-                                <Wallet size={22} color="white" />
-                            </Pressable>
-                            <Pressable
-                                onPress={() => router.push({ pathname: '/laporan/pembelian-mobil' })}
-                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                            >
-                                <TrendingUp size={22} color="white" />
-                            </Pressable>
-                        </View>
-                    </View>
-
-                    {/* Row 1: Operational Status (Inventory) */}
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        className="flex-row -mx-6 px-6 mb-4"
-                    >
-                        {[
-                            { label: 'Total Unit', key: 'total', value: unitStats.total, color: 'white' },
-                            { label: 'Tersedia', key: 'tersedia', value: unitStats.tersedia, color: '#10B981' },
-                            { label: 'Terjual', key: 'terjual', value: unitStats.terjual, color: '#3B82F6' },
-                        ].map((stat, idx) => (
-                            <View
-                                key={stat.key}
-                                style={{ width: 100 }}
-                                className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
-                            >
-                                <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
-                                <View className="flex-row items-baseline">
-                                    <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
-                                    <Typography className="text-white/30 text-[8px] ml-1 font-bold">UNIT</Typography>
-                                </View>
-                            </View>
-                        ))}
-                    </ScrollView>
-
-                    {/* Row 2: Financial/Payment Summary (Total, Lunas, etc) */}
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        className="flex-row -mx-6 px-6"
-                    >
-                        {[
-                            { label: 'Total', key: 'total_trx', value: stats.total, unit: 'TRX', color: 'white' },
-                            { label: 'Lunas', key: 'lunas', value: stats.lunas, unit: 'TRX', color: '#10B981' },
-                            { label: 'Belum Lunas', key: 'partial', value: stats.partial, unit: 'TRX', color: '#3B82F6' },
-                            { label: 'Belum Bayar', key: 'unpaid', value: stats.unpaid, unit: 'TRX', color: '#F59E0B' },
-                            { label: 'Batal', key: 'batal', value: stats.batal, unit: 'TRX', color: '#EF4444' },
-                        ].map((stat, idx) => (
-                            <View
-                                key={stat.key}
-                                style={{ width: 100 }}
-                                className={`bg-white/10 p-4 rounded-[24px] border border-white/5 mr-2`}
-                            >
-                                <Typography className="text-white/40 text-[10px] uppercase font-bold mb-1" numberOfLines={1}>{stat.label}</Typography>
-                                <View className="flex-row items-baseline">
-                                    <Typography weight="bold" style={{ color: stat.color }} className="text-xl">{stat.value || 0}</Typography>
-                                    {stat.unit ? (
-                                        <Typography className="text-white/30 text-[8px] ml-1 font-bold">{stat.unit}</Typography>
-                                    ) : null}
-                                </View>
-                            </View>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Filters & Search - Floating Overlay */}
-                <View className="px-6 -mt-8 z-10">
-                    <View className="bg-white p-3 rounded-[32px] shadow-2xl space-y-3 border border-gray-100">
-                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-[20px] border border-gray-100">
-                            <Search size={20} color="#6B7280" />
-                            <TextInput
-                                className="flex-1 ml-3 text-textMain text-sm font-medium h-full"
-                                placeholder="Cari unit..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                        </View>
-
-                        {/* Payment Filter Chips (Row 2 logic matched) */}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
-                            <Pressable
-                                onPress={() => setPaymentFilter('ALL')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                    Semua ({stats.total})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('LUNAS')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                    Lunas ({stats.lunas})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('PARTIAL')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
-                                    Belum Lunas ({stats.partial})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('UNPAID')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
-                                    Belum Bayar ({stats.unpaid})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('BATAL')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
-                                    Batal ({stats.batal})
-                                </Typography>
-                            </Pressable>
-                        </ScrollView>
                     </View>
                 </View>
 
-                {/* Tabs */}
-                <View className="flex-row px-6 mt-6 mb-2 space-x-2">
-                    {['tersedia', 'booking', 'terjual'].map((tab) => (
-                        <Pressable
-                            key={tab}
-                            onPress={() => {
-                                setActiveTab(tab);
-                                setPaymentFilter('ALL');
-                            }}
-                            className={`px-5 py-2.5 rounded-2xl border ${activeTab === tab ? 'bg-primary border-primary shadow-lg shadow-primary/20' : 'bg-white border-gray-100'}`}
-                        >
-                            <Typography className={`capitalize text-xs font-bold ${activeTab === tab ? 'text-white' : 'text-gray-500'}`}>
-                                {tab}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
+                {/* Filter Search Overlay */}
+                {sheetIndex === -1 && (
+                    <View className="px-6 -mt-6 z-1">
+                        <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                            <View className="flex-row items-center">
+                                <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                                    <Search size={18} color="#9CA3AF" />
+                                    <TextInput
+                                        className="flex-1 ml-3 text-sm font-medium text-textMain"
+                                        placeholder="Cari Unit (Plat, Model)..."
+                                        value={searchQuery}
+                                        onChangeText={setSearchQuery}
+                                        placeholderTextColor="#9CA3AF"
+                                        autoCorrect={false}
+                                        autoCapitalize="none"
+                                        returnKeyType="search"
+                                    />
+                                    {searchQuery.length > 0 && (
+                                        <Pressable onPress={() => setSearchQuery('')} className="ml-1">
+                                            <X size={18} color="#9CA3AF" />
+                                        </Pressable>
+                                    )}
+                                </View>
+                            </View>
+                            {/* Status Bayar Chips Filters */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100 space-x-2">
+                                <Pressable
+                                    onPress={() => setPaymentFilter('ALL')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                        Semua ({stats.total})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setPaymentFilter('LUNAS')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                        Lunas ({stats.lunas})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setPaymentFilter('PARTIAL')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                        Belum Lunas ({stats.partial})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setPaymentFilter('UNPAID')}
+                                    className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                        Belum Bayar ({stats.unpaid})
+                                    </Typography>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setPaymentFilter('BATAL')}
+                                    className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                        Batal ({stats.batal})
+                                    </Typography>
+                                </Pressable>
+                            </ScrollView>
+
+                        </View>
+                    </View>
+                )}
 
                 <ScrollView
-                    className="flex-1 px-6 pt-4"
+                    className="flex-1 px-6 pt-10"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={isLoading && mobils.length > 0} onRefresh={refetch} colors={['#023C69']} />
+                        <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#023C69" />
                     }
                 >
-                    {/* Date Filter Selection */}
-                    <Pressable
-                        onPress={() => {
-                            setTempDateRange(dateRange);
-                            setIsDateModalVisible(true);
-                            if (Platform.OS === 'web') {
-                                // Handled by state
-                            } else {
-                                dateSheetRef.current?.present();
-                            }
-                        }}
-                        className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100"
-                    >
-                        <View className="flex-row items-center">
-                            <Calendar size={18} color="#023C69" />
-                            <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
-                        </View>
-                        <View className="bg-primary/5 px-2 py-1 rounded-lg">
-                            <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
-                        </View>
-                    </Pressable>
+                    {/* Inventory Status (Metric Row) */}
+                    <View className="flex-row justify-between mb-8">
+                        {[
+                            { label: 'TERSEDIA', key: 'tersedia', color: '#023C69', icon: Car },
+                            { label: 'BOOKING', key: 'booking', color: '#F59E0B', icon: Clock },
+                            { label: 'TERJUAL', key: 'terjual', color: '#10B981', icon: RefreshCw },
+                        ].map((stat) => (
+                            <View key={stat.key} style={{ width: '31%' }} className="bg-white p-3 rounded-[32px] border border-gray-100 shadow-sm items-center">
+                                <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
+                                    <stat.icon size={16} color={stat.color} />
+                                </View>
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-xl leading-tight">
+                                    {inventorySummary ? (inventorySummary.per_status?.[stat.key.toUpperCase()] || inventorySummary.per_status?.[stat.key] || 0) : 0}
+                                </Typography>
+                                <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
+                            </View>
+                        ))}
+                    </View>
 
-                    {isLoading && mobils.length === 0 ? (
-                        <View className="space-y-4">
-                            <SkeletonCard />
-                            <SkeletonCard />
-                            <SkeletonCard />
+                    {/* Service Grid Section (Bento Style) */}
+                    <View className="flex-row flex-wrap justify-between mb-8">
+                        {/* Item 1: Wallet (Dompet Unit) */}
+                        <Pressable
+                            key="grid-wallet"
+                            onPress={() => {
+                                setShowWalletModal(true);
+                                if (Platform.OS !== 'web') {
+                                    walletSheetRef.current?.present();
+                                }
+                            }}
+                            style={{ width: '48.5%' }}
+                            className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                        >
+                            <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-emerald-500/10 border border-gray-50">
+                                <Wallet size={22} color="#10B981" strokeWidth={2.5} />
+                            </View>
+                            <View className="flex-1">
+                                <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Dompet</Typography>
+                                <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KAS UNIT</Typography>
+                            </View>
+                        </Pressable>
+
+                        {/* Item 2: Laporan (Penjualan) */}
+                        <Pressable
+                            key="grid-laporan"
+                            onPress={() => router.push({ pathname: '/laporan/pembelian-mobil' })}
+                            style={{ width: '48.5%' }}
+                            className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                        >
+                            <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-blue-500/10 border border-gray-50">
+                                <TrendingUp size={22} color="#3B82F6" strokeWidth={2.5} />
+                            </View>
+                            <View className="flex-1">
+                                <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Laporan</Typography>
+                                <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>PENJUALAN</Typography>
+                            </View>
+                        </Pressable>
+
+                        {/* Item 3: Master Data (Database) */}
+                        <Pressable
+                            key="grid-database"
+                            onPress={() => router.push('/master-data')}
+                            style={{ width: '48.5%' }}
+                            className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                        >
+                            <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-amber-500/10 border border-gray-50">
+                                <RefreshCw size={22} color="#F59E0B" strokeWidth={2.5} />
+                            </View>
+                            <View className="flex-1">
+                                <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Database</Typography>
+                                <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>MASTER DATA</Typography>
+                            </View>
+                        </Pressable>
+
+                        {/* Item 4: Register (Tambah Unit) */}
+                        <Pressable
+                            key="grid-register"
+                            onPress={handlePresentModalPress}
+                            style={{ width: '48.5%' }}
+                            className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
+                        >
+                            <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-indigo-500/10 border border-gray-50">
+                                <Plus size={22} color="#6366F1" strokeWidth={2.5} />
+                            </View>
+                            <View className="flex-1">
+                                <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Tambah Unit</Typography>
+                                <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>REGISTRASI</Typography>
+                            </View>
+                        </Pressable>
+                    </View>
+
+                    {/* Section Header */}
+                    <View className="flex-row justify-between items-center mb-6">
+                        <View>
+                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Daftar Inventaris Mobil</Typography>
+                            <Typography variant="caption" className="text-textGray">Management stok dan penjualan unit</Typography>
                         </View>
-                    ) : mobils.length === 0 ? (
+                    </View>
+
+                    {/* Tab Shifters */}
+                    <View className="flex-row bg-gray-100/50 p-1.5 rounded-[24px] mb-8">
+                        {[
+                            { label: 'Tersedia', key: 'tersedia' },
+                            { label: 'Booking', key: 'booking' },
+                            { label: 'Terjual', key: 'terjual' },
+                        ].map((tab) => (
+                            <Pressable
+                                key={tab.key}
+                                onPress={() => setActiveTab(tab.key)}
+                                className={`flex-1 py-3.5 rounded-[20px] items-center ${activeTab === tab.key ? 'bg-white shadow-sm shadow-black/5 border border-gray-200/50' : ''}`}
+                            >
+                                <Typography weight="bold" className={`text-xs ${activeTab === tab.key ? 'text-primary' : 'text-textGray'}`}>
+                                    {tab.label}
+                                </Typography>
+                            </Pressable>
+                        ))}
+                    </View>
+
+                    {/* Date Filter Selection */}
+                    {activeTab !== 'tersedia' && (
+                        <Pressable
+                            onPress={() => {
+                                setTempDateRange(dateRange);
+                                setIsDateModalVisible(true);
+                                if (Platform.OS !== 'web') {
+                                    dateSheetRef.current?.present();
+                                }
+                            }}
+                            className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
+                        >
+                            <View className="flex-row items-center">
+                                <Calendar size={18} color="#023C69" />
+                                <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
+                            </View>
+                            <View className="bg-primary/5 px-2 py-1 rounded-lg">
+                                <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
+                            </View>
+                        </Pressable>
+                    )}
+
+
+                    {/* Car List */}
+                    <View className="space-y-6 pb-20">
+                        {isLoading && mobils.length === 0 ? (
+                            <View className="space-y-4">
+                                <SkeletonCard />
+                                <SkeletonCard />
+                                <SkeletonCard />
+                            </View>
+                        ) : mobils.length === 0 ? (
                         <EmptyState
                             title="Mobil tidak ditemukan"
                             description={searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada unit mobil dalam kategori ini."}
@@ -1078,15 +1120,16 @@ export default function MobilInventoryScreen() {
                             </Pressable>
                         ))
                     )}
+                    </View>
                     <View className="h-32" />
                 </ScrollView>
 
                 {/* FAB matching Home */}
                 <Pressable
                     onPress={handlePresentModalPress}
-                    className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/30 border-4 border-white/20"
+                    className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20 active:scale-95 transition-transform"
                 >
-                    <Plus size={32} color="white" strokeWidth={3} />
+                    <Plus size={32} color="white" strokeWidth={2.5} />
                 </Pressable>
 
                 {/* Hybrid UI Logic modals (Web & Native) */}
@@ -1156,27 +1199,27 @@ export default function MobilInventoryScreen() {
                     </>
                 ) : (
                     <>
-                        <BottomSheetModal ref={bottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                        <BottomSheetModal ref={bottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
                             <View className="flex-1">
                                 <MobilForm onSuccess={() => { bottomSheetModalRef.current?.dismiss(); refetch(); }} />
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={salesBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                        <BottomSheetModal ref={salesBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
                             <View className="flex-1">
                                 {selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { salesBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={costBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                        <BottomSheetModal ref={costBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
                             <View className="flex-1">
                                 {selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { costBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={detailBottomSheetModalRef} index={0} snapPoints={detailSnapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                        <BottomSheetModal ref={detailBottomSheetModalRef} index={0} snapPoints={detailSnapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
                             <View className="flex-1">
                                 {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={editBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}>
+                        <BottomSheetModal ref={editBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
                             <View className="flex-1">
                                 {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
@@ -1189,6 +1232,7 @@ export default function MobilInventoryScreen() {
                             enablePanDownToClose
                             backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
                             onDismiss={handleCloseWallet}
+                            onChange={handleSheetChanges}
                         >
                             <BottomSheetView className="flex-1 px-8 py-2">
                                 {renderWalletContent()}
@@ -1202,6 +1246,7 @@ export default function MobilInventoryScreen() {
                             enablePanDownToClose
                             backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
                             onDismiss={() => setIsDateModalVisible(false)}
+                            onChange={handleSheetChanges}
                         >
                             <BottomSheetView className="flex-1 px-8 py-2">
                                 <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode</Typography>
