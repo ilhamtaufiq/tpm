@@ -3,6 +3,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings } from './printSettings';
+import { RECEIPT_TEMPLATES, TEMPLATE_FONT_SIZES, TEMPLATE_SPACING } from './receiptTemplates';
 
 // Dynamically import thermal printer to avoid issues on non-android platforms
 let BLEPrinter: any = null;
@@ -55,6 +56,10 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
     const paperWidth = settings.paperSize === '80mm' ? '80mm' : '58mm';
     // For CSS width on screen, we'll keep using px but strictly controlled
     const widthPx = settings.paperSize === '80mm' ? '302px' : '220px';
+
+    const template = RECEIPT_TEMPLATES[settings.template] || RECEIPT_TEMPLATES.standard;
+    const font = TEMPLATE_FONT_SIZES[template.features.fontSize];
+    const spacing = TEMPLATE_SPACING[template.features.spacing];
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -111,7 +116,7 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
     }
 
     const infoRow = (label: string, value: string | number | undefined) => value ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: ${font.info}px;">
             <span>${label}</span>
             <span>${value}</span>
         </div>
@@ -142,11 +147,11 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                     width: ${paperWidth} !important;
                     max-width: ${paperWidth} !important;
                     margin: 0 auto !important;
-                    padding: 4mm 4mm !important; /* Increased horizontal padding for safer centering */
+                    padding: ${spacing.section}mm 4mm !important;
                     background: white;
                     color: black;
                     font-family: 'Courier New', Courier, monospace;
-                    font-size: 11px;
+                    font-size: ${font.info}px;
                     font-weight: 600;
                     line-height: 1.2;
                     display: flex;
@@ -161,7 +166,7 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                 .divider { 
                     width: 100%;
                     border-bottom: 1px dashed #000; 
-                    margin: 3mm 0; 
+                    margin: ${spacing.divider / 2}mm 0; 
                 }
                 .text-center { text-align: center; width: 100%; }
                 .text-right { text-align: right; }
@@ -181,10 +186,19 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
             <div class="receipt-container">
             <!-- Header -->
             <div class="text-center">
-                ${settings.logoUri ? `<img src="${settings.logoUri}" style="width: 60px; height: 60px; display: block; margin: 0 auto 4px auto; object-fit: contain;" />` : ''}
-                <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
-                <div style="font-size: 10px; margin-bottom: 2px;">${settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</div>
-                <div style="font-size: 10px;">cianjur &nbsp; HP ${settings.companyPhone || '087720225244'}</div>
+                ${template.features.showLogo && settings.logoUri ? `
+                    <img 
+                        src="${settings.logoUri}" 
+                        style="width: 80px; height: 80px; display: block; margin: 0 auto 10px auto; object-fit: contain;" 
+                    />` : ''}
+                
+                ${template.features.showCompanyInfo ? `
+                    <div style="font-size: ${font.company}px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
+                    <div style="font-size: ${font.header}px; margin-bottom: 2px;">${settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</div>
+                    <div style="font-size: ${font.header}px;">cianjur &nbsp; HP ${settings.companyPhone || '087720225244'}</div>
+                ` : `
+                    <div style="font-size: ${font.company}px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
+                `}
             </div>
 
             <div class="divider"></div>
@@ -234,13 +248,21 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
 
             <div class="divider"></div>
             
+            ${template.features.showQRCode ? `
+                <div style="text-align: center; margin: 10px 0;">
+                    <div style="font-size: 8px; color: #666; margin-bottom: 4px;">SCAN UNTUK CEK KEASLIAN</div>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tpm.app/receipt/${data.type}/${data.transactionNumber}" style="width: 80px; height: 80px;" />
+                </div>
+                <div class="divider"></div>
+            ` : ''}
+
             ${data.vehiclePlate ? `
-                <div style="font-size: 11px; margin-bottom: 8px; text-align: center;">${data.vehiclePlate}</div>
+                <div style="font-size: ${font.info}px; margin-bottom: 8px; text-align: center;">${data.vehiclePlate}</div>
                 <div class="divider"></div>
             ` : ''}
 
             <!-- Footer -->
-            <div class="text-center" style="font-size: 10px; margin-top: 10px;">
+            <div class="text-center" style="font-size: ${font.footer}px; margin-top: 10px;">
                 ${settings.footer || 'Terimakasih atas kepercayaan anda'}
             </div>
 
@@ -367,11 +389,38 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
 }
 
 /**
+ * Helper to ensure logo is base64 for better compatibility
+ */
+async function ensureLogoBase64(uri: string | null): Promise<string | null> {
+    if (!uri) return null;
+    if (uri.startsWith('data:')) return uri;
+    if (Platform.OS === 'web') return uri; // Web handles local/remote URIs better
+
+    try {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = () => resolve(uri);
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn('Failed to convert logo to base64:', e);
+        return uri;
+    }
+}
+
+/**
  * Print receipt using Expo Print
  */
 export async function printReceipt(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
-        const html = generateReceiptHTML(data, settings);
+        // Pre-process logo to ensure it's base64 (helps with WebView and Direct Thermal)
+        const base64Logo = await ensureLogoBase64(settings.logoUri);
+        const processedSettings = { ...settings, logoUri: base64Logo };
+        
+        const html = generateReceiptHTML(data, processedSettings);
         
         // Calculations for points (1/72 inch)
         // 80mm = 226.77 points
@@ -422,8 +471,26 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
                         await BLEPrinter.init();
                         await BLEPrinter.connectPrinter(device.inner_mac_address);
                         
-                        // Generate thermal text and print
-                        const thermalText = generateThermalText(data, settings);
+                        // Generate thermal text
+                        const thermalText = generateThermalText(data, processedSettings);
+                        
+                        // If logo exists, print it first
+                        if (processedSettings.logoUri) {
+                            try {
+                                // Extract base64 if it's a data URI
+                                const base64Data = processedSettings.logoUri.includes('base64,') 
+                                    ? processedSettings.logoUri.split('base64,')[1] 
+                                    : processedSettings.logoUri;
+                                
+                                await BLEPrinter.printPic(base64Data, { 
+                                    width: settings.paperSize === '80mm' ? 200 : 150, 
+                                    left: settings.paperSize === '80mm' ? 50 : 20 
+                                });
+                            } catch (logoError) {
+                                console.warn('Failed to print logo to thermal printer:', logoError);
+                            }
+                        }
+                        
                         await BLEPrinter.printText(thermalText);
                         return; // Successfully printed directly
                     }
@@ -450,7 +517,10 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
  */
 export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
-        const html = generateReceiptHTML(data, settings);
+        const base64Logo = await ensureLogoBase64(settings.logoUri);
+        const processedSettings = { ...settings, logoUri: base64Logo };
+        
+        const html = generateReceiptHTML(data, processedSettings);
         
         // Use points for Expo Print (72dpi)
         const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;

@@ -129,11 +129,13 @@ export default function PrintSettingsScreen() {
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [1, 1],
-                quality: 0.8
+                quality: 0.8,
+                base64: true
             });
 
             if (!result.canceled && result.assets[0]) {
-                setSettings(prev => prev ? { ...prev, logoUri: result.assets[0].uri } : null);
+                const base64Img = `data:${result.assets[0].mimeType || 'image/jpeg'};base64,${result.assets[0].base64}`;
+                setSettings(prev => prev ? { ...prev, logoUri: base64Img } : null);
             }
         } catch (error) {
             console.error('Error picking logo:', error);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type } from 'lucide-react-native';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
@@ -188,13 +188,26 @@ export default function ProfileScreen() {
 
                             <Pressable
                                 className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                                onPress={() => router.push('/settings/scanner')}
+                            >
+                                <View className="w-10 h-10 bg-indigo-50 rounded-[14px] items-center justify-center mb-3">
+                                    <Scan size={20} color="#6366F1" />
+                                </View>
+                                <View>
+                                    <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Scanner</Typography>
+                                    <Typography variant="caption" className="text-text/40 text-[10px]">Barcode 2D</Typography>
+                                </View>
+                            </Pressable>
+
+                            <Pressable
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
                                 onPress={() => router.push('/settings/bluetooth')}
                             >
                                 <View className="w-10 h-10 bg-blue-50 rounded-[14px] items-center justify-center mb-3">
                                     <Bluetooth size={20} color="#3B82F6" />
                                 </View>
                                 <View>
-                                    <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Bluetooth</Typography>
+                                    <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Pairing</Typography>
                                     <Typography variant="caption" className="text-text/40 text-[10px]">Sync Perangkat</Typography>
                                 </View>
                             </Pressable>
@@ -225,6 +238,19 @@ export default function ProfileScreen() {
                                 <View>
                                     <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Biometrik</Typography>
                                     <Typography variant="caption" className="text-text/40 text-[10px]">{useBiometrics ? 'Aktif' : 'Klik Aktifkan'}</Typography>
+                                </View>
+                            </Pressable>
+
+                            <Pressable
+                                className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                                onPress={() => router.push('/settings/branding')}
+                            >
+                                <View className="w-10 h-10 bg-rose-50 rounded-[14px] items-center justify-center mb-3">
+                                    <Type size={20} color="#F43F5E" />
+                                </View>
+                                <View>
+                                    <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Branding</Typography>
+                                    <Typography variant="caption" className="text-text/40 text-[10px]">Logo & Nama App</Typography>
                                 </View>
                             </Pressable>
 

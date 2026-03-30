@@ -8,12 +8,15 @@ import api from '../../utils/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ShieldCheck, User, Lock, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useUIStore } from '../../store/useUIStore';
+import { Image } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function LoginScreen() {
     const router = useRouter();
     const { isAuthenticated, setAuth } = useAuthStore();
+    const { appLogo, appName } = useUIStore();
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -86,15 +89,19 @@ export default function LoginScreen() {
                         <View className="absolute top-[-50] right-[-50] w-64 h-64 bg-white/5 rounded-full" />
                         <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
 
-                        <View className="w-24 h-24 bg-white/10 rounded-[32px] items-center justify-center mb-6 border border-white/20">
-                            <ShieldCheck size={48} color="white" strokeWidth={1.5} />
+                        <View className="w-24 h-24 bg-white/10 rounded-[32px] items-center justify-center mb-6 border border-white/20 overflow-hidden">
+                            {appLogo ? (
+                                <Image source={{ uri: appLogo }} className="w-full h-full" resizeMode="contain" />
+                            ) : (
+                                <ShieldCheck size={48} color="white" strokeWidth={1.5} />
+                            )}
                         </View>
 
                         <Typography variant="h1" weight="bold" className="text-white text-center leading-tight">
-                            TPM
+                            {appName}
                         </Typography>
                         <Typography className="text-white/60 text-sm mt-2 font-medium tracking-wide">
-                            Tiga Putra Motor
+                            Manajemen Sistem Terpadu
                         </Typography>
                     </View>
 

@@ -19,6 +19,9 @@ interface UIState {
     themeColors: ThemeColors;
     setThemeColor: (key: keyof ThemeColors, color: string) => void;
     resetTheme: () => void;
+    appLogo: string | null;
+    appName: string;
+    setBranding: (branding: { logo?: string | null; name?: string }) => void;
 }
 
 export const defaultColors: ThemeColors = {
@@ -43,6 +46,12 @@ export const useUIStore = create<UIState>()(
                     themeColors: { ...state.themeColors, [key]: color }
                 })),
             resetTheme: () => set({ themeColors: defaultColors }),
+            appLogo: null,
+            appName: 'TPM',
+            setBranding: (branding) => set((state) => ({
+                appLogo: branding.logo !== undefined ? branding.logo : state.appLogo,
+                appName: branding.name !== undefined ? branding.name : state.appName,
+            })),
         }),
         {
             name: 'ui-storage',

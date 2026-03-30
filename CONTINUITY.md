@@ -1,32 +1,24 @@
-# Continuity Ledger
+# Continuity Ledger - TPM Receipt Design Fix
 
-- Goal: Fix thermal printing on Android to print directly without showing print preview.
-- Goal: Implement Role-Based Access Control (RBAC) to restrict unit-specific roles (Bengkel, Jasa Angkut, Mobil) to their respective modules, while allowing Admin/Manager full access.
-- Goal: Adjust `frontend/app/finance/akun.tsx` to display transaction stats (Masuk/Keluar) per account and include all active accounts in the list.
-- Goal: Implement user-friendly `AlertDialog` for specific business logic errors like "Saldo tidak mencukupi".
-- Goal: Fix unresponsive 'Pelunasan / Bayar Cicilan' button in `frontend/app/bengkel/index.tsx` by rendering the missing `PaymentModal`.
+- Goal: Fix missing logo/image in printed receipts (struk).
 - Constraints/Assumptions:
-  - Role 'BENGKEL' -> only see/access 'Bengkel'
-  - Role 'JASA_ANGKUT' -> only see/access 'Logistik'
-  - Role 'MOBIL' -> only see/access 'Jual Beli Mobil'
-  - 'ADMIN'/'MANAGER' -> full access.
+  - Frontend: React Native (Expo).
+  - Printer: Thermal (BLE) and System Print (PDF/WebView).
+  - Library: `react-native-thermal-receipt-printer`, `expo-print`.
 - Key decisions:
-  - Filter `ServiceGrid` on the home screen.
-  - Filter search results in `Header` based on user role.
-  - `all-menus.tsx` already has filtering logic.
-  - Show `total_masuk_bulan_ini` and `total_keluar_bulan_ini` in `akun.tsx` account cards.
-  - Link account cards to `mutasi.tsx` with specific filters.
-  - Include `KAS_UTAMA`, `BANK_UTAMA`, and unit-specific cashes in the account list.
+  - Change logo storage to base64 data URIs for both WebView compatibility and direct printer support.
+  - Fix missing logo printing in direct thermal receipt logic.
 - State:
-  - Done: Fix RBAC access, dashboard aggregation, and unit-specific financial reporting (Bengkel/Mobil/Jasa Angkut).
-  - Done: Enforce Unit Financial Isolation: Cash transactions stay in unit cash drawer.
-  - Done: Extend Business Unit Wallet: Added "Kasbon/Piutang" and "Inter-Unit Transfer" features to Bengkel, Jasa Angkut, and Mobil dashboards.
-  - Now: Completed inter-unit transfer capability and wallet extensions.
-  - Next: Testing and final user review.
+  - Done:
+    - Updated `PickLogo` to store base64 data URIs in `print.tsx`.
+    - Implemented `BLEPrinter.printPic` support in `printReceipt.ts`.
+  - Now:
+    - Ensuring backward compatibility for existing `file://` logo URIs in `printReceipt.ts`.
+  - Next:
+    - Test/Confirm with user.
 - Open questions (UNCONFIRMED if needed):
-  - Should the "Adjustment" modal in `akun.tsx` be changed to a "Transaction Entry" modal too?
-- Working set (files/ids/commands):
-  - `frontend/components/ServiceGrid.tsx`
-  - `frontend/components/ui/Header.tsx`
-  - `frontend/app/finance/akun.tsx`
-  - `frontend/app/finance/mutasi.tsx`
+  - Is `react-native-thermal-receipt-printer` version 1.2.0-rc.2 actually supporting `printPic` as implemented? (Assumed YES based on package.json).
+- Working set:
+  - `frontend/app/settings/print.tsx`
+  - `frontend/utils/printReceipt.ts`
+  - `frontend/utils/printSettings.ts`

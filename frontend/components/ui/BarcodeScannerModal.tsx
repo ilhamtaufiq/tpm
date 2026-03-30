@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo, FC } from 'react';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
-import { X, Zap, ZapOff } from 'lucide-react-native';
+import { X, Zap, ZapOff, Scan, Camera } from 'lucide-react-native';
 import { Button } from './Button';
 
 interface BarcodeScannerModalProps {
@@ -14,7 +15,7 @@ interface BarcodeScannerModalProps {
     continuous?: boolean;
 }
 
-export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ 
+export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({ 
     visible, 
     onClose, 
     onScan, 
@@ -27,12 +28,15 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     const [torch, setTorch] = useState(false);
     const [laserPos, setLaserPos] = useState(0);
     const [movingDown, setMovingDown] = useState(true);
+    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware'>('camera');
+    const [hwInput, setHwInput] = useState('');
+    const hwInputRef = useRef<TextInput>(null);
 
     // Laser Animation Effect
     useEffect(() => {
         if (!visible) return;
         const interval = setInterval(() => {
-            setLaserPos(prev => {
+            setLaserPos((prev: number) => {
                 if (movingDown) {
                     if (prev >= 240) { setMovingDown(false); return 240; }
                     return prev + 5;
@@ -46,17 +50,38 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }, [visible, movingDown]);
 
     useEffect(() => {
-        if (visible && !permission?.granted) {
+        if (visible && !permission?.granted && scannerMode === 'camera') {
             requestPermission();
         }
         
+        // Auto-focus hardware input if visible
+        if (visible) {
+            setTimeout(() => hwInputRef.current?.focus(), 500);
+        }
+
+        // Load preferred mode
+        const loadMode = async () => {
+            const saved = await AsyncStorage.getItem('@scanner_mode');
+            if (saved) setScannerMode(saved as any);
+        };
+        if (visible) loadMode();
+
         // Browser compatibility check for 1D barcodes
         if (visible && Platform.OS === 'web' && (window as any).BarcodeDetector) {
             (window as any).BarcodeDetector.getSupportedFormats().then((formats: string[]) => {
                 console.log(`[Scanner] Browser natively supports: ${formats.join(', ')}`);
             }).catch(console.error);
         }
-    }, [visible, permission]);
+    }, [visible, permission, scannerMode]);
+
+    const toggleScannerMode = async () => {
+        const newMode = scannerMode === 'camera' ? 'hardware' : 'camera';
+        setScannerMode(newMode);
+        await AsyncStorage.setItem('@scanner_mode', newMode);
+        if (newMode === 'hardware') {
+            setTimeout(() => hwInputRef.current?.focus(), 200);
+        }
+    };
 
     const handleBarCodeScanned = (result: { type: string, data: string }) => {
         if (scanned) return;
@@ -69,7 +94,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
     // Stable settings object to prevent unnecessary re-renders/scanner resets
     // Some browsers on Web require explicit types to activate the 1D detection engine
-    const scannerSettings = React.useMemo(() => ({
+    const scannerSettings = useMemo(() => ({
         barcodeTypes: [
             "qr", 
             "ean13", 
@@ -103,77 +128,143 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     </View>
                 ) : (
                     <View style={styles.cameraContainer}>
-                        <CameraView
-                            style={styles.camera}
-                            enableTorch={torch}
-                            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-                            barcodeScannerSettings={scannerSettings}
-                        >
-                            {/* Overlay */}
-                            <View style={styles.overlay}>
-                                <View style={styles.unfocusedContainer}></View>
-                                <View style={styles.middleContainer}>
+                        {scannerMode === 'camera' ? (
+                            <CameraView
+                                style={styles.camera}
+                                enableTorch={torch}
+                                onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                                barcodeScannerSettings={scannerSettings}
+                            >
+                                {/* Overlay */}
+                                <View style={styles.overlay}>
                                     <View style={styles.unfocusedContainer}></View>
-                                    <View style={styles.focusedContainer}>
-                                        <View style={[styles.corner, styles.topLeft]} />
-                                        <View style={[styles.corner, styles.topRight]} />
-                                        <View style={[styles.corner, styles.bottomLeft]} />
-                                        <View style={[styles.corner, styles.bottomRight]} />
-                                        
-                                        {/* Laser Line */}
-                                        <View style={[styles.laser, { top: laserPos }]} />
+                                    <View style={styles.middleContainer}>
+                                        <View style={styles.unfocusedContainer}></View>
+                                        <View style={styles.focusedContainer}>
+                                            <View style={[styles.corner, styles.topLeft]} />
+                                            <View style={[styles.corner, styles.topRight]} />
+                                            <View style={[styles.corner, styles.bottomLeft]} />
+                                            <View style={[styles.corner, styles.bottomRight]} />
+                                            
+                                            {/* Laser Line */}
+                                            <View style={[styles.laser, { top: laserPos }]} />
 
-                                        {scanned && (
-                                            <View style={styles.scannedIndicator}>
-                                                <Typography weight="bold" style={{ color: 'white' }}>Terdeteksi!</Typography>
-                                            </View>
-                                        )}
+                                            {scanned && (
+                                                <View style={styles.scannedIndicator}>
+                                                    <Typography weight="bold" style={{ color: 'white' }}>Terdeteksi!</Typography>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={styles.unfocusedContainer}></View>
                                     </View>
-                                    <View style={styles.unfocusedContainer}></View>
-                                </View>
-                                <View style={styles.unfocusedContainer}>
-                                    <View className="items-center mt-6">
-                                        <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
-                                            Posisikan barcode/QR code di dalam kotak
-                                        </Typography>
+                                    <View style={styles.unfocusedContainer}>
+                                        <View className="items-center mt-6">
+                                            <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
+                                                Posisikan barcode/QR code di dalam kotak
+                                            </Typography>
 
-                                        {/* Scanner Log Overlay */}
-                                        {scanLog.length > 0 && (
-                                            <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
-                                                <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
-                                                {scanLog.slice(0, 3).map((item, idx) => (
-                                                    <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
-                                                        <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
-                                                        <View className="flex-1">
-                                                            <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
-                                                            {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
+                                            {/* Scanner Log Overlay */}
+                                            {scanLog.length > 0 && (
+                                                <View className="w-[90%] bg-black/40 rounded-3xl p-4 border border-white/10 mt-2">
+                                                    <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
+                                                    {scanLog.slice(0, 3).map((item, idx) => (
+                                                        <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
+                                                            <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
+                                                            <View className="flex-1">
+                                                                <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
+                                                                {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
+                                                            </View>
+                                                            <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
                                                         </View>
-                                                        <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
-                                                    </View>
-                                                ))}
-                                                <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
-                                                
-                                                <Button 
-                                                    title="Selesai & Tutup" 
-                                                    variant="primary"
-                                                    onPress={onClose}
-                                                    className="h-12 rounded-2xl"
-                                                />
-                                            </View>
-                                        )}
+                                                    ))}
+                                                    <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
+                                                    
+                                                    <Button 
+                                                        title="Selesai & Tutup" 
+                                                        variant="primary"
+                                                        onPress={onClose}
+                                                        className="h-12 rounded-2xl"
+                                                    />
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
                                 </View>
+                            </CameraView>
+                        ) : (
+                            <View className="flex-1 items-center justify-center bg-gray-900 px-10">
+                                <View className="w-40 h-40 bg-blue-500/10 rounded-full items-center justify-center mb-8 border border-blue-500/20">
+                                    <Scan size={64} color="#3B82F6" strokeWidth={1} />
+                                </View>
+                                <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Hardware Mode</Typography>
+                                <Typography className="text-gray-400 text-center mb-10">Arahkan hardware scanner ke barcode dan tekan pelatuk scan.</Typography>
+                                
+                                <Pressable 
+                                    onPress={() => hwInputRef.current?.focus()}
+                                    className="bg-white/5 border border-white/10 px-6 py-4 rounded-3xl items-center w-full"
+                                >
+                                    <Typography className="text-blue-400 font-bold">Siap Menerima Scan...</Typography>
+                                </Pressable>
+
+                                {scanLog.length > 0 && (
+                                    <View className="mt-8 w-full">
+                                        <Typography variant="caption" weight="bold" className="text-white/40 text-center uppercase mb-4 tracking-widest">Item Terakhir</Typography>
+                                        <View className="bg-white/5 border border-white/10 p-4 rounded-3xl">
+                                            <Typography weight="bold" className="text-white text-center">{scanLog[0].title}</Typography>
+                                            <Typography variant="caption" className="text-white/50 text-center">{scanLog[0].subtitle}</Typography>
+                                        </View>
+                                    </View>
+                                )}
                             </View>
-                        </CameraView>
+                        )}
+
+                        {/* Hidden Input for Hardware Scanner */}
+                        <TextInput
+                            ref={hwInputRef}
+                            style={{ position: 'absolute', opacity: 0, height: 0, width: 0 }}
+                            value={hwInput}
+                            onChangeText={setHwInput}
+                            onSubmitEditing={(e) => {
+                                const code = e.nativeEvent.text;
+                                if (code) {
+                                    handleBarCodeScanned({ type: 'hardware', data: code });
+                                    setHwInput('');
+                                    // Keep focused for next scan
+                                    setTimeout(() => hwInputRef.current?.focus(), 100);
+                                }
+                            }}
+                            autoFocus={visible}
+                            blurOnSubmit={false}
+                        />
 
                         {/* Controls */}
                         <View style={styles.header}>
-                            <Pressable onPress={onClose} style={styles.iconButton}>
-                                <X size={24} color="white" />
+                            <Pressable 
+                                onPress={toggleScannerMode} 
+                                style={[styles.iconButton, { width: 'auto', paddingHorizontal: 16 }]}
+                            >
+                                {scannerMode === 'camera' ? (
+                                    <View className="flex-row items-center">
+                                        <Scan size={18} color="white" />
+                                        <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Hardware</Typography>
+                                    </View>
+                                ) : (
+                                    <View className="flex-row items-center">
+                                        <Camera size={18} color="white" />
+                                        <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Camera</Typography>
+                                    </View>
+                                )}
                             </Pressable>
-                            <Pressable onPress={() => setTorch(!torch)} style={styles.iconButton}>
-                                {torch ? <Zap size={24} color="#FBBF24" /> : <ZapOff size={24} color="white" />}
-                            </Pressable>
+                            <View className="flex-row space-x-2">
+                                {scannerMode === 'camera' && (
+                                    <Pressable onPress={() => setTorch(!torch)} style={styles.iconButton}>
+                                        {torch ? <Zap size={24} color="#FBBF24" /> : <ZapOff size={24} color="white" />}
+                                    </Pressable>
+                                )}
+                                <Pressable onPress={onClose} style={styles.iconButton}>
+                                    <X size={24} color="white" />
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
                 )}
