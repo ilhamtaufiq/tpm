@@ -18,13 +18,11 @@
   - Link account cards to `mutasi.tsx` with specific filters.
   - Include `KAS_UTAMA`, `BANK_UTAMA`, and unit-specific cashes in the account list.
 - State:
-  - Done:
-    - Filtered `ServiceGrid.tsx` for unit roles.
-    - Filtered `Header.tsx` (search functionality) for unit roles.
-    - Fixed `SparePartSelector` and `PurchaseScreen` by updating the "no data" message to "Data tidak ditemukan" and ensuring component availability in expenses.
-    - Fixed 'Pelunasan / Bayar Cicilan' button in `frontend/app/bengkel/index.tsx` by correctly rendering `PaymentModal` in the component's return statement.
-  - Now: Implementing direct thermal printing logic in `frontend/utils/printReceipt.ts` and enhancing error handling in `akun.tsx` & `mutasi.tsx`.
-  - Next: Verify RBAC integration with new components and test thermal printing.
+  - Done: Fix RBAC access, dashboard aggregation, and unit-specific financial reporting (Bengkel/Mobil/Jasa Angkut).
+  - Done: Enforce Unit Financial Isolation: Cash transactions stay in unit cash drawer.
+  - Done: Extend Business Unit Wallet: Added "Kasbon/Piutang" and "Inter-Unit Transfer" features to Bengkel, Jasa Angkut, and Mobil dashboards.
+  - Now: Completed inter-unit transfer capability and wallet extensions.
+  - Next: Testing and final user review.
 - Open questions (UNCONFIRMED if needed):
   - Should the "Adjustment" modal in `akun.tsx` be changed to a "Transaction Entry" modal too?
 - Working set (files/ids/commands):

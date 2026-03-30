@@ -49,7 +49,8 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
-import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang } from '../../hooks/useKeuangan';
+
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
@@ -139,16 +140,21 @@ export default function BengkelScreen() {
     const [isRecordingExpense, setIsRecordingExpense] = React.useState(false);
     const [expenseAmount, setExpenseAmount] = React.useState('');
     const [expenseNote, setExpenseNote] = React.useState('');
-    const [expensePaymentMethod, setExpensePaymentMethod] = React.useState<'TUNAI' | 'TRANSFER'>('TUNAI');
+    const [expensePaymentMethod, setExpensePaymentMethod] = React.useState<string>('KAS_UTAMA');
+
 
     const createExpenseMutation = useCreatePengeluaran();
     const createTransactionMutation = useCreateTransaction();
     const transferMutation = useTransfer();
 
-    const [expenseMode, setExpenseMode] = React.useState<'KELUAR' | 'MASUK' | 'SETORAN'>('KELUAR');
+    const [expenseMode, setExpenseMode] = React.useState<'KELUAR' | 'MASUK' | 'SETORAN' | 'PIUTANG'>('KELUAR');
+    const [debiturName, setDebiturName] = React.useState('');
 
+
+    const createPiutangMutation = useCreatePiutang();
     const { data: balances } = useKasBankBalances();
     const unitBalance = balances?.kas_unit_bengkel?.saldo || 0;
+
 
     const queue = queueData?.data || [];
 
@@ -793,7 +799,9 @@ export default function BengkelScreen() {
         setIsRecordingExpense(false);
         setExpenseAmount('');
         setExpenseNote('');
+        setDebiturName('');
     };
+
 
     const renderWalletContent = () => (
         <>
@@ -948,7 +956,8 @@ export default function BengkelScreen() {
                                     setExpenseMode('SETORAN');
                                     setIsRecordingExpense(true);
                                     setExpenseNote('Setoran Tunai ke Akun Utama');
-                                    setExpensePaymentMethod('TUNAI');
+                                    setExpensePaymentMethod('KAS_UTAMA');
+
                                 }}
                                 className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
                             >
@@ -958,7 +967,25 @@ export default function BengkelScreen() {
                                 <Typography weight="bold" className="text-blue-700 text-[8px] uppercase tracking-wider">Setoran Unit</Typography>
                                 <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">SETOR KE PUSAT</Typography>
                             </Pressable>
+
+                            <Pressable
+                                onPress={() => {
+                                    setExpenseMode('PIUTANG');
+                                    setIsRecordingExpense(true);
+                                    setExpenseNote('');
+                                    setDebiturName('');
+                                    setExpensePaymentMethod('TUNAI');
+                                }}
+                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                            >
+                                <View className="w-8 h-8 bg-amber-50 rounded-xl items-center justify-center mb-2">
+                                    <CircleDollarSign size={16} color="#D97706" />
+                                </View>
+                                <Typography weight="bold" className="text-amber-700 text-[8px] uppercase tracking-wider">Kasbon/Piutang</Typography>
+                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">UANG KELUAR</Typography>
+                            </Pressable>
                         </View>
+
 
                         <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
                             {/* info icon */}
@@ -989,9 +1016,10 @@ export default function BengkelScreen() {
                                 <ChevronLeft size={18} color="#6B7280" />
                             </View>
                         </Pressable>
-                        <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} tracking-tight`}>
-                            {expenseMode === 'KELUAR' ? 'Catat Biaya Operasional' : expenseMode === 'MASUK' ? 'Terima Dana (Pusat)' : 'Setoran ke Akun Utama'}
+                        <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} tracking-tight`}>
+                            {expenseMode === 'KELUAR' ? 'Catat Biaya Operasional' : expenseMode === 'MASUK' ? 'Terima Dana (Pusat)' : expenseMode === 'PIUTANG' ? 'Pemberian Kasbon/Piutang' : 'Setoran ke Akun Utama'}
                         </Typography>
+
                     </View>
 
                     <View className="space-y-6">
@@ -1002,9 +1030,22 @@ export default function BengkelScreen() {
                                 keyboardType="numeric"
                                 value={expenseAmount}
                                 onChangeText={(val) => setExpenseAmount(formatNumber(val))}
-                                className={`bg-gray-50 p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} border border-gray-100`}
+                                className={`bg-gray-50 p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-gray-100`}
                             />
                         </View>
+
+                        {expenseMode === 'PIUTANG' && (
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Nama Penerima/Debitur</Typography>
+                                <TextInput
+                                    placeholder="Contoh: Andi, Staff, dll..."
+                                    value={debiturName}
+                                    onChangeText={setDebiturName}
+                                    className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
+                                />
+                            </View>
+                        )}
+
 
                         <View>
                             <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
@@ -1018,28 +1059,32 @@ export default function BengkelScreen() {
 
                         {expenseMode === 'SETORAN' && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Penyetoran</Typography>
-                                <View className="flex-row space-x-3">
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
+                                <View className="flex-row flex-wrap -m-1">
                                     {[
-                                        { id: 'TUNAI', label: 'Cash (Akun Utama)' },
-                                        { id: 'TRANSFER', label: 'Bank (BCA Utama)' }
+                                        { id: 'KAS_UTAMA', label: 'Cash Utama' },
+                                        { id: 'BANK_UTAMA', label: 'Bank Utama' },
+                                        { id: 'KAS_UNIT_MOBIL', label: 'Unit Mobil' },
+                                        { id: 'KAS_UNIT_JASA_ANGKUT', label: 'Jasa Angkut' }
                                     ].map((opt) => (
-                                        <Pressable
-                                            key={opt.id}
-                                            onPress={() => setExpensePaymentMethod(opt.id as any)}
-                                            className={`flex-1 p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
-                                                ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                : 'bg-white border-gray-100'
-                                                }`}
-                                        >
-                                            <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
-                                                {opt.id === 'TUNAI' ? 'SETOR CASH' : 'SETOR BANK'}
-                                            </Typography>
-                                        </Pressable>
+                                        <View key={opt.id} className="w-1/2 p-1">
+                                            <Pressable
+                                                onPress={() => setExpensePaymentMethod(opt.id)}
+                                                className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
+                                                    ? 'bg-blue-600 border-blue-600 shadow-sm'
+                                                    : 'bg-white border-gray-100'
+                                                    }`}
+                                            >
+                                                <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
+                                                    {opt.label}
+                                                </Typography>
+                                            </Pressable>
+                                        </View>
                                     ))}
                                 </View>
                             </View>
                         )}
+
 
                         {expenseMode === 'MASUK' && (
                             <View className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 border-dashed">
@@ -1086,21 +1131,36 @@ export default function BengkelScreen() {
                                             nominal: parseNumber(expenseAmount),
                                             tanggal: new Date().toISOString().split('T')[0],
                                             keterangan: expenseNote
+                                        });                                     } else if (expenseMode === 'PIUTANG') {
+                                        // CREATE PIUTANG (Money out from Unit)
+                                        await createPiutangMutation.mutateAsync({
+                                            tanggal: new Date().toISOString().split('T')[0],
+                                            sumber: 'BENGKEL',
+                                            nama_debitur: debiturName,
+                                            nominal_piutang: parseNumber(expenseAmount),
+                                            metode_pembayaran: 'TUNAI',
+                                            catatan: expenseNote || `Pemberian kasbon/piutang dari Unit Bengkel`,
+                                            payments: [{
+                                                metode: 'TUNAI',
+                                                nominal: parseNumber(expenseAmount),
+                                                catatan: 'Disbursement from Unit Cash'
+                                            }]
                                         });
                                     } else {
-                                        // SETORAN (Transfer from Unit to Main)
-                                        const keAccount = expensePaymentMethod === 'TUNAI' ? 'KAS_UTAMA' : 'BANK_UTAMA';
+                                        // SETORAN / MUTASI (Transfer from Unit to Main or other Units)
                                         await transferMutation.mutateAsync({
                                             dari: 'KAS_UNIT_BENGKEL',
-                                            ke: keAccount as any,
+                                            ke: expensePaymentMethod as any,
                                             nominal: parseNumber(expenseAmount),
                                             tanggal: new Date().toISOString().split('T')[0],
                                             keterangan: expenseNote
                                         });
                                     }
 
+
                                     setExpenseAmount('');
                                     setExpenseNote('');
+                                    setDebiturName('');
                                     setIsRecordingExpense(false);
                                     handleCloseWallet();
 
@@ -1111,7 +1171,9 @@ export default function BengkelScreen() {
                                             ? 'Biaya operasional bengkel berhasil dicatat'
                                             : expenseMode === 'MASUK'
                                                 ? 'Dana dari akun utama berhasil diterima'
-                                                : 'Setoran unit ke akun pusat berhasil dicatat',
+                                                : expenseMode === 'PIUTANG'
+                                                    ? 'Pemberian kasbon/piutang unit berhasil dicatat'
+                                                    : 'Setoran unit ke akun pusat berhasil dicatat',
                                         variant: 'success',
                                         type: 'alert'
                                     });
@@ -1119,8 +1181,9 @@ export default function BengkelScreen() {
                                     Alert.alert('Gagal', e?.response?.data?.detail || 'Gagal mencatat transaksi');
                                 }
                             }}
-                            className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
+                            className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
                         />
+
                     </View>
                 </View>
             )}

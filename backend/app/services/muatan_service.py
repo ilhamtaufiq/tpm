@@ -639,7 +639,7 @@ class MuatanService:
                  tanggal=muatan.tanggal_bayar,
                  tipe=KasBankType.MASUK,
                  nominal=amount_to_pay,
-                 sumber=KasBankSource.PIUTANG,
+                 sumber=KasBankSource.JASA_ANGKUT,
                  metode_bayar=metode_bayar,
                  referensi_id=payment.id,
                  nomor_referensi=piutang.nomor_piutang,

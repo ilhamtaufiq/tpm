@@ -51,7 +51,8 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 import { PaymentModal } from '../../components/PaymentModal';
-import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang } from '../../hooks/useKeuangan';
+
 import { formatNumber, parseNumber } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
 
@@ -72,8 +73,11 @@ export default function JasaAngkutScreen() {
     const [isRecordingExpense, setIsRecordingExpense] = useState(false);
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseNote, setExpenseNote] = useState('');
-    const [expensePaymentMethod, setExpensePaymentMethod] = useState<'TUNAI' | 'TRANSFER'>('TUNAI');
-    const [expenseMode, setExpenseMode] = useState<'KELUAR' | 'MASUK' | 'SETORAN'>('KELUAR');
+    const [expensePaymentMethod, setExpensePaymentMethod] = useState<string>('KAS_UTAMA');
+
+    const [expenseMode, setExpenseMode] = useState<'KELUAR' | 'MASUK' | 'SETORAN' | 'PIUTANG'>('KELUAR');
+    const [debiturName, setDebiturName] = useState('');
+
 
     // Filters
     const [dateRange, setDateRange] = useState({
@@ -116,9 +120,11 @@ export default function JasaAngkutScreen() {
         tanggal_sampai: dateRange.sampai
     });
 
+    const createPiutangMutation = useCreatePiutang();
     const createExpenseMutation = useCreatePengeluaran();
     const createTransactionMutation = useCreateTransaction();
     const transferMutation = useTransfer();
+
 
     // Payment Filter Logic (Reactive)
     const stats = useMemo(() => {
@@ -514,7 +520,9 @@ export default function JasaAngkutScreen() {
         setIsRecordingExpense(false);
         setExpenseAmount('');
         setExpenseNote('');
+        setDebiturName('');
     };
+
 
     const walletSheetRef = useRef<BottomSheet>(null);
     const walletSnapPoints = useMemo(() => ['85%', '95%'], []);
@@ -663,7 +671,8 @@ export default function JasaAngkutScreen() {
                                     setExpenseMode('SETORAN');
                                     setIsRecordingExpense(true);
                                     setExpenseNote('Setoran Tunai ke Akun Utama');
-                                    setExpensePaymentMethod('TUNAI');
+                                    setExpensePaymentMethod('KAS_UTAMA');
+
                                 }}
                                 className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
                             >
@@ -673,7 +682,25 @@ export default function JasaAngkutScreen() {
                                 <Typography weight="bold" className="text-blue-700 text-[8px] uppercase tracking-wider">Setoran Unit</Typography>
                                 <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">SETOR KE PUSAT</Typography>
                             </Pressable>
+
+                            <Pressable
+                                onPress={() => {
+                                    setExpenseMode('PIUTANG');
+                                    setIsRecordingExpense(true);
+                                    setExpenseNote('');
+                                    setDebiturName('');
+                                    setExpensePaymentMethod('TUNAI');
+                                }}
+                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
+                            >
+                                <View className="w-8 h-8 bg-amber-50 rounded-xl items-center justify-center mb-2">
+                                    <CircleDollarSign size={16} color="#D97706" />
+                                </View>
+                                <Typography weight="bold" className="text-amber-700 text-[8px] uppercase tracking-wider">Kasbon/Piutang</Typography>
+                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">UANG KELUAR</Typography>
+                            </Pressable>
                         </View>
+
                     </View>
                 </View>
             )}
@@ -694,8 +721,8 @@ export default function JasaAngkutScreen() {
                                 <ChevronLeft size={18} color="#6B7280" />
                             </View>
                         </Pressable>
-                        <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} tracking-tight`}>
-                            {expenseMode === 'KELUAR' ? 'Catat Biaya Operasional' : expenseMode === 'MASUK' ? 'Terima Dana (Pusat)' : 'Setoran ke Akun Utama'}
+                        <Typography variant="h3" weight="bold" className={`${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} tracking-tight`}>
+                            {expenseMode === 'KELUAR' ? 'Catat Biaya Operasional' : expenseMode === 'MASUK' ? 'Terima Dana (Pusat)' : expenseMode === 'PIUTANG' ? 'Pemberian Kasbon/Piutang' : 'Setoran ke Akun Utama'}
                         </Typography>
                     </View>
 
@@ -707,9 +734,22 @@ export default function JasaAngkutScreen() {
                                 keyboardType="numeric"
                                 value={expenseAmount}
                                 onChangeText={(val) => setExpenseAmount(formatNumber(val))}
-                                className={`bg-gray-50 p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : 'text-blue-600'} border border-gray-100`}
+                                className={`bg-gray-50 p-5 rounded-3xl text-2xl font-bold ${expenseMode === 'KELUAR' ? 'text-rose-600' : expenseMode === 'MASUK' ? 'text-emerald-600' : expenseMode === 'PIUTANG' ? 'text-amber-600' : 'text-blue-600'} border border-gray-100`}
                             />
                         </View>
+
+                        {expenseMode === 'PIUTANG' && (
+                            <View>
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Nama Penerima/Debitur</Typography>
+                                <TextInput
+                                    placeholder="Contoh: Andi, Staff, dll..."
+                                    value={debiturName}
+                                    onChangeText={setDebiturName}
+                                    className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
+                                />
+                            </View>
+                        )}
+
 
                         <View>
                             <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Keterangan / Keperluan</Typography>
@@ -723,28 +763,32 @@ export default function JasaAngkutScreen() {
 
                         {expenseMode === 'SETORAN' && (
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Penyetoran</Typography>
-                                <View className="flex-row space-x-3">
+                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Tujuan Transfer / Mutasi</Typography>
+                                <View className="flex-row flex-wrap -m-1">
                                     {[
-                                        { id: 'TUNAI', label: 'Cash (Akun Utama)' },
-                                        { id: 'TRANSFER', label: 'Bank (BCA Utama)' }
+                                        { id: 'KAS_UTAMA', label: 'Cash Utama' },
+                                        { id: 'BANK_UTAMA', label: 'Bank Utama' },
+                                        { id: 'KAS_UNIT_MOBIL', label: 'Unit Mobil' },
+                                        { id: 'KAS_UNIT_BENGKEL', label: 'Unit Bengkel' }
                                     ].map((opt) => (
-                                        <Pressable
-                                            key={opt.id}
-                                            onPress={() => setExpensePaymentMethod(opt.id as any)}
-                                            className={`flex-1 p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
-                                                ? 'bg-blue-600 border-blue-600 shadow-sm'
-                                                : 'bg-white border-gray-100'
-                                                }`}
-                                        >
-                                            <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
-                                                {opt.id === 'TUNAI' ? 'SETOR CASH' : 'SETOR BANK'}
-                                            </Typography>
-                                        </Pressable>
+                                        <View key={opt.id} className="w-1/2 p-1">
+                                            <Pressable
+                                                onPress={() => setExpensePaymentMethod(opt.id)}
+                                                className={`p-4 rounded-2xl border items-center justify-center ${expensePaymentMethod === opt.id
+                                                    ? 'bg-blue-600 border-blue-600 shadow-sm'
+                                                    : 'bg-white border-gray-100'
+                                                    }`}
+                                            >
+                                                <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${expensePaymentMethod === opt.id ? 'text-white' : 'text-textGray'}`}>
+                                                    {opt.label}
+                                                </Typography>
+                                            </Pressable>
+                                        </View>
                                     ))}
                                 </View>
                             </View>
                         )}
+
 
                         <Button
                             title={
@@ -777,8 +821,22 @@ export default function JasaAngkutScreen() {
                                             tanggal: new Date().toISOString().split('T')[0],
                                             keterangan: expenseNote
                                         });
+                                    } else if (expenseMode === 'PIUTANG') {
+                                        await createPiutangMutation.mutateAsync({
+                                            tanggal: new Date().toISOString().split('T')[0],
+                                            sumber: 'JASA_ANGKUT',
+                                            nama_debitur: debiturName,
+                                            nominal_piutang: parseNumber(expenseAmount),
+                                            metode_pembayaran: 'TUNAI',
+                                            catatan: expenseNote || `Pemberian kasbon/piutang dari Unit Jasa Angkut`,
+                                            payments: [{
+                                                metode: 'TUNAI',
+                                                nominal: parseNumber(expenseAmount),
+                                                catatan: 'Disbursement from Unit Cash'
+                                            }]
+                                        });
                                     } else {
-                                        const keAccount = expensePaymentMethod === 'TUNAI' ? 'KAS_UTAMA' : 'BANK_UTAMA';
+                                        const keAccount = expensePaymentMethod;
                                         await transferMutation.mutateAsync({
                                             dari: 'KAS_UNIT_JASA_ANGKUT',
                                             ke: keAccount as any,
@@ -788,8 +846,10 @@ export default function JasaAngkutScreen() {
                                         });
                                     }
 
+
                                     setExpenseAmount('');
                                     setExpenseNote('');
+                                    setDebiturName('');
                                     setIsRecordingExpense(false);
                                     handleCloseWallet();
 
@@ -799,16 +859,20 @@ export default function JasaAngkutScreen() {
                                         message: expenseMode === 'KELUAR'
                                             ? 'Biaya operasional jasa angkut berhasil dicatat'
                                             : expenseMode === 'MASUK'
-                                                ? 'Dana dari akun utama berhasil diterima'
-                                                : 'Setoran unit ke akun pusat berhasil dicatat',
+                                                ? 'Dana berhasil diterima dari akun utama'
+                                                : expenseMode === 'PIUTANG'
+                                                    ? 'Pemberian kasbon/piutang unit berhasil dicatat'
+                                                    : 'Setoran ke akun utama berhasil dicatat',
                                         variant: 'success',
                                         type: 'alert'
                                     });
+                                    refetch();
+                                    refetchSummary();
                                 } catch (e: any) {
-                                    Alert.alert('Gagal', e?.response?.data?.detail || 'Gagal mencatat transaksi');
+                                    Alert.alert('Gagal', getErrorMessage(e, 'Gagal mencatat transaksi'));
                                 }
                             }}
-                            className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
+                            className={`h-16 rounded-[28px] mt-2 ${expenseMode === 'KELUAR' ? 'bg-rose-600 shadow-rose-600/30' : expenseMode === 'MASUK' ? 'bg-emerald-600 shadow-emerald-600/30' : expenseMode === 'PIUTANG' ? 'bg-amber-600 shadow-amber-600/30' : 'bg-blue-600 shadow-blue-600/30'} shadow-xl`}
                         />
                     </View>
                 </View>

@@ -93,31 +93,71 @@ class PiutangService:
             for p_detail in data.payments:
                 if p_detail.nominal <= 0:
                     continue
+                # Map PiutangSource to unit-specific KasBankSource for account mapping
+                from app.utils.constants import KasBankSource
+                source_mapping = {
+                    PiutangSource.BENGKEL: KasBankSource.BENGKEL,
+                    PiutangSource.JASA_ANGKUT: KasBankSource.JASA_ANGKUT,
+                    PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
+                    PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
+                }
+                unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+
+                # Automatic label based on unit
+                unit_label = {
+                    PiutangSource.BENGKEL: "Bengkel",
+                    PiutangSource.JASA_ANGKUT: "Jasa Angkut",
+                    PiutangSource.JUAL_BELI_MOBIL: "Mobil",
+                    PiutangSource.KASBON_KARYAWAN: "Kasbon",
+                }.get(piutang.sumber, "Piutang")
+
                 create_kas_entry(
                     db=self.db,
                     tanggal=data.tanggal,
                     tipe=KasBankType.KELUAR,
                     nominal=p_detail.nominal,
-                    sumber=KasBankSource.PIUTANG,
+                    sumber=unit_source,
                     metode_bayar=p_detail.metode,
                     referensi_id=piutang.id,
                     nomor_referensi=piutang.nomor_piutang,
-                    keterangan=f"Pemberian Piutang/Pinjaman kepada {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                    keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({p_detail.metode.upper()})",
                     user_id=user_id,
                 )
+
+
         elif data.metode_pembayaran:
+            # Map PiutangSource to unit-specific KasBankSource for account mapping
+            from app.utils.constants import KasBankSource
+            source_mapping = {
+                PiutangSource.BENGKEL: KasBankSource.BENGKEL,
+                PiutangSource.JASA_ANGKUT: KasBankSource.JASA_ANGKUT,
+                PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
+                PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
+            }
+            unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+            
+            # Automatic label based on unit
+            unit_label = {
+                PiutangSource.BENGKEL: "Bengkel",
+                PiutangSource.JASA_ANGKUT: "Jasa Angkut",
+                PiutangSource.JUAL_BELI_MOBIL: "Mobil",
+                PiutangSource.KASBON_KARYAWAN: "Kasbon",
+            }.get(piutang.sumber, "Piutang")
+
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
                 tipe=KasBankType.KELUAR,
                 nominal=data.nominal_piutang,
-                sumber=KasBankSource.PIUTANG,
+                sumber=unit_source,
                 metode_bayar=data.metode_pembayaran,
                 referensi_id=piutang.id,
                 nomor_referensi=piutang.nomor_piutang,
-                keterangan=f"Pemberian Piutang/Pinjaman kepada {piutang.nama_debitur} ({data.metode_pembayaran.upper()})",
+                keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({data.metode_pembayaran.upper()})",
                 user_id=user_id,
             )
+
+
 
         return piutang
 
@@ -371,19 +411,43 @@ class PiutangService:
             # Update piutang totals
             piutang.process_payment(p_detail.nominal)
 
+            # POLICY: Map PiutangSource to unit-specific KasBankSource. 
+            # This ensures that CASH (Tunai) stays in the source unit drawer (KAS_UNIT_...).
+            # Note: TRANFER (Transfer) will still flow to the Main Bank account (Akun Utama) 
+            # as per general Kas/Bank mapping logic in get_kas_jenis.
+            from app.utils.constants import KasBankSource
+
+            source_mapping = {
+                PiutangSource.BENGKEL: KasBankSource.BENGKEL,
+                PiutangSource.JASA_ANGKUT: KasBankSource.JASA_ANGKUT,
+                PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
+                PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
+            }
+            unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+
+            # Automatic label based on unit
+            unit_label = {
+                PiutangSource.BENGKEL: "Bengkel",
+                PiutangSource.JASA_ANGKUT: "Jasa Angkut",
+                PiutangSource.JUAL_BELI_MOBIL: "Mobil",
+                PiutangSource.KASBON_KARYAWAN: "Kasbon",
+            }.get(piutang.sumber, "Piutang")
+
             # Record to KasBank (Money In)
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
                 tipe=KasBankType.MASUK,
                 nominal=p_detail.nominal,
-                sumber=KasBankSource.PIUTANG,
+                sumber=unit_source,
                 metode_bayar=p_detail.metode,
                 referensi_id=pembayaran.id,
                 nomor_referensi=piutang.nomor_piutang,
-                keterangan=f"Pembayaran piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                keterangan=f"[{unit_label}] Pelunasan piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
                 user_id=user_id,
             )
+
+
 
         # Update source transaction status
         self._update_source_transaction(piutang, total_payment_nominal, data.tanggal)

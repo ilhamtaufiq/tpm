@@ -38,9 +38,12 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
     except (ValueError, TypeError):
         method = PaymentMethod.TUNAI
 
-    # Transfer always goes to Bank Utama (BCA)
+    # POLICY: Unit-specific isolation. 
+    # - CASH (Tunai) stays in the unit-specific drawer (KAS_UNIT_...).
+    # - TRANSFER flows directly to the Main Bank account (Akun Utama).
     if method == PaymentMethod.TRANSFER:
         return KasBankJenis.BANK_BCA
+
 
     # Cash mapping based on business unit
     if sumber == KasBankSource.BENGKEL:

@@ -526,9 +526,10 @@ class TransaksiBengkelService:
             if pembayaran_ids:
                 self.db.query(KasBank).filter(
                     KasBank.referensi_id.in_(pembayaran_ids),
-                    KasBank.sumber == KasBankSource.PIUTANG,
+                    or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL),
                     KasBank.nomor_referensi == piutang.nomor_piutang
                 ).delete(synchronize_session=False)
+
             self.db.delete(piutang)
 
         self.db.query(MobilPartService).filter(
@@ -1202,8 +1203,9 @@ class TransaksiBengkelService:
             if pembayaran_ids:
                 self.db.query(KasBank).filter(
                     KasBank.referensi_id.in_(pembayaran_ids),
-                    KasBank.sumber == KasBankSource.PIUTANG
+                    or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL)
                 ).delete(synchronize_session=False)
+
             
             # Additional check for payments by nomor_referensi
             self.db.query(KasBank).filter(
