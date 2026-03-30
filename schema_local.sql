@@ -1,0 +1,914 @@
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `absensi`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `absensi` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `karyawan_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `status` enum('HADIR','IZIN','SAKIT','ALPHA','CUTI','SETENGAH_HARI') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'HADIR',
+  `jam_masuk` time DEFAULT NULL,
+  `jam_keluar` time DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_absensi_karyawan_tanggal` (`karyawan_id`,`tanggal`),
+  KEY `ix_absensi_karyawan_id` (`karyawan_id`),
+  KEY `ix_absensi_tanggal` (`tanggal`),
+  CONSTRAINT `absensi_ibfk_1` FOREIGN KEY (`karyawan_id`) REFERENCES `karyawan` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `alembic_version`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `alembic_version` (
+  `version_num` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`version_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `armada_jasa_angkut`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `armada_jasa_angkut` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nopol` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jenis` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_armada_jasa_angkut_nopol` (`nopol`),
+  KEY `nama` (`nama`),
+  KEY `ix_armada_jasa_angkut_nama` (`nama`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `aset`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `aset` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kategori` enum('KENDARAAN','PERALATAN','BANGUNAN','TANAH','ELECTRONIC','LAINNYA') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal_beli` date NOT NULL,
+  `harga_beli` decimal(15,2) NOT NULL,
+  `nilai_residu` decimal(15,2) NOT NULL,
+  `umur_ekonomis` int NOT NULL,
+  `status` enum('AKTIF','RUSAK','DIJUAL','HILANG') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lokasi` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_aset_kode` (`kode`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_aset_nama` (`nama`),
+  CONSTRAINT `aset_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `customer_vehicles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `customer_vehicles` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `customer_id` int NOT NULL,
+  `plat_nomor` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jenis_unit` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `ix_customer_vehicles_plat_nomor` (`plat_nomor`),
+  CONSTRAINT `customer_vehicles_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `customers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `customers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipe` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alamat` text COLLATE utf8mb4_unicode_ci,
+  `kota` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `telepon` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `npwp` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_customers_kode` (`kode`),
+  KEY `ix_customers_nama` (`nama`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `detail_pembelian_spare_parts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `detail_pembelian_spare_parts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `pembelian_id` int NOT NULL,
+  `spare_part_id` int NOT NULL,
+  `qty` int NOT NULL,
+  `harga_satuan` decimal(15,2) NOT NULL,
+  `subtotal` decimal(15,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pembelian_id` (`pembelian_id`),
+  KEY `spare_part_id` (`spare_part_id`),
+  CONSTRAINT `detail_pembelian_spare_parts_ibfk_1` FOREIGN KEY (`pembelian_id`) REFERENCES `pembelian_spare_parts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `detail_pembelian_spare_parts_ibfk_2` FOREIGN KEY (`spare_part_id`) REFERENCES `spare_parts` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `detail_transaksi_services`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `detail_transaksi_services` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `transaksi_id` int NOT NULL,
+  `nama_jasa` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deskripsi` text COLLATE utf8mb4_unicode_ci,
+  `harga` decimal(15,2) NOT NULL,
+  `qty` int NOT NULL,
+  `subtotal` decimal(15,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `transaksi_id` (`transaksi_id`),
+  CONSTRAINT `detail_transaksi_services_ibfk_1` FOREIGN KEY (`transaksi_id`) REFERENCES `transaksi_penjualan_bengkel` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `detail_transaksi_spare_parts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `detail_transaksi_spare_parts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `transaksi_id` int NOT NULL,
+  `spare_part_id` int NOT NULL,
+  `qty` int NOT NULL,
+  `harga_beli` decimal(15,2) NOT NULL,
+  `harga_jual` decimal(15,2) NOT NULL,
+  `subtotal` decimal(15,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `spare_part_id` (`spare_part_id`),
+  KEY `transaksi_id` (`transaksi_id`),
+  CONSTRAINT `detail_transaksi_spare_parts_ibfk_1` FOREIGN KEY (`spare_part_id`) REFERENCES `spare_parts` (`id`),
+  CONSTRAINT `detail_transaksi_spare_parts_ibfk_2` FOREIGN KEY (`transaksi_id`) REFERENCES `transaksi_penjualan_bengkel` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `hutang_usaha`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hutang_usaha` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_hutang` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `sumber` enum('PEMBELIAN_PART','PEMBELIAN_MOBIL','LAINNYA') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `referensi_id` int DEFAULT NULL,
+  `nomor_referensi` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `supplier_id` int DEFAULT NULL,
+  `nama_kreditur` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telepon_kreditur` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alamat_kreditur` text COLLATE utf8mb4_unicode_ci,
+  `nominal_hutang` decimal(15,2) NOT NULL,
+  `total_dibayar` decimal(15,2) NOT NULL,
+  `sisa_hutang` decimal(15,2) NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL,
+  `tanggal_lunas` date DEFAULT NULL,
+  `status` enum('BELUM_LUNAS','LUNAS','SEBAGIAN','BATAL') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'BELUM_LUNAS',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_hutang_usaha_nomor_hutang` (`nomor_hutang`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_hutang_usaha_supplier_id` (`supplier_id`),
+  KEY `ix_hutang_usaha_tanggal` (`tanggal`),
+  CONSTRAINT `hutang_usaha_ibfk_1` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`),
+  CONSTRAINT `hutang_usaha_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `investor_disbursement_detail`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `investor_disbursement_detail` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `transaksi_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `transaksi_id` (`transaksi_id`),
+  CONSTRAINT `investor_disbursement_detail_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `investor_disbursement_detail_ibfk_2` FOREIGN KEY (`transaksi_id`) REFERENCES `transaksi_penjualan_mobil` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `jasa_angkut_biaya_lainnya`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `jasa_angkut_biaya_lainnya` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `muatan_id` int DEFAULT NULL,
+  `kategori` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deskripsi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `armada_id` int DEFAULT NULL,
+  `tanggal` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `muatan_id` (`muatan_id`),
+  KEY `armada_id` (`armada_id`),
+  KEY `ix_jasa_angkut_biaya_lainnya_tanggal` (`tanggal`),
+  CONSTRAINT `jasa_angkut_biaya_lainnya_ibfk_1` FOREIGN KEY (`muatan_id`) REFERENCES `muatan_jasa_angkut` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `jasa_angkut_biaya_lainnya_ibfk_2` FOREIGN KEY (`armada_id`) REFERENCES `armada_jasa_angkut` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `jasa_angkut_part_service`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `jasa_angkut_part_service` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `muatan_id` int DEFAULT NULL,
+  `tanggal` date NOT NULL,
+  `tipe` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deskripsi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `qty` int NOT NULL,
+  `harga_satuan` decimal(15,2) NOT NULL,
+  `total` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `armada_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `muatan_id` (`muatan_id`),
+  KEY `armada_id` (`armada_id`),
+  CONSTRAINT `jasa_angkut_part_service_ibfk_1` FOREIGN KEY (`muatan_id`) REFERENCES `muatan_jasa_angkut` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `jasa_angkut_part_service_ibfk_2` FOREIGN KEY (`armada_id`) REFERENCES `armada_jasa_angkut` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `jasa_servis`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `jasa_servis` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nama` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kategori` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `harga` decimal(15,2) NOT NULL,
+  `deskripsi` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ix_jasa_servis_nama` (`nama`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `karyawan`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `karyawan` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nik` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `jabatan` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alamat` text COLLATE utf8mb4_unicode_ci,
+  `telepon` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tanggal_lahir` date DEFAULT NULL,
+  `tanggal_bergabung` date NOT NULL,
+  `tanggal_keluar` date DEFAULT NULL,
+  `gaji_pokok` decimal(15,2) NOT NULL,
+  `tunjangan` decimal(15,2) NOT NULL,
+  `status` enum('AKTIF','TIDAK_AKTIF','RESIGN') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_karyawan_kode` (`kode`),
+  KEY `ix_karyawan_nama` (`nama`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `kas_bank`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `kas_bank` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `jenis` enum('CASH','BANK_BCA','BANK_MANDIRI','BANK_BRI','BANK_LAINNYA','KAS_UNIT_BENGKEL','KAS_UNIT_JASA_ANGKUT','KAS_UNIT_MOBIL','KAS_UTAMA','BANK_UTAMA') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'CASH',
+  `tipe` enum('MASUK','KELUAR') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `sumber` enum('BENGKEL','JUAL_BELI_MOBIL','JASA_ANGKUT','PEMBELIAN_PART','PEMBELIAN_MOBIL','PENGELUARAN','GAJI','KASBON','PIUTANG','HUTANG','MODAL','PRIVE','LAINNYA') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `referensi_id` int DEFAULT NULL,
+  `nomor_referensi` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `saldo_sebelum` decimal(15,2) NOT NULL,
+  `saldo_sesudah` decimal(15,2) NOT NULL,
+  `keterangan` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci DEFAULT 'TUNAI',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_kas_bank_nomor_transaksi` (`nomor_transaksi`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_kas_bank_jenis` (`jenis`),
+  KEY `ix_kas_bank_tanggal` (`tanggal`),
+  KEY `ix_kas_bank_tipe` (`tipe`),
+  CONSTRAINT `kas_bank_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `kasbon_karyawan`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `kasbon_karyawan` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_kasbon` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `karyawan_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `keterangan` text COLLATE utf8mb4_unicode_ci,
+  `status` enum('LUNAS','BELUM_LUNAS','CICILAN') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal_lunas` date DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_kasbon_karyawan_nomor_kasbon` (`nomor_kasbon`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_kasbon_karyawan_karyawan_id` (`karyawan_id`),
+  KEY `ix_kasbon_karyawan_tanggal` (`tanggal`),
+  CONSTRAINT `kasbon_karyawan_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `kasbon_karyawan_ibfk_2` FOREIGN KEY (`karyawan_id`) REFERENCES `karyawan` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `mobil`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `mobil` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `merek` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `model` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tahun` int NOT NULL,
+  `warna` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nomor_plat` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nomor_rangka` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nomor_mesin` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `transmisi` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bahan_bakar` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `kilometer` int DEFAULT NULL,
+  `harga_beli` decimal(15,2) NOT NULL,
+  `harga_jual` decimal(15,2) DEFAULT NULL,
+  `tipe_kepemilikan` enum('TPM','INVESTOR') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama_investor` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `persentase_investor` decimal(5,2) NOT NULL,
+  `status` enum('TERSEDIA','TERJUAL','DALAM_PERBAIKAN','BOOKING') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal_masuk` date NOT NULL,
+  `tanggal_terjual` date DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `nominal_investor` decimal(15,2) NOT NULL,
+  `status_bayar_beli` enum('LUNAS','BELUM_LUNAS','CICILAN') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LUNAS',
+  `metode_bayar_beli` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `dp_beli` decimal(15,2) NOT NULL DEFAULT '0.00',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_mobil_kode` (`kode`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_mobil_merek` (`merek`),
+  KEY `ix_mobil_nomor_plat` (`nomor_plat`),
+  CONSTRAINT `mobil_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `mobil_biaya_lainnya`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `mobil_biaya_lainnya` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `mobil_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `kategori` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deskripsi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mobil_id` (`mobil_id`),
+  CONSTRAINT `mobil_biaya_lainnya_ibfk_1` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `mobil_media`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `mobil_media` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `mobil_id` int NOT NULL,
+  `file_path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_primary` tinyint(1) NOT NULL,
+  `urutan` int NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mobil_id` (`mobil_id`),
+  CONSTRAINT `mobil_media_ibfk_1` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `mobil_part_service`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `mobil_part_service` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `mobil_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `tipe` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deskripsi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `qty` int NOT NULL,
+  `harga_satuan` decimal(15,2) NOT NULL,
+  `total` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mobil_id` (`mobil_id`),
+  CONSTRAINT `mobil_part_service_ibfk_1` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `muatan_jasa_angkut`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `muatan_jasa_angkut` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `supir_id` int DEFAULT NULL,
+  `asal` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tujuan` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jenis_muatan` text COLLATE utf8mb4_unicode_ci,
+  `berat_muatan` decimal(10,2) DEFAULT NULL,
+  `pendapatan_kotor` decimal(15,2) NOT NULL,
+  `biaya_bbm` decimal(15,2) NOT NULL,
+  `biaya_tol` decimal(15,2) NOT NULL,
+  `biaya_makan` decimal(15,2) NOT NULL,
+  `biaya_parkir` decimal(15,2) NOT NULL,
+  `biaya_lainnya` decimal(15,2) NOT NULL,
+  `total_biaya` decimal(15,2) NOT NULL,
+  `laba_kotor` decimal(15,2) NOT NULL,
+  `persentase_tpm` decimal(5,2) NOT NULL,
+  `laba_tpm` decimal(15,2) NOT NULL,
+  `laba_supir` decimal(15,2) NOT NULL,
+  `status` enum('PROSES','SELESAI') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PROSES',
+  `status_bayar` enum('LUNAS','BELUM_LUNAS','CICILAN') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal_bayar` date DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `supir_nama` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nopol` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ritase` int NOT NULL,
+  `harga_beli` decimal(15,2) NOT NULL,
+  `harga_jual` decimal(15,2) NOT NULL,
+  `info_kendaraan` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `armada_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_muatan_jasa_angkut_nomor_transaksi` (`nomor_transaksi`),
+  KEY `created_by` (`created_by`),
+  KEY `supir_id` (`supir_id`),
+  KEY `ix_muatan_jasa_angkut_tanggal` (`tanggal`),
+  KEY `fk_muatan_armada` (`armada_id`),
+  KEY `ix_muatan_jasa_angkut_status` (`status`),
+  CONSTRAINT `fk_muatan_armada` FOREIGN KEY (`armada_id`) REFERENCES `armada_jasa_angkut` (`id`),
+  CONSTRAINT `muatan_jasa_angkut_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `muatan_jasa_angkut_ibfk_2` FOREIGN KEY (`supir_id`) REFERENCES `supir` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pembayaran_hutang`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pembayaran_hutang` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `hutang_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_pembayaran_hutang_hutang_id` (`hutang_id`),
+  KEY `ix_pembayaran_hutang_tanggal` (`tanggal`),
+  CONSTRAINT `pembayaran_hutang_ibfk_1` FOREIGN KEY (`hutang_id`) REFERENCES `hutang_usaha` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `pembayaran_hutang_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pembayaran_piutang`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pembayaran_piutang` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `piutang_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_pembayaran_piutang_piutang_id` (`piutang_id`),
+  KEY `ix_pembayaran_piutang_tanggal` (`tanggal`),
+  CONSTRAINT `pembayaran_piutang_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `pembayaran_piutang_ibfk_2` FOREIGN KEY (`piutang_id`) REFERENCES `piutang_usaha` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pembelian_spare_parts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pembelian_spare_parts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `supplier_id` int NOT NULL,
+  `nomor_faktur` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `total` decimal(15,2) NOT NULL,
+  `diskon` decimal(15,2) NOT NULL,
+  `grand_total` decimal(15,2) NOT NULL,
+  `status_bayar` enum('LUNAS','BELUM_LUNAS','CICILAN') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tanggal_bayar` date DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_pembelian_spare_parts_nomor_transaksi` (`nomor_transaksi`),
+  KEY `created_by` (`created_by`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `ix_pembelian_spare_parts_tanggal` (`tanggal`),
+  CONSTRAINT `pembelian_spare_parts_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `pembelian_spare_parts_ibfk_2` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pengeluaran_bengkel`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pengeluaran_bengkel` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `kategori` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'biaya_operasional',
+  `deskripsi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `bisnis_kategori` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'umum',
+  `muatan_id` int DEFAULT NULL,
+  `armada_id` int DEFAULT NULL,
+  `mobil_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_pengeluaran_bengkel_nomor_transaksi` (`nomor_transaksi`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_pengeluaran_bengkel_tanggal` (`tanggal`),
+  KEY `muatan_id` (`muatan_id`),
+  KEY `mobil_id` (`mobil_id`),
+  KEY `armada_id` (`armada_id`),
+  CONSTRAINT `pengeluaran_bengkel_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `pengeluaran_bengkel_ibfk_2` FOREIGN KEY (`muatan_id`) REFERENCES `muatan_jasa_angkut` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `pengeluaran_bengkel_ibfk_3` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `pengeluaran_bengkel_ibfk_4` FOREIGN KEY (`armada_id`) REFERENCES `armada_jasa_angkut` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `piutang_usaha`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `piutang_usaha` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_piutang` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `sumber` enum('BENGKEL','JUAL_BELI_MOBIL','JASA_ANGKUT','KASBON_KARYAWAN','LAINNYA') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `referensi_id` int DEFAULT NULL,
+  `nomor_referensi` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `customer_id` int DEFAULT NULL,
+  `nama_debitur` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telepon_debitur` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alamat_debitur` text COLLATE utf8mb4_unicode_ci,
+  `nominal_piutang` decimal(15,2) NOT NULL,
+  `total_dibayar` decimal(15,2) NOT NULL,
+  `sisa_piutang` decimal(15,2) NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL,
+  `tanggal_lunas` date DEFAULT NULL,
+  `status` enum('BELUM_LUNAS','LUNAS','SEBAGIAN','BATAL') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'BELUM_LUNAS',
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_piutang_usaha_nomor_piutang` (`nomor_piutang`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_piutang_usaha_customer_id` (`customer_id`),
+  KEY `ix_piutang_usaha_tanggal` (`tanggal`),
+  CONSTRAINT `piutang_usaha_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `piutang_usaha_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `slip_gaji`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `slip_gaji` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_slip` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `karyawan_id` int NOT NULL,
+  `periode_tahun` int NOT NULL,
+  `jumlah_hadir` decimal(5,1) NOT NULL,
+  `gaji_pokok` decimal(15,2) NOT NULL,
+  `potongan_kasbon` decimal(15,2) NOT NULL,
+  `gaji_bersih` decimal(15,2) NOT NULL,
+  `status` enum('LUNAS','BELUM_LUNAS','CICILAN') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tanggal_bayar` date DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `periode_minggu` int NOT NULL,
+  `tanggal_mulai` date NOT NULL,
+  `tanggal_akhir` date NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_slip_gaji_nomor_slip` (`nomor_slip`),
+  UNIQUE KEY `uq_slip_gaji_karyawan_periode` (`karyawan_id`,`periode_minggu`,`periode_tahun`),
+  KEY `created_by` (`created_by`),
+  KEY `ix_slip_gaji_karyawan_id` (`karyawan_id`),
+  CONSTRAINT `slip_gaji_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `slip_gaji_ibfk_2` FOREIGN KEY (`karyawan_id`) REFERENCES `karyawan` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `spare_parts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `spare_parts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kategori` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `merek` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `satuan` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stok` int NOT NULL,
+  `stok_minimum` int NOT NULL,
+  `harga_beli` decimal(15,2) NOT NULL,
+  `harga_jual` decimal(15,2) NOT NULL,
+  `lokasi_rak` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `kode_part` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gambar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_spare_parts_kode` (`kode`),
+  KEY `ix_spare_parts_nama` (`nama`),
+  KEY `ix_spare_parts_kode_part` (`kode_part`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `supir`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `supir` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nik` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alamat` text COLLATE utf8mb4_unicode_ci,
+  `telepon` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nomor_sim` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `jenis_sim` varchar(5) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tanggal_bergabung` date NOT NULL,
+  `is_active` tinyint(1) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `info_kendaraan` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nopol_kendaraan` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `armada_default_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_supir_kode` (`kode`),
+  KEY `ix_supir_nama` (`nama`),
+  KEY `fk_supir_armada` (`armada_default_id`),
+  CONSTRAINT `fk_supir_armada` FOREIGN KEY (`armada_default_id`) REFERENCES `armada_jasa_angkut` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `suppliers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `suppliers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `kode` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alamat` text COLLATE utf8mb4_unicode_ci,
+  `kota` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `telepon` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_person` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `npwp` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `deleted_at` datetime DEFAULT NULL,
+  `bank` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `rekening` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_suppliers_kode` (`kode`),
+  KEY `ix_suppliers_nama` (`nama`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `system_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `system_settings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `key` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` text COLLATE utf8mb4_unicode_ci,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_system_settings_key` (`key`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `transaksi_penjualan_bengkel`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transaksi_penjualan_bengkel` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `customer_id` int DEFAULT NULL,
+  `nama_customer` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nomor_plat` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `jenis_kendaraan` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `total_parts` decimal(15,2) NOT NULL,
+  `total_jasa` decimal(15,2) NOT NULL,
+  `subtotal` decimal(15,2) NOT NULL,
+  `diskon` decimal(15,2) NOT NULL,
+  `grand_total` decimal(15,2) NOT NULL,
+  `hpp_parts` decimal(15,2) NOT NULL,
+  `laba_kotor` decimal(15,2) NOT NULL,
+  `status_bayar` enum('LUNAS','BELUM_LUNAS','CICILAN') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LUNAS',
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `jumlah_bayar` decimal(15,2) NOT NULL,
+  `kembalian` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `status_pengerjaan` enum('ANTRE','PROSES','SELESAI','BATAL') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ANTRE',
+  `kategori` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `muatan_id` int DEFAULT NULL,
+  `mobil_id` int DEFAULT NULL,
+  `armada_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_transaksi_penjualan_bengkel_nomor_transaksi` (`nomor_transaksi`),
+  KEY `created_by` (`created_by`),
+  KEY `customer_id` (`customer_id`),
+  KEY `ix_transaksi_penjualan_bengkel_tanggal` (`tanggal`),
+  KEY `ix_transaksi_penjualan_bengkel_status_pengerjaan` (`status_pengerjaan`),
+  KEY `fk_bengkel_muatan` (`muatan_id`),
+  KEY `fk_bengkel_mobil` (`mobil_id`),
+  KEY `armada_id` (`armada_id`),
+  CONSTRAINT `fk_bengkel_mobil` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_bengkel_muatan` FOREIGN KEY (`muatan_id`) REFERENCES `muatan_jasa_angkut` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `transaksi_penjualan_bengkel_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `transaksi_penjualan_bengkel_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
+  CONSTRAINT `transaksi_penjualan_bengkel_ibfk_3` FOREIGN KEY (`armada_id`) REFERENCES `armada_jasa_angkut` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `transaksi_penjualan_mobil`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transaksi_penjualan_mobil` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nomor_transaksi` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tanggal` date NOT NULL,
+  `mobil_id` int DEFAULT NULL,
+  `customer_id` int DEFAULT NULL,
+  `nama_pembeli` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telepon_pembeli` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alamat_pembeli` text COLLATE utf8mb4_unicode_ci,
+  `harga_jual` decimal(15,2) NOT NULL,
+  `total_modal` decimal(15,2) NOT NULL,
+  `laba_kotor` decimal(15,2) NOT NULL,
+  `tipe_kepemilikan` enum('TPM','INVESTOR') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `persentase_investor` decimal(5,2) NOT NULL,
+  `laba_investor` decimal(15,2) NOT NULL,
+  `laba_tpm` decimal(15,2) NOT NULL,
+  `status_bayar` enum('LUNAS','BELUM_LUNAS','CICILAN','BATAL') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LUNAS',
+  `metode_bayar` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TUNAI',
+  `dp` decimal(15,2) NOT NULL,
+  `sisa_bayar` decimal(15,2) NOT NULL,
+  `catatan` text COLLATE utf8mb4_unicode_ci,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `status_pencairan` enum('BELUM_DICAIRKAN','SEBAGIAN','DICAIRKAN') COLLATE utf8mb4_unicode_ci DEFAULT 'BELUM_DICAIRKAN',
+  `tanggal_pencairan` date DEFAULT NULL,
+  `nominal_pencairan` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `metode_pencairan` enum('TUNAI','TRANSFER','KREDIT','DEBIT','SPLIT','INTERNAL','POTONG_GAJI','OTHER') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `catatan_pencairan` text COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_transaksi_penjualan_mobil_nomor_transaksi` (`nomor_transaksi`),
+  UNIQUE KEY `mobil_id` (`mobil_id`),
+  KEY `created_by` (`created_by`),
+  KEY `customer_id` (`customer_id`),
+  KEY `ix_transaksi_penjualan_mobil_tanggal` (`tanggal`),
+  CONSTRAINT `transaksi_penjualan_mobil_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `transaksi_penjualan_mobil_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
+  CONSTRAINT `transaksi_penjualan_mobil_ibfk_3` FOREIGN KEY (`mobil_id`) REFERENCES `mobil` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `user_cash_adjustments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_cash_adjustments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `admin_id` int NOT NULL,
+  `saldo_sebelum` decimal(15,2) NOT NULL,
+  `saldo_sesudah` decimal(15,2) NOT NULL,
+  `nominal` decimal(15,2) NOT NULL,
+  `keterangan` text COLLATE utf8mb4_unicode_ci,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ix_user_cash_adjustments_admin_id` (`admin_id`),
+  KEY `ix_user_cash_adjustments_user_id` (`user_id`),
+  CONSTRAINT `user_cash_adjustments_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `user_cash_adjustments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hashed_password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `full_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('ADMIN','MANAGER','KASIR','MEKANIK','STAFF','VIEWER','BENGKEL','JASA_ANGKUT','MOBIL') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'STAFF',
+  `is_active` tinyint(1) NOT NULL,
+  `last_login` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  `profile_picture` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hashed_pin` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `security_settings` text COLLATE utf8mb4_unicode_ci,
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cash_balance` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `reset_token` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reset_token_expires` datetime DEFAULT NULL,
+  `home_background` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `otp_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `otp_expires` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ix_users_email` (`email`),
+  UNIQUE KEY `ix_users_username` (`username`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

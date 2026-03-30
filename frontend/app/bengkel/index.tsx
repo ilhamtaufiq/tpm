@@ -1633,6 +1633,30 @@ export default function BengkelScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={dialogConfig.loading || printing}
             />
+
+            {/* Payment Modal (Settlement/Installment) */}
+            {selectedItem && (
+                <PaymentModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    onSuccess={() => {
+                        setPaymentModalVisible(false);
+                        refetch();
+                        refetchSummary();
+                        setDialogConfig({
+                            visible: true,
+                            title: 'Sukses',
+                            message: 'Pembayaran cicilan berhasil dicatat',
+                            variant: 'success',
+                            type: 'alert'
+                        });
+                        handleClosePress();
+                    }}
+                    id={selectedItem.piutang_id}
+                    initialAmount={Number(selectedItem.grand_total) - Number(selectedItem.jumlah_bayar || 0)}
+                    type="piutang"
+                />
+            )}
             {/* Wallet Modal (Unit Level) - Hybrid: Modal on web, BottomSheet on mobile */}
             {Platform.OS === 'web' ? (
                 <Modal

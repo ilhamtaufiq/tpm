@@ -3,6 +3,8 @@
 - Goal: Fix thermal printing on Android to print directly without showing print preview.
 - Goal: Implement Role-Based Access Control (RBAC) to restrict unit-specific roles (Bengkel, Jasa Angkut, Mobil) to their respective modules, while allowing Admin/Manager full access.
 - Goal: Adjust `frontend/app/finance/akun.tsx` to display transaction stats (Masuk/Keluar) per account and include all active accounts in the list.
+- Goal: Implement user-friendly `AlertDialog` for specific business logic errors like "Saldo tidak mencukupi".
+- Goal: Fix unresponsive 'Pelunasan / Bayar Cicilan' button in `frontend/app/bengkel/index.tsx` by rendering the missing `PaymentModal`.
 - Constraints/Assumptions:
   - Role 'BENGKEL' -> only see/access 'Bengkel'
   - Role 'JASA_ANGKUT' -> only see/access 'Logistik'
@@ -20,8 +22,9 @@
     - Filtered `ServiceGrid.tsx` for unit roles.
     - Filtered `Header.tsx` (search functionality) for unit roles.
     - Fixed `SparePartSelector` and `PurchaseScreen` by updating the "no data" message to "Data tidak ditemukan" and ensuring component availability in expenses.
-  - Now: Implementing direct thermal printing logic in `frontend/utils/printReceipt.ts` and refactoring `akun.tsx`.
-  - Next: Verify RBAC integration with new components.
+    - Fixed 'Pelunasan / Bayar Cicilan' button in `frontend/app/bengkel/index.tsx` by correctly rendering `PaymentModal` in the component's return statement.
+  - Now: Implementing direct thermal printing logic in `frontend/utils/printReceipt.ts` and enhancing error handling in `akun.tsx` & `mutasi.tsx`.
+  - Next: Verify RBAC integration with new components and test thermal printing.
 - Open questions (UNCONFIRMED if needed):
   - Should the "Adjustment" modal in `akun.tsx` be changed to a "Transaction Entry" modal too?
 - Working set (files/ids/commands):

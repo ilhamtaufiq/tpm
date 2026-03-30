@@ -130,9 +130,18 @@ export default function AkunKeuanganScreen() {
     const [adjustmentDate, setAdjustmentDate] = useState(new Date().toISOString().split('T')[0]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Success Alert state
-    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
+    // Alert state
+    const [alertConfig, setAlertConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        variant: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        variant: 'info'
+    });
 
     // Sheet refs
     const adjustSheetRef = useRef<BottomSheet>(null);
@@ -203,12 +212,21 @@ export default function AkunKeuanganScreen() {
             });
 
             setIsAdjustModalVisible(false);
-            setAlertMessage(`Berhasil menyesuaikan saldo ${ACCOUNT_LABELS[selectedAccount]}`);
-            setShowSuccessAlert(true);
+            setAlertConfig({
+                visible: true,
+                title: 'Berhasil',
+                message: `Berhasil menyesuaikan saldo ${ACCOUNT_LABELS[selectedAccount]}`,
+                variant: 'success'
+            });
             fetchData();
         } catch (error: any) {
             console.error('Error adjusting balance:', error);
-            Alert.alert('Error', error?.response?.data?.detail || 'Gagal menyesuaikan saldo');
+            setAlertConfig({
+                visible: true,
+                title: 'Gagal',
+                message: error?.response?.data?.detail || 'Gagal menyesuaikan saldo',
+                variant: 'error'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -637,13 +655,13 @@ export default function AkunKeuanganScreen() {
                 </BottomSheet>
             )}
 
-            {/* Success Alert */}
+            {/* Alert Dialog */}
             <AlertDialog
-                visible={showSuccessAlert}
-                title="Berhasil"
-                message={alertMessage}
-                variant="success"
-                onClose={() => setShowSuccessAlert(false)}
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                variant={alertConfig.variant}
+                onClose={() => setAlertConfig(p => ({ ...p, visible: false }))}
             />
         </View>
     );
