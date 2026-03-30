@@ -31,7 +31,10 @@ export const SparePartSelector = ({
     // Spare Part Search Query
     const { data: searchResults, isLoading } = useQuery({
         queryKey: ['search_parts', searchQuery],
-        queryFn: () => bengkelService.searchSpareParts(searchQuery),
+        queryFn: async () => {
+            const res = await bengkelService.searchSpareParts(searchQuery);
+            return Array.isArray(res) ? res : (res.data || []);
+        },
         enabled: isOpen && searchQuery.length > 0,
     });
 
@@ -172,7 +175,7 @@ export const SparePartSelector = ({
                                 ListEmptyComponent={
                                     searchQuery.length > 0 ? (
                                         <View className="items-center mt-10">
-                                            <Typography className="text-gray-500">Sparepart tidak ditemukan</Typography>
+                                            <Typography className="text-gray-500">Data tidak ditemukan</Typography>
                                         </View>
                                     ) : (
                                         <View className="items-center mt-10">

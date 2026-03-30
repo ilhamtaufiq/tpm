@@ -50,7 +50,10 @@ export default function PurchaseScreen() {
     // API Hooks
     const createPembelianMutation = useCreatePembelianParts();
     const { data: partsData, isLoading: isLoadingParts } = useSparePartsList({ search: partSearchQuery });
-    const spareParts = partsData?.data || [];
+    const spareParts = useMemo(() => 
+        partsData?.pages.flatMap((page: any) => page.data || []) || [], 
+        [partsData]
+    );
 
     const handleBack = () => {
         if (router.canGoBack()) {
@@ -613,7 +616,7 @@ export default function PurchaseScreen() {
                                     )}
                                     ListEmptyComponent={
                                         <Typography className="text-center text-gray-500 mt-4">
-                                            {partSearchQuery ? 'Barang tidak ditemukan' : 'Mulai ketik untuk mencari'}
+                                            {partSearchQuery ? 'Data tidak ditemukan' : 'Mulai ketik untuk mencari'}
                                         </Typography>
                                     }
                                 />

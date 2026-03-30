@@ -19,6 +19,7 @@
   - Done:
     - Filtered `ServiceGrid.tsx` for unit roles.
     - Filtered `Header.tsx` (search functionality) for unit roles.
+    - Fixed `SparePartSelector` and `PurchaseScreen` by updating the "no data" message to "Data tidak ditemukan" and ensuring component availability in expenses.
   - Now: Implementing direct thermal printing logic in `frontend/utils/printReceipt.ts` and refactoring `akun.tsx`.
   - Next: Verify RBAC integration with new components.
 - Open questions (UNCONFIRMED if needed):

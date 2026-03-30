@@ -30,6 +30,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { MobilSelector } from '../../../components/ui/MobilSelector';
+import { SparePartSelector } from '../../../components/ui/SparePartSelector';
 
 const CATEGORIES = [
     { label: 'Prive', value: 'PRIVE', icon: Wallet, color: '#F59E0B' },
@@ -64,6 +65,7 @@ export default function ExpensesScreen() {
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
+    const [selectedSparePart, setSelectedSparePart] = useState<any>(null);
 
     const [jumlah, setJumlah] = useState('');
     const [deskripsi, setDeskripsi] = useState('');
@@ -116,6 +118,7 @@ export default function ExpensesScreen() {
             muatan_id: selectedMuatan?.id || null,
             armada_id: selectedArmada?.id || null,
             mobil_id: selectedMobil?.id || null,
+            spare_part_id: selectedSparePart?.id || null,
             jumlah: totalAmount,
             deskripsi,
             metode_bayar: payMetode,
@@ -150,6 +153,7 @@ export default function ExpensesScreen() {
                 setSelectedMuatan(null);
                 setSelectedMobil(null);
                 setSelectedArmada(null);
+                setSelectedSparePart(null);
                 setPayMetode('');
                 setSplitPayments([
                     { metode: 'TUNAI', jumlah: '', kas_jenis: null },
@@ -169,6 +173,7 @@ export default function ExpensesScreen() {
             setSelectedMuatan(null);
             setSelectedMobil(null);
             setSelectedArmada(null);
+            setSelectedSparePart(null);
             setPayMetode('');
             setSplitPayments([
                 { metode: 'TUNAI', jumlah: '', kas_jenis: null },
@@ -284,6 +289,7 @@ export default function ExpensesScreen() {
                                                         setSelectedMuatan(null);
                                                         setSelectedMobil(null);
                                                         setSelectedArmada(null);
+                                                        setSelectedSparePart(null);
                                                     }
                                                     setKasJenis(null); // Reset when business category changes
                                                 }}
@@ -311,6 +317,17 @@ export default function ExpensesScreen() {
                                                 placeholder="Pilih Armada..."
                                                 value={selectedArmada}
                                                 onSelect={setSelectedArmada}
+                                            />
+                                        </View>
+                                    )}
+                                    
+                                    {bisnisKategori === 'bengkel' && (
+                                        <View className="bg-gray-50 p-4 rounded-3xl border border-gray-100">
+                                            <SparePartSelector
+                                                label="SPAREPART (JIKA ADA)"
+                                                placeholder="Pilih Sparepart..."
+                                                value={selectedSparePart}
+                                                onSelect={setSelectedSparePart}
                                             />
                                         </View>
                                     )}
