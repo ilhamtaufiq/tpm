@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
-from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus
+from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus, KasBankJenis
 from app.schemas.keuangan import PaymentDetail
 from app.schemas.bengkel import PengeluaranBengkelResponse
 
@@ -217,6 +217,7 @@ class MuatanCreate(BaseModel):
     status: Optional[MuatanStatus] = MuatanStatus.PROSES
     status_bayar: Optional[PaymentStatus] = PaymentStatus.BELUM_LUNAS
     metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
     payments: Optional[List[PaymentDetail]] = None
     catatan: Optional[str] = None
 
@@ -253,6 +254,7 @@ class MuatanUpdate(BaseModel):
     persentase_tpm: Optional[Decimal] = None
     status: Optional[MuatanStatus] = None
     payments: Optional[List[PaymentDetail]] = None
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 

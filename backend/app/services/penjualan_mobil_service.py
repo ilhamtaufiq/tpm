@@ -384,18 +384,19 @@ class PenjualanMobilService:
             keterangan_prefix = "Lunas" if status_bayar == PaymentStatus.LUNAS else "DP"
             if hasattr(data, 'payments') and data.payments:
                 for p in data.payments:
-                    if p.jumlah > 0:
+                    if p.nominal > 0:
                         create_kas_entry(
                             db=self.db,
                             tanggal=data.tanggal,
                             tipe=KasBankType.MASUK,
-                            nominal=p.jumlah,
+                            nominal=p.nominal,
                             sumber=KasBankSource.JUAL_BELI_MOBIL,
                             metode_bayar=p.metode,
                             referensi_id=transaksi.id,
                             nomor_referensi=transaksi.nomor_transaksi,
                             keterangan=f"{keterangan_prefix} mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat}) - {p.metode}",
                             user_id=user_id,
+                            kas_jenis=p.kas_jenis,
                         )
             else:
                 create_kas_entry(
@@ -651,7 +652,7 @@ class PenjualanMobilService:
         self,
         transaksi_id: int,
         jumlah_bayar: Decimal,
-        payments: List[tuple[PaymentMethod, Decimal]],
+        payments: List[tuple[PaymentMethod, Decimal, Optional[KasBankJenis]]],
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanMobil:
         """Process payment for transaction (supports split payments)."""
@@ -707,7 +708,7 @@ class PenjualanMobilService:
         self.db.refresh(transaksi)
 
         # Record payment to kas/bank
-        for metode, nominal in payments:
+        for metode, nominal, kas_jenis in payments:
             if nominal > 0:
                 create_kas_entry(
                     db=self.db,
@@ -720,6 +721,7 @@ class PenjualanMobilService:
                     nomor_referensi=transaksi.nomor_transaksi,
                     keterangan=f"Pembayaran cicilan mobil {transaksi.nomor_transaksi} ({metode})",
                     user_id=user_id,
+                    kas_jenis=kas_jenis,
                 )
 
         return transaksi

@@ -147,6 +147,8 @@ class PaymentItem(BaseModel):
     """Schema for split payment item."""
     metode: PaymentMethod
     jumlah: Decimal = Field(..., ge=0)
+    kas_jenis: Optional[KasBankJenis] = None
+    catatan: Optional[str] = None
 
 
 # ============================================

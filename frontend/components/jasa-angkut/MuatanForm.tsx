@@ -351,9 +351,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 pendapatan_kotor: calculations.revenue,
                 biaya_operasional: [],
                 payments: isSplitPayment ? payments.map(p => ({
-                    metode: p.metode,
-                    nominal: parseNumber(p.jumlah)
-                })).filter(p => p.nominal > 0) : [],
+                    metode: p.metode.toUpperCase(),
+                    nominal: parseNumber(p.jumlah),
+                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_JASA_ANGKUT' : undefined
+                })).filter(p => p.nominal > 0) : (formData.status_bayar === 'LUNAS' ? [{
+                    metode: formData.metode_bayar.toUpperCase(),
+                    nominal: parseNumber(formData.harga_jual),
+                    kas_jenis: formData.metode_bayar.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_JASA_ANGKUT' : undefined
+                }] : []),
                 persentase_tpm: 50
             };
 

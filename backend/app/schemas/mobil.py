@@ -4,7 +4,14 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, InvestorDisbursementStatus
+from app.utils.constants import (
+    CarStatus,
+    OwnershipType,
+    PaymentStatus,
+    PaymentMethod,
+    InvestorDisbursementStatus,
+    KasBankJenis
+)
 from app.schemas.bengkel import PengeluaranBengkelResponse
 
 # ============================================
@@ -36,6 +43,7 @@ class MobilBase(BaseModel):
 class PurchasePaymentItem(BaseModel):
     metode: PaymentMethod
     jumlah: Decimal
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 class MobilCreate(MobilBase):
@@ -99,6 +107,7 @@ class BiayaItem(BaseModel):
 class PaymentItem(BaseModel):
     metode: PaymentMethod
     nominal: Decimal
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 class TransaksiMobilCreate(BaseModel):

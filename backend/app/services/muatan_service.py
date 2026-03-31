@@ -338,6 +338,7 @@ class MuatanService:
                              nomor_referensi=muatan.nomor_transaksi,
                              keterangan=f"Pemasukan Jasa Angkut ({p.metode.upper()}): {muatan.nomor_transaksi} (Net TPM)",
                              user_id=user_id,
+                             kas_jenis=p.kas_jenis,
                          )
              else:
                  create_kas_entry(
@@ -351,6 +352,7 @@ class MuatanService:
                     nomor_referensi=muatan.nomor_transaksi,
                     keterangan=f"Pemasukan Jasa Angkut {muatan.nomor_transaksi} (Net TPM)",
                     user_id=user_id,
+                    kas_jenis=data.kas_jenis,
                  )
  
         self.db.commit()

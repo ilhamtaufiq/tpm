@@ -184,8 +184,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 metode_bayar: (isSplitPayment ? 'SPLIT' : (finalDp === 0 ? 'KREDIT' : (metodeBayar || ''))).toUpperCase(),
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
-                    jumlah: parseNumber(p.jumlah)
-                })).filter(p => p.jumlah > 0) : [],
+                    nominal: parseNumber(p.jumlah),
+                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_MOBIL' : undefined
+                })).filter(p => p.nominal > 0) : (finalDp > 0 ? [{
+                    metode: (metodeBayar || '').toUpperCase(),
+                    nominal: finalDp,
+                    kas_jenis: (metodeBayar || '').toUpperCase() === 'TUNAI' ? 'KAS_UNIT_MOBIL' : undefined
+                }] : []),
                 catatan: catatan || null,
                 biaya_operasional: operationalCosts
                     .filter(c => c.deskripsi && c.jumlah)

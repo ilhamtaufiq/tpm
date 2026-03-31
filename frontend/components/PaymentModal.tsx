@@ -20,6 +20,7 @@ interface PaymentModalProps {
     title?: string;
     allowedMethods?: string[];
     type?: 'piutang' | 'hutang';
+    kas_jenis?: string;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -30,7 +31,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     initialAmount,
     title = 'Catat Pembayaran',
     allowedMethods,
-    type = 'piutang'
+    type = 'piutang',
+    kas_jenis
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
@@ -73,7 +75,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             .map(p => ({
                 metode: p.metode as any,
                 nominal: parseNumber(p.nominal),
-                catatan: p.catatan || undefined
+                catatan: p.catatan || undefined,
+                kas_jenis: p.metode === 'TUNAI' ? kas_jenis : undefined
             }))
             .filter(p => p.nominal > 0);
 

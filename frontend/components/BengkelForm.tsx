@@ -462,7 +462,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     .map(p => ({
                         metode: p.metode.toUpperCase(),
                         jumlah: Number(parseNumber(p.nominal)) || 0,
-                        jenis_kas: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined,
+                        kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined,
                         catatan: p.catatan || ''
                     })),
             jumlah_bayar: isInternalTransaction

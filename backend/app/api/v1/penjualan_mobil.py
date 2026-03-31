@@ -12,13 +12,14 @@ from app.schemas.mobil import (
     InvestorDisbursementDetailResponse,
 )
 from app.services.penjualan_mobil_service import PenjualanMobilService
-from app.utils.constants import PaymentStatus, OwnershipType, PaymentMethod
+from app.utils.constants import PaymentStatus, OwnershipType, PaymentMethod, KasBankJenis
 
 
 class PaymentEntry(BaseModel):
     """Single payment entry for split payments."""
     metode: PaymentMethod = PaymentMethod.TUNAI
     nominal: Decimal = Field(..., gt=0)
+    kas_jenis: Optional[KasBankJenis] = None
 
 
 class SplitPaymentRequest(BaseModel):
@@ -182,9 +183,9 @@ def update_payment(
     service = PenjualanMobilService(db)
     # Build payment entries list
     if data.payments:
-        payment_entries = [(p.metode, p.nominal) for p in data.payments]
+        payment_entries = [(p.metode, p.nominal, p.kas_jenis) for p in data.payments]
     else:
-        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.jumlah_bayar)]
+        payment_entries = [(data.metode_bayar or PaymentMethod.TUNAI, data.jumlah_bayar, None)]
     return service.update_payment(transaksi_id, data.jumlah_bayar, payment_entries, current_user.id)
 
 
