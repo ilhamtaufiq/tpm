@@ -5,9 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { CheckCircle2, Download, Share2, ArrowLeft } from 'lucide-react-native';
+import { CheckCircle2, Download, Share2, ArrowLeft, Image as ImageIcon } from 'lucide-react-native';
 import { formatCurrency } from '../../../utils/format';
-import api from '../../../utils/api';
+import api, { FILE_URL } from '../../../utils/api';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Alert } from 'react-native';
 
 /**
  * Public receipt view page
@@ -24,6 +27,7 @@ export default function PublicReceiptPage() {
 
     const [receipt, setReceipt] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [sharing, setSharing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -55,18 +59,65 @@ export default function PublicReceiptPage() {
     const handleShare = async () => {
         if (!receipt) return;
 
+        const shareUrl = `${FILE_URL}/receipt/${type}/${id}`;
+
         if (Platform.OS === 'web') {
             // Web share
             if (navigator.share) {
-                await navigator.share({
-                    title: `Struk ${receipt.transactionNumber}`,
-                    text: `Lihat struk transaksi ${type.toUpperCase()} #${receipt.transactionNumber}`,
-                    url: window.location.href
-                });
+                try {
+                    await navigator.share({
+                        title: `Struk Tiga Putra Motor`,
+                        text: `Lihat struk transaksi ${type.toUpperCase()} #${receipt.transactionNumber}`,
+                        url: shareUrl
+                    });
+                } catch (err) {
+                    console.log('Error sharing:', err);
+                }
+            } else {
+                // Fallback for browsers that don't support navigator.share
+                Alert.alert('Copy Link', 'Link struk: ' + shareUrl);
             }
         } else {
-            // Mobile share
-            // Use expo-sharing
+            // Mobile share - Share the link directly
+            await Sharing.shareAsync(shareUrl, {
+                dialogTitle: 'Bagikan Link Struk',
+                mimeType: 'text/plain'
+            });
+        }
+    };
+
+    const handleShareAsImage = async () => {
+        if (!receipt) return;
+
+        try {
+            setSharing(true);
+            const imageUrl = `${FILE_URL}/api/v1/public/receipt/image/${type}/${id}`;
+            const fileName = `Struk_TPM_${receipt.transactionNumber}.png`;
+            const fileUri = FileSystem.cacheDirectory + fileName;
+
+            if (Platform.OS === 'web') {
+                window.open(imageUrl, '_blank');
+                return;
+            }
+
+            // Download the image from backend
+            const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
+
+            if (downloadRes.status !== 200) {
+                throw new Error('Gagal mengunduh gambar struk');
+            }
+
+            // Share the image file
+            await Sharing.shareAsync(downloadRes.uri, {
+                mimeType: 'image/png',
+                dialogTitle: 'Bagikan Gambar Struk',
+                UTI: 'public.png'
+            });
+        } catch (err) {
+            console.error('Error sharing image:', err);
+            Alert.alert('Gagal Berbagi', 'Maaf, terjadi kesalahan saat menyiapkan gambar struk.');
+        } finally {
+            setSharing(false);
         }
     };
 
@@ -294,16 +345,25 @@ export default function PublicReceiptPage() {
                 {/* Action Buttons */}
                 <View className="mb-8" style={{ gap: 12 }}>
                     <Button
-                        title="Download PDF"
-                        onPress={handleDownloadPDF}
-                        icon={<Download size={20} color="white" />}
+                        title={sharing ? "Menyiapkan Gambar..." : "Bagikan Gambar Struk"}
+                        onPress={handleShareAsImage}
+                        disabled={sharing}
+                        loading={sharing}
+                        icon={<ImageIcon size={20} color="white" />}
                         className="h-14 rounded-2xl"
                     />
                     <Button
                         variant="outline"
-                        title="Bagikan Struk"
+                        title="Download PDF"
+                        onPress={handleDownloadPDF}
+                        icon={<Download size={20} color="#023C69" />}
+                        className="h-14 rounded-2xl"
+                    />
+                    <Button
+                        variant="outline-neutral"
+                        title="Bagikan Link Struk"
                         onPress={handleShare}
-                        icon={<Share2 size={20} color="#023C69" />}
+                        icon={<Share2 size={20} color="#6B7280" />}
                         className="h-14 rounded-2xl"
                     />
                 </View>

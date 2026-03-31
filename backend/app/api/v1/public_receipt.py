@@ -5,8 +5,13 @@ Accessible without authentication for QR code scanning
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime
+import io
+import os
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from fastapi.responses import HTMLResponse, Response
+import json
 
 from app.database.connection import get_db
 from app.models.bengkel import TransaksiPenjualanBengkel
@@ -144,8 +149,140 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     return receipt
 
 
-from fastapi.responses import HTMLResponse
-import json
+
+def get_font_path(bold=False):
+    """Get system font path, fallback to default"""
+    paths = []
+    if os.name == 'nt':  # Windows
+        font_name = "arialbd.ttf" if bold else "arial.ttf"
+        paths.append(os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts", font_name))
+    else:  # Linux/Unix
+        font_name = "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf"
+        paths.extend([
+            f"/usr/share/fonts/truetype/liberation/{font_name}",
+            f"/usr/share/fonts/TTF/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/TTF/DejaVuSans.ttf",
+            f"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        ])
+    
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
+
+def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
+    """Generate a beautiful 1200x630 OG image for the receipt"""
+    # Create canvas (1200x630 is optimal for Facebook/WhatsApp/Twitter)
+    width, height = 1200, 630
+    # Create a nice gradient background (Blue to Navy)
+    img = Image.new('RGB', (width, height), color='#023C69')
+    draw = ImageDraw.Draw(img)
+    
+    # Branded Header
+    draw.rectangle([0, 0, width, 120], fill='#023C69')
+    draw.rectangle([0, 120, width, 128], fill='#EE2737') # Red separator
+    
+    # Load fonts
+    font_path = get_font_path(bold=False)
+    font_bold_path = get_font_path(bold=True)
+    
+    try:
+        title_font = ImageFont.truetype(font_bold_path, 60) if font_bold_path else ImageFont.load_default()
+        subtitle_font = ImageFont.truetype(font_path, 30) if font_path else ImageFont.load_default()
+        label_font = ImageFont.truetype(font_bold_path, 24) if font_bold_path else ImageFont.load_default()
+        value_font = ImageFont.truetype(font_path, 36) if font_path else ImageFont.load_default()
+        amount_font = ImageFont.truetype(font_bold_path, 80) if font_bold_path else ImageFont.load_default()
+    except:
+        title_font = ImageFont.load_default()
+        subtitle_font = ImageFont.load_default()
+        label_font = ImageFont.load_default()
+        value_font = ImageFont.load_default()
+        amount_font = ImageFont.load_default()
+    
+    # Draw Logo/Company Name
+    draw.text((60, 30), "TIGA PUTRA MOTOR", font=title_font, fill="white")
+    draw.text((60, 90), "Bengkel, Variasi & Jual Beli Mobil", font=subtitle_font, fill="#e5e7eb")
+    
+    # White Card in the middle
+    card_margin = 60
+    draw.rectangle([card_margin, 160, width-card_margin, height-60], fill="white", outline="#e5e7eb")
+    
+    # Draw Details
+    # Left Column
+    draw.text((100, 200), "NO. STRUK", font=label_font, fill="#9ca3af")
+    draw.text((100, 230), f"#{data['transactionNumber']}", font=value_font, fill="#111827")
+    
+    draw.text((100, 310), "NAMA PELANGGAN", font=label_font, fill="#9ca3af")
+    draw.text((100, 340), data['customerName'], font=value_font, fill="#111827")
+    
+    # Right Column
+    draw.text((600, 200), "IDENTITAS KENDARAAN", font=label_font, fill="#9ca3af")
+    plate = data.get('vehiclePlate', '-')
+    vtype = data.get('vehicleType', '-')
+    draw.text((600, 230), f"{plate} / {vtype}", font=value_font, fill="#111827")
+    
+    draw.text((600, 310), "TANGGAL", font=label_font, fill="#9ca3af")
+    try:
+        dt = datetime.fromisoformat(data['date'])
+        formatted_date = dt.strftime("%d %b %Y, %H:%M")
+    except:
+        formatted_date = data['date']
+    draw.text((600, 340), formatted_date, font=value_font, fill="#111827")
+    
+    # Bottom Horizontal Line
+    draw.line([100, 420, width-100, 420], fill="#f3f4f6", width=2)
+    
+    # Total Amount
+    draw.text((100, 460), "TOTAL PEMBAYARAN", font=label_font, fill="#023C69")
+    total_str = f"Rp {data['total']:,.0f}"
+    draw.text((100, 490), total_str, font=amount_font, fill="#023C69")
+    
+    # Status Badge
+    status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
+    status_color = "#10B981" if status_text == "LUNAS" else "#EF4444"
+    
+    # Measure text for badge
+    # In newer Pillow version, use draw.textbbox
+    try:
+        text_bbox = draw.textbbox((0, 0), status_text, font=label_font)
+        text_w = text_bbox[2] - text_bbox[0]
+        text_h = text_bbox[3] - text_bbox[1]
+    except:
+        text_w, text_h = 100, 30 # fallback
+        
+    badge_x = width - card_margin - text_w - 60
+    draw.rectangle([badge_x - 20, 490, badge_x + text_w + 20, 490 + text_h + 30], fill=status_color)
+    draw.text((badge_x, 490 + 10), status_text, font=label_font, fill="white")
+    
+    # Save to bytes
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
+
+@router.get("/image/{receipt_type}/{transaction_id}")
+async def get_receipt_image(
+    receipt_type: str, 
+    transaction_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Generate dynamic OG image for the receipt
+    """
+    try:
+        if receipt_type == "bengkel":
+            data = get_bengkel_receipt(db, transaction_id)
+        elif receipt_type == "jasa_angkut":
+            data = get_jasa_angkut_receipt(db, transaction_id)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid receipt type")
+            
+        img_buf = generate_receipt_image(data)
+        return Response(content=img_buf.getvalue(), media_type="image/png")
+    except Exception as e:
+        print(f"Error generating OG image: {e}")
+        # Return a simple placeholder or 404
+        raise HTTPException(status_code=404, detail="Image generation failed")
+
 
 @router.get("/view/{receipt_type}/{transaction_id}", response_class=HTMLResponse)
 async def view_receipt(
@@ -164,15 +301,27 @@ async def view_receipt(
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
             
-        return generate_html_receipt(data)
+        return generate_html_receipt(data, receipt_type, transaction_id)
     except Exception as e:
         print(f"Error generating public view: {e}")
         return HTMLResponse(content="<div style='text-align:center; padding: 50px;'><h1 style='color:#EE2737;'>Struk tidak ditemukan</h1><p>Pastikan link yang Anda buka sudah benar.</p></div>", status_code=404)
 
-def generate_html_receipt(data: Dict[str, Any]) -> str:
-    """Generate a premium HTML receipt"""
+def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transaction_id: str = "") -> str:
+    """Generate a premium HTML receipt with OG tags"""
     
-    items_html = ""
+    # Base URL for OG Image
+    # Ideally this would come from settings or request
+    base_url = "https://tpm.cianjur.space"
+    image_url = f"{base_url}/api/v1/public/receipt/image/{receipt_type}/{transaction_id}"
+    page_url = f"{base_url}/api/v1/public/receipt/view/{receipt_type}/{transaction_id}"
+    
+    # Format description for OG
+    customer = data.get('customerName', 'Umum')
+    plate = data.get('vehiclePlate', '')
+    desc = f"Struk transaksi #{data['transactionNumber']} untuk {customer}"
+    if plate:
+        desc += f" ({plate})"
+    desc += f" senilai Rp {data['total']:,.0f}"
     for item in data.get("items", []):
         items_html += f"""
         <div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px;">
@@ -213,6 +362,23 @@ def generate_html_receipt(data: Dict[str, Any]) -> str:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Struk Digital - {data['transactionNumber']}</title>
+        
+        <!-- Open Graph / Social Media -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{page_url}">
+        <meta property="og:title" content="Struk Digital - TIGA PUTRA MOTOR">
+        <meta property="og:description" content="{desc}">
+        <meta property="og:image" content="{image_url}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:url" content="{page_url}">
+        <meta property="twitter:title" content="Struk Digital - TIGA PUTRA MOTOR">
+        <meta property="twitter:description" content="{desc}">
+        <meta property="twitter:image" content="{image_url}">
+
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {{ font-family: 'Outfit', sans-serif; background-color: #f3f4f6; margin: 0; padding: 16px; color: #374151; }}
