@@ -992,11 +992,26 @@ class TransaksiBengkelService:
         )
         status_map = {s.name.lower() if hasattr(s, "name") else str(s).lower(): count for s, count in status_counts}
 
-        # Payment type totals (Collected funds)
-        payment_aggregates = query.filter(TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL).with_entities(
-            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.TUNAI, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_tunai"),
-            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.TRANSFER, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_transfer"),
-            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.INTERNAL, TransaksiPenjualanBengkel.jumlah_bayar), else_=0)).label("total_internal"),
+        # Payment type totals (Collected funds from Kas/Bank ledger)
+        # This captures both direct sales and piutang settlements correctly.
+        # We look for entries where source is BENGKEL or PIUTANG-from-Bengkel
+        kas_income_query = self.db.query(KasBank).filter(
+            KasBank.tipe == KasBankType.MASUK,
+            or_(
+                KasBank.sumber == KasBankSource.BENGKEL,
+                KasBank.sumber == KasBankSource.PIUTANG
+            )
+        ).filter(~KasBank.keterangan.ilike("%Transfer dari KAS_UTAMA%"))
+
+        if tanggal_dari:
+            kas_income_query = kas_income_query.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            kas_income_query = kas_income_query.filter(KasBank.tanggal <= tanggal_sampai)
+
+        payment_aggregates = kas_income_query.with_entities(
+            func.sum(case((KasBank.metode_bayar == PaymentMethod.TUNAI, KasBank.nominal), else_=0)).label("total_tunai"),
+            func.sum(case((KasBank.metode_bayar == PaymentMethod.TRANSFER, KasBank.nominal), else_=0)).label("total_transfer"),
+            func.sum(case((KasBank.metode_bayar == PaymentMethod.INTERNAL, KasBank.nominal), else_=0)).label("total_internal"),
         ).first()
 
         # Manual Inflows/Outflows from KasBank (excluding automated BENGKEL sales to avoid double counting)
