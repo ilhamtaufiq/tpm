@@ -53,14 +53,13 @@ const DialogButton = ({
         <Pressable
             onPress={onPress}
             disabled={loading}
-            activeOpacity={0.7}
-            style={[
+            style={({ pressed }) => [
                 styles.button,
                 {
                     backgroundColor: bgColor,
                     borderColor: borderColor,
                     borderWidth: borderWidth,
-                    opacity: loading ? 0.5 : 1
+                    opacity: (loading || pressed) ? 0.6 : 1
                 }
             ]}
         >
