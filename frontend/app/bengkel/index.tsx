@@ -285,23 +285,25 @@ export default function BengkelScreen() {
 
             await printReceipt(receiptData, printSettings);
 
-            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
                 message: 'Struk berhasil dicetak',
                 variant: 'success',
-                type: 'alert'
+                type: 'alert',
+                onConfirm: undefined
             });
         } catch (error) {
-            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Error',
                 message: getErrorMessage(error, 'Gagal mencetak struk'),
                 variant: 'error',
-                type: 'alert'
+                type: 'alert',
+                onConfirm: undefined
             });
+        } finally {
+            setPrinting(false);
         }
     };
 
@@ -351,23 +353,25 @@ export default function BengkelScreen() {
 
             await saveReceiptPDF(receiptData, printSettings);
 
-            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
                 message: 'Struk berhasil disimpan sebagai PDF',
                 variant: 'success',
-                type: 'alert'
+                type: 'alert',
+                onConfirm: undefined
             });
         } catch (error) {
-            setPrinting(false);
             setDialogConfig({
                 visible: true,
                 title: 'Error',
                 message: getErrorMessage(error, 'Gagal menyimpan PDF'),
                 variant: 'error',
-                type: 'alert'
+                type: 'alert',
+                onConfirm: undefined
             });
+        } finally {
+            setPrinting(false);
         }
     };
 
@@ -1726,7 +1730,7 @@ export default function BengkelScreen() {
                 type={dialogConfig.type}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
                 onConfirm={dialogConfig.onConfirm}
-                loading={dialogConfig.loading || printing}
+                loading={dialogConfig.loading}
             />
 
             {/* Payment Modal (Settlement/Installment) */}
