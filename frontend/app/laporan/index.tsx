@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, Pressable, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight, Scale } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -22,6 +22,7 @@ interface ReportGroup {
 
 // Categories for Bento Layout
 export default function ReportsScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const { themeColors } = useUIStore();
 
@@ -75,7 +76,10 @@ export default function ReportsScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+            <View 
+                className="bg-primary pb-12 px-6 rounded-b-[48px] shadow-2xl"
+                style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+            >
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <Pressable

@@ -72,9 +72,8 @@ def create_app() -> FastAPI:
 
     def get_db_stats():
         """Fetch database statistics from MySQL with intelligent discovery."""
+        db = SessionLocal()
         try:
-            db = SessionLocal()
-            
             # Step 1: Detect current DB name
             current_db_res = db.execute(text("SELECT DATABASE()")).fetchone()
             detected_db = current_db_res[0] if current_db_res else settings.db_name
@@ -132,7 +131,6 @@ def create_app() -> FastAPI:
                         final_db_name = schema
 
             total_size = sum(t['size_mb'] for t in final_tables)
-            db.close()
             
             return {
                 "tables": final_tables,
@@ -143,6 +141,8 @@ def create_app() -> FastAPI:
         except Exception as e:
             print(f"[Monitor] DB Audit Error: {str(e)}")
             return {"error": str(e), "tables": [], "table_count": 0, "total_size_mb": 0}
+        finally:
+            db.close()
 
     @app.get("/api/v1/monitor/stats", tags=["Monitoring"])
     def get_monitor_stats():

@@ -94,12 +94,6 @@ export default function MasterDataScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Pusat Data & Inventori</Typography>
                         </View>
                     </View>
-                    <Pressable
-                        onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={20} color="white" />}
-                    </Pressable>
                 </View>
 
                 {/* Database Summary (Glassmorphism) - Inside Header */}

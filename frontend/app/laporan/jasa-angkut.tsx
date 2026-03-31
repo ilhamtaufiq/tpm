@@ -4,7 +4,7 @@ import {
     RefreshControl as RNRefreshControl, ActivityIndicator,
     TextInput, Platform, Alert, Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -30,6 +30,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function JasaAngkutReportScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
@@ -452,7 +453,6 @@ export default function JasaAngkutReportScreen() {
                                 {/* Group Header */}
                                 <Pressable
                                     onPress={() => toggleGroupCollapse(group.key)}
-                                    activeOpacity={0.7}
                                     className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
                                 >
                                     <View className="flex-row items-center flex-1">
@@ -495,7 +495,6 @@ export default function JasaAngkutReportScreen() {
                                             group.trips.map((item: any) => (
                                                 <Pressable
                                                     key={item.id}
-                                                    activeOpacity={0.7}
                                                     onPress={() => handlePressTrip(item)}
                                                     className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm ml-4 mb-4"
                                                 >
@@ -561,15 +560,16 @@ export default function JasaAngkutReportScreen() {
 
             {/* Detail Modal */}
             <BottomSheetModal
-                ref={bottomSheetModalRef}
-                index={0}
-                snapPoints={snapPoints}
-                enablePanDownToClose={true}
-                backdropComponent={({ style }) => (
-                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                )}
-                backgroundStyle={{ borderRadius: 32 }}
-            >
+    ref={bottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose={true}
+    topInset={insets.top}
+    backdropComponent={({ style }) => (
+        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+    )}
+    backgroundStyle={{ borderRadius: 32 }}
+>
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
@@ -761,7 +761,6 @@ export default function JasaAngkutReportScreen() {
             >
                 <Pressable
                     className="flex-1 bg-black/50 justify-end"
-                    activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
                     <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">

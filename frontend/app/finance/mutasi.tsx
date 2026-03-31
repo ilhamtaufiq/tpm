@@ -511,7 +511,9 @@ export default function MutasiKasScreen() {
                             items={ACCOUNT_FILTERS}
                             value={selectedFilter}
                             onChange={(v) => setSelectedFilter(v as KasBankJenis | 'all')}
-                            className="mb-2"
+                            variant="pill"
+                            scrollable={true}
+                            className="mb-3"
                         />
 
                         <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">

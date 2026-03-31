@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, KeyboardAvoidingView, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -49,6 +49,7 @@ const getStatusBadge = (status: EmployeeStatus) => {
 };
 
 export default function KaryawanScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter(); const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [karyawanList, setKaryawanList] = useState<Karyawan[]>([]);
@@ -322,7 +323,9 @@ export default function KaryawanScreen() {
     if (loading) {
         return (
             <SafeAreaView className="flex-1 bg-surface items-center justify-center">
-                <ActivityIndicator size="large" color="#16A34A" />
+                <View style={{ paddingTop: insets.top }}>
+                    <ActivityIndicator size="large" color="#16A34A" />
+                </View>
             </SafeAreaView>
         );
     }
@@ -332,7 +335,10 @@ export default function KaryawanScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+            <View 
+                className="bg-primary pb-12 px-6 rounded-b-[48px] shadow-2xl"
+                style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+            >
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <Pressable
@@ -489,6 +495,7 @@ export default function KaryawanScreen() {
                     snapPoints={snapPoints}
                     enablePanDownToClose
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    topInset={insets.top}
                     onClose={() => setIsSheetOpen(false)}
                 >
                     <BottomSheetScrollView className="px-8">

@@ -28,6 +28,7 @@ from app.api.v1 import (
     security,
     settings,
     user_cash,
+    backup,
 )
 
 
@@ -60,6 +61,8 @@ api_router.include_router(assets.router)
 api_router.include_router(security.router)
 api_router.include_router(settings.router)
 api_router.include_router(user_cash.router)
+api_router.include_router(backup.router)
+
 
 
 

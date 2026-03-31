@@ -845,11 +845,11 @@ export default function JasaAngkutScreen() {
                         )}
 
 
-                         <Button
+                        <Button
                             title={
                                 expenseMode === 'KELUAR' ? 'Catat Pengeluaran' :
-                                    expenseMode === 'MASUK' ? 'Catat Penambahan' : 
-                                    expenseMode === 'PIUTANG' ? 'Catat Kasbon' : 'Catat Setoran'
+                                    expenseMode === 'MASUK' ? 'Catat Penambahan' :
+                                        expenseMode === 'PIUTANG' ? 'Catat Kasbon' : 'Catat Setoran'
                             }
                             loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
@@ -878,7 +878,7 @@ export default function JasaAngkutScreen() {
                                             keterangan: expenseNote
                                         });
                                     } else if (expenseMode === 'PIUTANG') {
-                                         await createPiutangMutation.mutateAsync({
+                                        await createPiutangMutation.mutateAsync({
                                             tanggal: new Date().toISOString().split('T')[0],
                                             sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'JASA_ANGKUT',
                                             nama_debitur: debiturName,
@@ -1142,20 +1142,12 @@ export default function JasaAngkutScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            <Header 
-                title="Jasa Angkut" 
-                subtitle="Manajemen Ritase & Logistik" 
+            <Header
+                title="Jasa Angkut"
+                subtitle="Manajemen Ritase & Logistik"
                 showBackButton={true}
                 onBackButtonPress={handleGoBack}
                 showProfile={true}
-                rightElement={
-                    <Pressable 
-                        onPress={() => onRefresh()} 
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        <RefreshCw size={20} color="white" />
-                    </Pressable>
-                }
             />
 
             {/* Filter Search Overlay */}
@@ -1695,14 +1687,14 @@ export default function JasaAngkutScreen() {
             )}
 
             {/* Floating Action Button matching Bento style */}
-            <View style={{ position: 'absolute', bottom: 40, right: 24, zIndex: 999 }}>
+            {/* <View style={{ position: 'absolute', bottom: 40, right: 24, zIndex: 999 }}>
                 <Pressable
                     onPress={() => handlePresentModal('form')}
                     className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20 active:scale-95 transition-transform"
                 >
                     <Plus size={32} color="white" strokeWidth={2.5} />
                 </Pressable>
-            </View>
+            </View> */}
 
             <AlertDialog
                 visible={dialogConfig.visible}

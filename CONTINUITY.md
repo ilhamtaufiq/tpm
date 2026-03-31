@@ -1,27 +1,31 @@
 # Continuity Ledger
 
-- Goal: Integrating Profile Icon and Logout functionality into all business unit headers (Bengkel, Mobil, Jasa Angkut).
-- Constraints/Assumptions: 
-    - Using standardized `Header` component for consistency.
-    - Logout should clear the session using `useAuthStore.logout()`.
-    - Profile icon should link to `/(tabs)/profile`.
+- Goal: Fixing Android BottomSheet and Page Header layout to prevent overlap with the system status bar.
+- Constraints/Assumptions:
+    - Using `useSafeAreaInsets` from `react-native-safe-area-context` for dynamic top padding.
+    - Applying `topInset` property to `BottomSheetModal` and `BottomSheet` components.
+    - Global `Header` component and screen-specific headers should respect the safe area top.
 - Key decisions:
-    - Modified `Header.tsx` to include a Logout button (`LogOut` icon) next to the profile icon when `showProfile` is active.
-    - Set `showProfile` default to `true` in `Header.tsx`.
-    - Refactored `BengkelScreen`, `JasaAngkutScreen`, and `MobilScreen` to replace manual headers with the `Header` component.
+    - Updated `Header.tsx` to use dynamic padding for the main header and search modal.
+    - Applied `topInset={insets.top}` to all reported `BottomSheetModal` instances.
+    - Refactored multiple report and SDM pages to use dynamic top padding instead of hardcoded `pt-14`.
 - State:
-  - Done: 
-    - Modified `Header.tsx` with logout button and profile icon logic.
-    - Updated `bengkel/index.tsx` to use `Header`.
-    - Updated `jasa-angkut/index.tsx` to use `Header`.
-    - Updated `mobil/index.tsx` to use `Header`.
+  - Done:
+    - Modified `Header.tsx` with dynamic safe area padding.
+    - Updated `mobil/index.tsx`, `laporan/penjualan-bengkel.tsx`, `laporan/penjualan-mobil.tsx`, `laporan/pembelian-sparepart.tsx`, `laporan/pembelian-mobil.tsx`, `laporan/jasa-angkut.tsx` with `topInset`.
+    - Updated `laporan/index.tsx`, `sdm/index.tsx`, `sdm/karyawan.tsx` with dynamic header padding.
   - Now: Verifying the changes.
-  - Next: Testing logout flow.
+  - Next: User verification on Android device/emulator.
 - Open questions (UNCONFIRMED if needed):
-    - Are there any other pages that use manual headers? (Checked main unit dashboards)
+    - Are there any other specific pages using hardcoded `pt-14` that were missed? (Checked common patterns).
 - Working set (files/ids/commands):
     - `frontend/components/ui/Header.tsx`
-    - `frontend/app/bengkel/index.tsx`
-    - `frontend/app/jasa-angkut/index.tsx`
     - `frontend/app/mobil/index.tsx`
-    - `frontend/app/(tabs)/profile.tsx`
+    - `frontend/app/laporan/penjualan-bengkel.tsx`
+    - `frontend/app/laporan/penjualan-mobil.tsx`
+    - `frontend/app/laporan/pembelian-sparepart.tsx`
+    - `frontend/app/laporan/pembelian-mobil.tsx`
+    - `frontend/app/laporan/jasa-angkut.tsx`
+    - `frontend/app/laporan/index.tsx`
+    - `frontend/app/sdm/index.tsx`
+    - `frontend/app/sdm/karyawan.tsx`

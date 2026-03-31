@@ -1056,7 +1056,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             {/* Total Summary */}
             <View className="mb-6">
-                <Card className="bg-primary/5 border border-primary/10 p-5 rounded-3xl">
+                <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm">
 
                     {/* Jasa Angkut Internal Banner */}
                     {(kategori === 'jasa_angkut' && selectedMuatan) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
@@ -1086,7 +1086,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
                                         }
                                     }}
-                                    className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                                    className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
                                 >
                                     <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
                                         {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
@@ -1110,7 +1110,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                         newP[0].metode = newP[0].metode === m ? '' : m;
                                                         setPayments(newP);
                                                     }}
-                                                    className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}
+                                                    className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-white'}`}
                                                 >
                                                     <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-gray-700 text-[10px] font-medium'}>{m}</Typography>
                                                 </Pressable>
@@ -1123,7 +1123,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             placeholder="0"
                                             keyboardType="numeric"
                                             containerClassName="mb-0"
-                                            className="h-10 text-sm border-gray-300"
+                                            innerContainerClassName="!bg-white border-gray-100"
+                                            className="h-10 text-sm font-bold"
                                             value={payments[0]?.nominal || ''}
                                             onChangeText={(val) => {
                                                 const newP = [...payments];
@@ -1143,7 +1144,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         <View key={p.id} className="flex-row space-x-2 items-end mb-3">
                                             <View className="flex-1">
                                                 {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Metode</Typography>}
-                                                <View className="flex-row bg-white border border-gray-200 rounded-xl overflow-hidden h-10">
+                                                <View className="flex-row bg-white border border-white rounded-xl overflow-hidden h-10">
                                                     {['Tunai', 'Trf'].map((m, mIdx) => {
                                                         const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
                                                         return (
@@ -1169,7 +1170,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     placeholder="0"
                                                     keyboardType="numeric"
                                                     containerClassName="mb-0"
-                                                    className="h-10 text-sm border-gray-300 bg-white"
+                                                    innerContainerClassName="!bg-white border-gray-100"
+                                                    className="h-10 text-sm font-bold"
                                                     value={p.nominal}
                                                     onChangeText={(val) => {
                                                         const newP = [...payments];
@@ -1212,7 +1214,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 placeholder="0"
                                 keyboardType="numeric"
                                 containerClassName="mb-0"
-                                className="h-10 text-sm border-gray-300"
+                                innerContainerClassName="!bg-white border-gray-100"
+                                className="h-10 text-sm font-bold"
                                 value={diskon}
                                 onChangeText={(val) => setDiskon(formatNumber(val))}
                             />

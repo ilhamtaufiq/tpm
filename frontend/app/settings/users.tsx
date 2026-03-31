@@ -37,6 +37,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
+import { Header } from '../../components/ui/Header';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'ADMIN', color: '#EF4444', icon: Shield },
@@ -405,62 +406,27 @@ export default function UserManagementScreen() {
         <View className="flex-1 bg-[#F9FAFB]">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header */}
-            <View 
-                style={{ backgroundColor: themeColors.primary }}
-                className="pt-16 pb-24 px-6 rounded-b-[48px] shadow-2xl relative overflow-hidden"
-            >
-                {/* Decorative Pattern / Gradient Overlay */}
-                <View className="absolute top-0 left-0 right-0 h-full opacity-20">
-                    <View className="absolute -top-10 -right-10 w-80 h-80 bg-emerald-400/20 rounded-full blur-[80px]" />
-                    <View className="absolute -bottom-10 -left-10 w-80 h-80 bg-blue-400/20 rounded-full blur-[80px]" />
-                </View>
-
-                <View className="flex-row items-center justify-between mb-10 relative z-10">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={() => router.back()}
-                            className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/20"
-                        >
-                            <ChevronLeft size={28} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h1" className="text-white text-3xl tracking-tighter leading-tight font-black">User Base</Typography>
-                            <Typography className="text-white/50 text-[10px] font-black uppercase tracking-[3px] mt-0.5">Control Center</Typography>
-                        </View>
-                    </View>
+            <Header
+                title="User Base"
+                subtitle="Control Center"
+                showBackButton={true}
+                rightElement={
                     <Pressable 
                         onPress={onRefresh} 
-                        className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center border border-white/20"
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
                     >
                         {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
                     </Pressable>
-                </View>
+                }
+            />
 
-                {/* Bento Stats Row */}
-                <View className="flex-row justify-between relative z-10 px-1">
-                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 mr-3 shadow-sm">
-                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Total</Typography>
-                        <Typography className="text-white text-4xl font-black">{stats.total}</Typography>
-                    </View>
-                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-emerald-400/10 mr-3 shadow-sm">
-                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Active</Typography>
-                        <Typography className="text-emerald-400 text-4xl font-black">{stats.active}</Typography>
-                    </View>
-                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-red-400/10 shadow-sm">
-                        <Typography className="text-white/40 text-[8px] uppercase font-black tracking-[2.5px] mb-2">Inactive</Typography>
-                        <Typography className="text-red-400 text-4xl font-black">{stats.inactive}</Typography>
-                    </View>
-                </View>
-            </View>
-
-            <View className="px-6 -mt-12 z-20">
-                <View className="bg-white p-3 rounded-[32px] shadow-2xl flex-row items-center border border-gray-100">
-                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-16 rounded-2xl border border-gray-100">
-                        <Search size={22} color="#9CA3AF" />
+            <View className="px-6 -mt-8 z-20">
+                <View className="bg-white p-2.5 rounded-[28px] shadow-xl flex-row items-center border border-gray-100">
+                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
+                        <Search size={20} color="#9CA3AF" />
                         <TextInput
                             placeholder="Find administrator or staff..."
-                            className="flex-1 ml-3 text-base font-bold text-textMain"
+                            className="flex-1 ml-3 text-sm font-bold text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             placeholderTextColor="#9CA3AF"
@@ -469,10 +435,26 @@ export default function UserManagementScreen() {
                     <Pressable 
                         onPress={openAddForm}
                         style={{ backgroundColor: themeColors.primary }}
-                        className="ml-3 w-16 h-16 rounded-2xl items-center justify-center shadow-2xl shadow-primary/20"
+                        className="ml-2.5 w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-primary/20"
                     >
-                        <Plus size={28} color="white" />
+                        <Plus size={24} color="white" />
                     </Pressable>
+                </View>
+            </View>
+
+            {/* Bento Stats Row */}
+            <View className="px-6 mt-6 mb-2 flex-row justify-between">
+                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm mr-3">
+                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Total</Typography>
+                    <Typography className="text-primary text-3xl font-black">{stats.total}</Typography>
+                </View>
+                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm mr-3">
+                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Active</Typography>
+                    <Typography className="text-emerald-600 text-3xl font-black">{stats.active}</Typography>
+                </View>
+                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm">
+                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Inactive</Typography>
+                    <Typography className="text-red-500 text-3xl font-black">{stats.inactive}</Typography>
                 </View>
             </View>
 

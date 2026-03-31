@@ -202,9 +202,9 @@ export const AlertDialog = ({
                         {message}
                     </Typography>
 
-                    <View style={{ flexDirection: 'row', width: '100%', gap: 12 }}>
+                    <View style={{ flexDirection: 'row', width: '100%', gap: 12, alignItems: 'center' }}>
                         {type === 'confirm' && (
-                            <View style={{ flex: 1 }}>
+                            <View style={{ flex: 1, alignItems: 'stretch' }}>
                                 <DialogButton
                                     title={cancelText}
                                     variant="outline-neutral"
@@ -213,7 +213,7 @@ export const AlertDialog = ({
                                 />
                             </View>
                         )}
-                        <View style={{ flex: 1 }}>
+                        <View style={{ flex: 1, alignItems: 'stretch' }}>
                             <DialogButton
                                 title={confirmText}
                                 variant={getConfirmVariant()}
@@ -249,6 +249,7 @@ const styles = StyleSheet.create({
         elevation: 24,
     },
     button: {
+        width: '100%',
         height: 56, // h-14
         borderRadius: 16, // rounded-2xl
         flexDirection: 'row',

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
@@ -27,6 +27,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function SDMScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -53,7 +54,10 @@ export default function SDMScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
+            <View 
+                className="bg-primary pb-12 px-6 rounded-b-[48px] shadow-2xl"
+                style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+            >
                 <View className="flex-row items-center justify-between mb-8">
                     <View className="flex-row items-center">
                         <Pressable
@@ -67,12 +71,6 @@ export default function SDMScreen() {
                             <Typography className="text-white/50 text-xs mt-0.5">Manajemen Aset Manusia</Typography>
                         </View>
                     </View>
-                    <Pressable
-                        onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={20} color="white" />}
-                    </Pressable>
                 </View>
 
                 {/* Employee Insight Card (Glassmorphism) */}

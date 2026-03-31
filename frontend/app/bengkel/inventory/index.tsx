@@ -24,9 +24,7 @@ import {
     Package,
     ArrowUpDown,
     Filter,
-    QrCode,
     Barcode as BarcodeIcon,
-    Printer,
     Edit3,
     Minus,
 } from 'lucide-react-native';
@@ -39,8 +37,6 @@ import { formatCurrency } from '../../../utils/format';
 import { BaseModal } from '../../../components/ui/BaseModal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import QRCode from 'react-native-qrcode-svg';
-import { Barcode as BarcodeGenerator } from '../../../components/ui/Barcode';
 import * as Print from 'expo-print';
 import { FILE_URL } from '../../../utils/api';
 
@@ -50,8 +46,6 @@ export default function InventoryScreen() {
     const [selectedPart, setSelectedPart] = useState<any>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [showCode, setShowCode] = useState(false);
-    const [codeType, setCodeType] = useState<'QR' | 'BARCODE'>('QR');
     const qrRef = React.useRef<any>(null);
     
     // Quick Stock States
@@ -62,48 +56,7 @@ export default function InventoryScreen() {
     const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
     const updateStockMutation = useUpdateSparePartStock();
 
-    const handlePrint = async () => {
-        if (!selectedPart) return;
 
-        try {
-            let imageSource = '';
-            
-            if (codeType === 'QR') {
-                imageSource = `https://api.qrserver.com/v1/create-qr-code/?data=${selectedPart.kode}&size=300x300`;
-            } else {
-                imageSource = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${selectedPart.kode}&scale=3&rotate=N&includetext`;
-            }
-
-            const html = `
-                <html>
-                    <head>
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-                        <style>
-                            body { 
-                                display: flex; 
-                                align-items: center; 
-                                justify-content: center; 
-                                height: 100vh; 
-                                margin: 0; 
-                                padding: 0; 
-                            }
-                            img { 
-                                max-width: 90%; 
-                                height: auto; 
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <img src="${imageSource}" />
-                    </body>
-                </html>
-            `;
-
-            await Print.printAsync({ html });
-        } catch (error) {
-            Alert.alert('Error', 'Gagal mencetak kode.');
-        }
-    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -148,8 +101,6 @@ export default function InventoryScreen() {
         });
         setIsModalVisible(true);
         setIsEditing(false);
-        setShowCode(false);
-        setCodeType('QR');
     };
 
     const handleUpdate = async () => {
@@ -224,11 +175,11 @@ export default function InventoryScreen() {
     }, [refetch]);
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <SafeAreaView className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
+            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
@@ -252,7 +203,7 @@ export default function InventoryScreen() {
                 </View>
             </View>
 
-            <View className="p-6 pb-0">
+            <View className="p-6 pb-0 bg-white">
                 {/* Search & Filter */}
                 <View className="flex-row items-center space-x-3 mb-6">
                     <View className="flex-1 flex-row items-center bg-gray-100 rounded-2xl px-4 h-12">
@@ -390,8 +341,7 @@ export default function InventoryScreen() {
                             )}
                         </View>
                     </View>
-                    {!showCode ? (
-                        <View className="space-y-4 px-1">
+                    <View className="space-y-4 px-1">
                             <Input
                                 label="Nama Sparepart"
                                 value={formData.nama}
@@ -475,94 +425,11 @@ export default function InventoryScreen() {
                                             onPress={() => setIsEditing(true)}
                                             icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
                                         />
-                                        <View className="flex-row space-x-3">
-                                            <Pressable 
-                                                onPress={() => { setCodeType('QR'); setShowCode(true); }}
-                                                className="flex-1 bg-primary/5 border border-primary/10 rounded-2xl py-4 items-center justify-center"
-                                            >
-                                                <QrCode size={20} color="#023C69" />
-                                                <Typography variant="caption" weight="bold" className="text-primary mt-1">QR Code</Typography>
-                                            </Pressable>
-                                            <Pressable 
-                                                onPress={() => { setCodeType('BARCODE'); setShowCode(true); }}
-                                                className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl py-4 items-center justify-center"
-                                            >
-                                                <BarcodeIcon size={20} color="#10B981" />
-                                                <Typography variant="caption" weight="bold" className="text-emerald-600 mt-1">Barcode</Typography>
-                                            </Pressable>
-                                        </View>
                                     </View>
                                 )}
                             </View>
                         </View>
-                    ) : (
-                        <View className="items-center py-4">
-                            <View className="mb-6 w-full px-2">
-                                <Card className="bg-gray-50 border-gray-100 p-4 items-center rounded-3xl">
-                                    <Typography variant="h3" weight="bold" className="text-center mb-1">{selectedPart?.nama}</Typography>
-                                    <Typography variant="body2" className="text-gray-400 text-center font-bold tracking-widest">{selectedPart?.kode}</Typography>
-                                </Card>
-                            </View>
 
-                            <View className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6">
-                                {codeType === 'QR' ? (
-                                    <QRCode
-                                        value={selectedPart?.kode || ''}
-                                        size={220}
-                                        backgroundColor="white"
-                                        color="black"
-                                        getRef={(ref) => (qrRef.current = ref)}
-                                    />
-                                ) : (
-                                    <BarcodeGenerator
-                                        value={selectedPart?.kode || ''}
-                                        width={260}
-                                        height={120}
-                                    />
-                                )}
-                            </View>
-
-                            <Typography variant="caption" className="text-center text-gray-400 mb-8 px-6 leading-5">
-                                Gunakan label ini pada kemasan fisik sparepart untuk memudahkan scan saat transaksi.
-                            </Typography>
-
-                            <View style={{ width: '100%', paddingHorizontal: 8, marginTop: 16 }}>
-                                <TouchableOpacity
-                                    onPress={handlePrint}
-                                    activeOpacity={0.8}
-                                    style={{ 
-                                        backgroundColor: '#023C69', 
-                                        borderRadius: 16, 
-                                        height: 56, 
-                                        flexDirection: 'row', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center',
-                                        marginBottom: 12,
-                                        width: '100%'
-                                    }}
-                                >
-                                    <Printer size={20} color="#FFFFFF" strokeWidth={2} />
-                                    <Typography variant="body1" weight="bold" style={{ color: '#FFFFFF', marginLeft: 10 }}>Cetak {codeType}</Typography>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => setShowCode(false)}
-                                    activeOpacity={0.7}
-                                    style={{ 
-                                        borderWidth: 1, 
-                                        borderColor: '#D1D5DB', 
-                                        borderRadius: 16, 
-                                        height: 56, 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center',
-                                        width: '100%'
-                                    }}
-                                >
-                                    <Typography variant="body1" weight="bold" style={{ color: '#4B5563' }}>Kembali ke Detail</Typography>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
                 </View>
             </BaseModal>
             {/* Quick Stock Modal */}

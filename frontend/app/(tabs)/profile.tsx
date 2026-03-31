@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database } from 'lucide-react-native';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
@@ -305,7 +305,21 @@ export default function ProfileScreen() {
                         <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Sesi & Data</Typography>
 
                         <Pressable
-                            className="bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-4"
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
+                            onPress={() => router.push('/settings/backup')}
+                        >
+                            <View className="w-12 h-12 bg-indigo-50 rounded-[24px] items-center justify-center mr-4">
+                                <Database size={24} color="#6366F1" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Backup & Restore</Typography>
+                                <Typography variant="caption" className="text-text/40">Amankan data sistem ke ZIP/SQL</Typography>
+                            </View>
+                            <ChevronRight size={20} color={themeColors.textGray} />
+                        </Pressable>
+
+                        <Pressable
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
                             onPress={handleReset}
                             disabled={isResetting}
                         >

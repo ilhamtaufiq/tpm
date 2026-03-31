@@ -4,10 +4,11 @@
     "slug": "tpm-super-app",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/logo-tpm.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon2.png",
+      "image": "./assets/logo-tpm.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -25,7 +26,11 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "package": "com.olobor.tpmsuperapp"
+      "package": "com.olobor.tpmsuperapp",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-tpm.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "web": {
       "favicon": "./assets/favicon2.png",

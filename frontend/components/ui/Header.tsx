@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -41,6 +42,7 @@ export const Header = ({
     children,
     variant = 'page'
 }: HeaderProps) => {
+    const insets = useSafeAreaInsets();
     const { user, logout } = useAuthStore();
     const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -64,7 +66,6 @@ export const Header = ({
                 } else if (role === 'MOBIL') {
                     if (route.category !== 'Mobil' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
                 }
-                // Other non-admin/manager roles might need more restrictions, but these were explicitly mentioned.
             }
 
             // Search query filtering
@@ -94,7 +95,10 @@ export const Header = ({
     };
 
     return (
-        <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
+        <View 
+            className="bg-primary pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden"
+            style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+        >
             {/* Decorative Ambient Glass */}
             <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
             <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
@@ -169,7 +173,15 @@ export const Header = ({
                                             'Apakah Anda yakin ingin keluar dari aplikasi?',
                                             [
                                                 { text: 'Batal', style: 'cancel' },
-                                                { text: 'Keluar', style: 'destructive', onPress: () => logout() }
+                                                { 
+                                                    text: 'Keluar', 
+                                                    style: 'destructive', 
+                                                    onPress: () => {
+                                                        logout();
+                                                        // Explicitly redirect to login to ensure state transition
+                                                        router.replace('/(auth)/login' as any);
+                                                    } 
+                                                }
                                             ]
                                         );
                                     }}
@@ -206,7 +218,10 @@ export const Header = ({
             >
                 <View className="flex-1 bg-white">
                     {/* Modal Header */}
-                    <View className="pt-14 pb-4 px-6 border-b border-gray-100 flex-row items-center">
+                    <View 
+                        className="pb-4 px-6 border-b border-gray-100 flex-row items-center"
+                        style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+                    >
                         <View className="flex-1 bg-background h-12 rounded-2xl flex-row items-center px-4 border border-primary/20">
                             <Search size={20} color={themeColors.primary} />
                             <TextInput
@@ -256,7 +271,7 @@ export const Header = ({
                                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">{route.label}</Typography>
                                                 <Typography variant="caption" className="text-text/40" numberOfLines={1}>{route.description}</Typography>
                                             </View>
-                                            <View className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
+                                            <View className="w-8 h-8 rounded-full bg-gray-50 items-center justify-center" >
                                                 <ChevronRight size={16} color="#D1D5DB" />
                                             </View>
                                         </Pressable>
@@ -264,7 +279,7 @@ export const Header = ({
                                 })}
                             </View>
                         ) : (
-                            <View className="p-12 items-center">
+                            <View className="p-12 items-center" >
                                 <View className="w-24 h-24 bg-red-50 rounded-[32px] items-center justify-center mb-6 opacity-40">
                                     <Search size={48} color="#EF4444" strokeWidth={1.5} />
                                 </View>

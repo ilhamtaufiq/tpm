@@ -248,29 +248,114 @@ export default function PurchaseScreen() {
                         placeholder="Pilih Supplier..."
                     />
                 </Card>
-                <View className="flex-row space-x-3 mb-6">
-                    <Input
-                        label="Nomor Faktur"
-                        placeholder="INV/2024/001"
-                        containerClassName="flex-1"
-                        value={nomorFaktur}
-                        onChangeText={setNomorFaktur}
-                    />
-                    <View className="flex-1">
-                        <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal</Typography>
-                        <Pressable className="bg-gray-100 rounded-xl px-4 h-[52px] justify-center border-2 border-transparent">
-                            <View className="flex-row items-center">
-                                <Calendar size={18} color="#767676" />
-                                <Typography className="ml-2 font-medium">
-                                    {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                </Typography>
-                            </View>
+                <Input
+                    label="Nomor Faktur"
+                    placeholder="INV/2024/001"
+                    value={nomorFaktur}
+                    onChangeText={setNomorFaktur}
+                    containerClassName="mb-6"
+                />
+
+                <View className="mb-6">
+                    <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal Pembelian</Typography>
+                    <Pressable className="bg-gray-100 rounded-xl px-4 h-[52px] justify-center border-2 border-transparent">
+                        <View className="flex-row items-center">
+                            <Calendar size={18} color="#767676" />
+                            <Typography className="ml-2 font-medium">
+                                {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </Typography>
+                        </View>
+                    </Pressable>
+                </View>
+
+                {/* Items List */}
+                <View className="flex-row justify-between items-center mt-2 mb-4">
+                    <View className="flex-row items-center">
+                        <Package size={18} color="#023C69" />
+                        <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
+                    </View>
+                    <View className="flex-row items-center">
+                        <Pressable 
+                            onPress={() => setIsScannerOpen(true)} 
+                            className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl mr-2 border border-blue-100"
+                        >
+                            <QrCode size={14} color="#2563EB" />
+                            <Typography weight="bold" className="text-blue-700 text-[10px] ml-1.5 uppercase">Scan</Typography>
+                        </Pressable>
+                        <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
+                            <Plus size={14} color="#023C69" />
+                            <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
                         </Pressable>
                     </View>
                 </View>
 
+                {items.map((item, index) => (
+                    <Card key={item.id} className="mb-4 p-4 border border-gray-100 shadow-sm">
+                        <View className="flex-row justify-between items-start mb-3">
+                            <Typography variant="caption" weight="bold" className="text-primary">ITEM #{index + 1}</Typography>
+                            <Pressable onPress={() => handleRemoveItem(item.id)} className="bg-red-50 p-1.5 rounded-lg">
+                                <Trash2 size={16} color="#EE2737" />
+                            </Pressable>
+                        </View>
+
+                        <Pressable
+                            onPress={() => {
+                                setActiveItemIndex(index);
+                                setIsPartModalOpen(true);
+                            }}
+                        >
+                            <View pointerEvents="none">
+                                <Input
+                                    label="Nama Barang"
+                                    placeholder="Ketuk untuk cari sparepart..."
+                                    value={item.name}
+                                    editable={false}
+                                    containerClassName="mb-3"
+                                    endIcon={<Search size={18} color="#9CA3AF" />}
+                                />
+                            </View>
+                        </Pressable>
+
+                        <View className="flex-row space-x-3">
+                            <Input
+                                label="Qty"
+                                placeholder="0"
+                                keyboardType="numeric"
+                                containerClassName="flex-1"
+                                value={item.qty}
+                                onChangeText={(val) => handleUpdateItem(index, 'qty', val)}
+                            />
+                            <Input
+                                label="Harga Beli (Satuan)"
+                                placeholder="Rp 0"
+                                keyboardType="numeric"
+                                containerClassName="flex-[1.5]"
+                                value={item.price}
+                                onChangeText={(val) => handleUpdateItem(index, 'price', val)}
+                            />
+                        </View>
+
+                        {/* Subtotal preview */}
+                        <View className="flex-row justify-end mt-1">
+                            <Typography variant="caption" className="text-gray-500">
+                                Subtotal: {formatCurrency((Number(item.qty) || 0) * (Number(parseNumber(item.price)) || 0))}
+                            </Typography>
+                        </View>
+                    </Card>
+                ))}
+
+                {items.length === 0 && (
+                    <View className="items-center py-8 border-2 border-dashed border-gray-200 rounded-xl mb-6">
+                        <Truck size={32} color="#D1D5DB" />
+                        <Typography className="text-gray-400 mt-2">Belum ada barang dipilih</Typography>
+                        <Pressable onPress={handleAddItem} className="mt-2">
+                            <Typography weight="bold" className="text-primary">Tambah Barang</Typography>
+                        </Pressable>
+                    </View>
+                )}
+
                 {/* Metode Pembayaran */}
-                <View className="mb-6">
+                <View className="mb-6 mt-4">
                     <View className="flex-row justify-between items-center mb-4">
                         <Typography variant="body2" weight="bold" className="text-primary uppercase pr-1">Pembayaran</Typography>
                         <Pressable
@@ -435,92 +520,6 @@ export default function PurchaseScreen() {
                         </View>
                     )}
                 </View>
-
-                {/* Items List */}
-                <View className="flex-row justify-between items-center mt-2 mb-4">
-                    <View className="flex-row items-center">
-                        <Package size={18} color="#023C69" />
-                        <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
-                    </View>
-                    <View className="flex-row items-center">
-                        <Pressable 
-                            onPress={() => setIsScannerOpen(true)} 
-                            className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl mr-2 border border-blue-100"
-                        >
-                            <QrCode size={14} color="#2563EB" />
-                            <Typography weight="bold" className="text-blue-700 text-[10px] ml-1.5 uppercase">Scan</Typography>
-                        </Pressable>
-                        <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                            <Plus size={14} color="#023C69" />
-                            <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
-                        </Pressable>
-                    </View>
-                </View>
-
-                {items.map((item, index) => (
-                    <Card key={item.id} className="mb-4 p-4 border border-gray-100 shadow-sm">
-                        <View className="flex-row justify-between items-start mb-3">
-                            <Typography variant="caption" weight="bold" className="text-primary">ITEM #{index + 1}</Typography>
-                            <Pressable onPress={() => handleRemoveItem(item.id)} className="bg-red-50 p-1.5 rounded-lg">
-                                <Trash2 size={16} color="#EE2737" />
-                            </Pressable>
-                        </View>
-
-                        <Pressable
-                            onPress={() => {
-                                setActiveItemIndex(index);
-                                setIsPartModalOpen(true);
-                            }}
-                        >
-                            <View pointerEvents="none">
-                                <Input
-                                    label="Nama Barang"
-                                    placeholder="Ketuk untuk cari sparepart..."
-                                    value={item.name}
-                                    editable={false}
-                                    containerClassName="mb-3"
-                                    endIcon={<Search size={18} color="#9CA3AF" />}
-                                />
-                            </View>
-                        </Pressable>
-
-                        <View className="flex-row space-x-3">
-                            <Input
-                                label="Qty"
-                                placeholder="0"
-                                keyboardType="numeric"
-                                containerClassName="flex-1"
-                                value={item.qty}
-                                onChangeText={(val) => handleUpdateItem(index, 'qty', val)}
-                            />
-                            <Input
-                                label="Harga Beli (Satuan)"
-                                placeholder="Rp 0"
-                                keyboardType="numeric"
-                                containerClassName="flex-[1.5]"
-                                value={item.price}
-                                onChangeText={(val) => handleUpdateItem(index, 'price', val)}
-                            />
-                        </View>
-
-                        {/* Subtotal preview */}
-                        <View className="flex-row justify-end mt-1">
-                            <Typography variant="caption" className="text-gray-500">
-                                Subtotal: {formatCurrency((Number(item.qty) || 0) * (Number(parseNumber(item.price)) || 0))}
-                            </Typography>
-                        </View>
-                    </Card>
-                ))}
-
-                {items.length === 0 && (
-                    <View className="items-center py-8 border-2 border-dashed border-gray-200 rounded-xl mb-6">
-                        <Truck size={32} color="#D1D5DB" />
-                        <Typography className="text-gray-400 mt-2">Belum ada barang dipilih</Typography>
-                        <Pressable onPress={handleAddItem} className="mt-2">
-                            <Typography weight="bold" className="text-primary">Tambah Barang</Typography>
-                        </Pressable>
-                    </View>
-                )}
 
                 <Input
                     label="Catatan (Opsional)"

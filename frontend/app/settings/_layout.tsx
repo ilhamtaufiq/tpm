@@ -11,6 +11,7 @@ export default function SettingsLayout() {
             <Stack.Screen name="smtp" />
             <Stack.Screen name="security-features" />
             <Stack.Screen name="users" />
+            <Stack.Screen name="backup" />
         </Stack>
     );
 }

@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Pressable as RNPressable, Platform } from 'react-native';
+import { View, Pressable as RNPressable, Platform, ScrollView } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { cssInterop } from 'nativewind';
@@ -23,6 +22,7 @@ interface TabsProps {
     onChange: (value: string) => void;
     className?: string;
     variant?: 'pill' | 'segmented';
+    scrollable?: boolean;
 }
 
 /**
@@ -34,14 +34,25 @@ export const Tabs = ({
     value,
     onChange,
     className,
-    variant = 'segmented'
+    variant = 'segmented',
+    scrollable = false,
 }: TabsProps) => {
+    const Container = scrollable ? ScrollView : View;
+    const containerProps = scrollable ? { 
+        horizontal: true, 
+        showsHorizontalScrollIndicator: false, 
+        contentContainerStyle: { paddingRight: 24 } 
+    } : {};
+
     return (
-        <View className={cn(
-            "flex-row items-center",
-            variant === 'segmented' ? "bg-gray-100/80 p-1.5 rounded-[24px] border border-gray-200/50" : "gap-2",
-            className
-        )}>
+        <Container
+            {...containerProps}
+            className={cn(
+                "flex-row items-center",
+                variant === 'segmented' ? "bg-gray-100/80 p-1.5 rounded-[24px] border border-gray-200/50" : "gap-x-2",
+                className
+            )}
+        >
             {items.map((item) => {
                 const isActive = item.value === value;
                 const Icon = item.icon;
@@ -52,10 +63,12 @@ export const Tabs = ({
                         onPress={() => onChange(item.value)}
                         activeOpacity={0.7}
                         className={cn(
-                            "flex-1 flex-row items-center justify-center py-3 rounded-[18px]",
+                            "flex-row items-center justify-center py-2.5 rounded-[20px]",
+                            variant === 'segmented' ? "flex-1 px-2" : "px-5",
                             isActive && variant === 'segmented' ? "bg-white shadow-sm border border-gray-100" : "",
-                            isActive && variant === 'pill' ? "bg-primary px-5" : "",
-                            !isActive && variant === 'pill' ? "bg-white border border-gray-100 px-5" : ""
+                            isActive && variant === 'pill' ? "bg-primary border border-primary" : "",
+                            !isActive && variant === 'pill' ? "bg-white border border-gray-100" : "",
+                            scrollable ? "flex-none" : ""
                         )}
                     >
                         {Icon && (
@@ -71,8 +84,8 @@ export const Tabs = ({
                             variant="caption"
                             weight={isActive ? "bold" : "medium"}
                             className={cn(
-                                "tracking-tight uppercase text-[10px]",
-                                isActive ? (variant === 'pill' ? "text-white" : "text-primary") : "text-gray-400"
+                                "tracking-tight uppercase text-[9px]",
+                                isActive ? (variant === 'pill' ? "text-white" : "text-[#023C69]") : "text-gray-500"
                             )}
                         >
                             {item.label}
@@ -80,6 +93,6 @@ export const Tabs = ({
                     </WrappedPressable>
                 );
             })}
-        </View>
+        </Container>
     );
 };

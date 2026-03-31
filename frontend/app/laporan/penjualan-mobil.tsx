@@ -4,7 +4,7 @@ import {
     RefreshControl as RNRefreshControl, ActivityIndicator,
     TextInput, Alert, Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -25,6 +25,7 @@ import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorho
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PenjualanMobilReportScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
@@ -342,7 +343,6 @@ export default function PenjualanMobilReportScreen() {
                     transaksis.map((item, index) => (
                         <Pressable
                             key={item.id}
-                            activeOpacity={0.7}
                             onPress={() => handlePressTransaction(item)}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
                         >
@@ -396,15 +396,16 @@ export default function PenjualanMobilReportScreen() {
 
             {/* Detail Modal */}
             <BottomSheetModal
-                ref={bottomSheetModalRef}
-                index={0}
-                snapPoints={snapPoints}
-                enablePanDownToClose={true}
-                backdropComponent={({ style }) => (
-                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                )}
-                backgroundStyle={{ borderRadius: 32 }}
-            >
+    ref={bottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose={true}
+    topInset={insets.top}
+    backdropComponent={({ style }) => (
+        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+    )}
+    backgroundStyle={{ borderRadius: 32 }}
+>
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
@@ -566,7 +567,6 @@ export default function PenjualanMobilReportScreen() {
             >
                 <Pressable
                     className="flex-1 bg-black/50 justify-end"
-                    activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
                     <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">

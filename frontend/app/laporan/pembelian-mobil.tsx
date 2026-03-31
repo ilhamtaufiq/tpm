@@ -4,7 +4,7 @@ import {
     RefreshControl as RNRefreshControl, ActivityIndicator,
     TextInput, Alert, Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -24,6 +24,7 @@ import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorho
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PembelianMobilReportScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
@@ -210,7 +211,6 @@ export default function PembelianMobilReportScreen() {
                     <Pressable
                         onPress={handlePrev}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color="#374151" />
                     </Pressable>
@@ -225,7 +225,6 @@ export default function PembelianMobilReportScreen() {
                     <Pressable
                         onPress={handleNext}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                        activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color="#374151" />
                     </Pressable>
@@ -289,7 +288,6 @@ export default function PembelianMobilReportScreen() {
                             mobils.map((item) => (
                                 <Pressable
                                     key={item.id}
-                                    activeOpacity={0.7}
                                     onPress={() => handlePressMobil(item)}
                                 >
                                     <Card className="p-4 border-gray-100 mb-4">
@@ -332,15 +330,16 @@ export default function PembelianMobilReportScreen() {
 
             {/* Detail Modal */}
             <BottomSheetModal
-                ref={bottomSheetModalRef}
-                index={0}
-                snapPoints={snapPoints}
-                enablePanDownToClose={true}
-                backdropComponent={({ style }) => (
-                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-                )}
-                backgroundStyle={{ borderRadius: 32 }}
-            >
+    ref={bottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose={true}
+    topInset={insets.top}
+    backdropComponent={({ style }) => (
+        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+    )}
+    backgroundStyle={{ borderRadius: 32 }}
+>
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
@@ -492,7 +491,6 @@ export default function PembelianMobilReportScreen() {
             >
                 <Pressable
                     className="flex-1 bg-black/50 justify-end"
-                    activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
                     <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">

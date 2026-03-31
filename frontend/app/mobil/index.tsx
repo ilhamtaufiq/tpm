@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -50,6 +50,7 @@ import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 
 export default function MobilInventoryScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     // Filters
     const [dateRange, setDateRange] = useState({
@@ -1240,55 +1241,97 @@ export default function MobilInventoryScreen() {
                     </>
                 ) : (
                     <>
-                        <BottomSheetModal ref={bottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
+                        <BottomSheetModal
+    ref={bottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onChange={handleSheetChanges}
+>
                             <View className="flex-1">
                                 <MobilForm onSuccess={() => { bottomSheetModalRef.current?.dismiss(); refetch(); }} />
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={salesBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
+                        <BottomSheetModal
+    ref={salesBottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onChange={handleSheetChanges}
+>
                             <View className="flex-1">
                                 {selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { salesBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={costBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
+                        <BottomSheetModal
+    ref={costBottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onChange={handleSheetChanges}
+>
                             <View className="flex-1">
                                 {selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { costBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={detailBottomSheetModalRef} index={0} snapPoints={detailSnapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
+                        <BottomSheetModal
+    ref={detailBottomSheetModalRef}
+    index={0}
+    snapPoints={detailSnapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onChange={handleSheetChanges}
+>
                             <View className="flex-1">
                                 {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
                             </View>
                         </BottomSheetModal>
-                        <BottomSheetModal ref={editBottomSheetModalRef} index={0} snapPoints={snapPoints} enablePanDownToClose backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />} onChange={handleSheetChanges}>
+                        <BottomSheetModal
+    ref={editBottomSheetModalRef}
+    index={0}
+    snapPoints={snapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onChange={handleSheetChanges}
+>
                             <View className="flex-1">
                                 {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
                             </View>
                         </BottomSheetModal>
 
                         <BottomSheetModal
-                            ref={walletSheetRef}
-                            index={0}
-                            snapPoints={walletSnapPoints}
-                            enablePanDownToClose
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
-                            onDismiss={handleCloseWallet}
-                            onChange={handleSheetChanges}
-                        >
+    ref={walletSheetRef}
+    index={0}
+    snapPoints={walletSnapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onDismiss={handleCloseWallet}
+    onChange={handleSheetChanges}
+>
                             <BottomSheetView className="flex-1 px-8 py-2">
                                 {renderWalletContent()}
                             </BottomSheetView>
                         </BottomSheetModal>
 
                         <BottomSheetModal
-                            ref={dateSheetRef}
-                            index={0}
-                            snapPoints={dateSnapPoints}
-                            enablePanDownToClose
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
-                            onDismiss={() => setIsDateModalVisible(false)}
-                            onChange={handleSheetChanges}
-                        >
+    ref={dateSheetRef}
+    index={0}
+    snapPoints={dateSnapPoints}
+    enablePanDownToClose
+    topInset={insets.top}
+    backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+    onDismiss={() => setIsDateModalVisible(false)}
+    onChange={handleSheetChanges}
+>
                             <BottomSheetView className="flex-1 px-8 py-2">
                                 <Typography variant="h2" weight="bold" className="mb-6">Pilih Periode</Typography>
                                 {renderDateContent()}

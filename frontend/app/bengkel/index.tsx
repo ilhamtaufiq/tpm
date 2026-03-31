@@ -749,7 +749,7 @@ export default function BengkelScreen() {
                 </View>
 
                 {/* Action Buttons */}
-                <View className="space-y-4">
+                <View className="gap-3">
                     <Button
                         variant="primary"
                         title="Cetak Struk Transaksi"
@@ -786,7 +786,6 @@ export default function BengkelScreen() {
                                 className="rounded-2xl h-14 bg-amber-500 shadow-lg shadow-amber-500/30"
                             />
                         )}
-
 
                     <Button
                         variant="outline-danger"

@@ -38,7 +38,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     // Technical Info
     const [nomorRangka, setNomorRangka] = useState(initialData?.nomor_rangka || '');
     const [nomorMesin, setNomorMesin] = useState(initialData?.nomor_mesin || '');
-    const [transmisi, setTransmisi] = useState(initialData?.transmisi || 'AT');
+    const [transmisi, setTransmisi] = useState(initialData?.transmisi || 'MT');
     const [kilometer, setKilometer] = useState(formatNumber(String(initialData?.kilometer || '')));
 
     // Financial & Ownership
@@ -219,7 +219,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                     <View className="flex-1">
                         <Typography variant="body2" className="text-textGray mb-1 font-medium">Transmisi</Typography>
                         <View className="flex-row bg-gray-100 rounded-xl p-1">
-                            {['AT', 'MT'].map((t) => (
+                            {['MT', 'AT'].map((t) => (
                                 <Pressable
                                     key={t}
                                     onPress={() => setTransmisi(t)}
