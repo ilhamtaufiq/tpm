@@ -163,11 +163,11 @@ export default function NeracaScreen() {
                     </View>
                     <View className="bg-blue-50/50 rounded-2xl p-3 border border-blue-100/50">
                         <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />
-                        <Row label="Piutang Jual Beli Mobil" value={data.piutang_mobil} small />
-                        <Row label="Piutang Part Jual Mobil" value={data.piutang_part_mobil} small />
-                        <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} small />
+                        <Row label="Piutang Unit Mobil" value={data.piutang_mobil} small />
+                        <Row label="Piutang Sparepart Mobil" value={data.piutang_part_mobil} small />
+                        <Row label="Piutang Unit Jasa Angkut" value={data.piutang_jasa_angkut} small />
                         <Row label="Piutang Karyawan (Kasbon)" value={data.piutang_karyawan} small />
-                        <Row label="Piutang Usaha" value={data.piutang_usaha} small />
+                        <Row label="Piutang Unit Bengkel" value={data.piutang_usaha} small />
                         <View className="h-[1px] bg-blue-200/50 my-1.5" />
                         <Row label="Total Piutang" value={data.total_piutang} bold />
                     </View>

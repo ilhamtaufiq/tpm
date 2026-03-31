@@ -27,6 +27,7 @@ class PaymentDetail(BaseModel):
 
     metode: PaymentMethod
     nominal: Decimal = Field(..., gt=0)
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 
@@ -203,6 +204,7 @@ class PembayaranPiutangCreate(BaseModel):
     tanggal: date
     nominal: Decimal = Field(..., gt=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None
 
 

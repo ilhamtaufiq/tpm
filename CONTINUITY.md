@@ -1,31 +1,42 @@
-# Continuity Ledger - Workshop UI/UX & Financial Optimization
+# Continuity Ledger
 
-## Goal (incl. success criteria):
-- Standardize workshop financial reporting and form logic.
-- Improve UI/UX by moving administrative actions into a prominent 'Service Grid'.
-- Success: Professional, bento-style dashboard for workshop operations.
+- Goal: Fix Wallet Balance Updates for Receivables and Down Payments (DP)
+  - Ensure "Hasil Jual (Tunai)" correctly increases when a piutang is paid or DP is received.
+  - Route unit-specific cash transactions to `KAS_UNIT_BENGKEL`, `KAS_UNIT_MOBIL`, or `KAS_UNIT_JASA_ANGKUT`.
 
-## Constraints/Assumptions:
-- Business units need quick access to Wallet, Inventory, and Master Data.
-- Financial transactions must distinguish between unit cash and internal company movements.
+- Constraints/Assumptions:
+  - System uses unit-specific ledger accounts (`KAS_UNIT_...`) for physical cash tracking.
+  - `PiutangService.process_payment_split` is already updated to honor `kas_jenis`.
+  - Frontend components must explicitly specify the cash account to avoid defaulting to the main account.
 
-## Key decisions:
-- [UI/UX] Slimmed down the Blue Header to a minimal height, removed all statistics from it.
-- [UI/UX] Moved Unit Statistics (Antre, Proses, Selesai) into a row of three elegant, non-scrolling metric cards at the top of the content area.
-- [UI/UX] Reordered the content: Search & Filters -> Metric Cards -> Service Grid (Quick Actions) -> Section Header -> Date Picker -> Transaction List.
-- [UI/UX] Polished the Service Grid to a premium 'Bento' style: 2x2 grid, white icon containers, colored icons, and consistent labels.
-- [Backend/Finance] Map `INTERNAL` transactions to central cash (`KAS_UTAMA`) to prevent reporting discrepancies in unit-level physical cash drawers.
+- Key decisions:
+  - Field name is standardized to `kas_jenis` (matching the backend schema).
+  - `PaymentModal` will be updated to accept a `kas_jenis` prop, as it is a shared component.
+  - Backend services will be updated to propagate `kas_jenis` from the schema to the ledger integration.
 
-### State & Progress
-- **Done**:
-    - Bento-style Service Grid implementation (Bengkel, Mobil, Jasa Angkut).
-    - Header slim-down and stats relocation (Bengkel, Mobil, Jasa Angkut).
-    - TypeScript error resolution (specifically the `sheetIndex` reference error).
-    - Consistency across all business unit dashboards (Modernized FAB, Standardized Padding, Unified Layout).
-- **Now**: Work complete. Monitoring for interaction polish.
-- **Next**: Ensuring performance stability across low-end Android devices for the new layout.
+- State:
+  - Done:
+    - Updated `PiutangService` to support `kas_jenis`.
+    - Updated `keuangan.py` schema to include `kas_jenis`.
+    - Mapped `KaryawanSelector` for "Kasbon" logic in all units.
+  - Now:
+    - Standardizing `kas_jenis` field across all frontend forms and shared components.
+    - Updating `mobil.py` and `bengkel.py` schemas to support `kas_jenis` in split payment items.
+    - Updating remaining backend services specifically for penjualan (Mobil) and muatan (Jasa Angkut).
+  - Next:
+    - Validate fix by checking "Hasil Jual (Tunai)" balance in the business unit wallets.
 
-## Working set (files/ids/commands):
-- `frontend/app/bengkel/index.tsx`
-- `frontend/components/BengkelForm.tsx`
-- `backend/app/services/kas_bank_integration.py`
+- Open questions:
+  - None at this moment.
+
+- Working set:
+  - `backend/app/schemas/mobil.py`
+  - `backend/app/schemas/bengkel.py`
+  - `backend/app/services/penjualan_mobil_service.py`
+  - `backend/app/services/muatan_service.py`
+  - `frontend/components/PaymentModal.tsx`
+  - `frontend/components/BengkelForm.tsx`
+  - `frontend/components/MobilSalesForm.tsx`
+  - `frontend/app/bengkel/index.tsx`
+  - `frontend/app/mobil/index.tsx`
+  - `frontend/app/jasa-angkut/index.tsx`

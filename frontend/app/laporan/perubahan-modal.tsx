@@ -213,27 +213,27 @@ export default function LaporanPerubahanModalScreen() {
                             <td></td>
                         </tr>
                          <tr>
-                            <td>PIUTANG JUAL BELI MOBIL</td>
+                            <td>PIUTANG UNIT MOBIL</td>
                             <td class="amount">${formatCurrency(b2)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>PIUTANG PART JUAL MOBIL</td>
+                            <td>PIUTANG SPAREPART MOBIL</td>
                             <td class="amount">${formatCurrency(b3)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>PIUTANG SUPIR JASA ANGKUT</td>
+                            <td>PIUTANG UNIT JASA ANGKUT</td>
                             <td class="amount">${formatCurrency(b4)}</td>
                             <td></td>
                         </tr>
                          <tr>
-                            <td>PIUTANG KARYAWAN</td>
-                            <td class="amount">${formatCurrency(b5)}</td>
+                            <td>PIUTANG KARYAWAN (KASBON)</td>
+                            <td class="amount">${b5 > 0 ? formatCurrency(b5) : 'Rp 0'}</td>
                             <td></td>
                         </tr>
                          <tr class="border-bottom">
-                            <td>PIUTANG USAHA</td>
+                            <td>PIUTANG UNIT BENGKEL</td>
                             <td class="amount">${formatCurrency(b6)}</td>
                             <td></td>
                         </tr>
@@ -561,11 +561,11 @@ export default function LaporanPerubahanModalScreen() {
 
                 <View className="space-y-3">
                     <Row label="PIUTANG LAINNYA" value={data.piutang_lainnya} />
-                    <Row label="PIUTANG JUAL BELI MOBIL" value={data.piutang_mobil} />
-                    <Row label="PIUTANG PART JUAL MOBIL" value={data.piutang_part_mobil} />
-                    <Row label="PIUTANG SUPIR JASA ANGKUT" value={data.piutang_jasa_angkut} />
-                    <Row label="PIUTANG KARYAWAN" value={data.piutang_karyawan} />
-                    <Row label="PIUTANG USAHA" value={data.piutang_usaha} />
+                    <Row label="PIUTANG UNIT MOBIL" value={data.piutang_mobil} />
+                    <Row label="PIUTANG SPAREPART MOBIL" value={data.piutang_part_mobil} />
+                    <Row label="PIUTANG UNIT JASA ANGKUT" value={data.piutang_jasa_angkut} />
+                    <Row label="PIUTANG KARYAWAN (KASBON)" value={data.piutang_karyawan} />
+                    <Row label="PIUTANG UNIT BENGKEL" value={data.piutang_usaha} />
 
                     <View className="h-[1px] bg-gray-100 my-2" />
                     <Row label="Total Piutang" value={data.total_b} bold large color="text-secondary" />
@@ -764,7 +764,6 @@ export default function LaporanPerubahanModalScreen() {
             >
                 <Pressable
                     className="flex-1 bg-black/50 justify-end"
-                    activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
                     <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">

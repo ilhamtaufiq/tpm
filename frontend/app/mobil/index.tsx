@@ -45,6 +45,8 @@ import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer, 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
 import { Platform, Modal, TouchableOpacity } from 'react-native';
+import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
+import { Karyawan } from '../../services/sdm';
 
 export default function MobilInventoryScreen() {
     const router = useRouter();
@@ -78,9 +80,10 @@ export default function MobilInventoryScreen() {
     const [expenseAmount, setExpenseAmount] = useState('');
     const [expenseNote, setExpenseNote] = useState('');
     const [expensePaymentMethod, setExpensePaymentMethod] = useState<string>('KAS_UTAMA');
-
-    const [expenseMode, setExpenseMode] = useState<'KELUAR' | 'MASUK' | 'SETORAN' | 'PIUTANG'>('KELUAR');
-    const [debiturName, setDebiturName] = useState('');
+    const [expenseMode, setExpenseMode] = React.useState<'KELUAR' | 'MASUK' | 'SETORAN' | 'PIUTANG'>('KELUAR');
+    const [expensePiutangType, setExpensePiutangType] = React.useState<'UMUM' | 'KASBON'>('UMUM');
+    const [debiturName, setDebiturName] = React.useState('');
+    const [selectedKaryawan, setSelectedKaryawan] = React.useState<Karyawan | null>(null);
 
 
     // Dialog State
@@ -590,15 +593,58 @@ export default function MobilInventoryScreen() {
                         </View>
 
                         {expenseMode === 'PIUTANG' && (
-                            <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Nama Penerima/Debitur</Typography>
-                                <TextInput
-                                    placeholder="Contoh: Andi, Staff, dll..."
-                                    value={debiturName}
-                                    onChangeText={setDebiturName}
-                                    className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
-                                />
-                            </View>
+                            <>
+                                <View className="flex-row items-center justify-between bg-amber-50 p-4 rounded-[24px] border border-amber-100">
+                                    <View className="flex-row items-center">
+                                        <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${expensePiutangType === 'KASBON' ? 'bg-amber-500' : 'bg-amber-200'}`}>
+                                            <Wallet size={14} color="white" />
+                                        </View>
+                                        <View>
+                                            <Typography variant="caption" weight="bold" className="text-amber-900">Jenis Piutang</Typography>
+                                            <Typography variant="caption" className="text-amber-700/60 font-medium">Beri ke Karyawan?</Typography>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row items-center bg-white/50 p-1 rounded-2xl border border-amber-100">
+                                        <Pressable
+                                            onPress={() => setExpensePiutangType('UMUM')}
+                                            className={`px-4 py-2 rounded-xl ${expensePiutangType === 'UMUM' ? 'bg-amber-500 shadow-md' : ''}`}
+                                        >
+                                            <Typography variant="caption" weight="bold" className={expensePiutangType === 'UMUM' ? 'text-white' : 'text-amber-700'}>Umum</Typography>
+                                        </Pressable>
+                                        <Pressable
+                                            onPress={() => setExpensePiutangType('KASBON')}
+                                            className={`px-4 py-2 rounded-xl ${expensePiutangType === 'KASBON' ? 'bg-amber-500 shadow-md' : ''}`}
+                                        >
+                                            <Typography variant="caption" weight="bold" className={expensePiutangType === 'KASBON' ? 'text-white' : 'text-amber-700'}>Kasbon</Typography>
+                                        </Pressable>
+                                    </View>
+                                </View>
+
+                                <View>
+                                    <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">
+                                        {expensePiutangType === 'KASBON' ? 'Pilih Karyawan' : 'Nama Penerima/Debitur'}
+                                    </Typography>
+                                    
+                                    {expensePiutangType === 'KASBON' ? (
+                                        <KaryawanSelector
+                                            label="Pilih Karyawan SDM"
+                                            value={selectedKaryawan}
+                                            onSelect={(k) => {
+                                                setSelectedKaryawan(k);
+                                                if (k) setDebiturName(k.nama);
+                                            }}
+                                            placeholder="Cari nama karyawan..."
+                                        />
+                                    ) : (
+                                        <TextInput
+                                            placeholder="Contoh: Andi, Staff, dll..."
+                                            value={debiturName}
+                                            onChangeText={setDebiturName}
+                                            className="bg-gray-50 p-5 rounded-3xl text-sm font-bold text-primary border border-gray-100"
+                                        />
+                                    )}
+                                </View>
+                            </>
                         )}
 
 
@@ -641,14 +687,13 @@ export default function MobilInventoryScreen() {
                         )}
 
 
-                        <Button
+                         <Button
                             title={
                                 expenseMode === 'KELUAR' ? 'Catat Pengeluaran' :
                                     expenseMode === 'MASUK' ? 'Catat Penambahan' :
                                         expenseMode === 'PIUTANG' ? 'Catat Kasbon' : 'Catat Setoran'
                             }
-
-                            loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending}
+                            loading={createExpenseMutation.isPending || createTransactionMutation.isPending || transferMutation.isPending || createPiutangMutation.isPending}
                             onPress={async () => {
                                 if (!expenseAmount || !expenseNote) {
                                     Alert.alert('Gagal', 'Mohon isi nominal dan keterangan');
@@ -676,16 +721,18 @@ export default function MobilInventoryScreen() {
                                         });
                                     } else if (expenseMode === 'PIUTANG') {
                                         // CREATE PIUTANG (Money out from Unit)
-                                        await createPiutangMutation.mutateAsync({
+                                         await createPiutangMutation.mutateAsync({
                                             tanggal: new Date().toISOString().split('T')[0],
-                                            sumber: 'JUAL_BELI_MOBIL',
+                                            sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'JUAL_BELI_MOBIL',
                                             nama_debitur: debiturName,
+                                            referensi_id: expensePiutangType === 'KASBON' ? selectedKaryawan?.id : undefined,
                                             nominal_piutang: parseNumber(expenseAmount),
                                             metode_pembayaran: 'TUNAI',
                                             catatan: expenseNote || `Pemberian kasbon/piutang dari Unit Mobil`,
                                             payments: [{
                                                 metode: 'TUNAI',
                                                 nominal: parseNumber(expenseAmount),
+                                                kas_jenis: 'KAS_UNIT_MOBIL',
                                                 catatan: 'Disbursement from Unit Cash'
                                             }]
                                         });

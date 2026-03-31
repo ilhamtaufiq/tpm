@@ -92,7 +92,7 @@ export default function ReportsScreen() {
                 </View>
 
                 {/* Adaptive Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center justify-between">
+                {/* <View className="bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center justify-between">
                     <View className="flex-row items-center">
                         <View className="w-12 h-12 bg-white/20 rounded-2xl items-center justify-center mr-4">
                             <BarChart3 size={24} color="white" />
@@ -105,7 +105,7 @@ export default function ReportsScreen() {
                     <View className="bg-emerald-400 px-3 py-1.5 rounded-full border border-white/20">
                         <Typography className="text-white uppercase text-[8px] font-bold tracking-tighter">LIVE</Typography>
                     </View>
-                </View>
+                </View> */}
             </View>
 
             <ScrollView
@@ -128,7 +128,6 @@ export default function ReportsScreen() {
                                         key={rIdx}
                                         className={isFull ? "w-full bg-surface p-6 rounded-[32px] mb-6 border border-gray-50 shadow-sm" : "w-[48%] bg-surface p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"}
                                         onPress={() => router.push(report.path as any)}
-                                        activeOpacity={0.9}
                                     >
                                         <View className="flex-row items-center justify-between mb-5">
                                             <View

@@ -122,6 +122,7 @@ class PiutangService:
                     nomor_referensi=piutang.nomor_piutang,
                     keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({p_detail.metode.upper()})",
                     user_id=user_id,
+                    kas_jenis=p_detail.kas_jenis,
                 )
 
 
@@ -445,6 +446,7 @@ class PiutangService:
                 nomor_referensi=piutang.nomor_piutang,
                 keterangan=f"[{unit_label}] Pelunasan piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
                 user_id=user_id,
+                kas_jenis=p_detail.kas_jenis,
             )
 
 
