@@ -10,6 +10,7 @@ import { jasaAngkutService, Supir } from '../../../services/jasaAngkut';
 import { useSupirList } from '../../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
+import { Header } from '../../../components/ui/Header';
 
 export default function SupirScreen() {
     const router = useRouter(); const [filterActive, setFilterActive] = useState<boolean | undefined>(true);
@@ -37,30 +38,25 @@ export default function SupirScreen() {
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100">
-                <View className="flex-row items-center">
+            <Header 
+                title="Data Supir" 
+                showBackButton={true}
+                onBackButtonPress={() => {
+                    if (router.canGoBack()) {
+                        router.back();
+                    } else {
+                        router.replace('/jasa-angkut');
+                    }
+                }}
+                rightElement={
                     <Pressable
-                        onPress={() => {
-                            if (router.canGoBack()) {
-                                router.back();
-                            } else {
-                                router.replace('/jasa-angkut');
-                            }
-                        }}
-                        className="mr-4"
+                        onPress={() => router.push('/jasa-angkut/supir/form')}
+                        className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center border border-white/10"
                     >
-                        <ChevronLeft size={24} color="#1C1C1C" />
+                        <Plus size={20} color="white" />
                     </Pressable>
-                    <Typography variant="h2" weight="bold">Data Supir</Typography>
-                </View>
-                <Pressable
-                    onPress={() => router.push('/jasa-angkut/supir/form')}
-                    className="w-10 h-10 bg-primary rounded-full items-center justify-center"
-                >
-                    <Plus size={20} color="white" />
-                </Pressable>
-            </View>
+                }
+            />
 
             {/* Search & Filter */}
             <View className="p-4 bg-white border-b border-gray-100">
