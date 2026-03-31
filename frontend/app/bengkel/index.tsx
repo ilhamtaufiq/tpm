@@ -57,6 +57,7 @@ import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
+import { Header } from '../../components/ui/Header';
 
 export default function BengkelScreen() {
 
@@ -1271,28 +1272,13 @@ export default function BengkelScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Header Section (Design System) */}
-            <View className="bg-primary pt-14 pb-6 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <View className="flex-row items-center">
-                                <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Bengkel & POS</Typography>
-                            </View>
-                            <Typography className="text-white/50 text-xs mt-0.5">Manajemen Antrian & Inventori</Typography>
-                        </View>
-                    </View>
-                    <View className="flex-row space-x-2">
-                        {/* Icons moved to service grid below */}
-                    </View>
-                </View>
-            </View>
+            <Header 
+                title="Bengkel & POS" 
+                subtitle="Manajemen Antrian & Inventori" 
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+            />
 
             {/* Filter Search Overlay */}
             {sheetIndex === -1 && (

@@ -47,6 +47,7 @@ import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../uti
 import { Platform, Modal, TouchableOpacity } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
+import { Header } from '../../components/ui/Header';
 
 export default function MobilInventoryScreen() {
     const router = useRouter();
@@ -804,20 +805,13 @@ export default function MobilInventoryScreen() {
             <View className="flex-1 bg-surface">
                 <StatusBar barStyle="light-content" />
 
-                {/* Slim Header */}
-                <View className="bg-primary pt-14 pb-6 px-6 rounded-b-[32px]">
-                    <View className="flex-row items-center justify-between">
-                        <View className="flex-row items-center">
-                            <Pressable onPress={handleGoBack} className="w-10 h-10 bg-white/10 rounded-2xl items-center justify-center mr-4">
-                                <ChevronLeft size={20} color="white" />
-                            </Pressable>
-                            <View>
-                                <Typography variant="h3" weight="bold" className="text-white">Jual Beli Mobil</Typography>
-                                <Typography className="text-white/60 text-[10px] uppercase tracking-widest">Manajemen Unit</Typography>
-                            </View>
-                        </View>
-                    </View>
-                </View>
+                <Header 
+                    title="Jual Beli Mobil" 
+                    subtitle="Manajemen Unit" 
+                    showBackButton={true}
+                    onBackButtonPress={handleGoBack}
+                    showProfile={true}
+                />
 
                 {/* Filter Search Overlay */}
                 {sheetIndex === -1 && (

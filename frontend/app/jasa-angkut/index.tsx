@@ -58,6 +58,7 @@ import { FILE_URL } from '../../utils/api';
 
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
+import { Header } from '../../components/ui/Header';
 
 export default function JasaAngkutScreen() {
     // UI States (Moved up to prevent use-before-declaration)
@@ -1141,26 +1142,21 @@ export default function JasaAngkutScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Slim Header */}
-            <View className="bg-primary pt-14 pb-8 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Angkut</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Manajemen Ritase & Logistik</Typography>
-                        </View>
-                    </View>
-                    <Pressable onPress={() => onRefresh()} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
+            <Header 
+                title="Jasa Angkut" 
+                subtitle="Manajemen Ritase & Logistik" 
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+                rightElement={
+                    <Pressable 
+                        onPress={() => onRefresh()} 
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                    >
                         <RefreshCw size={20} color="white" />
                     </Pressable>
-                </View>
-            </View>
+                }
+            />
 
             {/* Filter Search Overlay */}
             {sheetIndex === -1 && (

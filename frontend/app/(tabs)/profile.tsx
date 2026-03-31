@@ -100,6 +100,7 @@ export default function ProfileScreen() {
             <Header
                 title={user?.full_name || user?.name || 'Admin TPM'}
                 subtitle={`Profil Saya • ${user?.role || 'Manager'}`}
+                showProfile={false}
                 leftElement={
                     <View className="w-14 h-14 bg-white/20 rounded-full p-1 border border-white/10">
                         <View className="w-full h-full bg-white rounded-full items-center justify-center overflow-hidden">

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Bell, User, X, ChevronRight, ChevronLeft } from 'lucide-react-native';
+import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut } from 'lucide-react-native';
 import { Typography } from './Typography';
-import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform } from 'react-native';
+import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform, Alert } from 'react-native';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -37,11 +37,11 @@ export const Header = ({
     onSearchChange,
     leftElement,
     rightElement,
-    showProfile = false,
+    showProfile = true,
     children,
     variant = 'page'
 }: HeaderProps) => {
-    const { user } = useAuthStore();
+    const { user, logout } = useAuthStore();
     const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -148,18 +148,36 @@ export const Header = ({
                     <View className="flex-row items-center gap-2">
                         {rightElement}
                         {showProfile && (
-                            <Pressable
-                                onPress={() => router.push('/(tabs)/profile')}
-                                className="w-11 h-11 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden ml-2"
-                            >
-                                <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
-                                    {user?.profile_picture ? (
-                                        <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
-                                    ) : (
-                                        <User size={22} color={themeColors.primary} strokeWidth={2.5} />
-                                    )}
-                                </View>
-                            </Pressable>
+                            <View className="flex-row items-center gap-2">
+                                <Pressable
+                                    onPress={() => router.push('/(tabs)/profile')}
+                                    className="w-11 h-11 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden ml-2"
+                                >
+                                    <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                                        {user?.profile_picture ? (
+                                            <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
+                                        ) : (
+                                            <User size={22} color={themeColors.primary} strokeWidth={2.5} />
+                                        )}
+                                    </View>
+                                </Pressable>
+
+                                <Pressable
+                                    onPress={() => {
+                                        Alert.alert(
+                                            'Keluar Sesi',
+                                            'Apakah Anda yakin ingin keluar dari aplikasi?',
+                                            [
+                                                { text: 'Batal', style: 'cancel' },
+                                                { text: 'Keluar', style: 'destructive', onPress: () => logout() }
+                                            ]
+                                        );
+                                    }}
+                                    className="w-11 h-11 bg-rose-500/20 rounded-2xl items-center justify-center border border-rose-500/20 ml-1"
+                                >
+                                    <LogOut size={20} color="#FF4B4B" />
+                                </Pressable>
+                            </View>
                         )}
                     </View>
                 </View>
