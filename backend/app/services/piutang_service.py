@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang
 from app.models.customer import Customer
+from app.models.karyawan import KasbonKaryawan
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
 from app.models.mobil import TransaksiPenjualanMobil
@@ -83,6 +84,53 @@ class PiutangService:
             catatan=data.catatan,
             created_by=user_id,
         )
+
+        # SPECIAL HANDLING: For KASBON_KARYAWAN from units (where referensi_id is employee ID)
+        # ensure a record is created in KasbonKaryawan table to show up in SDM module.
+        if piutang.sumber == PiutangSource.KASBON_KARYAWAN and piutang.referensi_id:
+            # Check if this ID is already a Kasbon (unlikely from unit caller)
+            exists = self.db.query(KasbonKaryawan).filter(KasbonKaryawan.id == piutang.referensi_id).first()
+            if not exists:
+                # This referensi_id is likely an employee_id (Karyawan ID) from unit wallets
+                karyawan_id = piutang.referensi_id
+                
+                # Generate unique kasbon number
+                today_kb = datetime.now()
+                prefix_kb = TRANSACTION_PREFIXES["kasbon"]
+                date_str_kb = today_kb.strftime("%y%m%d")
+                
+                last_kb = (
+                    self.db.query(KasbonKaryawan)
+                    .filter(KasbonKaryawan.nomor_kasbon.like(f"{prefix_kb}{date_str_kb}%"))
+                    .order_by(KasbonKaryawan.id.desc())
+                    .first()
+                )
+                
+                if last_kb:
+                    last_num_kb = int(last_kb.nomor_kasbon[-4:])
+                    new_num_kb = last_num_kb + 1
+                else:
+                    new_num_kb = 1
+                
+                nomor_kasbon = f"{prefix_kb}{date_str_kb}{new_num_kb:04d}"
+                
+                # Create Kasbon record
+                kasbon_rec = KasbonKaryawan(
+                    nomor_kasbon=nomor_kasbon,
+                    karyawan_id=karyawan_id,
+                    tanggal=piutang.tanggal,
+                    nominal=piutang.nominal_piutang,
+                    keterangan=piutang.catatan or f"Kasbon dari {piutang.sumber.value if piutang.sumber else 'Unit'}",
+                    status=PaymentStatus.BELUM_LUNAS,
+                    created_by=user_id,
+                )
+                self.db.add(kasbon_rec)
+                self.db.flush() # Ensure ID is generated
+                
+                # Link Piutang to the NEW Kasbon record instead of the Karyawan ID
+                piutang.referensi_id = kasbon_rec.id
+                piutang.nomor_referensi = nomor_kasbon
+                piutang.catatan = f"{piutang.catatan or ''} (Kasbon #{nomor_kasbon})".strip()
 
         self.db.add(piutang)
         self.db.commit()
