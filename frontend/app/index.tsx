@@ -109,9 +109,19 @@ export default function Index() {
     }
 
     // After hydration, redirect to appropriate page
-    console.log('INDEX: Redirecting...', isAuthenticated ? 'to Home' : 'to Login');
+    const user = useAuthStore.getState().user;
+    console.log('INDEX: Redirecting...', isAuthenticated ? 'to appropriate page for ' + (user?.role || 'unknown') : 'to Login');
 
     if (isAuthenticated) {
+        if (user?.role === 'BENGKEL') {
+            return <Redirect href="/bengkel" />;
+        }
+        if (user?.role === 'JASA_ANGKUT') {
+            return <Redirect href="/jasa-angkut" />;
+        }
+        if (user?.role === 'MOBIL') {
+            return <Redirect href="/mobil" />;
+        }
         return <Redirect href="/(tabs)/home" />;
     }
 

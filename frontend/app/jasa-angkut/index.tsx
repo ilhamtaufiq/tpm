@@ -310,11 +310,10 @@ export default function JasaAngkutScreen() {
 
 
     const handleGoBack = () => {
-
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/(tabs)/home');
+            router.replace('/');
         }
     };
 

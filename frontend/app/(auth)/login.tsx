@@ -20,7 +20,16 @@ export default function LoginScreen() {
 
     useEffect(() => {
         if (isAuthenticated) {
-            router.replace('/(tabs)/home');
+            const user = useAuthStore.getState().user;
+            if (user?.role === 'BENGKEL') {
+                router.replace('/bengkel');
+            } else if (user?.role === 'JASA_ANGKUT') {
+                router.replace('/jasa-angkut');
+            } else if (user?.role === 'MOBIL') {
+                router.replace('/mobil');
+            } else {
+                router.replace('/(tabs)/home');
+            }
         }
     }, [isAuthenticated]);
 
@@ -59,7 +68,17 @@ export default function LoginScreen() {
             }
 
             setAuth(user, access_token);
-            router.replace('/(tabs)/home');
+            
+            // Redirect based on role
+            if (user?.role === 'BENGKEL') {
+                router.replace('/bengkel');
+            } else if (user?.role === 'JASA_ANGKUT') {
+                router.replace('/jasa-angkut');
+            } else if (user?.role === 'MOBIL') {
+                router.replace('/mobil');
+            } else {
+                router.replace('/(tabs)/home');
+            }
         } catch (error: any) {
             console.error('Login error:', error.response?.data || error.message);
             Alert.alert(

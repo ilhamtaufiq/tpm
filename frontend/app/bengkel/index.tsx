@@ -422,12 +422,12 @@ export default function BengkelScreen() {
             if (router.canGoBack()) {
                 router.back();
             } else {
-                router.replace('/(tabs)/home');
+                router.replace('/');
             }
         } catch (error) {
             console.error('Navigation error:', error);
             try {
-                router.replace('/(tabs)/home');
+                router.replace('/');
             } catch (e) {
                 console.error('Fallback navigation failed:', e);
             }

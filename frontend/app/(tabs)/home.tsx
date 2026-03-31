@@ -1,5 +1,5 @@
 import { ScrollView, StatusBar, View, RefreshControl, Image } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
@@ -18,10 +18,26 @@ export default function HomeScreen() {
     const { themeColors } = useUIStore();
     const { user } = useAuthStore();
 
+    const router = useRouter();
+
     useFocusEffect(
         React.useCallback(() => {
+            // Role Guard: Redirect specific roles away from Home
+            if (user?.role === 'BENGKEL') {
+                router.replace('/bengkel');
+                return;
+            }
+            if (user?.role === 'JASA_ANGKUT') {
+                router.replace('/jasa-angkut');
+                return;
+            }
+            if (user?.role === 'MOBIL') {
+                router.replace('/mobil');
+                return;
+            }
+
             queryClient.invalidateQueries();
-        }, [queryClient])
+        }, [queryClient, user, router])
     );
 
     const handleRefresh = async () => {
