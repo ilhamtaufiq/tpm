@@ -505,7 +505,7 @@ export default function PiutangUsahaScreen() {
     const renderPiutangItem = ({ item }: { item: Piutang }) => {
         const progressPercent = item.persentase_terbayar;
         return (
-            <Pressable onPress={() => handleOpenDetail(item)} activeOpacity={0.7}>
+            <Pressable onPress={() => handleOpenDetail(item)}>
                 <Card className="mb-3 p-4">
                     <View className="flex-row justify-between items-start mb-2">
                         <View className="flex-1 mr-3">
@@ -566,48 +566,7 @@ export default function PiutangUsahaScreen() {
                         <Plus size={24} color="white" />
                     </Pressable>
                 }
-            >
-                {/* Receivables Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
-                        </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Saldo Piutang</Typography>
-                    </View>
-
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                {formatCurrency(summary?.total_sisa || 0)}
-                            </Typography>
-                            <Typography className="text-white/40 text-xs mt-1">Total Dari {summary?.jumlah_belum_lunas || 0} Invoice</Typography>
-                        </View>
-                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                            <CircleDollarSign size={24} color="white" />
-                        </View>
-                    </View>
-
-                    {/* Bento Stats Row Inside Header */}
-                    <View className="h-[1px] bg-white/10 my-6" />
-                    <View className="flex-row justify-between">
-                        <View className="flex-1">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Belum Lunas</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-white text-sm">{summary?.jumlah_belum_lunas || 0} Akun</Typography>
-                        </View>
-                        <View className="flex-1 items-end pl-4 border-l border-white/5">
-                            <View className="flex-row items-center mb-1">
-                                <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-rose-300 text-sm">{summary?.jumlah_overdue || 0} Akun</Typography>
-                        </View>
-                    </View>
-                </View>
-            </Header>
+            />
 
             {/* Filter & Search Navigator Overlay */}
             {!isSheetOpen && (
@@ -615,11 +574,10 @@ export default function PiutangUsahaScreen() {
                     <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                             {STATUS_FILTERS.map((filter) => (
-                                <Pressable
-                                    key={filter.value}
-                                    onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
-                                >
+                    <Pressable
+                        onPress={() => setSelectedFilter(filter.value)}
+                        className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
+                    >
                                     <Typography
                                         variant="caption"
                                         weight="bold"
@@ -656,7 +614,6 @@ export default function PiutangUsahaScreen() {
                     return (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
-                            activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-4">
@@ -717,13 +674,57 @@ export default function PiutangUsahaScreen() {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
-                    isLoadingList ? (
-                        <View className="space-y-6">
-                            <SkeletonCard className="rounded-[32px] h-40" />
-                            <SkeletonCard className="rounded-[32px] h-40" />
-                            <SkeletonCard className="rounded-[32px] h-40" />
+                    <View className="mb-6">
+                        {/* Receivables Insight Card (White Bento Style) */}
+                        <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                                    <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
+                                </View>
+                                <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Saldo Piutang</Typography>
+                            </View>
+
+                            <View className="flex-row items-center justify-between">
+                                <View>
+                                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
+                                        {formatCurrency(summary?.total_sisa || 0)}
+                                    </Typography>
+                                    <Typography className="text-textGray/40 text-xs mt-1">Total Dari {summary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                                </View>
+                                <View className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                                    <CircleDollarSign size={24} color="#023C69" />
+                                </View>
+                            </View>
+
+                            {/* Bento Stats Row */}
+                            <View className="h-[1px] bg-gray-50 my-6" />
+                            <View className="flex-row justify-between">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
+                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Belum Lunas</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-textMain text-sm">{summary?.jumlah_belum_lunas || 0} Akun</Typography>
+                                </View>
+                                <View className="flex-1 items-end pl-4 border-l border-gray-50">
+                                    <View className="flex-row items-center mb-1">
+                                        <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
+                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-rose-600 text-sm">{summary?.jumlah_overdue || 0} Akun</Typography>
+                                </View>
+                            </View>
                         </View>
-                    ) : null
+
+                        <Typography variant="h3" weight="bold" className="mb-4 tracking-tight">Daftar Piutang</Typography>
+                        {isLoadingList && (
+                            <View className="space-y-6">
+                                <SkeletonCard className="rounded-[32px] h-40" />
+                                <SkeletonCard className="rounded-[32px] h-40" />
+                                <SkeletonCard className="rounded-[32px] h-40" />
+                            </View>
+                        )}
+                    </View>
                 }
                 ListEmptyComponent={
                     isLoadingList ? null : (

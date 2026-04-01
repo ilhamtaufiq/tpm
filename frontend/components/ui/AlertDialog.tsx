@@ -33,24 +33,22 @@ const DialogButton = ({
     const isOutline = variant === 'outline-neutral';
 
     // Determine background color
-    let bgColor = '#023C69'; // Primary Default
+    let bgColor = '#023C69'; // Primary Default (Dark Blue)
     let borderColor = 'transparent';
     let borderWidth = 0;
     let textColor = '#FFFFFF';
 
     if (variant === 'danger') {
         bgColor = '#DC2626';
-        textColor = '#FFFFFF';
-    }
-    if (variant === 'secondary') {
+    } else if (variant === 'secondary') {
         bgColor = '#F59E0B';
-        textColor = '#FFFFFF';
-    }
-    if (isOutline) {
+    } else if (isOutline) {
         bgColor = 'transparent';
-        borderColor = '#D1D5DB'; // Gray 300
+        borderColor = '#D1D5DB';
         borderWidth = 1;
-        textColor = '#4B5563'; // Gray 600
+        textColor = '#4B5563';
+    } else if (variant === 'primary') {
+        bgColor = '#023C69';
     }
 
     // Determine Loading Indicator Color
@@ -66,7 +64,7 @@ const DialogButton = ({
                     backgroundColor: bgColor,
                     borderColor: borderColor,
                     borderWidth: borderWidth,
-                    opacity: (loading || pressed) ? 0.6 : 1
+                    opacity: (loading || pressed) ? 0.7 : 1
                 },
                 style
             ]}
@@ -74,9 +72,9 @@ const DialogButton = ({
             {loading ? (
                 <ActivityIndicator color={loaderColor} />
             ) : (
-                <Typography weight="bold" className="text-base text-center" style={{ color: textColor }}>
+                <Text style={[styles.buttonText, { color: textColor }]}>
                     {title}
-                </Typography>
+                </Text>
             )}
         </Pressable>
     );
@@ -158,10 +156,10 @@ export const AlertDialog = ({
 
     const getIconContainerStyle = () => {
         switch (variant) {
-            case 'success': return 'bg-emerald-50 border-emerald-100';
-            case 'error': return 'bg-red-50 border-red-100';
-            case 'warning': return 'bg-amber-50 border-amber-100';
-            default: return 'bg-blue-50 border-blue-100';
+            case 'success': return { backgroundColor: '#ECFDF5', borderColor: '#D1FAE5' };
+            case 'error': return { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' };
+            case 'warning': return { backgroundColor: '#FFFBEB', borderColor: '#FEF3C7' };
+            default: return { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' };
         }
     };
 
@@ -183,18 +181,18 @@ export const AlertDialog = ({
                         }
                     ]}
                 >
-                    {/* Bento Tile Icon */}
-                    <View className={`mb-6 w-20 h-20 rounded-[32px] items-center justify-center border-2 ${getIconContainerStyle()}`}>
+                    {/* Icon Container */}
+                    <View style={[styles.iconContainer, getIconContainerStyle()]}>
                         {getIcon()}
                     </View>
 
-                    <Typography variant="h2" weight="bold" className="text-center mb-2 text-gray-900 tracking-tighter">
+                    <Text style={styles.titleText}>
                         {title}
-                    </Typography>
+                    </Text>
 
-                    <Typography className="text-center text-gray-500 mb-8 leading-6 text-[15px] px-2 font-medium">
+                    <Text style={styles.messageText}>
                         {message}
-                    </Typography>
+                    </Text>
 
                     <View style={styles.buttonRow}>
                         {type === 'confirm' && (
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
         padding: 24,
-        zIndex: 1000
+        zIndex: 10000
     },
     dialogContainer: {
         width: '100%',
@@ -243,14 +241,39 @@ const styles = StyleSheet.create({
         padding: 32,
         alignItems: 'center',
         backgroundColor: 'white',
-        borderRadius: 48,
+        borderRadius: 40,
         borderWidth: 1,
         borderColor: '#F3F4F6',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.1,
-        shadowRadius: 30,
         elevation: 24,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+    },
+    iconContainer: {
+        marginBottom: 24,
+        width: 80,
+        height: 80,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+    },
+    titleText: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#111827',
+        textAlign: 'center',
+        marginBottom: 8,
+        letterSpacing: -0.5,
+    },
+    messageText: {
+        fontSize: 15,
+        color: '#6B7280',
+        textAlign: 'center',
+        marginBottom: 32,
+        lineHeight: 22,
+        paddingHorizontal: 8,
     },
     buttonRow: {
         flexDirection: 'row',
@@ -263,11 +286,17 @@ const styles = StyleSheet.create({
     },
     button: {
         width: '100%',
-        height: 56, // h-14
-        borderRadius: 16, // rounded-2xl
+        height: 56,
+        borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        textAlign: 'center',
     }
 });
+
 

@@ -327,25 +327,27 @@ export default function LaporanKeuanganScreen() {
                         <Settings size={20} color="white" />
                     </Pressable>
                 }
-            >
-                {/* Report Selector Tab */}
-                <View className="flex-row bg-black/20 p-1.5 rounded-3xl border border-white/5 mt-2">
+            />
+
+            {/* Report Selector Tab - Moved from Header to Page */}
+            <View className="px-6 -mt-8 z-10">
+                <View className="bg-white p-2 rounded-[32px] shadow-xl border border-gray-50 flex-row">
                     {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
                         <Pressable
                             key={type}
                             onPress={() => setReportType(type)}
-                            className={`flex-1 py-3 items-center rounded-2xl ${reportType === type ? 'bg-white shadow-sm' : ''}`}
+                            className={`flex-1 py-3.5 items-center rounded-2xl ${reportType === type ? 'bg-primary shadow-sm' : ''}`}
                         >
                             <Typography
                                 weight="bold"
-                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-primary' : 'text-white/50'}`}
+                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-white' : 'text-textGray/50'}`}
                             >
                                 {type.replace('_', ' ')}
                             </Typography>
                         </Pressable>
                     ))}
                 </View>
-            </Header>
+            </View>
 
     const renderProfitLoss = () => {
         if (!profitData) return null;

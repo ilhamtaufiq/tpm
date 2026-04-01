@@ -109,9 +109,9 @@ export default function ProfileScreen() {
 
             {/* Background Image (User Custom) */}
             {user?.home_background && (
-                <Image 
-                    source={{ uri: getFileUrl(user.home_background) as string }} 
-                    className="absolute inset-0 w-full h-full opacity-10" 
+                <Image
+                    source={{ uri: getFileUrl(user.home_background) as string }}
+                    className="absolute inset-0 w-full h-full opacity-10"
                     resizeMode="cover"
                 />
             )}
@@ -327,8 +327,8 @@ export default function ProfileScreen() {
                                 <Typography variant="body1" weight="bold" className="text-text mb-0.5">Batasi Akses Web</Typography>
                                 <Typography variant="caption" className="text-text/40">Paksa akses hanya dari Mobile</Typography>
                             </View>
-                            <Switch 
-                                value={protectedFeatures.disable_web_access} 
+                            <Switch
+                                value={protectedFeatures.disable_web_access}
                                 onValueChange={handleToggleWebAccess}
                                 trackColor={{ false: "#E2E8F0", true: "#FDA4AF" }}
                                 thumbColor={protectedFeatures.disable_web_access ? "#F43F5E" : "#94A3B8"}
@@ -388,7 +388,7 @@ export default function ProfileScreen() {
                 </Pressable>
 
                 <View className="items-center pb-10">
-                    <Typography variant="caption" className="text-text/20">Version 1.0.0 Alpha • TPM Engine</Typography>
+                    <Typography variant="caption" className="text-text/20">Version 2.0.0 Beta • TPM Engine</Typography>
                 </View>
             </ScrollView>
 

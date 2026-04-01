@@ -113,42 +113,42 @@ export default function FinanceTab() {
                         <RefreshCw size={20} color="white" />
                     </Pressable>
                 }
+            />
+
+            <ScrollView
+                className="flex-1 px-6 pt-6"
+                showsVerticalScrollIndicator={false}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
-                {/* Main Profit Card (Bento Style) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
-                    <Typography variant="h1" weight="bold" className="text-white text-3xl mb-6 tracking-tighter">
+                {/* Main Profit Card (Standard Bento Style) */}
+                <View className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm mb-10">
+                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[2px] mb-1">Estimasi Laba Bersih</Typography>
+                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl mb-6 tracking-tighter">
                         {formatCurrency(totalLabaBersih)}
                     </Typography>
 
-                    <View className="flex-row justify-between pt-5 border-t border-white/10">
+                    <View className="flex-row justify-between pt-5 border-t border-gray-50">
                         <View className="flex-1">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1">Pemasukan</Typography>
+                            <Typography className="text-textGray/30 text-[9px] uppercase font-bold mb-1">Pemasukan</Typography>
                             <View className="flex-row items-center">
-                                <View className="w-6 h-6 bg-emerald-500/20 rounded-lg items-center justify-center mr-2">
+                                <View className="w-6 h-6 bg-emerald-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingUp size={12} color="#10B981" />
                                 </View>
-                                <Typography className="text-white text-xs font-bold">{formatCurrency(totalPendapatan)}</Typography>
+                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPendapatan)}</Typography>
                             </View>
                         </View>
-                        <View className="flex-1 ml-4">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1">Pengeluaran</Typography>
+                        <View className="flex-1 ml-4 pl-4 border-l border-gray-50">
+                            <Typography className="text-textGray/30 text-[9px] uppercase font-bold mb-1">Pengeluaran</Typography>
                             <View className="flex-row items-center">
-                                <View className="w-6 h-6 bg-rose-500/20 rounded-lg items-center justify-center mr-2">
+                                <View className="w-6 h-6 bg-rose-50 rounded-lg items-center justify-center mr-2">
                                     <TrendingDown size={12} color="#EF4444" />
                                 </View>
-                                <Typography className="text-white text-xs font-bold">{formatCurrency(totalPengeluaran)}</Typography>
+                                <Typography className="text-textMain text-xs font-bold">{formatCurrency(totalPengeluaran)}</Typography>
                             </View>
                         </View>
                     </View>
                 </View>
-            </Header>
 
-            <ScrollView
-                className="flex-1 px-6 pt-10"
-                showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
-            >
                 {/* Wallet Cards */}
                 <View className="mb-6">
                     <Typography variant="h3" weight="bold" className="mb-4 tracking-tight px-1">Saldo Kas & Bank</Typography>

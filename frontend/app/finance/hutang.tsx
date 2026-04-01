@@ -518,33 +518,12 @@ export default function HutangUsahaScreen() {
                 rightElement={
                     <Pressable
                         onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-white rounded-2xl items-center justify-center shadow-lg shadow-white/20"
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
-                        <Plus size={20} color="#023C69" />
+                        <Plus size={24} color="white" />
                     </Pressable>
                 }
-            >
-                {/* Summary Card */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-white/20 px-3 py-1.5 rounded-full">
-                            <Typography className="text-white text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
-                        </View>
-                    </View>
-
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                {formatCurrency(summary?.total_sisa || 0)}
-                            </Typography>
-                            <Typography className="text-white/40 text-xs mt-1">Total Sisa Hutang</Typography>
-                        </View>
-                        <View className="bg-white/10 p-4 rounded-2xl">
-                            <CircleDollarSign size={24} color="white" />
-                        </View>
-                    </View>
-                </View>
-            </Header>
+            />
 
             {/* Filters & Search */}
             {!isSheetOpen && (
@@ -596,7 +575,6 @@ export default function HutangUsahaScreen() {
                     renderItem={({ item }) => (
                         <Pressable
                             onPress={() => handleOpenDetail(item)}
-                            activeOpacity={0.9}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
                         >
                             <View className="flex-row justify-between items-start mb-4">
@@ -626,8 +604,35 @@ export default function HutangUsahaScreen() {
                             </View>
                         </Pressable>
                     )}
+                    ListHeaderComponent={
+                        <View className="mb-6">
+                            {/* Summary Card (White Bento Style) */}
+                            <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                                <View className="flex-row justify-between items-center mb-6">
+                                    <View className="bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100">
+                                        <Typography className="text-rose-600 text-[10px] font-bold uppercase tracking-widest">Global Overview</Typography>
+                                    </View>
+                                    <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Saldo Hutang</Typography>
+                                </View>
+
+                                <View className="flex-row items-center justify-between">
+                                    <View>
+                                        <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
+                                            {formatCurrency(summary?.total_sisa || 0)}
+                                        </Typography>
+                                        <Typography className="text-textGray/40 text-xs mt-1">Total Sisa Kewajiban</Typography>
+                                    </View>
+                                    <View className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                                        <CircleDollarSign size={24} color="#E11D48" />
+                                    </View>
+                                </View>
+                            </View>
+
+                            <Typography variant="h3" weight="bold" className="mb-4 tracking-tight">Daftar Hutang</Typography>
+                        </View>
+                    }
                     ListEmptyComponent={<EmptyState title="Tidak ada data hutang" icon={CircleDollarSign} />}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#E11D48" />}
                 />
             )}
 

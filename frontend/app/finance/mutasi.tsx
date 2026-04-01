@@ -456,52 +456,7 @@ export default function MutasiKasScreen() {
                         <RefreshCw size={20} color="white" />
                     </Pressable>
                 }
-            >
-                {/* Balance Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Total Likuiditas</Typography>
-                        </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Saldo Saat Ini</Typography>
-                    </View>
-
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                {formatCurrency(balances?.total_saldo || 0)}
-                            </Typography>
-                            <Typography className="text-white/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
-                        </View>
-                        <Pressable
-                            onPress={() => router.push('/finance/akun')}
-                            className="bg-white/10 px-4 py-2 rounded-xl border border-white/10 flex-row items-center"
-                        >
-                            <Building2 size={16} color="white" />
-                            <Typography className="text-white text-xs font-bold ml-2">Detail Akun</Typography>
-                        </Pressable>
-                    </View>
-
-                    {/* Bento Stats Row Inside Header */}
-                    <View className="h-[1px] bg-white/10 my-6" />
-                    <View className="flex-row justify-between">
-                        <View className="flex-1">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Total Masuk</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-white text-sm">{formatCurrency(summary.total_masuk)}</Typography>
-                        </View>
-                        <View className="flex-1 items-end pl-4 border-l border-white/5">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-rose-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Total Keluar</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-rose-300 text-sm">{formatCurrency(summary.total_keluar)}</Typography>
-                        </View>
-                    </View>
-                </View>
-            </Header>
+            />
 
             {/* Account & Search Navigator Overlay */}
             {!isSheetOpen && (
@@ -581,13 +536,61 @@ export default function MutasiKasScreen() {
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 ListHeaderComponent={
-                    isLoadingTx ? (
-                        <View className="space-y-6">
-                            <SkeletonCard className="rounded-[32px] h-32" />
-                            <SkeletonCard className="rounded-[32px] h-32" />
-                            <SkeletonCard className="rounded-[32px] h-32" />
+                    <View className="mb-6">
+                        {/* Balance Insight Card (White Bento Style) */}
+                        <View className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                                    <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Total Likuiditas</Typography>
+                                </View>
+                                <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Saldo Saat Ini</Typography>
+                            </View>
+
+                            <View className="flex-row items-center justify-between">
+                                <View>
+                                    <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
+                                        {formatCurrency(balances?.total_saldo || 0)}
+                                    </Typography>
+                                    <Typography className="text-textGray/40 text-xs mt-1">Akumulasi Seluruh Akun</Typography>
+                                </View>
+                                <Pressable
+                                    onPress={() => router.push('/finance/akun')}
+                                    className="bg-primary/5 px-4 py-2 rounded-xl border border-primary/10 flex-row items-center"
+                                >
+                                    <Building2 size={16} color="#023C69" />
+                                    <Typography className="text-primary text-xs font-bold ml-2">Detail Akun</Typography>
+                                </Pressable>
+                            </View>
+
+                            {/* Bento Stats Row */}
+                            <View className="h-[1px] bg-gray-50 my-6" />
+                            <View className="flex-row justify-between">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
+                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Total Masuk</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(summary.total_masuk)}</Typography>
+                                </View>
+                                <View className="flex-1 items-end pl-4 border-l border-gray-50">
+                                    <View className="flex-row items-center mb-1">
+                                        <View className="w-2 h-2 rounded-full bg-rose-500 mr-1.5" />
+                                        <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Total Keluar</Typography>
+                                    </View>
+                                    <Typography weight="bold" className="text-rose-600 text-sm">{formatCurrency(summary.total_keluar)}</Typography>
+                                </View>
+                            </View>
                         </View>
-                    ) : null
+
+                        <Typography variant="h3" weight="bold" className="mb-4 tracking-tight">Riwayat Transaksi</Typography>
+                        {isLoadingTx && (
+                            <View className="space-y-6">
+                                <SkeletonCard className="rounded-[32px] h-32" />
+                                <SkeletonCard className="rounded-[32px] h-32" />
+                                <SkeletonCard className="rounded-[32px] h-32" />
+                            </View>
+                        )}
+                    </View>
                 }
                 ListEmptyComponent={
                     isLoadingTx ? null : (
