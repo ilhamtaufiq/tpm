@@ -56,16 +56,16 @@ export default function LandingPage() {
                         borderBottomRightRadius: 64,
                     }}
                 />
-                
+
                 <View className="px-6 items-center">
                     <View className="bg-white/10 px-4 py-2 rounded-full border border-white/20 mb-8 backdrop-blur-md">
                         <Typography className="text-white text-xs font-bold tracking-widest uppercase">The Next Gen Super App</Typography>
                     </View>
-                    
+
                     <Typography weight="bold" className="text-white text-center text-4xl md:text-6xl mb-6 tracking-tight">
-                        TPM Powerfull{"\n"}Business Suite
+                        TPM{"\n"}Tiga Putra Motor
                     </Typography>
-                    
+
                     <Typography className="text-white/70 text-center text-lg max-w-2xl mb-10 leading-relaxed">
                         Solusi digital terintegrasi untuk mengelola bisnis Bengkel, Jasa Angkut, dan Jual Beli Mobil dengan standar efisiensi tertinggi.
                     </Typography>
@@ -78,21 +78,21 @@ export default function LandingPage() {
                             <View className="flex-1">
                                 <Typography weight="bold" className="text-white text-lg mb-1">Akses Web Dinonaktifkan</Typography>
                                 <Typography className="text-white/80 text-sm leading-snug">
-                                    Admin telah membatasi akses aplikasi ini hanya melalui perangkat mobile untuk keamanan ekstra.
+                                    Admin telah membatasi akses aplikasi ini hanya melalui perangkat mobile.
                                 </Typography>
                             </View>
                         </View>
                     )}
 
                     <View className="flex-row gap-4">
-                        <Pressable 
+                        <Pressable
                             onPress={() => router.push('/(auth)/login')}
                             className="bg-white px-8 py-4 rounded-2xl shadow-xl shadow-indigo-900/40 flex-row items-center active:scale-95 transition-transform"
                         >
                             <Typography weight="bold" className="text-indigo-700 mr-2">Buka Aplikasi</Typography>
                             <ChevronRight size={18} color="#4338CA" />
                         </Pressable>
-                        
+
                         <Pressable className="bg-white/10 border border-white/20 px-8 py-4 rounded-2xl backdrop-blur-md active:scale-95 transition-transform">
                             <Typography weight="bold" className="text-white">Pelajari Fitur</Typography>
                         </Pressable>
@@ -104,8 +104,8 @@ export default function LandingPage() {
             <View className="px-6 -mt-16 mb-20">
                 <View className="flex-row flex-wrap gap-4 justify-between">
                     {features.map((feature, i) => (
-                        <View 
-                            key={i} 
+                        <View
+                            key={i}
                             style={{ width: width > 768 ? '48%' : '100%' }}
                             className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100 mb-2"
                         >
@@ -128,11 +128,11 @@ export default function LandingPage() {
                     <Typography className="text-gray-500 text-center mb-16 text-lg max-w-xl">
                         Didesain untuk kecepatan dan kemudahan akses. Nikmati pengalaman bento-style dashboard yang cantik di setiap perangkat Anda.
                     </Typography>
-                    
+
                     <View className="bg-indigo-50/50 p-4 rounded-[64px] border border-indigo-100">
-                         {/* We will use the generated image here if it was a real asset, but for now we simulate a premium UI preview */}
+                        {/* We will use the generated image here if it was a real asset, but for now we simulate a premium UI preview */}
                         <View className="w-full aspect-[16/10] bg-white rounded-[44px] shadow-2xl items-center justify-center border border-white overflow-hidden">
-                             {/* Simulation of a premium mobile mockup */}
+                            {/* Simulation of a premium mobile mockup */}
                             <Smartphone size={100} color="#6366F1" opacity={0.1} />
                         </View>
                     </View>
@@ -141,17 +141,21 @@ export default function LandingPage() {
 
             {/* FOOTER */}
             <View className="py-20 px-6 items-center">
-                <View className="w-16 h-16 bg-indigo-600 rounded-[22px] items-center justify-center mb-8 rotate-12">
-                   <Typography weight="bold" className="text-white text-2xl font-black">T</Typography>
+                <View className="mb-6 items-center flex-row">
+                    <Image
+                        source={require('../assets/logo-tpm.png')}
+                        style={{ width: 60, height: 60 }}
+                        resizeMode="contain"
+                    />
                 </View>
-                <Typography weight="bold" className="text-gray-900 text-xl mb-4">Tulus Putra Mandiri</Typography>
+                <Typography weight="bold" className="text-gray-900 text-xl mb-4">Tiga Putra Motor</Typography>
                 <Typography className="text-gray-400 text-sm mb-12">© 2026 TPM Super App. All rights reserved.</Typography>
-                
+
                 <View className="flex-row gap-8">
                     <Typography className="text-indigo-600 font-bold">Privacy Policy</Typography>
                     <Typography className="text-indigo-600 font-bold">Terms of Service</Typography>
                 </View>
             </View>
-        </ScrollView>
+        </ScrollView >
     );
 }
