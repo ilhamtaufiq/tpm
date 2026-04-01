@@ -58,24 +58,31 @@ const DialogButton = ({
         <Pressable
             onPress={onPress}
             disabled={loading}
-            style={({ pressed }) => [
-                styles.button,
-                {
-                    backgroundColor: bgColor,
-                    borderColor: borderColor,
-                    borderWidth: borderWidth,
-                    opacity: (loading || pressed) ? 0.7 : 1
-                },
-                style
-            ]}
         >
-            {loading ? (
-                <ActivityIndicator color={loaderColor} />
-            ) : (
-                <Text style={[styles.buttonText, { color: textColor }]}>
-                    {title}
-                </Text>
-            )}
+            <View
+                style={[
+                    styles.button,
+                    {
+                        backgroundColor: bgColor,
+                        borderColor: borderColor,
+                        borderWidth: borderWidth,
+                    },
+                    style
+                ]}
+            >
+                {loading ? (
+                    <ActivityIndicator color={loaderColor} />
+                ) : (
+                    <Text style={{ 
+                        color: textColor, 
+                        fontSize: 16, 
+                        fontWeight: '700', 
+                        textAlign: 'center',
+                    }}>
+                        {title}
+                    </Text>
+                )}
+            </View>
         </Pressable>
     );
 };
@@ -92,7 +99,7 @@ export const AlertDialog = ({
     type = 'alert',
     loading = false
 }: AlertDialogProps) => {
-    const scaleAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
     const [shouldRender, setShouldRender] = React.useState(visible);
@@ -274,7 +281,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#6B7280',
         textAlign: 'center',
-        marginBottom: 32,
+        marginBottom: 24,
         lineHeight: 22,
         paddingHorizontal: 8,
     },
