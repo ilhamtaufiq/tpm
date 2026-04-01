@@ -563,14 +563,6 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 onPress={handleSubmit}
                 disabled={isPending}
             />
-
-            <AlertDialog
-                visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
-            />
         </View>
     );
 
@@ -584,6 +576,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
                 </ScrollView>
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
+                />
             </View>
         );
     }
@@ -606,6 +605,13 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                 >
                     {renderFormContent()}
                 </BottomSheetScrollView>
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
+                />
             </View>
         </KeyboardAvoidingView>
     );

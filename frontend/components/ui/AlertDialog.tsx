@@ -238,12 +238,15 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 384,
         alignSelf: 'center',
-        padding: 32,
+        paddingTop: 32,
+        paddingHorizontal: 28,
+        paddingBottom: 28,
         alignItems: 'center',
         backgroundColor: 'white',
-        borderRadius: 40,
+        borderRadius: 28,
         borderWidth: 1,
         borderColor: '#F3F4F6',
+        overflow: 'visible',
         elevation: 24,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
@@ -279,6 +282,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         width: '100%',
         alignItems: 'center',
+        minHeight: 56,
     },
     buttonWrapper: {
         flex: 1,
@@ -286,16 +290,19 @@ const styles = StyleSheet.create({
     },
     button: {
         width: '100%',
-        height: 56,
+        minHeight: 52,
+        height: 52,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'visible',
     },
     buttonText: {
         fontSize: 16,
         fontWeight: '700',
         textAlign: 'center',
+        includeFontPadding: false,
     }
 });
 

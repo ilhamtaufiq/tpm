@@ -999,14 +999,6 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 loading={submitting}
                 className="mt-4"
             />
-
-            <AlertDialog
-                visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
-            />
         </View>
     );
 
@@ -1016,6 +1008,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 <ScrollView style={styles.flex1} showsVerticalScrollIndicator={true}>
                     {renderFormContent()}
                 </ScrollView>
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
+                />
             </View>
         );
     }
@@ -1034,6 +1033,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 >
                     {renderFormContent()}
                 </BottomSheetScrollView>
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
+                />
             </View>
         </KeyboardAvoidingView>
     );

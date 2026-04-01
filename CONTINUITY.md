@@ -1,45 +1,31 @@
-# Continuity Ledger - Business Unit UI Refactor
+# Continuity Ledger - AlertDialog Fix
 
 ## Goal
-Refactor the UI of financial and business unit screens to move header-specific content (cards, summaries) from the fixed `Header` component directly into the scrollable page content. This aligns with the Bento-style layout used in other modules.
+Fix two AlertDialog rendering issues on Android:
+1. AlertDialog not appearing centered after printing receipt (bengkel/index.tsx) — it was imported but never rendered.
+2. AlertDialog buttons invisible in "Validasi" dialog (BengkelForm.tsx) — AlertDialog was rendered inside BottomSheetScrollView, clipping the Modal.
 
 ## Constraints/Assumptions
-- Use `Header` component for fixed navigation (title, back button, profile).
-- Move summary cards (Profit, Liquidity) into `ScrollView` (Bengkel/Mobil) or `FlatList` `ListHeaderComponent` (Mutasi).
-- Adjust styling of moved content from "Glassmorphism" (on blue) to "Standard Card" (on light background) if necessary.
-- Maintain Bento-style consistency across all modules.
+- AlertDialog uses RN Modal internally — must be rendered at top-level, not inside BottomSheets or other constrained containers.
+- Must not break web behavior.
 
 ## Key Decisions
-- Goal: Relocate header-specific content (title, metrics, tabs) into the main scrollable page layouts across Business Units (Bengkel, Mobil, Jasa Angkut) and Finance modules.
-- Constraints/Assumptions:
-  - Header component remains for basic navigation (Back button, Title).
-  - Heavy header content (Insight Cards, Tabs) moved to Bento-style cards on the main surface.
-  - Safe area handling and "overlap" styling (-mt-8) maintained for visual continuity.
-- Key decisions:
-  - Use white Bento cards for integrated insights (Summary Cards) on the surface background.
-  - Position tabs/search as fixed elements below the header with an overlap effect.
+- Added missing `<AlertDialogComponent>` render to `bengkel/index.tsx` at root level.
+- Moved `<AlertDialog>` from `renderFormContent()` (inside scroll) to both web and mobile render paths at the container level in `BengkelForm.tsx`.
 
 ## State
 - Done:
-  - [x] Refactor `frontend/app/bengkel/index.tsx` (Pre-existing/Refined)
-  - [x] Refactor `frontend/app/mobil/index.tsx`
-  - [x] Refactor `frontend/app/jasa-angkut/index.tsx`
-  - [x] Refactor `frontend/app/finance/mutasi.tsx`
-  - [x] Refactor `frontend/app/(tabs)/finance.tsx`
-  - [x] Refactor `frontend/app/finance/laporan.tsx`
-  - [x] Refactor `frontend/app/finance/piutang.tsx`
-  - [x] Refactor `frontend/app/finance/hutang.tsx`
+  - [x] Fix bengkel/index.tsx — add AlertDialogComponent render at root level
+  - [x] Fix BengkelForm.tsx — move AlertDialog outside BottomSheetScrollView
 - Now:
-  - Verifying consistency across all modules.
+  - Verification complete.
 - Next:
-  - Final polish and testing of navigation/profile access.
+  - User testing on Android device.
 
 ## Open Questions (UNCONFIRMED)
-- None at the moment.
+- None.
 
 ## Working Set
-- `frontend/app/finance/piutang.tsx`
-- `frontend/app/finance/hutang.tsx`
-- `frontend/app/finance/laporan.tsx`
-- `frontend/app/finance/mutasi.tsx`
-- `frontend/app/(tabs)/finance.tsx`
+- `frontend/app/bengkel/index.tsx`
+- `frontend/components/BengkelForm.tsx`
+- `frontend/components/ui/AlertDialog.tsx`

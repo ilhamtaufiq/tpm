@@ -1282,14 +1282,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     loading={createTransaksiMutation.isPending || updateTransaksiMutation.isPending}
                 />
             </View>
-
-            <AlertDialog
-                visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
-            />
         </View>
     );
 
@@ -1316,6 +1308,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     onClose={() => setIsScannerOpen(false)}
                     onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
+                />
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
                 />
             </View>
         );
@@ -1349,6 +1348,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     onClose={() => setIsScannerOpen(false)}
                     onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
+                />
+                <AlertDialog
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    onClose={() => setDialogConfig(p => ({ ...p, visible: false }))}
                 />
             </View>
         </KeyboardAvoidingView>
