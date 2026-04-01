@@ -1,31 +1,36 @@
-# Continuity Ledger - AlertDialog Fix
+# Continuity Ledger - TPM Super App
 
 ## Goal
-Fix two AlertDialog rendering issues on Android:
-1. AlertDialog not appearing centered after printing receipt (bengkel/index.tsx) — it was imported but never rendered.
-2. AlertDialog buttons invisible in "Validasi" dialog (BengkelForm.tsx) — AlertDialog was rendered inside BottomSheetScrollView, clipping the Modal.
+Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled from the mobile app settings or via frontend environment variables.
 
 ## Constraints/Assumptions
-- AlertDialog uses RN Modal internally — must be rendered at top-level, not inside BottomSheets or other constrained containers.
-- Must not break web behavior.
+- Web access restriction redirects users to `/landing?reason=mobile_only`.
+- Local setting `is_pin_enabled` is required for granular PIN protection, but platform-level access (like web restriction) should be configurable independently of PIN status.
+- Frontend ENV `EXPO_PUBLIC_DISABLE_WEB_ACCESS` acts as a hard override (locks the feature to enabled).
 
 ## Key Decisions
-- Added missing `<AlertDialogComponent>` render to `bengkel/index.tsx` at root level.
-- Moved `<AlertDialog>` from `renderFormContent()` (inside scroll) to both web and mobile render paths at the container level in `BengkelForm.tsx`.
+- Moved "Batasi Akses Web" to a new "Akses Platform" section in `security-features.tsx` to separate it from page-level PIN protection.
+- Added visual feedback (badge) when the setting is locked by an environment variable.
+- Re-used existing redirection logic in `_layout.tsx` and `index.tsx`.
 
 ## State
 - Done:
-  - [x] Fix bengkel/index.tsx — add AlertDialogComponent render at root level
-  - [x] Fix BengkelForm.tsx — move AlertDialog outside BottomSheetScrollView
+  - [x] Implementation of redirection logic in `app/_layout.tsx` and `app/index.tsx`.
+  - [x] Landing page handling of `mobile_only` reason.
+  - [x] UI Toggle in `app/settings/security-features.tsx` under new "Akses Platform" section.
 - Now:
-  - Verification complete.
+  - Feature complete and ready for testing.
 - Next:
-  - User testing on Android device.
+  - Test on web browser to verify redirection when toggled ON.
+  - Test on web browser with `EXPO_PUBLIC_DISABLE_WEB_ACCESS=true`.
 
 ## Open Questions (UNCONFIRMED)
 - None.
 
 ## Working Set
-- `frontend/app/bengkel/index.tsx`
-- `frontend/components/BengkelForm.tsx`
-- `frontend/components/ui/AlertDialog.tsx`
+- `frontend/app/_layout.tsx`
+- `frontend/app/index.tsx`
+- `frontend/app/landing.tsx`
+- `frontend/app/settings/security-features.tsx`
+- `frontend/store/useSecurityStore.ts`
+- `backend/app/api/v1/security.py`

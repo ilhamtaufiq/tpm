@@ -13,7 +13,9 @@ import {
     Car,
     Users,
     Settings as SettingsIcon,
-    Lock
+    Lock,
+    MonitorOff,
+    Globe
 } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { useSecurityStore, ProtectedFeatures } from '../../store/useSecurityStore';
@@ -134,10 +136,59 @@ export default function SecurityFeaturesScreen() {
 
             <ScrollView className="flex-1 px-6 pt-6" showsVerticalScrollIndicator={false}>
                 <View className="mb-6">
-                    <Typography variant="h4" weight="bold" className="text-slate-800 mb-2">Granular PIN Protection</Typography>
+                    <Typography variant="h4" weight="bold" className="text-slate-800 mb-2">Keamanan & Akses</Typography>
                     <Typography className="text-slate-500 text-xs">
-                        Pilih halaman mana saja yang ingin Anda lindungi dengan PIN. Fitur ini memungkinkan Anda memberikan akses terbatas pada bagian tertentu.
+                        Kelola bagaimana aplikasi diakses dan dilindungi. Perubahan di sini akan berdampak pada seluruh pengguna.
                     </Typography>
+                </View>
+
+                {/* Section: Platform Access (Independent of PIN) */}
+                <View className="mb-8">
+                    <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Akses Platform</Typography>
+                    <View className="bg-white rounded-[32px] overflow-hidden border border-gray-100 shadow-sm relative">
+                        {updateSettingsMutation.isPending && (
+                            <View className="absolute inset-0 z-10 bg-white/50 items-center justify-center">
+                                <ActivityIndicator size="small" color={themeColors.primary} />
+                            </View>
+                        )}
+                        <View className="p-5 flex-row items-center justify-between">
+                            <View className="flex-row items-center flex-1">
+                                <View className="w-10 h-10 bg-rose-50 rounded-xl items-center justify-center mr-4">
+                                    <MonitorOff size={20} color="#F43F5E" />
+                                </View>
+                                <View className="flex-1 pr-4">
+                                    <View className="flex-row items-center mb-0.5">
+                                        <Typography weight="bold" className="text-[14px] text-slate-800">Batasi Akses Web</Typography>
+                                        {process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true' && (
+                                            <View className="ml-2 bg-blue-100 px-1.5 py-0.5 rounded-md">
+                                                <Typography className="text-[8px] text-blue-700 font-bold uppercase">ENV LOCKED</Typography>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <Typography numberOfLines={2} className="text-[10px] text-slate-400">
+                                        Hanya izinkan akses lewat aplikasi mobile (Web akan dialihkan ke landing page).
+                                    </Typography>
+                                </View>
+                            </View>
+
+                            <Switch
+                                value={protectedFeatures.disable_web_access || process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true'}
+                                onValueChange={() => handleToggle('disable_web_access')}
+                                trackColor={{ false: '#E2E8F0', true: '#F43F5E' }}
+                                thumbColor="#FFFFFF"
+                                disabled={updateSettingsMutation.isPending || process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true'}
+                            />
+                        </View>
+                    </View>
+                    {process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true' && (
+                        <Typography className="text-[9px] text-blue-500 mt-2 px-4 italic">
+                            * Pengaturan ini saat ini dikunci aktif oleh Environment Variable.
+                        </Typography>
+                    )}
+                </View>
+
+                <View className="mb-4">
+                    <Typography weight="bold" className="text-slate-400 text-[10px] uppercase tracking-widest mb-4 px-2">Proteksi PIN Granular</Typography>
                 </View>
 
                 {!isPinEnabled && (
@@ -154,10 +205,10 @@ export default function SecurityFeaturesScreen() {
                             <ActivityIndicator size="large" color={themeColors.primary} />
                         </View>
                     )}
-                    {featureList.map((item, index) => (
+                    {featureList.filter(f => f.id !== 'disable_web_access').map((item, index, filteredArr) => (
                         <View
                             key={item.id}
-                            className={`p-5 flex-row items-center justify-between ${index !== featureList.length - 1 ? 'border-b border-gray-50' : ''}`}
+                            className={`p-5 flex-row items-center justify-between ${index !== filteredArr.length - 1 ? 'border-b border-gray-50' : ''}`}
                         >
                             <View className="flex-row items-center flex-1">
                                 <View className={`w-10 h-10 ${item.color} rounded-xl items-center justify-center mr-4`}>
