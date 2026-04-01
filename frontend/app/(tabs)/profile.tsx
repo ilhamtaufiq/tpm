@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff } from 'lucide-react-native';
+import Constants from 'expo-constants';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
@@ -388,7 +389,7 @@ export default function ProfileScreen() {
                 </Pressable>
 
                 <View className="items-center pb-10">
-                    <Typography variant="caption" className="text-text/20">Version 2.0.0 Beta • TPM Engine</Typography>
+                    <Typography variant="caption" className="text-text/20">Version {Constants.expoConfig?.version || '1.0.0'} • TPM Engine</Typography>
                 </View>
             </ScrollView>
 
