@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw } from 'lucide-react-native';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
@@ -40,6 +41,44 @@ export default function ProfileScreen() {
         type: 'alert'
     });
     const [pinActionVisible, setPinActionVisible] = React.useState(false);
+    const [isCheckingUpdate, setIsCheckingUpdate] = React.useState(false);
+
+    const handleCheckUpdate = async () => {
+        if (__DEV__) {
+            Alert.alert('Info', 'Manual update hanya tersedia pada aplikasi production / standalone.');
+            return;
+        }
+
+        try {
+            setIsCheckingUpdate(true);
+            const update = await Updates.checkForUpdateAsync();
+
+            if (update.isAvailable) {
+                setDialogConfig({
+                    visible: true,
+                    title: "Update Tersedia",
+                    message: "Aplikasi versi terbaru ditemukan. Download dan update sekarang?",
+                    variant: 'info',
+                    type: 'confirm',
+                    onConfirm: async () => {
+                        try {
+                            await Updates.fetchUpdateAsync();
+                            await Updates.reloadAsync();
+                        } catch (error) {
+                            Alert.alert('Gagal Update', 'Terjadi kesalahan saat mendownload update.');
+                        }
+                    }
+                });
+            } else {
+                Alert.alert('Aplikasi Terupdate', 'Anda sudah menggunakan versi terbaru.');
+            }
+        } catch (error) {
+            console.error('Update Check Error:', error);
+            Alert.alert('Error', 'Gagal mengecek update ke server');
+        } finally {
+            setIsCheckingUpdate(false);
+        }
+    };
 
     const handleReset = () => {
         setDialogConfig({
@@ -375,7 +414,7 @@ export default function ProfileScreen() {
                 )}
 
                 <Pressable
-                    className="bg-surface/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-8"
+                    className="bg-surface/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-4"
                     onPress={handleLogout}
                 >
                     <View className="w-12 h-12 bg-gray-100 rounded-[18px] items-center justify-center mr-4">
@@ -384,6 +423,21 @@ export default function ProfileScreen() {
                     <View className="flex-1">
                         <Typography variant="body1" weight="bold" className="text-text">Keluar Akun</Typography>
                         <Typography variant="caption" className="text-text/40">Akhiri sesi aplikasi</Typography>
+                    </View>
+                    <ChevronRight size={18} color="#9CA3AF" />
+                </Pressable>
+
+                <Pressable
+                    className="bg-surface/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-8"
+                    onPress={handleCheckUpdate}
+                    disabled={isCheckingUpdate}
+                >
+                    <View className="w-12 h-12 bg-gray-100 rounded-[18px] items-center justify-center mr-4">
+                        <RefreshCw size={22} color="#374151" className={isCheckingUpdate ? 'animate-spin' : ''} />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body1" weight="bold" className="text-text">Cek Update Sistem</Typography>
+                        <Typography variant="caption" className="text-text/40">Paksa update manual ke server</Typography>
                     </View>
                     <ChevronRight size={18} color="#9CA3AF" />
                 </Pressable>
