@@ -34,6 +34,7 @@ class SecuritySettingsUpdate(BaseModel):
     mobil: Optional[bool] = None
     sdm: Optional[bool] = None
     settings: Optional[bool] = None
+    disable_web_access: Optional[bool] = None
 
 
 DEFAULT_SETTINGS = {
@@ -46,6 +47,7 @@ DEFAULT_SETTINGS = {
     "mobil": False,
     "sdm": False,
     "settings": False,
+    "disable_web_access": False,
 }
 
 

@@ -3,6 +3,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useUIStore } from '../store/useUIStore';
+import { useSecurityStore } from '../store/useSecurityStore';
+import { Platform } from 'react-native';
 
 export default function Index() {
     const [isHydrated, setIsHydrated] = useState(false);
@@ -110,7 +112,17 @@ export default function Index() {
 
     // After hydration, redirect to appropriate page
     const user = useAuthStore.getState().user;
+    const { protectedFeatures } = useSecurityStore.getState();
+    const isWeb = Platform.OS === 'web';
+    const isEnvDisabled = process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true';
+
     console.log('INDEX: Redirecting...', isAuthenticated ? 'to appropriate page for ' + (user?.role || 'unknown') : 'to Login');
+
+    // MOBILE ONLY CHECK (Override by User Setting or ENV)
+    if (isWeb && (protectedFeatures.disable_web_access || isEnvDisabled)) {
+        console.log('INDEX: Web access disabled (Setting or ENV), redirecting to landing');
+        return <Redirect href="/landing?reason=mobile_only" />;
+    }
 
     if (isAuthenticated) {
         if (user?.role === 'BENGKEL') {

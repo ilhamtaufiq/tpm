@@ -1,31 +1,28 @@
-# Continuity Ledger
-
-- Goal: Fixing Android BottomSheet and Page Header layout to prevent overlap with the system status bar.
+- Goal: Fixing Android layout issues (BottomSheet overlap, AlertDialog button visibility, and Page Header safe areas).
 - Constraints/Assumptions:
-    - Using `useSafeAreaInsets` from `react-native-safe-area-context` for dynamic top padding.
-    - Applying `topInset` property to `BottomSheetModal` and `BottomSheet` components.
-    - Global `Header` component and screen-specific headers should respect the safe area top.
+    - Using `useSafeAreaInsets` for dynamic top padding in headers.
+    - Avoiding `Dimensions.get('screen')` for absolute positioning on Android due to navbar inconsistencies.
+    - Standardizing component colors using explicit hex values where CSS variables may fail on native platforms.
 - Key decisions:
-    - Updated `Header.tsx` to use dynamic padding for the main header and search modal.
-    - Applied `topInset={insets.top}` to all reported `BottomSheetModal` instances.
-    - Refactored multiple report and SDM pages to use dynamic top padding instead of hardcoded `pt-14`.
+    - Updated `Header.tsx` to use dynamic padding.
+    - Refactored `AlertDialog.tsx`:
+        - Replaced `Dimensions` with `StyleSheet.absoluteFillObject` for backdrops.
+        - Replaced `gap` with explicit margins for button layout.
+        - Applied explicit hex colors to button text to ensure visibility on Android.
+    - Updated multiple report and SDM pages to use dynamic top padding.
 - State:
   - Done:
     - Modified `Header.tsx` with dynamic safe area padding.
-    - Updated `mobil/index.tsx`, `laporan/penjualan-bengkel.tsx`, `laporan/penjualan-mobil.tsx`, `laporan/pembelian-sparepart.tsx`, `laporan/pembelian-mobil.tsx`, `laporan/jasa-angkut.tsx` with `topInset`.
-    - Updated `laporan/index.tsx`, `sdm/index.tsx`, `sdm/karyawan.tsx` with dynamic header padding.
+    - Refactored `AlertDialog.tsx` for Android compatibility.
+    - Updated `mobil/index.tsx`, `laporan/*.tsx` with `topInset`.
+    - Updated `laporan/index.tsx`, `sdm/*.tsx` with dynamic header padding.
   - Now: Verifying the changes.
-  - Next: User verification on Android device/emulator.
+  - Next: User verification on Android device.
 - Open questions (UNCONFIRMED if needed):
-    - Are there any other specific pages using hardcoded `pt-14` that were missed? (Checked common patterns).
+    - Are there any other custom modals using `Dimensions.get('screen')` for backdrop centering?
 - Working set (files/ids/commands):
+    - `frontend/components/ui/AlertDialog.tsx`
     - `frontend/components/ui/Header.tsx`
+    - `frontend/app/settings/backup.tsx`
     - `frontend/app/mobil/index.tsx`
-    - `frontend/app/laporan/penjualan-bengkel.tsx`
-    - `frontend/app/laporan/penjualan-mobil.tsx`
-    - `frontend/app/laporan/pembelian-sparepart.tsx`
-    - `frontend/app/laporan/pembelian-mobil.tsx`
-    - `frontend/app/laporan/jasa-angkut.tsx`
-    - `frontend/app/laporan/index.tsx`
-    - `frontend/app/sdm/index.tsx`
-    - `frontend/app/sdm/karyawan.tsx`
+    - `frontend/app/laporan/*.tsx`

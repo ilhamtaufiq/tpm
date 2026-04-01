@@ -13,6 +13,7 @@ export interface ProtectedFeatures {
     mobil: boolean;         // Access to /mobil
     sdm: boolean;           // Access to /sdm (HR)
     settings: boolean;      // Access to /settings
+    disable_web_access: boolean; // NEW: Access restricted to mobile only
 }
 
 // Map route segments to feature keys
@@ -37,6 +38,7 @@ export const DEFAULT_PROTECTED_FEATURES: ProtectedFeatures = {
     mobil: false,
     sdm: false,
     settings: false,
+    disable_web_access: false,
 };
 
 interface SecurityState {

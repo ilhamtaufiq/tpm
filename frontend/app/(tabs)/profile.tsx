@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff } from 'lucide-react-native';
 
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
@@ -12,6 +12,8 @@ import { getErrorMessage } from '../../utils/error';
 import { router } from 'expo-router';
 import { useSecurityStore } from '../../store/useSecurityStore';
 import { BaseModal } from '../../components/ui/BaseModal';
+import { Switch } from 'react-native';
+import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
@@ -19,7 +21,8 @@ import { getFileUrl } from '../../utils/image';
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
     const { themeColors } = useUIStore();
-    const { isPinEnabled, useBiometrics } = useSecurityStore();
+    const { isPinEnabled, useBiometrics, protectedFeatures, syncWithBackend } = useSecurityStore();
+    const updateSettingsMutation = useUpdateSecuritySettings();
     const { mutate: resetTransactions, isPending: isResetting } = useResetTransactions();
     const [dialogConfig, setDialogConfig] = React.useState<{
         visible: boolean;
@@ -67,6 +70,22 @@ export default function ProfileScreen() {
                 });
             }
         });
+    };
+
+    const handleToggleWebAccess = async (enabled: boolean) => {
+        // Optimistic update
+        const originalFeatures = { ...protectedFeatures };
+        syncWithBackend(isPinEnabled, { ...protectedFeatures, disable_web_access: enabled });
+
+        try {
+            const serverFeatures = await updateSettingsMutation.mutateAsync({ disable_web_access: enabled });
+            syncWithBackend(isPinEnabled, serverFeatures);
+        } catch (error) {
+            console.error('Failed to update web access setting', error);
+            // Revert on failure
+            syncWithBackend(isPinEnabled, originalFeatures);
+            Alert.alert('Error', 'Gagal memperbarui pengaturan ke server');
+        }
     };
 
     const handleLogout = () => {
@@ -299,6 +318,23 @@ export default function ProfileScreen() {
                             </View>
                             <ChevronRight size={20} color={themeColors.textGray} />
                         </Pressable>
+
+                        <View className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8">
+                            <View className="w-12 h-12 bg-rose-50 rounded-[20px] items-center justify-center mr-4">
+                                <MonitorOff size={24} color="#F43F5E" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Batasi Akses Web</Typography>
+                                <Typography variant="caption" className="text-text/40">Paksa akses hanya dari Mobile</Typography>
+                            </View>
+                            <Switch 
+                                value={protectedFeatures.disable_web_access} 
+                                onValueChange={handleToggleWebAccess}
+                                trackColor={{ false: "#E2E8F0", true: "#FDA4AF" }}
+                                thumbColor={protectedFeatures.disable_web_access ? "#F43F5E" : "#94A3B8"}
+                                disabled={updateSettingsMutation.isPending}
+                            />
+                        </View>
 
 
                         {/* DANGER ZONE & SESSION */}

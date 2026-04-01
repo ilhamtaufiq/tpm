@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Modal, Pressable, Text, Dimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
 import { Typography } from './Typography';
-// import { Button } from './Button'; // Removed to use native Pressable implementation
 import { AlertCircle, CheckCircle, Info, XCircle, LucideIcon } from 'lucide-react-native';
 
 interface AlertDialogProps {
@@ -22,12 +21,14 @@ const DialogButton = ({
     onPress,
     title,
     variant = 'primary',
-    loading = false
+    loading = false,
+    style
 }: {
     onPress: () => void;
     title: string;
     variant?: 'primary' | 'secondary' | 'danger' | 'outline-neutral';
     loading?: boolean;
+    style?: any;
 }) => {
     const isOutline = variant === 'outline-neutral';
 
@@ -35,17 +36,23 @@ const DialogButton = ({
     let bgColor = '#023C69'; // Primary Default
     let borderColor = 'transparent';
     let borderWidth = 0;
+    let textColor = '#FFFFFF';
 
-    if (variant === 'danger') bgColor = '#DC2626';
-    if (variant === 'secondary') bgColor = '#F59E0B'; // Warning
+    if (variant === 'danger') {
+        bgColor = '#DC2626';
+        textColor = '#FFFFFF';
+    }
+    if (variant === 'secondary') {
+        bgColor = '#F59E0B';
+        textColor = '#FFFFFF';
+    }
     if (isOutline) {
         bgColor = 'transparent';
         borderColor = '#D1D5DB'; // Gray 300
         borderWidth = 1;
+        textColor = '#4B5563'; // Gray 600
     }
 
-    // Determine text color class
-    const textClass = isOutline ? 'text-gray-600' : 'text-white';
     // Determine Loading Indicator Color
     const loaderColor = isOutline ? '#4B5563' : 'white';
 
@@ -60,13 +67,14 @@ const DialogButton = ({
                     borderColor: borderColor,
                     borderWidth: borderWidth,
                     opacity: (loading || pressed) ? 0.6 : 1
-                }
+                },
+                style
             ]}
         >
             {loading ? (
                 <ActivityIndicator color={loaderColor} />
             ) : (
-                <Typography weight="bold" className={`text-base text-center ${textClass}`}>
+                <Typography weight="bold" className="text-base text-center" style={{ color: textColor }}>
                     {title}
                 </Typography>
             )}
@@ -86,7 +94,6 @@ export const AlertDialog = ({
     type = 'alert',
     loading = false
 }: AlertDialogProps) => {
-    const { width: screenWidth, height: screenHeight } = Dimensions.get('screen');
     const scaleAnim = useRef(new Animated.Value(0)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -166,20 +173,7 @@ export const AlertDialog = ({
             onRequestClose={onClose}
             statusBarTranslucent
         >
-            <View
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: screenWidth,
-                    height: screenHeight,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                    padding: 24,
-                    zIndex: 1000
-                }}
-            >
+            <View style={styles.backdrop}>
                 <Animated.View
                     style={[
                         styles.dialogContainer,
@@ -202,18 +196,19 @@ export const AlertDialog = ({
                         {message}
                     </Typography>
 
-                    <View style={{ flexDirection: 'row', width: '100%', gap: 12, alignItems: 'center' }}>
+                    <View style={styles.buttonRow}>
                         {type === 'confirm' && (
-                            <View style={{ flex: 1, alignItems: 'stretch' }}>
+                            <View style={styles.buttonWrapper}>
                                 <DialogButton
                                     title={cancelText}
                                     variant="outline-neutral"
                                     onPress={onClose}
                                     loading={loading}
+                                    style={{ marginRight: 6 }}
                                 />
                             </View>
                         )}
-                        <View style={{ flex: 1, alignItems: 'stretch' }}>
+                        <View style={styles.buttonWrapper}>
                             <DialogButton
                                 title={confirmText}
                                 variant={getConfirmVariant()}
@@ -222,6 +217,7 @@ export const AlertDialog = ({
                                     else onClose();
                                 }}
                                 loading={loading}
+                                style={{ marginLeft: type === 'confirm' ? 6 : 0 }}
                             />
                         </View>
                     </View>
@@ -232,6 +228,14 @@ export const AlertDialog = ({
 };
 
 const styles = StyleSheet.create({
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 24,
+        zIndex: 1000
+    },
     dialogContainer: {
         width: '100%',
         maxWidth: 384,
@@ -248,6 +252,15 @@ const styles = StyleSheet.create({
         shadowRadius: 30,
         elevation: 24,
     },
+    buttonRow: {
+        flexDirection: 'row',
+        width: '100%',
+        alignItems: 'center',
+    },
+    buttonWrapper: {
+        flex: 1,
+        alignItems: 'stretch',
+    },
     button: {
         width: '100%',
         height: 56, // h-14
@@ -257,3 +270,4 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     }
 });
+

@@ -6,7 +6,7 @@ import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { Stack, SplashScreen, useSegments, useRouter, router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform } from 'react-native';
 import {
     useFonts,
     Outfit_400Regular,
@@ -22,7 +22,6 @@ import { vars } from 'nativewind';
 import { useUIStore } from '../store/useUIStore';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { AppState, AppStateStatus } from 'react-native';
 import '../global.css';
 import { ConnectivityBanner } from '../components/ConnectivityBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -160,6 +159,15 @@ function RootLayoutContent() {
     useEffect(() => {
         if (!isReady || !loaded) return;
 
+        const isWeb = Platform.OS === 'web';
+        const isEnvDisabled = process.env.EXPO_PUBLIC_DISABLE_WEB_ACCESS === 'true';
+
+        if (isWeb && (protectedFeatures.disable_web_access || isEnvDisabled) && segments[0] !== 'landing') {
+            console.log('LAYOUT: Web access restricted (Setting or ENV)');
+            router.replace('/landing?reason=mobile_only');
+            return;
+        }
+
         const inAuthGroup = segments[0] === '(auth)';
         const inSecurityGroup = segments[0] === '(security)';
 
@@ -247,6 +255,7 @@ function RootLayoutContent() {
                     <BottomSheetModalProvider>
                         <Stack screenOptions={{ headerShown: false }}>
                             <Stack.Screen name="index" options={{ headerShown: false }} />
+                            <Stack.Screen name="landing" options={{ headerShown: false }} />
                             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                             <Stack.Screen name="(security)" options={{ headerShown: false }} />
