@@ -6,6 +6,7 @@ import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { Stack, SplashScreen, useSegments, useRouter, router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
+import * as Updates from 'expo-updates';
 import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform } from 'react-native';
 import {
     useFonts,
@@ -79,6 +80,7 @@ function RootLayoutContent() {
 
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
     // API state fetching
@@ -99,6 +101,27 @@ function RootLayoutContent() {
         '--color-text': themeColors.text,
         '--color-text-gray': themeColors.textGray,
     });
+
+    // Handle OTA Updates on app mount
+    useEffect(() => {
+        async function onFetchUpdateAsync() {
+            if (__DEV__) return; // Skip in development
+            try {
+                // IMPORTANT: In Expo 51+, we use the new Updates API
+                const update = await Updates.checkForUpdateAsync();
+                if (update.isAvailable) {
+                    setIsUpdating(true);
+                    await Updates.fetchUpdateAsync();
+                    await Updates.reloadAsync(); // App will restart with new version
+                }
+            } catch (error) {
+                console.log('Update check failed:', error);
+            } finally {
+                setIsUpdating(false);
+            }
+        }
+        onFetchUpdateAsync();
+    }, []);
 
     // Sync remote API settings to local store
     useEffect(() => {
@@ -235,14 +258,23 @@ function RootLayoutContent() {
         );
     }
 
-    // Show loading indicator while fonts are loading
-    if (!loaded || !isReady) {
+    // Show loading indicator while fonts are loading or update is downloading
+    if (!loaded || !isReady || isUpdating) {
+        const loadingMessage = isUpdating 
+            ? "Mendownload versi terbaru..." 
+            : "Memuat TPM Super App...";
+
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
                 <ActivityIndicator size="large" color="#3b82f6" />
-                <Text style={{ marginTop: 16, fontSize: 14, color: '#666' }}>
-                    Loading TPM Super App...
+                <Text style={{ marginTop: 16, fontSize: 14, color: '#666', fontWeight: '600' }}>
+                    {loadingMessage}
                 </Text>
+                {isUpdating && (
+                    <Text style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+                        Aplikasi akan restart secara otomatis
+                    </Text>
+                )}
             </View>
         );
     }
