@@ -344,7 +344,6 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 />
 
                 <Pressable
-                    activeOpacity={0.8}
                     onPress={handleAddBiaya}
                     disabled={addBiayaMutation.isPending}
                     className={`bg-primary flex-row items-center justify-center py-4 rounded-[20px] shadow-lg shadow-primary/20 ${addBiayaMutation.isPending ? 'opacity-70' : ''}`}
@@ -471,7 +470,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.flex1}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >

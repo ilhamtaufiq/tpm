@@ -300,6 +300,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             index={visible ? 0 : -1}
             snapPoints={snapPoints}
             enablePanDownToClose
+            keyboardBehavior="interactive"
+            keyboardBlurBehavior="restore"
             onClose={onClose}
             backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
         >

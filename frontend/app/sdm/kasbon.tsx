@@ -722,6 +722,8 @@ export default function KasbonScreen() {
                         index={-1}
                         snapPoints={createSnapPoints}
                         enablePanDownToClose
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                         onClose={() => setActiveSheet('none')}
                     >
@@ -735,6 +737,8 @@ export default function KasbonScreen() {
                         index={-1}
                         snapPoints={detailSnapPoints}
                         enablePanDownToClose
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                         onClose={() => setActiveSheet('none')}
                     >

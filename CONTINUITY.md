@@ -23,11 +23,13 @@ Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled f
   - [x] Fix invalid EAS Update configuration in `eas.json`.
   - [x] **Refactored AlertDialog.tsx to fix Android rendering issues.**
   - [x] **Applied 400ms delay to AlertDialog across all business unit screens.**
+  - [x] **Optimized Android keyboard handling by using `adjustResize` in `app.json`.**
+  - [x] **Updated `KeyboardAvoidingView` behavior and `BottomSheet` keyboard props across the app.**
 - Now:
-  - Feature complete and UI stability fixes applied.
+  - Feature complete and UI stability fixes (keyboard, modal race conditions) applied.
 - Next:
-  - Test on web browser to verify redirection when toggled ON.
-  - Test on mobile to verify AlertDialog fixes.
+  - Final verification on a physical Android device.
+  - Deploy via `eas update`.
 
 ## Open Questions (UNCONFIRMED)
 - None.

@@ -1668,6 +1668,8 @@ export default function BengkelScreen() {
                     index={sheetIndex}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
@@ -1707,6 +1709,8 @@ export default function BengkelScreen() {
                     index={-1}
                     snapPoints={dateSnapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={() => setIsDateModalVisible(false)}

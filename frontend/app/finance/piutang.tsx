@@ -753,6 +753,8 @@ export default function PiutangUsahaScreen() {
                     index={-1}
                     snapPoints={createSnapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
@@ -787,6 +789,8 @@ export default function PiutangUsahaScreen() {
                     index={-1}
                     snapPoints={detailSnapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >

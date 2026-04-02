@@ -1590,6 +1590,8 @@ export default function JasaAngkutScreen() {
                         index={sheetIndex}
                         snapPoints={snapPoints}
                         enablePanDownToClose
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         onChange={setSheetIndex}
@@ -1602,6 +1604,8 @@ export default function JasaAngkutScreen() {
                         index={-1}
                         snapPoints={walletSnapPoints}
                         enablePanDownToClose
+                        keyboardBehavior="interactive"
+                        keyboardBlurBehavior="restore"
                         backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                         handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                         onClose={handleCloseWallet}
@@ -1673,6 +1677,8 @@ export default function JasaAngkutScreen() {
                     index={-1}
                     snapPoints={dateSnapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onClose={() => setIsDateModalVisible(false)}

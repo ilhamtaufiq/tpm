@@ -1021,7 +1021,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.flex1}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >

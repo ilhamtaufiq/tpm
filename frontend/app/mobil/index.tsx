@@ -1251,6 +1251,8 @@ export default function MobilInventoryScreen() {
     topInset={insets.top}
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <View className="flex-1">
                                 <MobilForm onSuccess={() => { bottomSheetModalRef.current?.dismiss(); refetch(); }} />
@@ -1264,6 +1266,8 @@ export default function MobilInventoryScreen() {
     topInset={insets.top}
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <View className="flex-1">
                                 {selectedUnitData && <MobilSalesForm unit={selectedUnitData} onSuccess={() => { salesBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
@@ -1277,6 +1281,8 @@ export default function MobilInventoryScreen() {
     topInset={insets.top}
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <View className="flex-1">
                                 {selectedUnitData && <MobilCostForm unit={selectedUnitData} onSuccess={() => { costBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
@@ -1290,6 +1296,8 @@ export default function MobilInventoryScreen() {
     topInset={insets.top}
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <View className="flex-1">
                                 {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
@@ -1303,6 +1311,8 @@ export default function MobilInventoryScreen() {
     topInset={insets.top}
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <View className="flex-1">
                                 {editingUnit && <MobilForm initialData={editingUnit} onSuccess={() => { editBottomSheetModalRef.current?.dismiss(); refetch(); }} />}
@@ -1318,6 +1328,8 @@ export default function MobilInventoryScreen() {
     backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
     onDismiss={handleCloseWallet}
     onChange={handleSheetChanges}
+    keyboardBehavior="interactive"
+    keyboardBlurBehavior="restore"
 >
                             <BottomSheetView className="flex-1 px-8 py-2">
                                 {renderWalletContent()}

@@ -641,6 +641,8 @@ export default function MutasiKasScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}

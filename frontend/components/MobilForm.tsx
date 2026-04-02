@@ -485,7 +485,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.flex1}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
