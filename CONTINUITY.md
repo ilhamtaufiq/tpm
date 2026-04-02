@@ -1,18 +1,20 @@
 # Continuity Ledger - TPM Super App
 
 ## Goal
-Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled from the mobile app settings or via frontend environment variables. Also brand update from "Tulus Putra Mandiri" to "Tiga Putra Motor".
+Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled from the mobile app settings or via frontend environment variables. Also brand update from "Tulus Putra Mandiri" to "Tiga Putra Motor". Fix EAS Update configuration issues.
 
 ## Constraints/Assumptions
 - Web access restriction redirects users to `/landing?reason=mobile_only`.
 - Local setting `is_pin_enabled` is required for granular PIN protection, but platform-level access (like web restriction) should be configurable independently of PIN status.
 - Frontend ENV `EXPO_PUBLIC_DISABLE_WEB_ACCESS` acts as a hard override (locks the feature to enabled).
+- EAS Updates require a channel to be specified in `eas.json` when `update.url` is present in `app.json`.
 
 ## Key Decisions
 - Moved "Batasi Akses Web" to a new "Akses Platform" section in `security-features.tsx` to separate it from page-level PIN protection.
 - Added visual feedback (badge) when the setting is locked by an environment variable.
 - Re-used existing redirection logic in `_layout.tsx` and `index.tsx`.
 - Updated footer logo in `landing.tsx` to use the image asset `logo-tpm.png` and updated the brand name.
+- Added `channel` mapping for `development`, `preview`, and `production` build profiles in `eas.json`.
 
 ## State
 - Done:
@@ -20,6 +22,7 @@ Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled f
   - [x] Landing page handling of `mobile_only` reason.
   - [x] UI Toggle in `app/settings/security-features.tsx` under new "Akses Platform" section.
   - [x] Brand identity update in `landing.tsx` (Logo & Name).
+  - [x] Fix invalid EAS Update configuration in `eas.json`.
 - Now:
   - Feature complete and ready for testing.
 - Next:
@@ -36,3 +39,4 @@ Implement "Batasi Akses Web" (Restrict Web Access) feature that can be toggled f
 - `frontend/app/settings/security-features.tsx`
 - `frontend/store/useSecurityStore.ts`
 - `backend/app/api/v1/security.py`
+- `frontend/eas.json`
