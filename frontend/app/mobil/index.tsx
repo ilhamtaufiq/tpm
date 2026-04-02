@@ -756,19 +756,21 @@ export default function MobilInventoryScreen() {
                                     setIsRecordingExpense(false);
                                     handleCloseWallet();
 
-                                    setDialogConfig({
-                                        visible: true,
-                                        title: 'Sukses',
-                                        message: expenseMode === 'KELUAR'
-                                            ? 'Biaya operasional unit mobil berhasil dicatat'
-                                            : expenseMode === 'MASUK'
-                                                ? 'Dana berhasil diterima dari akun utama'
-                                                : expenseMode === 'PIUTANG'
-                                                    ? 'Pemberian kasbon/piutang unit berhasil dicatat'
-                                                    : 'Setoran ke akun utama berhasil dicatat',
-                                        variant: 'success',
-                                        type: 'alert'
-                                    });
+                                    setTimeout(() => {
+                                        setDialogConfig({
+                                            visible: true,
+                                            title: 'Sukses',
+                                            message: expenseMode === 'KELUAR'
+                                                ? 'Biaya operasional unit mobil berhasil dicatat'
+                                                : expenseMode === 'MASUK'
+                                                    ? 'Dana berhasil diterima dari akun utama'
+                                                    : expenseMode === 'PIUTANG'
+                                                        ? 'Pemberian kasbon/piutang unit berhasil dicatat'
+                                                        : 'Setoran ke akun utama berhasil dicatat',
+                                            variant: 'success',
+                                            type: 'alert'
+                                        });
+                                    }, 400);
 
                                     refetch();
                                     refetchSummary();

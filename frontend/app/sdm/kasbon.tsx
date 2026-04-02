@@ -188,8 +188,10 @@ export default function KasbonScreen() {
                 keterangan: formData.keterangan || undefined,
                 payments: payoutData
             });
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil ditambahkan', variant: 'success' });
             closeSheets();
+            setTimeout(() => {
+                setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil ditambahkan', variant: 'success' });
+            }, 400);
             loadData();
         } catch (error) {
             console.error('Failed to create kasbon:', error);
@@ -759,13 +761,15 @@ export default function KasbonScreen() {
                     onClose={() => setPaymentModalVisible(false)}
                     onSuccess={() => {
                         setPaymentModalVisible(false);
-                        setDialogConfig({
-                            visible: true,
-                            title: 'Sukses',
-                            message: 'Pembayaran kasbon berhasil dicatat',
-                            variant: 'success',
-                            type: 'alert'
-                        });
+                        setTimeout(() => {
+                            setDialogConfig({
+                                visible: true,
+                                title: 'Sukses',
+                                message: 'Pembayaran kasbon berhasil dicatat',
+                                variant: 'success',
+                                type: 'alert'
+                            });
+                        }, 400);
                         loadData();
                     }}
                     id={selectedKasbon.piutang_id}

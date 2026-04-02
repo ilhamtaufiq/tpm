@@ -1712,15 +1712,18 @@ export default function JasaAngkutScreen() {
                     visible={paymentModalVisible}
                     onClose={() => setPaymentModalVisible(false)}
                     onSuccess={() => {
-                        setDialogConfig({
-                            visible: true,
-                            title: 'Sukses',
-                            message: 'Pembayaran berhasil dicatat',
-                            variant: 'success',
-                            type: 'alert'
-                        });
-                        refetch();
+                        setPaymentModalVisible(false);
                         handleCloseSheet();
+                        setTimeout(() => {
+                            setDialogConfig({
+                                visible: true,
+                                title: 'Sukses',
+                                message: 'Pembayaran berhasil dicatat',
+                                variant: 'success',
+                                type: 'alert'
+                            });
+                        }, 400);
+                        refetch();
                     }}
                     id={selectedTrip.piutang_id}
                     initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
