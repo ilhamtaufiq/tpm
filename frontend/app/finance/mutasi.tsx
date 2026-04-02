@@ -179,13 +179,15 @@ export default function MutasiKasScreen() {
                 });
                 handleCloseSheet();
                 setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
-                setDialogConfig({
-                    visible: true,
-                    title: "Offline Mode",
-                    message: "Transfer telah disimpan di antrean offline.",
-                    variant: 'info',
-                    type: 'alert'
-                });
+                setTimeout(() => {
+                    setDialogConfig({
+                        visible: true,
+                        title: "Offline Mode",
+                        message: "Transfer telah disimpan di antrean offline.",
+                        variant: 'info',
+                        type: 'alert'
+                    });
+                }, 400);
                 return;
             }
 
@@ -198,13 +200,15 @@ export default function MutasiKasScreen() {
             });
             handleCloseSheet();
             setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
-            setDialogConfig({
-                visible: true,
-                title: "Sukses",
-                message: "Transfer berhasil dilakukan",
-                variant: 'success',
-                type: 'alert'
-            });
+            setTimeout(() => {
+                setDialogConfig({
+                    visible: true,
+                    title: "Sukses",
+                    message: "Transfer berhasil dilakukan",
+                    variant: 'success',
+                    type: 'alert'
+                });
+            }, 400);
         } catch (error) {
             console.error('Transfer failed:', error);
             setDialogConfig({
@@ -231,13 +235,15 @@ export default function MutasiKasScreen() {
                 });
                 handleCloseSheet();
                 setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
-                setDialogConfig({
-                    visible: true,
-                    title: "Offline Mode",
-                    message: "Setoran modal telah disimpan di antrean offline.",
-                    variant: 'info',
-                    type: 'alert'
-                });
+                setTimeout(() => {
+                    setDialogConfig({
+                        visible: true,
+                        title: "Offline Mode",
+                        message: "Setoran modal telah disimpan di antrean offline.",
+                        variant: 'info',
+                        type: 'alert'
+                    });
+                }, 400);
                 return;
             }
 
@@ -251,13 +257,15 @@ export default function MutasiKasScreen() {
             });
             handleCloseSheet();
             setModalForm({ jenis: 'KAS_UTAMA', nominal: '', keterangan: 'Setoran Modal' });
-            setDialogConfig({
-                visible: true,
-                title: "Sukses",
-                message: "Setoran modal berhasil disimpan",
-                variant: 'success',
-                type: 'alert'
-            });
+            setTimeout(() => {
+                setDialogConfig({
+                    visible: true,
+                    title: "Sukses",
+                    message: "Setoran modal berhasil disimpan",
+                    variant: 'success',
+                    type: 'alert'
+                });
+            }, 400);
         } catch (error) {
             console.error('Modal entry failed:', error);
             setDialogConfig({

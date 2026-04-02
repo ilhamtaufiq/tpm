@@ -213,15 +213,6 @@ export default function PiutangUsahaScreen() {
 
             if (!onlineManager.isOnline()) {
                 createMutation.mutate(payload);
-                showAlert('Offline Mode', 'Piutang telah disimpan di antrean offline.', 'info');
-                // Reset creation state
-                setCreateName('');
-                setCreateAmount('');
-                setCreateNote('');
-                setCreateMethod(undefined);
-                setIsCreateSplitPayment(false);
-                setCreatePayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
-
                 if (Platform.OS === 'web') {
                     setCreateVisible(false);
                     setIsSheetOpen(false);
@@ -229,20 +220,14 @@ export default function PiutangUsahaScreen() {
                     createSheetRef.current?.close();
                     setIsSheetOpen(false);
                 }
+
+                setTimeout(() => {
+                    showAlert('Offline Mode', 'Piutang telah disimpan di antrean offline.', 'info');
+                }, 400);
                 return;
             }
 
             await createMutation.mutateAsync(payload);
-            showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
-
-            // Reset creation state
-            setCreateName('');
-            setCreateAmount('');
-            setCreateNote('');
-            setCreateMethod(undefined);
-            setIsCreateSplitPayment(false);
-            setCreatePayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
-
             if (Platform.OS === 'web') {
                 setCreateVisible(false);
                 setIsSheetOpen(false);
@@ -251,6 +236,10 @@ export default function PiutangUsahaScreen() {
                 createSheetRef.current?.close();
                 setIsSheetOpen(false);
             }
+
+            setTimeout(() => {
+                showAlert('Sukses', 'Piutang berhasil dibuat', 'success');
+            }, 400);
         } catch (error: any) {
             const errorMessage = error?.response?.data?.detail || error?.detail || error?.message || 'Terjadi kesalahan saat membuat piutang';
             showAlert('Gagal', errorMessage, 'error');

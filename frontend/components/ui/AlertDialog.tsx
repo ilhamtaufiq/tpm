@@ -176,9 +176,10 @@ export const AlertDialog = ({
             visible={true}
             animationType="none"
             onRequestClose={onClose}
-            statusBarTranslucent
+            statusBarTranslucent={Platform.OS === 'android'}
         >
-            <View style={styles.backdrop}>
+            <View style={styles.modalOverlay}>
+                <View style={styles.backdrop}>
                 <Animated.View
                     style={[
                         styles.dialogContainer,
@@ -226,24 +227,33 @@ export const AlertDialog = ({
                             />
                         </View>
                     </View>
-                </Animated.View>
+                    </Animated.View>
+                </View>
             </View>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'transparent',
+    },
     backdrop: {
-        ...StyleSheet.absoluteFillObject,
+        flex: 1,
+        width: '100%',
+        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
         padding: 24,
-        zIndex: 10000
     },
     dialogContainer: {
         width: '100%',
-        maxWidth: 384,
+        minWidth: 280,
+        maxWidth: 400,
         alignSelf: 'center',
         paddingTop: 32,
         paddingHorizontal: 28,
