@@ -39,7 +39,7 @@ def create_spare_part(
 
 
 @router.post("/import", status_code=status.HTTP_200_OK)
-async def import_spare_parts(
+def import_spare_parts(
     db: DBSession,
     current_user: ManagerUser,
     file: UploadFile = File(...),
@@ -51,7 +51,7 @@ async def import_spare_parts(
             detail="File harus berformat Excel (.xlsx atau .xls)"
         )
     
-    contents = await file.read()
+    contents = file.file.read()
     service = SparePartService(db)
     return service.import_from_excel(contents)
 

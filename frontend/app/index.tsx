@@ -125,6 +125,9 @@ export default function Index() {
     }
 
     if (isAuthenticated) {
+        if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
+            return <Redirect href="/all-menus" />;
+        }
         if (user?.role === 'BENGKEL') {
             return <Redirect href="/bengkel" />;
         }

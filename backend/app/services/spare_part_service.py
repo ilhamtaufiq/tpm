@@ -4,7 +4,7 @@ import uuid
 import io
 import openpyxl
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_
@@ -228,7 +228,10 @@ class SparePartService:
 
         # Low stock filter
         if low_stock_only:
-            query = query.filter(SparePart.stok <= SparePart.stok_minimum)
+            query = query.filter(
+                SparePart.stok <= SparePart.stok_minimum,
+                SparePart.stok != 999
+            )
 
         # Count total
         total = query.count()
@@ -254,36 +257,6 @@ class SparePartService:
             "pages": pages,
         }
 
-    def update(self, spare_part_id: int, data: SparePartUpdate) -> SparePart:
-        """Update spare part."""
-        spare_part = self.get_by_id(spare_part_id)
-
-        update_data = data.model_dump(exclude_unset=True)
-
-        # Check duplicate name if changing
-        if "nama" in update_data and update_data["nama"] != spare_part.nama:
-            existing = (
-                self.db.query(SparePart)
-                .filter(
-                    SparePart.nama == update_data["nama"],
-                    SparePart.id != spare_part_id,
-                    SparePart.deleted_at.is_(None),
-                )
-                .first()
-            )
-            if existing:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Spare part dengan nama '{update_data['nama']}' sudah ada",
-                )
-
-        for field, value in update_data.items():
-            setattr(spare_part, field, value)
-
-        self.db.commit()
-        self.db.refresh(spare_part)
-
-        return spare_part
 
     def delete(self, spare_part_id: int) -> bool:
         """Soft delete spare part."""
@@ -317,14 +290,16 @@ class SparePartService:
         spare_part = self.get_by_id(spare_part_id)
 
         if operation == "add":
-            spare_part.stok += quantity
+            if spare_part.stok != 999:
+                spare_part.stok += quantity
         elif operation == "subtract":
-            if spare_part.stok < quantity:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Stok tidak mencukupi. Stok tersedia: {spare_part.stok}",
-                )
-            spare_part.stok -= quantity
+            if spare_part.stok != 999:
+                if spare_part.stok < quantity:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Stok tidak mencukupi. Stok tersedia: {spare_part.stok}",
+                    )
+                spare_part.stok -= quantity
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -362,6 +337,7 @@ class SparePartService:
             .filter(
                 SparePart.deleted_at.is_(None),
                 SparePart.stok <= SparePart.stok_minimum,
+                SparePart.stok != 999,
             )
             .order_by(SparePart.stok.asc())
             .all()
@@ -468,6 +444,14 @@ class SparePartService:
             "errors": []
         }
 
+        # Step 1: Soft-delete all existing spare parts to perform a fresh/replace import
+        now = datetime.now()
+        self.db.query(SparePart).filter(SparePart.deleted_at.is_(None)).update(
+            {"deleted_at": now}, 
+            synchronize_session=False
+        )
+        self.db.flush()
+
         # Skip header (starting from row 2)
         for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
             # Column mapping
@@ -498,28 +482,26 @@ class SparePartService:
                     "lokasi_rak": str(row[10]) if row[10] else None,
                     "catatan": str(row[11]) if row[11] else None
                 }
-            except (ValueError, TypeError, Decimal.InvalidOperation) as e:
+            except (ValueError, TypeError, InvalidOperation) as e:
                 results["failed"] += 1
                 results["errors"].append(f"Baris {row_idx}: Format data numerik tidak valid ({str(e)})")
                 continue
 
-            # Check if exists by kode or nama
+            # Check if exists by kode or nama (including soft-deleted ones to reactivate them)
             spare_part = None
             if kode:
                 spare_part = self.db.query(SparePart).filter(SparePart.kode == kode).first()
             
             if not spare_part:
-                # Try finding by exact name (non-deleted)
-                spare_part = self.db.query(SparePart).filter(
-                    SparePart.nama == nama,
-                    SparePart.deleted_at.is_(None)
-                ).first()
+                # Try finding by exact name
+                spare_part = self.db.query(SparePart).filter(SparePart.nama == nama).first()
 
             try:
                 if spare_part:
-                    # Update existing
+                    # Update existing and REACTIVATE
                     for key, value in data.items():
                         setattr(spare_part, key, value)
+                    spare_part.deleted_at = None
                     results["updated"] += 1
                 else:
                     # Create new

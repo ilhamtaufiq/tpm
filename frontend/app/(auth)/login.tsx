@@ -21,7 +21,9 @@ export default function LoginScreen() {
     useEffect(() => {
         if (isAuthenticated) {
             const user = useAuthStore.getState().user;
-            if (user?.role === 'BENGKEL') {
+            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
+                router.replace('/all-menus');
+            } else if (user?.role === 'BENGKEL') {
                 router.replace('/bengkel');
             } else if (user?.role === 'JASA_ANGKUT') {
                 router.replace('/jasa-angkut');
@@ -70,7 +72,9 @@ export default function LoginScreen() {
             setAuth(user, access_token);
             
             // Redirect based on role
-            if (user?.role === 'BENGKEL') {
+            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
+                router.replace('/all-menus');
+            } else if (user?.role === 'BENGKEL') {
                 router.replace('/bengkel');
             } else if (user?.role === 'JASA_ANGKUT') {
                 router.replace('/jasa-angkut');

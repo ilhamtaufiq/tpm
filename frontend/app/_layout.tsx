@@ -200,7 +200,12 @@ function RootLayoutContent() {
             return;
         }
         if (isAuthenticated && inAuthGroup) {
-            router.replace('/(tabs)/home');
+            const user = useAuthStore.getState().user;
+            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
+                router.replace('/all-menus');
+            } else {
+                router.replace('/(tabs)/home');
+            }
             return;
         }
 

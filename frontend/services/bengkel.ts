@@ -157,7 +157,9 @@ export const bengkelService = {
     },
 
     importSpareParts: async (formData: FormData) => {
-        const response = await api.post('/spare-parts/import', formData);
+        const response = await api.post('/spare-parts/import', formData, {
+            timeout: 60000 // 60 seconds for import
+        });
         return response.data;
     },
 

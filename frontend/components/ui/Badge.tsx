@@ -4,7 +4,7 @@ import { cn } from './Card';
 
 interface BadgeProps extends ViewProps {
     label: string;
-    variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral';
+    variant?: 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'infinity';
     textClassName?: string;
 }
 
@@ -18,6 +18,7 @@ export const Badge = ({ label, variant = 'neutral', className, textClassName, ..
                 variant === 'error' && 'bg-red-100',
                 variant === 'info' && 'bg-blue-100',
                 variant === 'neutral' && 'bg-gray-100',
+                variant === 'infinity' && 'bg-indigo-100',
                 className
             )}
             {...props}
@@ -30,6 +31,7 @@ export const Badge = ({ label, variant = 'neutral', className, textClassName, ..
                     variant === 'error' && 'text-red-700',
                     variant === 'info' && 'text-blue-700',
                     variant === 'neutral' && 'text-gray-700',
+                    variant === 'infinity' && 'text-indigo-700',
                     textClassName
                 )}
             >

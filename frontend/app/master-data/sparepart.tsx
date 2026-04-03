@@ -110,7 +110,7 @@ export default function SparePartMasterScreen() {
     const stats = useMemo(() => {
         // total should be from the first page's meta if possible, or total of all pages
         const totalCount = sparePartsData?.pages[0]?.total || 0;
-        const lowStock = sparePartsList.filter((item: any) => item.stok <= item.stok_minimum).length;
+        const lowStock = sparePartsList.filter((item: any) => item.stok !== 999 && item.stok <= item.stok_minimum).length;
         return { total: totalCount, lowStock };
     }, [sparePartsData, sparePartsList]);
 
@@ -125,6 +125,7 @@ export default function SparePartMasterScreen() {
     const [isEditing, setIsEditing] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scannerTarget, setScannerTarget] = useState<'kode' | 'kode_part'>('kode_part');
+    const [isAlwaysReady, setIsAlwaysReady] = useState(false);
     const importMutation = useImportSpareParts();
     const { refetch: fetchNextKode } = useNextSparePartKode();
 
@@ -209,9 +210,11 @@ export default function SparePartMasterScreen() {
                 catatan: item.catatan || '',
                 gambar: item.gambar,
             });
+            setIsAlwaysReady(item.stok === 999);
         } else {
             setIsEditing(false);
             setForm(INITIAL_FORM);
+            setIsAlwaysReady(false);
         }
 
         // Set visible for both platforms
@@ -224,6 +227,7 @@ export default function SparePartMasterScreen() {
 
     const handleCloseSheet = () => {
         setSheetVisible(false);
+        setIsAlwaysReady(false);
 
         if (Platform.OS !== 'web') {
             bottomSheetRef.current?.close();
@@ -574,7 +578,8 @@ export default function SparePartMasterScreen() {
     );
 
     const renderItem = ({ item }: { item: any }) => {
-        const isLowStock = item.stok <= item.stok_minimum;
+        const isAlwaysReady = item.stok === 999;
+        const isLowStock = !isAlwaysReady && item.stok <= item.stok_minimum;
         const imageUrl = item.gambar ? `${FILE_URL}/uploads/${item.gambar}` : null;
         const isSelected = selectedIds.includes(item.id);
 
@@ -627,9 +632,17 @@ export default function SparePartMasterScreen() {
                             </View>
 
                             <View className="flex-row items-center pt-2 mt-2 border-t border-gray-100/50 border-dashed">
-                                <Typography className="text-textGray text-xs font-semibold px-2 py-1 bg-gray-100 rounded-lg mr-2">
-                                    Stok: {item.stok}
-                                </Typography>
+                                {isAlwaysReady ? (
+                                    <Badge
+                                        label="Always Ready"
+                                        variant="infinity"
+                                        className="mr-2 px-3"
+                                    />
+                                ) : (
+                                    <Typography className="text-textGray text-xs font-semibold px-2 py-1 bg-gray-100 rounded-lg mr-2">
+                                        Stok: {item.stok}
+                                    </Typography>
+                                )}
                                 <Typography className="text-textGray/60 text-xs italic">
                                     Rak: {item.lokasi_rak || '-'}
                                 </Typography>
@@ -780,15 +793,38 @@ export default function SparePartMasterScreen() {
 
                 <View className="flex-row space-x-3">
                     <View className="flex-1">
-                        <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Stok Awal</Typography>
+                        <View className="flex-row justify-between items-center mb-2">
+                            <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Stok Awal</Typography>
+                            <Pressable 
+                                onPress={() => {
+                                    const newValue = !isAlwaysReady;
+                                    setIsAlwaysReady(newValue);
+                                    if (newValue) {
+                                        setForm(prev => ({ ...prev, stok: '999' }));
+                                    }
+                                }}
+                                className="flex-row items-center"
+                            >
+                                <View className={`w-4 h-4 rounded border items-center justify-center mr-1.5 ${isAlwaysReady ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                    {isAlwaysReady && <Check size={10} color="white" />}
+                                </View>
+                                <Typography className={`text-[10px] font-bold ${isAlwaysReady ? 'text-primary' : 'text-textGray'}`}>Always Ready</Typography>
+                            </Pressable>
+                        </View>
                         <TextInput
-                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5"
+                            className={`bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5 text-textMain font-medium focus:border-primary focus:bg-primary/5 ${isAlwaysReady ? 'opacity-50' : ''}`}
                             placeholder="0"
                             placeholderTextColor="#9CA3AF"
                             keyboardType="numeric"
                             value={form.stok}
                             onChangeText={(t) => setForm({ ...form, stok: t })}
+                            editable={!isAlwaysReady}
                         />
+                        {isAlwaysReady && (
+                            <Typography className="text-[8px] text-indigo-500 mt-1 italic font-bold">
+                                * Mode Always Ready: Stok diset ke 999 dan tidak akan berkurang.
+                            </Typography>
+                        )}
                     </View>
                     <View className="flex-1">
                         <Typography className="mb-2 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Min. Stok</Typography>
