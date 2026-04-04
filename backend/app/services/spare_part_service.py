@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, UploadFile
 from app.config import settings
@@ -345,10 +345,22 @@ class SparePartService:
 
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
+        # Use CASE statements to exclude items with stock 999 from value and count calculations
+        # as 999 represents "Always Ready" / infinite stock.
         result = (
             self.db.query(
-                func.sum(SparePart.stok * SparePart.harga_beli).label("total_value"),
-                func.sum(SparePart.stok).label("total_items"),
+                func.sum(
+                    case(
+                        (SparePart.stok != 999, SparePart.stok * SparePart.harga_beli),
+                        else_=0
+                    )
+                ).label("total_value"),
+                func.sum(
+                    case(
+                        (SparePart.stok != 999, SparePart.stok),
+                        else_=0
+                    )
+                ).label("total_items"),
                 func.count(SparePart.id).label("total_products"),
             )
             .filter(SparePart.deleted_at.is_(None))
@@ -357,8 +369,8 @@ class SparePartService:
 
         return {
             "total_value": float(result.total_value or 0),
-            "total_items": result.total_items or 0,
-            "total_products": result.total_products or 0,
+            "total_items": int(result.total_items or 0),
+            "total_products": int(result.total_products or 0),
         }
 
     def search_for_transaction(

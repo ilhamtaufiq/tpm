@@ -4,11 +4,11 @@
     "slug": "tpm-super-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo-tpm.png",
+    "icon": "./assets/logo_tpm.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo-tpm.png",
+      "image": "./assets/logo_tpm.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -37,7 +37,7 @@
       "package": "com.olobor.tpmsuperapp",
       "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-tpm.png",
+        "foregroundImage": "./assets/logo_tpm.png",
         "backgroundColor": "#ffffff"
       }
     },

@@ -5,11 +5,12 @@ import { Input } from './Input';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { Search, Plus, User, Building2, Check, X, Truck } from 'lucide-react-native';
+import { Search, Plus, User, Building2, Check, X, Truck, UserPlus } from 'lucide-react-native';
 import { masterDataService } from '../../services/masterData';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { CustomerFormModal } from './CustomerFormModal';
 
 interface MasterDataSelectorProps {
     type: 'customer' | 'supplier';
@@ -19,6 +20,7 @@ interface MasterDataSelectorProps {
     placeholder?: string;
     allowGuest?: boolean;
     onGuestNameChange?: (name: string) => void;
+    onAddNew?: (item: any) => void;
 }
 
 export const MasterDataSelector = ({
@@ -28,12 +30,14 @@ export const MasterDataSelector = ({
     label,
     placeholder,
     allowGuest = false,
-    onGuestNameChange
+    onGuestNameChange,
+    onAddNew
 }: MasterDataSelectorProps) => {
     const insets = useSafeAreaInsets();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Dynamic Query based on type
     const { data: searchResults, isLoading } = useQuery({
@@ -69,17 +73,12 @@ export const MasterDataSelector = ({
         }
     };
 
-    const renderBackdrop = useCallback(
-        (props: any) => (
-            <BottomSheetBackdrop
-                {...props}
-                disappearsOnIndex={-1}
-                appearsOnIndex={0}
-                opacity={0.5}
-            />
-        ),
-        []
-    );
+    const handleAddNew = (item: any) => {
+        onSelect(item);
+        if (onAddNew) onAddNew(item);
+        setIsAddModalOpen(false);
+        handleClose();
+    };
 
     return (
         <View className="mb-4 w-full">
@@ -151,17 +150,29 @@ export const MasterDataSelector = ({
                             />
                         </View>
 
-                        {allowGuest && searchQuery.length > 0 && (
-                            <Pressable onPress={handleGuestSelect} className="mb-4">
-                                <Card className="p-4 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
-                                    <Plus size={20} color="#4B5563" />
-                                    <View className="ml-3">
-                                        <Typography weight="semibold">Gunakan "{searchQuery}"</Typography>
-                                        <Typography variant="caption" className="text-gray-500">sebagai Guest / Non-Member</Typography>
-                                    </View>
-                                </Card>
-                            </Pressable>
-                        )}
+                        <View className="flex-row space-x-2 mb-4">
+                            {allowGuest && searchQuery.length > 0 && (
+                                <Pressable onPress={handleGuestSelect} className="flex-1">
+                                    <Card className="p-3 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
+                                        <User size={18} color="#4B5563" />
+                                        <View className="ml-2">
+                                            <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
+                                        </View>
+                                    </Card>
+                                </Pressable>
+                            )}
+
+                            {type === 'customer' && (
+                                <Pressable onPress={() => setIsAddModalOpen(true)} className="flex-1">
+                                    <Card className="p-3 bg-blue-50 border border-dashed border-blue-300 flex-row items-center">
+                                        <UserPlus size={18} color="#2563EB" />
+                                        <View className="ml-2">
+                                            <Typography weight="semibold" className="text-xs text-primary">Daftarkan Baru</Typography>
+                                        </View>
+                                    </Card>
+                                </Pressable>
+                            )}
+                        </View>
 
                         {isLoading ? (
                             <ActivityIndicator className="mt-4" color="#023C69" />
@@ -207,6 +218,16 @@ export const MasterDataSelector = ({
                     </View>
                 </View>
             </Modal>
+
+            {/* Quick Add Customer Modal */}
+            {type === 'customer' && (
+                <CustomerFormModal
+                    visible={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    onSuccess={handleAddNew}
+                    initialName={searchQuery}
+                />
+            )}
         </View>
     );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -25,12 +25,12 @@ import { id as localeID } from 'date-fns/locale';
 import { bengkelService } from '../../services/bengkel';
 import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
-import { TextInput, Alert, Modal } from 'react-native';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function StockSparepartReportScreen() {
-    const router = useRouter();    const [filterType, setFilterType] = useState<FilterType>('monthly');
+    const router = useRouter();
+    const [filterType, setFilterType] = useState<FilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -163,13 +163,13 @@ export default function StockSparepartReportScreen() {
                 </View>
 
                 <View className="flex-row justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                    <Pressable
+                    <TouchableOpacity
                         onPress={handlePrev}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronLeft size={20} color="#374151" />
-                    </Pressable>
+                    </TouchableOpacity>
 
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#4B5563" className="mr-2" />
@@ -178,13 +178,13 @@ export default function StockSparepartReportScreen() {
                         </Typography>
                     </View>
 
-                    <Pressable
+                    <TouchableOpacity
                         onPress={handleNext}
                         className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
                         activeOpacity={0.7}
                     >
                         <ChevronRight size={20} color="#374151" />
-                    </Pressable>
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -252,13 +252,13 @@ export default function StockSparepartReportScreen() {
 
                                 <View className="items-end">
                                     <View className="flex-row items-center">
-                                        <Typography variant="body2" weight="bold" className={part.stok <= part.stok_minimum ? 'text-error' : 'text-gray-800'}>
-                                            {part.stok}
+                                        <Typography variant="body2" weight="bold" className={part.stok === 999 ? 'text-emerald-600' : (part.stok <= part.stok_minimum ? 'text-error' : 'text-gray-800')}>
+                                            {part.stok === 999 ? 'Ready' : part.stok}
                                         </Typography>
                                         <Typography variant="caption" className="text-gray-400 ml-1">{part.satuan || 'Unit'}</Typography>
                                     </View>
                                     <Typography variant="caption" className="text-gray-500">
-                                        Value: {formatCurrency(part.stok * part.harga_beli)}
+                                        Value: {part.stok === 999 ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                                     </Typography>
                                 </View>
                             </View>
@@ -284,7 +284,7 @@ export default function StockSparepartReportScreen() {
                 animationType="fade"
                 onRequestClose={() => setShowExportMenu(false)}
             >
-                <Pressable
+                <TouchableOpacity
                     className="flex-1 bg-black/50 justify-end"
                     activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
@@ -338,13 +338,13 @@ export default function StockSparepartReportScreen() {
                                                                 <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: center;">
-                                                                <span style="font-weight: bold; color: ${part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b'};">
-                                                                    ${part.stok}
+                                                                <span style="font-weight: bold; color: ${part.stok === 999 ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">
+                                                                    ${part.stok === 999 ? 'Ready' : part.stok}
                                                                 </span>
                                                                 <span style="font-size: 8px; color: #94a3b8;">${part.satuan || 'Unit'}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: right; font-weight: bold;">
-                                                                ${formatCurrency(part.stok * part.harga_beli)}
+                                                                ${part.stok === 999 ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                                                             </td>
                                                         </tr>
                                                     `).join('')}
@@ -406,13 +406,13 @@ export default function StockSparepartReportScreen() {
                                                                 <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: center;">
-                                                                <span style="font-weight: bold; color: ${part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b'};">
-                                                                    ${part.stok}
+                                                                <span style="font-weight: bold; color: ${part.stok === 999 ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">
+                                                                    ${part.stok === 999 ? 'Ready' : part.stok}
                                                                 </span>
                                                                 <span style="font-size: 8px; color: #94a3b8;">${part.satuan || 'Unit'}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: right; font-weight: bold;">
-                                                                ${formatCurrency(part.stok * part.harga_beli)}
+                                                                ${part.stok === 999 ? formatCurrency(0) : formatCurrency(part.stok * part.harga_beli)}
                                                             </td>
                                                         </tr>
                                                     `).join('')}
@@ -438,7 +438,7 @@ export default function StockSparepartReportScreen() {
                             </Pressable>
                         </View>
                     </View>
-                </Pressable>
+                </TouchableOpacity>
             </Modal>
         </SafeAreaView>
     );

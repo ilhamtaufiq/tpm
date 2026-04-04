@@ -200,7 +200,8 @@ class PembelianPartService:
         # Update spare part stock and price
         for item in data.detail:
             spare_part = spare_parts_map[item.spare_part_id]
-            spare_part.stok += item.qty
+            if spare_part.stok != 999:
+                spare_part.stok += item.qty
             spare_part.harga_beli = item.harga_satuan  # Update latest purchase price
 
         # Record purchase payment to kas/bank if paid immediately (including partial)
@@ -453,7 +454,7 @@ class PembelianPartService:
                 .filter(SparePart.id == detail.spare_part_id)
                 .first()
             )
-            if spare_part:
+            if spare_part and spare_part.stok != 999:
                 spare_part.stok -= detail.qty
                 if spare_part.stok < 0:
                     spare_part.stok = 0

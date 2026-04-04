@@ -29,6 +29,7 @@ from app.api.v1 import (
     settings,
     user_cash,
     backup,
+    trash,
 )
 
 
@@ -62,6 +63,7 @@ api_router.include_router(security.router)
 api_router.include_router(settings.router)
 api_router.include_router(user_cash.router)
 api_router.include_router(backup.router)
+api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 
 
 

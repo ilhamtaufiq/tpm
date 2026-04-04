@@ -283,16 +283,18 @@ export default function InventoryScreen() {
                                     <Typography variant="caption" className="text-textGray/60">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
 
                                     <View className="flex-row items-center mt-2">
-                                        <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5'}`}>
+                                        <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok === 999 ? 'bg-emerald-50' : (part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5')}`}>
                                             <Typography
                                                 variant="caption"
                                                 weight="bold"
-                                                className={part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary'}
+                                                className={part.stok === 999 ? 'text-emerald-600' : (part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary')}
                                             >
-                                                Stok: {part.stok} {part.satuan || 'Unit'}
+                                                Stok: {part.stok === 999 ? 'Always Ready' : `${part.stok} ${part.satuan || 'Unit'}`}
                                             </Typography>
                                         </View>
-                                        <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
+                                        {part.stok !== 999 && (
+                                            <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
+                                        )}
                                     </View>
                                 </View>
 
@@ -442,7 +444,7 @@ export default function InventoryScreen() {
                     <Card className="bg-gray-50 border-gray-100 p-4 mb-6">
                         <Typography variant="body1" weight="bold">{scannedPart?.nama}</Typography>
                         <Typography variant="caption" className="text-textGray mt-1">
-                            Kode: {scannedPart?.kode} • Stok Saat Ini: {scannedPart?.stok} {scannedPart?.satuan || 'pcs'}
+                            Kode: {scannedPart?.kode} • Stok Saat Ini: {scannedPart?.stok === 999 ? 'Always Ready' : `${scannedPart?.stok} ${scannedPart?.satuan || 'pcs'}`}
                         </Typography>
                     </Card>
 

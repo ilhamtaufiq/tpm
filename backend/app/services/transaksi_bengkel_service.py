@@ -282,7 +282,8 @@ class TransaksiBengkelService:
         # Reduce spare part stock
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
-            sp.stok -= item.qty
+            if sp.stok != 999:
+                sp.stok -= item.qty
 
         # Create piutang if not fully paid
         if status_bayar != PaymentStatus.LUNAS:
@@ -502,7 +503,7 @@ class TransaksiBengkelService:
         # 1. Restore stock
         for detail in transaksi.detail_parts:
             sp = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
-            if sp:
+            if sp and sp.stok != 999:
                 sp.stok += detail.qty
 
         # 2. Delete old details
@@ -650,7 +651,8 @@ class TransaksiBengkelService:
         # 6. Apply stock & Re-create piutang / kas entries
         for item in data.detail_parts:
             sp = spare_parts_map[item.spare_part_id]
-            sp.stok -= item.qty
+            if sp.stok != 999:
+                sp.stok -= item.qty
 
         if status_bayar != PaymentStatus.LUNAS:
             debtor_name = transaksi.nama_customer or (customer.nama if customer else "Guest")
@@ -1191,7 +1193,7 @@ class TransaksiBengkelService:
                 .filter(SparePart.id == detail.spare_part_id)
                 .first()
             )
-            if spare_part:
+            if spare_part and spare_part.stok != 999:
                 spare_part.stok += detail.qty
 
         # 2. Void related Piutang

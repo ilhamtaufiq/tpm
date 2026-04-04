@@ -143,7 +143,7 @@ export default function LandingPage() {
             <View className="py-20 px-6 items-center">
                 <View className="mb-6 items-center flex-row">
                     <Image
-                        source={require('../assets/logo-tpm.png')}
+                        source={require('../assets/logo_tpm.png')}
                         style={{ width: 60, height: 60 }}
                         resizeMode="contain"
                     />

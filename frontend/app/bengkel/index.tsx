@@ -893,7 +893,7 @@ export default function BengkelScreen() {
                             </View>
                         ) : (
                             <View className="space-y-3">
-                                {historyData?.data?.slice(0, 2).map((item: any) => (
+                                {historyData?.data?.slice(0, 2)?.map((item: any) => (
                                     <View key={item.id} className="bg-white p-4 rounded-3xl border border-gray-100 flex-row items-center shadow-sm">
                                         <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'
                                             }`}>

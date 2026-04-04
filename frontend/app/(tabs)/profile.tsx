@@ -396,6 +396,20 @@ export default function ProfileScreen() {
 
                         <Pressable
                             className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
+                            onPress={() => router.push('/settings/trash')}
+                        >
+                            <View className="w-12 h-12 bg-red-50 rounded-[24px] items-center justify-center mr-4">
+                                <Trash2 size={24} color="#EF4444" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Tempat Sampah</Typography>
+                                <Typography variant="caption" className="text-text/40">Restore atau hapus permanen data</Typography>
+                            </View>
+                            <ChevronRight size={20} color={themeColors.textGray} />
+                        </Pressable>
+
+                        <Pressable
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-4"
                             onPress={handleReset}
                             disabled={isResetting}
                         >

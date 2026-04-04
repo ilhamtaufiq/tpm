@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "c:\laragon\www\tpm\tmp\test_stock.py", line 20, in <module>
+    result = service.get_stock_value()
+  File "c:\laragon\www\tpm\backend\app\services\spare_part_service.py", line 353, in get_stock_value
+    case(
+  File "C:\laragon\www\tpm\backend\venv\lib\site-packages\sqlalchemy\sql\_elements_constructors.py", line 850, in case
+    return Case(*whens, value=value, else_=else_)
+  File "C:\laragon\www\tpm\backend\venv\lib\site-packages\sqlalchemy\sql\elements.py", line 3390, in __init__
+    new_whens: Iterable[Any] = coercions._expression_collection_was_a_list(
+  File "C:\laragon\www\tpm\backend\venv\lib\site-packages\sqlalchemy\sql\coercions.py", line 152, in _expression_collection_was_a_list
+    raise exc.ArgumentError(
+sqlalchemy.exc.ArgumentError: The "whens" argument to case(), when referring to a sequence of items, is now passed as a series of positional elements, rather than as a list. 

@@ -497,6 +497,25 @@ def get_capital_report(
     
     # Total laba uses FULL car profit (not just TPM's share)
     total_laba_kotor = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_tpm
+    
+    # 2c. INITIAL STOCK & ASSETS CALCULATION
+    # If there is inventory or fixed assets that were never bought through the system,
+    # it must be treated as initial capital to avoid reconciliation "penyesuaian".
+    from app.services.spare_part_service import SparePartService
+    sparepart_service = SparePartService(db)
+    current_stock_value = sparepart_service.get_stock_value()["total_value"]
+    
+    # Total historical purchases for parts
+    from app.models.bengkel import PembelianSparePart
+    total_purchases = db.query(func.sum(PembelianSparePart.grand_total)).scalar() or 0
+    modal_awal_persediaan = max(0, current_stock_value - float(total_purchases))
+
+    # Fixed Assets (Total value of all active assets)
+    from app.models.keuangan import Aset
+    total_fixed_assets = db.query(func.sum(Aset.harga_beli)).filter(Aset.status == AssetStatus.AKTIF).scalar() or 0
+    
+    # Combined adjustment for unrecorded initial assets
+    modal_awal_total = modal_awal_persediaan + float(total_fixed_assets)
 
     # 2b. Internal bengkel for TERSEDIA cars — no bilateral KasBank.
     # Cost is tracked via Piutang (BENGKEL → JB MOBIL) in Section B.
@@ -515,7 +534,8 @@ def get_capital_report(
             "laba_mobil_tpm": laba_mobil_tpm,
             "laba_jasa_angkut": laba_jasa_angkut_tpm,
         },
-        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + total_laba_kotor
+        "modal_persediaan": modal_awal_total,
+        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + total_laba_kotor + modal_awal_total
     }
 
     # --- B. Piutang ---
@@ -1231,8 +1251,19 @@ def get_neraca(
         TransaksiPenjualanMobil.status_pencairan == InvestorDisbursementStatus.DICAIRKAN
     ).scalar() or 0)
 
+    # 4. Modal Awal (Adjustment for stock and fixed assets without purchase records)
+    # This aligns the component-based equity with the asset-based equity for unrecorded inventory/assets.
+    from app.models.bengkel import PembelianSparePart
+    total_purchases_ever = db.query(func.sum(PembelianSparePart.grand_total)).scalar() or 0
+    modal_persediaan_adj = max(0, persediaan_sparepart - float(total_purchases_ever))
+    
+    # Fixed Assets contribution to initial capital
+    modal_aset_adj = float(total_aktiva_tetap or 0)
+    
+    modal_awal_total = modal_persediaan_adj + modal_aset_adj
+
     # Selisih antara perhitungan komponen vs identity (untuk transparansi)
-    modal_komponen = setoran_modal + laba_ditahan - prive - paid_inv_cap
+    modal_komponen = setoran_modal + laba_ditahan - prive - paid_inv_cap + modal_awal_total
     selisih_modal = round(total_modal - modal_komponen, 2)
 
 
@@ -1248,6 +1279,7 @@ def get_neraca(
         "laba_ditahan": float(laba_ditahan),
         "prive": float(prive),
         "pencairan_investor": float(paid_inv_cap),
+        "modal_persediaan": float(modal_awal_total),
         "total_modal": float(total_modal),
         "modal_komponen": float(modal_komponen),
         "selisih_modal": float(selisih_modal),
