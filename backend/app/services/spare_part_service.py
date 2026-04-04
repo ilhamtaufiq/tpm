@@ -237,11 +237,22 @@ class SparePartService:
         total = query.count()
 
         # Sorting
-        sort_column = getattr(SparePart, sort_by, SparePart.nama)
-        if sort_order == "desc":
-            query = query.order_by(sort_column.desc())
+        if sort_by == "penjualan":
+            from app.models.bengkel import DetailTransaksiSpareParts
+            query = (
+                query.outerjoin(DetailTransaksiSpareParts)
+                .group_by(SparePart.id)
+            )
+            if sort_order == "desc":
+                query = query.order_by(func.sum(DetailTransaksiSpareParts.qty).desc())
+            else:
+                query = query.order_by(func.sum(DetailTransaksiSpareParts.qty).asc())
         else:
-            query = query.order_by(sort_column.asc())
+            sort_column = getattr(SparePart, sort_by, SparePart.nama)
+            if sort_order == "desc":
+                query = query.order_by(sort_column.desc())
+            else:
+                query = query.order_by(sort_column.asc())
 
         # Pagination
         spare_parts = query.offset(skip).limit(limit).all()
@@ -421,6 +432,74 @@ class SparePartService:
             .all()
         )
         return [b[0] for b in brands if b[0]]
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get inventory statistics (top sales and lowest stock)."""
+        from app.models.bengkel import DetailTransaksiSpareParts
+        
+        # 1. Top 5 Sales
+        top_sales = (
+            self.db.query(
+                SparePart,
+                func.sum(DetailTransaksiSpareParts.qty).label("total_sales")
+            )
+            .join(DetailTransaksiSpareParts)
+            .filter(SparePart.deleted_at.is_(None))
+            .group_by(SparePart.id)
+            .order_by(func.sum(DetailTransaksiSpareParts.qty).desc())
+            .limit(5)
+            .all()
+        )
+        
+        # Format top_sales to include total_sales in response
+        top_sales_formatted = []
+        for part, sales in top_sales:
+            # We can't easily add attributes to SQLAlchemy models, so we'll return a dict or similar
+            # But let's just use the model and let the speaker handle the rest if needed
+            # For simplicity, we'll return the part object and add an extra field in a dict
+            top_sales_formatted.append({
+                "id": part.id,
+                "nama": part.nama,
+                "kode": part.kode,
+                "stok": part.stok,
+                "stok_minimum": part.stok_minimum,
+                "harga_jual": float(part.harga_jual or 0),
+                "kategori": part.kategori,
+                "satuan": part.satuan,
+                "total_sales": int(sales or 0),
+                "gambar": part.gambar
+            })
+            
+        # 2. Top 5 Lowest Stock (Excluding 999)
+        lowest_stock = (
+            self.db.query(SparePart)
+            .filter(
+                SparePart.deleted_at.is_(None),
+                SparePart.stok != 999
+            )
+            .order_by(SparePart.stok.asc())
+            .limit(5)
+            .all()
+        )
+        
+        lowest_stock_formatted = []
+        for part in lowest_stock:
+            lowest_stock_formatted.append({
+                "id": part.id,
+                "nama": part.nama,
+                "kode": part.kode,
+                "stok": part.stok,
+                "stok_minimum": part.stok_minimum,
+                "harga_jual": float(part.harga_jual or 0),
+                "kategori": part.kategori,
+                "satuan": part.satuan,
+                "gambar": part.gambar
+            })
+            
+        return {
+            "top_sales": top_sales_formatted,
+            "lowest_stock": lowest_stock_formatted
+        }
 
     def import_from_excel(self, file_content: bytes) -> Dict[str, Any]:
         """Import spare parts from Excel file.

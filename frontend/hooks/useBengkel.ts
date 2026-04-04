@@ -113,6 +113,13 @@ export const useLowStockParts = () => {
     });
 };
 
+export const useSparePartStats = () => {
+    return useQuery({
+        queryKey: ['spare_parts_stats'],
+        queryFn: () => bengkelService.getSparePartStats(),
+    });
+};
+
 export const useCreateSparePart = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -219,6 +226,7 @@ export const usePembelianPartsList = (params?: any) => {
 export const useCreatePembelianParts = () => {
     const queryClient = useQueryClient();
     return useMutation({
+        mutationFn: (data: any) => bengkelService.createPembelianParts(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pembelian_parts'] });
             queryClient.invalidateQueries({ queryKey: ['spare_parts'] });

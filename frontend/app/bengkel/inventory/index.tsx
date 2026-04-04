@@ -8,11 +8,15 @@ import {
     Alert, 
     RefreshControl as RNRefreshControl, 
     TouchableOpacity, 
-    FlatList, 
-    ActivityIndicator, 
-    Image 
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Platform,
+    Modal
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
@@ -27,9 +31,11 @@ import {
     Barcode as BarcodeIcon,
     Edit3,
     Minus,
+    X,
+    CheckCircle2
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock } from '../../../hooks/useBengkel';
+import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats } from '../../../hooks/useBengkel';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -54,6 +60,11 @@ export default function InventoryScreen() {
     const [scannedPart, setScannedPart] = useState<any>(null);
     const [stockChange, setStockChange] = useState('0');
     const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
+    const [sortBy, setSortBy] = useState('nama');
+    const [sortOrder, setSortOrder] = useState('asc');
+    const [sheetIndex, setSheetIndex] = useState(-1);
+    const sortSheetRef = useRef<BottomSheet>(null);
+    const insets = useSafeAreaInsets();
     const updateStockMutation = useUpdateSparePartStock();
 
 
@@ -78,8 +89,9 @@ export default function InventoryScreen() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = useSparePartsList({ search });
+    } = useSparePartsList({ search, sort_by: sortBy, sort_order: sortOrder });
     const { data: lowStockData } = useLowStockParts();
+    const { data: statsData, isLoading: isStatsLoading } = useSparePartStats();
     const updatePartMutation = useUpdateSparePart();
 
     const parts = React.useMemo(() => 
@@ -174,6 +186,26 @@ export default function InventoryScreen() {
         setRefreshing(false);
     }, [refetch]);
 
+    const handlePresentSortSheet = () => {
+        if (Platform.OS === 'web') {
+            setSheetIndex(0);
+        } else {
+            sortSheetRef.current?.snapToIndex(0);
+        }
+    };
+
+    const renderBackdrop = useCallback(
+        (props: any) => (
+            <BottomSheetBackdrop
+                {...props}
+                appearsOnIndex={0}
+                disappearsOnIndex={-1}
+                pressBehavior="close"
+            />
+        ),
+        []
+    );
+
     return (
         <SafeAreaView className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" />
@@ -215,10 +247,68 @@ export default function InventoryScreen() {
                             onChangeText={setSearch}
                         />
                     </View>
-                    <Pressable className="w-12 h-12 bg-gray-100 rounded-2xl items-center justify-center">
-                        <Filter size={20} color="#1C1C1C" />
+                    <Pressable 
+                        onPress={handlePresentSortSheet}
+                        className={`w-12 h-12 rounded-2xl items-center justify-center ${sortBy !== 'nama' ? 'bg-primary/10 border border-primary/20' : 'bg-gray-100'}`}
+                    >
+                        <Filter size={20} color={sortBy !== 'nama' ? '#023C69' : '#1C1C1C'} />
                     </Pressable>
                 </View>
+
+                {/* Stats Section */}
+                {!search && (
+                    <View className="mb-6">
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6">
+                            {/* Top Sales */}
+                            <Card className="mr-4 p-4 bg-emerald-50/50 border-emerald-100 min-w-[280px]">
+                                <View className="flex-row items-center justify-between mb-3">
+                                    <Typography variant="body2" weight="bold" className="text-emerald-800">🔥 Penjualan Terbanyak</Typography>
+                                    <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                        <Typography variant="caption" className="text-emerald-700 font-bold">TOP 5</Typography>
+                                    </View>
+                                </View>
+                                {isStatsLoading ? (
+                                    <ActivityIndicator size="small" color="#10B981" />
+                                ) : (
+                                    statsData?.top_sales.map((item: any, idx: number) => (
+                                        <Pressable 
+                                            key={item.id} 
+                                            onPress={() => handleOpenDetail(item)}
+                                            className="flex-row items-center justify-between mb-2 active:opacity-60"
+                                        >
+                                            <Typography variant="caption" className="text-emerald-900/80 flex-1 mr-2" numberOfLines={1}>{idx + 1}. {item.nama}</Typography>
+                                            <Typography variant="caption" weight="bold" className="text-emerald-700">{item.total_sales} terjual</Typography>
+                                        </Pressable>
+                                    ))
+                                )}
+                            </Card>
+
+                            {/* Lowest Stock */}
+                            <Card className="mr-4 p-4 bg-rose-50/50 border-rose-100 min-w-[280px]">
+                                <View className="flex-row items-center justify-between mb-3">
+                                    <Typography variant="body2" weight="bold" className="text-rose-800">⚠️ Stok Terendah</Typography>
+                                    <View className="bg-rose-500/10 px-2 py-0.5 rounded-full">
+                                        <Typography variant="caption" className="text-rose-700 font-bold">REFILL</Typography>
+                                    </View>
+                                </View>
+                                {isStatsLoading ? (
+                                    <ActivityIndicator size="small" color="#F43F5E" />
+                                ) : (
+                                    statsData?.lowest_stock.map((item: any, idx: number) => (
+                                        <Pressable 
+                                            key={item.id} 
+                                            onPress={() => handleOpenDetail(item)}
+                                            className="flex-row items-center justify-between mb-2 active:opacity-60"
+                                        >
+                                            <Typography variant="caption" className="text-rose-900/80 flex-1 mr-2" numberOfLines={1}>{idx + 1}. {item.nama}</Typography>
+                                            <Typography variant="caption" weight="bold" className={item.stok <= item.stok_minimum ? 'text-rose-600' : 'text-rose-900/60'}>Stok: {item.stok}</Typography>
+                                        </Pressable>
+                                    ))
+                                )}
+                            </Card>
+                        </ScrollView>
+                    </View>
+                )}
 
                 {/* Low Stock Banner */}
                 {lowStockCount > 0 && (
@@ -244,7 +334,7 @@ export default function InventoryScreen() {
             ) : (
                 <FlatList
                     data={parts}
-                    keyExtractor={(item) => item.id.toString()}
+                    keyExtractor={(item: any) => item.id.toString()}
                     contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
                     onEndReached={() => {
                         if (hasNextPage && !isFetchingNextPage) {
@@ -266,7 +356,7 @@ export default function InventoryScreen() {
                     refreshControl={
                         <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                     }
-                    renderItem={({ item: part }) => {
+                    renderItem={({ item: part }: { item: any }) => {
                         const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
                         return (
                             <Card key={part.id} className="mb-4 p-4 flex-row items-center border-gray-50/50">
@@ -502,6 +592,134 @@ export default function InventoryScreen() {
                 onClose={() => setIsScannerOpen(false)} 
                 onScan={handleScanForStockUpdate} 
             />
+
+            {/* Sort UI - Hybrid (BottomSheet on Mobile, Modal on Web) */}
+            {Platform.OS === 'web' ? (
+                <Modal 
+                    visible={sheetIndex !== -1} 
+                    transparent 
+                    animationType="slide" 
+                    onRequestClose={() => setSheetIndex(-1)}
+                >
+                    <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setSheetIndex(-1)} />
+                        <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '80%', alignSelf: 'center' }}>
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}>
+                                {renderSortContent()}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            ) : (
+                <BottomSheet
+                    ref={sortSheetRef}
+                    index={-1}
+                    snapPoints={['65%', '85%']}
+                    enablePanDownToClose
+                    backdropComponent={renderBackdrop}
+                    backgroundStyle={{ borderRadius: 32 }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 40 }}
+                    onChange={setSheetIndex}
+                >
+                    <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24, paddingTop: 12 }}>
+                        {renderSortContent()}
+                    </BottomSheetScrollView>
+                </BottomSheet>
+            )}
         </SafeAreaView>
     );
+
+    function renderSortContent() {
+        const onClose = () => {
+            if (Platform.OS === 'web') setSheetIndex(-1);
+            else sortSheetRef.current?.close();
+        };
+
+        return (
+            <>
+                <View className="flex-row items-center justify-between mb-8">
+                    <Typography variant="h3" weight="bold">Urutkan Sparepart</Typography>
+                    <Pressable 
+                        onPress={onClose}
+                        className="bg-gray-100 p-2 rounded-full"
+                    >
+                        <X size={20} color="#4B5563" />
+                    </Pressable>
+                </View>
+
+                <View className="space-y-6">
+                    <View>
+                        <Typography variant="caption" weight="bold" className="text-textGray mb-4 ml-1 uppercase tracking-widest text-[10px]">Urutkan Berdasarkan</Typography>
+                        <View className="space-y-3">
+                            {[
+                                { id: 'nama', label: 'Nama Sparepart', icon: Package },
+                                { id: 'penjualan', label: 'Penjualan Terbanyak', icon: ArrowUpDown },
+                                { id: 'stok', label: 'Jumlah Stok', icon: AlertTriangle },
+                                { id: 'harga_jual', label: 'Harga Jual', icon: Edit3 },
+                            ].map((option) => (
+                                <TouchableOpacity
+                                    key={option.id}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        setSortBy(option.id);
+                                        if (option.id === 'penjualan' || option.id === 'stok') {
+                                            setSortOrder('desc');
+                                        } else {
+                                            setSortOrder('asc');
+                                        }
+                                    }}
+                                    className={`flex-row items-center p-4 rounded-3xl border-2 ${sortBy === option.id ? 'bg-primary/5 border-primary/20' : 'bg-white border-gray-50 shadow-sm shadow-gray-200'}`}
+                                >
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-gray-50'}`}>
+                                        <View>
+                                            {React.createElement(option.icon, { size: 22, color: sortBy === option.id ? '#023C69' : '#94A3B8' })}
+                                        </View>
+                                    </View>
+                                    <View className="flex-1">
+                                        <Typography weight={sortBy === option.id ? 'bold' : 'medium'} className={sortBy === option.id ? 'text-primary text-base' : 'text-textMain text-base'}>
+                                            {option.label}
+                                        </Typography>
+                                        <Typography variant="caption" className={sortBy === option.id ? 'text-primary/60' : 'text-textGray'}>
+                                            {option.id === 'nama' ? 'A-Z' : option.id === 'penjualan' ? 'Penjualan Tertinggi' : option.id === 'stok' ? 'Banyak ke Sedikit' : 'Harga'}
+                                        </Typography>
+                                    </View>
+                                    {sortBy === option.id && (
+                                        <View className="bg-primary rounded-full p-1.5">
+                                            <CheckCircle2 size={16} color="white" />
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+
+                    <View className="pt-4 border-t border-gray-100">
+                        <Typography variant="caption" weight="bold" className="text-textGray mb-4 ml-1 uppercase tracking-widest text-[10px]">Arah Urutan</Typography>
+                        <View className="flex-row space-x-3">
+                            <Pressable
+                                onPress={() => setSortOrder('asc')}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'asc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-white border-gray-100 shadow-sm'}`}
+                            >
+                                <Typography weight="bold" className={sortOrder === 'asc' ? 'text-white' : 'text-textMain'}>Terkecil/A-Z</Typography>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setSortOrder('desc')}
+                                className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${sortOrder === 'desc' ? 'bg-primary border-primary shadow-lg shadow-primary/30' : 'bg-white border-gray-100 shadow-sm'}`}
+                            >
+                                <Typography weight="bold" className={sortOrder === 'desc' ? 'text-white' : 'text-textMain'}>Terbesar/Z-A</Typography>
+                            </Pressable>
+                        </View>
+                    </View>
+
+                    <Button
+                        title="Terapkan Filter"
+                        onPress={onClose}
+                        className="mt-8 h-14 rounded-2xl shadow-xl shadow-primary/30"
+                    />
+                    <View className="h-8" />
+                </View>
+            </>
+        );
+    }
 }

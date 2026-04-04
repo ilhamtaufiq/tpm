@@ -115,6 +115,16 @@ def get_stock_value(
     return service.get_stock_value()
 
 
+@router.get("/stats")
+def get_stats(
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Get inventory statistics (top sales and lowest stock)."""
+    service = SparePartService(db)
+    return service.get_stats()
+
+
 @router.get("/categories", response_model=List[str])
 def get_categories(
     db: DBSession,

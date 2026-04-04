@@ -134,6 +134,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    getSparePartStats: async () => {
+        const response = await api.get('/spare-parts/stats');
+        return response.data;
+    },
+
     createSparePart: async (data: any) => {
         const response = await api.post('/spare-parts', data);
         return response.data;

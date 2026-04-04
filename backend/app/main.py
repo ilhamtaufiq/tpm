@@ -298,15 +298,22 @@ def create_app() -> FastAPI:
         """
 
     # Serve Frontend Static Files (from frontend/dist)
+    # Only mount if the directory exists AND contains an index.html to avoid crashes
     frontend_dist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+    index_html_path = os.path.join(frontend_dist_path, "index.html")
     
-    if os.path.exists(frontend_dist_path):
+    if os.path.exists(frontend_dist_path) and os.path.exists(index_html_path):
         app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="frontend")
         
         @app.exception_handler(404)
         async def spa_catch_all(request, exc):
             from fastapi.responses import FileResponse
-            return FileResponse(os.path.join(frontend_dist_path, "index.html"))
+            if os.path.exists(index_html_path):
+                return FileResponse(index_html_path)
+            return JSONResponse(
+                status_code=404,
+                content={"error": True, "message": "File not found", "detail": {"path": request.url.path}}
+            )
 
     # Health check endpoint
     @app.get("/health", tags=["Health"])

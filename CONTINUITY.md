@@ -25,8 +25,14 @@ Success criteria:
     - Updated Stock Sparepart Report UI and PDF.
     - Created `CustomerFormModal` component.
     - Integrated "Add Customer" flow into `MasterDataSelector`.
-- **Now**:
-    - Verifying the "Add Customer" flow in `BengkelForm`.
+    - Fixed backend crash by adding safety checks when serving frontend static files.
+    - Fixed TypeScript error in `PurchaseScreen` by adding missing `mutationFn` to `useCreatePembelianParts` hook.
+    - Fixed Manifest Validation Error in `app.json` by changing `softwareKeyboardLayoutMode` from `adjustResize` to `resize`.
+    - Added Inventory Statistics feature (Top 5 Sales and Lowest Stock) in `InventoryScreen`.
+    - Implemented advanced sorting in Spare Part list (by sales, stock, etc.).
+    - Replaced sorting Modal with a premium `BottomSheet` in `InventoryScreen` for UI consistency.
+    - Verified `softwareKeyboardLayoutMode` fix in `app.json`.
+    - Investigating frontend build status (missing index.html in dist).
 - **Next**:
     - Final verification and handover.
 

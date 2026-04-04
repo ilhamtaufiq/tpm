@@ -35,7 +35,7 @@
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "package": "com.olobor.tpmsuperapp",
-      "softwareKeyboardLayoutMode": "adjustResize",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo_tpm.png",
         "backgroundColor": "#ffffff"
