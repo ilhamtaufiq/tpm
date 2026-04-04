@@ -33,3 +33,13 @@ export const usePermanentDelete = () => {
         },
     });
 };
+
+export const useEmptyTrash = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (category: string) => trashService.emptyTrash(category),
+        onSuccess: (_, category) => {
+            queryClient.invalidateQueries({ queryKey: ['trash', category] });
+        },
+    });
+};

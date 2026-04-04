@@ -38,3 +38,12 @@ def permanent_delete(
     # current_user: AdminUser dependency already handles the check for ADMIN role
     service = TrashService(db)
     return {"status": "success", "deleted": service.permanent_delete(category, item_id)}
+@router.delete("/{category}/permanent")
+def empty_trash(
+    category: str,
+    db: DBSession,
+    current_user: AdminUser
+):
+    """Permanently delete all items in a category."""
+    service = TrashService(db)
+    return {"status": "success", "cleared": service.clear_category(category)}

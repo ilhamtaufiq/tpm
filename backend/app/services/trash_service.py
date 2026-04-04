@@ -89,3 +89,17 @@ class TrashService:
         self.db.delete(item)
         self.db.commit()
         return True
+
+    def clear_category(self, category: str) -> bool:
+        """Permanently delete all soft-deleted items in a category."""
+        model = self.MODELS.get(category.lower())
+        if not model:
+            raise HTTPException(status_code=400, detail="Invalid category")
+            
+        (
+            self.db.query(model)
+            .filter(model.deleted_at.is_not(None))
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return True

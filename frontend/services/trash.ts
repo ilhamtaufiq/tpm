@@ -12,5 +12,9 @@ export const trashService = {
     permanentDelete: async (category: string, id: number) => {
         const response = await api.delete(`/trash/${category}/${id}/permanent`);
         return response.data;
+    },
+    emptyTrash: async (category: string) => {
+        const response = await api.delete(`/trash/${category}/permanent`);
+        return response.data;
     }
 };

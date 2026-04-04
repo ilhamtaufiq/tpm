@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
-import { useTrashList, useRestoreItem, usePermanentDelete } from '../../hooks/useTrash';
+import { useTrashList, useRestoreItem, usePermanentDelete, useEmptyTrash } from '../../hooks/useTrash';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -28,6 +28,7 @@ export default function TrashScreen() {
     const { data: items, isLoading, refetch } = useTrashList(activeCategory);
     const restoreMutation = useRestoreItem();
     const permanentDeleteMutation = usePermanentDelete();
+    const emptyTrashMutation = useEmptyTrash();
     
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -92,6 +93,34 @@ export default function TrashScreen() {
         });
     };
 
+    const handleEmptyTrash = () => {
+        if (!items || items.length === 0) return;
+
+        const categoryLabel = CATEGORIES.find(c => c.id === activeCategory)?.label;
+
+        setDialogConfig({
+            visible: true,
+            title: 'Kosongkan Tempat Sampah',
+            message: `PERINGATAN: Semua data "${categoryLabel}" di tempat sampah akan dihapus selamanya. Tindakan ini tidak dapat dibatalkan. Kosongkan sekarang?`,
+            variant: 'error',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    await emptyTrashMutation.mutateAsync(activeCategory);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Sukses',
+                        message: 'Tempat sampah telah dikosongkan.',
+                        variant: 'success',
+                        type: 'alert'
+                    });
+                } catch (error: any) {
+                    Alert.alert('Error', error.response?.data?.detail || 'Gagal mengosongkan tempat sampah');
+                }
+            }
+        });
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-background" edges={['top']}>
             <View className="p-6 bg-surface pb-4 rounded-b-[32px] shadow-sm">
@@ -108,9 +137,15 @@ export default function TrashScreen() {
                             Data yang baru saja dihapus
                         </Typography>
                     </View>
-                    <View className="w-12 h-12 bg-red-50 rounded-2xl items-center justify-center">
-                        <Trash2 size={24} color="#EF4444" />
-                    </View>
+                    <Pressable 
+                        onPress={handleEmptyTrash}
+                        disabled={!items || items.length === 0 || emptyTrashMutation.isPending}
+                        className={`w-12 h-12 rounded-2xl items-center justify-center ${
+                            (!items || items.length === 0) ? 'bg-gray-50 opacity-50' : 'bg-red-50'
+                        }`}
+                    >
+                        <Trash2 size={24} color={(!items || items.length === 0) ? "#9CA3AF" : "#EF4444"} />
+                    </Pressable>
                 </View>
 
                 <ScrollView 
@@ -213,7 +248,7 @@ export default function TrashScreen() {
                 type={dialogConfig.type}
                 onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
                 onConfirm={dialogConfig.onConfirm}
-                loading={restoreMutation.isPending || permanentDeleteMutation.isPending}
+                loading={restoreMutation.isPending || permanentDeleteMutation.isPending || emptyTrashMutation.isPending}
             />
         </SafeAreaView>
     );
