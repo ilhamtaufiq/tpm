@@ -1730,16 +1730,6 @@ export default function BengkelScreen() {
                 onScan={handleScanBarcode}
             />
 
-            <AlertDialogComponent
-                visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                type={dialogConfig.type}
-                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-                onConfirm={dialogConfig.onConfirm}
-                loading={dialogConfig.loading}
-            />
 
             {/* Payment Modal (Settlement/Installment) */}
             {selectedItem && (

@@ -3,6 +3,8 @@ import { View, Modal, Pressable, Text, Dimensions, Animated, Easing, Platform, A
 import { Typography } from './Typography';
 import { AlertCircle, CheckCircle, Info, XCircle, LucideIcon } from 'lucide-react-native';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 interface AlertDialogProps {
     visible: boolean;
     title: string;
@@ -178,8 +180,11 @@ export const AlertDialog = ({
             onRequestClose={onClose}
             statusBarTranslucent={Platform.OS === 'android'}
         >
-            <View style={styles.modalOverlay}>
-                <View style={styles.backdrop}>
+            <View style={styles.centeredView}>
+                <Pressable 
+                    style={styles.backdrop} 
+                    onPress={onClose}
+                />
                 <Animated.View
                     style={[
                         styles.dialogContainer,
@@ -227,34 +232,27 @@ export const AlertDialog = ({
                             />
                         </View>
                     </View>
-                    </Animated.View>
-                </View>
+                </Animated.View>
             </View>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    modalOverlay: {
+    centeredView: {
         flex: 1,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'transparent',
-    },
-    backdrop: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 1000,
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        padding: 24,
     },
     dialogContainer: {
-        width: '100%',
+        width: SCREEN_WIDTH > 448 ? 400 : SCREEN_WIDTH - 48,
         minWidth: 280,
         maxWidth: 400,
-        alignSelf: 'center',
         paddingTop: 32,
         paddingHorizontal: 28,
         paddingBottom: 28,
