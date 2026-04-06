@@ -1,11 +1,12 @@
 # Continuity Ledger - TPM Workshop Project
 
 ## Goal (incl. success criteria)
-Enhance workshop transaction form and reports to handle "Always Ready" stock and improve customer onboarding flow. 
+Enhance workshop transaction form and reports to handle "Always Ready" stock, fix `bcrypt` login performance issues, and improve customer onboarding flow. 
 Success criteria:
 - Stock capital calculation excludes items with stock 999.
 - Dashboard/Reports display 999 as "Always Ready" or "Ready" with 0 value contribution.
 - BengkelForm allows adding new customers on the fly via a guest-like flow.
+- **FIX**: Login request duration reduced from ~35s to <500ms by fixing `bcrypt` and `passlib` version mismatch.
 
 ## Constraints/Assumptions
 - Stock 999 is a business rule for unlimited/always available items.
@@ -19,7 +20,10 @@ Success criteria:
 - Updated PDF export templates to correctly show unlimited stock items.
 
 ## State
+- **Now**:
+    - Final verification and handover.
 - **Done**:
+    - **FIX**: Resolved `bcrypt` version mismatch (downgraded to 3.2.0) to fix `AttributeError` and slow login performance (~35s → <500ms).
     - Fixed capital calculation logic (backend).
     - Updated Inventory UI for 999 stock.
     - Updated Stock Sparepart Report UI and PDF.
