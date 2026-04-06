@@ -26,6 +26,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import '../global.css';
 import { ConnectivityBanner } from '../components/ConnectivityBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AlertProvider } from '../context/AlertContext';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -319,7 +320,9 @@ function RootLayoutContent() {
 export default function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>
-            <RootLayoutContent />
+            <AlertProvider>
+                <RootLayoutContent />
+            </AlertProvider>
         </QueryClientProvider>
     );
 }

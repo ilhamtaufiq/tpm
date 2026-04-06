@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { sdmService, Kasbon, KasbonSummary, PaymentStatus, Karyawan } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
-import { AlertDialog } from '../../components/ui/AlertDialog';
+import { useAlert } from '../../context/AlertContext';
 import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
 
@@ -75,20 +75,7 @@ export default function KasbonScreen() {
     // Sheet State
     const [activeSheet, setActiveSheet] = useState<'none' | 'create' | 'detail'>('none');
 
-    const [dialogConfig, setDialogConfig] = useState<{
-        visible: boolean;
-        title: string;
-        message: string;
-        variant: 'success' | 'error' | 'warning' | 'info';
-        type?: 'alert' | 'confirm';
-        onConfirm?: () => void;
-    }>({
-        visible: false,
-        title: '',
-        message: '',
-        variant: 'info',
-        type: 'alert'
-    });
+    const { showAlert } = useAlert();
 
     const createSheetRef = useRef<BottomSheet>(null);
     const detailSheetRef = useRef<BottomSheet>(null);
@@ -170,7 +157,7 @@ export default function KasbonScreen() {
 
     const handleSubmitCreate = async () => {
         if (!formData.karyawan_id || !formData.jumlah) {
-            setDialogConfig({ visible: true, title: 'Validasi', message: 'Karyawan dan Jumlah wajib diisi', variant: 'warning' });
+            showAlert({ title: 'Validasi', message: 'Karyawan dan Jumlah wajib diisi', variant: 'warning' });
             return;
         }
 
@@ -190,19 +177,18 @@ export default function KasbonScreen() {
             });
             closeSheets();
             setTimeout(() => {
-                setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil ditambahkan', variant: 'success' });
+                showAlert({ title: 'Sukses', message: 'Kasbon berhasil ditambahkan', variant: 'success' });
             }, 400);
             loadData();
         } catch (error) {
             console.error('Failed to create kasbon:', error);
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menambahkan kasbon'), variant: 'error' });
+            showAlert({ title: 'Error', message: getErrorMessage(error, 'Gagal menambahkan kasbon'), variant: 'error' });
         }
     };
 
 
     const handleDelete = async (kasbon: Kasbon) => {
-        setDialogConfig({
-            visible: true,
+        showAlert({
             title: 'Hapus Kasbon',
             message: `Yakin ingin menghapus kasbon ${kasbon.karyawan_nama} senilai ${formatCurrency(kasbon.nominal)}? Data tidak dapat dikembalikan.`,
             variant: 'warning',
@@ -210,11 +196,11 @@ export default function KasbonScreen() {
             onConfirm: async () => {
                 try {
                     await sdmService.deleteKasbon(kasbon.id);
-                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Kasbon berhasil dihapus', variant: 'success' });
+                    showAlert({ title: 'Sukses', message: 'Kasbon berhasil dihapus', variant: 'success' });
                     loadData();
                 } catch (error) {
                     console.error('Failed to delete kasbon:', error);
-                    setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menghapus kasbon'), variant: 'error' });
+                    showAlert({ title: 'Error', message: getErrorMessage(error, 'Gagal menghapus kasbon'), variant: 'error' });
                 }
             }
         });
@@ -749,15 +735,6 @@ export default function KasbonScreen() {
                 </>
             )}
 
-            <AlertDialog
-                visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                type={dialogConfig.type}
-                onConfirm={dialogConfig.onConfirm}
-                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-            />
 
             {selectedKasbon && selectedKasbon.piutang_id && (
                 <PaymentModal
@@ -766,8 +743,7 @@ export default function KasbonScreen() {
                     onSuccess={() => {
                         setPaymentModalVisible(false);
                         setTimeout(() => {
-                            setDialogConfig({
-                                visible: true,
+                            showAlert({
                                 title: 'Sukses',
                                 message: 'Pembayaran kasbon berhasil dicatat',
                                 variant: 'success',
