@@ -50,14 +50,15 @@ def get_current_week(tanggal: date = None) -> tuple[int, int]:
 class SlipGajiPreviewItem:
     """Preview item for slip gaji generation."""
     def __init__(self, karyawan_id: int, karyawan_nama: str, karyawan_kode: str,
-                 gaji_pokok: Decimal, jumlah_hadir: int, potongan_kasbon: Decimal):
+                 gaji_pokok: Decimal, jumlah_hadir: int, potongan_kasbon: Decimal, uang_lembur: Decimal = Decimal("0")):
         self.karyawan_id = karyawan_id
         self.karyawan_nama = karyawan_nama
         self.karyawan_kode = karyawan_kode
         self.gaji_pokok = gaji_pokok
         self.jumlah_hadir = jumlah_hadir
         self.potongan_kasbon = potongan_kasbon
-        self.gaji_bersih = gaji_pokok - potongan_kasbon
+        self.uang_lembur = uang_lembur
+        self.gaji_bersih = gaji_pokok + uang_lembur - potongan_kasbon
 
 
 class SlipGajiService:
@@ -180,8 +181,9 @@ class SlipGajiService:
             tanggal_akhir,
         )
 
-        # Get kasbon deduction from data or default to 0 (as per user request: don't cut automatically)
+        # Get kasbon and overtime from data or default to 0
         potongan_kasbon = data.potongan_kasbon if data.potongan_kasbon is not None else Decimal("0")
+        uang_lembur = data.uang_lembur if data.uang_lembur is not None else Decimal("0")
 
         # Generate slip number
         nomor_slip = self._generate_nomor_slip(data.periode_minggu, data.periode_tahun)
@@ -201,6 +203,7 @@ class SlipGajiService:
             jumlah_hadir=jumlah_hadir,
             gaji_pokok=gaji_pokok_pro_rated,
             potongan_kasbon=potongan_kasbon,
+            uang_lembur=uang_lembur,
             status=PaymentStatus.BELUM_LUNAS,
             created_by=user_id,
         )
@@ -374,8 +377,9 @@ class SlipGajiService:
                 if not karyawan:
                     continue
 
-                # Get kasbon deduction from item or default to 0
+                # Get kasbon and overtime from item or default to 0
                 potongan_kasbon = Decimal(str(item.get("potongan_kasbon", 0)))
+                uang_lembur_item = Decimal(str(item.get("uang_lembur", 0)))
 
                 # Generate slip number
                 nomor_slip = self._generate_nomor_slip(minggu, tahun)
@@ -386,7 +390,7 @@ class SlipGajiService:
                 daily_rate = karyawan.gaji_pokok / Decimal("6")
                 gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
-                # Create slip with overridden attendance and kasbon
+                # Create slip with overridden attendance, kasbon, and overtime
                 slip = SlipGaji(
                     nomor_slip=nomor_slip,
                     karyawan_id=karyawan_id,
@@ -397,6 +401,7 @@ class SlipGajiService:
                     jumlah_hadir=hadir_val,
                     gaji_pokok=gaji_pokok_pro_rated,
                     potongan_kasbon=potongan_kasbon,
+                    uang_lembur=uang_lembur_item,
                     status=PaymentStatus.BELUM_LUNAS,
                     created_by=user_id,
                 )
@@ -452,8 +457,9 @@ class SlipGajiService:
             if not karyawan:
                 continue
 
-            # Get kasbon deduction from item or default to 0
+            # Get kasbon and overtime from item or default to 0
             potongan_kasbon = Decimal(str(item.get("potongan_kasbon", 0)))
+            uang_lembur_item = Decimal(str(item.get("uang_lembur", 0)))
 
             # Generate slip number
             nomor_slip = self._generate_nomor_slip(minggu, tahun)
@@ -463,7 +469,7 @@ class SlipGajiService:
             daily_rate = karyawan.gaji_pokok / Decimal("6")
             gaji_pokok_pro_rated = (daily_rate * hadir_val).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
-            # Create slip with range dates and kasbon
+            # Create slip with range dates, kasbon and overtime
             slip = SlipGaji(
                 nomor_slip=nomor_slip,
                 karyawan_id=karyawan_id,
@@ -474,6 +480,7 @@ class SlipGajiService:
                 jumlah_hadir=hadir_val,
                 gaji_pokok=gaji_pokok_pro_rated,
                 potongan_kasbon=potongan_kasbon,
+                uang_lembur=uang_lembur_item,
                 status=PaymentStatus.BELUM_LUNAS,
                 created_by=user_id,
             )
@@ -782,6 +789,7 @@ class SlipGajiService:
 
         aggregates = query.with_entities(
             func.sum(SlipGaji.gaji_pokok).label("total_gaji_pokok"),
+            func.sum(SlipGaji.uang_lembur).label("total_uang_lembur"),
             func.sum(SlipGaji.potongan_kasbon).label("total_potongan_kasbon"),
             func.sum(SlipGaji.gaji_bersih).label("total_gaji_bersih"),
         ).first()

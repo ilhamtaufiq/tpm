@@ -23,6 +23,9 @@ Success criteria:
 - **Now**:
     - Final verification and handover.
 - **Done**:
+    - **SDM Module**: Standardized all SDM sub-pages (Karyawan, Absensi, Kasbon, Slip Gaji) to use the centralized `Header` component.
+    - **SDM Index**: Redesigned the main dashboard and subsequently removed the "Employee Insight" section as per user request to simplify navigation. 
+    - **UI/UX**: Improved `Absensi` input with quick choice pills and rounded-full styles for better user experience.
     - **FIX**: Resolved `bcrypt` version mismatch (downgraded to 3.2.0) to fix `AttributeError` and slow login performance (~35s → <500ms).
     - Fixed capital calculation logic (backend).
     - Updated Inventory UI for 999 stock.
@@ -36,7 +39,6 @@ Success criteria:
     - Implemented advanced sorting in Spare Part list (by sales, stock, etc.).
     - Replaced sorting Modal with a premium `BottomSheet` in `InventoryScreen` for UI consistency.
     - Verified `softwareKeyboardLayoutMode` fix in `app.json`.
-    - Investigating frontend build status (missing index.html in dist).
 - **Next**:
     - Final verification and handover.
 
@@ -45,7 +47,9 @@ Success criteria:
 
 ## Working set (files/ids/commands)
 - backend/app/services/spare_part_service.py
-- frontend/app/laporan/stock-sparepart.tsx
-- frontend/components/ui/MasterDataSelector.tsx
-- frontend/components/ui/CustomerFormModal.tsx
-- frontend/components/BengkelForm.tsx
+- frontend/app/sdm/index.tsx
+- frontend/app/sdm/absensi.tsx
+- frontend/app/sdm/karyawan.tsx
+- frontend/app/sdm/kasbon.tsx
+- frontend/app/sdm/slip-gaji.tsx
+- frontend/components/ui/Header.tsx

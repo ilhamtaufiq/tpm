@@ -116,6 +116,7 @@ export interface SlipGaji {
     jumlah_hadir: number;
     gaji_pokok: number;
     potongan_kasbon: number;
+    uang_lembur: number;
     gaji_bersih: number;
     status: PaymentStatus;
     piutang_id?: number;
@@ -132,6 +133,7 @@ export interface SlipGajiWeeklySummary {
     tanggal_akhir: string;
     total_karyawan: number;
     total_gaji_pokok: number;
+    total_uang_lembur: number;
     total_potongan_kasbon: number;
     total_gaji_bersih: number;
     total_dibayar: number;
@@ -147,6 +149,7 @@ export interface SlipGajiPreviewItem {
     jumlah_hadir: number;
     total_kasbon: number;
     potongan_kasbon: number;
+    uang_lembur: number;
     gaji_bersih: number;
 }
 

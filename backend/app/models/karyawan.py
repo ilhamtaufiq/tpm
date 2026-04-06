@@ -149,6 +149,9 @@ class SlipGaji(Base, TimestampMixin):
     # Deductions
     potongan_kasbon: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
+    # Overtime
+    uang_lembur: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
+
     # Calculated totals
     gaji_bersih: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
 
@@ -178,7 +181,7 @@ class SlipGaji(Base, TimestampMixin):
 
     def calculate_totals(self) -> None:
         """Calculate weekly salary."""
-        self.gaji_bersih = self.gaji_pokok - self.potongan_kasbon
+        self.gaji_bersih = self.gaji_pokok + self.uang_lembur - self.potongan_kasbon
 
     def __repr__(self) -> str:
         return f"<SlipGaji(karyawan_id={self.karyawan_id}, minggu={self.periode_minggu}/{self.periode_tahun})>"

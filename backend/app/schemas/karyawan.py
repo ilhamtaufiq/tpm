@@ -176,6 +176,7 @@ class SlipGajiCreate(BaseModel):
     periode_minggu: int = Field(..., ge=1, le=53)
     periode_tahun: int = Field(..., ge=2000, le=2100)
     potongan_kasbon: Optional[Decimal] = Field(default=Decimal("0"), ge=0)
+    uang_lembur: Optional[Decimal] = Field(default=Decimal("0"), ge=0)
 
 
 class SlipGajiUpdate(BaseModel):
@@ -200,6 +201,7 @@ class SlipGajiResponse(BaseModel):
     jumlah_hadir: float
     gaji_pokok: Decimal
     potongan_kasbon: Decimal
+    uang_lembur: Decimal
     gaji_bersih: Decimal
     status: PaymentStatus
     metode_bayar: Optional[PaymentMethod] = None
@@ -229,6 +231,7 @@ class SlipGajiWeeklySummary(BaseModel):
     tanggal_akhir: date
     total_karyawan: int
     total_gaji_pokok: Decimal
+    total_uang_lembur: Decimal
     total_potongan_kasbon: Decimal
     total_gaji_bersih: Decimal
     total_dibayar: Decimal

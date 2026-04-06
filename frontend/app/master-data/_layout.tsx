@@ -23,7 +23,7 @@ export default function MasterDataLayout() {
             }}
         >
             <Stack.Screen name="index" options={{ title: 'Data Master' }} />
-            <Stack.Screen name="pelanggan" options={{ title: 'Master Pelanggan' }} />
+            <Stack.Screen name="customer" options={{ title: 'Master Pelanggan' }} />
             <Stack.Screen name="supplier" options={{ title: 'Master Supplier' }} />
             <Stack.Screen name="sparepart" options={{ title: 'Master Sparepart' }} />
         </Stack>

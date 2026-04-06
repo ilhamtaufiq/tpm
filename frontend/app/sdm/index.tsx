@@ -1,23 +1,15 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Card } from '../../components/ui/Card';
+import React, { useState, useCallback } from 'react';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
-import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft,
     Users,
     Clock,
     Wallet,
-    UserMinus,
     ChevronRight,
-    RefreshCw,
     FileText,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { sdmService, EmployeeStats } from '../../services/sdm';
-import { useEmployeeStats } from '../../hooks/useSDM';
-import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
+import { Header } from '../../components/ui/Header';
 
 const QUICK_ACTIONS = [
     { id: 'karyawan', label: 'Karyawan', icon: Users, color: '#3B82F6', route: '/sdm/karyawan' },
@@ -27,12 +19,8 @@ const QUICK_ACTIONS = [
 ];
 
 export default function SDMScreen() {
-    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
-
-    // API Hooks
-    const { data: stats, isLoading, refetch } = useEmployeeStats();
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -44,96 +32,32 @@ export default function SDMScreen() {
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await refetch();
+        // Simulate refresh or add relevant refetch if needed in future
+        await new Promise(resolve => setTimeout(resolve, 500));
         setRefreshing(false);
-    }, [refetch]);
+    }, []);
 
 
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View 
-                className="bg-primary pb-12 px-6 rounded-b-[48px] shadow-2xl"
-                style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
-            >
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">SDM & Payroll</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Manajemen Aset Manusia</Typography>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Employee Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Live Report</Typography>
-                        </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Populasi Staff</Typography>
-                    </View>
-
-                    <View className="flex-row items-center justify-between">
-                        <View>
-                            {isLoading ? (
-                                <ActivityIndicator color="white" className="mt-2" />
-                            ) : (
-                                <>
-                                    <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
-                                        {stats?.total_karyawan || 0} Orang
-                                    </Typography>
-                                    <Typography className="text-white/40 text-xs mt-1">Total Karyawan Terdaftar</Typography>
-                                </>
-                            )}
-                        </View>
-                        <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                            <Users size={24} color="white" />
-                        </View>
-                    </View>
-
-                    {/* Bento Internal Stats Row */}
-                    <View className="h-[1px] bg-white/10 my-6" />
-                    <View className="flex-row justify-between">
-                        <View className="flex-1">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Aktif</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-white text-sm">{stats?.total_aktif || 0}</Typography>
-                        </View>
-                        <View className="flex-1 items-center px-4 border-l border-white/5 border-r">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Cuti</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-white text-sm">{stats?.total_cuti || 0}</Typography>
-                        </View>
-                        <View className="flex-1 items-end pl-4">
-                            <View className="flex-row items-center mb-1">
-                                <View className="w-2 h-2 rounded-full bg-rose-500 mr-1.5" />
-                                <Typography className="text-white/30 text-[9px] uppercase font-bold tracking-widest">Resign</Typography>
-                            </View>
-                            <Typography weight="bold" className="text-rose-300 text-sm">{stats?.total_resign || 0}</Typography>
-                        </View>
-                    </View>
-                </View>
-            </View>
+            <Header 
+                title="SDM & Payroll"
+                subtitle="Manajemen SDM & Kepegawaian"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+            />
 
             <ScrollView
-                className="flex-1"
-                contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32, paddingBottom: 100 }}
+                className="flex-1 px-6"
+                contentContainerStyle={{ paddingBottom: 100, paddingTop: 32 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
+                {/* Visual Break / Spacer */}
+                <View className="h-6" />
+
                 {/* Premium Circular Quick Actions */}
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Navigasi Cepat</Typography>
                 <View className="flex-row flex-wrap justify-between mb-10">
@@ -145,8 +69,8 @@ export default function SDMScreen() {
                             className="w-[22%] items-center"
                         >
                             <View
-                                className="w-14 h-14 rounded-full items-center justify-center mb-2 shadow-sm border border-white"
-                                style={{ backgroundColor: `${action.color}10`, shadowColor: action.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }}
+                                className="w-14 h-14 rounded-full items-center justify-center mb-2 bg-white shadow-sm border border-gray-100"
+                                style={{ backgroundColor: `${action.color}15` }}
                             >
                                 <action.icon size={22} color={action.color} strokeWidth={2.5} />
                             </View>
@@ -159,64 +83,67 @@ export default function SDMScreen() {
 
                 {/* Sub-Feature Cards (Premium List Style) */}
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Modul Operasional</Typography>
-
-                <View className="space-y-6">
+                <View className="space-y-4">
                     <Pressable
-                        onPress={() => router.push('/sdm/karyawan')}
-                        
-                        className="bg-white p-5 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center mb-6"
+                        onPress={() => router.push('/sdm/absensi')}
+                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
                     >
-                        <View className="w-14 h-14 rounded-2xl bg-blue-50 items-center justify-center mr-4 border border-blue-100/50">
-                            <Users size={24} color="#3B82F6" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Database Karyawan</Typography>
-                            <Typography variant="caption" className="text-textGray">Kelola profil & dokumen sdm</Typography>
+                        <View className="flex-row items-center">
+                            <View className="w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center mr-4 border border-emerald-100">
+                                <Clock size={24} color="#10B981" />
+                            </View>
+                            <View>
+                                <Typography variant="h4" weight="bold" className="text-textMain">Absensi Presensi</Typography>
+                                <Typography className="text-textGray/60 text-xs">Catat Masuk, Pulang & Izin</Typography>
+                            </View>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>
 
                     <Pressable
-                        onPress={() => router.push('/sdm/absensi')}
-                        
-                        className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
+                        onPress={() => router.push('/sdm/karyawan')}
+                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
                     >
-                        <View className="w-14 h-14 rounded-2xl bg-emerald-50 items-center justify-center mr-4 border border-emerald-100/50">
-                            <Clock size={24} color="#10B981" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Presensi Harian</Typography>
-                            <Typography variant="caption" className="text-textGray">Rekap kehadiran & lembur staff</Typography>
+                        <View className="flex-row items-center">
+                            <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4 border border-blue-100">
+                                <Users size={24} color="#3B82F6" />
+                            </View>
+                            <View>
+                                <Typography variant="h4" weight="bold" className="text-textMain">Database Personalia</Typography>
+                                <Typography className="text-textGray/60 text-xs">Informasi Data Karyawan</Typography>
+                            </View>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>
 
                     <Pressable
                         onPress={() => router.push('/sdm/kasbon')}
-                        
-                        className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
+                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
                     >
-                        <View className="w-14 h-14 rounded-2xl bg-amber-50 items-center justify-center mr-4 border border-amber-100/50">
-                            <Wallet size={24} color="#F59E0B" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Manajemen Kasbon</Typography>
-                            <Typography variant="caption" className="text-textGray">Pinjaman & cicilan karyawan</Typography>
+                        <View className="flex-row items-center">
+                            <View className="w-12 h-12 bg-amber-50 rounded-2xl items-center justify-center mr-4 border border-amber-100">
+                                <Wallet size={24} color="#F59E0B" />
+                            </View>
+                            <View>
+                                <Typography variant="h4" weight="bold" className="text-textMain">Pencatatan Kasbon</Typography>
+                                <Typography className="text-textGray/60 text-xs">Pinjaman & Riwayat Kasbon</Typography>
+                            </View>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>
 
                     <Pressable
                         onPress={() => router.push('/sdm/slip-gaji')}
-                        
-                        className="bg-white p-5 rounded-[32px] border border-gray-100/50 shadow-sm flex-row items-center mb-6"
+                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
                     >
-                        <View className="w-14 h-14 rounded-2xl bg-purple-50 items-center justify-center mr-4 border border-purple-100/50">
-                            <FileText size={24} color="#8B5CF6" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Payroll & Slip Gaji</Typography>
-                            <Typography variant="caption" className="text-textGray">Otomasi penggajian & laporan</Typography>
+                        <View className="flex-row items-center">
+                            <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4 border border-purple-100">
+                                <FileText size={24} color="#8B5CF6" />
+                            </View>
+                            <View>
+                                <Typography variant="h4" weight="bold" className="text-textMain">Payroll & Slip Gaji</Typography>
+                                <Typography className="text-textGray/60 text-xs">Generate & Download Slip</Typography>
+                            </View>
                         </View>
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>

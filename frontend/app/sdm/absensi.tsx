@@ -24,6 +24,7 @@ import { getErrorMessage } from '../../utils/error';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { onlineManager } from '@tanstack/react-query';
+import { Header } from '../../components/ui/Header';
 
 export default function AbsensiScreen() {
     const router = useRouter();
@@ -244,39 +245,19 @@ export default function AbsensiScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Absensi Karyawan</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">
-                                {selectedKaryawan ? `Input Kehadiran: ${selectedKaryawan.nama}` : 'Pilih Karyawan untuk Mulai'}
-                            </Typography>
-                        </View>
-                    </View>
-                    {!selectedKaryawan && (
-                        <Pressable
-                            onPress={onRefresh}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            {refreshing ? <ActivityIndicator size="small" color="white" /> : <Clock size={22} color="white" />}
-                        </Pressable>
-                    )}
-                </View>
-
+            <Header 
+                title="Absensi Karyawan"
+                subtitle={selectedKaryawan ? `Input Kehadiran: ${selectedKaryawan.nama}` : 'Pilih Karyawan untuk Mulai'}
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+            >
                 {!selectedKaryawan && (
                     <View className="bg-white/10 px-5 py-3 rounded-2xl border border-white/10 flex-row items-center">
                         <Search size={18} color="white" opacity={0.6} />
                         <Typography className="flex-1 ml-3 text-white/40 text-sm">Cari karyawan...</Typography>
                     </View>
                 )}
-            </View>
+            </Header>
 
             <View className="flex-1 -mt-8 z-10 px-6">
                 {!selectedKaryawan ? (
@@ -416,30 +397,55 @@ export default function AbsensiScreen() {
                         value={jamMasuk}
                         onChangeText={setJamMasuk}
                         placeholder="08:00"
+                        innerContainerClassName="rounded-full px-6"
                     />
                     <Input
                         label="Jam Keluar"
                         value={jamKeluar}
                         onChangeText={setJamKeluar}
                         placeholder="17:00"
+                        innerContainerClassName="rounded-full px-6"
                     />
 
                     <Typography className="text-gray-500 text-xs italic mt-2">
                         * Keluar antara 12:00 - 14:00 otomatis Setengah Hari
                     </Typography>
 
+                    <View className="flex-row space-x-2 mt-4">
+                        <Pressable 
+                            onPress={() => {
+                                setJamMasuk('08:00');
+                                setJamKeluar('17:00');
+                            }}
+                            className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '17:00' ? 'bg-primary/10 border-primary' : 'bg-gray-50 border-gray-100'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '17:00' ? 'text-primary' : 'text-textGray'}>Full Day</Typography>
+                            <Typography className="text-[10px] text-gray-400">08:00 - 17:00</Typography>
+                        </Pressable>
+                        <Pressable 
+                            onPress={() => {
+                                setJamMasuk('08:00');
+                                setJamKeluar('12:00');
+                            }}
+                            className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '12:00' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '12:00' ? 'text-amber-700' : 'text-textGray'}>1/2 Day</Typography>
+                            <Typography className="text-[10px] text-gray-400">08:00 - 12:00</Typography>
+                        </Pressable>
+                    </View>
+
                     <View className="flex-row space-x-3 mt-6">
                         {selectedDates[tempDate] && (
                             <Pressable
                                 onPress={handleRemoveAttendance}
-                                className="flex-1 bg-red-50 h-14 rounded-2xl items-center justify-center border border-red-100"
+                                className="flex-1 bg-red-50 h-14 rounded-full items-center justify-center border border-red-100"
                             >
                                 <Typography weight="bold" className="text-red-600">Hapus</Typography>
                             </Pressable>
                         )}
                         <Pressable
                             onPress={handleConfirmTime}
-                            className="flex-[2] bg-primary h-14 rounded-2xl items-center justify-center shadow-lg"
+                            className="flex-[2] bg-primary h-14 rounded-full items-center justify-center shadow-lg"
                         >
                             <Typography weight="bold" className="text-white">Simpan</Typography>
                         </Pressable>

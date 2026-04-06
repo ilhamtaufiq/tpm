@@ -29,6 +29,7 @@ import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollP
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { Header } from '../../components/ui/Header';
 
 // Helper to get current week number
 const getWeekNumber = (d: Date): number => {
@@ -83,6 +84,7 @@ export default function SlipGajiScreen() {
     // Local state for edits
     const [attendanceEdits, setAttendanceEdits] = useState<Record<number, number>>({});
     const [kasbonEdits, setKasbonEdits] = useState<Record<number, number>>({});
+    const [overtimeEdits, setOvertimeEdits] = useState<Record<number, number>>({});
 
     // Search query
     const [searchQuery, setSearchQuery] = useState('');
@@ -192,6 +194,14 @@ export default function SlipGajiScreen() {
         }));
     };
 
+    const handleUpdateOvertime = (karyawanId: number, value: string) => {
+        const numValue = parseFloat(value.replace(/[^0-9]/g, '')) || 0;
+        setOvertimeEdits(prev => ({
+            ...prev,
+            [karyawanId]: numValue
+        }));
+    };
+
     const getAttendanceValue = (item: SlipGajiPreviewItem) => {
         return attendanceEdits[item.karyawan_id] !== undefined
             ? attendanceEdits[item.karyawan_id]
@@ -204,16 +214,23 @@ export default function SlipGajiScreen() {
             : item.potongan_kasbon;
     };
 
+    const getOvertimeValue = (item: SlipGajiPreviewItem) => {
+        return overtimeEdits[item.karyawan_id] !== undefined
+            ? overtimeEdits[item.karyawan_id]
+            : (item.uang_lembur || 0);
+    };
+
     const handleGenerateSingle = async (item: SlipGajiPreviewItem) => {
         setGeneratingId(item.karyawan_id);
         const finalAttendance = getAttendanceValue(item);
         const finalKasbon = getKasbonValue(item);
+        const finalOvertime = getOvertimeValue(item);
 
         try {
             await createBulkMutation.mutateAsync({
                 tanggalDari: startDate,
                 tanggalSampai: endDate,
-                items: [{ ...item, jumlah_hadir: finalAttendance, potongan_kasbon: finalKasbon }],
+                items: [{ ...item, jumlah_hadir: finalAttendance, potongan_kasbon: finalKasbon, uang_lembur: finalOvertime }],
             });
             setDialogConfig({
                 visible: true,
@@ -242,7 +259,8 @@ export default function SlipGajiScreen() {
             const itemsToGenerate = filteredPending.map((item: SlipGajiPreviewItem) => ({
                 ...item,
                 jumlah_hadir: getAttendanceValue(item),
-                potongan_kasbon: getKasbonValue(item)
+                potongan_kasbon: getKasbonValue(item),
+                uang_lembur: getOvertimeValue(item)
             }));
 
             await createBulkMutation.mutateAsync({
@@ -380,10 +398,11 @@ export default function SlipGajiScreen() {
         const isGenerating = generatingId === item.karyawan_id;
         const currentAttendance = getAttendanceValue(item);
         const currentKasbon = getKasbonValue(item);
+        const currentOvertime = getOvertimeValue(item);
 
-        // Dynamic calculation: (Base / 6) * Current Attendance - Kasbon
+        // Dynamic calculation: (Base / 6) * Current Attendance + Overtime - Kasbon
         const currentGajiPokok = Math.round((item.gaji_pokok_dasar / 6) * currentAttendance);
-        const currentGajiBersih = currentGajiPokok - currentKasbon;
+        const currentGajiBersih = currentGajiPokok + currentOvertime - currentKasbon;
 
         return (
             <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
@@ -429,6 +448,21 @@ export default function SlipGajiScreen() {
                                     value={String(currentAttendance)}
                                     onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
                                     selectTextOnFocus
+                                />
+                            </View>
+                        </View>
+
+                        <View className="mb-4 items-end">
+                            <Typography className="text-[9px] text-emerald-400 font-bold uppercase mb-1 tracking-widest">Uang Lembur</Typography>
+                            <View className="flex-row items-center bg-emerald-50/50 rounded-2xl border border-emerald-100 px-3 py-1">
+                                <Typography className="text-emerald-400 font-bold text-xs mr-1">Rp</Typography>
+                                <TextInput
+                                    className="w-20 text-right text-emerald-600 font-bold p-0 text-base"
+                                    keyboardType="numeric"
+                                    value={formatNumber(String(currentOvertime))}
+                                    onChangeText={(v) => handleUpdateOvertime(item.karyawan_id, parseNumber(v).toString())}
+                                    selectTextOnFocus
+                                    placeholder="0"
                                 />
                             </View>
                         </View>
@@ -504,68 +538,58 @@ export default function SlipGajiScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Redesigned Header */}
-            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-12 h-12 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Sistem Payroll</Typography>
-                            <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Berdasarkan Range Tanggal</Typography>
-                        </View>
-                    </View>
+            <Header 
+                title="Payroll"
+                subtitle="Sistem Gaji Mingguan"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+            />
 
-                    <View className="bg-white/10 rounded-2xl py-2 px-4 border border-white/10 flex-row items-center">
-                        <Clock size={16} color="white" className="mr-2" />
-                        <Typography className="text-white font-bold text-xs">Custom Range</Typography>
-                    </View>
-                </View>
-
+            <ScrollView 
+                className="flex-1"
+                contentContainerStyle={{ paddingTop: 24, paddingBottom: 100 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
+            >
                 {/* Range Selection Card */}
-                <View className="flex-row space-x-3 mb-4">
+                <View className="mx-6 mb-6">
+                    <View className="flex-row space-x-3 mb-4">
+                        <Pressable
+                            onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
+                            className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm"
+                        >
+                            <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
+                            <Typography className="text-textMain font-bold text-sm">{startDate}</Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
+                            className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm"
+                        >
+                            <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
+                            <Typography className="text-textMain font-bold text-sm">{endDate}</Typography>
+                        </Pressable>
+                    </View>
+
+                    {/* Date Selection Card - PREMIUM */}
                     <Pressable
-                        onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
-                        className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
+                        onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
+                        className="bg-white p-6 rounded-[32px] shadow-xl border border-gray-100 flex-row items-center"
                     >
-                        <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
-                        <Typography className="text-white font-bold text-sm">{startDate}</Typography>
-                    </Pressable>
-                    <Pressable
-                        onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
-                        className="flex-1 bg-white/10 p-4 rounded-3xl border border-white/10"
-                    >
-                        <Typography className="text-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
-                        <Typography className="text-white font-bold text-sm">{endDate}</Typography>
+                        <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
+                            <Calendar size={28} color="#023C69" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Tanggal Cetak Slip</Typography>
+                            <Typography className="text-textMain font-bold text-xl">{slipDate}</Typography>
+                        </View>
+                        <View className="bg-primary/10 px-4 py-2 rounded-full">
+                            <Typography className="text-primary text-[10px] font-black uppercase">Ubah</Typography>
+                        </View>
                     </Pressable>
                 </View>
 
-                {/* Date Selection Card - PREMIUM */}
-                <Pressable
-                    onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
-                    
-                    className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center"
-                >
-                    <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
-                        <Calendar size={28} color="#023C69" />
-                    </View>
-                    <View className="flex-1">
-                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Tanggal Cetak Slip</Typography>
-                        <Typography className="text-textMain font-bold text-xl">{slipDate}</Typography>
-                    </View>
-                    <View className="bg-primary/10 px-4 py-2 rounded-full">
-                        <Typography className="text-primary text-[10px] font-black uppercase">Ubah</Typography>
-                    </View>
-                </Pressable>
-            </View>
-
-            {/* Search & Tabs Area */}
-            <View className="flex-1 mt-6 z-20">
-                <View className="mx-6 h-full bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden">
+                {/* Search & Tabs Area */}
+                <View className="flex-1 z-20">
+                    <View className="mx-6 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px]">
 
                     {/* Glassmorphic Search */}
                     <View className="px-6 pt-6 pb-2">
@@ -674,8 +698,9 @@ export default function SlipGajiScreen() {
                             </Pressable>
                         </View>
                     )}
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
 
             {/* Summary Panel for History */}
             {activeTab === 'history' && summary && (
@@ -813,6 +838,10 @@ export default function SlipGajiScreen() {
                     <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
                         <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Kehadiran</Typography>
                         <Typography weight="bold" className="text-textMain text-lg">{selectedSlip.jumlah_hadir} Hari</Typography>
+                    </View>
+                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
+                        <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Uang Lembur</Typography>
+                        <Typography weight="bold" className="text-emerald-600 text-lg">+{formatCurrency(selectedSlip.uang_lembur || 0)}</Typography>
                     </View>
                     <View className="flex-row justify-between items-center mb-8">
                         <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Potongan Kasbon</Typography>

@@ -26,6 +26,7 @@ import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../uti
 import { useAlert } from '../../context/AlertContext';
 import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
+import { Header } from '../../components/ui/Header';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -484,29 +485,12 @@ export default function KasbonScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Kasbon HR</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Pinjaman & Kasbon Karyawan</Typography>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => loadData()}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        <RefreshCw size={20} color="white" />
-                    </Pressable>
-                </View>
-
+            <Header 
+                title="Kasbon HR"
+                subtitle="Pinjaman & Kasbon Karyawan"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+            >
                 {/* Main Insight Card (Glassmorphism) */}
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
                     <View className="flex-row justify-between items-center mb-6">
@@ -544,7 +528,7 @@ export default function KasbonScreen() {
                         </View>
                     </View>
                 </View>
-            </View>
+            </Header>
 
             {/* Filter & Search Navigator Overlay */}
             <View className="px-6 -mt-8">

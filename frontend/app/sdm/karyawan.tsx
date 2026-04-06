@@ -30,6 +30,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { onlineManager } from '@tanstack/react-query';
 import { useCreateKaryawan, useUpdateKaryawan } from '../../hooks/useSDM';
+import { Header } from '../../components/ui/Header';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -334,32 +335,12 @@ export default function KaryawanScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View 
-                className="bg-primary pb-12 px-6 rounded-b-[48px] shadow-2xl"
-                style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+            <Header 
+                title="Personalia"
+                subtitle="Basis Data Karyawan"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
             >
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Personalia</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Basis Data Karyawan</Typography>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </Pressable>
-                </View>
-
                 {/* Database Quick Summary (Glassmorphism) - Inside Header */}
                 <View className="bg-white/10 p-5 rounded-[32px] border border-white/10 flex-row items-center justify-between">
                     <View className="flex-row items-center">
@@ -373,7 +354,7 @@ export default function KaryawanScreen() {
                     </View>
                     <Typography variant="h2" weight="bold" className="text-white text-2xl">{karyawanList.length}</Typography>
                 </View>
-            </View>
+            </Header>
 
             {/* Filter & Search Navigator Overlay */}
             <View className="px-6 -mt-8 z-10">
