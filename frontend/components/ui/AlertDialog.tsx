@@ -1,9 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Modal, Pressable, Text, Dimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
-import { Typography } from './Typography';
-import { AlertCircle, CheckCircle, Info, XCircle, LucideIcon } from 'lucide-react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { View, Modal, Pressable, Text, useWindowDimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
+import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react-native';
 
 interface AlertDialogProps {
     visible: boolean;
@@ -60,6 +57,7 @@ const DialogButton = ({
         <Pressable
             onPress={onPress}
             disabled={loading}
+            style={{ width: '100%' }}
         >
             <View
                 style={[
@@ -101,6 +99,7 @@ export const AlertDialog = ({
     type = 'alert',
     loading = false
 }: AlertDialogProps) => {
+    const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
     const scaleAnim = useRef(new Animated.Value(0.8)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -180,7 +179,7 @@ export const AlertDialog = ({
             onRequestClose={onClose}
             statusBarTranslucent={Platform.OS === 'android'}
         >
-            <View style={styles.centeredView}>
+            <View style={[styles.centeredView, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}>
                 <Pressable 
                     style={styles.backdrop} 
                     onPress={onClose}
@@ -189,6 +188,7 @@ export const AlertDialog = ({
                     style={[
                         styles.dialogContainer,
                         {
+                            width: SCREEN_WIDTH > 448 ? 400 : SCREEN_WIDTH - 48,
                             transform: [{ scale: scaleAnim }],
                             opacity: opacityAnim,
                         }
@@ -244,13 +244,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
+        backgroundColor: 'transparent',
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     dialogContainer: {
-        width: SCREEN_WIDTH > 448 ? 400 : SCREEN_WIDTH - 48,
         minWidth: 280,
         maxWidth: 400,
         paddingTop: 32,
