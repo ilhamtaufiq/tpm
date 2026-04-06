@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { View, Modal, Pressable, Text, useWindowDimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
 import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react-native';
 
@@ -15,7 +15,7 @@ interface AlertDialogProps {
     loading?: boolean;
 }
 
-// Internal Button component using basic Pressable to avoid Modal interaction issues
+// Internal Button component with Premium Design
 const DialogButton = ({
     onPress,
     title,
@@ -31,58 +31,44 @@ const DialogButton = ({
 }) => {
     const isOutline = variant === 'outline-neutral';
 
-    // Determine background color
-    let bgColor = '#023C69'; // Primary Default (Dark Blue)
-    let borderColor = 'transparent';
-    let borderWidth = 0;
-    let textColor = '#FFFFFF';
-
-    if (variant === 'danger') {
-        bgColor = '#DC2626';
-    } else if (variant === 'secondary') {
-        bgColor = '#F59E0B';
-    } else if (isOutline) {
-        bgColor = 'transparent';
-        borderColor = '#D1D5DB';
-        borderWidth = 1;
-        textColor = '#4B5563';
-    } else if (variant === 'primary') {
-        bgColor = '#023C69';
-    }
-
-    // Determine Loading Indicator Color
-    const loaderColor = isOutline ? '#4B5563' : 'white';
+    const colors = useMemo(() => {
+        if (variant === 'danger') return { bg: '#E11D48', text: '#FFFFFF' };
+        if (variant === 'secondary') return { bg: '#F59E0B', text: '#FFFFFF' };
+        if (isOutline) return { bg: 'transparent', text: '#4B5563' };
+        return { bg: '#023C69', text: '#FFFFFF' };
+    }, [variant, isOutline]);
 
     return (
         <Pressable
             onPress={onPress}
             disabled={loading}
-            style={{ width: '100%' }}
+            style={({ pressed }) => [
+                { width: '100%' },
+                pressed && { opacity: 0.9 }
+            ]}
         >
-            <View
-                style={[
-                    styles.button,
-                    {
-                        backgroundColor: bgColor,
-                        borderColor: borderColor,
-                        borderWidth: borderWidth,
-                    },
-                    style
-                ]}
-            >
-                {loading ? (
-                    <ActivityIndicator color={loaderColor} />
-                ) : (
-                    <Text style={{ 
-                        color: textColor, 
-                        fontSize: 16, 
-                        fontWeight: '700', 
-                        textAlign: 'center',
-                    }}>
-                        {title}
-                    </Text>
-                )}
-            </View>
+            {({ pressed }) => (
+                <View
+                    style={[
+                        styles.buttonBase,
+                        {
+                            backgroundColor: colors.bg,
+                            borderColor: isOutline ? '#E5E7EB' : 'transparent',
+                            borderWidth: isOutline ? 1 : 0,
+                            transform: [{ scale: pressed ? 0.98 : 1 }],
+                        },
+                        style
+                    ]}
+                >
+                    {loading ? (
+                        <ActivityIndicator color={colors.text} size="small" />
+                    ) : (
+                        <Text style={[styles.buttonText, { color: colors.text }]}>
+                            {title}
+                        </Text>
+                    )}
+                </View>
+            )}
         </Pressable>
     );
 };
@@ -100,117 +86,90 @@ export const AlertDialog = ({
     loading = false
 }: AlertDialogProps) => {
     const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
-    const scaleAnim = useRef(new Animated.Value(0.8)).current;
+    
+    // Animation Values
+    const scaleAnim = useRef(new Animated.Value(0.9)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
-
-    const [shouldRender, setShouldRender] = React.useState(visible);
 
     useEffect(() => {
         if (visible) {
-            setShouldRender(true);
             Animated.parallel([
                 Animated.spring(scaleAnim, {
                     toValue: 1,
+                    friction: 9,
+                    tension: 50,
                     useNativeDriver: true,
-                    damping: 20,
-                    stiffness: 200,
                 }),
                 Animated.timing(opacityAnim, {
                     toValue: 1,
-                    duration: 300,
-                    useNativeDriver: true,
-                })
-            ]).start();
-        } else {
-            Animated.parallel([
-                Animated.timing(scaleAnim, {
-                    toValue: 0.9,
-                    duration: 200,
+                    duration: 250,
+                    easing: Easing.out(Easing.cubic),
                     useNativeDriver: true,
                 }),
-                Animated.timing(opacityAnim, {
-                    toValue: 0,
-                    duration: 200,
-                    useNativeDriver: true,
-                })
-            ]).start(() => setShouldRender(false));
+            ]).start();
+        } else {
+            scaleAnim.setValue(0.9);
+            opacityAnim.setValue(0);
         }
     }, [visible]);
 
-    if (!shouldRender) return null;
+    const ui = useMemo(() => {
+        const size = 36;
+        const variants = {
+            success: { icon: <CheckCircle size={size} color="#10B981" strokeWidth={2.5} />, bg: '#ECFDF5', border: '#D1FAE5' },
+            error: { icon: <XCircle size={size} color="#E11D48" strokeWidth={2.5} />, bg: '#FFF1F2', border: '#FFE4E6' },
+            warning: { icon: <AlertCircle size={size} color="#F59E0B" strokeWidth={2.5} />, bg: '#FFFBEB', border: '#FEF3C7' },
+            info: { icon: <Info size={size} color="#3B82F6" strokeWidth={2.5} />, bg: '#EFF6FF', border: '#DBEAFE' },
+        };
+        return variants[variant];
+    }, [variant]);
 
-    const getIcon = () => {
-        const size = 32;
-        switch (variant) {
-            case 'success':
-                return <CheckCircle size={size} color="#10B981" strokeWidth={2.5} />;
-            case 'error':
-                return <XCircle size={size} color="#EF4444" strokeWidth={2.5} />;
-            case 'warning':
-                return <AlertCircle size={size} color="#F59E0B" strokeWidth={2.5} />;
-            default:
-                return <Info size={size} color="#3B82F6" strokeWidth={2.5} />;
-        }
-    };
-
-    const getConfirmVariant = (): 'primary' | 'secondary' | 'danger' => {
-        switch (variant) {
-            case 'error': return 'danger';
-            case 'warning': return 'secondary';
-            case 'success': return 'primary';
-            default: return 'primary';
-        }
-    };
-
-    const getIconContainerStyle = () => {
-        switch (variant) {
-            case 'success': return { backgroundColor: '#ECFDF5', borderColor: '#D1FAE5' };
-            case 'error': return { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' };
-            case 'warning': return { backgroundColor: '#FFFBEB', borderColor: '#FEF3C7' };
-            default: return { backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' };
-        }
-    };
+    if (!visible) return null;
 
     return (
         <Modal
             transparent
-            visible={true}
+            visible={visible}
             animationType="none"
             onRequestClose={onClose}
-            statusBarTranslucent={Platform.OS === 'android'}
+            statusBarTranslucent={true}
         >
-            <View style={[styles.centeredView, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}>
-                <View 
-                    style={styles.backdrop} 
+            <View style={[styles.overlay, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}>
+                {/* Backdrop with fade */}
+                <Animated.View 
+                    style={[
+                        StyleSheet.absoluteFill, 
+                        { backgroundColor: 'rgba(2, 21, 38, 0.75)', opacity: opacityAnim }
+                    ]}
                 >
-                    <Pressable style={{ flex: 1 }} onPress={onClose} />
-                </View>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+                </Animated.View>
                 
                 <Animated.View
                     style={[
-                        styles.dialogContainer,
+                        styles.container,
                         {
-                            width: SCREEN_WIDTH > 448 ? 400 : SCREEN_WIDTH - 48,
-                            transform: [{ scale: scaleAnim }],
+                            width: SCREEN_WIDTH > 480 ? 400 : SCREEN_WIDTH - 56,
                             opacity: opacityAnim,
+                            transform: [{ scale: scaleAnim }],
                         }
                     ]}
                 >
-                    <View style={[styles.iconContainer, getIconContainerStyle()]}>
-                        {getIcon()}
+                    {/* Branded Icon Container */}
+                    <View style={[styles.iconBox, { backgroundColor: ui.bg, borderColor: ui.border }]}>
+                        {ui.icon}
                     </View>
 
-                    <Text style={styles.titleText}>
-                        {title}
-                    </Text>
+                    {/* Text Content */}
+                    <View style={styles.textGroup}>
+                        <Text style={styles.title}>{title}</Text>
+                        <Text style={styles.message}>{message}</Text>
+                    </View>
 
-                    <Text style={styles.messageText}>
-                        {message}
-                    </Text>
-
-                    <View style={styles.buttonRow}>
+                    {/* Action Buttons */}
+                    <View style={styles.actions}>
                         {type === 'confirm' && (
-                            <View style={styles.buttonWrapper}>
+                            <View style={styles.btnFlex}>
                                 <DialogButton
                                     title={cancelText}
                                     variant="outline-neutral"
@@ -220,10 +179,10 @@ export const AlertDialog = ({
                                 />
                             </View>
                         )}
-                        <View style={styles.buttonWrapper}>
+                        <View style={styles.btnFlex}>
                             <DialogButton
                                 title={confirmText}
-                                variant={getConfirmVariant()}
+                                variant={variant === 'error' ? 'danger' : variant === 'warning' ? 'secondary' : 'primary'}
                                 onPress={() => {
                                     if (onConfirm) onConfirm();
                                     else onClose();
@@ -240,83 +199,79 @@ export const AlertDialog = ({
 };
 
 const styles = StyleSheet.create({
-    centeredView: {
-        flex: 1,
+    overlay: {
         justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 1000,
     },
-    backdrop: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    },
-    dialogContainer: {
-        minWidth: 280,
-        maxWidth: 400,
-        paddingTop: 32,
-        paddingHorizontal: 28,
-        paddingBottom: 28,
-        alignItems: 'center',
+    container: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 28,
+        borderRadius: 36,
+        paddingTop: 44,
+        paddingHorizontal: 28,
+        paddingBottom: 32,
+        alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.15,
+                shadowRadius: 24,
+            },
+            android: {
+                elevation: 16,
+            }
+        }),
         borderWidth: 1,
-        borderColor: '#F3F4F6',
-        elevation: 10,
+        borderColor: 'rgba(0,0,0,0.05)',
     },
-    iconContainer: {
-        marginBottom: 24,
-        width: 80,
-        height: 80,
-        borderRadius: 28,
+    iconBox: {
+        width: 92,
+        height: 92,
+        borderRadius: 34,
+        borderWidth: 3,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 2,
+        marginBottom: 32,
     },
-    titleText: {
-        fontSize: 22,
-        fontWeight: '700',
-        color: '#111827',
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: -0.5,
-    },
-    messageText: {
-        fontSize: 15,
-        color: '#6B7280',
-        textAlign: 'center',
-        marginBottom: 24,
-        lineHeight: 22,
-        paddingHorizontal: 8,
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        width: '100%',
+    textGroup: {
         alignItems: 'center',
-        minHeight: 56,
-    },
-    buttonWrapper: {
-        flex: 1,
-        alignItems: 'stretch',
-    },
-    button: {
+        marginBottom: 36,
         width: '100%',
-        minHeight: 52,
-        height: 52,
-        borderRadius: 16,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#0F172A',
+        textAlign: 'center',
+        marginBottom: 12,
+        letterSpacing: -0.6,
+    },
+    message: {
+        fontSize: 16,
+        color: '#475569',
+        textAlign: 'center',
+        lineHeight: 24,
+        paddingHorizontal: 8,
+        fontWeight: '500',
+    },
+    actions: {
         flexDirection: 'row',
+        width: '100%',
+    },
+    btnFlex: {
+        flex: 1,
+    },
+    buttonBase: {
+        height: 60,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
     },
     buttonText: {
         fontSize: 16,
         fontWeight: '700',
-        textAlign: 'center',
-        includeFontPadding: false,
-    }
+        letterSpacing: -0.1,
+    },
 });
 
 

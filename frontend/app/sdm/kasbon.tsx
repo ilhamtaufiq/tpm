@@ -561,7 +561,7 @@ export default function KasbonScreen() {
             </View>
 
             {/* Filter & Search Navigator Overlay */}
-            <View className="px-6 -mt-8 z-10">
+            <View className="px-6 -mt-8">
                 <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
                         {STATUS_FILTERS.map((filter) => (
