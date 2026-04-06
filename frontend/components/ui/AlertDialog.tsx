@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import { View, Modal, Pressable, Text, useWindowDimensions, Animated, Easing, Platform, ActivityIndicator, StyleSheet } from 'react-native';
-import { AlertCircle, CheckCircle, Info, XCircle } from 'lucide-react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, TouchableOpacity, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
 
 interface AlertDialogProps {
     visible: boolean;
@@ -15,64 +15,10 @@ interface AlertDialogProps {
     loading?: boolean;
 }
 
-// Internal Button component with Premium Design
-const DialogButton = ({
-    onPress,
-    title,
-    variant = 'primary',
-    loading = false,
-    style
-}: {
-    onPress: () => void;
-    title: string;
-    variant?: 'primary' | 'secondary' | 'danger' | 'outline-neutral';
-    loading?: boolean;
-    style?: any;
-}) => {
-    const isOutline = variant === 'outline-neutral';
-
-    const colors = useMemo(() => {
-        if (variant === 'danger') return { bg: '#E11D48', text: '#FFFFFF' };
-        if (variant === 'secondary') return { bg: '#F59E0B', text: '#FFFFFF' };
-        if (isOutline) return { bg: 'transparent', text: '#4B5563' };
-        return { bg: '#023C69', text: '#FFFFFF' };
-    }, [variant, isOutline]);
-
-    return (
-        <Pressable
-            onPress={onPress}
-            disabled={loading}
-            style={({ pressed }) => [
-                { width: '100%' },
-                pressed && { opacity: 0.9 }
-            ]}
-        >
-            {({ pressed }) => (
-                <View
-                    style={[
-                        styles.buttonBase,
-                        {
-                            backgroundColor: colors.bg,
-                            borderColor: isOutline ? '#E5E7EB' : 'transparent',
-                            borderWidth: isOutline ? 1 : 0,
-                            transform: [{ scale: pressed ? 0.98 : 1 }],
-                        },
-                        style
-                    ]}
-                >
-                    {loading ? (
-                        <ActivityIndicator color={colors.text} size="small" />
-                    ) : (
-                        <Text style={[styles.buttonText, { color: colors.text }]}>
-                            {title}
-                        </Text>
-                    )}
-                </View>
-            )}
-        </Pressable>
-    );
-};
-
+/**
+ * ALERT DIALOG (STITCH UI - PREVIEW READY)
+ * Full screen Absolute View implementation (Bypasses Modal touch bugs).
+ */
 export const AlertDialog = ({
     visible,
     title,
@@ -87,191 +33,183 @@ export const AlertDialog = ({
 }: AlertDialogProps) => {
     const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
     
-    // Animation Values
-    const scaleAnim = useRef(new Animated.Value(0.9)).current;
+    // Smooth Entry Animation
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
     useEffect(() => {
         if (visible) {
             Animated.parallel([
-                Animated.spring(scaleAnim, {
-                    toValue: 1,
-                    friction: 9,
-                    tension: 50,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(opacityAnim, {
-                    toValue: 1,
-                    duration: 250,
-                    easing: Easing.out(Easing.cubic),
-                    useNativeDriver: true,
-                }),
+                Animated.timing(opacityAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+                Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
             ]).start();
         } else {
-            scaleAnim.setValue(0.9);
             opacityAnim.setValue(0);
+            scaleAnim.setValue(0.95);
         }
     }, [visible]);
 
-    const ui = useMemo(() => {
-        const size = 36;
-        const variants = {
-            success: { icon: <CheckCircle size={size} color="#10B981" strokeWidth={2.5} />, bg: '#ECFDF5', border: '#D1FAE5' },
-            error: { icon: <XCircle size={size} color="#E11D48" strokeWidth={2.5} />, bg: '#FFF1F2', border: '#FFE4E6' },
-            warning: { icon: <AlertCircle size={size} color="#F59E0B" strokeWidth={2.5} />, bg: '#FFFBEB', border: '#FEF3C7' },
-            info: { icon: <Info size={size} color="#3B82F6" strokeWidth={2.5} />, bg: '#EFF6FF', border: '#DBEAFE' },
-        };
-        return variants[variant];
-    }, [variant]);
-
     if (!visible) return null;
 
+    const modalWidth = SCREEN_WIDTH > 480 ? 400 : SCREEN_WIDTH - 56;
+    const isError = variant === 'error';
+    const isWarning = variant === 'warning';
+    
+    const ui = {
+        success: { color: '#10B981', bg: '#F0FDF4', icon: <CheckCircle size={32} color="#10B981" strokeWidth={2.5} /> },
+        error: { color: '#E11D48', bg: '#FFF1F2', icon: <XCircle size={32} color="#E11D48" strokeWidth={2.5} /> },
+        warning: { color: '#F59E0B', bg: '#FFFBEB', icon: <AlertCircle size={32} color="#F59E0B" strokeWidth={2.5} /> },
+        info: { color: '#023C69', bg: '#F8FAFC', icon: <Info size={32} color="#023C69" strokeWidth={2.5} /> },
+    }[variant || 'info'];
+
+    const isConfirm = type === 'confirm';
+
     return (
-        <Modal
-            transparent
-            visible={visible}
-            animationType="none"
-            onRequestClose={onClose}
-            statusBarTranslucent={true}
-        >
-            <View style={[styles.overlay, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}>
-                {/* Backdrop with fade */}
-                <Animated.View 
-                    style={[
-                        StyleSheet.absoluteFill, 
-                        { backgroundColor: 'rgba(2, 21, 38, 0.75)', opacity: opacityAnim }
-                    ]}
-                >
-                    <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-                </Animated.View>
-                
-                <Animated.View
-                    style={[
-                        styles.container,
-                        {
-                            width: SCREEN_WIDTH > 480 ? 400 : SCREEN_WIDTH - 56,
-                            opacity: opacityAnim,
-                            transform: [{ scale: scaleAnim }],
-                        }
-                    ]}
-                >
-                    {/* Branded Icon Container */}
-                    <View style={[styles.iconBox, { backgroundColor: ui.bg, borderColor: ui.border }]}>
-                        {ui.icon}
-                    </View>
+        <View style={styles.root}>
+            {/* BACKDROP: Using the proven dark overlay */}
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: opacityAnim }]}>
+                <Pressable onPress={onClose} style={styles.backdrop}>
+                    <View style={styles.backdropTint} />
+                </Pressable>
+            </Animated.View>
 
-                    {/* Text Content */}
-                    <View style={styles.textGroup}>
-                        <Text style={styles.title}>{title}</Text>
-                        <Text style={styles.message}>{message}</Text>
-                    </View>
+            {/* CONTENT: Centered Layered View */}
+            <Animated.View 
+                style={[
+                    styles.card, 
+                    { 
+                        width: modalWidth,
+                        opacity: opacityAnim,
+                        transform: [{ scale: scaleAnim }]
+                    }
+                ]}
+            >
+                {/* Branded Icon Container */}
+                <View style={[styles.iconContainer, { backgroundColor: ui.bg, borderColor: ui.color + '20' }]}>
+                    {ui.icon}
+                </View>
 
-                    {/* Action Buttons */}
-                    <View style={styles.actions}>
-                        {type === 'confirm' && (
-                            <View style={styles.btnFlex}>
-                                <DialogButton
-                                    title={cancelText}
-                                    variant="outline-neutral"
-                                    onPress={onClose}
-                                    loading={loading}
-                                    style={{ marginRight: 6 }}
-                                />
-                            </View>
-                        )}
-                        <View style={styles.btnFlex}>
-                            <DialogButton
-                                title={confirmText}
-                                variant={variant === 'error' ? 'danger' : variant === 'warning' ? 'secondary' : 'primary'}
-                                onPress={() => {
-                                    if (onConfirm) onConfirm();
-                                    else onClose();
-                                }}
-                                loading={loading}
-                                style={{ marginLeft: type === 'confirm' ? 6 : 0 }}
-                            />
+                {/* Text Payload */}
+                <Text style={styles.titleText}>{title}</Text>
+                <Text style={styles.messageText}>{message}</Text>
+
+                {/* Button Integration */}
+                <View style={styles.actionsBox}>
+                    {isConfirm && (
+                        <View style={styles.btnWrapper}>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={onClose}
+                                style={[styles.btnBase, styles.cancelBtn]}
+                                disabled={loading}
+                            >
+                                <Text style={styles.cancelText}>{cancelText}</Text>
+                            </TouchableOpacity>
                         </View>
+                    )}
+                    
+                    <View style={styles.btnWrapper}>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => {
+                                if (onConfirm) onConfirm();
+                                else onClose();
+                            }}
+                            disabled={loading}
+                            style={[styles.btnBase, { backgroundColor: ui.color }]}
+                        >
+                            <Text style={styles.confirmText}>
+                                {loading ? '...' : confirmText}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                </Animated.View>
-            </View>
-        </Modal>
+                </View>
+            </Animated.View>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    overlay: {
+    root: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 9999, // Maintains absolute priority
+        elevation: 10,
     },
-    container: {
+    backdrop: {
+        flex: 1,
+    },
+    backdropTint: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.65)', // Premium navy-tinted backdrop
+    },
+    card: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 36,
-        paddingTop: 44,
-        paddingHorizontal: 28,
-        paddingBottom: 32,
+        borderRadius: 32,
+        padding: 24,
         alignItems: 'center',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.15,
-                shadowRadius: 24,
-            },
-            android: {
-                elevation: 16,
-            }
-        }),
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)',
+        borderWidth: 1.5,
+        borderColor: '#F1F5F9',
+        // High elevation for Android shadowing without using object shadow props
+        elevation: 20, 
     },
-    iconBox: {
-        width: 92,
-        height: 92,
-        borderRadius: 34,
-        borderWidth: 3,
+    iconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 32,
+        marginBottom: 20,
+        borderWidth: 2,
     },
-    textGroup: {
-        alignItems: 'center',
-        marginBottom: 36,
-        width: '100%',
-    },
-    title: {
+    titleText: {
         fontSize: 24,
-        fontWeight: '800',
+        fontWeight: 'bold',
         color: '#0F172A',
         textAlign: 'center',
-        marginBottom: 12,
-        letterSpacing: -0.6,
+        marginBottom: 10,
+        letterSpacing: -0.5,
     },
-    message: {
+    messageText: {
         fontSize: 16,
-        color: '#475569',
+        color: '#64748B',
         textAlign: 'center',
         lineHeight: 24,
-        paddingHorizontal: 8,
-        fontWeight: '500',
+        marginBottom: 32,
+        paddingHorizontal: 10,
     },
-    actions: {
+    actionsBox: {
         flexDirection: 'row',
         width: '100%',
     },
-    btnFlex: {
+    btnWrapper: {
         flex: 1,
     },
-    buttonBase: {
-        height: 60,
-        borderRadius: 22,
+    btnBase: {
+        height: 56,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
+        marginHorizontal: 5,
     },
-    buttonText: {
+    confirmText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
         fontSize: 16,
-        fontWeight: '700',
-        letterSpacing: -0.1,
+    },
+    cancelBtn: {
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    cancelText: {
+        color: '#475569',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
-
-
