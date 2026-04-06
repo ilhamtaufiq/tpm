@@ -1460,12 +1460,12 @@ export default function BengkelScreen() {
                         </View>
                     </Pressable>
 
-                    {/* Item 4: Master Data (Database) */}
+                    {/* Item 4: Absensi (Presensi Karyawan) */}
                     <Pressable
-                        key="grid-database"
+                        key="grid-absensi"
                         onPress={() => {
                             try {
-                                router.push('/master-data');
+                                router.push('/sdm/absensi');
                             } catch (e) {
                                 console.error('Nav error:', e);
                             }
@@ -1474,11 +1474,11 @@ export default function BengkelScreen() {
                         className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
                     >
                         <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-indigo-500/10 border border-gray-50">
-                            <Database size={22} color="#6366F1" strokeWidth={2.5} />
+                            <Clock size={22} color="#6366F1" strokeWidth={2.5} />
                         </View>
                         <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Database</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>MASTER DATA</Typography>
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Absensi</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>PRESENSI SDM</Typography>
                         </View>
                     </Pressable>
                 </View>

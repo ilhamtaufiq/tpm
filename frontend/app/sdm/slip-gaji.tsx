@@ -393,7 +393,6 @@ export default function SlipGajiScreen() {
             setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menghapus slip'), variant: 'error' });
         }
     };
-
     const renderPendingItem = ({ item }: { item: SlipGajiPreviewItem }) => {
         const isGenerating = generatingId === item.karyawan_id;
         const currentAttendance = getAttendanceValue(item);
@@ -405,98 +404,103 @@ export default function SlipGajiScreen() {
         const currentGajiBersih = currentGajiPokok + currentOvertime - currentKasbon;
 
         return (
-            <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
-                <View className="flex-row items-start justify-between">
-                    <View className="flex-1 mr-4">
-                        <View className="flex-row items-center mb-1">
-                            <View className="w-8 h-8 bg-amber-50 rounded-full items-center justify-center mr-2">
-                                <User size={16} color="#F59E0B" />
-                            </View>
-                            <Typography weight="bold" className="text-textMain text-base">{item.karyawan_nama}</Typography>
+            <Card className="mb-4 p-5 border border-gray-100 shadow-sm overflow-hidden">
+                {/* Header Section: Profile & Attendance */}
+                <View className="flex-row items-center justify-between mb-4">
+                    <View className="flex-row items-center flex-1 mr-4">
+                        <View className="w-10 h-10 bg-amber-50 rounded-2xl items-center justify-center mr-3 border border-amber-100">
+                            <User size={20} color="#F59E0B" />
                         </View>
-                        <Typography variant="caption" className="text-gray-400 mb-3">{item.karyawan_kode}</Typography>
-
-                        <View className="flex-row flex-wrap items-center gap-2">
-                            <View className="bg-gray-50 px-2 py-1.5 rounded-xl border border-gray-100 flex-row items-center">
-                                <Typography className="text-[10px] text-gray-400 font-bold uppercase mr-1">Base:</Typography>
-                                <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok_dasar)}</Typography>
-                            </View>
-                            <View className="bg-primary/5 px-2 py-1.5 rounded-xl border border-primary/10 flex-row items-center">
-                                <Typography className="text-[10px] text-primary/60 font-bold uppercase mr-1">Gaji:</Typography>
-                                <Typography weight="bold" className="text-[11px] text-primary">{formatCurrency(currentGajiPokok)}</Typography>
-                            </View>
-                            {item.total_kasbon > 0 && (
-                                <View className="bg-rose-50 px-2 py-1.5 rounded-xl border border-rose-100 flex-row items-center">
-                                    <Typography className="text-[10px] text-rose-400 font-bold uppercase mr-1">Total Kasbon:</Typography>
-                                    <Typography weight="bold" className="text-[11px] text-rose-600">{formatCurrency(item.total_kasbon)}</Typography>
-                                </View>
-                            )}
-                        </View>
-                        <View className="mt-4 pt-3 border-t border-gray-50 flex-row items-center justify-between">
-                            <Typography weight="bold" className="text-xs text-textGray uppercase tracking-widest">Gaji Bersih:</Typography>
-                            <Typography weight="bold" className="text-lg text-emerald-600">{formatCurrency(currentGajiBersih)}</Typography>
+                        <View className="flex-1">
+                            <Typography weight="bold" className="text-textMain text-base" numberOfLines={1}>{item.karyawan_nama}</Typography>
+                            <Typography variant="caption" className="text-gray-400 font-bold">{item.karyawan_kode}</Typography>
                         </View>
                     </View>
 
                     <View className="items-end">
-                        <View className="mb-3 items-end">
-                            <Typography className="text-[9px] text-gray-400 font-bold uppercase mb-1 tracking-widest">Kehadiran (Hari)</Typography>
-                            <View className="flex-row items-center bg-white rounded-2xl border border-gray-200 px-3 py-1">
-                                <TextInput
-                                    className="w-10 text-center text-primary font-bold p-0 text-lg"
-                                    keyboardType="numeric"
-                                    value={String(currentAttendance)}
-                                    onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
-                                    selectTextOnFocus
-                                />
-                            </View>
+                        <Typography className="text-[8px] text-gray-400 font-black uppercase mb-1 tracking-widest text-right">Kehadiran</Typography>
+                        <View className="flex-row items-center bg-gray-50 rounded-xl border border-gray-100 px-3 py-1.5 min-w-[60px] justify-center">
+                            <TextInput
+                                className="text-primary font-black p-0 text-base"
+                                keyboardType="numeric"
+                                value={String(currentAttendance)}
+                                onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
+                                selectTextOnFocus
+                            />
+                            <Typography className="text-gray-400 text-[10px] font-bold ml-1 uppercase">Hari</Typography>
                         </View>
-
-                        <View className="mb-4 items-end">
-                            <Typography className="text-[9px] text-emerald-400 font-bold uppercase mb-1 tracking-widest">Uang Lembur</Typography>
-                            <View className="flex-row items-center bg-emerald-50/50 rounded-2xl border border-emerald-100 px-3 py-1">
-                                <Typography className="text-emerald-400 font-bold text-xs mr-1">Rp</Typography>
-                                <TextInput
-                                    className="w-20 text-right text-emerald-600 font-bold p-0 text-base"
-                                    keyboardType="numeric"
-                                    value={formatNumber(String(currentOvertime))}
-                                    onChangeText={(v) => handleUpdateOvertime(item.karyawan_id, parseNumber(v).toString())}
-                                    selectTextOnFocus
-                                    placeholder="0"
-                                />
-                            </View>
-                        </View>
-
-                        <View className="mb-4 items-end">
-                            <Typography className="text-[9px] text-rose-400 font-bold uppercase mb-1 tracking-widest">Potong Kasbon</Typography>
-                            <View className="flex-row items-center bg-rose-50/50 rounded-2xl border border-rose-100 px-3 py-1">
-                                <Typography className="text-rose-400 font-bold text-xs mr-1">Rp</Typography>
-                                <TextInput
-                                    className="w-20 text-right text-rose-600 font-bold p-0 text-base"
-                                    keyboardType="numeric"
-                                    value={formatNumber(String(currentKasbon))}
-                                    onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, parseNumber(v).toString())}
-                                    selectTextOnFocus
-                                    placeholder="0"
-                                />
-                            </View>
-                        </View>
-
-                        <Pressable
-                            onPress={() => handleGenerateSingle(item)}
-                            disabled={isGenerating || !!generatingId}
-                            className={`px-4 py-3 rounded-xl flex-row items-center ${isGenerating ? 'bg-gray-100' : 'bg-primary'}`}
-                        >
-                            {isGenerating ? (
-                                <ActivityIndicator size="small" color="#16A34A" />
-                            ) : (
-                                <>
-                                    <Typography className="text-white text-[10px] font-bold uppercase mr-2">Proses</Typography>
-                                    <ArrowRight size={12} color="white" />
-                                </>
-                            )}
-                        </Pressable>
                     </View>
+                </View>
+
+                {/* Salary Components Breakdown */}
+                <View className="flex-row flex-wrap gap-2 mb-4">
+                    <View className="bg-gray-50 px-3 py-2 rounded-2xl border border-gray-100 flex-row items-center">
+                        <Typography className="text-[9px] text-gray-400 font-bold uppercase mr-1.5">Base Pay</Typography>
+                        <Typography weight="bold" className="text-[11px] text-textMain">{formatCurrency(item.gaji_pokok_dasar)}</Typography>
+                    </View>
+                    <View className="bg-primary/5 px-3 py-2 rounded-2xl border border-primary/10 flex-row items-center">
+                        <Typography className="text-[9px] text-primary/60 font-bold uppercase mr-1.5">Gaji Pokok</Typography>
+                        <Typography weight="bold" className="text-[11px] text-primary">{formatCurrency(currentGajiPokok)}</Typography>
+                    </View>
+                    {item.total_kasbon > 0 && (
+                        <View className="bg-rose-50 px-3 py-2 rounded-2xl border border-rose-100 flex-row items-center">
+                            <Typography className="text-[9px] text-rose-400 font-bold uppercase mr-1.5">Utang Kasbon</Typography>
+                            <Typography weight="bold" className="text-[11px] text-rose-600">{formatCurrency(item.total_kasbon)}</Typography>
+                        </View>
+                    )}
+                </View>
+
+                {/* Adjustment Inputs Row */}
+                <View className="flex-row items-center space-x-3 mb-5">
+                    <View className="flex-1">
+                        <Typography className="text-[9px] text-emerald-500 font-black uppercase mb-1.5 tracking-wider ml-1">Uang Lembur (Rp)</Typography>
+                        <View className="flex-row items-center bg-emerald-50/30 rounded-2xl border border-emerald-100/50 px-4 py-3">
+                            <TextInput
+                                className="flex-1 text-emerald-600 font-black p-0 text-base"
+                                keyboardType="numeric"
+                                value={formatNumber(String(currentOvertime))}
+                                onChangeText={(v) => handleUpdateOvertime(item.karyawan_id, parseNumber(v).toString())}
+                                selectTextOnFocus
+                                placeholder="0"
+                            />
+                        </View>
+                    </View>
+                    <View className="flex-1">
+                        <Typography className="text-[9px] text-rose-500 font-black uppercase mb-1.5 tracking-wider ml-1">Potong Kasbon (Rp)</Typography>
+                        <View className="flex-row items-center bg-rose-50/30 rounded-2xl border border-rose-100/50 px-4 py-3">
+                            <TextInput
+                                className="flex-1 text-rose-600 font-black p-0 text-base"
+                                keyboardType="numeric"
+                                value={formatNumber(String(currentKasbon))}
+                                onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, parseNumber(v).toString())}
+                                selectTextOnFocus
+                                placeholder="0"
+                            />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Footer Section: Total & Process */}
+                <View className="pt-4 border-t border-gray-100 flex-row items-center justify-between">
+                    <View>
+                        <Typography className="text-[8px] text-textGray/40 font-black uppercase tracking-[2px] mb-1">Gaji Bersih Diterima</Typography>
+                        <Typography weight="bold" className="text-2xl text-emerald-600 tracking-tighter">{formatCurrency(currentGajiBersih)}</Typography>
+                    </View>
+
+                    <Pressable
+                        onPress={() => handleGenerateSingle(item)}
+                        disabled={isGenerating || !!generatingId}
+                        className={`h-14 px-6 rounded-2xl flex-row items-center justify-center ${isGenerating ? 'bg-gray-100' : 'bg-primary shadow-lg shadow-primary/30'}`}
+                    >
+                        {isGenerating ? (
+                            <ActivityIndicator size="small" color="#023C69" />
+                        ) : (
+                            <>
+                                <Typography className="text-white text-xs font-black uppercase tracking-widest mr-2">Proses</Typography>
+                                <ArrowRight size={16} color="white" />
+                            </>
+                        )}
+                    </Pressable>
                 </View>
             </Card>
         );

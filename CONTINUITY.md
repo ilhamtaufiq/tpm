@@ -24,6 +24,7 @@ Success criteria:
     - Final verification and handover.
 - **Done**:
     - **SDM Module**: Standardized all SDM sub-pages (Karyawan, Absensi, Kasbon, Slip Gaji) to use the centralized `Header` component.
+    - **SDM Integration**: Replaced the "Database/Master Data" button in `bengkel/index.tsx` with a direct "Absensi/Presensi SDM" button for better accessibility between modules.
     - **SDM Index**: Redesigned the main dashboard and subsequently removed the "Employee Insight" section as per user request to simplify navigation. 
     - **UI/UX**: Improved `Absensi` input with quick choice pills and rounded-full styles for better user experience.
     - **FIX**: Resolved `bcrypt` version mismatch (downgraded to 3.2.0) to fix `AttributeError` and slow login performance (~35s → <500ms).
