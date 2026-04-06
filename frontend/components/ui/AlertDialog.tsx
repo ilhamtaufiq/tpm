@@ -180,10 +180,12 @@ export const AlertDialog = ({
             statusBarTranslucent={Platform.OS === 'android'}
         >
             <View style={[styles.centeredView, { width: SCREEN_WIDTH, height: SCREEN_HEIGHT }]}>
-                <Pressable 
+                <View 
                     style={styles.backdrop} 
-                    onPress={onClose}
-                />
+                >
+                    <Pressable style={{ flex: 1 }} onPress={onClose} />
+                </View>
+                
                 <Animated.View
                     style={[
                         styles.dialogContainer,
@@ -194,7 +196,6 @@ export const AlertDialog = ({
                         }
                     ]}
                 >
-                    {/* Icon Container */}
                     <View style={[styles.iconContainer, getIconContainerStyle()]}>
                         {getIcon()}
                     </View>
@@ -244,10 +245,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
-        backgroundColor: 'transparent',
     },
     backdrop: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     dialogContainer: {
@@ -257,16 +261,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 28,
         paddingBottom: 28,
         alignItems: 'center',
-        backgroundColor: 'white',
+        backgroundColor: '#FFFFFF',
         borderRadius: 28,
         borderWidth: 1,
         borderColor: '#F3F4F6',
-        overflow: 'visible',
-        elevation: 24,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
+        elevation: 10,
     },
     iconContainer: {
         marginBottom: 24,
@@ -311,7 +310,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'visible',
     },
     buttonText: {
         fontSize: 16,
