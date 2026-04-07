@@ -182,9 +182,14 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(a3)}</td>
                             <td></td>
                         </tr>
+                        <tr class="border-bottom">
+                            <td>PERSEDIAAN SPAREPART</td>
+                            <td class="amount">${formatCurrency(report.section_a.modal_persediaan || 0)}</td>
+                            <td></td>
+                        </tr>
                         <tr>
                             <td colspan="2" class="amount"></td>
-                            <td class="amount">${formatCurrency(a4)}</td>
+                            <td class="amount">${formatCurrency(a4 + (report.section_a.modal_persediaan || 0))}</td>
                         </tr>
                         <tr class="border-bottom">
                             <td colspan="2" class="amount"></td>
@@ -528,6 +533,7 @@ export default function LaporanPerubahanModalScreen() {
                     <Row label="Setoran Modal" value={data.setoran_modal} />
                     <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
                     <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
+                    <Row label="Persediaan Sparepart" value={data.modal_persediaan} />
 
                     <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
                         <Typography variant="caption" weight="bold" className="mb-2 text-primary uppercase tracking-tighter">Rincian Laba Unit</Typography>

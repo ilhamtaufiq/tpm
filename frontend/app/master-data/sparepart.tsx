@@ -375,11 +375,11 @@ export default function SparePartMasterScreen() {
             const response = await importMutation.mutateAsync(formData);
 
             if (Platform.OS === 'web') {
-                alert(`Import Berhasil\nTotal Baris Data: ${response.total}\nDiimpor: ${response.success + response.updated}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
+                alert(`Import Berhasil\nTotal Baris Data: ${response.total}\nProduk Unik (Diimpor): ${response.success + response.updated}\nDuplikat (Dilewati): ${response.duplicates}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
             } else {
                 Alert.alert(
                     'Import Berhasil',
-                    `Total Baris Data: ${response.total}\nDiimpor: ${response.success + response.updated}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}`,
+                    `Total Baris Data: ${response.total}\nProduk Unik (Diimpor): ${response.success + response.updated}\nDuplikat (Dilewati): ${response.duplicates}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}`,
                     response.failed > 0 ? [
                         {
                             text: 'Lihat Error',

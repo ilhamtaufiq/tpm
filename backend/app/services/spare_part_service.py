@@ -531,10 +531,16 @@ class SparePartService:
             "total": 0,
             "success": 0,
             "updated": 0,
+            "duplicates": 0,
             "failed": 0,
             "skipped": 0,
             "errors": []
         }
+        
+        # Track items processed in THIS import session to handle merging and fresh start
+        processed_ids = set()
+        processed_names = set()
+        processed_kodes = set()
 
         # Step 1: Soft-delete all existing spare parts to perform a fresh/replace import
         now = datetime.now()
@@ -561,17 +567,28 @@ class SparePartService:
                 results["errors"].append(f"Baris {row_idx}: Nama spare part wajib diisi")
                 continue
 
+            # Track for next rows (we still track for internal logic but we DON'T skip)
+            processed_names.add(nama.lower())
+            if kode: processed_kodes.add(kode)
+
             # Data parsing with defaults
             try:
+                stok = int(row[6]) if row[6] is not None else 0
+                harga_beli = Decimal(str(row[8] or 0))
+                
+                # If stock is 999 (Always Ready), set purchase price to 0 to avoid inventory cost calculation
+                if stok == 999:
+                    harga_beli = Decimal("0")
+
                 data = {
                     "nama": nama,
                     "kode_part": str(row[2]).strip() if row[2] else None,
                     "kategori": str(row[3]) if row[3] else "Umum",
                     "merek": str(row[4]) if row[4] else None,
                     "satuan": str(row[5]) if row[5] else "pcs",
-                    "stok": int(row[6]) if row[6] is not None else 0,
+                    "stok": stok,
                     "stok_minimum": int(row[7]) if row[7] is not None else 5,
-                    "harga_beli": Decimal(str(row[8] or 0)),
+                    "harga_beli": harga_beli,
                     "harga_jual": Decimal(str(row[9] or 0)),
                     "lokasi_rak": str(row[10]) if row[10] else None,
                     "catatan": str(row[11]) if row[11] else None
@@ -592,21 +609,49 @@ class SparePartService:
 
             try:
                 if spare_part:
-                    # Update existing and REACTIVATE
-                    for key, value in data.items():
-                        setattr(spare_part, key, value)
+                    # Reset stock to 0 ONLY the first time we see this item during this import session
+                    # because Step 1 "Soft-deleted" everything (we want a fresh replace)
+                    if spare_part.id not in processed_ids:
+                        spare_part.stok = 0
+                        processed_ids.add(spare_part.id)
+
+                    # Now perform the merge/sum logic
+                    if stok == 999 or spare_part.stok == 999:
+                        spare_part.stok = 999
+                        spare_part.harga_beli = Decimal("0")
+                    else:
+                        spare_part.stok += stok
+                        # Update other fields, last one wins for price
+                        spare_part.harga_beli = harga_beli
+                    
+                    spare_part.harga_jual = Decimal(str(row[9] or 0))
+                    spare_part.kategori = str(row[3]) if row[3] else spare_part.kategori
+                    spare_part.merek = str(row[4]) if row[4] else spare_part.merek
+                    spare_part.satuan = str(row[5]) if row[5] else spare_part.satuan
+                    spare_part.lokasi_rak = str(row[10]) if row[10] else spare_part.lokasi_rak
+                    spare_part.catatan = str(row[11]) if row[11] else spare_part.catatan
+                    
                     spare_part.deleted_at = None
                     results["updated"] += 1
                 else:
                     # Create new
                     new_spare_part = SparePart(
                         kode=kode if kode else self.generate_next_kode(),
-                        **data
+                        nama=nama,
+                        kode_part=str(row[2]).strip() if row[2] else None,
+                        kategori=str(row[3]) if row[3] else "Umum",
+                        merek=str(row[4]) if row[4] else None,
+                        satuan=str(row[5]) if row[5] else "pcs",
+                        stok=stok,
+                        stok_minimum=int(row[7]) if row[7] is not None else 5,
+                        harga_beli=harga_beli,
+                        harga_jual=Decimal(str(row[9] or 0)),
+                        lokasi_rak=str(row[10]) if row[10] else None,
+                        catatan=str(row[11]) if row[11] else None
                     )
                     self.db.add(new_spare_part)
                     results["success"] += 1
                 
-                # Commit every few rows or at the end? For safety, let's commit often but flush first
                 self.db.flush()
             except Exception as e:
                 self.db.rollback()
