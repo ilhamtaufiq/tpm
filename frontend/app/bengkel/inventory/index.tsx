@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { 
-    View, 
-    ScrollView, 
-    Pressable, 
-    TextInput, 
-    StatusBar, 
-    Alert, 
-    RefreshControl as RNRefreshControl, 
-    TouchableOpacity, 
+import {
+    View,
+    ScrollView,
+    Pressable,
+    TextInput,
+    StatusBar,
+    Alert,
+    RefreshControl as RNRefreshControl,
+    TouchableOpacity,
     ActivityIndicator,
     FlatList,
     Image,
@@ -53,7 +53,7 @@ export default function InventoryScreen() {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const qrRef = React.useRef<any>(null);
-    
+
     // Quick Stock States
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [isQuickStockVisible, setIsQuickStockVisible] = useState(false);
@@ -82,9 +82,9 @@ export default function InventoryScreen() {
     });
 
     // API Hooks
-    const { 
-        data: partsData, 
-        isLoading, 
+    const {
+        data: partsData,
+        isLoading,
         refetch,
         fetchNextPage,
         hasNextPage,
@@ -94,9 +94,9 @@ export default function InventoryScreen() {
     const { data: statsData, isLoading: isStatsLoading } = useSparePartStats();
     const updatePartMutation = useUpdateSparePart();
 
-    const parts = React.useMemo(() => 
+    const parts = React.useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data) || [],
-    [partsData]);
+        [partsData]);
     const lowStockCount = lowStockData?.length || 0;
 
     const handleOpenDetail = (part: any) => {
@@ -140,8 +140,8 @@ export default function InventoryScreen() {
         setIsScannerOpen(false);
         const cleanData = scannedData.trim();
         // search for part locally
-        const part = parts.find((p: any) => 
-            p.kode === cleanData || 
+        const part = parts.find((p: any) =>
+            p.kode === cleanData ||
             (p.kode_part && p.kode_part === cleanData)
         );
 
@@ -157,7 +157,7 @@ export default function InventoryScreen() {
 
     const handleQuickStockUpdate = async () => {
         if (!scannedPart || !stockChange) return;
-        
+
         try {
             await updateStockMutation.mutateAsync({
                 id: scannedPart.id,
@@ -247,7 +247,7 @@ export default function InventoryScreen() {
                             onChangeText={setSearch}
                         />
                     </View>
-                    <Pressable 
+                    <Pressable
                         onPress={handlePresentSortSheet}
                         className={`w-12 h-12 rounded-2xl items-center justify-center ${sortBy !== 'nama' ? 'bg-primary/10 border border-primary/20' : 'bg-gray-100'}`}
                     >
@@ -256,59 +256,7 @@ export default function InventoryScreen() {
                 </View>
 
                 {/* Stats Section */}
-                {!search && (
-                    <View className="mb-6">
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-6 px-6">
-                            {/* Top Sales */}
-                            <Card className="mr-4 p-4 bg-emerald-50/50 border-emerald-100 min-w-[280px]">
-                                <View className="flex-row items-center justify-between mb-3">
-                                    <Typography variant="body2" weight="bold" className="text-emerald-800">🔥 Penjualan Terbanyak</Typography>
-                                    <View className="bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                                        <Typography variant="caption" className="text-emerald-700 font-bold">TOP 5</Typography>
-                                    </View>
-                                </View>
-                                {isStatsLoading ? (
-                                    <ActivityIndicator size="small" color="#10B981" />
-                                ) : (
-                                    statsData?.top_sales.map((item: any, idx: number) => (
-                                        <Pressable 
-                                            key={item.id} 
-                                            onPress={() => handleOpenDetail(item)}
-                                            className="flex-row items-center justify-between mb-2 active:opacity-60"
-                                        >
-                                            <Typography variant="caption" className="text-emerald-900/80 flex-1 mr-2" numberOfLines={1}>{idx + 1}. {item.nama}</Typography>
-                                            <Typography variant="caption" weight="bold" className="text-emerald-700">{item.total_sales} terjual</Typography>
-                                        </Pressable>
-                                    ))
-                                )}
-                            </Card>
 
-                            {/* Lowest Stock */}
-                            <Card className="mr-4 p-4 bg-rose-50/50 border-rose-100 min-w-[280px]">
-                                <View className="flex-row items-center justify-between mb-3">
-                                    <Typography variant="body2" weight="bold" className="text-rose-800">⚠️ Stok Terendah</Typography>
-                                    <View className="bg-rose-500/10 px-2 py-0.5 rounded-full">
-                                        <Typography variant="caption" className="text-rose-700 font-bold">REFILL</Typography>
-                                    </View>
-                                </View>
-                                {isStatsLoading ? (
-                                    <ActivityIndicator size="small" color="#F43F5E" />
-                                ) : (
-                                    statsData?.lowest_stock.map((item: any, idx: number) => (
-                                        <Pressable 
-                                            key={item.id} 
-                                            onPress={() => handleOpenDetail(item)}
-                                            className="flex-row items-center justify-between mb-2 active:opacity-60"
-                                        >
-                                            <Typography variant="caption" className="text-rose-900/80 flex-1 mr-2" numberOfLines={1}>{idx + 1}. {item.nama}</Typography>
-                                            <Typography variant="caption" weight="bold" className={item.stok <= item.stok_minimum ? 'text-rose-600' : 'text-rose-900/60'}>Stok: {item.stok}</Typography>
-                                        </Pressable>
-                                    ))
-                                )}
-                            </Card>
-                        </ScrollView>
-                    </View>
-                )}
 
                 {/* Low Stock Banner */}
                 {lowStockCount > 0 && (
@@ -388,16 +336,16 @@ export default function InventoryScreen() {
                                     </View>
                                 </View>
 
-                            <View className="items-end">
-                                <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
-                                <Pressable
-                                    className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
-                                    onPress={() => handleOpenDetail(part)}
-                                >
-                                    <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
-                                </Pressable>
-                            </View>
-                        </Card>
+                                <View className="items-end">
+                                    <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
+                                    <Pressable
+                                        className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
+                                        onPress={() => handleOpenDetail(part)}
+                                    >
+                                        <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
+                                    </Pressable>
+                                </View>
+                            </Card>
                         );
                     }}
                     ListEmptyComponent={
@@ -423,8 +371,8 @@ export default function InventoryScreen() {
                     <View className="items-center mb-6">
                         <View className="w-40 h-40 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
                             {formData.gambar ? (
-                                <Image 
-                                    source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }} 
+                                <Image
+                                    source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }}
                                     className="w-full h-full"
                                     resizeMode="cover"
                                 />
@@ -434,93 +382,93 @@ export default function InventoryScreen() {
                         </View>
                     </View>
                     <View className="space-y-4 px-1">
+                        <Input
+                            label="Nama Sparepart"
+                            value={formData.nama}
+                            onChangeText={(text) => setFormData({ ...formData, nama: text })}
+                            editable={isEditing}
+                            placeholder="Contoh: Oli MPX 2"
+                        />
+                        <Input
+                            label="Kode Part"
+                            value={formData.kode}
+                            onChangeText={(text) => setFormData({ ...formData, kode: text })}
+                            editable={isEditing}
+                            placeholder="Contoh: OL-001"
+                        />
+                        <View className="flex-row space-x-3">
                             <Input
-                                label="Nama Sparepart"
-                                value={formData.nama}
-                                onChangeText={(text) => setFormData({ ...formData, nama: text })}
+                                label="Kategori"
+                                value={formData.kategori}
+                                containerClassName="flex-1"
+                                onChangeText={(text) => setFormData({ ...formData, kategori: text })}
                                 editable={isEditing}
-                                placeholder="Contoh: Oli MPX 2"
+                                placeholder="Pelumas"
                             />
                             <Input
-                                label="Kode Part"
-                                value={formData.kode}
-                                onChangeText={(text) => setFormData({ ...formData, kode: text })}
+                                label="Satuan"
+                                value={formData.satuan}
+                                containerClassName="flex-[0.7]"
+                                onChangeText={(text) => setFormData({ ...formData, satuan: text })}
                                 editable={isEditing}
-                                placeholder="Contoh: OL-001"
+                                placeholder="Unit"
                             />
-                            <View className="flex-row space-x-3">
+                        </View>
+                        <View className="flex-row space-x-3">
+                            <View className="flex-1">
                                 <Input
-                                    label="Kategori"
-                                    value={formData.kategori}
-                                    containerClassName="flex-1"
-                                    onChangeText={(text) => setFormData({ ...formData, kategori: text })}
+                                    label="Stok"
+                                    value={formData.stok}
+                                    onChangeText={(text) => setFormData({ ...formData, stok: text })}
                                     editable={isEditing}
-                                    placeholder="Pelumas"
-                                />
-                                <Input
-                                    label="Satuan"
-                                    value={formData.satuan}
-                                    containerClassName="flex-[0.7]"
-                                    onChangeText={(text) => setFormData({ ...formData, satuan: text })}
-                                    editable={isEditing}
-                                    placeholder="Unit"
+                                    keyboardType="numeric"
                                 />
                             </View>
-                            <View className="flex-row space-x-3">
-                                <View className="flex-1">
-                                    <Input
-                                        label="Stok"
-                                        value={formData.stok}
-                                        onChangeText={(text) => setFormData({ ...formData, stok: text })}
-                                        editable={isEditing}
-                                        keyboardType="numeric"
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Input
-                                        label="Stok Min."
-                                        value={formData.stok_minimum}
-                                        onChangeText={(text) => setFormData({ ...formData, stok_minimum: text })}
-                                        editable={isEditing}
-                                        keyboardType="numeric"
-                                    />
-                                </View>
-                            </View>
-                            <Input
-                                label="Harga Jual (Rp)"
-                                value={formData.harga_jual}
-                                onChangeText={(text) => setFormData({ ...formData, harga_jual: text })}
-                                editable={isEditing}
-                                keyboardType="numeric"
-                            />
-
-                            <View className="mt-6">
-                                {isEditing ? (
-                                    <View className="space-y-3">
-                                        <Button
-                                            title="Simpan Perubahan"
-                                            onPress={handleUpdate}
-                                            loading={updatePartMutation.isPending}
-                                        />
-                                        <Button
-                                            title="Batal"
-                                            variant="outline"
-                                            onPress={() => setIsEditing(false)}
-                                        />
-                                    </View>
-                                ) : (
-                                    <View className="space-y-3">
-                                        <Button
-                                            title="Ubah Data"
-                                            variant="outline-neutral"
-                                            className="bg-gray-100 border-0"
-                                            onPress={() => setIsEditing(true)}
-                                            icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
-                                        />
-                                    </View>
-                                )}
+                            <View className="flex-1">
+                                <Input
+                                    label="Stok Min."
+                                    value={formData.stok_minimum}
+                                    onChangeText={(text) => setFormData({ ...formData, stok_minimum: text })}
+                                    editable={isEditing}
+                                    keyboardType="numeric"
+                                />
                             </View>
                         </View>
+                        <Input
+                            label="Harga Jual (Rp)"
+                            value={formData.harga_jual}
+                            onChangeText={(text) => setFormData({ ...formData, harga_jual: text })}
+                            editable={isEditing}
+                            keyboardType="numeric"
+                        />
+
+                        <View className="mt-6">
+                            {isEditing ? (
+                                <View className="space-y-3">
+                                    <Button
+                                        title="Simpan Perubahan"
+                                        onPress={handleUpdate}
+                                        loading={updatePartMutation.isPending}
+                                    />
+                                    <Button
+                                        title="Batal"
+                                        variant="outline"
+                                        onPress={() => setIsEditing(false)}
+                                    />
+                                </View>
+                            ) : (
+                                <View className="space-y-3">
+                                    <Button
+                                        title="Ubah Data"
+                                        variant="outline-neutral"
+                                        className="bg-gray-100 border-0"
+                                        onPress={() => setIsEditing(true)}
+                                        icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                    </View>
 
                 </View>
             </BaseModal>
@@ -539,14 +487,14 @@ export default function InventoryScreen() {
                     </Card>
 
                     <View className="flex-row space-x-3 mb-6">
-                        <Pressable 
+                        <Pressable
                             onPress={() => setStockOp('add')}
                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'add' ? 'bg-emerald-50 border-emerald-500' : 'bg-white border-gray-100'}`}
                         >
                             <Plus size={20} color={stockOp === 'add' ? '#10B981' : '#94A3B8'} />
                             <Typography className={`ml-2 font-bold ${stockOp === 'add' ? 'text-emerald-700' : 'text-gray-400'}`}>Tambah</Typography>
                         </Pressable>
-                        <Pressable 
+                        <Pressable
                             onPress={() => setStockOp('subtract')}
                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${stockOp === 'subtract' ? 'bg-rose-50 border-rose-500' : 'bg-white border-gray-100'}`}
                         >
@@ -557,7 +505,7 @@ export default function InventoryScreen() {
 
                     <Typography variant="caption" weight="bold" className="text-textGray mb-2 ml-1">Jumlah Perubahan</Typography>
                     <View className="flex-row items-center space-x-4 mb-8">
-                        <Pressable 
+                        <Pressable
                             onPress={() => setStockChange(prev => Math.max(0, parseInt(prev) - 1).toString())}
                             className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
                         >
@@ -571,7 +519,7 @@ export default function InventoryScreen() {
                                 className="h-12 bg-gray-50 border border-gray-200 rounded-xl text-center text-xl font-bold font-outfit"
                             />
                         </View>
-                        <Pressable 
+                        <Pressable
                             onPress={() => setStockChange(prev => (parseInt(prev || '0') + 1).toString())}
                             className="w-12 h-12 bg-gray-100 rounded-xl items-center justify-center"
                         >
@@ -587,18 +535,18 @@ export default function InventoryScreen() {
                 </View>
             </BaseModal>
 
-            <BarcodeScannerModal 
-                visible={isScannerOpen} 
-                onClose={() => setIsScannerOpen(false)} 
-                onScan={handleScanForStockUpdate} 
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScanForStockUpdate}
             />
 
             {/* Sort UI - Hybrid (BottomSheet on Mobile, Modal on Web) */}
             {Platform.OS === 'web' ? (
-                <Modal 
-                    visible={sheetIndex !== -1} 
-                    transparent 
-                    animationType="slide" 
+                <Modal
+                    visible={sheetIndex !== -1}
+                    transparent
+                    animationType="slide"
                     onRequestClose={() => setSheetIndex(-1)}
                 >
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
@@ -640,7 +588,7 @@ export default function InventoryScreen() {
             <>
                 <View className="flex-row items-center justify-between mb-8">
                     <Typography variant="h3" weight="bold">Urutkan Sparepart</Typography>
-                    <Pressable 
+                    <Pressable
                         onPress={onClose}
                         className="bg-gray-100 p-2 rounded-full"
                     >

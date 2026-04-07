@@ -1416,12 +1416,12 @@ export default function BengkelScreen() {
                         </View>
                     </Pressable>
 
-                    {/* Item 2: Purchase (Pembelian Part) */}
+                    {/* Item 2: Master Data */}
                     <Pressable
-                        key="grid-purchase"
+                        key="grid-master-data"
                         onPress={() => {
                             try {
-                                router.push('/bengkel/purchase');
+                                router.push('/master-data');
                             } catch (e) {
                                 console.error('Nav error:', e);
                             }
@@ -1430,11 +1430,11 @@ export default function BengkelScreen() {
                         className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
                     >
                         <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-blue-500/10 border border-gray-50">
-                            <ShoppingCart size={22} color="#3B82F6" strokeWidth={2.5} />
+                            <Database size={22} color="#3B82F6" strokeWidth={2.5} />
                         </View>
                         <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Beli Part</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>RESTOCK</Typography>
+                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Master Data</Typography>
+                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KELOLA DATA</Typography>
                         </View>
                     </Pressable>
 
