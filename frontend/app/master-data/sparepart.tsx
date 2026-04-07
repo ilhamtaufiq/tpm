@@ -103,7 +103,7 @@ export default function SparePartMasterScreen() {
         isFetchingNextPage
     } = useSparePartsList({
         search: debouncedSearch,
-        limit: isShowingAll ? 10000 : 20
+        limit: isShowingAll ? 5000 : 20
     });
 
     const sparePartsList = useMemo(() =>

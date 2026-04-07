@@ -99,8 +99,9 @@ export default function LaporanPerubahanModalScreen() {
             const b5 = report.section_b.piutang_karyawan || 0;
             const b6 = report.section_b.piutang_usaha || 0;
 
-            const b7 = report.section_b.total_b || 0; // Total B from Backend
-            const b8 = a7 - b7; // Intermediate balance (A.7 - B.7)
+            const b7 = report.section_b.total_b || 0; // Total B from Backend (including assets)
+            const b8 = a7 - b7; // Intermediate balance (A.7 - B.7) - Stock assets are in both A and B, so they cancel out to find cash.
+            const b_persediaan = report.section_b.modal_persediaan || 0;
 
             // C. Pengurang
             const c_part_cash = report.section_c.pembelian_part?.cash || 0;
@@ -251,6 +252,11 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="2">LABA & MODAL (A-B)</td>
                             <td class="amount">${formatCurrency(b8)}</td>
                         </tr>
+                        ${b_persediaan ? `
+                        <tr class="sub-row">
+                            <td colspan="2" style="font-style: italic; color: #666;">*Terhitung Aset Persediaan & Tetap: ${formatCurrency(b_persediaan)}</td>
+                            <td></td>
+                        </tr>` : ''}
                     </table>
 
                     <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
@@ -568,7 +574,7 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center mr-3">
                         <Wallet size={18} color={themeColors.secondary} />
                     </View>
-                    <Typography variant="h4" weight="bold">B. PIUTANG</Typography>
+                    <Typography variant="h4" weight="bold">B. PIUTANG & ASET</Typography>
                 </View>
 
                 <View className="space-y-3">
@@ -578,9 +584,13 @@ export default function LaporanPerubahanModalScreen() {
                     <Row label="PIUTANG UNIT JASA ANGKUT" value={data.piutang_jasa_angkut} />
                     <Row label="PIUTANG KARYAWAN (KASBON)" value={data.piutang_karyawan} />
                     <Row label="PIUTANG UNIT BENGKEL" value={data.piutang_usaha} />
+                    
+                    {data.modal_persediaan > 0 && (
+                        <Row label="ASET PERSEDIAAN & TETAP" value={data.modal_persediaan} color="text-secondary/70" />
+                    )}
 
                     <View className="h-[1px] bg-gray-100 my-2" />
-                    <Row label="Total Piutang" value={data.total_b} bold large color="text-secondary" />
+                    <Row label="Total B (Piutang & Aset)" value={data.total_b} bold large color="text-secondary" />
                 </View>
             </Card>
         );

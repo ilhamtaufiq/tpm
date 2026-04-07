@@ -61,7 +61,7 @@ def list_spare_parts(
     db: DBSession,
     current_user: CurrentUser,
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=5000),
     search: Optional[str] = None,
     kategori: Optional[str] = None,
     merek: Optional[str] = None,

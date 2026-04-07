@@ -640,6 +640,10 @@ def get_capital_report(
     # but the user sees it as a category too.
     total_b = p_lainnya_net + p_mobil_net + p_supir_ja_net + p_karyawan_net + p_usaha_net + p_part_jual_mobil
 
+    # Combined Piutang with Initial Non-Cash Assets for reconciliation
+    # Since these are included in A (added) but are not cash, they must be in B (subtracted)
+    total_b_with_assets = total_b + modal_awal_total
+
     section_b = {
         "piutang_lainnya": p_lainnya_net,
         "piutang_mobil": p_mobil_net,
@@ -648,8 +652,9 @@ def get_capital_report(
         "piutang_jasa_angkut": p_supir_ja_net,
         "piutang_karyawan": p_karyawan_net,
         "piutang_usaha": p_usaha_net,
+        "modal_persediaan": modal_awal_total,
         "total_penerimaan": total_penerimaan_piutang, # For display
-        "total_b": total_b
+        "total_b": total_b_with_assets
     }
 
     # Pre-calculate Accrued Investor Payables for use in Section C and Section E
