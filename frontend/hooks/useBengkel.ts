@@ -213,6 +213,13 @@ export const useNextSparePartKode = () => {
     });
 };
 
+export const useSparePartStockValue = () => {
+    return useQuery({
+        queryKey: ['spare_parts_stock_value'],
+        queryFn: () => bengkelService.getStockValue(),
+    });
+};
+
 // =============================================
 // PEMBELIAN PARTS
 // =============================================

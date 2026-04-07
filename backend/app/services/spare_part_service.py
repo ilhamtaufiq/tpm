@@ -532,6 +532,7 @@ class SparePartService:
             "success": 0,
             "updated": 0,
             "failed": 0,
+            "skipped": 0,
             "errors": []
         }
 
@@ -547,7 +548,9 @@ class SparePartService:
         for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
             # Column mapping
             # A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10
-            if not any(row): continue  # Skip empty rows
+            if not any(row): 
+                results["skipped"] += 1
+                continue  # Skip empty rows
             
             results["total"] += 1
             kode = str(row[0]).strip() if row[0] else None

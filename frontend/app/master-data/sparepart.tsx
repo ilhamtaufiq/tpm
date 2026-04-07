@@ -24,7 +24,9 @@ import {
     Camera,
     Check,
     Circle,
-    Download
+    Download,
+    Eye,
+    Coins
 } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as DocumentPicker from 'expo-document-picker';
@@ -43,7 +45,8 @@ import {
     useDebounce,
     useUploadSparePartImage,
     useBulkDeleteSpareParts,
-    useExportSpareParts
+    useExportSpareParts,
+    useSparePartStockValue
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
@@ -87,6 +90,7 @@ export default function SparePartMasterScreen() {
     // Search & Filter
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedSearch = useDebounce(searchQuery, 500);
+    const [isShowingAll, setIsShowingAll] = useState(false);
 
     // Queries
     const {
@@ -99,7 +103,7 @@ export default function SparePartMasterScreen() {
         isFetchingNextPage
     } = useSparePartsList({
         search: debouncedSearch,
-        limit: 20
+        limit: isShowingAll ? 10000 : 20
     });
 
     const sparePartsList = useMemo(() =>
@@ -113,6 +117,14 @@ export default function SparePartMasterScreen() {
         const lowStock = sparePartsList.filter((item: any) => item.stok !== 999 && item.stok <= item.stok_minimum).length;
         return { total: totalCount, lowStock };
     }, [sparePartsData, sparePartsList]);
+
+    // Modal Stats
+    const { data: stockValueData, refetch: refetchStockValue } = useSparePartStockValue();
+
+    const handleRefresh = async () => {
+        refetch();
+        refetchStockValue();
+    };
 
     // Mutations
     const createMutation = useCreateSparePart();
@@ -131,6 +143,7 @@ export default function SparePartMasterScreen() {
 
     const [isPrintModalVisible, setIsPrintModalVisible] = useState(false);
     const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+    const [isExportModalVisible, setIsExportModalVisible] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     const handleGenerateKode = async () => {
@@ -362,11 +375,11 @@ export default function SparePartMasterScreen() {
             const response = await importMutation.mutateAsync(formData);
 
             if (Platform.OS === 'web') {
-                alert(`Import Berhasil\nTotal: ${response.total}\nSukses: ${response.success}\nUpdate: ${response.updated}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
+                alert(`Import Berhasil\nTotal Baris Data: ${response.total}\nDiimpor: ${response.success + response.updated}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
             } else {
                 Alert.alert(
                     'Import Berhasil',
-                    `Total: ${response.total}\nSukses: ${response.success}\nUpdate: ${response.updated}\nGagal: ${response.failed}`,
+                    `Total Baris Data: ${response.total}\nDiimpor: ${response.success + response.updated}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}`,
                     response.failed > 0 ? [
                         {
                             text: 'Lihat Error',
@@ -528,9 +541,9 @@ export default function SparePartMasterScreen() {
         }
     };
 
-    const handleBulkExport = async () => {
+    const handleBulkExport = async (ids?: number[]) => {
         try {
-            const data = await exportMutation.mutateAsync(selectedIds.length > 0 ? selectedIds : undefined);
+            const data = await exportMutation.mutateAsync(ids);
             const filename = `spare_parts_export_${new Date().getTime()}.xlsx`;
 
             if (Platform.OS === 'web') {
@@ -944,7 +957,7 @@ export default function SparePartMasterScreen() {
                         </Pressable>
 
                         <Pressable
-                            onPress={() => refetch()}
+                            onPress={handleRefresh}
                             className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                         >
                             {isRefetching ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
@@ -954,14 +967,26 @@ export default function SparePartMasterScreen() {
 
                 {/* Dashboard Stats (Glassmorphism) - Inside Header */}
                 <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
+                    <View className="flex-row justify-between items-center mb-4">
                         <View className="flex-row items-center">
                             <View className="bg-white/20 p-2 rounded-xl mr-3">
                                 <Package size={16} color="white" />
                             </View>
                             <Typography className="text-white/90 text-sm font-bold">Total Barang</Typography>
                         </View>
-                        <Typography variant="h2" weight="bold" className="text-white text-3xl tracking-tight">{stats.total}</Typography>
+                        <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tight">{stats.total}</Typography>
+                    </View>
+
+                    <View className="flex-row justify-between items-center mb-6 pt-4 border-t border-white/10">
+                        <View className="flex-row items-center">
+                            <View className="bg-white/20 p-2 rounded-xl mr-3">
+                                <Coins size={16} color="white" />
+                            </View>
+                            <Typography className="text-white/90 text-sm font-bold">Total Modal Stok</Typography>
+                        </View>
+                        <Typography variant="h2" weight="bold" className="text-white text-xl tracking-tight">
+                            Rp {Number(stockValueData?.total_value || 0).toLocaleString('id-ID')}
+                        </Typography>
                     </View>
 
                     {stats.lowStock > 0 ? (
@@ -1006,6 +1031,45 @@ export default function SparePartMasterScreen() {
                 </View>
             )}
 
+            {/* Load All Button Trigger */}
+            {!sheetVisible && (
+                <View className="px-6 mb-2 mt-4">
+                    {hasNextPage && !isShowingAll ? (
+                        <Pressable 
+                            onPress={() => {
+                                setIsShowingAll(true);
+                                setSelectedIds([]);
+                            }}
+                            className="bg-primary/5 p-4 rounded-[28px] border border-primary/20 flex-row items-center justify-center shadow-sm"
+                        >
+                            <Sparkles size={20} color="#023C69" className="mr-3" />
+                            <View>
+                                <Typography className="text-primary font-bold text-sm">Tampilkan Semua Sparepart</Typography>
+                                <Typography className="text-primary/60 text-[10px] font-medium uppercase tracking-tight">Muat total {stats.total} item untuk aksi massal</Typography>
+                            </View>
+                        </Pressable>
+                    ) : isShowingAll ? (
+                        <View className="flex-row items-center justify-between bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                            <View className="flex-row items-center">
+                                <View className="bg-amber-100 p-1.5 rounded-lg mr-3">
+                                    <Sparkles size={14} color="#D97706" />
+                                </View>
+                                <Typography className="text-amber-800 font-bold text-xs">Mode Semua Data Aktif</Typography>
+                            </View>
+                            <Pressable 
+                                onPress={() => {
+                                    setIsShowingAll(false);
+                                    setSelectedIds([]);
+                                }}
+                                className="bg-white px-3 py-1.5 rounded-xl border border-amber-200"
+                            >
+                                <Typography className="text-amber-700 font-bold text-[10px]">Mode Halaman</Typography>
+                            </Pressable>
+                        </View>
+                    ) : null}
+                </View>
+            )}
+
             {/* Bulk Actions Header */}
             {!sheetVisible && (
                 <View className="px-6 mb-4">
@@ -1046,7 +1110,7 @@ export default function SparePartMasterScreen() {
                                         <Trash2 size={18} color="#EF4444" />
                                     </Pressable>
                                     <Pressable
-                                        onPress={handleBulkExport}
+                                        onPress={() => setIsExportModalVisible(true)}
                                         className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center border border-emerald-100"
                                     >
                                         <Download size={18} color="#10B981" />
@@ -1054,7 +1118,7 @@ export default function SparePartMasterScreen() {
                                 </>
                             ) : (
                                 <Pressable
-                                    onPress={handleBulkExport}
+                                    onPress={() => setIsExportModalVisible(true)}
                                     className="px-4 py-2.5 bg-gray-50 rounded-2xl flex-row items-center border border-gray-100"
                                 >
                                     <Download size={16} color="#4B5563" className="mr-2" />
@@ -1080,7 +1144,7 @@ export default function SparePartMasterScreen() {
                     onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
                     onEndReachedThreshold={0.5}
                     refreshControl={
-                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#16A34A" />
+                        <RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor="#16A34A" />
                     }
                     ListEmptyComponent={
                         <View className="items-center justify-center py-20">
@@ -1248,6 +1312,77 @@ export default function SparePartMasterScreen() {
                             title="Tutup"
                             variant="outline"
                             onPress={() => setIsImportModalVisible(false)}
+                            className="mt-4"
+                        />
+                    </View>
+                </View>
+            </BaseModal>
+            {/* Export Selection Modal */}
+            <BaseModal
+                visible={isExportModalVisible}
+                onClose={() => setIsExportModalVisible(false)}
+                title="Download Excel"
+            >
+                <View className="p-4">
+                    <Typography className="text-textGray mb-6 text-center">
+                        Pilih cakupan data yang ingin Anda unduh dalam format Excel.
+                    </Typography>
+
+                    <View className="space-y-4">
+                        <Pressable
+                            onPress={() => {
+                                setIsExportModalVisible(false);
+                                handleBulkExport(undefined);
+                            }}
+                            className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
+                        >
+                            <View className="bg-primary/10 p-3 rounded-xl mr-4">
+                                <Package size={24} color="#023C69" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>
+                                <Typography variant="caption" className="text-textGray">Ekspor seluruh data di database ({stats.total} item).</Typography>
+                            </View>
+                        </Pressable>
+
+                        <Pressable
+                            onPress={() => {
+                                setIsExportModalVisible(false);
+                                handleBulkExport(sparePartsList.map((i: any) => i.id));
+                            }}
+                            className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex-row items-center"
+                        >
+                            <View className="bg-emerald-100 p-3 rounded-xl mr-4">
+                                <Eye size={24} color="#059669" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-emerald-700">Download Yang Tampil</Typography>
+                                <Typography variant="caption" className="text-textGray">Hanya item yang sudah dimuat di layar ({sparePartsList.length} item).</Typography>
+                            </View>
+                        </Pressable>
+
+                        {selectedIds.length > 0 && (
+                            <Pressable
+                                onPress={() => {
+                                    setIsExportModalVisible(false);
+                                    handleBulkExport(selectedIds);
+                                }}
+                                className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex-row items-center"
+                            >
+                                <View className="bg-amber-100 p-3 rounded-xl mr-4">
+                                    <Check size={24} color="#D97706" />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography variant="body1" weight="bold" className="text-amber-700">Download Data Terpilih</Typography>
+                                    <Typography variant="caption" className="text-textGray">Ekspor {selectedIds.length} item yang telah Anda centang.</Typography>
+                                </View>
+                            </Pressable>
+                        )}
+
+                        <Button
+                            title="Tutup"
+                            variant="outline"
+                            onPress={() => setIsExportModalVisible(false)}
                             className="mt-4"
                         />
                     </View>

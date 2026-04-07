@@ -121,13 +121,14 @@ export default function LabaRugiScreen() {
         penjualan: reportData?.bengkel_details?.total_penjualan || 0,
         hpp: reportData?.bengkel_details?.total_hpp || 0,
         biayaOps: reportData?.pengeluaran_unit_details?.bengkel || 0,
-        biayaGaji: reportData?.pengeluaran_details?.gaji?.total || 0,
+        biayaGaji: reportData?.pengeluaran_details?.gaji?.total_gaji_pokok || 0,
+        biayaLembur: reportData?.pengeluaran_details?.gaji?.total_uang_lembur || 0,
     };
 
     const priveTotal = reportData?.pengeluaran_details?.prive?.total || 0;
 
     const labaKotor = bengkelData.penjualan - bengkelData.hpp;
-    const totalBiaya = bengkelData.biayaOps + bengkelData.biayaGaji;
+    const totalBiaya = bengkelData.biayaOps + bengkelData.biayaGaji + bengkelData.biayaLembur - (reportData?.pengeluaran_details?.gaji?.total_potongan_kasbon || 0);
     const labaBersih = labaKotor - totalBiaya;
 
     return (
@@ -292,6 +293,7 @@ export default function LabaRugiScreen() {
                                 <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-3">Beban Operasional</Typography>
                                 <SubItemRow label="Biaya Operasional" value={bengkelData.biayaOps} isNegative />
                                 <SubItemRow label="Biaya Gaji" value={bengkelData.biayaGaji} isNegative />
+                                <SubItemRow label="Biaya Lembur" value={bengkelData.biayaLembur} isNegative />
                             </View>
 
                             <View className={`p-5 rounded-[24px] flex-row justify-between items-center ${labaBersih >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
@@ -505,6 +507,10 @@ export default function LabaRugiScreen() {
                                             <span>Biaya Gaji</span>
                                             <span class="text-error">(${formatCurrency(bengkelData.biayaGaji)})</span>
                                         </div>
+                                        <div class="row-item">
+                                            <span>Biaya Lembur</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaLembur)})</span>
+                                        </div>
                                         <div class="row-item row-total">
                                             <span>4. LABA BERSIH BENGKEL</span>
                                             <span class="font-bold">${formatCurrency(labaBersih)}</span>
@@ -639,6 +645,10 @@ export default function LabaRugiScreen() {
                                         <div class="row-item">
                                             <span>Biaya Gaji</span>
                                             <span class="text-error">(${formatCurrency(bengkelData.biayaGaji)})</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Biaya Lembur</span>
+                                            <span class="text-error">(${formatCurrency(bengkelData.biayaLembur)})</span>
                                         </div>
                                         <div class="row-item row-total">
                                             <span>4. LABA BERSIH BENGKEL</span>
