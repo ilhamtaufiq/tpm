@@ -836,6 +836,7 @@ class SlipGajiService:
             func.count(SlipGaji.id).label("count"),
             func.sum(SlipGaji.gaji_bersih).label("total"),
             func.sum(SlipGaji.gaji_pokok).label("total_gaji_pokok"),
+            func.sum(SlipGaji.uang_lembur).label("total_uang_lembur"),
             func.sum(SlipGaji.potongan_kasbon).label("total_potongan_kasbon"),
         ).first()
 
@@ -843,5 +844,6 @@ class SlipGajiService:
             "count": result.count or 0,
             "total": float(result.total or 0),
             "total_gaji_pokok": float(result.total_gaji_pokok or 0),
+            "total_uang_lembur": float(result.total_uang_lembur or 0),
             "total_potongan_kasbon": float(result.total_potongan_kasbon or 0),
         }

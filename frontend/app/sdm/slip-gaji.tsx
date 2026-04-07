@@ -310,88 +310,136 @@ export default function SlipGajiScreen() {
             }
         }
 
+        // 1. Capture current slip data for the confirm alert and mutation
+        const slipToPay = selectedSlip;
+        const currentIsSplit = isSplitPayment;
+        const currentPayments = [...payments];
+        const currentMetode = payMetode.toUpperCase();
+
+        // 2. Close sheet visually FIRST
+        if (Platform.OS !== 'web') {
+            bottomSheetRef.current?.close();
+        } else {
+            setSelectedSlip(null);
+        }
+
+        // 3. Show confirm alert on main screen
         setDialogConfig({
             visible: true,
             title: 'Konfirmasi Pembayaran',
-            message: `Proses pembayaran untuk ${selectedSlip.karyawan_nama}?`,
+            message: `Proses pembayaran untuk ${slipToPay.karyawan_nama}?`,
             variant: 'info',
             type: 'confirm',
-            onConfirm: executePayment
+            onConfirm: async () => {
+                // Clear the confirm dialog
+                setDialogConfig(prev => ({ ...prev, visible: false }));
+                
+                try {
+                    const payload: any = {
+                        id: slipToPay.id,
+                        data: currentIsSplit ? {
+                            payments: currentPayments.map(p => ({
+                                metode: p.metode.toUpperCase(),
+                                nominal: parseNumber(p.nominal) || 0,
+                                catatan: p.catatan
+                            }))
+                        } : { metode_bayar: currentMetode },
+                    };
+
+                    await processPaymentMutation.mutateAsync(payload);
+                    
+                    // Cleanup and Success feedback
+                    setSelectedSlip(null);
+                    setDialogConfig({ 
+                        visible: true, 
+                        title: 'Sukses', 
+                        message: 'Pembayaran berhasil', 
+                        variant: 'success' 
+                    });
+                    onRefresh();
+                } catch (error: any) {
+                    setDialogConfig({ 
+                        visible: true, 
+                        title: 'Error', 
+                        message: getErrorMessage(error, 'Gagal bayar'), 
+                        variant: 'error' 
+                    });
+                }
+            }
         });
     };
 
-    const executePayment = async () => {
-        if (!selectedSlip) return;
-        try {
-            const payload: any = {
-                id: selectedSlip.id,
-                data: isSplitPayment ? {
-                    payments: payments.map(p => ({
-                        metode: p.metode.toUpperCase(),
-                        nominal: parseNumber(p.nominal) || 0,
-                        catatan: p.catatan
-                    }))
-                } : { metode_bayar: payMetode.toUpperCase() },
-            };
-
-            await processPaymentMutation.mutateAsync(payload);
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran berhasil', variant: 'success' });
-            if (Platform.OS === 'web') setSelectedSlip(null);
-            else bottomSheetRef.current?.close();
-            onRefresh();
-        } catch (error: any) {
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal bayar'), variant: 'error' });
-        }
-    };
 
     const handleVoidPayment = async () => {
         if (!selectedSlip) return;
+        const slipToVoid = selectedSlip;
+
+        // 1. Close sheet visually first
+        if (Platform.OS !== 'web') {
+            bottomSheetRef.current?.close();
+        } else {
+            setSelectedSlip(null);
+        }
+
         setDialogConfig({
             visible: true,
             title: 'Batalkan Pembayaran',
-            message: `Yakin ingin membatalkan pembayaran untuk ${selectedSlip.karyawan_nama}? Tindakan ini akan mengembalikan saldo kas/bank.`,
+            message: `Yakin ingin membatalkan pembayaran untuk ${slipToVoid.karyawan_nama}? Tindakan ini akan mengembalikan saldo kas/bank.`,
             variant: 'warning',
             type: 'confirm',
-            onConfirm: executeVoidPayment
+            onConfirm: async () => {
+                setDialogConfig(prev => ({ ...prev, visible: false }));
+                try {
+                    await voidPaymentMutation.mutateAsync(slipToVoid.id);
+                    setSelectedSlip(null);
+                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran dibatalkan', variant: 'success' });
+                    onRefresh();
+                } catch (error: any) {
+                    setDialogConfig({ 
+                        visible: true, 
+                        title: 'Error', 
+                        message: getErrorMessage(error, 'Gagal membatalkan pembayaran'), 
+                        variant: 'error' 
+                    });
+                }
+            }
         });
-    };
-
-    const executeVoidPayment = async () => {
-        if (!selectedSlip) return;
-        try {
-            await voidPaymentMutation.mutateAsync(selectedSlip.id);
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Pembayaran dibatalkan', variant: 'success' });
-            if (Platform.OS === 'web') setSelectedSlip(null);
-            else bottomSheetRef.current?.close();
-            onRefresh();
-        } catch (error: any) {
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal membatalkan pembayaran'), variant: 'error' });
-        }
     };
 
     const handleDeleteSlip = async () => {
         if (!selectedSlip) return;
+        const slipToDelete = selectedSlip;
+
+        // 1. Close sheet visually first
+        if (Platform.OS !== 'web') {
+            bottomSheetRef.current?.close();
+        } else {
+            setSelectedSlip(null);
+        }
+
         setDialogConfig({
             visible: true,
-            title: 'Hapus Slip Payroll',
-            message: `Yakin ingin menghapus slip payroll ${selectedSlip.karyawan_nama}? Data yang dihapus tidak dapat dikembalikan.`,
-            variant: 'warning',
+            title: 'Hapus Slip',
+            message: `Yakin ingin menghapus slip payroll ${slipToDelete.karyawan_nama}? Data yang dihapus tidak dapat dikembalikan.`,
+            variant: 'error',
             type: 'confirm',
-            onConfirm: executeDeleteSlip
+            onConfirm: async () => {
+                setDialogConfig(prev => ({ ...prev, visible: false }));
+                try {
+                    await deleteMutation.mutateAsync(slipToDelete.id);
+                    setSelectedSlip(null);
+                    setDialogConfig({ visible: true, title: 'Sukses', message: 'Slip payroll berhasil dihapus', variant: 'success' });
+                    onRefresh();
+                } catch (error: any) {
+                    setDialogConfig({ 
+                        visible: true, 
+                        title: 'Error', 
+                        message: getErrorMessage(error, 'Gagal menghapus slip'), 
+                        variant: 'error' 
+                    });
+                }
+            }
         });
-    };
-
-    const executeDeleteSlip = async () => {
-        if (!selectedSlip) return;
-        try {
-            await deleteMutation.mutateAsync(selectedSlip.id);
-            setDialogConfig({ visible: true, title: 'Sukses', message: 'Slip payroll berhasil dihapus', variant: 'success' });
-            if (Platform.OS === 'web') setSelectedSlip(null);
-            else bottomSheetRef.current?.close();
-            onRefresh();
-        } catch (error: any) {
-            setDialogConfig({ visible: true, title: 'Error', message: getErrorMessage(error, 'Gagal menghapus slip'), variant: 'error' });
-        }
     };
     const renderPendingItem = ({ item }: { item: SlipGajiPreviewItem }) => {
         const isGenerating = generatingId === item.karyawan_id;

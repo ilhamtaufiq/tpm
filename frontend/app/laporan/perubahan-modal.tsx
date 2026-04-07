@@ -114,6 +114,7 @@ export default function LaporanPerubahanModalScreen() {
             const c_inv_total = report.section_c.pengembalian_investor?.total || 0;
             const c_op = report.section_c.operasional || 0;
             const c_gaji = report.section_c.gaji || 0;
+            const c_lembur = report.section_c.lembur || 0;
             const c_prive = report.section_c.prive || 0;
             const c_prep = report.section_c.biaya_persiapan_display || 0;
             const c_inv_termasuk_prep = report.section_c.pengembalian_investor?.termasuk_biaya_persiapan || 0;
@@ -312,6 +313,11 @@ export default function LaporanPerubahanModalScreen() {
                         <tr class="green-row">
                             <td>BEBAN GAJI KARYAWAN</td>
                             <td class="amount">${formatCurrency(c_gaji)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row">
+                            <td>BEBAN LEMBUR KARYAWAN</td>
+                            <td class="amount">${formatCurrency(c_lembur)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row border-bottom">
@@ -620,6 +626,7 @@ export default function LaporanPerubahanModalScreen() {
 
                     <Row label="Beban Operasional Bengkel" value={data.operasional} isNegative />
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
+                    <Row label="Beban Lembur Karyawan" value={data.lembur} isNegative />
                     <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
                     {data.kasbon_karyawan ? <Row label="Kasbon Karyawan (Net)" value={data.kasbon_karyawan} isNegative /> : null}
                     {data.transaksi_lainnya ? <Row label="Transaksi Lainnya (Net)" value={data.transaksi_lainnya} isNegative /> : null}

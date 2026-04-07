@@ -23,6 +23,7 @@ class SlipGajiBulkItem(BaseModel):
     karyawan_id: int
     jumlah_hadir: float
     potongan_kasbon: float = 0
+    uang_lembur: float = 0
 
 
 class SlipGajiBulkCreate(BaseModel):

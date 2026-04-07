@@ -472,7 +472,8 @@ export const sdmService = {
             items: items ? items.map(i => ({
                 karyawan_id: i.karyawan_id,
                 jumlah_hadir: i.jumlah_hadir,
-                potongan_kasbon: i.potongan_kasbon
+                potongan_kasbon: i.potongan_kasbon,
+                uang_lembur: i.uang_lembur
             })) : undefined,
             tanggal_mulai: tanggalMulai
         };
@@ -485,7 +486,8 @@ export const sdmService = {
             items: items ? items.map(i => ({
                 karyawan_id: i.karyawan_id,
                 jumlah_hadir: i.jumlah_hadir,
-                potongan_kasbon: i.potongan_kasbon
+                potongan_kasbon: i.potongan_kasbon,
+                uang_lembur: i.uang_lembur
             })) : undefined,
         };
         const response = await api.post('/slip-gaji/bulk-range', data, {

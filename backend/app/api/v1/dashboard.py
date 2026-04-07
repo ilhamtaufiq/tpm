@@ -759,7 +759,8 @@ def get_capital_report(
             "termasuk_biaya_persiapan": biaya_persiapan_display,
         },
         "operasional": biaya_opr,
-        "gaji": biaya_gaji,
+        "gaji": float(gaji_summary.get("total_gaji_pokok", 0)),
+        "lembur": float(gaji_summary.get("total_uang_lembur", 0)),
         "prive": prive,
         "biaya_persiapan": 0,  # Already included in pengembalian_investor total
         "biaya_persiapan_display": biaya_persiapan_display,  # For display only
