@@ -84,12 +84,14 @@ export default function LaporanPerubahanModalScreen() {
             const a2 = report.section_a.hpp_bengkel || 0;
             const a3 = report.section_a.hpp_mobil || 0;
             const a4 = a2 + a3;
-            const a5 = a1 + a4; // Laba & Modal Awal + HPP
+            const a5 = a1 + a4 + (report.section_a.modal_persediaan || 0); // Laba & Modal Awal + HPP + Assets
 
             // A.6 (Gross Profit)
             const a6 = report.section_a.total_laba || 0;
             // internal_bengkel_mobil removed (no longer bilateral)
             const a7 = report.section_a.total_a || 0; // Total A from Backend
+            const a_aset_persediaan = report.section_a.aset_persediaan || 0;
+            const a_aset_tetap = report.section_a.aset_tetap || 0;
 
             // B. Piutang
             const b1 = report.section_b.piutang_lainnya || 0;
@@ -101,7 +103,10 @@ export default function LaporanPerubahanModalScreen() {
 
             const b7 = report.section_b.total_b || 0; // Total B from Backend (including assets)
             const b8 = a7 - b7; // Intermediate balance (A.7 - B.7) - Stock assets are in both A and B, so they cancel out to find cash.
-            const b_persediaan = report.section_b.modal_persediaan || 0;
+            const b_aset_persediaan = report.section_b.aset_persediaan || 0;
+            const b_aset_tetap = report.section_b.aset_tetap || 0;
+            const b_total_piutang = (b1 + b2 + b3 + b4 + b5 + b6);
+            const b_total_aset = (b_aset_persediaan + b_aset_tetap);
 
             // C. Pengurang
             const c_part_cash = report.section_c.pembelian_part?.cash || 0;
@@ -183,9 +188,14 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(a3)}</td>
                             <td></td>
                         </tr>
+                        <tr>
+                            <td>ASET PERSEDIAAN</td>
+                            <td class="amount">${formatCurrency(a_aset_persediaan)}</td>
+                            <td></td>
+                        </tr>
                         <tr class="border-bottom">
-                            <td>PERSEDIAAN SPAREPART</td>
-                            <td class="amount">${formatCurrency(report.section_a.modal_persediaan || 0)}</td>
+                            <td>ASET TETAP</td>
+                            <td class="amount">${formatCurrency(a_aset_tetap)}</td>
                             <td></td>
                         </tr>
                         <tr>
@@ -212,51 +222,72 @@ export default function LaporanPerubahanModalScreen() {
                     <!-- SECTION B -->
                     <table cellspacing="0">
                         <tr>
-                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #f1f5f9;">B. PIUTANG:</td>
+                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #f1f5f9; padding-bottom: 8px;">B. PIUTANG & ASET:</td>
                         </tr>
                         <tr>
-                            <td>PIUTANG LAINNYA</td>
+                            <td colspan="3" style="font-weight: bold; padding-left: 10px; color: #475569;">B.1 PIUTANG</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-left: 20px;">PIUTANG LAINNYA</td>
                             <td class="amount">${formatCurrency(b1)}</td>
                             <td></td>
                         </tr>
                          <tr>
-                            <td>PIUTANG UNIT MOBIL</td>
+                            <td style="padding-left: 20px;">PIUTANG UNIT MOBIL</td>
                             <td class="amount">${formatCurrency(b2)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>PIUTANG SPAREPART MOBIL</td>
+                            <td style="padding-left: 20px;">PIUTANG SPAREPART MOBIL</td>
                             <td class="amount">${formatCurrency(b3)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td>PIUTANG UNIT JASA ANGKUT</td>
+                            <td style="padding-left: 20px;">PIUTANG UNIT JASA ANGKUT</td>
                             <td class="amount">${formatCurrency(b4)}</td>
                             <td></td>
                         </tr>
                          <tr>
-                            <td>PIUTANG KARYAWAN (KASBON)</td>
+                            <td style="padding-left: 20px;">PIUTANG KARYAWAN (KASBON)</td>
                             <td class="amount">${b5 > 0 ? formatCurrency(b5) : 'Rp 0'}</td>
                             <td></td>
                         </tr>
                          <tr class="border-bottom">
-                            <td>PIUTANG UNIT BENGKEL</td>
+                            <td style="padding-left: 20px;">PIUTANG UNIT BENGKEL</td>
                             <td class="amount">${formatCurrency(b6)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="2"></td>
+                            <td colspan="2" style="font-style: italic; padding-left: 20px;">Subtotal Piutang</td>
+                            <td class="amount" style="border-top: 1px dashed #ccc;">${formatCurrency(b_total_piutang)}</td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="font-weight: bold; padding-left: 10px; color: #475569; padding-top: 8px;">B.2 ASET</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-left: 20px;">ASET PERSEDIAAN</td>
+                            <td class="amount">${formatCurrency(b_aset_persediaan)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td style="padding-left: 20px;">ASET TETAP</td>
+                            <td class="amount">${formatCurrency(b_aset_tetap)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="font-style: italic; padding-left: 20px;">Subtotal Aset</td>
+                            <td class="amount" style="border-top: 1px dashed #ccc;">${formatCurrency(b_total_aset)}</td>
+                        </tr>
+
+                        <tr class="total-bar">
+                            <td colspan="2">TOTAL B (PIUTANG & ASET)</td>
                             <td class="amount">${formatCurrency(b7)}</td>
                         </tr>
-                        <tr class="total-bar">
-                            <td colspan="2">LABA & MODAL (A-B)</td>
+                        <tr class="total-bar" style="background-color: #475569;">
+                            <td colspan="2">LABA & MODAL BERSIH (A-B)</td>
                             <td class="amount">${formatCurrency(b8)}</td>
                         </tr>
-                        ${b_persediaan ? `
-                        <tr class="sub-row">
-                            <td colspan="2" style="font-style: italic; color: #666;">*Terhitung Aset Persediaan & Tetap: ${formatCurrency(b_persediaan)}</td>
-                            <td></td>
-                        </tr>` : ''}
                     </table>
 
                     <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
@@ -539,7 +570,8 @@ export default function LaporanPerubahanModalScreen() {
                     <Row label="Setoran Modal" value={data.setoran_modal} />
                     <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
                     <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
-                    <Row label="Persediaan Sparepart" value={data.modal_persediaan} />
+                    <Row label="Aset Persediaan" value={data.aset_persediaan} />
+                    <Row label="Aset Tetap" value={data.aset_tetap} />
 
                     <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
                         <Typography variant="caption" weight="bold" className="mb-2 text-primary uppercase tracking-tighter">Rincian Laba Unit</Typography>
@@ -578,16 +610,25 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
 
                 <View className="space-y-3">
-                    <Row label="PIUTANG LAINNYA" value={data.piutang_lainnya} />
-                    <Row label="PIUTANG UNIT MOBIL" value={data.piutang_mobil} />
-                    <Row label="PIUTANG SPAREPART MOBIL" value={data.piutang_part_mobil} />
-                    <Row label="PIUTANG UNIT JASA ANGKUT" value={data.piutang_jasa_angkut} />
-                    <Row label="PIUTANG KARYAWAN (KASBON)" value={data.piutang_karyawan} />
-                    <Row label="PIUTANG UNIT BENGKEL" value={data.piutang_usaha} />
-                    
-                    {data.modal_persediaan > 0 && (
-                        <Row label="ASET PERSEDIAAN & TETAP" value={data.modal_persediaan} color="text-secondary/70" />
-                    )}
+                    <View className="mb-2">
+                        <Typography variant="body2" weight="bold" className="text-secondary/70 mb-2 uppercase tracking-wider">B.1 PIUTANG</Typography>
+                        <View className="ml-2 space-y-3 border-l-2 border-secondary/10 pl-3">
+                            <Row label="PIUTANG LAINNYA" value={data.piutang_lainnya} small />
+                            <Row label="PIUTANG UNIT MOBIL" value={data.piutang_mobil} small />
+                            <Row label="PIUTANG SPAREPART MOBIL" value={data.piutang_part_mobil} small />
+                            <Row label="PIUTANG UNIT JASA ANGKUT" value={data.piutang_jasa_angkut} small />
+                            <Row label="PIUTANG KARYAWAN (KASBON)" value={data.piutang_karyawan} small />
+                            <Row label="PIUTANG UNIT BENGKEL" value={data.piutang_usaha} small />
+                        </View>
+                    </View>
+
+                    <View className="mb-2 mt-4">
+                        <Typography variant="body2" weight="bold" className="text-secondary/70 mb-2 uppercase tracking-wider">B.2 ASET</Typography>
+                        <View className="ml-2 space-y-3 border-l-2 border-secondary/10 pl-3">
+                            <Row label="ASET PERSEDIAAN" value={data.aset_persediaan} small />
+                            <Row label="ASET TETAP" value={data.aset_tetap} small />
+                        </View>
+                    </View>
 
                     <View className="h-[1px] bg-gray-100 my-2" />
                     <Row label="Total B (Piutang & Aset)" value={data.total_b} bold large color="text-secondary" />

@@ -534,6 +534,8 @@ def get_capital_report(
             "laba_mobil_tpm": laba_mobil_tpm,
             "laba_jasa_angkut": laba_jasa_angkut_tpm,
         },
+        "aset_persediaan": modal_awal_persediaan,
+        "aset_tetap": float(total_fixed_assets),
         "modal_persediaan": modal_awal_total,
         "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + total_laba_kotor + modal_awal_total
     }
@@ -652,6 +654,8 @@ def get_capital_report(
         "piutang_jasa_angkut": p_supir_ja_net,
         "piutang_karyawan": p_karyawan_net,
         "piutang_usaha": p_usaha_net,
+        "aset_persediaan": modal_awal_persediaan,
+        "aset_tetap": float(total_fixed_assets),
         "modal_persediaan": modal_awal_total,
         "total_penerimaan": total_penerimaan_piutang, # For display
         "total_b": total_b_with_assets
