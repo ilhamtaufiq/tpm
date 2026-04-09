@@ -113,9 +113,27 @@ PID_BACKEND=$!
     echo -e "${GREEN}$prefix${NC} Memproses update frontend..."
     cd "$FRONTEND_DIR"
     
-    # Rebuild Expo Web using runuser to ensure NVM/Node environment is loaded
-    echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web (This may take a few minutes)..."
-    runuser -l $REAL_USER -c "cd $FRONTEND_DIR && npx expo export -p web --non-interactive" || { 
+    # Discovery logic: Mencari npx dengan lebih agresif (NVM support)
+    FIND_NPX_CMD='
+        if command -v npx &>/dev/null; then 
+            which npx
+        elif [ -f "$HOME/.nvm/nvm.sh" ]; then 
+            source "$HOME/.nvm/nvm.sh" && which npx
+        elif [ -f "/usr/local/bin/npx" ]; then echo "/usr/local/bin/npx"
+        elif [ -f "/usr/bin/npx" ]; then echo "/usr/bin/npx"
+        fi
+    '
+    NPX_BIN=$(runuser -l $REAL_USER -c "$FIND_NPX_CMD")
+    
+    if [ -z "$NPX_BIN" ]; then
+        echo -e "${RED}$prefix ERROR${NC} npx tidak ditemukan untuk user $REAL_USER."
+        echo -e "${YELLOW}Debug PATH:${NC} $(runuser -l $REAL_USER -c 'echo $PATH')"
+        exit 1
+    fi
+
+    # Rebuild Expo Web
+    echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web using $NPX_BIN..."
+    runuser -l $REAL_USER -c "cd $FRONTEND_DIR && $NPX_BIN expo export -p web --non-interactive" || { 
         echo -e "${RED}$prefix ERROR${NC} Build failed. Check logs above."; 
         exit 1; 
     }
