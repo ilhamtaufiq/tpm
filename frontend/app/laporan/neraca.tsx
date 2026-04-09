@@ -146,8 +146,24 @@ export default function NeracaScreen() {
                         </Typography>
                     </View>
                     <View className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/50">
-                        <Row label="Kas Tunai" value={data.kas_tunai} small />
+                        <Row label="Kas Tunai (Utama)" value={data.kas_tunai} small />
                         <Row label="Kas Bank" value={data.kas_bank} small />
+                        <Row label="Kas di Unit Operasional" value={data.unit_cash} small />
+                        
+                        {/* Breakdown Unit Cash if relevant */}
+                        {data.unit_details && (
+                            <View className="ml-4 mt-1 border-l border-emerald-200/50 pl-2">
+                                {Object.entries(data.unit_details).map(([unit, val]) => (
+                                    <Row 
+                                        key={unit} 
+                                        label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()} 
+                                        value={val as number} 
+                                        small 
+                                    />
+                                ))}
+                            </View>
+                        )}
+
                         <View className="h-[1px] bg-emerald-200/50 my-1.5" />
                         <Row label="Total Kas & Bank" value={data.total_kas_bank} bold />
                     </View>
@@ -274,13 +290,16 @@ export default function NeracaScreen() {
                     </View>
                 </View>
 
-                {/* Setoran Modal */}
+                {/* Modal Awal & Setoran */}
                 <View className="mb-3">
                     <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
-                        <Row label="Setoran Modal" value={data.setoran_modal} />
+                        <Row label="Setoran Modal Tunai" value={data.setoran_modal} />
+                        {data.modal_persediaan > 0 && (
+                            <Row label="Modal Awal (Aset & Stok)" value={data.modal_persediaan} small />
+                        )}
                     </View>
                     {data.pencairan_investor > 0 && (
-                        <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
+                        <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50 mt-2">
                             <Row label="Pengembalian Modal Investor Mobil" value={data.pencairan_investor} isNegative />
                         </View>
                     )}

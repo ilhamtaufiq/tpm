@@ -830,6 +830,12 @@ def get_capital_report(
             # Bank accounts and BOP accounts classified as transfer for macro-reconciliation
             posisi_transfer += saldo
 
+    # Breakdown by accounts for audit
+    unit_details = {k: 0 for k in unit_keys}
+    for k, v in balances.items():
+        if k in unit_keys and isinstance(v, dict):
+            unit_details[k] = v.get("saldo", 0)
+
     total_kas = posisi_cash + posisi_transfer
     
     # Formula-based reconciliation: should equal total_kas
@@ -839,6 +845,7 @@ def get_capital_report(
     section_d = {
         "cash": posisi_cash,
         "transfer": posisi_transfer,
+        "unit_details": {k: float(v or 0) for k, v in unit_details.items()},
         "total_d": total_kas,
         "theoretical_modal": modal_komponen,
         "modal_komponen": modal_komponen,
@@ -948,6 +955,9 @@ def get_neraca(
         KasBankJenis.CASH.value.lower(),
         KasBankJenis.KAS_UTAMA.value.lower(),
     ]
+    
+    # Initialize details to ensure all units appear even if saldo is 0
+    unit_details = {k: 0 for k in unit_keys}
 
     for k, v in balances.items():
         if not isinstance(v, dict): continue
@@ -1225,19 +1235,20 @@ def get_neraca(
     modal_out = get_kas_sum(KasBankSource.MODAL, KasBankType.KELUAR)
     setoran_modal = float(modal_in or 0) - float(modal_out or 0)
     
-    # 2. Laba Ditahan components (for display)
-    bengkel_summ = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
-    mobil_summ = penjualan_mobil_service.get_summary(tanggal_dari, tanggal_sampai)
-    muatan_summ = muatan_service.get_summary(tanggal_dari, tanggal_sampai)
+    # 2. Laba Ditahan components (for display). 
+    # Use None for tanggal_dari to get cumulative (retained earnings) up to tanggal_sampai.
+    bengkel_summ = bengkel_service.get_summary(None, tanggal_sampai)
+    mobil_summ = penjualan_mobil_service.get_summary(None, tanggal_sampai)
+    muatan_summ = muatan_service.get_summary(None, tanggal_sampai)
     
     laba_bengkel = float(bengkel_summ["total_laba_kotor"] or 0)
     laba_mobil_tpm = float(mobil_summ["laba_tpm"] or 0)
     laba_jasa_angkut = float(muatan_summ["laba_tpm"] or 0)
     total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut
     
-    # Beban Operasional
-    pengeluaran = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
-    gaji_summary = slip_gaji_service.get_summary_by_date_range(tanggal_dari, tanggal_sampai)
+    # Beban Operasional (Cumulative)
+    pengeluaran = pengeluaran_service.get_summary(None, tanggal_sampai)
+    gaji_summary = slip_gaji_service.get_summary_by_date_range(None, tanggal_sampai)
     
     pengeluaran_details = pengeluaran["per_kategori"]
     prive_total = float(pengeluaran_details.get("prive", {}).get("total", 0))
@@ -1263,9 +1274,25 @@ def get_neraca(
 
     # 4. Modal Awal (Adjustment for stock and fixed assets without purchase records)
     # This aligns the component-based equity with the asset-based equity for unrecorded inventory/assets.
-    from app.models.bengkel import PembelianSparePart
-    total_purchases_ever = db.query(func.sum(PembelianSparePart.grand_total)).scalar() or 0
-    modal_persediaan_adj = max(0, persediaan_sparepart - float(total_purchases_ever))
+    from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel
+    
+    # Total purchases up to tanggal_sampai
+    q_purchases = db.query(func.sum(PembelianSparePart.grand_total))
+    if tanggal_sampai:
+        q_purchases = q_purchases.filter(PembelianSparePart.tanggal <= tanggal_sampai)
+    total_purchases_ever = float(q_purchases.scalar() or 0)
+    
+    # Total HPP ever sold up to tanggal_sampai to keep initial capital constant
+    q_hpp = db.query(func.sum(TransaksiPenjualanBengkel.hpp_parts)).filter(
+        TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+    )
+    if tanggal_sampai:
+        q_hpp = q_hpp.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+    total_hpp_ever = float(q_hpp.scalar() or 0)
+    
+    # Initial Stock = (Current Stock + Total Sold Stock) - Total Purchases Recorded
+    # Note: persediaan_sparepart already represents the stock at tanggal_sampai
+    modal_persediaan_adj = max(0, (float(persediaan_sparepart) + total_hpp_ever) - total_purchases_ever)
     
     # Fixed Assets contribution to initial capital
     modal_aset_adj = float(total_aktiva_tetap or 0)

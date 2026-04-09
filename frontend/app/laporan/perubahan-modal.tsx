@@ -189,7 +189,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td></td>
                         </tr>
                         <tr>
-                            <td>ASET PERSEDIAAN</td>
+                            <td>PERSEDIAAN SPAREPART</td>
                             <td class="amount">${formatCurrency(a_aset_persediaan)}</td>
                             <td></td>
                         </tr>
@@ -266,7 +266,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="3" style="font-weight: bold; padding-left: 10px; color: #475569; padding-top: 8px;">B.2 ASET</td>
                         </tr>
                         <tr>
-                            <td style="padding-left: 20px;">ASET PERSEDIAAN</td>
+                            <td style="padding-left: 20px;">PERSEDIAAN SPAREPART</td>
                             <td class="amount">${formatCurrency(b_aset_persediaan)}</td>
                             <td></td>
                         </tr>
@@ -567,10 +567,15 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
 
                 <View className="space-y-3">
-                    <Row label="Setoran Modal" value={data.setoran_modal} />
+                    <Typography variant="h4" weight="bold" className="mb-2 text-primary tracking-tighter">Modal</Typography>
+
+                    <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
+                        <Row label="Setoran Modal" value={data.setoran_modal} />
+                        <Row label="Persediaan Sparepart" value={data.aset_persediaan} />
+
+                    </View>
                     <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
                     <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
-                    <Row label="Aset Persediaan" value={data.aset_persediaan} />
                     <Row label="Aset Tetap" value={data.aset_tetap} />
 
                     <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
@@ -625,7 +630,7 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="mb-2 mt-4">
                         <Typography variant="body2" weight="bold" className="text-secondary/70 mb-2 uppercase tracking-wider">B.2 ASET</Typography>
                         <View className="ml-2 space-y-3 border-l-2 border-secondary/10 pl-3">
-                            <Row label="ASET PERSEDIAAN" value={data.aset_persediaan} small />
+                            <Row label="PERSEDIAAN SPAREPART" value={data.aset_persediaan} small />
                             <Row label="ASET TETAP" value={data.aset_tetap} small />
                         </View>
                     </View>
@@ -743,7 +748,21 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
 
                 <View className="space-y-4">
-                    <Row label="Saldo Kas (Tunai)" value={data.cash} small isDark themeColors={themeColors} />
+                    <Row label="Saldo Kas (Tunai & Unit)" value={data.cash} small isDark themeColors={themeColors} />
+                    {data.unit_details && (
+                        <View className="ml-4 border-l border-white/20 pl-2">
+                            {Object.entries(data.unit_details).map(([unit, val]) => (
+                                <Row 
+                                    key={unit} 
+                                    label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()} 
+                                    value={val as number} 
+                                    small 
+                                    isDark 
+                                    themeColors={themeColors}
+                                />
+                            ))}
+                        </View>
+                    )}
                     <Row label="Saldo Transfer / Bank" value={data.transfer} small isDark themeColors={themeColors} />
 
                     <View className="h-[1px] bg-white/10 my-2" />
