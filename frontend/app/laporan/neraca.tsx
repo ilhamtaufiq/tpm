@@ -255,37 +255,6 @@ export default function NeracaScreen() {
         </View>
     );
 
-    const renderHutang = () => {
-        const data = report?.hutang || {};
-        return (
-            <Card className="mb-5 p-5 border-rose-100 bg-rose-50/10">
-                <View className="flex-row items-center mb-5">
-                    <View className="w-9 h-9 rounded-2xl bg-rose-100 items-center justify-center mr-3">
-                        <CreditCard size={18} color="#E11D48" />
-                    </View>
-                    <View className="flex-1">
-                        <Typography variant="body1" weight="bold" className="text-text">Hutang</Typography>
-                        <Typography variant="caption" className="text-textGray">Liabilities</Typography>
-                    </View>
-                    <View className="bg-rose-50 px-3 py-1 rounded-xl">
-                        <Typography variant="caption" weight="bold" className="text-rose-700">
-                            {formatCurrency(data.total_hutang || 0)}
-                        </Typography>
-                    </View>
-                </View>
-
-                <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
-                    <Row label="Hutang Pembelian Part" value={data.hutang_part} small />
-                    <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} small />
-                    <Row label="Hutang Investor" value={data.hutang_investor} small />
-                    <Row label="Hutang Lainnya" value={data.hutang_lainnya} small />
-                    <View className="h-[1px] bg-rose-200/50 my-1.5" />
-                    <Row label="Total Hutang" value={data.total_hutang} bold color="text-rose-700" />
-                </View>
-            </Card>
-        );
-    };
-
     const renderModal = () => {
         const data = report?.modal || {};
         return (
@@ -365,6 +334,39 @@ export default function NeracaScreen() {
             </Card>
         );
     };
+
+    const renderHutang = () => {
+        const data = report?.hutang || {};
+        return (
+            <Card className="mb-5 p-5 border-rose-100 bg-rose-50/10">
+                <View className="flex-row items-center mb-5">
+                    <View className="w-9 h-9 rounded-2xl bg-rose-100 items-center justify-center mr-3">
+                        <CreditCard size={18} color="#E11D48" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body1" weight="bold" className="text-text">Hutang</Typography>
+                        <Typography variant="caption" className="text-textGray">Liabilities</Typography>
+                    </View>
+                    <View className="bg-rose-50 px-3 py-1 rounded-xl">
+                        <Typography variant="caption" weight="bold" className="text-rose-700">
+                            {formatCurrency(data.total_hutang || 0)}
+                        </Typography>
+                    </View>
+                </View>
+
+                <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
+                    <Row label="Hutang Pembelian Part" value={data.hutang_part} small />
+                    <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} small />
+                    <Row label="Hutang Investor" value={data.hutang_investor} small />
+                    <Row label="Hutang Lainnya" value={data.hutang_lainnya} small />
+                    <View className="h-[1px] bg-rose-200/50 my-1.5" />
+                    <Row label="Total Hutang" value={data.total_hutang} bold color="text-rose-700" />
+                </View>
+            </Card>
+        );
+    };
+
+
 
     const renderTotalPasiva = () => (
         <View className="mb-5 bg-violet-600 p-5 rounded-[28px] shadow-lg shadow-violet-200">
@@ -595,9 +597,8 @@ export default function NeracaScreen() {
                                 <Typography variant="caption" className="text-textGray">Kewajiban & Modal</Typography>
                             </View>
                         </View>
-
-                        {renderHutang()}
                         {renderModal()}
+                        {renderHutang()}
                         {renderTotalPasiva()}
                         {/* Balance Check */}
                         {renderBalanceCheck()}
@@ -693,21 +694,7 @@ export default function NeracaScreen() {
                                         </div>
 
                                         <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-                                        <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
-                                        <div class="row-item">
-                                            <span>Hutang Part</span>
-                                            <span>${formatCurrency(report.hutang.hutang_part)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Hutang Mobil</span>
-                                            <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL HUTANG</span>
-                                            <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
-                                        </div>
-
-                                        <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
+                                          <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
                                         <div class="row-item">
                                             <span>Setoran Modal</span>
                                             <span>${formatCurrency(report.modal.setoran_modal)}</span>
@@ -723,6 +710,19 @@ export default function NeracaScreen() {
                                         <div class="row-item row-total">
                                             <span>TOTAL MODAL</span>
                                             <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
+                                        </div>
+                                        <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
+                                        <div class="row-item">
+                                            <span>Hutang Part</span>
+                                            <span>${formatCurrency(report.hutang.hutang_part)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Hutang Mobil</span>
+                                            <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>TOTAL HUTANG</span>
+                                            <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
                                         </div>
 
                                         <div class="row-item row-total" style="font-size:16px; background:#7C3AED; color:white; padding:10px; border-radius:5px; margin-top:20px;">
