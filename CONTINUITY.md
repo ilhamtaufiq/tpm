@@ -39,7 +39,8 @@ Success criteria:
     - Added Inventory Statistics feature (Top 5 Sales and Lowest Stock) in `InventoryScreen`.
     - Implemented advanced sorting in Spare Part list (by sales, stock, etc.).
     - Replaced sorting Modal with a premium `BottomSheet` in `InventoryScreen` for UI consistency.
-    - Verified `softwareKeyboardLayoutMode` fix in `app.json`.
+    - Fixed `softwareKeyboardLayoutMode` fix in `app.json`.
+    - **VPS Fix**: Resolved `npx: command not found` error in `update-app.sh` by using `runuser -l` to correctly load the user environment (NVM/Node).
 - **Next**:
     - Final verification and handover.
 

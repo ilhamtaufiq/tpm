@@ -113,27 +113,9 @@ PID_BACKEND=$!
     echo -e "${GREEN}$prefix${NC} Memproses update frontend..."
     cd "$FRONTEND_DIR"
     
-    # Cari executable NPM/NPX
-    if command -v npm &> /dev/null; then
-         NPM_PATH=$(which npm)
-         NPX_PATH=$(which npx)
-    else
-         NPM_PATH=$(runuser -l $REAL_USER -c 'which npm')
-         NPX_PATH=$(runuser -l $REAL_USER -c 'which npx')
-    fi
-    
-    # Fallback to default paths if not found
-    [ -z "$NPM_PATH" ] && NPM_PATH="/usr/bin/npm"
-    [ -z "$NPX_PATH" ] && NPX_PATH="/usr/bin/npx"
-
-    # Update NPM dependencies (SKIPPED AS REQUESTED)
-    # echo -e "${YELLOW}$prefix${NC} Updating NPM dependencies..."
-    # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} NPM install failed"; exit 1; }
-
-    # Rebuild Expo Web
+    # Rebuild Expo Web using runuser to ensure NVM/Node environment is loaded
     echo -e "${GREEN}$prefix${NC} Rebuilding Expo Web (This may take a few minutes)..."
-    # Note: Removed >/dev/null to allow capturing errors if it hangs or fails
-    sudo -u $REAL_USER "$NPX_PATH" expo export -p web --non-interactive || { 
+    runuser -l $REAL_USER -c "cd $FRONTEND_DIR && npx expo export -p web --non-interactive" || { 
         echo -e "${RED}$prefix ERROR${NC} Build failed. Check logs above."; 
         exit 1; 
     }
