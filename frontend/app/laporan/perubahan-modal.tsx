@@ -119,6 +119,10 @@ export default function LaporanPerubahanModalScreen() {
             const c_inv_transfer = report.section_c.pengembalian_investor?.transfer || 0;
             const c_inv_total = report.section_c.pengembalian_investor?.total || 0;
             const c_op = report.section_c.operasional || 0;
+            const c_op_umum = report.section_c.operasional_unit_details?.umum || 0;
+            const c_op_bengkel = report.section_c.operasional_unit_details?.bengkel || 0;
+            const c_op_mobil = report.section_c.operasional_unit_details?.mobil || 0;
+            const c_op_ja = report.section_c.operasional_unit_details?.jasa_angkut || 0;
             const c_gaji = report.section_c.gaji || 0;
             const c_lembur = report.section_c.lembur || 0;
             const c_prive = report.section_c.prive || 0;
@@ -348,8 +352,28 @@ export default function LaporanPerubahanModalScreen() {
                             <td></td>
                         </tr>` : ''}
                         <tr class="green-row">
-                            <td>BEBAN OPERASIONAL BENGKEL</td>
-                            <td class="amount">${formatCurrency(c_op)}</td>
+                            <td><b>TOTAL BEBAN OPERASIONAL</b></td>
+                            <td class="amount"><b>${formatCurrency(c_op)}</b></td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Operasional Umum (Overhead)</td>
+                            <td class="amount">${formatCurrency(c_op_umum)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Operasional Bengkel</td>
+                            <td class="amount">${formatCurrency(c_op_bengkel)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Operasional Mobil</td>
+                            <td class="amount">${formatCurrency(c_op_mobil)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Operasional Jasa Angkut</td>
+                            <td class="amount">${formatCurrency(c_op_ja)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row">
@@ -686,7 +710,15 @@ export default function LaporanPerubahanModalScreen() {
                         </View>
                     </View>
 
-                    <Row label="Beban Operasional Bengkel" value={data.operasional} isNegative />
+                    <View>
+                        <Row label="Total Beban Operasional" value={data.operasional} bold />
+                        <View className="ml-4 mt-1 space-y-1">
+                            <Row label="Operasional Umum (Overhead)" value={data.operasional_unit_details?.umum} small isNegative />
+                            <Row label="Operasional Unit Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative />
+                            <Row label="Operasional Unit Mobil" value={data.operasional_unit_details?.mobil} small isNegative />
+                            <Row label="Operasional Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative />
+                        </View>
+                    </View>
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
                     <Row label="Beban Lembur Karyawan" value={data.lembur} isNegative />
                     <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />

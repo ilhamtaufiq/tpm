@@ -375,6 +375,36 @@ export default function LabaRugiScreen() {
                         </View>
                     </View>
 
+                    {/* SECTION 4: BIAYA OPERASIONAL UMUM */}
+                    <View className="mb-8 bg-surface rounded-[32px] p-6 border border-gray-50 shadow-sm">
+                        <View className="flex-row items-center mb-6 px-1">
+                            <View className="w-1.5 h-6 bg-rose-500 rounded-full mr-3" />
+                            <Typography variant="h3" weight="bold" className="text-text tracking-tight">Biaya Umum / Overhead</Typography>
+                        </View>
+
+                        <View className="space-y-1">
+                            <ReportRow label="1. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.umum || 0} isNegative />
+                            
+                            <View className="bg-gray-50/50 rounded-2xl p-4 my-2 border border-gray-100/50">
+                                <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest mb-2">Info Pengeluaran</Typography>
+                                <Typography variant="caption" className="text-textGray">Beban konsolidasi yang tidak dibebankan ke unit spesifik (Listrik, Air, Keamanan, Administrasi Kantor, dll).</Typography>
+                            </View>
+
+                            <View className="h-[1px] bg-gray-50 my-4" />
+
+                            <View className="p-5 rounded-[24px] flex-row justify-between items-center bg-rose-50">
+                                <View>
+                                    <Typography variant="body2" weight="bold" className="text-rose-800">Total Biaya Umum</Typography>
+                                    <Typography className="text-rose-600/60 text-[10px] font-bold uppercase tracking-tighter">Konsolidasi TPM</Typography>
+                                </View>
+                                <Typography variant="h3" weight="bold" className="text-rose-700">
+                                    ({formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})
+                                </Typography>
+                            </View>
+                        </View>
+                    </View>
+
+
                     {/* OTHER SECTIONS (Bento Small Grid) */}
                     <View className="flex-row flex-wrap justify-between mb-8">
                         {/* Pengeluaran Lainnya */}
@@ -560,7 +590,18 @@ export default function LabaRugiScreen() {
                                             <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
                                         </div>
 
+                                        <div class="section-header">BIAYA OPERASIONAL UMUM</div>
+                                        <div class="row-item">
+                                            <span>1. Biaya Operasional Umum (Overhead)</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>TOTAL BIAYA UMUM</span>
+                                            <span class="font-bold">(${formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})</span>
+                                        </div>
+
                                         <div class="section-header">BEBAN & PRIVE</div>
+
                                         <div class="row-item">
                                             <span>Beban Lainnya</span>
                                             <span class="text-error">(${formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)})</span>
@@ -699,7 +740,18 @@ export default function LabaRugiScreen() {
                                             <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
                                         </div>
 
+                                        <div class="section-header">BIAYA OPERASIONAL UMUM</div>
+                                        <div class="row-item">
+                                            <span>1. Biaya Operasional Umum (Overhead)</span>
+                                            <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})</span>
+                                        </div>
+                                        <div class="row-item row-total">
+                                            <span>TOTAL BIAYA UMUM</span>
+                                            <span class="font-bold">(${formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})</span>
+                                        </div>
+
                                         <div class="section-header">BEBAN & PRIVE</div>
+
                                         <div class="row-item">
                                             <span>Beban Lainnya</span>
                                             <span class="text-error">(${formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)})</span>

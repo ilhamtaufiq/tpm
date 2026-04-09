@@ -353,11 +353,15 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
                     nominal: parseNumber(p.jumlah),
-                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_JASA_ANGKUT' : undefined
+                    kas_jenis: p.metode.toUpperCase() === 'TUNAI' 
+                        ? 'KAS_UNIT_JASA_ANGKUT' 
+                        : (p.metode.toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
                 })).filter(p => p.nominal > 0) : (formData.status_bayar === 'LUNAS' ? [{
                     metode: formData.metode_bayar.toUpperCase(),
-                    nominal: parseNumber(formData.harga_jual),
-                    kas_jenis: formData.metode_bayar.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_JASA_ANGKUT' : undefined
+                    nominal: calculations.tpmShare, // Use tpmShare instead of total harga_jual
+                    kas_jenis: formData.metode_bayar.toUpperCase() === 'TUNAI' 
+                        ? 'KAS_UNIT_JASA_ANGKUT' 
+                        : (formData.metode_bayar.toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
                 }] : []),
                 persentase_tpm: 50
             };

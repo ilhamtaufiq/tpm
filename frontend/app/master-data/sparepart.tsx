@@ -808,7 +808,7 @@ export default function SparePartMasterScreen() {
                     <View className="flex-1">
                         <View className="flex-row justify-between items-center mb-2">
                             <Typography className="text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Stok Awal</Typography>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => {
                                     const newValue = !isAlwaysReady;
                                     setIsAlwaysReady(newValue);
@@ -1035,7 +1035,7 @@ export default function SparePartMasterScreen() {
             {!sheetVisible && (
                 <View className="px-6 mb-2 mt-4">
                     {hasNextPage && !isShowingAll ? (
-                        <Pressable 
+                        <Pressable
                             onPress={() => {
                                 setIsShowingAll(true);
                                 setSelectedIds([]);
@@ -1056,7 +1056,7 @@ export default function SparePartMasterScreen() {
                                 </View>
                                 <Typography className="text-amber-800 font-bold text-xs">Mode Semua Data Aktif</Typography>
                             </View>
-                            <Pressable 
+                            <Pressable
                                 onPress={() => {
                                     setIsShowingAll(false);
                                     setSelectedIds([]);

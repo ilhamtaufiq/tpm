@@ -1,57 +1,37 @@
 # Continuity Ledger - TPM Workshop Project
 
 ## Goal (incl. success criteria)
-Enhance workshop transaction form and reports to handle "Always Ready" stock, fix `bcrypt` login performance issues, and improve customer onboarding flow. 
+Ensure complete financial transparency by integrating all operational unit cash accounts into reports and clarifying the flow of general expenses.
 Success criteria:
-- Stock capital calculation excludes items with stock 999.
-- Dashboard/Reports display 999 as "Always Ready" or "Ready" with 0 value contribution.
-- BengkelForm allows adding new customers on the fly via a guest-like flow.
-- **FIX**: Login request duration reduced from ~35s to <500ms by fixing `bcrypt` and `passlib` version mismatch.
+- Neraca and Perubahan Modal reports display all unit cash accounts (Bengkel, Jasa Angkut, Mobil) regardless of balance.
+- General (Umum) expenses are correctly mapped and visible across Profit & Loss, Balance Sheet, and Capital reports.
+- Reconciliation logic is transparent and verifiable.
 
 ## Constraints/Assumptions
-- Stock 999 is a business rule for unlimited/always available items.
-- Project uses Expo Router, NativeWind (Tailwind), Lucide icons, and React Query.
-- Backend uses FastAPI, SQLModel.
+- Cash is tracked in unit-specific accounts (KAS_UNIT_...) and central accounts.
+- The system uses accounting identity `Modal = Aktiva - Hutang` for the Balance Sheet.
+- General expenses (bisnis_kategori='umum') are tracked via `PengeluaranService`.
 
 ## Key decisions
-- Modified `SparePartService.get_stock_value` to use `CASE` statements to filter out 999 stock from value calculations.
-- Implemented `CustomerFormModal` as a reusable component for quick customer registration.
-- Integrated quick registration into `MasterDataSelector` for the "Customer" type.
-- Updated PDF export templates to correctly show unlimited stock items.
+- Updated backend `get_neraca` and `get_capital_report` to initialize `unit_details` with all unit keys (bengkel, jasa_angkut, mobil) with default 0.
+- Standardized frontend display in `neraca.tsx` and `perubahan-modal.tsx` to always show the unit breakdown.
 
 ## State
 - **Now**:
-    - Final verification and handover.
+    - Explaining the reporting flow of "Umum" category expenses.
 - **Done**:
-    - **SDM Module**: Standardized all SDM sub-pages (Karyawan, Absensi, Kasbon, Slip Gaji) to use the centralized `Header` component.
-    - **SDM Integration**: Replaced the "Database/Master Data" button in `bengkel/index.tsx` with a direct "Absensi/Presensi SDM" button for better accessibility between modules.
-    - **SDM Index**: Redesigned the main dashboard and subsequently removed the "Employee Insight" section as per user request to simplify navigation. 
-    - **UI/UX**: Improved `Absensi` input with quick choice pills and rounded-full styles for better user experience.
-    - **FIX**: Resolved `bcrypt` version mismatch (downgraded to 3.2.0) to fix `AttributeError` and slow login performance (~35s → <500ms).
-    - Fixed capital calculation logic (backend).
-    - Updated Inventory UI for 999 stock.
-    - Updated Stock Sparepart Report UI and PDF.
-    - Created `CustomerFormModal` component.
-    - Integrated "Add Customer" flow into `MasterDataSelector`.
-    - Fixed backend crash by adding safety checks when serving frontend static files.
-    - Fixed TypeScript error in `PurchaseScreen` by adding missing `mutationFn` to `useCreatePembelianParts` hook.
-    - Fixed Manifest Validation Error in `app.json` by changing `softwareKeyboardLayoutMode` from `adjustResize` to `resize`.
-    - Added Inventory Statistics feature (Top 5 Sales and Lowest Stock) in `InventoryScreen`.
-    - Implemented advanced sorting in Spare Part list (by sales, stock, etc.).
-    - Replaced sorting Modal with a premium `BottomSheet` in `InventoryScreen` for UI consistency.
-    - Fixed `softwareKeyboardLayoutMode` fix in `app.json`.
-    - **VPS Fix**: Resolved `npx: command not found` error in `update-app.sh` by using `runuser -l` to correctly load the user environment (NVM/Node).
+    - Fixed zero-balance unit visibility in Neraca and Perubahan Modal reports.
+    - Verified backend aggregation logic for unit-specific cash.
 - **Next**:
-    - Final verification and handover.
+    - Add a dedicated "Overhead Umum" section in Laba Rugi if needed for better clarity.
 
 ## Open questions (UNCONFIRMED)
-- None at the moment.
+- Does the user want a dedicated section for "Pengeluaran Umum" in the Laba Rugi report, or is the current aggregation sufficient?
 
 ## Working set (files/ids/commands)
-- backend/app/services/spare_part_service.py
-- frontend/app/sdm/index.tsx
-- frontend/app/sdm/absensi.tsx
-- frontend/app/sdm/karyawan.tsx
-- frontend/app/sdm/kasbon.tsx
-- frontend/app/sdm/slip-gaji.tsx
-- frontend/components/ui/Header.tsx
+- backend/app/api/v1/dashboard.py
+- frontend/app/laporan/neraca.tsx
+- frontend/app/laporan/perubahan-modal.tsx
+- frontend/app/laporan/laba-rugi.tsx
+- backend/app/services/pengeluaran_service.py
+

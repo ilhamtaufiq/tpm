@@ -723,6 +723,16 @@ def get_capital_report(
     biaya_gaji = gaji_summary["total"]
     prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
+    # Unit-specific operational expenses for transparency
+    pengeluaran_summ = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
+    raw_units = pengeluaran_summ.get("per_unit", {})
+    operasional_unit_details = {
+        "bengkel": float(raw_units.get("bengkel", 0)),
+        "mobil": float(raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("mobil", 0)),
+        "jasa_angkut": float(raw_units.get("jasa_angkut", 0)),
+        "umum": float(raw_units.get("umum", 0))
+    }
+
     # 5. Biaya Persiapan Mobil — ALREADY included in jb_mobil KELUAR above.
     #    We query it here ONLY for display purposes (breakdown).
     q_prep = db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil)
@@ -768,6 +778,7 @@ def get_capital_report(
             "termasuk_biaya_persiapan": biaya_persiapan_display,
         },
         "operasional": biaya_opr,
+        "operasional_unit_details": operasional_unit_details,
         "gaji": float(gaji_summary.get("total_gaji_pokok", 0)),
         "lembur": float(gaji_summary.get("total_uang_lembur", 0)),
         "prive": prive,
@@ -777,6 +788,7 @@ def get_capital_report(
         "transaksi_lainnya": lainnya_net_out,
         "total_c": total_c
     }
+
 
     # --- E. Hutang / Kewajiban ---
     # Fetch current payable balances
