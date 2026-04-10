@@ -961,7 +961,8 @@ const Row = ({
     color,
     isNegative,
     isDark,
-    themeColors
+    themeColors,
+    className
 }: {
     label: string,
     value: number,
@@ -971,9 +972,10 @@ const Row = ({
     color?: string,
     isNegative?: boolean,
     isDark?: boolean,
-    themeColors?: any
+    themeColors?: any,
+    className?: string
 }) => (
-    <View className="flex-row justify-between items-center">
+    <View className={`flex-row justify-between items-center ${className || ''}`}>
         <Typography
             variant={small ? 'caption' : 'body2'}
             className={`${isDark ? 'text-white/60' : small ? 'text-textGray' : 'text-text'}`}

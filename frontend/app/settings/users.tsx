@@ -165,7 +165,7 @@ export default function UserManagementScreen() {
             visible: true,
             title: 'Hapus User',
             message: `Apakah Anda yakin ingin menghapus user ${user.full_name}? Tindakan ini tidak dapat dibatalkan.`,
-            variant: 'danger',
+            variant: 'error',
             type: 'confirm',
             onConfirm: async () => {
                 try {
@@ -344,9 +344,7 @@ export default function UserManagementScreen() {
                     <Button 
                         title="Hapus User" 
                         onPress={() => handleDelete(selectedUser)}
-                        variant="outline"
-                        style={{ borderColor: '#EF4444' }}
-                        textStyle={{ color: '#EF4444' }}
+                        variant="outline-danger"
                         icon={<Trash2 size={18} color="#EF4444" />}
                     />
                 </View>
