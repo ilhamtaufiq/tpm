@@ -160,6 +160,38 @@ export default function UserManagementScreen() {
         handleOpenSheet();
     };
 
+    const handleDelete = (user: UserType) => {
+        setDialogConfig({
+            visible: true,
+            title: 'Hapus User',
+            message: `Apakah Anda yakin ingin menghapus user ${user.full_name}? Tindakan ini tidak dapat dibatalkan.`,
+            variant: 'danger',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    await deleteMutation.mutateAsync(user.id);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Sukses',
+                        message: 'User berhasil dihapus',
+                        variant: 'success',
+                        type: 'alert'
+                    });
+                    handleCloseSheet();
+                    refetch();
+                } catch (error) {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Error',
+                        message: getErrorMessage(error, 'Gagal menghapus user'),
+                        variant: 'error',
+                        type: 'alert'
+                    });
+                }
+            }
+        });
+    };
+
     const handleSubmit = async () => {
         if (!formData.username || !formData.full_name || !formData.email || (!selectedUser && !formData.password)) {
             setDialogConfig({ visible: true, title: 'Validasi', message: 'Harap isi semua field wajib', variant: 'warning' });
@@ -297,7 +329,7 @@ export default function UserManagementScreen() {
                         </View>
                     </Card>
 
-                    <View className="flex-row space-x-3">
+                    <View className="flex-row space-x-3 mb-3">
                         <Button title="Edit User" onPress={() => openEditForm(selectedUser)} variant="outline" className="flex-1" />
                         <Button 
                             title={selectedUser.is_active ? "Nonaktifkan" : "Aktifkan"} 
@@ -309,6 +341,14 @@ export default function UserManagementScreen() {
                             }}
                         />
                     </View>
+                    <Button 
+                        title="Hapus User" 
+                        onPress={() => handleDelete(selectedUser)}
+                        variant="outline"
+                        style={{ borderColor: '#EF4444' }}
+                        textStyle={{ color: '#EF4444' }}
+                        icon={<Trash2 size={18} color="#EF4444" />}
+                    />
                 </View>
             );
         }
