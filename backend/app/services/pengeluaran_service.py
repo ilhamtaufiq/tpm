@@ -330,6 +330,24 @@ class PengeluaranService:
         by_unit = unit_query.group_by(PengeluaranBengkel.bisnis_kategori).all()
         unit_summary = {row[0]: float(row[1] or 0) for row in by_unit}
 
+        # Breakdown Jasa Angkut by Armada
+        from app.models.jasa_angkut import ArmadaJasaAngkut
+        armada_ja_query = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(PengeluaranBengkel.jumlah)
+        ).join(
+            ArmadaJasaAngkut, PengeluaranBengkel.armada_id == ArmadaJasaAngkut.id
+        ).filter(
+            PengeluaranBengkel.bisnis_kategori == "jasa_angkut"
+        )
+        if tanggal_dari:
+            armada_ja_query = armada_ja_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            armada_ja_query = armada_ja_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
+        
+        by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
+        armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
+
         return {
             "total_transaksi": total_count,
             "total_pengeluaran": float(total_value),
@@ -337,6 +355,7 @@ class PengeluaranService:
             "count": total_count,
             "per_kategori": category_summary,
             "per_unit": unit_summary,
+            "jasa_angkut_armada": armada_ja_summary,
             "period": {
                 "start": tanggal_dari.isoformat() if tanggal_dari else None,
                 "end": tanggal_sampai.isoformat() if tanggal_sampai else None,

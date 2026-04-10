@@ -4,29 +4,32 @@
 Ensure complete financial transparency by integrating all operational unit cash accounts into reports and clarifying the flow of general expenses.
 Success criteria:
 - Neraca and Perubahan Modal reports display all unit cash accounts (Bengkel, Jasa Angkut, Mobil) regardless of balance.
-- General (Umum) expenses are correctly mapped and visible across Profit & Loss, Balance Sheet, and Capital reports.
+- General (Umum) expenses and Armada-specific Jasa Angkut costs are correctly mapped and visible across Profit & Loss, Balance Sheet, and Capital reports.
 - Reconciliation logic is transparent and verifiable.
 
 ## Constraints/Assumptions
 - Cash is tracked in unit-specific accounts (KAS_UNIT_...) and central accounts.
 - The system uses accounting identity `Modal = Aktiva - Hutang` for the Balance Sheet.
-- General expenses (bisnis_kategori='umum') are tracked via `PengeluaranService`.
+- Jasa Angkut operational costs from PengeluaranBengkel are grouped by `armada_id`.
 
 ## Key decisions
-- Updated backend `get_neraca` and `get_capital_report` to initialize `unit_details` with all unit keys (bengkel, jasa_angkut, mobil) with default 0.
+- Updated `PengeluaranService.get_summary` to provide an armada-level breakdown for Jasa Angkut expenses.
+- Updated `perubahan-modal.tsx` (UI & PDF) to show "biaya operasional per armada".
+- Updated `laba-rugi.tsx` (UI) for consistency.
 - Standardized frontend display in `neraca.tsx` and `perubahan-modal.tsx` to always show the unit breakdown.
 
 ## State
 - **Now**:
-    - Explaining the reporting flow of "Umum" category expenses.
+    - Finalizing the implementation of "biaya operasional per armada" for Jasa Angkut.
 - **Done**:
     - Fixed zero-balance unit visibility in Neraca and Perubahan Modal reports.
-    - Verified backend aggregation logic for unit-specific cash.
+    - Integrated granular armada-specific breakdowns for Jasa Angkut operational costs.
+    - Updated backend services and API endpoints to support granular reporting.
 - **Next**:
-    - Add a dedicated "Overhead Umum" section in Laba Rugi if needed for better clarity.
+    - Monitor user feedback on the new report granularity.
 
 ## Open questions (UNCONFIRMED)
-- Does the user want a dedicated section for "Pengeluaran Umum" in the Laba Rugi report, or is the current aggregation sufficient?
+- None at the moment.
 
 ## Working set (files/ids/commands)
 - backend/app/api/v1/dashboard.py
@@ -34,4 +37,3 @@ Success criteria:
 - frontend/app/laporan/perubahan-modal.tsx
 - frontend/app/laporan/laba-rugi.tsx
 - backend/app/services/pengeluaran_service.py
-

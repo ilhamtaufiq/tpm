@@ -376,6 +376,15 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_op_ja)}</td>
                             <td></td>
                         </tr>
+                        ${report.section_c.operasional_unit_details?.jasa_angkut_armada ? 
+                            Object.entries(report.section_c.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => `
+                            <tr class="green-row sub-row" style="font-style: italic; opacity: 0.8;">
+                                <td style="padding-left: 40px;">> ${name}</td>
+                                <td class="amount">${formatCurrency(val as number)}</td>
+                                <td></td>
+                            </tr>
+                            `).join('') : ''
+                        }
                         <tr class="green-row">
                             <td>BEBAN GAJI KARYAWAN</td>
                             <td class="amount">${formatCurrency(c_gaji)}</td>
@@ -717,6 +726,20 @@ export default function LaporanPerubahanModalScreen() {
                             <Row label="Operasional Unit Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative />
                             <Row label="Operasional Unit Mobil" value={data.operasional_unit_details?.mobil} small isNegative />
                             <Row label="Operasional Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative />
+                            {data.operasional_unit_details?.jasa_angkut_armada && Object.keys(data.operasional_unit_details.jasa_angkut_armada).length > 0 && (
+                                <View className="ml-4 border-l border-red-100 pl-2 mb-1">
+                                    {Object.entries(data.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => (
+                                        <Row 
+                                            key={name} 
+                                            label={name} 
+                                            value={val as number} 
+                                            small 
+                                            isNegative 
+                                            className="opacity-70"
+                                        />
+                                    ))}
+                                </View>
+                            )}
                         </View>
                     </View>
                     <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />

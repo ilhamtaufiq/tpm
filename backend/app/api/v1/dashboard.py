@@ -274,6 +274,7 @@ def get_profit_summary(
     pengeluaran_unit_details["mobil"] = total_mobil_ops
     pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0)
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
+    pengeluaran_unit_details["jasa_angkut_armada"] = pengeluaran.get("jasa_angkut_armada", {})
 
     # Add Purchases (as requested by user)
     if "pembelian_part" in pengeluaran_details:
@@ -730,7 +731,8 @@ def get_capital_report(
         "bengkel": float(raw_units.get("bengkel", 0)),
         "mobil": float(raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("mobil", 0)),
         "jasa_angkut": float(raw_units.get("jasa_angkut", 0)),
-        "umum": float(raw_units.get("umum", 0))
+        "umum": float(raw_units.get("umum", 0)),
+        "jasa_angkut_armada": pengeluaran_summ.get("jasa_angkut_armada", {})
     }
 
     # 5. Biaya Persiapan Mobil — ALREADY included in jb_mobil KELUAR above.

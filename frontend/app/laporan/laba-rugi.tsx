@@ -318,6 +318,19 @@ export default function LabaRugiScreen() {
                             <ReportRow label="2. Biaya Lainnya (Muatan)" value={reportData?.jasa_angkut_details?.biaya_lainnya || 0} isNegative />
                             <ReportRow label="3. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
                             <ReportRow label="4. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} isNegative />
+                             
+                             {reportData?.pengeluaran_unit_details?.jasa_angkut_armada && Object.keys(reportData.pengeluaran_unit_details.jasa_angkut_armada).length > 0 && (
+                                 <View className="ml-4 border-l border-red-100 pl-2 mb-2">
+                                     {Object.entries(reportData.pengeluaran_unit_details.jasa_angkut_armada).map(([name, val]) => (
+                                         <SubItemRow 
+                                             key={name}
+                                             label={name} 
+                                             value={val as number} 
+                                             isNegative 
+                                         />
+                                     ))}
+                                 </View>
+                             )}
 
                             <View className="h-[1px] bg-gray-50 my-4" />
 
