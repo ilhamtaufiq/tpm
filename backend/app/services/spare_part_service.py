@@ -22,8 +22,14 @@ class SparePartService:
     def __init__(self, db: Session):
         self.db = db
 
-    def generate_next_kode(self) -> str:
-        """Generate unique spare part code."""
+    def generate_next_kode(self, offset: int = 0) -> str:
+        """Generate unique spare part code.
+        
+        Args:
+            offset: Additional offset to add to the counter (used during bulk import
+                     to avoid duplicate kodes when newly added records aren't yet 
+                     visible via DB queries).
+        """
         today = datetime.now()
         prefix = "SPR"
         date_str = today.strftime("%y%m")
@@ -31,15 +37,15 @@ class SparePartService:
         last = (
             self.db.query(SparePart)
             .filter(SparePart.kode.like(f"{prefix}{date_str}%"))
-            .order_by(SparePart.id.desc())
+            .order_by(SparePart.kode.desc())
             .first()
         )
 
         if last:
             last_num = int(last.kode[-4:])
-            new_num = last_num + 1
+            new_num = last_num + 1 + offset
         else:
-            new_num = 1
+            new_num = 1 + offset
 
         return f"{prefix}{date_str}{new_num:04d}"
 
@@ -700,6 +706,7 @@ class SparePartService:
         processed_ids = set()
         processed_names = set()
         processed_kodes = set()
+        new_kode_counter = 0  # Running counter to prevent duplicate auto-generated kodes
 
         # Step 1: Soft-delete all existing spare parts to perform a fresh/replace import
         now = datetime.now()
@@ -749,6 +756,7 @@ class SparePartService:
                 spare_part = self.db.query(SparePart).filter(SparePart.nama == nama).first()
 
             try:
+                savepoint = self.db.begin_nested()
                 if spare_part:
                     # Track if this is a duplicate within the same import file
                     is_duplicate_in_file = spare_part.id in processed_ids
@@ -788,8 +796,13 @@ class SparePartService:
                         results["updated"] += 1
                 else:
                     # Create new
+                    if kode:
+                        new_kode = kode
+                    else:
+                        new_kode = self.generate_next_kode(offset=new_kode_counter)
+                        new_kode_counter += 1
                     new_spare_part = SparePart(
-                        kode=kode if kode else self.generate_next_kode(),
+                        kode=new_kode,
                         nama=nama,
                         kode_part=parsed["kode_part"],
                         kategori=parsed["kategori"] or "Umum",
@@ -807,7 +820,7 @@ class SparePartService:
                 
                 self.db.flush()
             except Exception as e:
-                self.db.rollback()
+                savepoint.rollback()
                 results["failed"] += 1
                 results["errors"].append(f"Baris {row_idx}: Terjadi kesalahan database ({str(e)})")
                 continue

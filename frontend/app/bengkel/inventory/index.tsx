@@ -32,10 +32,13 @@ import {
     Edit3,
     Minus,
     X,
-    CheckCircle2
+    CheckCircle2,
+    Check,
+    Circle,
+    Download
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats } from '../../../hooks/useBengkel';
+import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts } from '../../../hooks/useBengkel';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -98,6 +101,45 @@ export default function InventoryScreen() {
         partsData?.pages.flatMap((page: any) => page.data) || [],
         [partsData]);
     const lowStockCount = lowStockData?.length || 0;
+
+    const exportMutation = useExportSpareParts();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [isExportModalVisible, setIsExportModalVisible] = useState(false);
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === parts.length && parts.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(parts.map((item: any) => item.id));
+        }
+    };
+
+    const toggleSelect = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkExport = async (ids?: number[]) => {
+        try {
+            const data = await exportMutation.mutateAsync(ids);
+            const filename = `inventory_export_${new Date().getTime()}.xlsx`;
+
+            if (Platform.OS === 'web') {
+                const url = window.URL.createObjectURL(new Blob([data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } else {
+                Alert.alert('Export', 'Fitur download di mobile akan segera hadir. Gunakan format Web untuk export.');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Gagal mengekspor data.');
+        }
+    };
 
     const handleOpenDetail = (part: any) => {
         setSelectedPart(part);
@@ -272,6 +314,33 @@ export default function InventoryScreen() {
                 )}
             </View>
 
+            {parts.length > 0 && (
+                <View className="px-6 mb-4">
+                    <Card className="bg-white p-3 rounded-2xl border border-gray-100 flex-row items-center justify-between shadow-sm">
+                        <View className="flex-row items-center">
+                            <Pressable onPress={toggleSelectAll} className="flex-row items-center mr-4">
+                                <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === parts.length && parts.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                    {selectedIds.length === parts.length && parts.length > 0 && <Check size={14} color="white" />}
+                                </View>
+                                <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
+                            </Pressable>
+                            {selectedIds.length > 0 && (
+                                <Typography className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded-lg">
+                                    {selectedIds.length} terpilih
+                                </Typography>
+                            )}
+                        </View>
+                        <Pressable 
+                            onPress={() => setIsExportModalVisible(true)}
+                            className="px-4 py-2 bg-emerald-50 rounded-xl flex-row items-center border border-emerald-100"
+                        >
+                            <Download size={14} color="#059669" className="mr-2" />
+                            <Typography className="text-xs font-bold text-emerald-700">Export</Typography>
+                        </Pressable>
+                    </Card>
+                </View>
+            )}
+
             {isLoading ? (
                 <View className="flex-1 px-6 pt-4">
                     <SkeletonCard />
@@ -306,46 +375,58 @@ export default function InventoryScreen() {
                     }
                     renderItem={({ item: part }: { item: any }) => {
                         const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
+                        const isSelected = selectedIds.includes(part.id);
                         return (
-                            <Card key={part.id} className="mb-4 p-4 flex-row items-center border-gray-50/50">
-                                <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center mr-4 overflow-hidden border border-gray-100">
-                                    {imageUrl ? (
-                                        <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
-                                    ) : (
-                                        <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
-                                    )}
-                                </View>
-
-                                <View className="flex-1">
-                                    <Typography variant="body2" weight="bold" className="text-textMain">{part.nama}</Typography>
-                                    <Typography variant="caption" className="text-textGray/60">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
-
-                                    <View className="flex-row items-center mt-2">
-                                        <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok === 999 ? 'bg-emerald-50' : (part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5')}`}>
-                                            <Typography
-                                                variant="caption"
-                                                weight="bold"
-                                                className={part.stok === 999 ? 'text-emerald-600' : (part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary')}
-                                            >
-                                                Stok: {part.stok === 999 ? 'Always Ready' : `${part.stok} ${part.satuan || 'Unit'}`}
-                                            </Typography>
+                            <View key={`row-${part.id}`} className="flex-row items-center space-x-3 mb-4">
+                                <Pressable onPress={() => toggleSelect(part.id)} className="p-1">
+                                    {isSelected ? (
+                                        <View className="bg-primary rounded-lg p-1">
+                                            <Check size={16} color="white" />
                                         </View>
-                                        {part.stok !== 999 && (
-                                            <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
+                                    ) : (
+                                        <Circle size={24} color="#CBD5E1" strokeWidth={1} />
+                                    )}
+                                </Pressable>
+                                <Card className="p-4 flex-1 flex-row items-center border-gray-50/50">
+                                    <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center mr-4 overflow-hidden border border-gray-100">
+                                        {imageUrl ? (
+                                            <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
+                                        ) : (
+                                            <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
                                         )}
                                     </View>
-                                </View>
 
-                                <View className="items-end">
-                                    <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
-                                    <Pressable
-                                        className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
-                                        onPress={() => handleOpenDetail(part)}
-                                    >
-                                        <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
-                                    </Pressable>
-                                </View>
-                            </Card>
+                                    <View className="flex-1">
+                                        <Typography variant="body2" weight="bold" className="text-textMain">{part.nama}</Typography>
+                                        <Typography variant="caption" className="text-textGray/60">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
+
+                                        <View className="flex-row items-center mt-2">
+                                            <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok === 999 ? 'bg-emerald-50' : (part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5')}`}>
+                                                <Typography
+                                                    variant="caption"
+                                                    weight="bold"
+                                                    className={part.stok === 999 ? 'text-emerald-600' : (part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary')}
+                                                >
+                                                    Stok: {part.stok === 999 ? 'Always Ready' : `${part.stok} ${part.satuan || 'Unit'}`}
+                                                </Typography>
+                                            </View>
+                                            {part.stok !== 999 && (
+                                                <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
+                                            )}
+                                        </View>
+                                    </View>
+
+                                    <View className="items-end">
+                                        <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
+                                        <Pressable
+                                            className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
+                                            onPress={() => handleOpenDetail(part)}
+                                        >
+                                            <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
+                                        </Pressable>
+                                    </View>
+                                </Card>
+                            </View>
                         );
                     }}
                     ListEmptyComponent={
@@ -540,6 +621,74 @@ export default function InventoryScreen() {
                 onClose={() => setIsScannerOpen(false)}
                 onScan={handleScanForStockUpdate}
             />
+
+            {/* Export Selection Modal */}
+            <BaseModal
+                visible={isExportModalVisible}
+                onClose={() => setIsExportModalVisible(false)}
+                title="Download Excel"
+            >
+                <View className="p-4">
+                    <Typography className="text-textGray mb-6 text-center">
+                        Pilih cakupan data yang ingin Anda unduh dalam format Excel.
+                    </Typography>
+                    <View className="space-y-4">
+                        <Pressable
+                            onPress={() => {
+                                setIsExportModalVisible(false);
+                                handleBulkExport(undefined);
+                            }}
+                            className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex-row items-center"
+                        >
+                            <View className="bg-primary/10 p-3 rounded-xl mr-4">
+                                <Package size={24} color="#023C69" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-primary">Download Seluruh Data</Typography>
+                                <Typography variant="caption" className="text-textGray">Ekspor seluruh data dari database.</Typography>
+                            </View>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => {
+                                setIsExportModalVisible(false);
+                                handleBulkExport(parts.map((i: any) => i.id));
+                            }}
+                            className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex-row items-center"
+                        >
+                            <View className="bg-emerald-100 p-3 rounded-xl mr-4">
+                                <Check size={24} color="#059669" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-emerald-700">Download Yang Tampil</Typography>
+                                <Typography variant="caption" className="text-textGray">Hanya item yang sudah dimuat di layar ({parts.length} item).</Typography>
+                            </View>
+                        </Pressable>
+                        {selectedIds.length > 0 && (
+                            <Pressable
+                                onPress={() => {
+                                    setIsExportModalVisible(false);
+                                    handleBulkExport(selectedIds);
+                                }}
+                                className="bg-amber-50 p-4 rounded-2xl border border-amber-100 flex-row items-center"
+                            >
+                                <View className="bg-amber-100 p-3 rounded-xl mr-4">
+                                    <Check size={24} color="#D97706" />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography variant="body1" weight="bold" className="text-amber-700">Download Data Terpilih</Typography>
+                                    <Typography variant="caption" className="text-textGray">Ekspor {selectedIds.length} item yang telah Anda centang.</Typography>
+                                </View>
+                            </Pressable>
+                        )}
+                        <Button
+                            title="Tutup"
+                            variant="outline"
+                            onPress={() => setIsExportModalVisible(false)}
+                            className="mt-4"
+                        />
+                    </View>
+                </View>
+            </BaseModal>
 
             {/* Sort UI - Hybrid (BottomSheet on Mobile, Modal on Web) */}
             {Platform.OS === 'web' ? (
