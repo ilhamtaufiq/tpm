@@ -930,8 +930,8 @@ export default function SparePartMasterScreen() {
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
-                <View className="flex-row items-center justify-between mb-8">
+            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[48px] shadow-2xl z-0">
+                <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center">
                         <Pressable
                             onPress={handleGoBack}
@@ -966,53 +966,6 @@ export default function SparePartMasterScreen() {
                         </Pressable>
                     </View>
                 </View>
-
-                {/* Dashboard Stats (Glassmorphism) - Inside Header */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <View className="flex-row items-center">
-                            <View className="bg-white/20 p-2 rounded-xl mr-3">
-                                <Package size={16} color="white" />
-                            </View>
-                            <Typography className="text-white/90 text-sm font-bold">Total Barang</Typography>
-                        </View>
-                        <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tight">{stats.total}</Typography>
-                    </View>
-
-                    <View className="flex-row justify-between items-center mb-6 pt-4 border-t border-white/10">
-                        <View className="flex-row items-center">
-                            <View className="bg-white/20 p-2 rounded-xl mr-3">
-                                <Coins size={16} color="white" />
-                            </View>
-                            <Typography className="text-white/90 text-sm font-bold">Total Modal Stok</Typography>
-                        </View>
-                        <Typography variant="h2" weight="bold" className="text-white text-xl tracking-tight">
-                            Rp {Number(stockValueData?.total_value || 0).toLocaleString('id-ID')}
-                        </Typography>
-                    </View>
-
-                    {stats.lowStock > 0 ? (
-                        <View className="bg-red-500/20 p-3 rounded-2xl border border-red-500/30 flex-row items-center">
-                            <View className="bg-red-500/20 p-1.5 rounded-lg mr-3">
-                                <AlertTriangle size={14} color="#FCA5A5" />
-                            </View>
-                            <View>
-                                <Typography className="text-red-200 text-[10px] font-bold uppercase tracking-widest">Perhatian</Typography>
-                                <Typography className="text-white font-bold">{stats.lowStock} Barang Stok Menipis</Typography>
-                            </View>
-                        </View>
-                    ) : (
-                        <View className="bg-emerald-500/20 p-3 rounded-2xl border border-emerald-500/30 flex-row items-center">
-                            <View className="bg-emerald-500/20 p-1.5 rounded-lg mr-3">
-                                <Package size={14} color="#6EE7B7" />
-                            </View>
-                            <View>
-                                <Typography className="text-emerald-200 text-[10px] font-bold uppercase tracking-widest">Status Aman</Typography>
-                                <Typography className="text-white font-bold">Stok Semua Barang Aman</Typography>
-                            </View>
-                        </View>
-                    )}
-                </View>
             </View>
 
             {/* Floating Search Overlay - Hide when form is open */}
@@ -1030,6 +983,57 @@ export default function SparePartMasterScreen() {
                             />
                         </View>
                     </View>
+                </View>
+            )}
+
+            {/* Dashboard Stats (In-Page) */}
+            {!sheetVisible && (
+                <View className="px-6 mb-4 mt-2">
+                    <Card className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                        <View className="flex-row justify-between items-center mb-4">
+                            <View className="flex-row items-center">
+                                <View className="bg-primary/10 p-2 rounded-xl mr-3">
+                                    <Package size={16} color="#023C69" />
+                                </View>
+                                <Typography className="text-textGray text-sm font-bold">Total Barang</Typography>
+                            </View>
+                            <Typography variant="h2" weight="bold" className="text-textMain text-2xl tracking-tight">{stats.total}</Typography>
+                        </View>
+
+                        <View className="flex-row justify-between items-center mb-4 pt-4 border-t border-gray-100 border-dashed">
+                            <View className="flex-row items-center">
+                                <View className="bg-indigo-50 p-2 rounded-xl mr-3">
+                                    <Coins size={16} color="#4F46E5" />
+                                </View>
+                                <Typography className="text-textGray text-sm font-bold">Total Modal Stok</Typography>
+                            </View>
+                            <Typography variant="h2" weight="bold" className="text-primary text-xl tracking-tight">
+                                Rp {Number(stockValueData?.total_value || 0).toLocaleString('id-ID')}
+                            </Typography>
+                        </View>
+
+                        {stats.lowStock > 0 ? (
+                            <View className="bg-red-50 p-3 rounded-2xl border border-red-100 flex-row items-center">
+                                <View className="bg-red-100 p-1.5 rounded-lg mr-3">
+                                    <AlertTriangle size={14} color="#EF4444" />
+                                </View>
+                                <View>
+                                    <Typography className="text-red-500 text-[10px] font-bold uppercase tracking-widest">Perhatian</Typography>
+                                    <Typography className="text-red-700 font-bold text-xs">{stats.lowStock} Barang Stok Menipis</Typography>
+                                </View>
+                            </View>
+                        ) : (
+                            <View className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex-row items-center">
+                                <View className="bg-emerald-100 p-1.5 rounded-lg mr-3">
+                                    <Package size={14} color="#10B981" />
+                                </View>
+                                <View>
+                                    <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Status Aman</Typography>
+                                    <Typography className="text-emerald-800 font-bold text-xs">Stok Semua Barang Aman</Typography>
+                                </View>
+                            </View>
+                        )}
+                    </Card>
                 </View>
             )}
 

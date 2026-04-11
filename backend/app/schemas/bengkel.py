@@ -26,7 +26,7 @@ class SparePartBase(BaseModel):
     kategori: Optional[str] = Field(None, max_length=50)
     merek: Optional[str] = Field(None, max_length=50)
     satuan: str = Field(default="pcs", max_length=20)
-    stok_minimum: int = Field(default=5, ge=0)
+    stok_minimum: Decimal = Field(default=Decimal("5"), ge=0)
     harga_beli: Decimal = Field(default=Decimal("0"), ge=0)
     harga_jual: Decimal = Field(default=Decimal("0"), ge=0)
     lokasi_rak: Optional[str] = Field(None, max_length=30)
@@ -38,7 +38,7 @@ class SparePartCreate(SparePartBase):
     """Schema for creating spare part."""
 
     kode: Optional[str] = Field(None, max_length=30)  # Auto-generated if not provided
-    stok: int = Field(default=0, ge=0)
+    stok: Decimal = Field(default=Decimal("0"), ge=0)
 
 
 class SparePartUpdate(BaseModel):
@@ -49,12 +49,12 @@ class SparePartUpdate(BaseModel):
     kategori: Optional[str] = Field(None, max_length=50)
     merek: Optional[str] = Field(None, max_length=50)
     satuan: Optional[str] = Field(None, max_length=20)
-    stok_minimum: Optional[int] = Field(None, ge=0)
+    stok_minimum: Optional[Decimal] = Field(None, ge=0)
     harga_beli: Optional[Decimal] = Field(None, ge=0)
     harga_jual: Optional[Decimal] = Field(None, ge=0)
     lokasi_rak: Optional[str] = Field(None, max_length=30)
     catatan: Optional[str] = None
-    stok: Optional[int] = Field(None, ge=0)
+    stok: Optional[Decimal] = Field(None, ge=0)
     gambar: Optional[str] = None
 
 
@@ -68,8 +68,8 @@ class SparePartResponse(BaseModel):
     kategori: Optional[str] = None
     merek: Optional[str] = None
     satuan: str
-    stok: int
-    stok_minimum: int
+    stok: Decimal
+    stok_minimum: Decimal
     harga_beli: Decimal
     harga_jual: Decimal
     lokasi_rak: Optional[str] = None
