@@ -51,6 +51,7 @@ class MobilCreate(MobilBase):
     status_bayar: PaymentStatus = PaymentStatus.LUNAS
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     dp: Decimal = Field(default=Decimal("0"), ge=0)
+    kas_jenis: Optional[KasBankJenis] = None
     payments: Optional[List[PurchasePaymentItem]] = None
 
 class MobilUpdate(BaseModel):

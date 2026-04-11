@@ -46,12 +46,18 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     const [namaInvestor, setNamaInvestor] = useState(initialData?.nama_investor || '');
     const [nominalInvestor, setNominalInvestor] = useState(formatNumber(String(initialData?.nominal_investor || '')));
     const [persentaseInvestor, setPersentaseInvestor] = useState(String(initialData?.persentase_investor || '0'));
-    const [metodeBayar, setMetodeBayar] = useState(initialData?.metode_bayar_beli || '');
+    const [sumberBayar, setSumberBayar] = useState(() => {
+        if (initialData) {
+            if (initialData.metode_bayar_beli === 'SPLIT') return 'SPLIT';
+            return initialData.metode_bayar_beli === 'TRANSFER' ? 'UTAMA_TRANSFER' : 'UNIT_TUNAI';
+        }
+        return '';
+    });
     const [statusBayar, setStatusBayar] = useState(initialData?.status_bayar_beli || 'LUNAS');
     const [dp, setDp] = useState(formatNumber(String(initialData?.dp_beli || '0')));
 
-    const [payments, setPayments] = useState<{ id: number; metode: string; jumlah: string }[]>([
-        { id: Date.now(), metode: '', jumlah: '' }
+    const [payments, setPayments] = useState<{ id: number; metode: string; sumber: string; jumlah: string }[]>([
+        { id: Date.now(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }
     ]);
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -88,14 +94,14 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         }
 
         if (!isEdit) {
-            if (!metodeBayar) {
-                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning' });
+            if (!sumberBayar) {
+                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana', variant: 'warning' });
                 return;
             }
-            if (metodeBayar === 'SPLIT') {
-                const hasEmptyMethod = payments.some(p => !p.metode || parseNumber(p.jumlah) <= 0);
+            if (sumberBayar === 'SPLIT') {
+                const hasEmptyMethod = payments.some(p => !p.sumber || parseNumber(p.jumlah) <= 0);
                 if (hasEmptyMethod) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran untuk semua nominal', variant: 'warning' });
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana untuk semua nominal split', variant: 'warning' });
                     return;
                 }
             }
@@ -119,18 +125,39 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
         if (!isEdit) {
             payload.harga_beli = parseNumber(hargaBeli);
-            payload.metode_bayar = metodeBayar;
+
+            let actualMetode = 'TUNAI';
+            let kasJenis = 'KAS_UNIT_MOBIL';
+
+            if (sumberBayar === 'UTAMA_TUNAI') {
+                kasJenis = 'KAS_UTAMA';
+            } else if (sumberBayar === 'UTAMA_TRANSFER') {
+                actualMetode = 'TRANSFER';
+                kasJenis = 'BANK_UTAMA';
+            } else if (sumberBayar === 'SPLIT') {
+                actualMetode = 'SPLIT';
+            }
+
+            payload.metode_bayar = actualMetode;
+            payload.kas_jenis = kasJenis;
             payload.status_bayar = statusBayar;
             payload.dp = parseNumber(dp) || 0;
             payload.tanggal_masuk = new Date().toISOString().split('T')[0];
 
-            if (metodeBayar === 'SPLIT') {
+            if (sumberBayar === 'SPLIT') {
                 payload.payments = payments
                     .filter(p => parseNumber(p.jumlah) > 0)
-                    .map(p => ({
-                        metode: p.metode.toUpperCase(),
-                        jumlah: parseNumber(p.jumlah)
-                    }));
+                    .map(p => {
+                        let pMetode = 'TUNAI';
+                        let pKasJenis = 'KAS_UNIT_MOBIL';
+                        if (p.sumber === 'UTAMA_TUNAI') pKasJenis = 'KAS_UTAMA';
+                        else if (p.sumber === 'UTAMA_TRANSFER') { pMetode = 'TRANSFER'; pKasJenis = 'BANK_UTAMA'; }
+                        return {
+                            metode: pMetode,
+                            kas_jenis: pKasJenis,
+                            jumlah: parseNumber(p.jumlah)
+                        };
+                    });
             }
         }
 
@@ -279,33 +306,35 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             <View className="flex-row space-x-3 items-end">
                                 <View className="flex-[1.5]">
                                     <View className="flex-row justify-between items-center mb-2">
-                                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-tight">Metode Pembayaran</Typography>
-                                        {metodeBayar === 'SPLIT' && (
+                                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-tight">Sumber Dana</Typography>
+                                        {sumberBayar === 'SPLIT' && (
                                             <Badge label="SPLIT AKTIF" variant="warning" />
                                         )}
                                     </View>
-                                    <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
+                                    <View className="flex-row flex-wrap -m-0.5">
                                         {[
-                                            { label: 'Cash', value: 'TUNAI' },
-                                            { label: 'Transfer', value: 'TRANSFER' },
+                                            { label: 'Tunai Mobil', value: 'UNIT_TUNAI' },
+                                            { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                            { label: 'Transfer', value: 'UTAMA_TRANSFER' },
                                             { label: 'Split', value: 'SPLIT' }
                                         ].map((m) => (
-                                            <Pressable
-                                                key={m.value}
-                                                onPress={() => {
-                                                    setMetodeBayar(m.value);
-                                                }}
-                                                className={`flex-1 py-2.5 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
-                                            >
-                                                <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
-                                                    {m.label}
-                                                </Typography>
-                                            </Pressable>
+                                            <View key={m.value} className="w-1/2 p-0.5">
+                                                <Pressable
+                                                    onPress={() => {
+                                                        setSumberBayar(m.value);
+                                                    }}
+                                                    className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-gray-100'}`}
+                                                >
+                                                    <Typography variant="caption" weight="bold" className={`text-center text-[10px] ${sumberBayar === m.value ? 'text-white' : 'text-gray-500'}`}>
+                                                        {m.label}
+                                                    </Typography>
+                                                </Pressable>
+                                            </View>
                                         ))}
                                     </View>
                                 </View>
 
-                                {metodeBayar !== 'SPLIT' && (
+                                {sumberBayar !== 'SPLIT' && (
                                     statusBayar !== 'LUNAS' ? (
                                         <Input
                                             label="Uang Muka / DP (Rp)"
@@ -324,40 +353,41 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                             </View>
 
                             {/* Split Payment Editor */}
-                            {metodeBayar === 'SPLIT' && (
+                            {sumberBayar === 'SPLIT' && (
                                 <View className="mt-6 p-4 bg-gray-50/50 rounded-3xl border border-gray-100">
                                     <Typography variant="caption" weight="bold" className="text-primary mb-4 ml-1">RINCIAN PEMBAYARAN MULTI</Typography>
 
                                     {/* Split Payment Rows */}
                                     {payments.map((p, idx) => (
-                                        <View key={p.id} className="flex-row space-x-3 items-end mb-4">
-                                            {/* Column: Metode */}
-                                            <View className="flex-1">
+                                        <View key={p.id} className="flex-row space-x-2 items-end mb-4">
+                                            {/* Column: Akun/Sumber */}
+                                            <View className="flex-[1.8]">
                                                 {idx === 0 && (
-                                                    <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Metode</Typography>
+                                                    <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1 text-[10px]">Sumber Dana</Typography>
                                                 )}
-                                                <View className="flex-row bg-white border border-gray-200 rounded-xl overflow-hidden h-10">
-                                                    {['Tunai', 'Trf'].map((m) => {
-                                                        const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
-                                                        return (
-                                                            <Pressable
-                                                                key={m}
-                                                                onPress={() => {
-                                                                    const newP = [...payments];
-                                                                    newP[idx].metode = longM;
-                                                                    setPayments(newP);
-                                                                }}
-                                                                className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
+                                                <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden h-10 items-center justify-center">
+                                                    {[
+                                                        { id: 'UNIT_TUNAI', label: 'Unit' },
+                                                        { id: 'UTAMA_TUNAI', label: 'Utm Tunai' },
+                                                        { id: 'UTAMA_TRANSFER', label: 'Utm Trf' }
+                                                    ].map((opt) => (
+                                                        <Pressable
+                                                            key={opt.id}
+                                                            onPress={() => {
+                                                                const newP = [...payments];
+                                                                newP[idx].sumber = opt.id;
+                                                                setPayments(newP);
+                                                            }}
+                                                            className={`flex-1 h-full items-center justify-center ${p.sumber === opt.id ? 'bg-blue-600' : 'bg-transparent'}`}
+                                                        >
+                                                            <Typography
+                                                                weight="bold"
+                                                                className={`text-[8px] ${p.sumber === opt.id ? 'text-white' : 'text-textGray text-center'}`}
                                                             >
-                                                                <Typography
-                                                                    weight="bold"
-                                                                    className={`text-[9px] ${p.metode === longM ? 'text-white' : 'text-textGray'}`}
-                                                                >
-                                                                    {m}
-                                                                </Typography>
-                                                            </Pressable>
-                                                        );
-                                                    })}
+                                                                {opt.label}
+                                                            </Typography>
+                                                        </Pressable>
+                                                    ))}
                                                 </View>
                                             </View>
 
@@ -396,11 +426,11 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
                                     {/* Add Button */}
                                     <Pressable
-                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }])}
+                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />
-                                        <Typography weight="bold" className="text-primary text-[10px] ml-1 text-center">Tambah Metode Pembayaran</Typography>
+                                        <Typography weight="bold" className="text-primary text-[10px] ml-1 text-center">Tambah Sumber Dana</Typography>
                                     </Pressable>
 
                                     {/* Summary Split */}

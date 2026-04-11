@@ -198,6 +198,7 @@ class MobilService:
                         nomor_referensi=mobil.kode,
                         keterangan=f"Pembelian Unit ({p.metode.upper()}): {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                         user_id=user_id,
+                        kas_jenis=p.kas_jenis,
                     )
         elif total_pembayaran > 0:
             create_kas_entry(
@@ -211,6 +212,7 @@ class MobilService:
                 nomor_referensi=mobil.kode,
                 keterangan=f"Pembelian Unit: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                 user_id=user_id,
+                kas_jenis=data.kas_jenis,
             )
 
         # Record Hutang (Payable) if not fully paid

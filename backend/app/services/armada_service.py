@@ -302,6 +302,7 @@ class ArmadaService:
                         nomor_referensi=nomor_transaksi,
                         keterangan=f"Biaya Ops Jasa Angkut ({payment.metode.upper()}) - {armada.nopol}: {data.deskripsi}",
                         user_id=user_id,
+                        kas_jenis=payment.kas_jenis,
                     )
         else:
             create_kas_entry(
@@ -315,6 +316,7 @@ class ArmadaService:
                 nomor_referensi=nomor_transaksi,
                 keterangan=f"Biaya Ops Jasa Angkut - {armada.nopol}: {data.deskripsi}",
                 user_id=user_id,
+                kas_jenis=data.kas_jenis,
             )
         
         self.db.commit()

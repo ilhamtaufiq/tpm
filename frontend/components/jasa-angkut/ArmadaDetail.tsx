@@ -46,15 +46,15 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         deskripsi: '',
         jumlah: '',
         catatan: '',
-        metode_bayar: 'TUNAI'
+        metode_bayar: 'UNIT_TUNAI'
     });
     const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([]);
+    const [payments, setPayments] = useState<{ id: number; sumber: string; nominal: string }[]>([]);
 
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
+        setPayments([...payments, { id: Date.now(), sumber: 'UNIT_TUNAI', nominal: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -72,7 +72,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
-            setPayments([{ id: Date.now(), metode: expenseForm.metode_bayar, nominal: expenseForm.jumlah }]);
+            setPayments([{ id: Date.now(), sumber: expenseForm.metode_bayar, nominal: expenseForm.jumlah }]);
         } else {
             setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(totalSplitAmount.toString()) }));
         }
@@ -83,12 +83,22 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         if (!expenseForm.deskripsi || !expenseForm.jumlah) return;
         try {
             setSubmittingExpense(true);
+
+            const getPaymentDetails = (sumber: string) => {
+                if (sumber === 'UNIT_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_JASA_ANGKUT' };
+                if (sumber === 'UTAMA_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UTAMA' };
+                if (sumber === 'UTAMA_TRANSFER') return { metode: 'TRANSFER', kas_jenis: 'BANK_UTAMA' };
+                return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_JASA_ANGKUT' };
+            };
+
             const finalAmount = isSplitPayment ? totalSplitAmount : parseNumber(expenseForm.jumlah);
             await jasaAngkutService.addArmadaExpense(id, {
                 ...expenseForm,
                 jumlah: finalAmount,
+                metode_bayar: isSplitPayment ? 'SPLIT' : getPaymentDetails(expenseForm.metode_bayar).metode,
+                kas_jenis: isSplitPayment ? undefined : getPaymentDetails(expenseForm.metode_bayar).kas_jenis,
                 payments: isSplitPayment ? payments.map(p => ({
-                    metode: p.metode,
+                    ...getPaymentDetails(p.sumber),
                     nominal: parseNumber(p.nominal)
                 })).filter(p => p.nominal > 0) : []
             });
@@ -98,7 +108,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                 deskripsi: '',
                 jumlah: '',
                 catatan: '',
-                metode_bayar: 'TUNAI'
+                metode_bayar: 'UNIT_TUNAI'
             });
             setPayments([]);
             setIsSplitPayment(false);
@@ -141,14 +151,14 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
         );
     }
 
-    const { 
-        armada, 
-        stats, 
-        muatan_history = [], 
-        perbaikan_history = [], 
+    const {
+        armada,
+        stats,
+        muatan_history = [],
+        perbaikan_history = [],
         general_expenses = [],
         workshop_expenses = [],
-        pengeluaran_bengkel = [] 
+        pengeluaran_bengkel = []
     } = detailData;
 
     const actualWorkshopExpenses = [...(workshop_expenses || []), ...(pengeluaran_bengkel || [])];
@@ -412,7 +422,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             const maintenance_in_muatan = (m.part_services || []).reduce((acc: number, ps: any) => acc + Number(ps.total || 0), 0);
                                             const bengkel_cat_costs = (m.biaya_tambahan || []).reduce((acc: number, b: any) => b.kategori === 'Perawatan Bengkel' ? acc + Number(b.jumlah || 0) : acc, 0);
                                             const ops_cost = Number(m.total_biaya || 0) - (maintenance_in_muatan + bengkel_cat_costs);
-                                            
+
                                             if (ops_cost <= 0) return null;
 
                                             return {
@@ -425,7 +435,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             };
                                         }).filter(Boolean);
 
-                                        const allExpenses = [...workshopItems, ...generalItems, ...tripItems].sort((a, b) => 
+                                        const allExpenses = [...workshopItems, ...generalItems, ...tripItems].sort((a, b) =>
                                             new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
                                         );
 
@@ -444,7 +454,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             let bgColor = 'bg-orange-50';
                                             let iconColor = '#F59E0B';
                                             let IconComp = TrendingDown;
-                                            
+
                                             if (isWorkshop) {
                                                 bgColor = 'bg-red-50';
                                                 iconColor = '#EF4444';
@@ -463,7 +473,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                     <View className="flex-1">
                                                         <View className="flex-row justify-between items-start">
                                                             <View className="flex-1 mr-2">
-                                                                 <Typography weight="bold" className="text-textMain">{expense.display_deskripsi}</Typography>
+                                                                <Typography weight="bold" className="text-textMain">{expense.display_deskripsi}</Typography>
                                                                 <Typography variant="caption" className={`${isWorkshop ? 'text-red-600' : isTrip ? 'text-blue-600' : 'text-textGray'} font-bold text-[10px] uppercase`}>
                                                                     {expense.display_sub}
                                                                 </Typography>
@@ -538,13 +548,17 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                 </View>
 
                                                 <View className="flex-row flex-wrap gap-2 mb-3">
-                                                    {['TUNAI', 'TRANSFER'].map((m) => (
+                                                    {[
+                                                        { label: 'Tunai Jasa Angkut', value: 'UNIT_TUNAI' },
+                                                        { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                                        { label: 'Transfer', value: 'UTAMA_TRANSFER' }
+                                                    ].map((m) => (
                                                         <Pressable
-                                                            key={m}
-                                                            onPress={() => updatePaymentRow(p.id, 'metode', m)}
-                                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                                            key={m.value}
+                                                            onPress={() => updatePaymentRow(p.id, 'sumber', m.value)}
+                                                            className={`px-3 py-1.5 rounded-xl border ${p.sumber === m.value ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                                         >
-                                                            <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
+                                                            <Typography variant="caption" weight={p.sumber === m.value ? 'bold' : 'medium'} className={p.sumber === m.value ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                                         </Pressable>
                                                     ))}
                                                 </View>
@@ -567,15 +581,19 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                 ) : (
                                     <View className="space-y-4">
                                         <View>
-                                            <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
+                                            <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode & Akun</Typography>
                                             <View className="flex-row flex-wrap gap-2">
-                                                {['TUNAI', 'TRANSFER'].map((m) => (
+                                                {[
+                                                    { label: 'Tunai Jasa Angkut', value: 'UNIT_TUNAI' },
+                                                    { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                                    { label: 'Transfer', value: 'UTAMA_TRANSFER' }
+                                                ].map((m) => (
                                                     <Pressable
-                                                        key={m}
-                                                        onPress={() => setExpenseForm(prev => ({ ...prev, metode_bayar: m }))}
-                                                        className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
+                                                        key={m.value}
+                                                        onPress={() => setExpenseForm(prev => ({ ...prev, metode_bayar: m.value }))}
+                                                        className={`px-4 py-2 rounded-xl border ${expenseForm.metode_bayar === m.value ? 'border-primary bg-primary/5' : 'border-gray-100 bg-white'}`}
                                                     >
-                                                        <Typography variant="caption" weight="bold" className={expenseForm.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                                                        <Typography variant="caption" weight="bold" className={expenseForm.metode_bayar === m.value ? 'text-primary' : 'text-gray-400'}>{m.label}</Typography>
                                                     </Pressable>
                                                 ))}
                                             </View>

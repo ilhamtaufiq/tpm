@@ -36,6 +36,7 @@ class ArmadaExpenseCreate(BaseModel):
     jumlah: Decimal = Field(..., ge=0)
     catatan: Optional[str] = None
     metode_bayar: Optional[PaymentMethod] = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
     payments: Optional[List[PaymentDetail]] = None
 
 

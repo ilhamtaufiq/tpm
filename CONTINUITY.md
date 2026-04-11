@@ -23,17 +23,17 @@ Success criteria:
 
 ## State
 - **Now**:
-    - Finalizing UI verifications.
+    - Finalizing UI verifications and addressing user requests.
 - **Done**:
+    - Refactored `frontend/components/MobilForm.tsx` to handle multi-account payments (`sumberBayar`: Unit Tunai, Utama Tunai, Utama Transfer, Split).
+    - Updated `MobilCreate` schema in `backend/app/schemas/mobil.py` to accept `kas_jenis`.
+    - Integrated `kas_jenis` injection into `kas_bank` ledger inside `backend/app/services/mobil_service.py` during car purchases.
     - Redesigned `neraca.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
     - Redesigned `laba-rugi.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
     - Redesigned `perubahan-modal.tsx` UI layout adhering to Stitch UI Design principles (modern glassmorphic, neater cards, and structured groupings) without altering the logical values.
     - Changed payment options in Pembelian Sparepart to support both Akun Bengkel (Cash) and Akun Utama (Cash & Bank), while maintaining split payment capabilities and Hutang option.
-    - Updated `frontend/app/bengkel/purchase/index.tsx` to handle `kas_jenis` dynamically based on the selected payment method.
-    - Fixed zero-balance unit visibility in Neraca and Perubahan Modal reports.
-    - Integrated granular armada-specific breakdowns for Jasa Angkut operational costs.
-    - Added Delete User functionality to settings.
-    - Resolved all identified UI component type errors.
+    - Changed payment options in Armada Operational Expense to support KAS_UNIT_JASA_ANGKUT, KAS_UTAMA, and BANK_UTAMA.
+    - Handled kas_jenis dynamically based on the selected payment method across modules.
 - **Next**:
     - Project handover or further feature requests from user.
 
