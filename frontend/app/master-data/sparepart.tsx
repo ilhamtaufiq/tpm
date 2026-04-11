@@ -374,12 +374,14 @@ export default function SparePartMasterScreen() {
 
             const response = await importMutation.mutateAsync(formData);
 
+            const formatLabel = response.format_detected === 'stok_format' ? 'Import Stok' : 'Format Standar';
+            const totalUnik = response.success + response.updated;
             if (Platform.OS === 'web') {
-                alert(`Import Berhasil\nTotal Baris Data: ${response.total}\nProduk Unik (Diimpor): ${response.success + response.updated}\nDuplikat (Dilewati): ${response.duplicates}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
+                alert(`Import Berhasil (Format: ${formatLabel})\nTotal Baris: ${response.total}\nProduk Unik: ${totalUnik}\n  → Baru: ${response.success}\n  → Diperbarui: ${response.updated}\nDuplikat (Digabung): ${response.duplicates}\nBaris Kosong: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
             } else {
                 Alert.alert(
                     'Import Berhasil',
-                    `Total Baris Data: ${response.total}\nProduk Unik (Diimpor): ${response.success + response.updated}\nDuplikat (Dilewati): ${response.duplicates}\nBaris Kosong Dilewati: ${response.skipped}\nGagal: ${response.failed}`,
+                    `Format: ${formatLabel}\nTotal Baris: ${response.total}\nProduk Unik: ${totalUnik}\n  → Baru: ${response.success}\n  → Diperbarui: ${response.updated}\nDuplikat (Digabung): ${response.duplicates}\nBaris Kosong: ${response.skipped}\nGagal: ${response.failed}`,
                     response.failed > 0 ? [
                         {
                             text: 'Lihat Error',
@@ -1300,11 +1302,18 @@ export default function SparePartMasterScreen() {
                         </Pressable>
 
                         <View className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mt-2">
-                            <Typography className="text-blue-700 text-[10px] font-bold uppercase mb-2 tracking-widest">Alur Bulk Update:</Typography>
+                            <Typography className="text-blue-700 text-[10px] font-bold uppercase mb-2 tracking-widest">Format File yang Didukung:</Typography>
+                            <Typography className="text-blue-600 text-[11px] leading-relaxed mb-2">
+                                <Typography weight="bold">1. Format Import Stok</Typography>{"\n"}
+                                {"   "}Kolom: Urutan | Nama | Kode Part | Harga Beli | Harga Jual | Stok | Satuan | Total Modal | Always Ready{"\n"}
+                                {"   "}Isi kolom Always Ready: ya/true/1 untuk aktifkan
+                            </Typography>
                             <Typography className="text-blue-600 text-[11px] leading-relaxed">
-                                1. Pilih barang di daftar atau klik <Typography weight="bold">"Download XLS"</Typography>{"\n"}
-                                2. Ubah harga/stok pada file Excel tersebut.{"\n"}
-                                3. Klik menu ini dan upload kembali file yang sudah diubah.
+                                <Typography weight="bold">2. Format Standar (Hasil Ekspor)</Typography>{"\n"}
+                                {"   "}Kolom: Kode | Nama | Kode Part | Kategori | Merek | Satuan | Stok | Stok Min | H.Beli | H.Jual | Rak | Catatan
+                            </Typography>
+                            <Typography className="text-blue-500 text-[10px] mt-2 italic">
+                                * Format akan dideteksi otomatis dari header baris pertama.
                             </Typography>
                         </View>
 

@@ -533,12 +533,12 @@ def get_capital_report(
             "laba_kotor_mobil": laba_kotor_mobil,
             "laba_investor_mobil": laba_investor_mobil,
             "laba_mobil_tpm": laba_mobil_tpm,
-            "laba_jasa_angkut": laba_jasa_angkut_tpm,
+            "laba_jasa_angkut": float(muatan_summ.get("total_pendapatan", 0)),  # USE GROSS for reconciliation
         },
         "aset_persediaan": modal_awal_persediaan,
         "aset_tetap": float(total_fixed_assets),
         "modal_persediaan": modal_awal_total,
-        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + total_laba_kotor + modal_awal_total
+        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + (total_laba_kotor - laba_jasa_angkut_tpm + float(muatan_summ.get("total_pendapatan", 0))) + modal_awal_total
     }
 
     # --- B. Piutang ---
@@ -720,17 +720,23 @@ def get_capital_report(
     jb_mobil_cash = max(jb_mobil_cash - internal_bilateral_keluar, 0)  # Remove internal entries
 
     # 4. Beban Operasional, Gaji, Prive (From KasBank)
-    biaya_opr = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
-    biaya_gaji = gaji_summary["total"]
+    # Include unit-specific operational sources to ensure cash reconciliation
+    biaya_opr_p = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
+    biaya_opr_ja = get_kas_sum(KasBankSource.JASA_ANGKUT, KasBankType.KELUAR)
+    biaya_opr_b = get_kas_sum(KasBankSource.BENGKEL, KasBankType.KELUAR)
+    
+    biaya_opr = biaya_opr_p + biaya_opr_ja + biaya_opr_b
+    
+    biaya_gaji = float(gaji_summary.get("total_gaji_pokok", 0) + gaji_summary.get("total_uang_lembur", 0))
     prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
     # Unit-specific operational expenses for transparency
     pengeluaran_summ = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
     raw_units = pengeluaran_summ.get("per_unit", {})
     operasional_unit_details = {
-        "bengkel": float(raw_units.get("bengkel", 0)),
+        "bengkel": float(raw_units.get("bengkel", 0) + biaya_opr_b),
         "mobil": float(raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("mobil", 0)),
-        "jasa_angkut": float(raw_units.get("jasa_angkut", 0)),
+        "jasa_angkut": float(raw_units.get("jasa_angkut", 0) + biaya_opr_ja),
         "umum": float(raw_units.get("umum", 0)),
         "jasa_angkut_armada": pengeluaran_summ.get("jasa_angkut_armada", {})
     }

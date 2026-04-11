@@ -37,7 +37,7 @@ class SparePart(Base, TimestampMixin, SoftDeleteMixin):
     kategori: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     merek: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     satuan: Mapped[str] = mapped_column(String(20), default="pcs")
-    stok: Mapped[int] = mapped_column(Integer, default=0)
+    stok: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     stok_minimum: Mapped[int] = mapped_column(Integer, default=5)
     harga_beli: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)
     harga_jual: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0)

@@ -356,14 +356,14 @@ class SparePartService:
 
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
-        # Use CASE statements to exclude items with stock 999 from value and count calculations
-        # as 999 represents "Always Ready" / infinite stock.
+        # For normal items: modal = stok × harga_beli
+        # For Always Ready (999): modal = 0 (karena ini barang jasa/tanpa stok fisik)
         result = (
             self.db.query(
                 func.sum(
                     case(
-                        (SparePart.stok != 999, SparePart.stok * SparePart.harga_beli),
-                        else_=0
+                        (SparePart.stok == 999, 0),
+                        else_=SparePart.stok * SparePart.harga_beli
                     )
                 ).label("total_value"),
                 func.sum(
@@ -501,12 +501,167 @@ class SparePartService:
             "lowest_stock": lowest_stock_formatted
         }
 
+    def _detect_format(self, sheet) -> str:
+        """Detect Excel import format based on header row.
+        
+        Returns:
+            'stok_format' - import-stok-format.xlsx style (Urutan, Nama, Kode Part, Harga Beli, Harga Jual, Stok, Satuan, Total Modal)
+            'standard'    - Original 12-column format (Kode, Nama, Kode Part, Kategori, Merek, Satuan, Stok, Stok Min, Harga Beli, Harga Jual, Lokasi Rak, Catatan)
+        """
+        header_row = [str(cell.value or '').strip().lower() for cell in sheet[1]]
+        
+        # Check for import-stok-format pattern
+        col_a = header_row[0] if len(header_row) > 0 else ''
+        col_b = header_row[1] if len(header_row) > 1 else ''
+        
+        stok_format_indicators = ['urutan', 'no', 'no.', 'nomor', 'urutan sparepart']
+        if any(indicator in col_a for indicator in stok_format_indicators):
+            return 'stok_format'
+        
+        # Also detect by checking if col D header looks like "Harga Beli" (stok format)
+        # vs "Kategori" (standard format)
+        col_d = header_row[3] if len(header_row) > 3 else ''
+        if 'harga' in col_d and 'beli' in col_d:
+            return 'stok_format'
+        
+        return 'standard'
+
+    def _parse_row_stok_format(self, row, row_idx: int) -> Dict[str, Any]:
+        """Parse a row from import-stok-format.xlsx.
+        
+        Columns:
+        A(0): Urutan Sparepart (ignored, just a sequence number)
+        B(1): Nama Spare Part (Required)
+        C(2): Kode Part
+        D(3): Harga Beli
+        E(4): Harga Jual
+        F(5): Stok
+        G(6): Satuan
+        H(7): Total Modal (ignored, calculated field)
+        I(8): Always Ready (optional, true/ya/yes/1 = stok 999)
+        """
+        nama = str(row[1]).strip() if row[1] else None
+        if not nama:
+            return {"error": f"Baris {row_idx}: Nama spare part wajib diisi"}
+        
+        try:
+            # Check Always Ready flag (column I, index 8)
+            always_ready = False
+            if len(row) > 8 and row[8] is not None:
+                ar_val = str(row[8]).strip().lower()
+                always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
+
+            harga_beli = Decimal(str(row[3] or 0))
+            harga_jual = Decimal(str(row[4] or 0))
+
+            stok_raw = row[5]
+            if always_ready:
+                stok = Decimal("999")
+            elif stok_raw is not None:
+                stok_str = str(stok_raw).strip()
+                try:
+                    stok = Decimal(stok_str) if stok_str else Decimal("0")
+                except InvalidOperation:
+                    # Text like "Tanpa Stok" → Normally Always Ready
+                    stok = Decimal("999")
+                    
+                    # MAGIC FIX: Check if Excel "Total Modal" has a manually typed value!
+                    # Total Modal is at column H (index 7). If it's > 0, they actually have hidden stock!
+                    if len(row) > 7 and row[7]:
+                        try:
+                            excel_modal = Decimal(str(row[7]).strip())
+                            if excel_modal > 0 and harga_beli > 0:
+                                stok = excel_modal / harga_beli  # Back-calculate the stock!
+                        except InvalidOperation:
+                            pass
+            else:
+                stok = Decimal("0")
+            
+            satuan = str(row[6]).strip() if row[6] and str(row[6]).strip() else "pcs"
+            kode_part = str(row[2]).strip() if row[2] and str(row[2]).strip() else None
+            
+            return {
+                "kode": None,  # No internal kode in this format, will be auto-generated
+                "nama": nama,
+                "kode_part": kode_part,
+                "kategori": "Umum",
+                "merek": None,
+                "satuan": satuan,
+                "stok": stok,
+                "stok_minimum": 5,
+                "harga_beli": harga_beli,
+                "harga_jual": harga_jual,
+                "lokasi_rak": None,
+                "catatan": None,
+            }
+        except (ValueError, TypeError, InvalidOperation) as e:
+            return {"error": f"Baris {row_idx}: Format data numerik tidak valid ({str(e)})"}
+
+    def _parse_row_standard(self, row, row_idx: int) -> Dict[str, Any]:
+        """Parse a row from the standard 12-column export format.
+        
+        Columns:
+        A(0): Kode Barang (Internal)
+        B(1): Nama (Required)
+        C(2): Kode Part (OEM / Mfg Code)
+        D(3): Kategori
+        E(4): Merek
+        F(5): Satuan
+        G(6): Stok
+        H(7): Stok Minimum
+        I(8): Harga Beli
+        J(9): Harga Jual
+        K(10): Lokasi Rak
+        L(11): Catatan
+        """
+        kode = str(row[0]).strip() if row[0] else None
+        nama = str(row[1]).strip() if row[1] else None
+        
+        if not nama:
+            return {"error": f"Baris {row_idx}: Nama spare part wajib diisi"}
+        
+        try:
+            stok = int(row[6]) if row[6] is not None else 0
+            harga_beli = Decimal(str(row[8] or 0))
+            
+            if stok == 999:
+                harga_beli = Decimal("0")
+            
+            return {
+                "kode": kode,
+                "nama": nama,
+                "kode_part": str(row[2]).strip() if row[2] else None,
+                "kategori": str(row[3]) if row[3] else "Umum",
+                "merek": str(row[4]) if row[4] else None,
+                "satuan": str(row[5]) if row[5] else "pcs",
+                "stok": stok,
+                "stok_minimum": int(row[7]) if row[7] is not None else 5,
+                "harga_beli": harga_beli,
+                "harga_jual": Decimal(str(row[9] or 0)),
+                "lokasi_rak": str(row[10]) if len(row) > 10 and row[10] else None,
+                "catatan": str(row[11]) if len(row) > 11 and row[11] else None,
+            }
+        except (ValueError, TypeError, InvalidOperation) as e:
+            return {"error": f"Baris {row_idx}: Format data numerik tidak valid ({str(e)})"}
+
     def import_from_excel(self, file_content: bytes) -> Dict[str, Any]:
         """Import spare parts from Excel file.
         
-        Expected columns (Fixed Order):
+        Auto-detects two formats:
+        
+        FORMAT 1 - 'stok_format' (import-stok-format.xlsx):
+        A: Urutan Sparepart (No.)
+        B: Nama Spare Part (Required)
+        C: Kode Part
+        D: Harga Beli
+        E: Harga Jual
+        F: Stok
+        G: Satuan
+        H: Total Modal (ignored)
+        
+        FORMAT 2 - 'standard' (export/original format):
         A: Kode Barang (Internal)
-        B: Nama (Required) 
+        B: Nama (Required)
         C: Kode Part (OEM / Mfg Code)
         D: Kategori
         E: Merek
@@ -527,6 +682,9 @@ class SparePartService:
                 detail=f"Gagal membaca file Excel: {str(e)}"
             )
 
+        # Auto-detect format
+        detected_format = self._detect_format(sheet)
+
         results = {
             "total": 0,
             "success": 0,
@@ -534,7 +692,8 @@ class SparePartService:
             "duplicates": 0,
             "failed": 0,
             "skipped": 0,
-            "errors": []
+            "errors": [],
+            "format_detected": detected_format,
         }
         
         # Track items processed in THIS import session to handle merging and fresh start
@@ -552,102 +711,96 @@ class SparePartService:
 
         # Skip header (starting from row 2)
         for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
-            # Column mapping
-            # A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9, K=10
             if not any(row): 
                 results["skipped"] += 1
                 continue  # Skip empty rows
             
             results["total"] += 1
-            kode = str(row[0]).strip() if row[0] else None
-            nama = str(row[1]).strip() if row[1] else None
-            
-            if not nama:
+
+            # Parse row based on detected format
+            if detected_format == 'stok_format':
+                parsed = self._parse_row_stok_format(row, row_idx)
+            else:
+                parsed = self._parse_row_standard(row, row_idx)
+
+            # Check for parse errors
+            if "error" in parsed:
                 results["failed"] += 1
-                results["errors"].append(f"Baris {row_idx}: Nama spare part wajib diisi")
+                results["errors"].append(parsed["error"])
                 continue
 
-            # Track for next rows (we still track for internal logic but we DON'T skip)
+            kode = parsed["kode"]
+            nama = parsed["nama"]
+            stok = parsed["stok"]
+            harga_beli = parsed["harga_beli"]
+
+            # Track for next rows
             processed_names.add(nama.lower())
             if kode: processed_kodes.add(kode)
-
-            # Data parsing with defaults
-            try:
-                stok = int(row[6]) if row[6] is not None else 0
-                harga_beli = Decimal(str(row[8] or 0))
-                
-                # If stock is 999 (Always Ready), set purchase price to 0 to avoid inventory cost calculation
-                if stok == 999:
-                    harga_beli = Decimal("0")
-
-                data = {
-                    "nama": nama,
-                    "kode_part": str(row[2]).strip() if row[2] else None,
-                    "kategori": str(row[3]) if row[3] else "Umum",
-                    "merek": str(row[4]) if row[4] else None,
-                    "satuan": str(row[5]) if row[5] else "pcs",
-                    "stok": stok,
-                    "stok_minimum": int(row[7]) if row[7] is not None else 5,
-                    "harga_beli": harga_beli,
-                    "harga_jual": Decimal(str(row[9] or 0)),
-                    "lokasi_rak": str(row[10]) if row[10] else None,
-                    "catatan": str(row[11]) if row[11] else None
-                }
-            except (ValueError, TypeError, InvalidOperation) as e:
-                results["failed"] += 1
-                results["errors"].append(f"Baris {row_idx}: Format data numerik tidak valid ({str(e)})")
-                continue
 
             # Check if exists by kode or nama (including soft-deleted ones to reactivate them)
             spare_part = None
             if kode:
                 spare_part = self.db.query(SparePart).filter(SparePart.kode == kode).first()
             
-            if not spare_part:
-                # Try finding by exact name
+            if not spare_part and detected_format != 'stok_format':
+                # Only match by name for standard format
+                # stok_format uses Urutan as unique identifier — each row is a distinct item
                 spare_part = self.db.query(SparePart).filter(SparePart.nama == nama).first()
 
             try:
                 if spare_part:
+                    # Track if this is a duplicate within the same import file
+                    is_duplicate_in_file = spare_part.id in processed_ids
+
                     # Reset stock to 0 ONLY the first time we see this item during this import session
                     # because Step 1 "Soft-deleted" everything (we want a fresh replace)
-                    if spare_part.id not in processed_ids:
+                    if not is_duplicate_in_file:
                         spare_part.stok = 0
                         processed_ids.add(spare_part.id)
 
                     # Now perform the merge/sum logic
-                    if stok == 999 or spare_part.stok == 999:
+                    if detected_format == 'stok_format':
+                        # stok_format: no Always Ready (999) logic, just sum stock as-is
+                        spare_part.stok += stok
+                        spare_part.harga_beli = harga_beli
+                    elif stok == 999 or spare_part.stok == 999:
                         spare_part.stok = 999
                         spare_part.harga_beli = Decimal("0")
                     else:
                         spare_part.stok += stok
-                        # Update other fields, last one wins for price
                         spare_part.harga_beli = harga_beli
                     
-                    spare_part.harga_jual = Decimal(str(row[9] or 0))
-                    spare_part.kategori = str(row[3]) if row[3] else spare_part.kategori
-                    spare_part.merek = str(row[4]) if row[4] else spare_part.merek
-                    spare_part.satuan = str(row[5]) if row[5] else spare_part.satuan
-                    spare_part.lokasi_rak = str(row[10]) if row[10] else spare_part.lokasi_rak
-                    spare_part.catatan = str(row[11]) if row[11] else spare_part.catatan
+                    spare_part.harga_jual = parsed["harga_jual"]
+                    spare_part.kode_part = parsed["kode_part"] or spare_part.kode_part
+                    spare_part.kategori = parsed["kategori"] if parsed["kategori"] != "Umum" else (spare_part.kategori or "Umum")
+                    spare_part.merek = parsed["merek"] or spare_part.merek
+                    spare_part.satuan = parsed["satuan"] or spare_part.satuan
+                    spare_part.stok_minimum = parsed.get("stok_minimum", spare_part.stok_minimum or 5)
+                    spare_part.lokasi_rak = parsed["lokasi_rak"] or spare_part.lokasi_rak
+                    spare_part.catatan = parsed["catatan"] or spare_part.catatan
                     
                     spare_part.deleted_at = None
-                    results["updated"] += 1
+
+                    if is_duplicate_in_file:
+                        results["duplicates"] += 1
+                    else:
+                        results["updated"] += 1
                 else:
                     # Create new
                     new_spare_part = SparePart(
                         kode=kode if kode else self.generate_next_kode(),
                         nama=nama,
-                        kode_part=str(row[2]).strip() if row[2] else None,
-                        kategori=str(row[3]) if row[3] else "Umum",
-                        merek=str(row[4]) if row[4] else None,
-                        satuan=str(row[5]) if row[5] else "pcs",
+                        kode_part=parsed["kode_part"],
+                        kategori=parsed["kategori"] or "Umum",
+                        merek=parsed["merek"],
+                        satuan=parsed["satuan"] or "pcs",
                         stok=stok,
-                        stok_minimum=int(row[7]) if row[7] is not None else 5,
+                        stok_minimum=parsed.get("stok_minimum", 5),
                         harga_beli=harga_beli,
-                        harga_jual=Decimal(str(row[9] or 0)),
-                        lokasi_rak=str(row[10]) if row[10] else None,
-                        catatan=str(row[11]) if row[11] else None
+                        harga_jual=parsed["harga_jual"],
+                        lokasi_rak=parsed["lokasi_rak"],
+                        catatan=parsed["catatan"],
                     )
                     self.db.add(new_spare_part)
                     results["success"] += 1
