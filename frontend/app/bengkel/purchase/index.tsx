@@ -37,9 +37,16 @@ export default function PurchaseScreen() {
     const [statusBayar, setStatusBayar] = useState('LUNAS');
     const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
     const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', nominal: '' }
+    const [payments, setPayments] = useState<{ id: number; sumber: string; nominal: string }[]>([
+        { id: Date.now(), sumber: 'BENGKEL_TUNAI', nominal: '' }
     ]);
+
+    const getPaymentDetails = (sumber: string) => {
+        if (sumber === 'BENGKEL_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
+        if (sumber === 'UTAMA_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UTAMA' };
+        if (sumber === 'UTAMA_TRANSFER') return { metode: 'TRANSFER', kas_jenis: 'BANK_UTAMA' };
+        return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
+    };
 
     // Modal State
     const [isPartModalOpen, setIsPartModalOpen] = useState(false);
@@ -50,8 +57,8 @@ export default function PurchaseScreen() {
     // API Hooks
     const createPembelianMutation = useCreatePembelianParts();
     const { data: partsData, isLoading: isLoadingParts } = useSparePartsList({ search: partSearchQuery });
-    const spareParts = useMemo(() => 
-        partsData?.pages.flatMap((page: any) => page.data || []) || [], 
+    const spareParts = useMemo(() =>
+        partsData?.pages.flatMap((page: any) => page.data || []) || [],
         [partsData]
     );
 
@@ -94,7 +101,7 @@ export default function PurchaseScreen() {
     };
 
     const handleAddPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '' }]);
+        setPayments([...payments, { id: Date.now(), sumber: 'BENGKEL_TUNAI', nominal: '' }]);
     };
 
     const handleRemovePaymentRow = (id: number) => {
@@ -135,9 +142,9 @@ export default function PurchaseScreen() {
 
     const handleScanPart = (data: string) => {
         const cleanData = data.trim();
-        const availableParts = spareParts || []; 
+        const availableParts = spareParts || [];
         // Better logic: use the hook that fetches all for search but maybe we need a dedicated search by code.
-        
+
         let part = availableParts.find((p: any) => p.kode === cleanData);
         if (!part) {
             const strippedData = cleanData.replace(/^0+/, '');
@@ -188,17 +195,17 @@ export default function PurchaseScreen() {
             nomor_faktur: nomorFaktur || '-', // Optional
             catatan: catatan,
             status_bayar: isSplitPayment ? (totalSplitAmount >= total ? 'LUNAS' : 'BELUM_LUNAS') : statusBayar,
-            metode_bayar: isSplitPayment ? 'SPLIT' : (metodeBayar || 'TUNAI').toUpperCase(),
-            kas_jenis: isSplitPayment ? undefined : ((metodeBayar || 'TUNAI').toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'),
+            metode_bayar: isSplitPayment ? 'SPLIT' : (metodeBayar === 'KREDIT' ? 'KREDIT' : getPaymentDetails(metodeBayar || 'BENGKEL_TUNAI').metode),
+            kas_jenis: isSplitPayment ? undefined : (metodeBayar === 'KREDIT' ? undefined : getPaymentDetails(metodeBayar || 'BENGKEL_TUNAI').kas_jenis),
             payments: isSplitPayment ? payments.map(p => ({
-                metode: p.metode,
+                metode: getPaymentDetails(p.sumber).metode,
                 jumlah: parseNumber(p.nominal),
-                kas_jenis: p.metode === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'
+                kas_jenis: getPaymentDetails(p.sumber).kas_jenis
             })).filter(p => p.jumlah > 0) : [
-                { 
-                    metode: (metodeBayar || 'TUNAI').toUpperCase(), 
+                {
+                    metode: metodeBayar === 'KREDIT' ? 'KREDIT' : getPaymentDetails(metodeBayar || 'BENGKEL_TUNAI').metode,
                     jumlah: statusBayar === 'LUNAS' ? total : parseNumber(payments[0]?.nominal || '0'),
-                    kas_jenis: (metodeBayar || 'TUNAI').toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'
+                    kas_jenis: metodeBayar === 'KREDIT' ? undefined : getPaymentDetails(metodeBayar || 'BENGKEL_TUNAI').kas_jenis
                 }
             ],
             diskon: 0,
@@ -281,8 +288,8 @@ export default function PurchaseScreen() {
                         <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
                     </View>
                     <View className="flex-row items-center">
-                        <Pressable 
-                            onPress={() => setIsScannerOpen(true)} 
+                        <Pressable
+                            onPress={() => setIsScannerOpen(true)}
                             className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl mr-2 border border-blue-100"
                         >
                             <QrCode size={14} color="#2563EB" />
@@ -379,10 +386,11 @@ export default function PurchaseScreen() {
                             {/* Row: Method */}
                             <View>
                                 <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Metode Pembayaran</Typography>
-                                <View className="flex-row bg-gray-100 rounded-2xl p-1 border border-gray-200/50 space-x-1">
+                                <View className="flex-row flex-wrap justify-between bg-gray-100 rounded-2xl p-1 border border-gray-200/50">
                                     {[
-                                        { label: 'Cash', value: 'TUNAI' },
-                                        { label: 'Trf', value: 'TRANSFER' },
+                                        { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
+                                        { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                        { label: 'Transfer', value: 'UTAMA_TRANSFER' },
                                         { label: 'Hutang Penuh', value: 'KREDIT' }
                                     ].map((m) => (
                                         <Pressable
@@ -398,7 +406,7 @@ export default function PurchaseScreen() {
                                                     handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(total.toString()));
                                                 }
                                             }}
-                                            className={`flex-1 py-3 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
+                                            className={`w-[48%] mb-1 py-3 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
                                         >
                                             <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
                                                 {m.label}
@@ -413,9 +421,9 @@ export default function PurchaseScreen() {
                                 <View className="bg-primary/5 border border-primary/10 p-4 rounded-[28px]">
                                     <View className="flex-row justify-between items-center mb-2 px-1">
                                         <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-tight">Jumlah Bayar (Rp)</Typography>
-                                        <Typography 
-                                            variant="caption" 
-                                            weight="bold" 
+                                        <Typography
+                                            variant="caption"
+                                            weight="bold"
                                             className={parseNumber(payments[0]?.nominal || '0') >= total ? "text-emerald-600" : "text-amber-600"}
                                         >
                                             {parseNumber(payments[0]?.nominal || '0') >= total ? "Lunas" : "Titip / DP"}
@@ -440,7 +448,7 @@ export default function PurchaseScreen() {
                                     )}
                                 </View>
                             )}
-                            
+
                             {/* Feedback if full Hutang */}
                             {metodeBayar === 'KREDIT' && (
                                 <View className="bg-amber-50/50 border border-amber-100 p-5 rounded-[28px] flex-row items-center">
@@ -459,41 +467,42 @@ export default function PurchaseScreen() {
                     ) : (
                         <View className="space-y-3">
                             {payments.map((p, idx) => (
-                                <View key={p.id} className="flex-row space-x-3 items-end mb-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                                    <View className="flex-1">
-                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Metode</Typography>}
-                                        <View className="flex-row bg-white border border-gray-200 rounded-xl overflow-hidden h-10">
-                                            {['TUNAI', 'TRANSFER'].map((m) => {
-                                                const label = m === 'TRANSFER' ? 'Trf' : 'Cash';
-                                                return (
-                                                    <Pressable
-                                                        key={m}
-                                                        onPress={() => handleUpdatePaymentRow(p.id, 'metode', m)}
-                                                        className={`flex-1 items-center justify-center ${p.metode === m ? 'bg-primary' : 'bg-transparent'}`}
-                                                    >
-                                                        <Typography weight="bold" className={`text-[9px] ${p.metode === m ? 'text-white' : 'text-textGray'}`}>{label}</Typography>
-                                                    </Pressable>
-                                                );
-                                            })}
+                                <View key={p.id} className="flex-col mb-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
+                                    {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Metode & Akun</Typography>}
+                                    <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
+                                        {[
+                                            { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
+                                            { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                            { label: 'Transfer Utama', value: 'UTAMA_TRANSFER' }
+                                        ].map((m) => (
+                                            <Pressable
+                                                key={m.value}
+                                                onPress={() => handleUpdatePaymentRow(p.id, 'sumber', m.value)}
+                                                className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-gray-100 ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
+                                            >
+                                                <Typography weight="bold" className={`text-[9px] ${p.sumber === m.value ? 'text-white' : 'text-textGray'}`}>{m.label}</Typography>
+                                            </Pressable>
+                                        ))}
+                                    </View>
+                                    <View className="flex-row items-center space-x-2">
+                                        <View className="flex-1">
+                                            {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Nominal (Rp)</Typography>}
+                                            <Input
+                                                placeholder="0"
+                                                keyboardType="numeric"
+                                                containerClassName="mb-0"
+                                                className="h-10 text-sm"
+                                                value={p.nominal}
+                                                onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
+                                            />
                                         </View>
+                                        <Pressable
+                                            onPress={() => handleRemovePaymentRow(p.id)}
+                                            className="h-10 w-10 items-center justify-center bg-rose-50 rounded-xl"
+                                        >
+                                            <Trash2 size={16} color="#F43F5E" />
+                                        </Pressable>
                                     </View>
-                                    <View className="flex-[1.5]">
-                                        {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Nominal (Rp)</Typography>}
-                                        <Input
-                                            placeholder="0"
-                                            keyboardType="numeric"
-                                            containerClassName="mb-0"
-                                            className="h-10 text-sm"
-                                            value={p.nominal}
-                                            onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
-                                        />
-                                    </View>
-                                    <Pressable
-                                        onPress={() => handleRemovePaymentRow(p.id)}
-                                        className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
-                                    >
-                                        <Trash2 size={14} color="#F43F5E" />
-                                    </Pressable>
                                 </View>
                             ))}
                             <Pressable
@@ -630,11 +639,11 @@ export default function PurchaseScreen() {
                     </View>
                 </View>
             </Modal>
-            
-            <BarcodeScannerModal 
-                visible={isScannerOpen} 
-                onClose={() => setIsScannerOpen(false)} 
-                onScan={handleScanPart} 
+
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScanPart}
             />
         </SafeAreaView >
     );

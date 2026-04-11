@@ -28,7 +28,7 @@ Success criteria:
     - Redesigned `neraca.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
     - Redesigned `laba-rugi.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
     - Redesigned `perubahan-modal.tsx` UI layout adhering to Stitch UI Design principles (modern glassmorphic, neater cards, and structured groupings) without altering the logical values.
-    - Fixed `kas_jenis` mapping in Pembelian Sparepart so that TRANSFER uses `BANK_UTAMA` instead of `KAS_UNIT_BENGKEL`.
+    - Changed payment options in Pembelian Sparepart to support both Akun Bengkel (Cash) and Akun Utama (Cash & Bank), while maintaining split payment capabilities and Hutang option.
     - Updated `frontend/app/bengkel/purchase/index.tsx` to handle `kas_jenis` dynamically based on the selected payment method.
     - Fixed zero-balance unit visibility in Neraca and Perubahan Modal reports.
     - Integrated granular armada-specific breakdowns for Jasa Angkut operational costs.
