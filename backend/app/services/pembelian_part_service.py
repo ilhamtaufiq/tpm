@@ -219,6 +219,7 @@ class PembelianPartService:
                         nomor_referensi=pembelian.nomor_transaksi,
                         keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi} ({pm.metode})",
                         user_id=user_id,
+                        kas_jenis=pm.kas_jenis,
                     )
             else:
                 create_kas_entry(
@@ -232,6 +233,7 @@ class PembelianPartService:
                     nomor_referensi=pembelian.nomor_transaksi,
                     keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
                     user_id=user_id,
+                    kas_jenis=data.kas_jenis,
                 )
 
         # Record Hutang for the remainder
