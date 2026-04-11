@@ -44,6 +44,12 @@ export default function LaporanPerubahanModalScreen() {
         return format(date, 'yyyy', { locale: localeID });
     };
 
+    const getHeaderDate = () => {
+        if (filterType === 'daily') return format(date, 'dd MMM yyyy', { locale: localeID });
+        if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
+        return format(date, 'yyyy', { locale: localeID });
+    };
+
     // calculate date params
     const getDateParams = () => {
         let start = date;
@@ -533,104 +539,131 @@ export default function LaporanPerubahanModalScreen() {
     };
 
     const renderHeader = () => (
-        <View className="bg-surface border-b border-gray-100">
-            {/* Rule 2: Custom Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                    <Pressable onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color={themeColors.text} />
-                    </Pressable>
-                    <Typography variant="h2" weight="bold">Sisa Laba & Modal Di Tangan TPM</Typography>
+        <>
+            {/* Header */}
+            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl z-20">
+                <View className="flex-row items-center justify-between mb-8">
+                    <View className="flex-row items-center">
+                        <Pressable
+                            onPress={handleBack}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                        >
+                            <ChevronLeft size={24} color="white" />
+                        </Pressable>
+                        <View>
+                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Laba & Modal</Typography>
+                            <Typography className="text-white/50 text-xs mt-0.5">Laporan Komprehensif TPM</Typography>
+                        </View>
+                    </View>
+                    <View className="flex-row items-center">
+                        <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5 mr-2">
+                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
+                                {getHeaderDate()}
+                            </Typography>
+                        </View>
+                        <Pressable
+                            onPress={() => setShowExportMenu(true)}
+                            disabled={isExporting}
+                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        >
+                            {isExporting ? <ActivityIndicator size="small" color="white" /> : <Download size={22} color="white" />}
+                        </Pressable>
+                    </View>
                 </View>
-                <Pressable onPress={() => setShowExportMenu(true)} disabled={isExporting}>
-                    <Download size={24} color={isExporting ? themeColors.textGray : themeColors.text} />
-                </Pressable>
-            </View>
 
-            {/* Rule 9: Date Filter Pattern */}
-            <View className="px-6 pb-4">
-                {/* Tabs */}
-                <View className="flex-row bg-gray-100 p-1 rounded-xl mb-4">
+                {/* Filter Tabs */}
+                <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
                         <Pressable
                             key={type}
                             onPress={() => setFilterType(type)}
-                            className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-surface shadow-sm' : ''}`}
+                            className={`flex-1 py-2.5 items-center rounded-xl ${filterType === type ? 'bg-primary shadow-lg border border-white/10' : ''}`}
                         >
                             <Typography
                                 variant="caption"
-                                weight={filterType === type ? 'bold' : 'medium'}
-                                className={filterType === type ? 'text-primary' : 'text-gray-500'}
+                                weight="bold"
+                                className={filterType === type ? 'text-white' : 'text-white/40'}
                             >
                                 {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
                             </Typography>
                         </Pressable>
                     ))}
                 </View>
+            </View>
 
-                {/* Navigator */}
-                <View className="flex-row justify-between items-center bg-background px-4 py-3 rounded-xl border border-gray-100">
-                    <Pressable onPress={handlePrev} className="p-1">
-                        <ChevronLeft size={20} color="#64748B" />
+            {/* Date Navigator */}
+            <View className="px-6 -mt-6 z-30">
+                <View className="bg-surface p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
+                    <Pressable
+                        onPress={handlePrev}
+                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
+                    >
+                        <ChevronLeft size={20} color={themeColors.text} />
                     </Pressable>
-                    <View className="flex-row items-center">
-                        <Calendar size={18} color="#64748B" className="mr-2" />
-                        <Typography weight="semibold" className="text-gray-700">
+
+                    <View className="flex-1 flex-row items-center justify-center">
+                        <Calendar size={18} color={themeColors.primary} className="mr-2" />
+                        <Typography variant="body2" weight="bold" className="text-text capitalize tracking-tight">
                             {getFormattedDate()}
                         </Typography>
                     </View>
-                    <Pressable onPress={handleNext} className="p-1">
-                        <ChevronRight size={20} color="#64748B" />
+
+                    <Pressable
+                        onPress={handleNext}
+                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
+                    >
+                        <ChevronRight size={20} color={themeColors.text} />
                     </Pressable>
                 </View>
             </View>
-        </View>
+        </>
     );
 
     const renderSectionA = () => {
         const data = report?.section_a || {};
         const details = data.details || {};
         return (
-            <Card className="mb-6 p-4">
-                <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-3">
-                        <ArrowUpRight size={18} color={themeColors.primary} />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-blue-50/70 px-5 py-4 flex-row items-center border-b border-blue-100/50 w-full">
+                    <View className="w-8 h-8 rounded-full bg-blue-100/80 items-center justify-center mr-3">
+                        <ArrowUpRight size={18} className="text-blue-600" />
                     </View>
-                    <Typography variant="h4" weight="bold">A. Laba dan Modal Awal</Typography>
+                    <Typography variant="h4" weight="bold" className="text-blue-900 tracking-tight">A. Laba dan Modal Awal</Typography>
                 </View>
 
-                <View className="space-y-3">
-                    <Typography variant="h4" weight="bold" className="mb-2 text-primary tracking-tighter">Modal</Typography>
-
-                    <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
+                <View className="p-5 space-y-4 w-full">
+                    <View className="space-y-1">
                         <Row label="Setoran Modal" value={data.setoran_modal} />
                         <Row label="Persediaan Sparepart" value={data.aset_persediaan} />
-
+                        <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
+                        <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
+                        <Row label="Aset Tetap" value={data.aset_tetap} />
                     </View>
-                    <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
-                    <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
-                    <Row label="Aset Tetap" value={data.aset_tetap} />
-
-                    <View className="ml-4 pl-4 border-l-2 border-primary/20 my-2 bg-background p-3 rounded-r-xl">
-                        <Typography variant="caption" weight="bold" className="mb-2 text-primary uppercase tracking-tighter">Rincian Laba Unit</Typography>
-                        <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
-
-                        <View className="mt-2 mb-1">
-                            <Row label="2. Laba Jual Beli Mobil (Kotor)" value={details.laba_kotor_mobil} small />
-                            <Row label="   - Porsi Investor" value={details.laba_investor_mobil} small isNegative />
-                            <Row label="   = Laba TPM Mobil" value={details.laba_mobil} small bold />
+                    
+                    <View className="bg-slate-50 rounded-xl p-4 border border-slate-100 w-full shadow-sm shadow-slate-100/50">
+                        <Typography variant="caption" weight="bold" className="mb-3 text-slate-500 uppercase tracking-widest text-[10px]">Rincian Laba Operasional</Typography>
+                        
+                        <View className="space-y-1">
+                            <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
+                            
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
+                                <Row label="2. Laba Kotor Mobil" value={details.laba_kotor_mobil} small />
+                                <Row label="   Porsi Investor" value={details.laba_investor_mobil} small isNegative color="text-rose-500" />
+                                <View className="mt-1 bg-white p-2 rounded-lg border border-slate-100">
+                                    <Row label="Laba Bersih Mobil" value={details.laba_mobil} small bold color="text-slate-800" />
+                                </View>
+                            </View>
+                            
+                            <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
                         </View>
-
-                        <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
-
-                        <View className="h-[1px] bg-gray-200 my-2" />
-                        <Row label="TOTAL LABA KOTOR (UNIT)" value={data.total_laba} bold color="text-primary" />
+                        
+                        <View className="h-px bg-blue-200/60 my-3" />
+                        <Row label="Total Laba Kotor (Unit)" value={data.total_laba} bold color="text-blue-700" />
                     </View>
-
-
-
-                    <View className="h-[1px] bg-gray-200 my-2" />
-                    <Row label="Total Laba dan Modal" value={data.total_a} bold large color="text-primary" />
+                    
+                    <View className="pt-3 border-t-2 border-dashed border-slate-200">
+                        <Row label="TOTAL A (Laba dan Modal)" value={data.total_a} bold large color="text-slate-800" />
+                    </View>
                 </View>
             </Card>
         );
@@ -639,37 +672,38 @@ export default function LaporanPerubahanModalScreen() {
     const renderSectionB = () => {
         const data = report?.section_b || {};
         return (
-            <Card className="mb-6 p-4">
-                <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center mr-3">
-                        <Wallet size={18} color={themeColors.secondary} />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-emerald-50/70 px-5 py-4 flex-row items-center border-b border-emerald-100/50 w-full">
+                    <View className="w-8 h-8 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
+                        <Wallet size={18} className="text-emerald-600" />
                     </View>
-                    <Typography variant="h4" weight="bold">B. PIUTANG & ASET</Typography>
+                    <Typography variant="h4" weight="bold" className="text-emerald-900 tracking-tight">B. Piutang & Aset</Typography>
                 </View>
 
-                <View className="space-y-3">
-                    <View className="mb-2">
-                        <Typography variant="body2" weight="bold" className="text-secondary/70 mb-2 uppercase tracking-wider">B.1 PIUTANG</Typography>
-                        <View className="ml-2 space-y-3 border-l-2 border-secondary/10 pl-3">
-                            <Row label="PIUTANG LAINNYA" value={data.piutang_lainnya} small />
-                            <Row label="PIUTANG UNIT MOBIL" value={data.piutang_mobil} small />
-                            <Row label="PIUTANG SPAREPART MOBIL" value={data.piutang_part_mobil} small />
-                            <Row label="PIUTANG UNIT JASA ANGKUT" value={data.piutang_jasa_angkut} small />
-                            <Row label="PIUTANG KARYAWAN (KASBON)" value={data.piutang_karyawan} small />
-                            <Row label="PIUTANG UNIT BENGKEL" value={data.piutang_usaha} small />
+                <View className="p-5 w-full">
+                    <View className="mb-5">
+                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.1 Piutang Tersebar</Typography>
+                        <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
+                            <Row label="Piutang Usaha (Bengkel)" value={data.piutang_usaha} small />
+                            <Row label="Piutang Unit Mobil" value={data.piutang_mobil} small />
+                            <Row label="Piutang Sparepart Mobil" value={data.piutang_part_mobil} small />
+                            <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} small />
+                            {data.piutang_karyawan > 0 && <Row label="Piutang Karyawan (Kasbon)" value={data.piutang_karyawan} small />}
+                            {data.piutang_lainnya > 0 && <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />}
                         </View>
                     </View>
 
-                    <View className="mb-2 mt-4">
-                        <Typography variant="body2" weight="bold" className="text-secondary/70 mb-2 uppercase tracking-wider">B.2 ASET</Typography>
-                        <View className="ml-2 space-y-3 border-l-2 border-secondary/10 pl-3">
-                            <Row label="PERSEDIAAN SPAREPART" value={data.aset_persediaan} small />
-                            <Row label="ASET TETAP" value={data.aset_tetap} small />
+                    <View className="mb-5">
+                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.2 Nilai Aset</Typography>
+                        <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
+                            <Row label="Persediaan Sparepart" value={data.aset_persediaan} small />
+                            <Row label="Nilai Aset Tetap" value={data.aset_tetap} small />
                         </View>
                     </View>
 
-                    <View className="h-[1px] bg-gray-100 my-2" />
-                    <Row label="Total B (Piutang & Aset)" value={data.total_b} bold large color="text-secondary" />
+                    <View className="pt-3 border-t-2 border-dashed border-emerald-200/70">
+                        <Row label="TOTAL B (Piutang & Aset)" value={data.total_b} bold large color="text-emerald-700" />
+                    </View>
                 </View>
             </Card>
         );
@@ -678,78 +712,93 @@ export default function LaporanPerubahanModalScreen() {
     const renderSectionC = () => {
         const data = report?.section_c || {};
         return (
-            <Card className="mb-6 p-4">
-                <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-red-100 items-center justify-center mr-3">
-                        <ArrowDownLeft size={18} className="text-red-600" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-rose-50/70 px-5 py-4 flex-row items-center border-b border-rose-100/50 w-full">
+                    <View className="w-8 h-8 rounded-full bg-rose-100/80 items-center justify-center mr-3">
+                        <ArrowDownLeft size={18} className="text-rose-600" />
                     </View>
-                    <Typography variant="h4" weight="bold">C. Pengurangan Laba & Modal</Typography>
+                    <Typography variant="h4" weight="bold" className="text-rose-900 tracking-tight">C. Pengurangan Modal</Typography>
                 </View>
 
-                <View className="space-y-4">
-                    <View>
-                        <Row label="Total Pembelian Part" value={data.pembelian_part?.total} bold />
-                        <View className="ml-4 mt-1 space-y-1">
-                            <Row label="Cash" value={data.pembelian_part?.cash} small />
-                            <Row label="Transfer" value={data.pembelian_part?.transfer} small />
+                <View className="p-5 space-y-4 w-full">
+                    {data.pembelian_part?.total > 0 && (
+                        <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <Row label="Total Pembelian Part" value={data.pembelian_part?.total} bold />
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
+                                <Row label="Pembayaran Cash" value={data.pembelian_part?.cash} small />
+                                <Row label="Pembayaran Transfer" value={data.pembelian_part?.transfer} small />
+                            </View>
+                        </View>
+                    )}
+
+                    {data.pembelian_mobil?.total > 0 && (
+                        <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <Row label="Total Pembelian Mobil" value={data.pembelian_mobil?.total} bold />
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
+                                <Row label="Pembayaran Cash" value={data.pembelian_mobil?.cash} small />
+                                <Row label="Pembayaran Transfer" value={data.pembelian_mobil?.transfer} small />
+                            </View>
+                        </View>
+                    )}
+
+                    {data.pengembalian_investor?.total > 0 && (
+                        <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                            <Row label="Arus Keluar Pembelian/JB Mobil" value={data.pengembalian_investor?.total} bold />
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
+                                <Row label="Pembayaran Cash" value={data.pengembalian_investor?.cash} small />
+                                <Row label="Pembayaran Transfer" value={data.pengembalian_investor?.transfer} small />
+                                {data.pengembalian_investor?.accrued > 0 && (
+                                    <Row label="Penyesuaian Kewajiban (Hutang)" value={data.pengembalian_investor?.accrued} small color="text-rose-500" />
+                                )}
+                                {data.pengembalian_investor?.termasuk_biaya_persiapan > 0 && (
+                                    <View className="bg-amber-50/50 p-2 rounded-lg mt-1 border border-amber-100/50">
+                                        <Typography variant="caption" className="text-amber-700 text-[10px]">
+                                            *Terdapat Biaya Persiapan Mobil: {formatCurrency(data.pengembalian_investor.termasuk_biaya_persiapan)}
+                                        </Typography>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    )}
+
+                    <View className="bg-orange-50/40 p-3.5 rounded-xl border border-orange-100/50 w-full">
+                        <Row label="Total Beban Operasional" value={data.operasional} bold color="text-orange-800" />
+                        <View className="mt-3 pt-3 border-t border-orange-200/50 space-y-1.5">
+                            <Row label="Operasional Umum (Overhead)" value={data.operasional_unit_details?.umum} small isNegative color="text-slate-600" />
+                            <Row label="Operasional Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative color="text-slate-600" />
+                            <Row label="Operasional Mobil" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
+                            
+                            <View>
+                                <Row label="Operasional Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
+                                {data.operasional_unit_details?.jasa_angkut_armada && Object.keys(data.operasional_unit_details.jasa_angkut_armada).length > 0 && (
+                                    <View className="ml-3 mt-1.5 p-2 bg-white/50 rounded-lg border border-orange-100/50 space-y-1">
+                                        {Object.entries(data.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => (
+                                            <Row 
+                                                key={name} 
+                                                label={name} 
+                                                value={val as number} 
+                                                small 
+                                                isNegative 
+                                                color="text-slate-500"
+                                            />
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
                         </View>
                     </View>
 
-                    <View>
-                        <Row label="Total Pembelian Mobil" value={data.pembelian_mobil?.total} bold />
-                        <View className="ml-4 mt-1 space-y-1">
-                            <Row label="Cash" value={data.pembelian_mobil?.cash} small />
-                            <Row label="Transfer" value={data.pembelian_mobil?.transfer} small />
-                        </View>
+                    <View className="space-y-2 px-1 pt-2 w-full">
+                        <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
+                        <Row label="Beban Lembur Karyawan" value={data.lembur} isNegative />
+                        <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
+                        {data.kasbon_karyawan > 0 && <Row label="Kasbon Karyawan (Net)" value={data.kasbon_karyawan} isNegative />}
+                        {data.transaksi_lainnya > 0 && <Row label="Transaksi Lainnya (Net)" value={data.transaksi_lainnya} isNegative />}
                     </View>
 
-                    <View>
-                        <Row label="Total Arus Keluar JB Mobil" value={data.pengembalian_investor?.total} bold />
-                        <View className="ml-4 mt-1 space-y-1">
-                            <Row label="Cash" value={data.pengembalian_investor?.cash} small />
-                            <Row label="Transfer" value={data.pengembalian_investor?.transfer} small />
-                            {data.pengembalian_investor?.accrued > 0 && (
-                                <Row label="Penyesuaian Kewajiban (Hutang)" value={data.pengembalian_investor?.accrued} small color="text-rose-500" />
-                            )}
-                            {data.pengembalian_investor?.termasuk_biaya_persiapan > 0 && (
-                                <Typography variant="caption" className="text-textGray italic text-[10px] mt-0.5 px-1">
-                                    *termasuk Biaya Persiapan Mobil: {formatCurrency(data.pengembalian_investor.termasuk_biaya_persiapan)}
-                                </Typography>
-                            )}
-                        </View>
+                    <View className="pt-4 mt-2 border-t-2 border-dashed border-rose-200/70">
+                        <Row label="TOTAL C (Pengurangan Modal)" value={data.total_c} bold large color="text-rose-600" />
                     </View>
-
-                    <View>
-                        <Row label="Total Beban Operasional" value={data.operasional} bold />
-                        <View className="ml-4 mt-1 space-y-1">
-                            <Row label="Operasional Umum (Overhead)" value={data.operasional_unit_details?.umum} small isNegative />
-                            <Row label="Operasional Unit Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative />
-                            <Row label="Operasional Unit Mobil" value={data.operasional_unit_details?.mobil} small isNegative />
-                            <Row label="Operasional Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative />
-                            {data.operasional_unit_details?.jasa_angkut_armada && Object.keys(data.operasional_unit_details.jasa_angkut_armada).length > 0 && (
-                                <View className="ml-4 border-l border-red-100 pl-2 mb-1">
-                                    {Object.entries(data.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => (
-                                        <Row 
-                                            key={name} 
-                                            label={name} 
-                                            value={val as number} 
-                                            small 
-                                            isNegative 
-                                            className="opacity-70"
-                                        />
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                    </View>
-                    <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
-                    <Row label="Beban Lembur Karyawan" value={data.lembur} isNegative />
-                    <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
-                    {data.kasbon_karyawan ? <Row label="Kasbon Karyawan (Net)" value={data.kasbon_karyawan} isNegative /> : null}
-                    {data.transaksi_lainnya ? <Row label="Transaksi Lainnya (Net)" value={data.transaksi_lainnya} isNegative /> : null}
-
-                    <View className="h-[1px] bg-gray-200 my-2" />
-                    <Row label="Total Pengurangan" value={data.total_c} bold large color="text-red-600" />
                 </View>
             </Card>
         );
@@ -758,26 +807,27 @@ export default function LaporanPerubahanModalScreen() {
     const renderSectionE = () => {
         const data = report?.section_e || {};
         return (
-            <Card className="mb-6 p-4 border-rose-100 bg-rose-50/10">
-                <View className="flex-row items-center mb-4">
-                    <View className="w-8 h-8 rounded-full bg-rose-100 items-center justify-center mr-3">
-                        <AlertTriangle size={18} className="text-rose-600" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-amber-50/70 px-5 py-4 flex-row items-center border-b border-amber-100/50 w-full">
+                    <View className="w-8 h-8 rounded-full bg-amber-100/80 items-center justify-center mr-3">
+                        <AlertTriangle size={18} className="text-amber-600" />
                     </View>
-                    <Typography variant="h4" weight="bold" className="text-rose-900">E. HUTANG / KEWAJIBAN</Typography>
+                    <Typography variant="h4" weight="bold" className="text-amber-900 tracking-tight">E. Hutang / Kewajiban</Typography>
                 </View>
 
-                <View className="space-y-3">
+                <View className="p-5 space-y-2.5 w-full">
                     <Row label="Hutang Pembelian Part" value={data.hutang_part} />
                     <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} />
                     <Row label="Hutang Investor" value={data.hutang_investor} />
                     <Row label="Hutang Lainnya" value={data.hutang_lainnya} />
 
-                    <View className="h-[1px] bg-rose-200 my-2" />
-                    <Row label="Total Hutang Belum Lunas" value={data.total_e} color="text-rose-600" bold large />
+                    <View className="pt-3 mt-1 border-t-2 border-dashed border-amber-200/70 w-full">
+                        <Row label="TOTAL E (Hutang Belum Lunas)" value={data.total_e} color="text-amber-600" bold large />
+                    </View>
 
-                    <View className="mt-2 pt-2 border-t border-dashed border-rose-200">
-                        <Typography variant="caption" className="text-rose-400 italic text-xs">
-                            *Hutang adalah kewajiban yang belum dibayar tunai, sehingga uang kas masih ada di tangan (POSISI KREDIT MENAMBAH KAS).
+                    <View className="mt-4 bg-amber-50/80 rounded-xl p-3 border border-amber-100/50">
+                        <Typography variant="caption" className="text-amber-700/80 leading-snug">
+                            Hutang memposisikan kewajiban yang belum dibayar tunai. Nilai positif ini ditambahkan kembali dalam rekonsiliasi karena merepresentasikan kas yang secara fisik masih ada dalam kendali.
                         </Typography>
                     </View>
                 </View>
@@ -788,78 +838,84 @@ export default function LaporanPerubahanModalScreen() {
     const renderSectionD = () => {
         const data = report?.section_d || {};
         return (
-            <Card className="mb-24 p-5 bg-primary border-0 shadow-2xl relative overflow-hidden">
-                {/* Decorative element */}
-                <View className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full" />
+            <Card className="mb-10 overflow-hidden border-0 shadow-lg shadow-indigo-900/10 bg-indigo-600 rounded-3xl w-full relative">
+                <View className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500 rounded-full opacity-40" />
+                <View className="absolute -bottom-16 -left-16 w-40 h-40 bg-indigo-700 rounded-full opacity-40" />
 
-                <View className="flex-row items-center mb-6">
-                    <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center mr-4">
-                        <DollarSign size={20} color="white" />
-                    </View>
-                    <View>
-                        <Typography variant="h4" weight="bold" className="text-white">F. Sisa Laba dan Modal</Typography>
-                        <Typography variant="caption" className="text-white/60">Posisi Kas & Rekonsiliasi Akhir</Typography>
-                    </View>
-                </View>
-
-                <View className="space-y-4">
-                    <Row label="Saldo Kas (Tunai & Unit)" value={data.cash} small isDark themeColors={themeColors} />
-                    {data.unit_details && (
-                        <View className="ml-4 border-l border-white/20 pl-2">
-                            {Object.entries(data.unit_details).map(([unit, val]) => (
-                                <Row 
-                                    key={unit} 
-                                    label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()} 
-                                    value={val as number} 
-                                    small 
-                                    isDark 
-                                    themeColors={themeColors}
-                                />
-                            ))}
+                <View className="p-6 relative z-10 w-full">
+                    <View className="flex-row items-center mb-6">
+                        <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center mr-4 backdrop-blur-md border border-white/10">
+                            <Wallet size={24} color="white" />
                         </View>
-                    )}
-                    <Row label="Saldo Transfer / Bank" value={data.transfer} small isDark themeColors={themeColors} />
-
-                    <View className="h-[1px] bg-white/10 my-2" />
-
-                    <View className="flex-row justify-between items-center px-1">
-                        <Typography className="text-white/60" variant="body2">Total Saldo Kas & Bank</Typography>
-                        <Typography weight="bold" className="text-white" variant="h4">{formatCurrency(data.total_d || 0)}</Typography>
+                        <View className="flex-1">
+                            <Typography variant="h3" weight="bold" className="text-white tracking-tight">F. Total Modal & Kas</Typography>
+                            <Typography variant="caption" className="text-indigo-200 mt-1">Keselarasan Sistem dan Laporan</Typography>
+                        </View>
                     </View>
 
-                    <View className="mt-4 p-4 bg-black/10 rounded-2xl border border-white/10">
-                        <View className="flex-row items-center mb-3">
-                            <View className="w-1.5 h-4 bg-secondary rounded-full mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-white/80 uppercase tracking-widest">Rekonsiliasi Modal</Typography>
+                    <View className="bg-white/10 rounded-2xl p-5 border border-white/10 backdrop-blur-md mb-6 w-full shadow-inner">
+                        <View className="space-y-3 w-full">
+                            <Row label="Kas Tunai (Tunai & Brankas Unit)" value={data.cash} isDark />
+                            
+                            {data.unit_details && Object.keys(data.unit_details).length > 0 && (
+                                <View className="bg-black/20 rounded-xl p-3.5 space-y-2 mt-1 border border-white/5">
+                                    {Object.entries(data.unit_details).map(([unit, val]) => (
+                                        <Row 
+                                            key={unit} 
+                                            label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()} 
+                                            value={val as number} 
+                                            small 
+                                            isDark 
+                                        />
+                                    ))}
+                                </View>
+                            )}
+                            
+                            <Row className="mt-1" label="Kas Bank / Transfer" value={data.transfer} isDark />
                         </View>
 
-                        <Row label="Modal Berjalan (= Saldo Kas & Bank)" value={data.theoretical_modal} bold large color="text-white" isDark themeColors={themeColors} />
+                        <View className="h-px bg-white/20 my-4" />
 
-                        {(!data.penyesuaian || Math.abs(data.penyesuaian) < 1) ? (
-                            <View className="mt-2 flex-row items-center justify-center">
-                                <Typography className="text-emerald-300 text-xs font-bold">✓ REKONSILIASI SEIMBANG</Typography>
-                            </View>
-                        ) : (
-                            <View className="mt-2 flex-row items-center justify-center">
-                                <Typography className="text-amber-300 text-xs font-bold">⚠ REKONSILIASI MEMERLUKAN PENYESUAIAN</Typography>
-                            </View>
-                        )}
+                        <View className="flex-row justify-between items-center w-full">
+                            <Typography className="text-indigo-100" variant="body1" weight="medium">Total Saldo Riil</Typography>
+                            <Typography weight="bold" className="text-white text-3xl tracking-tighter">{formatCurrency(data.total_d || 0)}</Typography>
+                        </View>
+                    </View>
 
-                        {data.penyesuaian !== undefined && Math.abs(data.penyesuaian) >= 1 && (
-                            <View className="mt-3 pt-3 border-t border-white/10 space-y-1">
-                                <Row label="Modal Komponen (A - B - C + E)" value={data.modal_komponen} small color="text-white/50" isDark themeColors={themeColors} />
-                                <Row label="Penyesuaian" value={data.penyesuaian} small color="text-amber-300/80" isDark themeColors={themeColors} />
-                                <Typography variant="caption" className="text-white/30 italic leading-4 mt-1 px-1">
-                                    *Penyesuaian = selisih antara perhitungan komponen dan saldo aktual kas. Bisa terjadi dari rounding, transaksi lintas periode, atau arus kas yang belum tercatat di laporan ini.
+                    <View className="bg-slate-900/40 rounded-2xl p-5 border border-white/10 backdrop-blur-xl w-full">
+                        <View className="flex-row items-center mb-5">
+                            <View className="w-1.5 h-4 bg-indigo-400 rounded-full mr-2.5" />
+                            <Typography variant="caption" weight="bold" className="text-indigo-100 uppercase tracking-widest text-[10px]">Rekonsiliasi Modal Teoritis</Typography>
+                        </View>
+
+                        <Row label="Modal Berdasarkan Sistem" value={data.theoretical_modal} bold large color="text-white" isDark />
+
+                        {data.penyesuaian !== undefined && Math.abs(data.penyesuaian) >= 1 ? (
+                            <View className="mt-5 pt-5 border-t border-white/10 w-full space-y-3">
+                                <View className="flex-row items-center bg-rose-500/20 px-3 py-1.5 rounded-lg border border-rose-500/30 self-start mb-1">
+                                    <AlertTriangle size={14} color="#FDA4AF" className="mr-1.5" />
+                                    <Typography className="text-rose-200 text-xs font-bold">BUTUH PENYESUAIAN</Typography>
+                                </View>
+                                
+                                <View className="space-y-1.5">
+                                    <Row label="Modal Teoritis [ (A-B) - C + E ]" value={data.modal_komponen} small color="text-indigo-200" isDark />
+                                    <Row label="Selisih / Penyesuaian" value={data.penyesuaian} small bold color="text-rose-300" isDark />
+                                </View>
+                                
+                                <Typography variant="caption" className="text-indigo-200/60 leading-normal mt-1 text-[10px]">
+                                    *Selisih terjadi karena perbedaan perhitungan teoritis komponen dengan total saldo riil.
                                 </Typography>
                             </View>
+                        ) : (
+                            <View className="mt-5 pt-5 border-t border-white/10">
+                                <View className="flex-row items-center bg-emerald-500/20 px-4 py-2.5 rounded-xl border border-emerald-500/30 w-full justify-center">
+                                    <View className="w-6 h-6 rounded-full bg-emerald-500/40 items-center justify-center mr-2.5">
+                                        <Typography className="text-emerald-100 text-xs font-bold">✓</Typography>
+                                    </View>
+                                    <Typography className="text-emerald-100/90 text-sm font-bold tracking-wide">REKONSILIASI SEIMBANG</Typography>
+                                </View>
+                            </View>
                         )}
-
-                        <View className="mt-3 pt-3 border-t border-white/5">
-                            <Typography variant="caption" className="text-white/40 italic leading-4">
-                                *Modal Berjalan diturunkan langsung dari Saldo Kas & Bank aktual, sama seperti pendekatan Neraca (Aktiva = Hutang + Modal).
-                            </Typography>
-                        </View>
                     </View>
                 </View>
             </Card>
@@ -867,14 +923,15 @@ export default function LaporanPerubahanModalScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-surface">
-            <StatusBar barStyle="dark-content" />
+        <SafeAreaView className="flex-1 bg-slate-50">
+            <StatusBar barStyle="light-content" />
             <Stack.Screen options={{ headerShown: false }} />
 
             {renderHeader()}
 
             <ScrollView
-                className="flex-1 px-4 pt-4"
+                className="flex-1 px-4 pt-5"
+                contentContainerStyle={{ paddingBottom: 40 }}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={refetch} />}
                 showsVerticalScrollIndicator={false}
             >
@@ -901,33 +958,33 @@ export default function LaporanPerubahanModalScreen() {
                 onRequestClose={() => setShowExportMenu(false)}
             >
                 <Pressable
-                    className="flex-1 bg-black/50 justify-end"
+                    className="flex-1 bg-slate-900/40 justify-end backdrop-blur-sm"
                     onPress={() => setShowExportMenu(false)}
                 >
-                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-8">
+                    <Pressable onPress={e => e.stopPropagation()} className="bg-white rounded-t-[32px] p-6 pb-10 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-6 w-full">
                             <View>
-                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                                <Typography variant="h3" weight="bold" className="text-slate-800">Ekspor Laporan</Typography>
+                                <Typography variant="caption" className="text-slate-500">Pilih metode ekspor PDF</Typography>
                             </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
-                                <X size={20} color={themeColors.textGray} />
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2.5 rounded-full active:bg-slate-200">
+                                <X size={20} className="text-slate-600" />
                             </Pressable>
                         </View>
 
-                        <View className="flex-row gap-4">
+                        <View className="flex-row gap-4 w-full">
                             <Pressable
                                 onPress={() => {
                                     setShowExportMenu(false);
                                     setTimeout(() => handleExportPDF('preview'), 100);
                                 }}
-                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                                className="flex-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm shadow-slate-200 items-center active:bg-slate-50"
                             >
-                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
-                                    <Eye size={28} color="white" />
+                                <View className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl items-center justify-center mb-3">
+                                    <Eye size={28} className="text-blue-600" />
                                 </View>
-                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                                <Typography weight="bold" className="text-slate-700">Tampilkan</Typography>
+                                <Typography variant="caption" className="text-slate-500 text-center mt-1">Pratinjau PDF</Typography>
                             </Pressable>
 
                             <Pressable
@@ -935,16 +992,16 @@ export default function LaporanPerubahanModalScreen() {
                                     setShowExportMenu(false);
                                     setTimeout(() => handleExportPDF('download'), 100);
                                 }}
-                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                                className="flex-1 bg-primary p-5 rounded-2xl shadow-md shadow-primary/30 items-center active:bg-primary-dark"
                             >
-                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
-                                    <Share2 size={28} color="white" />
+                                <View className="w-14 h-14 bg-white/20 rounded-2xl items-center justify-center mb-3">
+                                    <Download size={28} color="white" />
                                 </View>
-                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
-                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                                <Typography weight="bold" className="text-white">Download</Typography>
+                                <Typography variant="caption" className="text-primary-100 text-center mt-1">Simpan File</Typography>
                             </Pressable>
                         </View>
-                    </View>
+                    </Pressable>
                 </Pressable>
             </Modal>
         </SafeAreaView>
@@ -975,17 +1032,17 @@ const Row = ({
     themeColors?: any,
     className?: string
 }) => (
-    <View className={`flex-row justify-between items-center ${className || ''}`}>
+    <View className={`flex-row justify-between items-center py-[2px] w-full ${className || ''}`}>
         <Typography
             variant={small ? 'caption' : 'body2'}
-            className={`${isDark ? 'text-white/60' : small ? 'text-textGray' : 'text-text'}`}
+            className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
         >
             {label}
         </Typography>
         <Typography
-            variant={large ? 'h3' : small ? 'caption' : 'body2'}
-            weight={bold ? 'bold' : 'medium'}
-            className={color || (isDark ? 'text-white' : 'text-text')}
+            variant={large ? 'h3' : small ? 'body2' : 'body1'}
+            weight={bold ? 'bold' : 'semibold'}
+            className={`${color || (isDark ? 'text-white' : 'text-slate-800')} text-right flex-shrink-0`}
         >
             {isNegative && value > 0 ? `(${formatCurrency(value)})` : formatCurrency(value || 0)}
         </Typography>

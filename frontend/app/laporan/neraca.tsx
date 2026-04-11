@@ -81,8 +81,7 @@ export default function NeracaScreen() {
         }
     };
 
-    // Helper Row Component
-    const Row = ({ label, value, bold, small, large, color, isNegative, isDark }: {
+    const Row = ({ label, value, bold, small, large, color, isNegative, isDark, indent }: {
         label: string;
         value: number;
         bold?: boolean;
@@ -91,25 +90,21 @@ export default function NeracaScreen() {
         color?: string;
         isNegative?: boolean;
         isDark?: boolean;
+        indent?: boolean;
     }) => (
-        <View className="flex-row justify-between items-center py-1.5 px-1">
+        <View className={`flex-row justify-between items-center py-1.5 w-full ${indent ? 'pl-4' : ''}`}>
             <Typography
                 variant={small ? 'caption' : 'body2'}
-                weight={bold ? 'bold' : 'normal'}
-                className={`${isDark ? 'text-white/60' : small ? 'text-textGray' : 'text-text'} flex-1 mr-2`}
+                className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
             >
                 {label}
             </Typography>
             <Typography
-                variant={large ? 'h3' : small ? 'caption' : 'body2'}
-                weight={bold ? 'bold' : 'medium'}
-                className={
-                    isNegative ? 'text-rose-600' :
-                        color ? color :
-                            isDark ? 'text-white' : 'text-text'
-                }
+                variant={large ? 'h3' : small ? 'body2' : 'body1'}
+                weight={bold ? 'bold' : 'semibold'}
+                className={`${color || (isDark ? 'text-white' : 'text-slate-800')} text-right flex-shrink-0`}
             >
-                {isNegative ? `(${formatCurrency(Math.abs(value || 0))})` : formatCurrency(value || 0)}
+                {isNegative && value > 0 ? `(${formatCurrency(value)})` : formatCurrency(value || 0)}
             </Typography>
         </View>
     );
@@ -121,85 +116,90 @@ export default function NeracaScreen() {
     const renderAktivaLancar = () => {
         const data = report?.aktiva_lancar || {};
         return (
-            <Card className="mb-5 p-5">
-                <View className="flex-row items-center mb-5">
-                    <View className="w-9 h-9 rounded-2xl bg-emerald-100 items-center justify-center mr-3">
-                        <Banknote size={18} color="#059669" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-emerald-50/70 px-5 py-4 flex-row justify-between items-center border-b border-emerald-100/50 w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
+                            <Banknote size={20} className="text-emerald-600" />
+                        </View>
+                        <View>
+                            <Typography variant="h4" weight="bold" className="text-emerald-900 tracking-tight">Aktiva Lancar</Typography>
+                            <Typography variant="caption" className="text-emerald-700/60 uppercase text-[10px] tracking-wider mt-0.5">Current Assets</Typography>
+                        </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography variant="body1" weight="bold" className="text-text">Aktiva Lancar</Typography>
-                        <Typography variant="caption" className="text-textGray">Current Assets</Typography>
-                    </View>
-                    <View className="bg-emerald-50 px-3 py-1 rounded-xl">
-                        <Typography variant="caption" weight="bold" className="text-emerald-700">
+                    <View className="bg-emerald-100/50 px-3 py-1.5 rounded-full border border-emerald-200/30">
+                        <Typography variant="body2" weight="bold" className="text-emerald-800">
                             {formatCurrency(data.total_aktiva_lancar || 0)}
                         </Typography>
                     </View>
                 </View>
 
-                {/* Kas & Bank */}
-                <View className="mb-4">
-                    <View className="flex-row items-center mb-2">
-                        <View className="w-1 h-4 bg-emerald-500 rounded-full mr-2" />
-                        <Typography variant="caption" weight="bold" className="text-emerald-700 uppercase tracking-widest text-[10px]">
-                            Kas & Bank
-                        </Typography>
-                    </View>
-                    <View className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/50">
-                        <Row label="Kas Tunai (Utama)" value={data.kas_tunai} small />
-                        <Row label="Kas Bank" value={data.kas_bank} small />
-                        <Row label="Kas di Unit Operasional" value={data.unit_cash} small />
+                <View className="p-5 w-full">
+                    {/* Kas & Bank */}
+                    <View className="mb-4 w-full">
+                        <View className="flex-row items-center mb-2">
+                            <View className="w-1 h-3.5 bg-emerald-500 rounded-full mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">
+                                Kas & Bank
+                            </Typography>
+                        </View>
+                        <View className="w-full pl-3">
+                            <Row label="Kas Tunai (Utama)" value={data.kas_tunai} small />
+                            <Row label="Kas Bank" value={data.kas_bank} small />
+                            <Row label="Kas di Unit Operasional" value={data.unit_cash} small />
 
-                        {/* Breakdown Unit Cash if relevant */}
-                        {data.unit_details && (
-                            <View className="ml-4 mt-1 border-l border-emerald-200/50 pl-2">
-                                {Object.entries(data.unit_details).map(([unit, val]) => (
-                                    <Row
-                                        key={unit}
-                                        label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()}
-                                        value={val as number}
-                                        small
-                                    />
-                                ))}
-                            </View>
-                        )}
+                            {/* Breakdown Unit Cash if relevant */}
+                            {data.unit_details && (
+                                <View className="ml-2 pl-2 border-l border-slate-200/50 mt-1 mb-1">
+                                    {Object.entries(data.unit_details).map(([unit, val]) => (
+                                        <Row
+                                            key={unit}
+                                            label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()}
+                                            value={val as number}
+                                            small
+                                            indent
+                                        />
+                                    ))}
+                                </View>
+                            )}
 
-                        <View className="h-[1px] bg-emerald-200/50 my-1.5" />
-                        <Row label="Total Kas & Bank" value={data.total_kas_bank} bold />
+                            <View className="h-[1px] bg-slate-100 w-full my-2" />
+                            <Row label="Total Kas & Bank" value={data.total_kas_bank} bold color="text-emerald-700" />
+                        </View>
                     </View>
-                </View>
 
-                {/* Piutang */}
-                <View className="mb-4">
-                    <View className="flex-row items-center mb-2">
-                        <View className="w-1 h-4 bg-blue-500 rounded-full mr-2" />
-                        <Typography variant="caption" weight="bold" className="text-blue-700 uppercase tracking-widest text-[10px]">
-                            Piutang Usaha
-                        </Typography>
+                    {/* Piutang */}
+                    <View className="mb-4 w-full">
+                        <View className="flex-row items-center mb-2">
+                            <View className="w-1 h-3.5 bg-blue-500 rounded-full mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">
+                                Piutang Usaha
+                            </Typography>
+                        </View>
+                        <View className="w-full pl-3">
+                            <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />
+                            <Row label="Piutang Unit Mobil" value={data.piutang_mobil} small />
+                            <Row label="Piutang Sparepart Mobil" value={data.piutang_part_mobil} small />
+                            <Row label="Piutang Unit Jasa Angkut" value={data.piutang_jasa_angkut} small />
+                            <Row label="Piutang Karyawan (Kasbon)" value={data.piutang_karyawan} small />
+                            <Row label="Piutang Unit Bengkel" value={data.piutang_usaha} small />
+                            <View className="h-[1px] bg-slate-100 w-full my-2" />
+                            <Row label="Total Piutang" value={data.total_piutang} bold color="text-blue-700" />
+                        </View>
                     </View>
-                    <View className="bg-blue-50/50 rounded-2xl p-3 border border-blue-100/50">
-                        <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />
-                        <Row label="Piutang Unit Mobil" value={data.piutang_mobil} small />
-                        <Row label="Piutang Sparepart Mobil" value={data.piutang_part_mobil} small />
-                        <Row label="Piutang Unit Jasa Angkut" value={data.piutang_jasa_angkut} small />
-                        <Row label="Piutang Karyawan (Kasbon)" value={data.piutang_karyawan} small />
-                        <Row label="Piutang Unit Bengkel" value={data.piutang_usaha} small />
-                        <View className="h-[1px] bg-blue-200/50 my-1.5" />
-                        <Row label="Total Piutang" value={data.total_piutang} bold />
-                    </View>
-                </View>
 
-                {/* Persediaan */}
-                <View>
-                    <View className="flex-row items-center mb-2">
-                        <View className="w-1 h-4 bg-amber-500 rounded-full mr-2" />
-                        <Typography variant="caption" weight="bold" className="text-amber-700 uppercase tracking-widest text-[10px]">
-                            Persediaan & Stok
-                        </Typography>
-                    </View>
-                    <View className="bg-amber-50/50 rounded-2xl p-3 border border-amber-100/50">
-                        <Row label="Persediaan Sparepart" value={data.persediaan_sparepart} small />
-                        <Row label="Stok Mobil (Inventory)" value={data.stok_mobil} small />
+                    {/* Persediaan */}
+                    <View className="w-full">
+                        <View className="flex-row items-center mb-2">
+                            <View className="w-1 h-3.5 bg-amber-500 rounded-full mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">
+                                Persediaan & Stok
+                            </Typography>
+                        </View>
+                        <View className="w-full pl-3">
+                            <Row label="Persediaan Sparepart" value={data.persediaan_sparepart} small />
+                            <Row label="Stok Mobil (Inventory)" value={data.stok_mobil} small />
+                        </View>
                     </View>
                 </View>
             </Card>
@@ -209,62 +209,66 @@ export default function NeracaScreen() {
     const renderAktivaTetap = () => {
         const data = report?.aktiva_tetap || {};
         return (
-            <Card className="mb-5 p-5">
-                <View className="flex-row items-center mb-5">
-                    <View className="w-9 h-9 rounded-2xl bg-indigo-100 items-center justify-center mr-3">
-                        <Box size={18} color="#4338CA" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-indigo-50/70 px-5 py-4 flex-row justify-between items-center border-b border-indigo-100/50 w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-indigo-100/80 items-center justify-center mr-3">
+                            <Box size={20} className="text-indigo-600" />
+                        </View>
+                        <View>
+                            <Typography variant="h4" weight="bold" className="text-indigo-900 tracking-tight">Aktiva Tetap</Typography>
+                            <Typography variant="caption" className="text-indigo-700/60 uppercase text-[10px] tracking-wider mt-0.5">Fixed Assets</Typography>
+                        </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography variant="body1" weight="bold" className="text-text">Aktiva Tetap</Typography>
-                        <Typography variant="caption" className="text-textGray">Fixed Assets / Perusahaan</Typography>
-                    </View>
-                    <View className="bg-indigo-50 px-3 py-1 rounded-xl">
-                        <Typography variant="caption" weight="bold" className="text-indigo-700">
+                    <View className="bg-indigo-100/50 px-3 py-1.5 rounded-full border border-indigo-200/30">
+                        <Typography variant="body2" weight="bold" className="text-indigo-800">
                             {formatCurrency(data.total_aktiva_tetap || 0)}
                         </Typography>
                     </View>
                 </View>
 
-                <View className="bg-indigo-50/50 rounded-2xl p-3 border border-indigo-100/50">
-                    <Typography variant="caption" weight="bold" className="text-indigo-700 uppercase tracking-widest text-[9px] mb-2 px-1">
+                <View className="p-5 w-full">
+                    <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px] mb-3">
                         Daftar Aset Aktif
                     </Typography>
-                    {data.detail_aset && data.detail_aset.length > 0 ? (
-                        data.detail_aset.map((aset: any, index: number) => (
-                            <Row
-                                key={index}
-                                label={`${aset.kode} - ${aset.nama}`}
-                                value={aset.harga_beli}
-                                small
-                            />
-                        ))
-                    ) : (
-                        <View className="py-4 items-center">
-                            <Typography variant="caption" className="text-gray-400">Belum ada aset terdaftar</Typography>
-                        </View>
-                    )}
-                    <View className="h-[1px] bg-indigo-200/50 my-1.5" />
-                    <Row label="Total Aktiva Tetap" value={data.total_aktiva_tetap} bold color="text-indigo-700" />
+                    <View className="w-full pl-2">
+                        {data.detail_aset && data.detail_aset.length > 0 ? (
+                            data.detail_aset.map((aset: any, index: number) => (
+                                <Row
+                                    key={index}
+                                    label={`${aset.kode} - ${aset.nama}`}
+                                    value={aset.harga_beli}
+                                    small
+                                />
+                            ))
+                        ) : (
+                            <View className="py-4 items-center">
+                                <Typography variant="caption" className="text-slate-400">Belum ada aset terdaftar</Typography>
+                            </View>
+                        )}
+                        <View className="h-[1px] bg-slate-100 w-full my-3" />
+                        <Row label="Total Aktiva Tetap" value={data.total_aktiva_tetap} bold color="text-indigo-700" />
+                    </View>
                 </View>
             </Card>
         );
     };
 
     const renderTotalAktiva = () => (
-        <View className="mb-5 bg-emerald-600 p-5 rounded-[28px] shadow-lg shadow-emerald-200">
-            <View className="flex-row justify-between items-center">
+        <View className="mb-6 rounded-[32px] p-1 bg-gradient-to-r from-emerald-500 to-emerald-700 w-full shadow-lg shadow-emerald-500/30">
+            <View className="bg-emerald-600 rounded-[28px] p-5 w-full flex-row justify-between items-center">
                 <View className="flex-row items-center">
-                    <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-3">
-                        <ArrowUpRight size={20} color="white" />
+                    <View className="w-12 h-12 bg-white/20 rounded-[20px] items-center justify-center mr-4">
+                        <ArrowUpRight size={24} color="white" />
                     </View>
                     <View>
-                        <Typography variant="caption" weight="bold" className="text-white/60 uppercase tracking-widest text-[9px]">
+                        <Typography variant="caption" weight="bold" className="text-white/60 uppercase tracking-widest text-[10px] mb-1">
                             Total Aktiva
                         </Typography>
-                        <Typography variant="caption" className="text-white/40">Assets</Typography>
+                        <Typography variant="caption" className="text-white/80">Semua Aset</Typography>
                     </View>
                 </View>
-                <Typography variant="h3" weight="bold" className="text-white">
+                <Typography variant="h2" weight="bold" className="text-white flex-shrink-0">
                     {formatCurrency(report?.total_aktiva || 0)}
                 </Typography>
             </View>
@@ -274,82 +278,74 @@ export default function NeracaScreen() {
     const renderModal = () => {
         const data = report?.modal || {};
         return (
-            <Card className="mb-5 p-5">
-                <View className="flex-row items-center mb-5">
-                    <View className="w-9 h-9 rounded-2xl bg-violet-100 items-center justify-center mr-3">
-                        <Landmark size={18} color="#7C3AED" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-violet-50/70 px-5 py-4 flex-row justify-between items-center border-b border-violet-100/50 w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-violet-100/80 items-center justify-center mr-3">
+                            <Landmark size={20} className="text-violet-600" />
+                        </View>
+                        <View>
+                            <Typography variant="h4" weight="bold" className="text-violet-900 tracking-tight">Modal</Typography>
+                            <Typography variant="caption" className="text-violet-700/60 uppercase text-[10px] tracking-wider mt-0.5">Equity</Typography>
+                        </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography variant="body1" weight="bold" className="text-text">Modal</Typography>
-                        <Typography variant="caption" className="text-textGray">Equity</Typography>
-                    </View>
-                    <View className="bg-violet-50 px-3 py-1 rounded-xl">
-                        <Typography variant="caption" weight="bold" className="text-violet-700">
+                    <View className="bg-violet-100/50 px-3 py-1.5 rounded-full border border-violet-200/30">
+                        <Typography variant="body2" weight="bold" className="text-violet-800">
                             {formatCurrency(data.total_modal || 0)}
                         </Typography>
                     </View>
                 </View>
 
-                {/* Modal Awal & Setoran */}
-                <View className="mb-3">
-                    <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
-                        <Row label="Setoran Modal Tunai" value={data.setoran_modal} />
+                <View className="p-5 w-full">
+                    {/* Modal Awal & Setoran */}
+                    <View className="mb-4 w-full">
+                        <Row label="1. Setoran Modal Tunai" value={data.setoran_modal} bold large />
                         {data.modal_persediaan > 0 && (
-                            <Row label="Modal Awal Persediaan Sparepart" value={data.modal_persediaan} small />
+                            <Row label="Modal Awal Persediaan Sparepart" value={data.modal_persediaan} small indent />
+                        )}
+                        {data.pencairan_investor > 0 && (
+                            <Row label="Pengembalian Modal Investor Mobil" value={data.pencairan_investor} isNegative small indent />
                         )}
                     </View>
-                    {data.pencairan_investor > 0 && (
-                        <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50 mt-2">
-                            <Row label="Pengembalian Modal Investor Mobil" value={data.pencairan_investor} isNegative />
+
+                    {/* Laba Ditahan */}
+                    <View className="mb-4 w-full">
+                        <Row label="2. Laba Ditahan" value={data.laba_ditahan} bold large color="text-violet-700" />
+                        <View className="bg-slate-50 w-full p-4 rounded-xl border border-slate-100 mt-2">
+                            <Row label="Laba Kotor Total" value={data.laba_kotor} small />
+                            <View className="ml-3 pl-3 border-l border-slate-200/60 my-1">
+                                <Row label="Bengkel" value={data.detail_laba?.bengkel} small indent />
+                                <Row label="Jual Beli Mobil" value={data.detail_laba?.mobil} small indent />
+                                <Row label="Jasa Angkut" value={data.detail_laba?.jasa_angkut} small indent />
+                            </View>
+                            <Row label="Total Beban Operasional" value={data.total_beban} small isNegative />
+                        </View>
+                    </View>
+
+                    {/* Prive */}
+                    <View className="mb-4 w-full">
+                        <Row label="3. Prive (Pengambilan Pemilik)" value={data.prive} isNegative bold large />
+                    </View>
+
+                    <View className="h-[1px] bg-slate-100 w-full my-1" />
+
+                    {/* Reconciliation Info */}
+                    {data.selisih_modal !== 0 && data.selisih_modal != null && (
+                        <View className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 mt-4 w-full">
+                            <View className="flex-row items-center mb-3 border-b border-amber-100/50 pb-2">
+                                <AlertTriangle size={14} className="text-amber-600" />
+                                <Typography variant="caption" weight="bold" className="text-amber-800 ml-2 tracking-widest text-[10px]">
+                                    SELISIH PENYESUAIAN
+                                </Typography>
+                            </View>
+                            <Row label="Modal (Perhitungan Komponen)" value={data.modal_komponen} small />
+                            <Row label="Penyesuaian" value={data.selisih_modal} small color="text-amber-700" />
+                            <Typography variant="caption" className="text-amber-600/70 text-[10px] mt-2 block w-full leading-snug">
+                                Penyesuaian karena selisih saldo yang tidak imbang
+                            </Typography>
                         </View>
                     )}
                 </View>
-
-                {/* Laba Ditahan */}
-                <View className="mb-3">
-                    <View className="flex-row items-center mb-2">
-                        <View className="w-1 h-4 bg-violet-500 rounded-full mr-2" />
-                        <Typography variant="caption" weight="bold" className="text-violet-700 uppercase tracking-widest text-[10px]">
-                            Laba Ditahan
-                        </Typography>
-                    </View>
-                    <View className="bg-violet-50/50 rounded-2xl p-3 border border-violet-100/50">
-                        <Row label="Laba Kotor" value={data.laba_kotor} small />
-                        <View className="ml-3 pl-3 border-l-2 border-violet-200/50 my-1">
-                            <Row label="Bengkel" value={data.detail_laba?.bengkel} small />
-                            <Row label="Jual Beli Mobil" value={data.detail_laba?.mobil} small />
-                            <Row label="Jasa Angkut" value={data.detail_laba?.jasa_angkut} small />
-                        </View>
-                        <Row label="Total Beban Operasional" value={data.total_beban} small isNegative />
-                        <View className="h-[1px] bg-violet-200/50 my-1.5" />
-                        <Row label="Laba Ditahan" value={data.laba_ditahan} bold color="text-violet-700" />
-                    </View>
-                </View>
-
-                {/* Prive */}
-                <View className="mb-3 space-y-2">
-                    <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
-                        <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
-                    </View>
-
-                </View>
-
-                {/* Reconciliation Info */}
-                {data.selisih_modal !== 0 && data.selisih_modal != null && (
-                    <View className="bg-amber-50/50 rounded-2xl p-3 border border-amber-100/50">
-                        <View className="flex-row items-center mb-2">
-                            <AlertTriangle size={12} color="#D97706" />
-                            <Typography variant="caption" weight="bold" className="text-amber-700 ml-1.5 text-[10px]">
-                                SELISIH PENYESUAIAN
-                            </Typography>
-                        </View>
-                        <Row label="Modal (Perhitungan Komponen)" value={data.modal_komponen} small />
-                        <Row label="Penyesuaian" value={data.selisih_modal} small color="text-amber-700" />
-                        <Typography variant="caption" className="text-amber-600/60 text-[9px] mt-1 px-1">
-                            Selisih karena konversi kas ke aset (pembelian mobil, sparepart, dll)
-                        </Typography>
-                    </View>
-                )}
             </Card>
         );
     };
@@ -357,29 +353,35 @@ export default function NeracaScreen() {
     const renderHutang = () => {
         const data = report?.hutang || {};
         return (
-            <Card className="mb-5 p-5 border-rose-100 bg-rose-50/10">
-                <View className="flex-row items-center mb-5">
-                    <View className="w-9 h-9 rounded-2xl bg-rose-100 items-center justify-center mr-3">
-                        <CreditCard size={18} color="#E11D48" />
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-rose-50/70 px-5 py-4 flex-row justify-between items-center border-b border-rose-100/50 w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-rose-100/80 items-center justify-center mr-3">
+                            <CreditCard size={20} className="text-rose-600" />
+                        </View>
+                        <View>
+                            <Typography variant="h4" weight="bold" className="text-rose-900 tracking-tight">Hutang</Typography>
+                            <Typography variant="caption" className="text-rose-700/60 uppercase text-[10px] tracking-wider mt-0.5">Liabilities</Typography>
+                        </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography variant="body1" weight="bold" className="text-text">Hutang</Typography>
-                        <Typography variant="caption" className="text-textGray">Liabilities</Typography>
-                    </View>
-                    <View className="bg-rose-50 px-3 py-1 rounded-xl">
-                        <Typography variant="caption" weight="bold" className="text-rose-700">
+                    <View className="bg-rose-100/50 px-3 py-1.5 rounded-full border border-rose-200/30">
+                        <Typography variant="body2" weight="bold" className="text-rose-800">
                             {formatCurrency(data.total_hutang || 0)}
                         </Typography>
                     </View>
                 </View>
 
-                <View className="bg-rose-50/50 rounded-2xl p-3 border border-rose-100/50">
-                    <Row label="Hutang Pembelian Part" value={data.hutang_part} small />
-                    <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} small />
-                    <Row label="Hutang Investor" value={data.hutang_investor} small />
-                    <Row label="Hutang Lainnya" value={data.hutang_lainnya} small />
-                    <View className="h-[1px] bg-rose-200/50 my-1.5" />
-                    <Row label="Total Hutang" value={data.total_hutang} bold color="text-rose-700" />
+                <View className="p-5 w-full">
+                    <Row label="1. Hutang Pembelian Part" value={data.hutang_part} small large />
+                    <Row label="2. Hutang Pembelian Mobil" value={data.hutang_mobil} small large />
+                    <Row label="3. Hutang Investor" value={data.hutang_investor} small large />
+                    <Row label="4. Hutang Lainnya" value={data.hutang_lainnya} small large />
+                    
+                    <View className="h-[1px] bg-slate-100 w-full my-3" />
+                    
+                    <View className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100/50">
+                        <Row label="Total Hutang" value={data.total_hutang} bold large color="text-rose-800" />
+                    </View>
                 </View>
             </Card>
         );
@@ -388,20 +390,20 @@ export default function NeracaScreen() {
 
 
     const renderTotalPasiva = () => (
-        <View className="mb-5 bg-violet-600 p-5 rounded-[28px] shadow-lg shadow-violet-200">
-            <View className="flex-row justify-between items-center">
+        <View className="mb-6 rounded-[32px] p-1 bg-gradient-to-r from-violet-500 to-violet-700 w-full shadow-lg shadow-violet-500/30">
+            <View className="bg-violet-600 rounded-[28px] p-5 w-full flex-row justify-between items-center">
                 <View className="flex-row items-center">
-                    <View className="w-10 h-10 bg-white/20 rounded-2xl items-center justify-center mr-3">
-                        <ArrowDownLeft size={20} color="white" />
+                    <View className="w-12 h-12 bg-white/20 rounded-[20px] items-center justify-center mr-4">
+                        <ArrowDownLeft size={24} color="white" />
                     </View>
                     <View>
-                        <Typography variant="caption" weight="bold" className="text-white/60 uppercase tracking-widest text-[9px]">
+                        <Typography variant="caption" weight="bold" className="text-white/60 uppercase tracking-widest text-[10px] mb-1">
                             Total Pasiva
                         </Typography>
-                        <Typography variant="caption" className="text-white/40">Hutang + Modal</Typography>
+                        <Typography variant="caption" className="text-white/80">Hutang + Modal</Typography>
                     </View>
                 </View>
-                <Typography variant="h3" weight="bold" className="text-white">
+                <Typography variant="h2" weight="bold" className="text-white flex-shrink-0">
                     {formatCurrency(report?.total_pasiva || 0)}
                 </Typography>
             </View>
@@ -413,56 +415,50 @@ export default function NeracaScreen() {
         const selisih = report?.selisih || 0;
 
         return (
-            <Card className={`mb-24 p-6 ${isBalanced ? 'bg-primary border-0' : 'bg-amber-500 border-0'} shadow-2xl relative overflow-hidden`}>
-                {/* Decorative */}
-                <View className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full" />
+            <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
+                <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+                <View className="absolute -bottom-10 -left-10 w-20 h-20 bg-black/5 rounded-full" />
 
-                <View className="flex-row items-center mb-5">
-                    <View className="w-11 h-11 rounded-2xl bg-white/20 items-center justify-center mr-4">
-                        <Scale size={22} color="white" />
+                <View className="flex-row items-center mb-6">
+                    <View className="w-12 h-12 rounded-[20px] bg-white/20 items-center justify-center mr-4">
+                        <Scale size={24} color="white" />
                     </View>
                     <View>
-                        <Typography variant="h4" weight="bold" className="text-white">Keseimbangan Neraca</Typography>
-                        <Typography variant="caption" className="text-white/50">Balance Check</Typography>
+                        <Typography variant="h3" weight="bold" className="text-white tracking-tight">Keseimbangan Neraca</Typography>
+                        <Typography variant="caption" className="text-white/60 uppercase tracking-widest text-[10px] mt-0.5">Balance Check</Typography>
                     </View>
                 </View>
 
-                <View className="bg-white/10 rounded-2xl p-4 border border-white/10 mb-4">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <Typography className="text-white/60 text-xs">Total Aktiva</Typography>
-                        <Typography weight="bold" className="text-white">{formatCurrency(report?.total_aktiva || 0)}</Typography>
-                    </View>
-                    <View className="flex-row justify-between items-center mb-3">
-                        <Typography className="text-white/60 text-xs">Total Pasiva (Hutang + Modal)</Typography>
-                        <Typography weight="bold" className="text-white">{formatCurrency(report?.total_pasiva || 0)}</Typography>
-                    </View>
-                    <View className="h-[1px] bg-white/10 my-2" />
-                    <View className="flex-row justify-between items-center">
-                        <Typography className="text-white/60 text-xs">Selisih</Typography>
-                        <Typography weight="bold" className={selisih === 0 ? "text-emerald-300" : "text-amber-300"}>
+                <View className="bg-white/10 rounded-2xl p-5 border border-white/10 mb-4 w-full">
+                    <Row label="Total Aktiva" value={report?.total_aktiva || 0} isDark small />
+                    <Row label="Total Pasiva (Hutang + Modal)" value={report?.total_pasiva || 0} isDark small />
+                    <View className="h-[1px] bg-white/20 w-full my-3" />
+                    <View className="flex-row justify-between items-center w-full">
+                        <Typography className="text-white/60 text-xs flex-1">Selisih</Typography>
+                        <Typography variant="h4" weight="bold" className={selisih === 0 ? "text-emerald-300" : "text-amber-300"}>
                             {formatCurrency(selisih)}
                         </Typography>
                     </View>
                 </View>
 
-                <View className="flex-row items-center justify-center p-3 bg-white/10 rounded-2xl">
+                <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
                     {isBalanced ? (
                         <>
-                            <CheckCircle size={18} color="#6EE7B7" />
-                            <Typography weight="bold" className="text-emerald-300 ml-2 text-sm">
+                            <CheckCircle size={20} color="#6EE7B7" />
+                            <Typography weight="bold" className="text-emerald-300 ml-2 tracking-wide uppercase text-sm">
                                 NERACA SEIMBANG
                             </Typography>
                         </>
                     ) : (
                         <>
-                            <AlertTriangle size={18} color="#FCD34D" />
-                            <Typography weight="bold" className="text-amber-200 ml-2 text-sm">
+                            <AlertTriangle size={20} color="#FDE68A" />
+                            <Typography weight="bold" className="text-amber-200 ml-2 tracking-wide uppercase text-sm">
                                 TERDAPAT SELISIH
                             </Typography>
                         </>
                     )}
                 </View>
-            </Card>
+            </View>
         );
     };
 
@@ -505,32 +501,7 @@ export default function NeracaScreen() {
                     </View>
                 </View>
 
-                {/* Summary Card */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10 mb-8">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
-                            <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Balance Sheet</Typography>
-                        </View>
-                        <View className="flex-row items-center">
-                            <Scale size={14} color={report?.is_balanced ? "#10B981" : "#FBBF24"} />
-                            <Typography className={`${report?.is_balanced ? 'text-emerald-400' : 'text-amber-400'} text-[10px] font-bold ml-1`}>
-                                {report?.is_balanced ? 'BALANCED' : 'UNBALANCED'}
-                            </Typography>
-                        </View>
-                    </View>
 
-                    <View className="flex-row justify-between pt-1">
-                        <View className="flex-1">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
-                            <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_aktiva || 0)}</Typography>
-                        </View>
-                        <View className="w-[1px] bg-white/10 mx-4" />
-                        <View className="flex-1 items-end">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
-                            <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_pasiva || 0)}</Typography>
-                        </View>
-                    </View>
-                </View>
 
                 {/* Filter Tabs */}
                 <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
@@ -595,6 +566,32 @@ export default function NeracaScreen() {
                     </View>
                 ) : (
                     <>
+                        <View className="bg-slate-900 p-6 rounded-[32px] shadow-xl shadow-slate-900/20 mb-8 mt-2 w-full">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View className="bg-emerald-500/20 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                                    <Typography className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Balance Sheet</Typography>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <Scale size={14} color={report?.is_balanced ? "#34D399" : "#FBBF24"} />
+                                    <Typography className={`${report?.is_balanced ? 'text-emerald-400' : 'text-amber-400'} text-[10px] font-bold ml-1`}>
+                                        {report?.is_balanced ? 'BALANCED' : 'UNBALANCED'}
+                                    </Typography>
+                                </View>
+                            </View>
+
+                            <View className="flex-row justify-between pt-1">
+                                <View className="flex-1">
+                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
+                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_aktiva || 0)}</Typography>
+                                </View>
+                                <View className="w-[1px] bg-slate-700/50 mx-4" />
+                                <View className="flex-1 items-end">
+                                    <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
+                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_pasiva || 0)}</Typography>
+                                </View>
+                            </View>
+                        </View>
+
                         {/* AKTIVA Section Header */}
                         <View className="flex-row items-center mb-4 px-2">
                             <View className="w-2 h-8 bg-emerald-500 rounded-full mr-3" />
