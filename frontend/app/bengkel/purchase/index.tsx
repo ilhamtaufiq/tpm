@@ -189,11 +189,17 @@ export default function PurchaseScreen() {
             catatan: catatan,
             status_bayar: isSplitPayment ? (totalSplitAmount >= total ? 'LUNAS' : 'BELUM_LUNAS') : statusBayar,
             metode_bayar: isSplitPayment ? 'SPLIT' : (metodeBayar || 'TUNAI').toUpperCase(),
+            kas_jenis: isSplitPayment ? undefined : ((metodeBayar || 'TUNAI').toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'),
             payments: isSplitPayment ? payments.map(p => ({
                 metode: p.metode,
-                jumlah: parseNumber(p.nominal)
+                jumlah: parseNumber(p.nominal),
+                kas_jenis: p.metode === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'
             })).filter(p => p.jumlah > 0) : [
-                { metode: (metodeBayar || 'TUNAI').toUpperCase(), jumlah: statusBayar === 'LUNAS' ? total : parseNumber(payments[0]?.nominal || '0') }
+                { 
+                    metode: (metodeBayar || 'TUNAI').toUpperCase(), 
+                    jumlah: statusBayar === 'LUNAS' ? total : parseNumber(payments[0]?.nominal || '0'),
+                    kas_jenis: (metodeBayar || 'TUNAI').toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : 'KAS_UNIT_BENGKEL'
+                }
             ],
             diskon: 0,
             detail: items.map(item => ({

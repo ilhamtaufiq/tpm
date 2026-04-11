@@ -23,8 +23,9 @@ Success criteria:
 
 ## State
 - **Now**:
-    - Finalized all reporting and administrative requested features.
+    - Fixed `kas_jenis` mapping in Pembelian Sparepart so that TRANSFER uses `BANK_UTAMA` instead of `KAS_UNIT_BENGKEL`.
 - **Done**:
+    - Updated `frontend/app/bengkel/purchase/index.tsx` to handle `kas_jenis` dynamically based on the selected payment method.
     - Fixed zero-balance unit visibility in Neraca and Perubahan Modal reports.
     - Integrated granular armada-specific breakdowns for Jasa Angkut operational costs.
     - Added Delete User functionality to settings.
@@ -36,7 +37,7 @@ Success criteria:
 - None at the moment.
 
 ## Working set (files/ids/commands)
-- backend/app/api/v1/dashboard.py
+- frontend/app/bengkel/purchase/index.tsx
 - frontend/app/laporan/neraca.tsx
 - frontend/app/laporan/perubahan-modal.tsx
 - frontend/app/laporan/laba-rugi.tsx
