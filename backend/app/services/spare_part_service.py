@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import func, or_, case
+from sqlalchemy import func, or_, case, text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, UploadFile
 from app.config import settings
@@ -25,6 +25,9 @@ class SparePartService:
     def generate_next_kode(self, offset: int = 0) -> str:
         """Generate unique spare part code.
         
+        Format: SPR + YYMM + NNNN (e.g. SPR26040001)
+        Prefix is 7 chars: 'SPR' (3) + 'YYMM' (4)
+        
         Args:
             offset: Additional offset to add to the counter (used during bulk import
                      to avoid duplicate kodes when newly added records aren't yet 
@@ -33,21 +36,27 @@ class SparePartService:
         today = datetime.now()
         prefix = "SPR"
         date_str = today.strftime("%y%m")
+        full_prefix = f"{prefix}{date_str}"  # e.g. "SPR2604" = 7 chars
 
         last = (
             self.db.query(SparePart)
-            .filter(SparePart.kode.like(f"{prefix}{date_str}%"))
+            .filter(SparePart.kode.like(f"{full_prefix}%"))
             .order_by(SparePart.kode.desc())
             .first()
         )
 
         if last:
-            last_num = int(last.kode[-4:])
+            # Extract numeric suffix AFTER the prefix (not just last 4 chars)
+            num_str = last.kode[len(full_prefix):]  # e.g. "0001" or "10000"
+            try:
+                last_num = int(num_str)
+            except (ValueError, IndexError):
+                last_num = 0
             new_num = last_num + 1 + offset
         else:
             new_num = 1 + offset
 
-        return f"{prefix}{date_str}{new_num:04d}"
+        return f"{full_prefix}{new_num:04d}"
 
     def create(self, data: SparePartCreate, user_id: Optional[int] = None) -> SparePart:
         """Create a new spare part."""
@@ -551,37 +560,44 @@ class SparePartService:
             return {"error": f"Baris {row_idx}: Nama spare part wajib diisi"}
         
         try:
-            # Check Always Ready flag (column I, index 8)
-            always_ready = False
-            if len(row) > 8 and row[8] is not None:
-                ar_val = str(row[8]).strip().lower()
-                always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
-
             harga_beli = Decimal(str(row[3] or 0))
             harga_jual = Decimal(str(row[4] or 0))
 
-            stok_raw = row[5]
-            if always_ready:
-                stok = Decimal("999")
-            elif stok_raw is not None:
-                stok_str = str(stok_raw).strip()
+            stok = None
+            
+            # --- TWEAK MODAL: Force stock to match Excel's "Total Modal" ---
+            # Total Modal is at column H (index 7). If it's explicitly > 0, calculate the exact stock 
+            # so the DB's stok * harga_beli perfectly matches the Excel summary.
+            excel_modal = Decimal("0")
+            if len(row) > 7 and row[7]:
                 try:
-                    stok = Decimal(stok_str) if stok_str else Decimal("0")
+                    excel_modal = Decimal(str(row[7]).strip())
                 except InvalidOperation:
-                    # Text like "Tanpa Stok" → Normally Always Ready
+                    pass
+            
+            if excel_modal > 0 and harga_beli > 0:
+                stok = excel_modal / harga_beli
+
+            # --- FALLBACK: Use actual 'stok' column or Always Ready ---
+            if stok is None:
+                # Check Always Ready flag (column I, index 8)
+                always_ready = False
+                if len(row) > 8 and row[8] is not None:
+                    ar_val = str(row[8]).strip().lower()
+                    always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
+                
+                stok_raw = row[5]
+                if always_ready:
                     stok = Decimal("999")
-                    
-                    # MAGIC FIX: Check if Excel "Total Modal" has a manually typed value!
-                    # Total Modal is at column H (index 7). If it's > 0, they actually have hidden stock!
-                    if len(row) > 7 and row[7]:
-                        try:
-                            excel_modal = Decimal(str(row[7]).strip())
-                            if excel_modal > 0 and harga_beli > 0:
-                                stok = excel_modal / harga_beli  # Back-calculate the stock!
-                        except InvalidOperation:
-                            pass
-            else:
-                stok = Decimal("0")
+                elif stok_raw is not None:
+                    stok_str = str(stok_raw).strip()
+                    try:
+                        stok = Decimal(stok_str) if stok_str else Decimal("0")
+                    except InvalidOperation:
+                        # Text like "Tanpa Stok" or completely invalid string
+                        stok = Decimal("999")
+                else:
+                    stok = Decimal("0")
             
             satuan = str(row[6]).strip() if row[6] and str(row[6]).strip() else "pcs"
             kode_part = str(row[2]).strip() if row[2] and str(row[2]).strip() else None
@@ -702,105 +718,65 @@ class SparePartService:
             "format_detected": detected_format,
         }
         
-        # Track items processed in THIS import session to handle merging and fresh start
-        processed_ids = set()
-        processed_names = set()
-        processed_kodes = set()
-        new_kode_counter = 0  # Running counter to prevent duplicate auto-generated kodes
-
-        # Step 1: Soft-delete all existing spare parts to perform a fresh/replace import
-        now = datetime.now()
-        self.db.query(SparePart).filter(SparePart.deleted_at.is_(None)).update(
-            {"deleted_at": now}, 
-            synchronize_session=False
-        )
-        self.db.flush()
-
-        # Skip header (starting from row 2)
+        # ===================================================================
+        # PHASE 1: Parse all rows into in-memory dicts (no DB operations)
+        # ===================================================================
+        parsed_rows = []
         for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
             if not any(row): 
                 results["skipped"] += 1
-                continue  # Skip empty rows
+                continue
             
             results["total"] += 1
 
-            # Parse row based on detected format
             if detected_format == 'stok_format':
                 parsed = self._parse_row_stok_format(row, row_idx)
             else:
                 parsed = self._parse_row_standard(row, row_idx)
 
-            # Check for parse errors
             if "error" in parsed:
                 results["failed"] += 1
                 results["errors"].append(parsed["error"])
                 continue
-
-            kode = parsed["kode"]
-            nama = parsed["nama"]
-            stok = parsed["stok"]
-            harga_beli = parsed["harga_beli"]
-
-            # Track for next rows
-            processed_names.add(nama.lower())
-            if kode: processed_kodes.add(kode)
-
-            # Check if exists by kode or nama (including soft-deleted ones to reactivate them)
-            spare_part = None
-            if kode:
-                spare_part = self.db.query(SparePart).filter(SparePart.kode == kode).first()
             
-            if not spare_part and detected_format != 'stok_format':
-                # Only match by name for standard format
-                # stok_format uses Urutan as unique identifier — each row is a distinct item
-                spare_part = self.db.query(SparePart).filter(SparePart.nama == nama).first()
+            parsed["_row_idx"] = row_idx
+            parsed_rows.append(parsed)
 
-            try:
-                savepoint = self.db.begin_nested()
-                if spare_part:
-                    # Track if this is a duplicate within the same import file
-                    is_duplicate_in_file = spare_part.id in processed_ids
+        # ===================================================================
+        # PHASE 2: Apply parsed rows to DB (hard delete + fresh insert)
+        # ===================================================================
+        try:
+            # Step 1: HARD DELETE all existing spare parts for a truly fresh import.
+            from sqlalchemy import text
+            self.db.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+            self.db.execute(
+                SparePart.__table__.delete()
+            )
+            self.db.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+            self.db.flush()
 
-                    # Reset stock to 0 ONLY the first time we see this item during this import session
-                    # because Step 1 "Soft-deleted" everything (we want a fresh replace)
-                    if not is_duplicate_in_file:
-                        spare_part.stok = 0
-                        processed_ids.add(spare_part.id)
+            # Step 2: Pre-generate kodes for items that need one.
+            date_str = datetime.now().strftime("%y%m")
+            kodes_needed = sum(1 for p in parsed_rows if not p.get("kode"))
+            pre_generated_kodes = [f"SPR{date_str}{(i + 1):04d}" for i in range(kodes_needed)]
+            kode_idx = 0
 
-                    # Now perform the merge/sum logic
-                    if detected_format == 'stok_format':
-                        # stok_format: no Always Ready (999) logic, just sum stock as-is
-                        spare_part.stok += stok
-                        spare_part.harga_beli = harga_beli
-                    elif stok == 999 or spare_part.stok == 999:
-                        spare_part.stok = 999
-                        spare_part.harga_beli = Decimal("0")
-                    else:
-                        spare_part.stok += stok
-                        spare_part.harga_beli = harga_beli
-                    
-                    spare_part.harga_jual = parsed["harga_jual"]
-                    spare_part.kode_part = parsed["kode_part"] or spare_part.kode_part
-                    spare_part.kategori = parsed["kategori"] if parsed["kategori"] != "Umum" else (spare_part.kategori or "Umum")
-                    spare_part.merek = parsed["merek"] or spare_part.merek
-                    spare_part.satuan = parsed["satuan"] or spare_part.satuan
-                    spare_part.stok_minimum = parsed.get("stok_minimum", spare_part.stok_minimum or 5)
-                    spare_part.lokasi_rak = parsed["lokasi_rak"] or spare_part.lokasi_rak
-                    spare_part.catatan = parsed["catatan"] or spare_part.catatan
-                    
-                    spare_part.deleted_at = None
+            # Step 3: Insert all rows WITHOUT merging (Patokan = Urutan di Excel)
+            for parsed in parsed_rows:
+                row_idx = parsed["_row_idx"]
+                nama = parsed["nama"]
+                stok = parsed["stok"]
+                harga_beli = parsed["harga_beli"]
 
-                    if is_duplicate_in_file:
-                        results["duplicates"] += 1
-                    else:
-                        results["updated"] += 1
-                else:
-                    # Create new
+                try:
+                    # --- CREATE new item ---
+                    kode = parsed.get("kode")
                     if kode:
                         new_kode = kode
                     else:
-                        new_kode = self.generate_next_kode(offset=new_kode_counter)
-                        new_kode_counter += 1
+                        new_kode = pre_generated_kodes[kode_idx]
+                        kode_idx += 1
+                    
                     new_spare_part = SparePart(
                         kode=new_kode,
                         nama=nama,
@@ -817,15 +793,22 @@ class SparePartService:
                     )
                     self.db.add(new_spare_part)
                     results["success"] += 1
-                
-                self.db.flush()
-            except Exception as e:
-                savepoint.rollback()
-                results["failed"] += 1
-                results["errors"].append(f"Baris {row_idx}: Terjadi kesalahan database ({str(e)})")
-                continue
 
-        self.db.commit()
+                except Exception as e:
+                    results["failed"] += 1
+                    results["errors"].append(f"Baris {row_idx}: {str(e)}")
+                    continue
+
+            # Single flush + commit for the entire batch
+            self.db.flush()
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Import gagal: {str(e)}"
+            )
+        
         return results
 
     def bulk_delete(self, ids: List[int]) -> int:

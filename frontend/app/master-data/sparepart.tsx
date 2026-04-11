@@ -23,6 +23,9 @@ import {
     Image as ImageIcon,
     Camera,
     Check,
+    CheckCircle2,
+    XCircle,
+    Upload,
     Circle,
     Download,
     Eye,
@@ -348,6 +351,14 @@ export default function SparePartMasterScreen() {
         }
     };
 
+    // Import Progress States
+    const [isImportProgressVisible, setIsImportProgressVisible] = useState(false);
+    const [importStep, setImportStep] = useState<'picking' | 'uploading' | 'processing' | 'done' | 'error'>('picking');
+    const [importProgress, setImportProgress] = useState(0);
+    const [importResult, setImportResult] = useState<any>(null);
+    const [importError, setImportError] = useState<string>('');
+    const importProgressInterval = useRef<any>(null);
+
     const handleImport = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
@@ -372,33 +383,47 @@ export default function SparePartMasterScreen() {
                 });
             }
 
+            // Show progress modal
+            setIsImportProgressVisible(true);
+            setImportStep('uploading');
+            setImportProgress(0);
+            setImportResult(null);
+            setImportError('');
+
+            // Simulate upload progress
+            let progress = 0;
+            importProgressInterval.current = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 85) progress = 85;
+                setImportProgress(Math.round(progress));
+            }, 200);
+
+            // Switch to processing after a small delay
+            setTimeout(() => setImportStep('processing'), 800);
+
             const response = await importMutation.mutateAsync(formData);
 
-            const formatLabel = response.format_detected === 'stok_format' ? 'Import Stok' : 'Format Standar';
-            const totalUnik = response.success + response.updated;
-            if (Platform.OS === 'web') {
-                alert(`Import Berhasil (Format: ${formatLabel})\nTotal Baris: ${response.total}\nProduk Unik: ${totalUnik}\n  → Baru: ${response.success}\n  → Diperbarui: ${response.updated}\nDuplikat (Digabung): ${response.duplicates}\nBaris Kosong: ${response.skipped}\nGagal: ${response.failed}${response.failed > 0 ? '\n\nDetail Error: ' + response.errors.slice(0, 5).join('\n') : ''}`);
-            } else {
-                Alert.alert(
-                    'Import Berhasil',
-                    `Format: ${formatLabel}\nTotal Baris: ${response.total}\nProduk Unik: ${totalUnik}\n  → Baru: ${response.success}\n  → Diperbarui: ${response.updated}\nDuplikat (Digabung): ${response.duplicates}\nBaris Kosong: ${response.skipped}\nGagal: ${response.failed}`,
-                    response.failed > 0 ? [
-                        {
-                            text: 'Lihat Error',
-                            onPress: () => Alert.alert('Detail Error', response.errors.slice(0, 5).join('\n') + (response.errors.length > 5 ? '\n...' : ''))
-                        },
-                        { text: 'OK' }
-                    ] : undefined
-                );
-            }
-        } catch (error) {
-            console.error('Import failed:', error);
-            if (Platform.OS === 'web') {
-                alert('Terjadi kesalahan saat mengimpor data. Pastikan format file sesuai.');
-            } else {
-                Alert.alert('Gagal', 'Terjadi kesalahan saat mengimpor data. Pastikan format file sesuai.');
-            }
+            // Clear interval and set 100%
+            if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+            setImportProgress(100);
+            setImportResult(response);
+            setImportStep('done');
+        } catch (error: any) {
+            if (importProgressInterval.current) clearInterval(importProgressInterval.current);
+            const errorMsg = error?.response?.data?.detail || error?.message || 'Terjadi kesalahan saat mengimpor data.';
+            setImportError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+            setImportStep('error');
+            setIsImportProgressVisible(true);
         }
+    };
+
+    const handleCloseImportProgress = () => {
+        setIsImportProgressVisible(false);
+        setImportStep('picking');
+        setImportProgress(0);
+        setImportResult(null);
+        setImportError('');
+        if (importProgressInterval.current) clearInterval(importProgressInterval.current);
     };
 
     const handleBulkPrint = async (type: 'QR' | 'BARCODE') => {
@@ -1399,6 +1424,181 @@ export default function SparePartMasterScreen() {
                             className="mt-4"
                         />
                     </View>
+                </View>
+            </BaseModal>
+
+            {/* Import Progress Modal */}
+            <BaseModal
+                visible={isImportProgressVisible}
+                onClose={importStep === 'done' || importStep === 'error' ? handleCloseImportProgress : undefined}
+                title="Import Sparepart"
+            >
+                <View className="p-6">
+                    {/* Step Indicators */}
+                    <View className="flex-row items-center justify-center mb-8">
+                        {[
+                            { key: 'uploading', label: 'Upload' },
+                            { key: 'processing', label: 'Proses' },
+                            { key: 'done', label: 'Selesai' },
+                        ].map((step, i) => {
+                            const isActive = step.key === importStep || 
+                                (step.key === 'done' && importStep === 'error');
+                            const isCompleted = 
+                                (step.key === 'uploading' && ['processing', 'done', 'error'].includes(importStep)) ||
+                                (step.key === 'processing' && ['done'].includes(importStep));
+                            const isFailed = step.key === 'done' && importStep === 'error';
+                            
+                            return (
+                                <React.Fragment key={step.key}>
+                                    <View className="items-center">
+                                        <View className={`w-10 h-10 rounded-full items-center justify-center ${
+                                            isFailed ? 'bg-red-500' :
+                                            isCompleted ? 'bg-emerald-500' : 
+                                            isActive ? 'bg-primary' : 'bg-gray-200'
+                                        }`}>
+                                            {isFailed ? (
+                                                <XCircle size={20} color="white" />
+                                            ) : isCompleted ? (
+                                                <CheckCircle2 size={20} color="white" />
+                                            ) : isActive ? (
+                                                <ActivityIndicator size="small" color="white" />
+                                            ) : (
+                                                <Typography className="text-gray-400 font-bold text-xs">{i + 1}</Typography>
+                                            )}
+                                        </View>
+                                        <Typography className={`text-[10px] font-bold mt-1.5 ${
+                                            isFailed ? 'text-red-500' :
+                                            isCompleted ? 'text-emerald-600' : 
+                                            isActive ? 'text-primary' : 'text-gray-400'
+                                        }`}>{step.label}</Typography>
+                                    </View>
+                                    {i < 2 && (
+                                        <View className={`flex-1 h-0.5 mx-2 mt-[-12px] rounded-full ${
+                                            isCompleted ? 'bg-emerald-400' : 'bg-gray-200'
+                                        }`} />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </View>
+
+                    {/* Upload/Processing State */}
+                    {(importStep === 'uploading' || importStep === 'processing') && (
+                        <View className="items-center">
+                            <View className="w-24 h-24 bg-primary/5 rounded-full items-center justify-center mb-6 border-2 border-primary/10">
+                                {importStep === 'uploading' ? (
+                                    <Upload size={36} color="#023C69" />
+                                ) : (
+                                    <RefreshCw size={36} color="#023C69" />
+                                )}
+                            </View>
+                            <Typography variant="h3" weight="bold" className="text-textMain mb-2">
+                                {importStep === 'uploading' ? 'Mengunggah File...' : 'Memproses Data...'}
+                            </Typography>
+                            <Typography className="text-textGray text-center text-sm mb-6">
+                                {importStep === 'uploading' 
+                                    ? 'File sedang diunggah ke server.' 
+                                    : 'Membaca Excel dan menyimpan ke database. Harap tunggu...'}
+                            </Typography>
+
+                            {/* Progress Bar */}
+                            <View className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-2">
+                                <View 
+                                    className="bg-primary h-full rounded-full"
+                                    style={{ width: `${importProgress}%` }}
+                                />
+                            </View>
+                            <Typography className="text-primary font-bold text-sm">{importProgress}%</Typography>
+                        </View>
+                    )}
+
+                    {/* Success State */}
+                    {importStep === 'done' && importResult && (
+                        <View>
+                            <View className="items-center mb-6">
+                                <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-4 border-2 border-emerald-100">
+                                    <CheckCircle2 size={40} color="#10B981" />
+                                </View>
+                                <Typography variant="h3" weight="bold" className="text-emerald-700">Import Berhasil!</Typography>
+                                <Typography className="text-textGray text-sm mt-1">
+                                    Format: {importResult.format_detected === 'stok_format' ? 'Import Stok' : 'Format Standar'}
+                                </Typography>
+                            </View>
+
+                            {/* Result Stats */}
+                            <View className="space-y-3">
+                                <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-2xl">
+                                    <Typography className="text-textGray text-sm">Total Baris Diproses</Typography>
+                                    <Typography weight="bold" className="text-textMain text-lg">{importResult.total}</Typography>
+                                </View>
+                                <View className="flex-row justify-between items-center bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                                    <Typography className="text-emerald-700 text-sm">✨ Produk Baru</Typography>
+                                    <Typography weight="bold" className="text-emerald-700 text-lg">{importResult.success}</Typography>
+                                </View>
+                                <View className="flex-row justify-between items-center bg-blue-50 p-3 rounded-2xl border border-blue-100">
+                                    <Typography className="text-blue-700 text-sm">🔄 Diperbarui</Typography>
+                                    <Typography weight="bold" className="text-blue-700 text-lg">{importResult.updated}</Typography>
+                                </View>
+                                {importResult.duplicates > 0 && (
+                                    <View className="flex-row justify-between items-center bg-amber-50 p-3 rounded-2xl border border-amber-100">
+                                        <Typography className="text-amber-700 text-sm">🔗 Digabung (Duplikat)</Typography>
+                                        <Typography weight="bold" className="text-amber-700 text-lg">{importResult.duplicates}</Typography>
+                                    </View>
+                                )}
+                                {importResult.failed > 0 && (
+                                    <View className="bg-red-50 p-3 rounded-2xl border border-red-100">
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Typography className="text-red-600 text-sm">❌ Gagal</Typography>
+                                            <Typography weight="bold" className="text-red-600 text-lg">{importResult.failed}</Typography>
+                                        </View>
+                                        {importResult.errors && importResult.errors.length > 0 && (
+                                            <View className="bg-red-100/50 p-2 rounded-xl">
+                                                {importResult.errors.slice(0, 3).map((err: string, idx: number) => (
+                                                    <Typography key={idx} className="text-red-500 text-[10px] mb-0.5">
+                                                        {err.length > 100 ? err.substring(0, 100) + '...' : err}
+                                                    </Typography>
+                                                ))}
+                                                {importResult.errors.length > 3 && (
+                                                    <Typography className="text-red-400 text-[10px] italic">...dan {importResult.errors.length - 3} error lainnya</Typography>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+
+                            <Button
+                                title="Selesai"
+                                onPress={handleCloseImportProgress}
+                                className="mt-6"
+                                size="lg"
+                            />
+                        </View>
+                    )}
+
+                    {/* Error State */}
+                    {importStep === 'error' && (
+                        <View className="items-center">
+                            <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-4 border-2 border-red-100">
+                                <XCircle size={40} color="#EF4444" />
+                            </View>
+                            <Typography variant="h3" weight="bold" className="text-red-600 mb-2">Import Gagal</Typography>
+                            <Typography className="text-textGray text-center text-sm mb-4">
+                                Terjadi kesalahan saat mengimpor data.
+                            </Typography>
+                            <View className="bg-red-50 p-4 rounded-2xl border border-red-100 w-full mb-6">
+                                <Typography className="text-red-600 text-xs">
+                                    {importError || 'Unknown error'}
+                                </Typography>
+                            </View>
+                            <Button
+                                title="Tutup"
+                                variant="danger"
+                                onPress={handleCloseImportProgress}
+                                size="lg"
+                            />
+                        </View>
+                    )}
                 </View>
             </BaseModal>
         </View>
