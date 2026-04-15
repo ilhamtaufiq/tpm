@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, func, Column
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class Base(DeclarativeBase):
@@ -36,7 +37,11 @@ class SoftDeleteMixin:
         default=None,
     )
 
-    @property
+    @hybrid_property
     def is_deleted(self) -> bool:
         """Check if record is soft deleted."""
         return self.deleted_at is not None
+
+    @is_deleted.expression
+    def is_deleted(cls):
+        return cls.deleted_at.is_not(None)

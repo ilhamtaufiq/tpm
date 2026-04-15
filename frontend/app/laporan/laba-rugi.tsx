@@ -161,20 +161,26 @@ export default function LabaRugiScreen() {
                     <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
                 </div>
                 <div class="row-item">
-                    <span>2. Biaya Lainnya (Muatan)</span>
-                    <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_lainnya || 0)})</span>
-                </div>
-                <div class="row-item">
-                    <span>3. Biaya Sparepart & Servis</span>
+                    <span>2. Biaya Sparepart & Servis</span>
                     <span class="text-error">(${formatCurrency(reportData?.jasa_angkut_details?.biaya_bengkel || 0)})</span>
                 </div>
+                ${reportData?.jasa_angkut_details?.bengkel_per_armada && Object.keys(reportData.jasa_angkut_details.bengkel_per_armada).length > 0 ? `
+                    <div style="padding-left: 20px; font-size: 10px; color: #6B7280; margin-bottom: 5px;">
+                        ${Object.entries(reportData.jasa_angkut_details.bengkel_per_armada).map(([name, val]) => `
+                            <div class="row-item" style="border:none; padding:2px 0;">
+                                <span>- ${name}</span>
+                                <span class="text-error">(${formatCurrency(val as number)})</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
                 <div class="row-item">
-                    <span>4. Biaya Operasional Umum</span>
+                    <span>3. Biaya Operasional Umum</span>
                     <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.jasa_angkut || 0)})</span>
                 </div>
                 <div class="row-item row-total">
-                    <span>5. LABA BERSIH JASA ANGKUT</span>
-                    <span class="font-bold">${formatCurrency((reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}</span>
+                    <span>4. LABA BERSIH JASA ANGKUT</span>
+                    <span class="font-bold">${formatCurrency((reportData?.jasa_angkut_details?.gross_share_tpm || 0) - (reportData?.jasa_angkut_details?.biaya_lainnya || 0) - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}</span>
                 </div>
 
                 <div class="section-header">UNIT JUAL BELI MOBIL</div>
@@ -186,16 +192,40 @@ export default function LabaRugiScreen() {
                     <span>2. Biaya Operasional Unit</span>
                     <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.mobil || 0)})</span>
                 </div>
+                ${reportData?.pengeluaran_unit_details?.mobil_unit && Object.keys(reportData.pengeluaran_unit_details.mobil_unit).length > 0 ? `
+                    <div style="padding-left: 20px; font-size: 10px; color: #6B7280; margin-bottom: 5px;">
+                        ${Object.entries(reportData.pengeluaran_unit_details.mobil_unit).map(([name, val]) => `
+                            <div class="row-item" style="border:none; padding:2px 0;">
+                                <span>- ${name}</span>
+                                <span class="text-error">(${formatCurrency(val as number)})</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
                 <div class="row-item">
-                    <span>3. Laba Investor</span>
+                    <span>3. Biaya Sparepart & Servis</span>
+                    <span class="text-error">(${formatCurrency(reportData?.mobil_details?.biaya_bengkel || 0)})</span>
+                </div>
+                ${reportData?.mobil_details?.bengkel_per_mobil && Object.keys(reportData.mobil_details.bengkel_per_mobil).length > 0 ? `
+                    <div style="padding-left: 20px; font-size: 10px; color: #6B7280; margin-bottom: 5px;">
+                        ${Object.entries(reportData.mobil_details.bengkel_per_mobil).map(([name, val]) => `
+                            <div class="row-item" style="border:none; padding:2px 0;">
+                                <span>- ${name}</span>
+                                <span class="text-error">(${formatCurrency(val as number)})</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                <div class="row-item">
+                    <span>4. Laba Investor</span>
                     <span class="text-error">(${formatCurrency(reportData?.mobil_details?.laba_investor || 0)})</span>
                 </div>
                 <div class="row-item row-sub" style="color: ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? '#D97706' : '#6B7280'};">
-                    <span>4. Sisa Piutang (Belum Lunas)</span>
+                    <span>5. Sisa Piutang (Belum Lunas)</span>
                     <span>${formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}</span>
                 </div>
                 <div class="row-item row-total">
-                    <span>5. LABA TPM (NET)</span>
+                    <span>6. LABA TPM (NET)</span>
                     <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
                 </div>
 
@@ -378,7 +408,8 @@ export default function LabaRugiScreen() {
     );
 
     const renderJasaAngkutSection = () => {
-        const netJasaAngkut = (reportData?.laba_kotor?.jasa_angkut || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0);
+        const grossMinusMuatan = (reportData?.jasa_angkut_details?.gross_share_tpm || 0) - (reportData?.jasa_angkut_details?.biaya_lainnya || 0);
+        const netJasaAngkut = grossMinusMuatan - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0);
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -390,10 +421,16 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    <Row label="1. Penghasilan Jasa (Gross TPM)" value={reportData?.jasa_angkut_details?.gross_share_tpm || 0} bold large />
-                    <Row label="2. Biaya Lainnya (Muatan)" value={reportData?.jasa_angkut_details?.biaya_lainnya || 0} isNegative />
-                    <Row label="3. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
-                    <Row label="4. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} isNegative />
+                    <Row label="1. Penghasilan Jasa (Net Rute)" value={grossMinusMuatan} bold large />
+                    <Row label="2. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
+                    {reportData?.jasa_angkut_details?.bengkel_per_armada && Object.keys(reportData.jasa_angkut_details.bengkel_per_armada).length > 0 && (
+                        <View className="ml-4 pl-3 py-1 border-l-2 border-emerald-100 mt-1 mb-2 w-[90%]">
+                            {Object.entries(reportData.jasa_angkut_details.bengkel_per_armada).map(([name, val]) => (
+                                <Row key={name} label={name} value={val as number} small isNegative />
+                            ))}
+                        </View>
+                    )}
+                    <Row label="3. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} isNegative />
 
                     {reportData?.pengeluaran_unit_details?.jasa_angkut_armada && Object.keys(reportData.pengeluaran_unit_details.jasa_angkut_armada).length > 0 && (
                         <View className="ml-4 pl-3 py-1 border-l-2 border-emerald-100 mt-2 mb-2 w-[90%]">
@@ -407,7 +444,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netJasaAngkut >= 0 ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-800" : "text-rose-800"}>5. Laba/Rugi Bersih</Typography>
+                            <Typography variant="body2" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-800" : "text-rose-800"}>4. Laba/Rugi Bersih</Typography>
                             <Typography variant="caption" className={netJasaAngkut >= 0 ? "text-emerald-600/70 uppercase tracking-tighter text-[10px] mt-0.5" : "text-rose-600/70 uppercase tracking-tighter text-[10px] mt-0.5"}>Unit Jasa Angkut</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-700" : "text-rose-700"}>
@@ -434,12 +471,27 @@ export default function LabaRugiScreen() {
                 <View className="p-5 w-full">
                     <Row label="1. Total Penjualan (Gross)" value={reportData?.mobil_details?.total_penjualan || 0} bold large />
                     <Row label="2. Biaya Operasional Unit" value={reportData?.pengeluaran_unit_details?.mobil || 0} isNegative />
-                    <Row label="3. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
+                    {reportData?.pengeluaran_unit_details?.mobil_unit && Object.keys(reportData.pengeluaran_unit_details.mobil_unit).length > 0 && (
+                        <View className="ml-4 pl-3 py-1 border-l-2 border-amber-100 mt-1 mb-2 w-[90%]">
+                            {Object.entries(reportData.pengeluaran_unit_details.mobil_unit).map(([name, val]) => (
+                                <Row key={name} label={name} value={val as number} small isNegative />
+                            ))}
+                        </View>
+                    )}
+                    <Row label="3. Biaya Sparepart & Servis" value={reportData?.mobil_details?.biaya_bengkel || 0} isNegative />
+                    {reportData?.mobil_details?.bengkel_per_mobil && Object.keys(reportData.mobil_details.bengkel_per_mobil).length > 0 && (
+                        <View className="ml-4 pl-3 py-1 border-l-2 border-amber-100 mt-1 mb-2 w-[90%]">
+                            {Object.entries(reportData.mobil_details.bengkel_per_mobil).map(([name, val]) => (
+                                <Row key={name} label={name} value={val as number} small isNegative />
+                            ))}
+                        </View>
+                    )}
+                    <Row label="4. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
 
                     <View className={`w-full rounded-xl p-3 my-3 border flex-row justify-between items-center ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-slate-50 border-slate-100/50'}`}>
                         <View className="flex-1 pr-2">
                             <View className="flex-row items-center">
-                                <Typography variant="caption" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-800 tracking-wide uppercase text-[10px] mr-2" : "text-slate-500 tracking-wide uppercase text-[10px] mr-2"}>4. Sisa Piutang Unit</Typography>
+                                <Typography variant="caption" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-800 tracking-wide uppercase text-[10px] mr-2" : "text-slate-500 tracking-wide uppercase text-[10px] mr-2"}>5. Sisa Piutang Unit</Typography>
                                 {(reportData?.mobil_details?.piutang_nilai || 0) > 0 && <View className="bg-amber-500 w-1.5 h-1.5 rounded-full" />}
                             </View>
                             <Typography variant="caption" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-600/80 text-[10px]" : "text-slate-400 text-[10px]"}>
@@ -455,7 +507,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netMobil >= 0 ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className={netMobil >= 0 ? "text-emerald-800" : "text-rose-800"}>5. Laba TPM (Net)</Typography>
+                            <Typography variant="body2" weight="bold" className={netMobil >= 0 ? "text-emerald-800" : "text-rose-800"}>6. Laba TPM (Net)</Typography>
                             <Typography variant="caption" className={netMobil >= 0 ? "text-emerald-600/70 uppercase tracking-tighter text-[10px] mt-0.5" : "text-rose-600/70 uppercase tracking-tighter text-[10px] mt-0.5"}>Unit Jual Beli Mobil</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className={netMobil >= 0 ? "text-emerald-700" : "text-rose-700"}>

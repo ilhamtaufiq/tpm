@@ -275,6 +275,7 @@ def get_profit_summary(
     pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0)
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
     pengeluaran_unit_details["jasa_angkut_armada"] = pengeluaran.get("jasa_angkut_armada", {})
+    pengeluaran_unit_details["mobil_unit"] = pengeluaran.get("mobil_unit", {})
 
     # Add Purchases (as requested by user)
     if "pembelian_part" in pengeluaran_details:

@@ -63,7 +63,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
     const [catatan, setCatatan] = useState('');
-    const [activeTab, setActiveTab] = useState<'service' | 'sparepart'>('service');
+    const [activeTab, setActiveTab] = useState<'sparepart' | 'service'>('sparepart');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scannerMode, setScannerMode] = useState<'sparepart' | 'plate' | 'vessel'>('sparepart');
     const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
@@ -408,7 +408,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         }
 
         if (!isInternalTransaction) {
-            
+
             if (!isSplitPayment) {
                 // Method is required ONLY if amount is greater than 0
                 if (!payments[0]?.metode && totalPaid > 0) {
@@ -796,29 +796,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             {/* TABS SWITCHER */}
             <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
-                <View className={`flex-1 rounded-[18px] ${activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-                    <TouchableOpacity
-                        onPress={() => setActiveTab('service')}
-                        activeOpacity={0.7}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
-                    >
-                        <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
-                        <Typography
-                            variant="caption"
-                            weight={activeTab === 'service' ? 'bold' : 'medium'}
-                            className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
-                        >
-                            Jasa (Service)
-                        </Typography>
-                        {serviceCount > 0 && (
-                            <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'service' ? 'bg-primary' : 'bg-gray-200'}`}>
-                                <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
-                                    {serviceCount}
-                                </Typography>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                </View>
 
                 <View className={`flex-1 rounded-[18px] ${activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
                     <TouchableOpacity
@@ -843,68 +820,32 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         )}
                     </TouchableOpacity>
                 </View>
+                <View className={`flex-1 rounded-[18px] ${activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
+                    <TouchableOpacity
+                        onPress={() => setActiveTab('service')}
+                        activeOpacity={0.7}
+                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
+                    >
+                        <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
+                        <Typography
+                            variant="caption"
+                            weight={activeTab === 'service' ? 'bold' : 'medium'}
+                            className={`ml-2 ${activeTab === 'service' ? 'text-primary' : 'text-gray-400'}`}
+                        >
+                            Jasa (Service)
+                        </Typography>
+                        {serviceCount > 0 && (
+                            <View className={`ml-2 px-2 py-0.5 rounded-full ${activeTab === 'service' ? 'bg-primary' : 'bg-gray-200'}`}>
+                                <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
+                                    {serviceCount}
+                                </Typography>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
+
             </View>
 
-            {/* Jasa Section */}
-            {activeTab === 'service' && (
-                <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <View className="flex-row items-center">
-                            <Wrench size={18} color="#023C69" />
-                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
-                        </View>
-                        <Pressable onPress={addService} className="flex-row items-center">
-                            <Plus size={16} color="#023C69" />
-                            <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
-                        </Pressable>
-                    </View>
-
-                    {services.map((service, index) => (
-                        <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
-                            <View className="flex-row items-center space-x-2">
-                                <View style={{ flex: 1 }}>
-                                    <JasaSelector
-                                        value={service.nama_jasa ? {
-                                            id: service.service_id || 0,
-                                            nama: service.nama_jasa,
-                                            harga: service.harga,
-                                            kategori: 'Servis',
-                                        } : null}
-                                        onSelect={(js) => {
-                                            const newS = [...services];
-                                            if (js) {
-                                                newS[index].service_id = js.id;
-                                                newS[index].nama_jasa = js.nama;
-                                                const cleanPrice = Math.floor(Number(js.harga)).toString();
-                                                newS[index].harga = formatNumber(cleanPrice);
-                                            } else {
-                                                newS[index].service_id = 0;
-                                                newS[index].nama_jasa = '';
-                                                newS[index].harga = '';
-                                            }
-                                            setServices(newS);
-                                        }}
-                                    />
-                                </View>
-                                {services.length > 1 && (
-                                    <Pressable
-                                        onPress={() => setServices(services.filter(s => s.id !== service.id))}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                        style={{
-                                            padding: 10,
-                                            zIndex: 100,
-                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined
-                                        }}
-                                        className="items-center justify-center bg-red-50 rounded-2xl"
-                                    >
-                                        <Trash2 size={22} color="#EE2737" />
-                                    </Pressable>
-                                )}
-                            </View>
-                        </Card>
-                    ))}
-                </View>
-            )}
 
             {/* Parts Section */}
             {activeTab === 'sparepart' && (
@@ -1053,6 +994,68 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     ))}
                 </View>
             )}
+
+            {/* Jasa Section */}
+            {activeTab === 'service' && (
+                <View className="mb-6">
+                    <View className="flex-row justify-between items-center mb-3">
+                        <View className="flex-row items-center">
+                            <Wrench size={18} color="#023C69" />
+                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
+                        </View>
+                        <Pressable onPress={addService} className="flex-row items-center">
+                            <Plus size={16} color="#023C69" />
+                            <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
+                        </Pressable>
+                    </View>
+
+                    {services.map((service, index) => (
+                        <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
+                            <View className="flex-row items-center space-x-2">
+                                <View style={{ flex: 1 }}>
+                                    <JasaSelector
+                                        value={service.nama_jasa ? {
+                                            id: service.service_id || 0,
+                                            nama: service.nama_jasa,
+                                            harga: service.harga,
+                                            kategori: 'Servis',
+                                        } : null}
+                                        onSelect={(js) => {
+                                            const newS = [...services];
+                                            if (js) {
+                                                newS[index].service_id = js.id;
+                                                newS[index].nama_jasa = js.nama;
+                                                const cleanPrice = Math.floor(Number(js.harga)).toString();
+                                                newS[index].harga = formatNumber(cleanPrice);
+                                            } else {
+                                                newS[index].service_id = 0;
+                                                newS[index].nama_jasa = '';
+                                                newS[index].harga = '';
+                                            }
+                                            setServices(newS);
+                                        }}
+                                    />
+                                </View>
+                                {services.length > 1 && (
+                                    <Pressable
+                                        onPress={() => setServices(services.filter(s => s.id !== service.id))}
+                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                                        style={{
+                                            padding: 10,
+                                            zIndex: 100,
+                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined
+                                        }}
+                                        className="items-center justify-center bg-red-50 rounded-2xl"
+                                    >
+                                        <Trash2 size={22} color="#EE2737" />
+                                    </Pressable>
+                                )}
+                            </View>
+                        </Card>
+                    ))}
+                </View>
+            )}
+
 
             {/* Total Summary */}
             <View className="mb-6">
@@ -1305,9 +1308,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 </ScrollView>
                 <BarcodeScannerModal
                     visible={isScannerOpen}
-                    onClose={() => setIsScannerOpen(false)}
+                    onClose={() => {
+                        setIsScannerOpen(false);
+                        // Auto-switch to sparepart tab after continuous scan session
+                        if (scannerMode === 'sparepart' && scanLog.length > 0) {
+                            setActiveTab('sparepart');
+                        }
+                    }}
                     onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
+                    continuous={scannerMode === 'sparepart'}
                 />
                 <AlertDialog
                     visible={dialogConfig.visible}
@@ -1345,9 +1355,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 </BottomSheetScrollView>
                 <BarcodeScannerModal
                     visible={isScannerOpen}
-                    onClose={() => setIsScannerOpen(false)}
+                    onClose={() => {
+                        setIsScannerOpen(false);
+                        // Auto-switch to sparepart tab after continuous scan session
+                        if (scannerMode === 'sparepart' && scanLog.length > 0) {
+                            setActiveTab('sparepart');
+                        }
+                    }}
                     onScan={(data) => scannerMode === 'sparepart' ? handleScanSparePart(data) : handleScanPlate(data)}
                     scanLog={scanLog}
+                    continuous={scannerMode === 'sparepart'}
                 />
                 <AlertDialog
                     visible={dialogConfig.visible}

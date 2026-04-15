@@ -348,6 +348,25 @@ class PengeluaranService:
         by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
         armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
 
+        # Breakdown Jual Beli Mobil by Mobil
+        from app.models.mobil import Mobil
+        mobil_query = self.db.query(
+            Mobil.model,
+            Mobil.nomor_plat,
+            func.sum(PengeluaranBengkel.jumlah)
+        ).join(
+            Mobil, PengeluaranBengkel.mobil_id == Mobil.id
+        ).filter(
+            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"])
+        )
+        if tanggal_dari:
+            mobil_query = mobil_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai:
+            mobil_query = mobil_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
+        
+        by_mobil = mobil_query.group_by(Mobil.model, Mobil.nomor_plat).all()
+        mobil_summary = {f"{row[0]} ({row[1]})" if row[0] and row[1] else (row[0] or row[1] or "Unknown"): float(row[2] or 0) for row in by_mobil}
+
         return {
             "total_transaksi": total_count,
             "total_pengeluaran": float(total_value),
@@ -356,6 +375,7 @@ class PengeluaranService:
             "per_kategori": category_summary,
             "per_unit": unit_summary,
             "jasa_angkut_armada": armada_ja_summary,
+            "mobil_unit": mobil_summary,
             "period": {
                 "start": tanggal_dari.isoformat() if tanggal_dari else None,
                 "end": tanggal_sampai.isoformat() if tanggal_sampai else None,

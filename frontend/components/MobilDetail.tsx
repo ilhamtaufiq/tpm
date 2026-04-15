@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -25,7 +25,9 @@ import {
     Ban,
     AlertTriangle,
     ArrowDownLeft,
-    Info
+    Info,
+    Share2,
+    Link
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
@@ -78,6 +80,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     const [cancelError, setCancelError] = useState<string | null>(null);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [hutangModalVisible, setHutangModalVisible] = useState(false);
+    const [shareSuccess, setShareSuccess] = useState(false);
 
     const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
@@ -139,6 +142,40 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             } catch (error) {
                 console.error('Upload error:', error);
                 Alert.alert('Gagal Upload', 'Terjadi kesalahan saat mengunggah media. Silakan coba lagi.');
+            }
+        }
+    };
+
+    const handleShareGallery = async () => {
+        const galleryUrl = `${(FILE_URL || 'https://tpm.cianjur.space')}/api/v1/public/gallery/mobil/${activeUnit.id}/view`;
+        const shareTitle = `${activeUnit.merek} ${activeUnit.model} ${activeUnit.tahun}`;
+        const shareMessage = `${shareTitle} - ${activeUnit.nomor_plat}\n\nLihat foto & video unit ini:\n${galleryUrl}`;
+
+        try {
+            if (Platform.OS === 'web') {
+                // Web: Try native share first, fallback to clipboard
+                if (navigator.share) {
+                    await navigator.share({
+                        title: shareTitle,
+                        text: shareMessage,
+                        url: galleryUrl,
+                    });
+                } else {
+                    await navigator.clipboard.writeText(galleryUrl);
+                    setShareSuccess(true);
+                    setTimeout(() => setShareSuccess(false), 2000);
+                }
+            } else {
+                // Native: Use React Native Share API
+                await Share.share({
+                    title: shareTitle,
+                    message: shareMessage,
+                    url: galleryUrl, // iOS only
+                });
+            }
+        } catch (error: any) {
+            if (error?.message !== 'Share dismissed') {
+                console.error('Share error:', error);
             }
         }
     };
@@ -301,18 +338,32 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </View>
                     )}
 
-                    {/* Media Quick Action */}
-                    <Pressable
-                        onPress={handlePickMedia}
-                        disabled={uploadMediaAction.isPending}
-                        className="absolute bottom-6 right-6 w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-2xl border border-gray-100"
-                    >
-                        {uploadMediaAction.isPending ? (
-                            <ActivityIndicator size="small" color="#023C69" />
-                        ) : (
-                            <Plus size={24} color="#023C69" strokeWidth={3} />
+                    {/* Media Quick Actions */}
+                    <View className="absolute bottom-6 right-6 flex-row gap-2">
+                        {activeUnit.media && activeUnit.media.length > 0 && (
+                            <Pressable
+                                onPress={handleShareGallery}
+                                className="w-14 h-14 bg-emerald-500 rounded-2xl items-center justify-center shadow-2xl border border-emerald-400/30"
+                            >
+                                {shareSuccess ? (
+                                    <CheckCircle2 size={22} color="white" />
+                                ) : (
+                                    <Share2 size={22} color="white" />
+                                )}
+                            </Pressable>
                         )}
-                    </Pressable>
+                        <Pressable
+                            onPress={handlePickMedia}
+                            disabled={uploadMediaAction.isPending}
+                            className="w-14 h-14 bg-white rounded-2xl items-center justify-center shadow-2xl border border-gray-100"
+                        >
+                            {uploadMediaAction.isPending ? (
+                                <ActivityIndicator size="small" color="#023C69" />
+                            ) : (
+                                <Plus size={24} color="#023C69" strokeWidth={3} />
+                            )}
+                        </Pressable>
+                    </View>
                 </View>
 
                 <View className="flex-1 bg-white -mt-8 rounded-t-[48px] px-6 pt-10">

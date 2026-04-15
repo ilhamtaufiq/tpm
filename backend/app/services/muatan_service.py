@@ -910,12 +910,16 @@ class MuatanService:
         total_biaya_all = float(aggregates.total_biaya or 0)
 
         # Breakdown for Report Details
-        # 1. Biaya Bengkel (Part services + Perawatan Bengkel category)
-        bengkel_parts = self.db.query(func.sum(JasaAngkutPartService.total)).join(MuatanJasaAngkut).filter(
-            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+        # 1. Biaya Bengkel Total
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.models.jasa_angkut import JasaAngkutPartService
+
+        bengkel_parts = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
-        if tanggal_dari: bengkel_parts = bengkel_parts.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-        if tanggal_sampai: bengkel_parts = bengkel_parts.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        if tanggal_dari: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
         
         bengkel_tambahan = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).join(MuatanJasaAngkut).filter(
             MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL,
@@ -925,7 +929,16 @@ class MuatanService:
         if tanggal_sampai: bengkel_tambahan = bengkel_tambahan.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         
         total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
-        total_biaya_lainnya = total_biaya_all - total_biaya_bengkel
+
+        # 2. Biaya Lainnya (Muatan Operational Costs completely excluding Workshop)
+        bengkel_inside_muatan = self.db.query(func.sum(JasaAngkutPartService.total)).join(MuatanJasaAngkut).filter(
+            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: bengkel_inside_muatan = bengkel_inside_muatan.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_inside_muatan = bengkel_inside_muatan.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+
+        total_bengkel_inside_muatan = float((bengkel_inside_muatan.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
+        total_biaya_lainnya = total_biaya_all - total_bengkel_inside_muatan
 
         # --- NEW CASH BREAKDOWN FOR WALLET ---
         # 1. Total Tunai (Payments entering KAS_UNIT_JASA_ANGKUT)
@@ -964,6 +977,47 @@ class MuatanService:
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
 
+        # Breakdown of bengkel per armada
+        from app.models.jasa_angkut import ArmadaJasaAngkut
+        
+        bengkel_armada_query = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(TransaksiPenjualanBengkel.grand_total)
+        ).join(
+            ArmadaJasaAngkut, TransaksiPenjualanBengkel.armada_id == ArmadaJasaAngkut.id
+        ).filter(
+            TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        
+        bengkel_armada_parts = bengkel_armada_query.group_by(ArmadaJasaAngkut.nama).all()
+        
+        bengkel_tambahan_armada_query = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(JasaAngkutBiayaLainnya.jumlah)
+        ).join(
+            ArmadaJasaAngkut, JasaAngkutBiayaLainnya.armada_id == ArmadaJasaAngkut.id
+        ).outerjoin(
+            MuatanJasaAngkut, JasaAngkutBiayaLainnya.muatan_id == MuatanJasaAngkut.id
+        ).filter(
+            or_(MuatanJasaAngkut.id.is_(None), MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL),
+            JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
+        )
+        if tanggal_dari: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
+        
+        bengkel_armada_tambahan = bengkel_tambahan_armada_query.group_by(ArmadaJasaAngkut.nama).all()
+        
+        bengkel_per_armada = {}
+        for nama, total in bengkel_armada_parts:
+            if nama:
+                bengkel_per_armada[nama] = float(total or 0)
+        for nama, total in bengkel_armada_tambahan:
+            if nama:
+                bengkel_per_armada[nama] = bengkel_per_armada.get(nama, 0) + float(total or 0)
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -981,7 +1035,8 @@ class MuatanService:
             "details": {
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": total_biaya_lainnya,
-                "biaya_bengkel": total_biaya_bengkel
+                "biaya_bengkel": total_biaya_bengkel,
+                "bengkel_per_armada": bengkel_per_armada
             }
         }
 

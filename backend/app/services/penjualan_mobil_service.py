@@ -894,14 +894,22 @@ class PenjualanMobilService:
             ).first()
         )
         
-        # Realized parts (active sales only)
-        realized_parts_q = (
-            query.filter(TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL)
-            .join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
-            .join(MobilBiayaLainnya, Mobil.id == MobilBiayaLainnya.mobil_id)
-            .filter(MobilBiayaLainnya.kategori == "Perawatan Bengkel")
+        # Total Bengkel (All workshop transactions tied to jual_beli_mobil, plus Perawatan Bengkel)
+        bengkel_parts_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil',
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
-        total_parts_realized = float(realized_parts_q.with_entities(func.sum(MobilBiayaLainnya.jumlah)).scalar() or 0)
+        if tanggal_dari: bengkel_parts_q = bengkel_parts_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_parts_q = bengkel_parts_q.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        
+        # Any manual operational costs keyed as Perawatan Bengkel
+        bengkel_tambahan_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).filter(
+            MobilBiayaLainnya.kategori == "Perawatan Bengkel"
+        )
+        if tanggal_dari: bengkel_tambahan_q = bengkel_tambahan_q.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_tambahan_q = bengkel_tambahan_q.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
+        
+        total_biaya_bengkel = float((bengkel_parts_q.scalar() or 0) + (bengkel_tambahan_q.scalar() or 0))
 
         # Unpaid values (Sisa Bayar)
         unpaid_value = (
@@ -947,6 +955,46 @@ class PenjualanMobilService:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
+        # Breakdown of bengkel per mobil
+        
+        bengkel_mobil_query = self.db.query(
+            Mobil.model,
+            Mobil.nomor_plat,
+            func.sum(TransaksiPenjualanBengkel.grand_total)
+        ).join(
+            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
+        ).filter(
+            TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil',
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        
+        bengkel_mobil_parts = bengkel_mobil_query.group_by(Mobil.model, Mobil.nomor_plat).all()
+        
+        bengkel_tambahan_mobil_query = self.db.query(
+            Mobil.model,
+            Mobil.nomor_plat,
+            func.sum(MobilBiayaLainnya.jumlah)
+        ).join(
+            Mobil, MobilBiayaLainnya.mobil_id == Mobil.id
+        ).filter(
+            MobilBiayaLainnya.kategori == "Perawatan Bengkel"
+        )
+        if tanggal_dari: bengkel_tambahan_mobil_query = bengkel_tambahan_mobil_query.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_tambahan_mobil_query = bengkel_tambahan_mobil_query.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
+        
+        bengkel_tambahan_mobil = bengkel_tambahan_mobil_query.group_by(Mobil.model, Mobil.nomor_plat).all()
+        
+        # Combine
+        bengkel_per_mobil = {}
+        for row in bengkel_mobil_parts:
+            key = f"{row[0]} ({row[1]})" if row[0] and row[1] else (row[0] or row[1] or "Unknown")
+            bengkel_per_mobil[key] = bengkel_per_mobil.get(key, 0) + float(row[2] or 0)
+            
+        for row in bengkel_tambahan_mobil:
+            key = f"{row[0]} ({row[1]})" if row[0] and row[1] else (row[0] or row[1] or "Unknown")
+            bengkel_per_mobil[key] = bengkel_per_mobil.get(key, 0) + float(row[2] or 0)
 
         return {
             "total_transaksi": total_count,
@@ -960,7 +1008,9 @@ class PenjualanMobilService:
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "total_dp": float(aggregates.total_dp or 0),
-            "total_parts_realized": total_parts_realized,
+            "total_biaya_bengkel": total_biaya_bengkel,
+            "biaya_bengkel": total_biaya_bengkel, # keep fallback
+            "bengkel_per_mobil": bengkel_per_mobil,
             "piutang_nilai": float(unpaid_value),
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_MOBIL)),
             "total_tunai": float(total_tunai_q.scalar() or 0),

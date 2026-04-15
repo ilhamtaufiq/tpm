@@ -88,8 +88,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         // console.log(`[Scanner] Scanned type: ${result.type}, data: ${result.data}`);
         setScanned(true);
         onScan(result.data);
-        // Reset scanned state after a delay to allow another scan if needed
-        setTimeout(() => setScanned(false), 2000);
+        // In continuous mode, use shorter cooldown (1s) so user can scan rapidly
+        // In single-scan mode, use 2s cooldown
+        const cooldown = continuous ? 1000 : 2000;
+        setTimeout(() => setScanned(false), cooldown);
     };
 
     // Stable settings object to prevent unnecessary re-renders/scanner resets
@@ -137,7 +139,20 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             >
                                 {/* Overlay */}
                                 <View style={styles.overlay}>
-                                    <View style={styles.unfocusedContainer}></View>
+                                    <View style={styles.unfocusedContainer}>
+                                        {/* Continuous Mode Badge */}
+                                        {continuous && (
+                                            <View style={{ position: 'absolute', bottom: 8, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}>
+                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
+                                                <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>CONTINUOUS SCAN</Typography>
+                                                {scanLog.length > 0 && (
+                                                    <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                                                        <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
                                     <View style={styles.middleContainer}>
                                         <View style={styles.unfocusedContainer}></View>
                                         <View style={styles.focusedContainer}>
@@ -151,7 +166,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
                                             {scanned && (
                                                 <View style={styles.scannedIndicator}>
-                                                    <Typography weight="bold" style={{ color: 'white' }}>Terdeteksi!</Typography>
+                                                    <Typography weight="bold" style={{ color: 'white' }}>{continuous ? '✓ Ditambahkan!' : 'Terdeteksi!'}</Typography>
                                                 </View>
                                             )}
                                         </View>
@@ -160,7 +175,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     <View style={styles.unfocusedContainer}>
                                         <View className="items-center mt-6">
                                             <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
-                                                Posisikan barcode/QR code di dalam kotak
+                                                {continuous 
+                                                    ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
+                                                    : 'Posisikan barcode/QR code di dalam kotak'
+                                                }
                                             </Typography>
 
                                             {/* Scanner Log Overlay */}
@@ -193,11 +211,28 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             </CameraView>
                         ) : (
                             <View className="flex-1 items-center justify-center bg-gray-900 px-10">
+                                {/* Continuous Mode Badge for Hardware */}
+                                {continuous && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginBottom: 24 }}>
+                                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
+                                        <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>CONTINUOUS SCAN</Typography>
+                                        {scanLog.length > 0 && (
+                                            <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                                                <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
                                 <View className="w-40 h-40 bg-blue-500/10 rounded-full items-center justify-center mb-8 border border-blue-500/20">
                                     <Scan size={64} color="#3B82F6" strokeWidth={1} />
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Hardware Mode</Typography>
-                                <Typography className="text-gray-400 text-center mb-10">Arahkan hardware scanner ke barcode dan tekan pelatuk scan.</Typography>
+                                <Typography className="text-gray-400 text-center mb-10">
+                                    {continuous 
+                                        ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
+                                        : 'Arahkan hardware scanner ke barcode dan tekan pelatuk scan.'
+                                    }
+                                </Typography>
                                 
                                 <Pressable 
                                     onPress={() => hwInputRef.current?.focus()}
@@ -209,10 +244,21 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 {scanLog.length > 0 && (
                                     <View className="mt-8 w-full">
                                         <Typography variant="caption" weight="bold" className="text-white/40 text-center uppercase mb-4 tracking-widest">Item Terakhir</Typography>
-                                        <View className="bg-white/5 border border-white/10 p-4 rounded-3xl">
+                                        <View className="bg-white/5 border border-white/10 p-4 rounded-3xl mb-4">
                                             <Typography weight="bold" className="text-white text-center">{scanLog[0].title}</Typography>
                                             <Typography variant="caption" className="text-white/50 text-center">{scanLog[0].subtitle}</Typography>
                                         </View>
+                                        {continuous && (
+                                            <View>
+                                                <Typography variant="caption" weight="bold" className="text-emerald-400 text-center mb-4">Total: {scanLog.length} item tersimpan</Typography>
+                                                <Button 
+                                                    title="Selesai & Tutup" 
+                                                    variant="primary"
+                                                    onPress={onClose}
+                                                    className="h-12 rounded-2xl"
+                                                />
+                                            </View>
+                                        )}
                                     </View>
                                 )}
                             </View>

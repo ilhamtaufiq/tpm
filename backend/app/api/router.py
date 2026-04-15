@@ -23,6 +23,7 @@ from app.api.v1 import (
     maintenance,
     jasa_servis,
     public_receipt,
+    public_gallery,
     armada,
     assets,
     security,
@@ -71,4 +72,5 @@ api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 # Public endpoints (no auth required) - mount outside /api/v1
 from fastapi import FastAPI
 api_router.include_router(public_receipt.router, prefix="", tags=["Public Receipt"])
+api_router.include_router(public_gallery.router, prefix="", tags=["Public Gallery"])
 
