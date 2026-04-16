@@ -201,7 +201,25 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
         body_bold_font = ImageFont.load_default()
         total_font = ImageFont.load_default()
     
-    y = 60
+    # Logo
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "logo_tpm.png")
+    y = 30
+    if os.path.exists(logo_path):
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            # Resize logo to fit well in header (e.g. 100px height)
+            aspect = logo.width / logo.height
+            logo_w = int(80 * aspect)
+            logo_h = 80
+            logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+            
+            # Create a white background for the logo paste if it has transparency
+            img.paste(logo, (int(width/2 - logo_w/2), y), mask=logo)
+            y += logo_h + 10
+        except Exception as e:
+            print(f"Error loading logo for OG image: {e}")
+            pass
+
     # Business Name
     draw.text((width/2, y), data['companyName'], font=header_font, fill="black", anchor="mm")
     y += 40
@@ -414,8 +432,21 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
                 box-sizing: border-box;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }}
+            .header {{ 
+                text-align: center; 
+                margin-bottom: 20px; 
+            }}
+            .logo-container {{
+                display: flex;
+                justify-content: center;
+                margin-bottom: 10px;
+            }}
+            .logo-container img {{
+                height: 60px;
+                width: auto;
+                filter: grayscale(1);
+            }}
             
-            .header {{ text-align: center; margin-bottom: 10px; }}
             .business-name {{ font-size: 18px; font-weight: 700; margin-bottom: 2px; }}
             .business-info {{ font-size: 11px; margin-bottom: 2px; }}
             
@@ -458,6 +489,9 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     <body>
         <div class="receipt-container">
             <div class="header">
+                <div class="logo-container">
+                    <img src="/static/logo_tpm.png" alt="Logo" onerror="this.style.display='none'">
+                </div>
                 <div class="business-name">{data['companyName']}</div>
                 <div class="business-info">{data['companyAddress']}</div>
                 <div class="business-info">Telp: {data['companyPhone']}</div>
@@ -552,18 +586,36 @@ async def get_receipt_pdf(
         p = canvas.Canvas(buffer, pagesize=A5)
         width, height = A5
         
+        # Logo
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        logo_path = os.path.join(static_dir, "logo_tpm.png")
+        y_cursor = height - 40
+        
+        if os.path.exists(logo_path):
+            try:
+                # Place logo centered
+                logo_h = 40
+                p.drawImage(logo_path, width/2 - 40, y_cursor - 40, width=80, height=logo_h, mask='auto', preserveAspectRatio=True)
+                y_cursor -= 50
+            except:
+                pass
+
         # Header
         p.setFont("Helvetica-Bold", 16)
-        p.drawCentredString(width/2, height - 50, data['companyName'])
+        p.drawCentredString(width/2, y_cursor, data['companyName'])
+        y_cursor -= 15
         p.setFont("Helvetica", 10)
-        p.drawCentredString(width/2, height - 65, data['companyAddress'])
-        p.drawCentredString(width/2, height - 80, f"Telp: {data['companyPhone']}")
+        p.drawCentredString(width/2, y_cursor, data['companyAddress'])
+        y_cursor -= 13
+        p.drawCentredString(width/2, y_cursor, f"Telp: {data['companyPhone']}")
+        y_cursor -= 12
         
-        p.line(30, height - 90, width - 30, height - 90)
+        p.line(30, y_cursor, width - 30, y_cursor)
+        y_cursor -= 20
         
         # Receipt Info
         p.setFont("Helvetica", 11)
-        y = height - 110
+        y = y_cursor
         p.drawString(30, y, f"No. Nota: {data['transactionNumber']}")
         
         try:

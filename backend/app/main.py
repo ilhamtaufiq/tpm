@@ -61,6 +61,11 @@ def create_app() -> FastAPI:
     # Mount static files for uploads
     app.mount(f"/{settings.upload_dir}", StaticFiles(directory=upload_path), name="uploads")
 
+    # Mount static files for app assets
+    static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+    if os.path.exists(static_path):
+        app.mount("/static", StaticFiles(directory=static_path), name="static")
+
     # Include API router
     app.include_router(api_router)
 
