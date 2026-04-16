@@ -996,6 +996,25 @@ class PenjualanMobilService:
             key = f"{row[0]} ({row[1]})" if row[0] and row[1] else (row[0] or row[1] or "Unknown")
             bengkel_per_mobil[key] = bengkel_per_mobil.get(key, 0) + float(row[2] or 0)
 
+        # Get list of sold car IDs and their model/plat strings for matching
+        sold_q = self.db.query(TransaksiPenjualanMobil.mobil_id, Mobil.model, Mobil.nomor_plat).join(
+            Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id
+        ).filter(
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: sold_q = sold_q.filter(TransaksiPenjualanMobil.tanggal >= tanggal_dari)
+        if tanggal_sampai: sold_q = sold_q.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
+        
+        sold_results = sold_q.all()
+        sold_ids = [{"mobil_id": r[0]} for r in sold_results]
+        sold_keys = {f"{r[1]} ({r[2]})" if r[1] and r[2] else (r[1] or r[2] or "Unknown") for r in sold_results}
+
+        # Calculate bengkel costs for unsold cars only
+        total_biaya_bengkel_unsold = 0
+        for key, val in bengkel_per_mobil.items():
+            if key not in sold_keys:
+                total_biaya_bengkel_unsold += val
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -1009,6 +1028,7 @@ class PenjualanMobilService:
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
             "total_dp": float(aggregates.total_dp or 0),
             "total_biaya_bengkel": total_biaya_bengkel,
+            "total_biaya_bengkel_unsold": total_biaya_bengkel_unsold,
             "biaya_bengkel": total_biaya_bengkel, # keep fallback
             "bengkel_per_mobil": bengkel_per_mobil,
             "piutang_nilai": float(unpaid_value),
@@ -1016,6 +1036,7 @@ class PenjualanMobilService:
             "total_tunai": float(total_tunai_q.scalar() or 0),
             "total_transfer": float(total_transfer_q.scalar() or 0),
             "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
+            "sold_list": sold_ids
         }
 
 

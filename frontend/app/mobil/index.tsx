@@ -1313,9 +1313,9 @@ export default function MobilInventoryScreen() {
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
                         >
-                            <BottomSheetView style={{ flex: 1 }}>
+                            <View style={{ flex: 1 }}>
                                 {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
-                            </BottomSheetView>
+                            </View>
                         </BottomSheetModal>
                         <BottomSheetModal
                             ref={editBottomSheetModalRef}

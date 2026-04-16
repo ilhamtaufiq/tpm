@@ -409,9 +409,12 @@ export default function LabaRugiScreen() {
 
     const renderJasaAngkutSection = () => {
         const grossJasaAngkut = (reportData?.jasa_angkut_details?.gross_share_tpm || 0); // Already represents (Revenue - Driver Share)
-        const tripCosts = reportData?.jasa_angkut_details?.biaya_lainnya || 0;
-        const generalOps = (reportData?.pengeluaran_unit_details?.jasa_angkut || 0) - tripCosts;
-        const netJasaAngkut = grossJasaAngkut - tripCosts - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - generalOps;
+
+        // Use consolidated armada costs from backend (includes Maintenance + BBM/Tol/Parkir)
+        const armadaOps = reportData?.jasa_angkut_details?.armada_period_ops || 0;
+        const generalOps = reportData?.pengeluaran_unit_details?.jasa_angkut || 0;
+
+        const netJasaAngkut = grossJasaAngkut - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - armadaOps - generalOps;
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -427,15 +430,16 @@ export default function LabaRugiScreen() {
 
                     <Row label="2. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
 
-                    <Row label="3. Biaya Operasional Armada" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} bold large isNegative />
+                    <Row label="3. Biaya Operasional Armada" value={armadaOps} bold large isNegative />
                     <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(BBM, Tol, Parkir, & Umum)</Typography>
 
+                    <Row label="4. Biaya Umum Unit" value={generalOps} isNegative />
 
                     <View className="h-[1px] bg-slate-100 w-full my-4" />
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netJasaAngkut >= 0 ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-800" : "text-rose-800"}>4. Laba/Rugi Bersih</Typography>
+                            <Typography variant="body2" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-800" : "text-rose-800"}>5. Laba/Rugi Bersih</Typography>
                             <Typography variant="caption" className={netJasaAngkut >= 0 ? "text-emerald-600/70 uppercase tracking-tighter text-[10px] mt-0.5" : "text-rose-600/70 uppercase tracking-tighter text-[10px] mt-0.5"}>Unit Jasa Angkut</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className={netJasaAngkut >= 0 ? "text-emerald-700" : "text-rose-700"}>
@@ -448,7 +452,18 @@ export default function LabaRugiScreen() {
     };
 
     const renderMobilSection = () => {
-        const netMobil = (reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0);
+        const totalPenjualan = reportData?.mobil_details?.total_penjualan || 0;
+
+        // Modal Dasar = Total Modal from sales (HPP) + Capital expenditures made this period for ANY car
+        const modalDasar = (reportData?.mobil_details?.total_modal || 0) + (reportData?.mobil_details?.capital_period_ops || 0);
+        const biayaPerbaikan = reportData?.mobil_details?.biaya_bengkel || 0; // Spareparts & Service
+        const labaKotorUnit = totalPenjualan - modalDasar - biayaPerbaikan;
+
+        const labaInvestor = reportData?.mobil_details?.laba_investor || 0;
+        const labaKotorTPM = totalPenjualan - modalDasar - biayaPerbaikan - labaInvestor;
+
+        const operasionalBisnis = reportData?.pengeluaran_unit_details?.mobil || 0;
+        const netMobil = labaKotorTPM - operasionalBisnis;
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -460,21 +475,31 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    <Row label="1. Total Penjualan (Gross)" value={reportData?.mobil_details?.total_penjualan || 0} bold large />
-                    <Row label="2. Biaya Operasional Unit" value={reportData?.pengeluaran_unit_details?.mobil || 0} isNegative />
-                    <Row label="3. Biaya Sparepart & Servis" value={reportData?.mobil_details?.biaya_bengkel || 0} isNegative />
+                    <Row label="1. Total Penjualan Unit" value={totalPenjualan} bold large />
 
-                    <Row label="4. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
+                    <View className="bg-slate-50/50 p-3 rounded-xl mb-3 border border-slate-100">
+                        <Row label="2. Manajemen Biaya Unit" value={modalDasar} isNegative />
+                        <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(Pajak, BBN, dll)</Typography>
+
+                        <Row label="3. Biaya Perbaikan Unit" value={biayaPerbaikan} isNegative />
+                        <Typography variant="caption" className="text-slate-400 ml-4 -mt-1">(Sparepart & Servis Bengkel)</Typography>
+                    </View>
+
+                    <Row label="4. Laba Kotor Unit" value={labaKotorUnit} bold />
+                    <Row label="5. Bagian Laba Investor" value={labaInvestor} isNegative />
+
+                    <View className="h-[1px] bg-slate-100 w-full my-3" />
+
+                    <Row label="6. Laba Kotor TPM" value={labaKotorTPM} bold />
+                    <Row label="7. Biaya Operasional Bisnis" value={operasionalBisnis} isNegative />
+                    <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(Umum: Listrik, Admin, Sewa, dll)</Typography>
 
                     <View className={`w-full rounded-xl p-3 my-3 border flex-row justify-between items-center ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-slate-50 border-slate-100/50'}`}>
                         <View className="flex-1 pr-2">
                             <View className="flex-row items-center">
-                                <Typography variant="caption" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-800 tracking-wide uppercase text-[10px] mr-2" : "text-slate-500 tracking-wide uppercase text-[10px] mr-2"}>5. Sisa Piutang Unit</Typography>
+                                <Typography variant="caption" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-800 tracking-wide uppercase text-[10px] mr-2" : "text-slate-500 tracking-wide uppercase text-[10px] mr-2"}>Sisa Piutang Unit</Typography>
                                 {(reportData?.mobil_details?.piutang_nilai || 0) > 0 && <View className="bg-amber-500 w-1.5 h-1.5 rounded-full" />}
                             </View>
-                            <Typography variant="caption" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-600/80 text-[10px]" : "text-slate-400 text-[10px]"}>
-                                {(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "Nilai dari penjualan yang belum lunas" : "Lunas keseluruhan di periode ini"}
-                            </Typography>
                         </View>
                         <Typography variant="body2" weight="bold" className={(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? "text-amber-700 flex-shrink-0" : "text-slate-400 flex-shrink-0"}>
                             {formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}
@@ -485,7 +510,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netMobil >= 0 ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className={netMobil >= 0 ? "text-emerald-800" : "text-rose-800"}>6. Laba TPM (Net)</Typography>
+                            <Typography variant="body2" weight="bold" className={netMobil >= 0 ? "text-emerald-800" : "text-rose-800"}>8. Laba Bersih TPM</Typography>
                             <Typography variant="caption" className={netMobil >= 0 ? "text-emerald-600/70 uppercase tracking-tighter text-[10px] mt-0.5" : "text-rose-600/70 uppercase tracking-tighter text-[10px] mt-0.5"}>Unit Jual Beli Mobil</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className={netMobil >= 0 ? "text-emerald-700" : "text-rose-700"}>

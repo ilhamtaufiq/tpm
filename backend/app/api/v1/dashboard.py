@@ -285,26 +285,57 @@ def get_profit_summary(
     pengeluaran_unit_details = {}
     raw_units = pengeluaran.get("per_unit", {})
     
-    # Consolidate Car-related categories
-    total_mobil_ops = (
+    # 1. Mobil: Split General Ops vs Car Capital
+    # Only for cars NOT sold in the current period (to avoid double counting with HPP total_modal)
+    # Convert to set of strings for fast and reliable comparison
+    sold_mobil_ids = {str(m['mobil_id']) for m in mobil.get("sold_list", []) if m.get('mobil_id')}
+    mobil_unit_breakdown = pengeluaran.get("mobil_unit", {})
+    
+    # Separate costs for cars sold this period (already in total_modal) vs unsold cars
+    # This prevents the 150k Pajak/STNK from being added twice if the car was sold this month
+    capital_unsold_mobil_ops = 0
+    for m_id, val in mobil_unit_breakdown.items():
+        if str(m_id) not in sold_mobil_ids:
+            capital_unsold_mobil_ops += float(val)
+
+    raw_mobil_total = float(
         raw_units.get("penjualan_mobil", 0) + 
         raw_units.get("jual_beli_mobil", 0) + 
         raw_units.get("mobil", 0)
     )
     
+    general_mobil_ops = raw_mobil_total - sum(mobil_unit_breakdown.values())
+    
     pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
-    pengeluaran_unit_details["mobil"] = total_mobil_ops
-    pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0) + float(trip_costs)
+    pengeluaran_unit_details["mobil"] = general_mobil_ops
+    
+    # 2. Jasa Angkut: Split General Ops vs Armada/Trip Ops
+    ja_armada_breakdown = pengeluaran.get("jasa_angkut_armada", {}).copy()
+    trip_armada_breakdown = muatan.get("details", {}).get("operasional_per_armada", {})
+    
+    # Aggregate all armada specific costs (Maintenance from Pengeluaran + BBM/Tol/Parkir from Trips)
+    all_armada_specific = 0
+    for arm, val in ja_armada_breakdown.items():
+        all_armada_specific += float(val)
+    
+    raw_ja_total = float(raw_units.get("jasa_angkut", 0))
+    general_ja_ops = raw_ja_total - sum(ja_armada_breakdown.values())
+    
+    pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
+    pengeluaran_unit_details["mobil"] = general_mobil_ops
+    pengeluaran_unit_details["jasa_angkut"] = general_ja_ops
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
     
-    # Merge armada breakdowns
-    ja_armada = pengeluaran.get("jasa_angkut_armada", {}).copy()
-    trip_armada_breakdown = muatan.get("details", {}).get("operasional_per_armada", {})
-    for arm, val in trip_armada_breakdown.items():
-        ja_armada[arm] = ja_armada.get(arm, 0) + float(val)
+    # Add capital/specific values to summary for UI categorization
+    mobil["capital_period_ops"] = capital_unsold_mobil_ops
+    muatan["details"]["armada_period_ops"] = all_armada_specific + float(trip_costs)
     
-    pengeluaran_unit_details["jasa_angkut_armada"] = ja_armada
-    pengeluaran_unit_details["mobil_unit"] = pengeluaran.get("mobil_unit", {})
+    # Merge armada breakdowns for detailed lists
+    for arm, val in trip_armada_breakdown.items():
+        ja_armada_breakdown[arm] = ja_armada_breakdown.get(arm, 0) + float(val)
+    
+    pengeluaran_unit_details["jasa_angkut_armada"] = ja_armada_breakdown
+    pengeluaran_unit_details["mobil_unit"] = mobil_unit_breakdown
 
     # Add Purchases (as requested by user)
     if "pembelian_part" in pengeluaran_details:

@@ -348,24 +348,22 @@ class PengeluaranService:
         by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
         armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
 
-        # Breakdown Jual Beli Mobil by Mobil
+        # Breakdown Jual Beli Mobil by Mobil ID
         from app.models.mobil import Mobil
         mobil_query = self.db.query(
-            Mobil.model,
-            Mobil.nomor_plat,
+            PengeluaranBengkel.mobil_id,
             func.sum(PengeluaranBengkel.jumlah)
-        ).join(
-            Mobil, PengeluaranBengkel.mobil_id == Mobil.id
         ).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"])
+            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+            PengeluaranBengkel.mobil_id != None
         )
         if tanggal_dari:
             mobil_query = mobil_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai:
             mobil_query = mobil_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
         
-        by_mobil = mobil_query.group_by(Mobil.model, Mobil.nomor_plat).all()
-        mobil_summary = {f"{row[0]} ({row[1]})" if row[0] and row[1] else (row[0] or row[1] or "Unknown"): float(row[2] or 0) for row in by_mobil}
+        by_mobil = mobil_query.group_by(PengeluaranBengkel.mobil_id).all()
+        mobil_summary = {str(row[0]): float(row[1] or 0) for row in by_mobil}
 
         return {
             "total_transaksi": total_count,

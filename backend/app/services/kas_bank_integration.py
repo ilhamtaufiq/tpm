@@ -43,7 +43,7 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
     # - TRANSFER flows directly to the Main Bank account (Akun Utama).
     # - INTERNAL (Mutasi Antar Unit) flows to Central Cash (KAS_UTAMA) to avoid physical drawer discrepancies.
     if method == PaymentMethod.TRANSFER:
-        return KasBankJenis.BANK_BCA
+        return KasBankJenis.BANK_UTAMA
     
     if method == PaymentMethod.INTERNAL:
         return KasBankJenis.KAS_UTAMA

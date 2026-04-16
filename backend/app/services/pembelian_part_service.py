@@ -220,6 +220,7 @@ class PembelianPartService:
                         keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi} ({pm.metode})",
                         user_id=user_id,
                         kas_jenis=pm.kas_jenis,
+                        allow_negative=True,
                     )
             else:
                 create_kas_entry(
@@ -234,6 +235,7 @@ class PembelianPartService:
                     keterangan=f"Pembelian spare part - {pembelian.nomor_transaksi}",
                     user_id=user_id,
                     kas_jenis=data.kas_jenis,
+                    allow_negative=True,
                 )
 
         # Record Hutang for the remainder
@@ -413,6 +415,7 @@ class PembelianPartService:
                 nomor_referensi=hutang.nomor_hutang,
                 keterangan=f"Pelunasan hutang {hutang.nomor_hutang} (Pembelian Part: {pembelian.nomor_transaksi})",
                 user_id=user_id,
+                allow_negative=True,
             )
         else:
             # No hutang record found (maybe it was deleted or never created)
@@ -428,6 +431,7 @@ class PembelianPartService:
                 nomor_referensi=pembelian.nomor_transaksi,
                 keterangan=f"Pelunasan pembelian spare part - {pembelian.nomor_transaksi}",
                 user_id=user_id,
+                allow_negative=True,
             )
 
         self.db.commit()

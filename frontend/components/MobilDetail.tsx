@@ -374,7 +374,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     </View>
                 </View>
 
-                <View className="flex-1 bg-white -mt-8 rounded-t-[48px] px-6 pt-10">
+                <View className="bg-white -mt-8 rounded-t-[48px] px-6 pt-10">
                     {/* Badge & Title */}
                     <View className="items-center mb-10">
                         <View className="bg-primary/10 px-4 py-1.5 rounded-full mb-3 border border-primary/5">
