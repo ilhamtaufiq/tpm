@@ -411,6 +411,18 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     image_url = f"{base_url}/api/v1/public/receipt/image/{receipt_type}/{transaction_id}"
     page_url = f"{base_url}/api/v1/public/receipt/view/{receipt_type}/{transaction_id}"
     
+    # Load default logo as base64 for embedding
+    logo_b64 = ""
+    try:
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        logo_path = os.path.join(static_dir, "logo_tpm.png")
+        if os.path.exists(logo_path):
+            with open(logo_path, "rb") as f:
+                import base64 as b64
+                logo_b64 = f"data:image/png;base64,{b64.b64encode(f.read()).decode()}"
+    except:
+        pass
+    
     # Format description for OG
     customer = data.get('customerName', 'Umum')
     plate = data.get('vehiclePlate', '')
@@ -504,7 +516,6 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             .logo-container img {{
                 height: 60px;
                 width: auto;
-                filter: grayscale(1);
             }}
             
             .business-name {{ font-size: 18px; font-weight: 700; margin-bottom: 2px; }}
@@ -559,7 +570,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             <div class="header">
                 {f'<div style="text-align:center; font-size:10px; margin-bottom:5px;">{data["customHeader"]}</div>' if data.get("customHeader") else ''}
                 <div class="logo-container">
-                    <img src="{data.get('customLogo') if data.get('customLogo') and data['customLogo'] != 'tpm_default' else '/static/logo_tpm.png'}" alt="Logo" onerror="this.style.display='none'">
+                    <img src="{data.get('customLogo') if data.get('customLogo') and data['customLogo'] != 'tpm_default' else logo_b64}" alt="Logo" onerror="this.style.display='none'">
                 </div>
                 <div class="business-name">{data['companyName']}</div>
                 <div class="business-info">{data['companyAddress']}</div>
