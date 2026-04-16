@@ -452,10 +452,17 @@ def get_capital_report(
         if tanggal_sampai:
             q = q.filter(KasBank.tanggal <= tanggal_sampai)
         if method_filter:
+            cash_types = [
+                KasBankJenis.CASH,
+                KasBankJenis.KAS_UNIT_BENGKEL,
+                KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+                KasBankJenis.KAS_UNIT_MOBIL,
+                KasBankJenis.KAS_UTAMA
+            ]
             if method_filter == 'cash':
-                q = q.filter(KasBank.jenis == KasBankJenis.CASH)
+                q = q.filter(KasBank.jenis.in_(cash_types))
             elif method_filter == 'transfer':
-                q = q.filter(KasBank.jenis != KasBankJenis.CASH)
+                q = q.filter(~KasBank.jenis.in_(cash_types))
         return float(q.scalar() or 0)
 
     # Services
@@ -930,10 +937,17 @@ def get_neraca(
         if tanggal_sampai:
             q = q.filter(KasBank.tanggal <= tanggal_sampai)
         if method_filter:
+            cash_types = [
+                KasBankJenis.CASH,
+                KasBankJenis.KAS_UNIT_BENGKEL,
+                KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+                KasBankJenis.KAS_UNIT_MOBIL,
+                KasBankJenis.KAS_UTAMA
+            ]
             if method_filter == 'cash':
-                q = q.filter(KasBank.jenis == KasBankJenis.CASH)
+                q = q.filter(KasBank.jenis.in_(cash_types))
             elif method_filter == 'transfer':
-                q = q.filter(KasBank.jenis != KasBankJenis.CASH)
+                q = q.filter(~KasBank.jenis.in_(cash_types))
         return float(q.scalar() or 0)
 
     # ==========================================

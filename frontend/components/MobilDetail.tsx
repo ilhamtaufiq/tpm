@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { View, ScrollView, Image, Pressable, Alert, ActivityIndicator, FlatList, Dimensions, StatusBar, Modal, TextInput, TouchableOpacity, Platform, Share, Linking } from 'react-native';
 import { Typography } from './ui/Typography';
 import { Button } from './ui/Button';
@@ -56,6 +57,11 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+        console.log('[DEBUG] MobilDetail mounted for unit:', initialUnit?.id);
+        return () => console.log('[DEBUG] MobilDetail unmounted');
+    }, []);
 
     const [deleteDialog, setDeleteDialog] = useState<{
         visible: boolean;
@@ -214,7 +220,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         // Construct URL safely, avoiding double slashes
         const baseUrl = (FILE_URL || '').replace(/\/$/, '');
         const filePath = item.file_path.replace(/^\//, '');
-        const fullUrl = `${baseUrl}/uploads/${filePath}?t=${Date.now()}`;
+        const fullUrl = `${baseUrl}/uploads/${filePath}`;
 
         console.log('[MobilDetail] Rendering media:', item.id, item.file_type, fullUrl);
 
@@ -269,10 +275,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         );
     };
 
+        const ContentWrapper = Platform.OS === 'web' ? ScrollView : BottomSheetScrollView;
+
     return (
         <View className="flex-1 bg-white">
             <StatusBar barStyle="light-content" />
-            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+            <ContentWrapper showsVerticalScrollIndicator={false} className="flex-1">
                 {/* Fixed Header Overlay (Mobile Style) */}
                 <View className="absolute top-6 left-6 right-6 z-10 flex-row justify-between items-center">
                     <Pressable
@@ -590,7 +598,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     {/* Extra Bottom Padding */}
                     <View className="h-10" />
                 </View>
-            </ScrollView>
+            </ContentWrapper>
 
             <AlertDialog
                 visible={deleteDialog.visible}

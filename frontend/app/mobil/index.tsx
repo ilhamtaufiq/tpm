@@ -29,7 +29,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { onlineManager } from '@tanstack/react-query';
-import BottomSheet, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView, BottomSheetModal, BottomSheetModalProvider, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { MobilForm } from '../../components/MobilForm';
 import { MobilDetail } from '../../components/MobilDetail';
 import { MobilSalesForm } from '../../components/MobilSalesForm';
@@ -233,12 +233,26 @@ export default function MobilInventoryScreen() {
             costBottomSheetModalRef.current?.present();
         }
     }, [costBottomSheetModalRef]);
+    
+    const renderBackdrop = useCallback(
+        (props: any) => (
+            <BottomSheetBackdrop
+                {...props}
+                disappearsOnIndex={-1}
+                appearsOnIndex={0}
+                opacity={0.5}
+            />
+        ),
+        []
+    );
 
     const handlePresentDetailModal = useCallback((unit: any) => {
+        console.log('[DEBUG] handlePresentDetailModal called with unit:', unit?.id);
         setSelectedDetailUnit(unit);
         if (Platform.OS === 'web') {
             setWebModal('detail');
         } else {
+            console.log('[DEBUG] Presenting detailBottomSheetModalRef');
             detailBottomSheetModalRef.current?.present();
         }
     }, [detailBottomSheetModalRef]);
@@ -1063,7 +1077,7 @@ export default function MobilInventoryScreen() {
                                             {item.media && item.media.length > 0 ? (
                                                 <Image
                                                     source={{
-                                                        uri: `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${item.media[0].file_path.replace(/^\//, '')}?t=${Date.now()}`
+                                                        uri: `${(FILE_URL || '').replace(/\/$/, '')}/uploads/${item.media[0].file_path.replace(/^\//, '')}`
                                                     }}
                                                     className="w-full h-full"
                                                     resizeMode="cover"
@@ -1249,7 +1263,7 @@ export default function MobilInventoryScreen() {
                             snapPoints={snapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
@@ -1264,7 +1278,7 @@ export default function MobilInventoryScreen() {
                             snapPoints={snapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
@@ -1279,7 +1293,7 @@ export default function MobilInventoryScreen() {
                             snapPoints={snapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
@@ -1294,14 +1308,14 @@ export default function MobilInventoryScreen() {
                             snapPoints={detailSnapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
                         >
-                            <View className="flex-1">
+                            <BottomSheetView style={{ flex: 1 }}>
                                 {selectedDetailUnit && <MobilDetail unit={selectedDetailUnit} onClose={() => detailBottomSheetModalRef.current?.dismiss()} onSell={(u) => { detailBottomSheetModalRef.current?.dismiss(); handlePresentSalesModal(u); }} onEdit={() => { detailBottomSheetModalRef.current?.dismiss(); handlePresentEditModal(selectedDetailUnit); }} />}
-                            </View>
+                            </BottomSheetView>
                         </BottomSheetModal>
                         <BottomSheetModal
                             ref={editBottomSheetModalRef}
@@ -1309,7 +1323,7 @@ export default function MobilInventoryScreen() {
                             snapPoints={snapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"
                             keyboardBlurBehavior="restore"
@@ -1325,7 +1339,7 @@ export default function MobilInventoryScreen() {
                             snapPoints={walletSnapPoints}
                             enablePanDownToClose
                             topInset={insets.top}
-                            backdropComponent={(props) => <View {...props} className="absolute inset-0 bg-black/50" />}
+                            backdropComponent={renderBackdrop}
                             onDismiss={handleCloseWallet}
                             onChange={handleSheetChanges}
                             keyboardBehavior="interactive"

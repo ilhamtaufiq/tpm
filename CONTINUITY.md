@@ -1,50 +1,33 @@
 # Continuity Ledger - TPM Workshop Project
 
-## Goal (incl. success criteria)
-Ensure complete financial transparency by integrating all operational unit cash accounts into reports and clarifying the flow of general expenses.
-Success criteria:
-- Neraca and Perubahan Modal reports display all unit cash accounts (Bengkel, Jasa Angkut, Mobil) regardless of balance.
-- General (Umum) expenses and Armada-specific Jasa Angkut costs are correctly mapped and visible across Profit & Loss, Balance Sheet, and Capital reports.
-- Reconciliation logic is transparent and verifiable.
-- Administrative tools (Users, Settings) are complete and functional.
+## Goal
+Fix financial reporting discrepancy where cash sparepart purchases are categorized as transfer in "Laporan Perubahan Modal" and ensure Mobil Detail modal works correctly on Android.
 
 ## Constraints/Assumptions
-- Cash is tracked in unit-specific accounts (KAS_UNIT_...) and central accounts.
-- The system uses accounting identity `Modal = Aktiva - Hutang` for the Balance Sheet.
-- Jasa Angkut operational costs from PengeluaranBengkel are grouped by `armada_id`.
+- Backend: FastAPI/Python
+- Frontend: Expo/React Native/TypeScript
+- Database: PostgreSQL (via SQLAlchemy)
+- Payment methods: TUNAI (Cash) and TRANSFER (Bank)
+- Cash Accounts: `KAS_UNIT_BENGKEL`, `KAS_UTAMA`, `KAS_UNIT_MOBIL`, `KAS_UNIT_JASA_ANGKUT`, `CASH`.
 
-## Key decisions
-- Updated `PengeluaranService.get_summary` to provide an armada-level breakdown for Jasa Angkut expenses.
-- Updated `perubahan-modal.tsx` (UI & PDF) to show "biaya operasional per armada".
-- Updated `laba-rugi.tsx` (UI) for consistency.
-- Standardized frontend display in `neraca.tsx` and `perubahan-modal.tsx` to always show the unit breakdown.
-- Implemented **User Deletion** feature in `users.tsx` with confirmation dialogs.
-- Fixed TypeScript/Type errors in `users.tsx` (Button props, AlertDialog variant) and `perubahan-modal.tsx` (Row component className prop).
+## Key Decisions
+- [2026-04-16] Standardized `MobilDetail` modal to use `BottomSheetScrollView` and removed `Date.now()` cache-buster on media URLs to resolve Android rendering issues.
+- [2026-04-16] Identified backend bug in `get_capital_report` and `get_neraca` where `method_filter == 'cash'` incorrectly only included `KasBankJenis.CASH`, excluding unit-specific and main cash accounts.
 
 ## State
-- **Now**:
-    - Finalizing UI verifications and addressing user requests.
-- **Done**:
-    - Refactored `frontend/components/MobilForm.tsx` to handle multi-account payments (`sumberBayar`: Unit Tunai, Utama Tunai, Utama Transfer, Split).
-    - Updated `MobilCreate` schema in `backend/app/schemas/mobil.py` to accept `kas_jenis`.
-    - Integrated `kas_jenis` injection into `kas_bank` ledger inside `backend/app/services/mobil_service.py` during car purchases.
-    - Redesigned `neraca.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
-    - Redesigned `laba-rugi.tsx` UI layout adhering to Stitch UI Design principles without altering the logical values.
-    - Redesigned `perubahan-modal.tsx` UI layout adhering to Stitch UI Design principles (modern glassmorphic, neater cards, and structured groupings) without altering the logical values.
-    - Changed payment options in Pembelian Sparepart to support both Akun Bengkel (Cash) and Akun Utama (Cash & Bank), while maintaining split payment capabilities and Hutang option.
-    - Changed payment options in Armada Operational Expense to support KAS_UNIT_JASA_ANGKUT, KAS_UTAMA, and BANK_UTAMA.
-    - Handled kas_jenis dynamically based on the selected payment method across modules.
-- **Next**:
-    - Project handover or further feature requests from user.
+- Done:
+  - Investigated frontend purchase submission logic: Confirmed `metode: 'TUNAI'` and `kas_jenis: 'KAS_UNIT_BENGKEL'` are correctly sent.
+  - Investigated backend `get_capital_report` and `get_neraca`: Located the hardcoded `KasBankJenis.CASH` check in `get_kas_sum` helper.
+  - Applied fix to `get_kas_sum` in `backend/app/api/v1/dashboard.py` to include all cash-account types.
+- Now:
+  - Awaiting user verification for both report categorization and Android modal visibility.
+- Next:
+  - Close issue once verified.
 
-## Open questions (UNCONFIRMED)
+## Open Questions
 - None at the moment.
 
-## Working set (files/ids/commands)
-- frontend/app/bengkel/purchase/index.tsx
-- frontend/app/laporan/neraca.tsx
-- frontend/app/laporan/perubahan-modal.tsx
-- frontend/app/laporan/laba-rugi.tsx
-- backend/app/services/pengeluaran_service.py
-- frontend/app/settings/users.tsx
-- frontend/.agent/workflows/skills/stitch-ui-design/SKILL.md
+## Working Set
+- `backend/app/api/v1/dashboard.py`
+- `frontend/app/bengkel/purchase/index.tsx`
+- `frontend/app/laporan/perubahan-modal.tsx`
