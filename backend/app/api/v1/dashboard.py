@@ -125,10 +125,11 @@ def get_dashboard_summary(
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
             "laba_tpm": float(muatan_summary["laba_tpm"]),
-            "total_pengeluaran": overhead_data.get("jasa_angkut", 0),
+            "total_pengeluaran": overhead_data.get("jasa_angkut", 0) + muatan_summary.get("details", {}).get("biaya_lainnya", 0),
             "active_trips": muatan_summary["hutang_supir_count"],
             "saldo_cash": float(kas_bank_summary.get("kas_unit_jasa_angkut", {}).get("saldo", 0)),
         },
+
         "piutang": {
             "total_piutang": float(piutang_summary["total_piutang"]),
             "total_sisa": float(piutang_summary["total_sisa"]),
@@ -240,15 +241,32 @@ def get_profit_summary(
         muatan["total_pendapatan"]
     )
 
+    # Calculate Jasa Angkut contributions
+    muatan_gross_tpm = muatan["total_pendapatan"] # Already represents (Revenue - Driver Share)
+    muatan_net_tpm = muatan["laba_tpm"] # Represents Gross TPM Share now (expenses handled separately)
+    trip_costs = muatan.get("details", {}).get("biaya_lainnya", 0)
+
+
     total_laba_kotor = (
         bengkel["total_laba_kotor"] +
         mobil["laba_tpm"] +
-        muatan["laba_tpm"]
+        muatan_gross_tpm # Use Gross for proper expense matching
     )
 
     # Merge gaji and pembelian data into pengeluaran details
     per_kategori = pengeluaran["per_kategori"]
     
+    # Add trip expenses as a category
+    if trip_costs > 0:
+        if "operasional_muatan" in per_kategori:
+            per_kategori["operasional_muatan"]["total"] += float(trip_costs)
+            per_kategori["operasional_muatan"]["count"] += muatan["total_transaksi"]
+        else:
+            per_kategori["operasional_muatan"] = {
+                "total": float(trip_costs),
+                "count": muatan["total_transaksi"]
+            }
+
     # Add salaries
     if "gaji" in per_kategori:
         for key, value in gaji_summary.items():
@@ -276,9 +294,16 @@ def get_profit_summary(
     
     pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
     pengeluaran_unit_details["mobil"] = total_mobil_ops
-    pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0)
+    pengeluaran_unit_details["jasa_angkut"] = raw_units.get("jasa_angkut", 0) + float(trip_costs)
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
-    pengeluaran_unit_details["jasa_angkut_armada"] = pengeluaran.get("jasa_angkut_armada", {})
+    
+    # Merge armada breakdowns
+    ja_armada = pengeluaran.get("jasa_angkut_armada", {}).copy()
+    trip_armada_breakdown = muatan.get("details", {}).get("operasional_per_armada", {})
+    for arm, val in trip_armada_breakdown.items():
+        ja_armada[arm] = ja_armada.get(arm, 0) + float(val)
+    
+    pengeluaran_unit_details["jasa_angkut_armada"] = ja_armada
     pengeluaran_unit_details["mobil_unit"] = pengeluaran.get("mobil_unit", {})
 
     # Add Purchases (as requested by user)
@@ -295,7 +320,8 @@ def get_profit_summary(
     # Pembelian part tidak dihitung sebagai beban di sini karena sudah masuk ke HPP di Laba Kotor
     total_pengeluaran = (
         pengeluaran["total_pengeluaran"] + 
-        gaji_summary["total"]
+        gaji_summary["total"] +
+        float(trip_costs)
     )
     laba_bersih = total_laba_kotor - total_pengeluaran
 
@@ -506,10 +532,13 @@ def get_capital_report(
     laba_kotor_mobil = mobil_summ["total_laba_kotor"]  # Full gross profit (investor + TPM)
     laba_mobil_tpm = mobil_summ["laba_tpm"]             # TPM share only (for display)
     laba_investor_mobil = mobil_summ["laba_investor"]    # Investor share (for display)
-    laba_jasa_angkut_tpm = muatan_summ["laba_tpm"]
     
-    # Total laba uses FULL car profit (not just TPM's share)
-    total_laba_kotor = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_tpm
+    # Use Jasa Angkut Gross (before trip costs) because trip costs are subtracted in Section C
+    laba_jasa_angkut_gross = muatan_summ["total_pendapatan"] - muatan_summ.get("total_laba_supir", 0)
+    laba_jasa_angkut_tpm = muatan_summ["laba_tpm"] # For display/ref
+    
+    # Total laba uses FULL car profit and GROSS Jasa Angkut profit
+    total_laba_kotor = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_gross
     
     # 2c. INITIAL STOCK & ASSETS CALCULATION
     # If there is inventory or fixed assets that were never bought through the system,
@@ -1282,8 +1311,11 @@ def get_neraca(
     
     laba_bengkel = float(bengkel_summ["total_laba_kotor"] or 0)
     laba_mobil_tpm = float(mobil_summ["laba_tpm"] or 0)
-    laba_jasa_angkut = float(muatan_summ["laba_tpm"] or 0)
+    # Per User Request: jasa_angkut profit is recorded as Gross TPM share (50%)
+    # muatan_summ["total_pendapatan"] already represents (Revenue - Driver Share)
+    laba_jasa_angkut = float(muatan_summ["total_pendapatan"] or 0)
     total_laba_kotor = laba_bengkel + laba_mobil_tpm + laba_jasa_angkut
+
     
     # Beban Operasional (Cumulative)
     pengeluaran = pengeluaran_service.get_summary(None, tanggal_sampai)
@@ -1292,8 +1324,9 @@ def get_neraca(
     pengeluaran_details = pengeluaran["per_kategori"]
     prive_total = float(pengeluaran_details.get("prive", {}).get("total", 0))
     
-    # Beban = pengeluaran operasional (excluding prive, which is separate)
-    total_beban = float(pengeluaran["total_pengeluaran"] or 0) + float(gaji_summary["total"] or 0) - prive_total
+    # Beban = pengeluaran operasional + trip costs (excluding prive, which is separate)
+    trip_costs = float(muatan_summ.get("details", {}).get("biaya_lainnya", 0))
+    total_beban = float(pengeluaran["total_pengeluaran"] or 0) + float(gaji_summary["total"] or 0) + trip_costs - prive_total
     
     laba_ditahan = total_laba_kotor - total_beban
     prive = prive_total

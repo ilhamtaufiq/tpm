@@ -235,9 +235,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const revenue = jual - beli;
         
         const totalCosts = formData.biaya_operasional.reduce((acc, b) => acc + (parseNumber(b.jumlah) || 0), 0);
-        // Driver gets 50% of the gross margin (revenue)
-        // TPM gets the remaining 50% minus all operational costs
-        const tpmShare = (revenue * 0.5) - totalCosts;
+        const tpmShare = (revenue * 0.5); // Per User Request: TPM share is gross (expenses moved to armada)
+
 
         return { revenue, tpmShare, totalCosts, beli, jual, bengkelTotal: 0 };
     }, [formData.harga_beli, formData.harga_jual, formData.biaya_operasional]);

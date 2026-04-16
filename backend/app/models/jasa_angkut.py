@@ -1,6 +1,10 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.bengkel import PengeluaranBengkel
+
 
 from sqlalchemy import (
     String,
@@ -168,9 +172,9 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     def calculate_profit(self) -> None:
         """Calculate profit split between TPM and driver.
         
-        Logic: Operational costs are charged to TPM, not Driver.
-        Driver Share = Gross Revenue * (100 - TPM%) / 100
-        TPM Share = Gross Revenue - Driver Share - Total Costs
+        New Logic: Operational costs are NOT deducted from the trip's laba_tpm.
+        Instead, they are recorded as armada-level expenses in reports.
+        laba_tpm represents the Gross TPM Share.
         """
         # Calculate revenue from trading
         self.pendapatan_kotor = self.harga_jual - self.harga_beli
@@ -184,14 +188,18 @@ class MuatanJasaAngkut(Base, TimestampMixin):
             sum(b.jumlah for b in self.biaya_tambahan) +
             sum(ps.total for ps in self.part_services)
         )
-        self.laba_kotor = self.pendapatan_kotor - self.total_biaya
         
-        # Driver share from GROSS revenue (driver is NOT affected by costs)
+        # Trip Laba Kotor is now Gross Margin for report consistency
+        self.laba_kotor = self.pendapatan_kotor
+        
+        # Driver share from GROSS revenue (50%)
         persentase_supir = Decimal("100") - self.persentase_tpm
         self.laba_supir = (self.pendapatan_kotor * persentase_supir / 100).quantize(Decimal("0.01"))
         
-        # TPM absorbs all costs
-        self.laba_tpm = self.pendapatan_kotor - self.laba_supir - self.total_biaya
+        # TPM Share is also GROSS (50%)
+        # Operational expenses are reported separately per armada in the Laba Rugi report.
+        self.laba_tpm = self.pendapatan_kotor - self.laba_supir
+
 
     def __repr__(self) -> str:
         return f"<MuatanJasaAngkut(id={self.id}, nomor='{self.nomor_transaksi}', tujuan='{self.tujuan}')>"

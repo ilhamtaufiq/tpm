@@ -371,7 +371,7 @@ export default function LabaRugiScreen() {
                 </View>
                 <Typography variant="h4" weight="bold" className="text-blue-900 tracking-tight">Unit Bengkel</Typography>
             </View>
-            
+
             <View className="p-5 w-full">
                 <View className="mb-4 w-full">
                     <Row label="1. Penjualan Sparepart & Jasa" value={bengkelData.penjualan} bold large />
@@ -379,10 +379,10 @@ export default function LabaRugiScreen() {
                     <Row label="Jasa" value={reportData?.bengkel_details?.total_jasa || 0} small indent />
                     <Row label="Diskon" value={reportData?.bengkel_details?.total_diskon || 0} small indent isNegative />
                 </View>
-                
+
                 <View className="h-[1px] bg-slate-100 w-full my-3" />
                 <Row label="2. HPP Sparepart Terjual" value={bengkelData.hpp} bold large isNegative />
-                
+
                 <View className="bg-blue-50/50 w-full p-4 rounded-xl border border-blue-100 mt-4 mb-4">
                     <Row label="3. Laba Kotor Bengkel" value={labaKotor} bold large color="text-blue-700" />
                 </View>
@@ -408,8 +408,10 @@ export default function LabaRugiScreen() {
     );
 
     const renderJasaAngkutSection = () => {
-        const grossMinusMuatan = (reportData?.jasa_angkut_details?.gross_share_tpm || 0) - (reportData?.jasa_angkut_details?.biaya_lainnya || 0);
-        const netJasaAngkut = grossMinusMuatan - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0);
+        const grossJasaAngkut = (reportData?.jasa_angkut_details?.gross_share_tpm || 0); // Already represents (Revenue - Driver Share)
+        const tripCosts = reportData?.jasa_angkut_details?.biaya_lainnya || 0;
+        const generalOps = (reportData?.pengeluaran_unit_details?.jasa_angkut || 0) - tripCosts;
+        const netJasaAngkut = grossJasaAngkut - tripCosts - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - generalOps;
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -421,24 +423,13 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    <Row label="1. Penghasilan Jasa (Net Rute)" value={grossMinusMuatan} bold large />
-                    <Row label="2. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
-                    {reportData?.jasa_angkut_details?.bengkel_per_armada && Object.keys(reportData.jasa_angkut_details.bengkel_per_armada).length > 0 && (
-                        <View className="ml-4 pl-3 py-1 border-l-2 border-emerald-100 mt-1 mb-2 w-[90%]">
-                            {Object.entries(reportData.jasa_angkut_details.bengkel_per_armada).map(([name, val]) => (
-                                <Row key={name} label={name} value={val as number} small isNegative />
-                            ))}
-                        </View>
-                    )}
-                    <Row label="3. Biaya Operasional Umum" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} isNegative />
+                    <Row label="1. Penghasilan Jasa (Bagian TPM)" value={grossJasaAngkut} bold large />
 
-                    {reportData?.pengeluaran_unit_details?.jasa_angkut_armada && Object.keys(reportData.pengeluaran_unit_details.jasa_angkut_armada).length > 0 && (
-                        <View className="ml-4 pl-3 py-1 border-l-2 border-emerald-100 mt-2 mb-2 w-[90%]">
-                            {Object.entries(reportData.pengeluaran_unit_details.jasa_angkut_armada).map(([name, val]) => (
-                                <Row key={name} label={name} value={val as number} small isNegative />
-                            ))}
-                        </View>
-                    )}
+                    <Row label="2. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
+
+                    <Row label="3. Biaya Operasional Armada" value={reportData?.pengeluaran_unit_details?.jasa_angkut || 0} bold large isNegative />
+                    <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(BBM, Tol, Parkir, & Umum)</Typography>
+
 
                     <View className="h-[1px] bg-slate-100 w-full my-4" />
 
@@ -471,21 +462,8 @@ export default function LabaRugiScreen() {
                 <View className="p-5 w-full">
                     <Row label="1. Total Penjualan (Gross)" value={reportData?.mobil_details?.total_penjualan || 0} bold large />
                     <Row label="2. Biaya Operasional Unit" value={reportData?.pengeluaran_unit_details?.mobil || 0} isNegative />
-                    {reportData?.pengeluaran_unit_details?.mobil_unit && Object.keys(reportData.pengeluaran_unit_details.mobil_unit).length > 0 && (
-                        <View className="ml-4 pl-3 py-1 border-l-2 border-amber-100 mt-1 mb-2 w-[90%]">
-                            {Object.entries(reportData.pengeluaran_unit_details.mobil_unit).map(([name, val]) => (
-                                <Row key={name} label={name} value={val as number} small isNegative />
-                            ))}
-                        </View>
-                    )}
                     <Row label="3. Biaya Sparepart & Servis" value={reportData?.mobil_details?.biaya_bengkel || 0} isNegative />
-                    {reportData?.mobil_details?.bengkel_per_mobil && Object.keys(reportData.mobil_details.bengkel_per_mobil).length > 0 && (
-                        <View className="ml-4 pl-3 py-1 border-l-2 border-amber-100 mt-1 mb-2 w-[90%]">
-                            {Object.entries(reportData.mobil_details.bengkel_per_mobil).map(([name, val]) => (
-                                <Row key={name} label={name} value={val as number} small isNegative />
-                            ))}
-                        </View>
-                    )}
+
                     <Row label="4. Laba Investor" value={reportData?.mobil_details?.laba_investor || 0} isNegative />
 
                     <View className={`w-full rounded-xl p-3 my-3 border flex-row justify-between items-center ${(reportData?.mobil_details?.piutang_nilai || 0) > 0 ? 'bg-amber-50/50 border-amber-200/60' : 'bg-slate-50 border-slate-100/50'}`}>
@@ -530,7 +508,7 @@ export default function LabaRugiScreen() {
 
             <View className="p-5 w-full">
                 <Row label="1. Operasional Umum (Listrik, Admin, dll)" value={reportData?.pengeluaran_unit_details?.umum || 0} isNegative bold large />
-                
+
                 <View className="bg-slate-50 rounded-xl p-3 mt-3 w-full border border-slate-100">
                     <Typography variant="caption" className="text-slate-500 leading-snug">
                         Pengeluaran yang ditarik dari kas utama dan tidak membebani unit/bisnis tertentu secara langsung.
@@ -578,7 +556,7 @@ export default function LabaRugiScreen() {
 
     const renderFinalRecap = () => {
         const finalProfit = reportData?.laba_bersih || 0;
-        
+
         return (
             <Card className="bg-indigo-900 p-6 rounded-[32px] shadow-lg shadow-indigo-900/30 mb-10 overflow-hidden relative w-full border border-indigo-800">
                 <View className="absolute -right-8 -bottom-8 opacity-10">
@@ -611,11 +589,11 @@ export default function LabaRugiScreen() {
         <SafeAreaView className="flex-1 bg-slate-50">
             <StatusBar barStyle="light-content" />
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             {renderHeader()}
 
-            <ScrollView 
-                className="flex-1 px-4 pt-5" 
+            <ScrollView
+                className="flex-1 px-4 pt-5"
                 contentContainerStyle={{ paddingBottom: 40 }}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={fetchData} />}
                 showsVerticalScrollIndicator={false}
@@ -630,7 +608,7 @@ export default function LabaRugiScreen() {
                             <Typography variant="h4" weight="bold" className="text-slate-800">Perincian Laba</Typography>
                             <Typography variant="caption" className="text-slate-400">Total 3 Unit Bisnis</Typography>
                         </View>
-                        
+
                         {renderBengkelSection()}
                         {renderJasaAngkutSection()}
                         {renderMobilSection()}

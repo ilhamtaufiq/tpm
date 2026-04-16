@@ -136,23 +136,24 @@ class MuatanService:
     ) -> Dict[str, Decimal]:
         """Calculate profit split.
         
-        Logic: Operational costs are deducted SOLELY from TPM's portion.
-        Driver Share = (Gross Margin * (100 - TPM%)) / 100
-        TPM Share = (Gross Margin * TPM%) / 100 - Operational Costs
+        New Logic: Operational costs are NOT deducted from the trip's laba_tpm.
+        Instead, they are recorded as armada-level expenses.
+        Trip laba_tpm represents the Gross TPM Share.
         """
-        # Gross profit for calculation base
+        # Gross profit for calculation base (Revenue - Cost of goods)
         laba_kotor_gross = pendapatan_kotor
         
-        # Calculate base shares
+        # Calculate base shares (usually 50/50)
         share_supir = (laba_kotor_gross * (Decimal("100") - persentase_tpm) / 100).quantize(Decimal("0.01"))
         share_tpm_gross = (laba_kotor_gross * persentase_tpm / 100).quantize(Decimal("0.01"))
         
-        # TPM takes the full hit for costs
-        laba_tpm = share_tpm_gross - total_biaya_operasional
+        # Per User Request: Total laba_tpm in DB should be GROSS (before operational expenses)
+        # The operational expenses are aggregates per armada in reports instead.
+        laba_tpm = share_tpm_gross
         laba_supir = share_supir
         
-        # Final laba kotor for accounting (Margin - Total costs)
-        laba_kotor_final = pendapatan_kotor - total_biaya_operasional
+        # Trip Laba Kotor is also reported as Gross for this unit
+        laba_kotor_final = laba_kotor_gross
 
         return {
             "total_biaya": total_biaya_operasional,
@@ -160,6 +161,7 @@ class MuatanService:
             "laba_tpm": laba_tpm,
             "laba_supir": laba_supir,
         }
+
 
     def get_route_suggestions(self, field: str, query: Optional[str] = None, limit: int = 10) -> List[str]:
         """Get unique suggestions for route fields (asal/tujuan) with optional search."""
@@ -240,12 +242,14 @@ class MuatanService:
         for item in data.biaya_operasional:
             biaya = JasaAngkutBiayaLainnya(
                 muatan_id=muatan.id,
+                armada_id=muatan.armada_id, # Set armada_id
                 tanggal=data.tanggal,
                 kategori="Operasional",
                 deskripsi=item.deskripsi,
                 jumlah=item.jumlah,
             )
             self.db.add(biaya)
+
 
             # Record operational cost to kas/bank (money going out)
             create_kas_entry(
@@ -547,12 +551,14 @@ class MuatanService:
             for item in data.biaya_operasional:
                 biaya = JasaAngkutBiayaLainnya(
                     muatan_id=muatan.id,
+                    armada_id=muatan.armada_id, # Set armada_id
                     tanggal=muatan.tanggal,
                     kategori="Operasional",
                     deskripsi=item.deskripsi,
                     jumlah=item.jumlah,
                 )
                 self.db.add(biaya)
+
             
             # Calculate total dynamic cost from the input list directly for profit calc
             # We must also include existing 'Perawatan Bengkel' cost if any
@@ -904,12 +910,15 @@ class MuatanService:
         # Aggregate values (Excluding cancelled for financial totals)
         aggregates = query.filter(MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL).with_entities(
             func.sum(MuatanJasaAngkut.pendapatan_kotor - MuatanJasaAngkut.laba_supir).label("total_pendapatan"),
+            func.sum(MuatanJasaAngkut.laba_supir).label("total_laba_supir"),
             func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya"),
             func.sum(MuatanJasaAngkut.laba_kotor).label("total_laba_kotor"),
             func.sum(MuatanJasaAngkut.laba_tpm).label("total_laba_tpm"),
         ).first()
 
+
         total_pendapatan = float(aggregates.total_pendapatan or 0)
+        total_laba_supir = float(aggregates.total_laba_supir or 0)
         total_biaya_all = float(aggregates.total_biaya or 0)
 
         # Breakdown for Report Details
@@ -1021,7 +1030,7 @@ class MuatanService:
             if nama:
                 bengkel_per_armada[nama] = bengkel_per_armada.get(nama, 0) + float(total or 0)
 
-        return {
+        result_dict = {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
             "partial_count": partial_count,
@@ -1029,8 +1038,10 @@ class MuatanService:
             "batal_count": batal_count,
             "hutang_supir_count": active_count, # Mapped as active_trips in dashboard
             "total_pendapatan": total_pendapatan,
+            "total_laba_supir": total_laba_supir,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),
+
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_JASA_ANGKUT)),
             "total_tunai": float(total_tunai_q.scalar() or 0),
             "total_transfer": float(total_transfer_q.scalar() or 0),
@@ -1039,9 +1050,54 @@ class MuatanService:
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": total_biaya_lainnya,
                 "biaya_bengkel": total_biaya_bengkel,
-                "bengkel_per_armada": bengkel_per_armada
+                "bengkel_per_armada": bengkel_per_armada,
+                "operasional_per_armada": {} # Will be populated below
             }
         }
+
+        # --- Aggregate Operational Breakdown per Armada ---
+        # 1. Dynamic Operational Costs (from JasaAngkutBiayaLainnya table)
+        dynamic_op_q = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(JasaAngkutBiayaLainnya.jumlah)
+        ).join(ArmadaJasaAngkut, JasaAngkutBiayaLainnya.armada_id == ArmadaJasaAngkut.id).outerjoin(
+            MuatanJasaAngkut, JasaAngkutBiayaLainnya.muatan_id == MuatanJasaAngkut.id
+        ).filter(
+            or_(MuatanJasaAngkut.id.is_(None), MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL),
+            JasaAngkutBiayaLainnya.kategori == "Operasional"
+        )
+        if tanggal_dari: dynamic_op_q = dynamic_op_q.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: dynamic_op_q = dynamic_op_q.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
+        dynamic_ops = dynamic_op_q.group_by(ArmadaJasaAngkut.nama).all()
+
+        # 2. Fixed Operational Costs (from MuatanJasaAngkut columns: BBM, Tol, Parkir, Lainnya)
+        # Per user request: include (BBM, Tol, Parkir, & Umum/Lainnya)
+        fixed_op_q = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(
+                MuatanJasaAngkut.biaya_bbm + 
+                MuatanJasaAngkut.biaya_tol + 
+                MuatanJasaAngkut.biaya_parkir + 
+                MuatanJasaAngkut.biaya_lainnya
+            )
+        ).join(ArmadaJasaAngkut, MuatanJasaAngkut.armada_id == ArmadaJasaAngkut.id).filter(
+            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: fixed_op_q = fixed_op_q.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
+        if tanggal_sampai: fixed_op_q = fixed_op_q.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        fixed_ops = fixed_op_q.group_by(ArmadaJasaAngkut.nama).all()
+
+        # Merge results
+        op_per_armada = {}
+        for name, amount in dynamic_ops:
+            if name: op_per_armada[name] = float(amount or 0)
+        for name, amount in fixed_ops:
+            if name: op_per_armada[name] = op_per_armada.get(name, 0) + float(amount or 0)
+
+        result_dict["details"]["operasional_per_armada"] = op_per_armada
+        
+        return result_dict
+
 
 
     def get_driver_summary(
