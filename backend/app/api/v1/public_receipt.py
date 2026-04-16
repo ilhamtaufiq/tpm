@@ -51,6 +51,25 @@ async def get_receipt(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
 
+def format_payment_method(method: str) -> str:
+    """Format raw payment method string to human-readable text"""
+    if not method: return "-"
+    
+    # Handle enum-like strings (e.g. PAYMENTMETHOD.SPLIT)
+    formatted = str(method).split('.')[-1].upper()
+    
+    mapping = {
+        "SPLIT": "GABUNGAN",
+        "TUNAI": "TUNAI",
+        "TRANSFER": "TRANSFER / QRIS",
+        "DEBIT": "KARTU DEBIT",
+        "KREDIT": "KARTU KREDIT",
+        "PIUTANG": "BON / PIUTANG"
+    }
+    
+    return mapping.get(formatted, formatted)
+
+
 def apply_branding(db: Session, receipt: Dict[str, Any]):
     """Apply system branding settings to receipt data"""
     try:
@@ -120,11 +139,11 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "total": float(transaction.grand_total or 0),
         "paid": float(transaction.jumlah_bayar or 0),
         "remaining": float(transaction.grand_total or 0) - float(transaction.jumlah_bayar or 0),
-        "paymentMethod": transaction.metode_bayar,
+        "paymentMethod": format_payment_method(transaction.metode_bayar),
         "notes": transaction.catatan,
-        "companyName": "TIGA PUTRA MOTOR",
-        "companyAddress": "Jl. Raya Cianjur Sukabumi KM 5, Cianjur",
-        "companyPhone": "087720225244"
+        "companyName": "Tiga Putra Motor",
+        "companyAddress": "Cianjur, Jawa Barat",
+        "companyPhone": "+62 856 5999 4407"
     }
     
     return apply_branding(db, receipt)
@@ -163,11 +182,11 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "discount": 0,
         "total": float(muatan.harga_jual or 0),
         "paid": float(muatan.harga_jual or 0) if muatan.status_bayar == 'LUNAS' else 0,
-        "paymentMethod": "TUNAI",
+        "paymentMethod": format_payment_method("TUNAI"),
         "notes": muatan.catatan,
-        "companyName": "TIGA PUTRA MOTOR",
-        "companyAddress": "Jl. Raya Cianjur Sukabumi KM 5, Cianjur",
-        "companyPhone": "087720225244"
+        "companyName": "Tiga Putra Motor",
+        "companyAddress": "Cianjur, Jawa Barat",
+        "companyPhone": "+62 856 5999 4407"
     }
     
     return apply_branding(db, receipt)
