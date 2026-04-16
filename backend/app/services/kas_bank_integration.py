@@ -72,6 +72,7 @@ def create_kas_entry(
     keterangan: str,
     user_id: Optional[int] = None,
     kas_jenis: Optional[KasBankJenis] = None,
+    allow_negative: bool = False,
 ) -> KasBank:
     """Create a kas/bank entry for financial transactions.
     
@@ -93,6 +94,7 @@ def create_kas_entry(
         referensi_id=referensi_id,
         nomor_referensi=nomor_referensi,
         keterangan=keterangan,
+        allow_negative=allow_negative,
     )
 
     return service.create(data, user_id)

@@ -44,7 +44,8 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         status_bayar: 'BELUM_LUNAS',
         status: 'PROSES',
         metode_bayar: 'TUNAI',
-        catatan: ''
+        catatan: '',
+        biaya_operasional: [] as { deskripsi: string, jumlah: string }[]
     });
 
     // Hooks for data fetching
@@ -133,7 +134,11 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 status_bayar: initialData.status_bayar === 'LUNAS' ? 'LUNAS' : 'BELUM_LUNAS',
                 status: initialData.status || 'PROSES',
                 metode_bayar: initialData.metode_bayar?.toUpperCase() || 'TUNAI',
-                catatan: initialData.catatan || ''
+                catatan: initialData.catatan || '',
+                biaya_operasional: (initialData.biaya_tambahan || []).map((b: any) => ({
+                    deskripsi: b.deskripsi,
+                    jumlah: formatNumber(b.jumlah)
+                }))
             });
 
         }
@@ -228,10 +233,14 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const beli = parseNumber(formData.harga_beli) || 0;
         const jual = parseNumber(formData.harga_jual) || 0;
         const revenue = jual - beli;
-        const tpmShare = revenue * 0.5; // TPM share is 50% of the profit
+        
+        const totalCosts = formData.biaya_operasional.reduce((acc, b) => acc + (parseNumber(b.jumlah) || 0), 0);
+        // Driver gets 50% of the gross margin (revenue)
+        // TPM gets the remaining 50% minus all operational costs
+        const tpmShare = (revenue * 0.5) - totalCosts;
 
-        return { revenue, tpmShare, totalCosts: 0, beli, jual, bengkelTotal: 0 };
-    }, [formData.harga_beli, formData.harga_jual]);
+        return { revenue, tpmShare, totalCosts, beli, jual, bengkelTotal: 0 };
+    }, [formData.harga_beli, formData.harga_jual, formData.biaya_operasional]);
 
     const filteredDrivers = useMemo(() => {
         if (!driverSearch) return activeDrivers as Supir[];
@@ -286,6 +295,29 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const newList = [...formData.jenis_muatan_list];
         newList.splice(index, 1);
         setFormData(prev => ({ ...prev, jenis_muatan_list: newList.length > 0 ? newList : [{ jenis: '', ritase: '1', harga_beli: '', harga_jual: '', asal: '', tujuan: '' }] }));
+    };
+
+    const addBiayaOperasional = (deskripsi: string = '', jumlah: string = '') => {
+        setFormData(prev => ({
+            ...prev,
+            biaya_operasional: [...prev.biaya_operasional, { deskripsi, jumlah: formatNumber(jumlah) }]
+        }));
+    };
+
+    const removeBiayaOperasional = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            biaya_operasional: prev.biaya_operasional.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateBiayaOperasional = (index: number, field: 'deskripsi' | 'jumlah', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            biaya_operasional: prev.biaya_operasional.map((item, i) =>
+                i === index ? { ...item, [field]: field === 'jumlah' ? formatNumber(value) : value } : item
+            )
+        }));
     };
 
     const handleSubmit = async () => {
@@ -349,7 +381,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 harga_beli: parseNumber(formData.harga_beli),
                 harga_jual: parseNumber(formData.harga_jual),
                 pendapatan_kotor: calculations.revenue,
-                biaya_operasional: [],
+                biaya_operasional: formData.biaya_operasional.map(item => ({
+                    deskripsi: item.deskripsi,
+                    jumlah: parseNumber(item.jumlah)
+                })),
                 payments: isSplitPayment ? payments.map(p => ({
                     metode: p.metode.toUpperCase(),
                     nominal: parseNumber(p.jumlah),
@@ -777,6 +812,72 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                         </View>
                     </View>
                 ))}
+            </View>
+
+            {/* Operational Costs Section */}
+            <View className="flex-row items-center justify-between mb-2 mt-4">
+                <Typography variant="caption" weight="bold" className="text-gray-500 uppercase tracking-widest">Biaya Operasional (Ops)</Typography>
+                <Pressable onPress={() => addBiayaOperasional()} className="flex-row items-center bg-orange-50 px-2 py-1 rounded-lg">
+                    <PlusCircle size={14} color="#F59E0B" />
+                    <Typography variant="caption" weight="bold" className="text-orange-700 ml-1">Tambah</Typography>
+                </Pressable>
+            </View>
+
+            <View className="bg-orange-50/30 p-4 rounded-2xl border border-orange-100 mb-6 font-bold">
+                <View className="flex-row flex-wrap gap-2 mb-4">
+                    {[
+                        { label: 'BBM', val: 'BBM' },
+                        { label: 'Tol', val: 'Tol' },
+                        { label: 'Parkir', val: 'Parkir' },
+                        { label: 'Makan', val: 'Makan/Uang Saku' },
+                        { label: 'Mel', val: 'Mel' }
+                    ].map(btn => (
+                        <Pressable
+                            key={btn.val}
+                            onPress={() => addBiayaOperasional(btn.val)}
+                            className="px-3 py-1.5 rounded-full bg-white border border-orange-100 shadow-sm"
+                        >
+                            <Typography variant="caption" weight="bold" className="text-orange-600 text-[10px] uppercase">+{btn.label}</Typography>
+                        </Pressable>
+                    ))}
+                </View>
+
+                {formData.biaya_operasional.length === 0 ? (
+                    <View className="py-4 items-center">
+                        <Typography variant="caption" className="text-orange-400 italic">Belum ada biaya operasional ditambahkan</Typography>
+                    </View>
+                ) : (
+                    formData.biaya_operasional.map((item, index) => (
+                        <View key={index} className="flex-row items-center gap-2 mb-3 bg-white p-3 rounded-2xl border border-orange-50">
+                            <View className="flex-[2]">
+                                <Input
+                                    placeholder="Deskripsi"
+                                    value={item.deskripsi}
+                                    onChangeText={v => updateBiayaOperasional(index, 'deskripsi', v)}
+                                    containerClassName="mb-0"
+                                    className="h-10 text-[12px] border-transparent"
+                                />
+                            </View>
+                            <View className="flex-[1.5]">
+                                <Input
+                                    placeholder="Rp"
+                                    keyboardType="numeric"
+                                    value={item.jumlah}
+                                    onChangeText={v => updateBiayaOperasional(index, 'jumlah', v)}
+                                    containerClassName="mb-0"
+                                    className="h-10 text-[12px] border-transparent font-bold text-orange-700"
+                                    startIcon={<Typography className="text-orange-300 text-[10px] font-bold">Rp</Typography>}
+                                />
+                            </View>
+                            <Pressable
+                                onPress={() => removeBiayaOperasional(index)}
+                                className="w-8 h-8 items-center justify-center bg-red-50 rounded-full"
+                            >
+                                <Trash2 size={12} color="#EF4444" />
+                            </Pressable>
+                        </View>
+                    ))
+                )}
             </View>
 
             <Typography variant="caption" weight="bold" className="mb-2 text-gray-500 mt-2">KEUANGAN & MARGIN</Typography>

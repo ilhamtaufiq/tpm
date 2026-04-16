@@ -68,7 +68,7 @@ class KasBankService:
         saldo_sebelum = self._get_current_balance(data.jenis)
 
         # Check if enough balance for outgoing transaction
-        if data.tipe == KasBankType.KELUAR and data.nominal > saldo_sebelum:
+        if data.tipe == KasBankType.KELUAR and data.nominal > saldo_sebelum and not data.allow_negative:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Saldo tidak mencukupi. Saldo {data.jenis.value}: {saldo_sebelum}",

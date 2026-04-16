@@ -136,25 +136,27 @@ class MuatanService:
     ) -> Dict[str, Decimal]:
         """Calculate profit split.
         
-        New Logic: Operational costs are charged to TPM, not Driver.
-        Driver Share = Gross Revenue * (100 - TPM%) / 100
-        TPM Share = Gross Revenue - Driver Share - Operational Costs
+        Logic: Operational costs are deducted SOLELY from TPM's portion.
+        Driver Share = (Gross Margin * (100 - TPM%)) / 100
+        TPM Share = (Gross Margin * TPM%) / 100 - Operational Costs
         """
-        # Net Profit (for accounting)
-        laba_kotor = pendapatan_kotor - total_biaya_operasional
+        # Gross profit for calculation base
+        laba_kotor_gross = pendapatan_kotor
         
-        # Driver share calculated from Gross Revenue (Pendapatan Kotor)
-        persentase_supir = Decimal("100") - persentase_tpm
-        laba_supir = (pendapatan_kotor * persentase_supir / 100).quantize(Decimal("0.01"))
+        # Calculate base shares
+        share_supir = (laba_kotor_gross * (Decimal("100") - persentase_tpm) / 100).quantize(Decimal("0.01"))
+        share_tpm_gross = (laba_kotor_gross * persentase_tpm / 100).quantize(Decimal("0.01"))
         
-        # TPM Share takes the hit for operational costs
-        # TPM Share = Total Revenue - Driver Share - Costs
-        # Which is equivalent to: (Gross Share TPM) - Costs
-        laba_tpm = pendapatan_kotor - laba_supir - total_biaya_operasional
+        # TPM takes the full hit for costs
+        laba_tpm = share_tpm_gross - total_biaya_operasional
+        laba_supir = share_supir
+        
+        # Final laba kotor for accounting (Margin - Total costs)
+        laba_kotor_final = pendapatan_kotor - total_biaya_operasional
 
         return {
             "total_biaya": total_biaya_operasional,
-            "laba_kotor": laba_kotor,
+            "laba_kotor": laba_kotor_final,
             "laba_tpm": laba_tpm,
             "laba_supir": laba_supir,
         }
@@ -256,7 +258,8 @@ class MuatanService:
                 referensi_id=muatan.id,
                 nomor_referensi=muatan.nomor_transaksi,
                 keterangan=f"Biaya Operational Muatan {nomor_transaksi}: {item.deskripsi}",
-                user_id=user_id
+                user_id=user_id,
+                allow_negative=True
             )
         
         # Determine total dynamic cost initially

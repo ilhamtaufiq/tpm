@@ -286,6 +286,7 @@ class KasBankCreate(BaseModel):
     nomor_referensi: Optional[str] = Field(None, max_length=30)
     keterangan: str = Field(..., min_length=2, max_length=255)
     catatan: Optional[str] = None
+    allow_negative: bool = False
 
 
 class KasBankResponse(BaseModel):
