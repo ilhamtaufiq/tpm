@@ -52,8 +52,47 @@ export default function PublicReceiptPage() {
 
     const handleDownloadPDF = async () => {
         if (!receipt) return;
-        // Trigger PDF download
-        // Implementation depends on backend API
+ 
+        try {
+            setLoading(true);
+            const pdfUrl = `${FILE_URL}/api/v1/public/receipt/${type}/${id}/pdf`;
+            
+            // Generate Filename (consistently with backend)
+            // nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal
+            const clean = (str: string) => (str || '').replace(/[^a-zA-Z0-9]/g, '_');
+            const datePart = new Date(receipt.date).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }).replace(/\//g, '');
+            
+            const fileName = `${clean(receipt.transactionNumber)}-${clean(receipt.customerName)}-${clean(receipt.vehiclePlate || 'NoPol')}-${datePart}.pdf`;
+            const fileUri = FileSystem.cacheDirectory + fileName;
+ 
+            if (Platform.OS === 'web') {
+                window.open(pdfUrl, '_blank');
+                return;
+            }
+ 
+            // Download the PDF from backend
+            const downloadRes = await FileSystem.downloadAsync(pdfUrl, fileUri);
+ 
+            if (downloadRes.status !== 200) {
+                throw new Error('Gagal mengunduh PDF struk');
+            }
+ 
+            // Share the PDF file
+            await Sharing.shareAsync(downloadRes.uri, {
+                mimeType: 'application/pdf',
+                dialogTitle: 'Download Struk PDF',
+                UTI: 'com.adobe.pdf'
+            });
+        } catch (err: any) {
+            console.error('Download error:', err);
+            Alert.alert('Error', 'Gagal mengunduh PDF. Silakan coba lagi nanti.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleShare = async () => {
@@ -166,184 +205,178 @@ export default function PublicReceiptPage() {
         );
     }
 
+    const receiptStyles = {
+        paper: {
+            backgroundColor: '#fff',
+            padding: 20,
+            width: '100%',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+        },
+        mono: {
+            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        },
+        divider: {
+            borderBottomWidth: 1,
+            borderBottomColor: '#000',
+            borderStyle: 'dashed' as const,
+            marginVertical: 15,
+        }
+    };
+
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+        <SafeAreaView className="flex-1 bg-gray-100" edges={['top']}>
             {/* Header */}
-            <View className="bg-white px-6 py-4 border-b border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-1">
-                        <Typography variant="h3" weight="bold">Struk Digital</Typography>
-                        <Typography variant="caption" className="text-textGray mt-1">
-                            {type === 'bengkel' ? 'Bengkel' : 'Jasa Angkut'} • {receipt.transactionNumber}
-                        </Typography>
-                    </View>
-                    <View className="w-12 h-12 bg-emerald-50 rounded-full items-center justify-center">
-                        <CheckCircle2 size={24} color="#023C69" />
-                    </View>
-                </View>
+            <View className="bg-white px-6 py-4 border-b border-gray-200 flex-row items-center">
+                <Button 
+                    variant="ghost" 
+                    onPress={() => router.back()}
+                    icon={<ArrowLeft size={24} color="#374151" />}
+                    className="mr-2 p-0 w-10"
+                />
+                <Typography variant="h3" weight="bold">Struk Digital</Typography>
             </View>
-
-            <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
-                {/* Status Card */}
-                <Card className="p-6 mb-6 rounded-[24px] bg-gradient-to-br from-emerald-50 to-white border border-emerald-100">
-                    <View className="items-center">
-                        <View className="w-16 h-16 bg-emerald-100 rounded-full items-center justify-center mb-3">
-                            <CheckCircle2 size={32} color="#023C69" />
-                        </View>
-                        <Typography variant="h4" weight="bold" className="text-emerald-700 mb-1">
-                            Transaksi Berhasil
+ 
+            <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
+                <View style={receiptStyles.paper}>
+                    {/* Header Info */}
+                    <View className="items-center mb-2">
+                        <Typography weight="bold" style={[{ fontSize: 18, textAlign: 'center' }, receiptStyles.mono]}>
+                            {receipt.companyName}
                         </Typography>
-                        <Typography variant="caption" className="text-emerald-600">
-                            {formatDate(receipt.date)}
+                        <Typography style={[{ fontSize: 12, textAlign: 'center', marginTop: 4 }, receiptStyles.mono]}>
+                            {receipt.companyAddress}
+                        </Typography>
+                        <Typography style={[{ fontSize: 12, textAlign: 'center' }, receiptStyles.mono]}>
+                            Telp: {receipt.companyPhone}
                         </Typography>
                     </View>
-                </Card>
-
-                {/* Company Info */}
-                <Card className="p-6 mb-6 rounded-[24px]">
-                    <Typography variant="h4" weight="bold" className="mb-4 text-center">
-                        {receipt.companyName || 'TPM Business'}
-                    </Typography>
-                    <Typography variant="caption" className="text-center text-textGray mb-1">
-                        {receipt.companyAddress || 'Jl. Contoh No. 123, Jakarta'}
-                    </Typography>
-                    <Typography variant="caption" className="text-center text-textGray">
-                        {receipt.companyPhone || '(021) 1234-5678'}
-                    </Typography>
-                </Card>
-
-                {/* Customer Info */}
-                <Card className="p-6 mb-6 rounded-[24px]">
-                    <Typography variant="h4" weight="bold" className="mb-4">
-                        Informasi Pelanggan
-                    </Typography>
-
-                    <View className="space-y-3">
-                        <View className="flex-row justify-between">
-                            <Typography variant="body2" className="text-textGray">Nama</Typography>
-                            <Typography variant="body2" weight="semibold">{receipt.customerName}</Typography>
+ 
+                    <View style={receiptStyles.divider} />
+ 
+                    {/* Transaction Info */}
+                    <View>
+                        <View className="flex-row justify-between mb-1">
+                            <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>No. Nota:</Typography>
+                            <Typography style={[{ fontSize: 12, fontWeight: 'bold' }, receiptStyles.mono]}>{receipt.transactionNumber}</Typography>
                         </View>
-
-                        {type === 'bengkel' && (
-                            <>
-                                <View className="flex-row justify-between">
-                                    <Typography variant="body2" className="text-textGray">No. Polisi</Typography>
-                                    <Typography variant="body2" weight="semibold">{receipt.vehiclePlate}</Typography>
-                                </View>
-                                <View className="flex-row justify-between">
-                                    <Typography variant="body2" className="text-textGray">Kendaraan</Typography>
-                                    <Typography variant="body2" weight="semibold">{receipt.vehicleType}</Typography>
-                                </View>
-                            </>
+                        <View className="flex-row justify-between mb-1">
+                            <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>Tanggal:</Typography>
+                            <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{formatDate(receipt.date)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between mb-1">
+                            <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>Pelanggan:</Typography>
+                            <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{receipt.customerName}</Typography>
+                        </View>
+                        {receipt.vehiclePlate && (
+                            <View className="flex-row justify-between mb-1">
+                                <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>No. Polisi:</Typography>
+                                <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{receipt.vehiclePlate}</Typography>
+                            </View>
                         )}
-
-                        {type === 'jasa_angkut' && receipt.origin && (
-                            <>
-                                <View className="flex-row justify-between">
-                                    <Typography variant="body2" className="text-textGray">Rute</Typography>
-                                    <Typography variant="body2" weight="semibold">
-                                        {receipt.origin} → {receipt.destination}
+                    </View>
+ 
+                    <View style={receiptStyles.divider} />
+ 
+                    {/* Items List */}
+                    <View>
+                        {receipt.items.map((item: any, index: number) => (
+                            <View key={index} className="mb-4">
+                                <Typography style={[{ fontSize: 13, fontWeight: 'bold' }, receiptStyles.mono]}>
+                                    {item.description.toUpperCase()}
+                                </Typography>
+                                <View className="flex-row justify-between mt-1">
+                                    <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>
+                                        {item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}
+                                    </Typography>
+                                    <Typography style={[{ fontSize: 12, fontWeight: 'bold' }, receiptStyles.mono]}>
+                                        {formatCurrency(item.subtotal).replace('Rp', '').trim()}
                                     </Typography>
                                 </View>
-                                {receipt.driverName && (
-                                    <View className="flex-row justify-between">
-                                        <Typography variant="body2" className="text-textGray">Supir</Typography>
-                                        <Typography variant="body2" weight="semibold">{receipt.driverName}</Typography>
-                                    </View>
-                                )}
+                            </View>
+                        ))}
+                    </View>
+ 
+                    <View style={receiptStyles.divider} />
+ 
+                    {/* Summary */}
+                    <View>
+                        <View className="flex-row justify-between mb-1">
+                            <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>SUBTOTAL</Typography>
+                            <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.subtotal).replace('Rp', '').trim()}</Typography>
+                        </View>
+                        
+                        {receipt.tax > 0 && (
+                            <View className="flex-row justify-between mb-1">
+                                <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>PAJAK</Typography>
+                                <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.tax).replace('Rp', '').trim()}</Typography>
+                            </View>
+                        )}
+ 
+                        {receipt.discount > 0 && (
+                            <View className="flex-row justify-between mb-1">
+                                <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>DISKON</Typography>
+                                <Typography style={[{ fontSize: 13, color: '#EF4444' }, receiptStyles.mono]}>-{formatCurrency(receipt.discount).replace('Rp', '').trim()}</Typography>
+                            </View>
+                        )}
+ 
+                        <View className="my-2" style={{ borderTopWidth: 1, borderTopColor: '#000' }} />
+                        
+                        <View className="flex-row justify-between items-center py-1">
+                            <Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>TOTAL</Typography>
+                            <Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>
+                                {formatCurrency(receipt.total).replace('Rp', '').trim()}
+                            </Typography>
+                        </View>
+ 
+                        {receipt.total - receipt.paid > 0 ? (
+                            <>
+                                <View className="flex-row justify-between mb-1 mt-2">
+                                    <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>DIBAYAR</Typography>
+                                    <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{formatCurrency(receipt.paid).replace('Rp', '').trim()}</Typography>
+                                </View>
+                                <View className="flex-row justify-between mb-1">
+                                    <Typography style={[{ fontSize: 12, fontWeight: 'bold', color: '#EF4444' }, receiptStyles.mono]}>SISA</Typography>
+                                    <Typography style={[{ fontSize: 12, fontWeight: 'bold', color: '#EF4444' }, receiptStyles.mono]}>
+                                        {formatCurrency(receipt.total - receipt.paid).replace('Rp', '').trim()}
+                                    </Typography>
+                                </View>
                             </>
+                        ) : (
+                            <Typography style={[{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginTop: 10 }, receiptStyles.mono]}>
+                                *** LUNAS ***
+                            </Typography>
+                        )}
+ 
+                        <View className="flex-row justify-between mt-4">
+                            <Typography style={[{ fontSize: 11 }, receiptStyles.mono]}>Metode Bayar:</Typography>
+                            <Typography style={[{ fontSize: 11, fontWeight: 'bold' }, receiptStyles.mono]}>{str(receipt.paymentMethod || '-').toUpperCase()}</Typography>
+                        </View>
+                    </View>
+ 
+                    <View style={receiptStyles.divider} />
+ 
+                    {/* Footer */}
+                    <View className="items-center">
+                        <Typography style={[{ fontSize: 11, textAlign: 'center' }, receiptStyles.mono]}>
+                            TERIMA KASIH ATAS KUNJUNGANNYA
+                        </Typography>
+                        <Typography style={[{ fontSize: 10, textAlign: 'center', marginTop: 4, color: '#6B7280' }, receiptStyles.mono]}>
+                            Bukti pembayaran sah {receipt.companyName}
+                        </Typography>
+                        {receipt.notes && (
+                            <Typography style={[{ fontSize: 11, textAlign: 'center', marginTop: 10, fontStyle: 'italic' }, receiptStyles.mono]}>
+                                "{receipt.notes}"
+                            </Typography>
                         )}
                     </View>
-                </Card>
-
-                {/* Items */}
-                <Card className="p-6 mb-6 rounded-[24px]">
-                    <Typography variant="h4" weight="bold" className="mb-4">
-                        Rincian
-                    </Typography>
-
-                    {receipt.items.map((item: any, index: number) => (
-                        <View key={index} className="mb-4 pb-4 border-b border-gray-100 last:border-b-0">
-                            <View className="flex-row justify-between items-start mb-1">
-                                <Typography variant="body2" weight="semibold" className="flex-1 mr-4">
-                                    {item.description}
-                                </Typography>
-                                <Typography variant="body2" weight="bold">
-                                    {formatCurrency(item.subtotal)}
-                                </Typography>
-                            </View>
-                            {item.quantity && item.unitPrice && (
-                                <Typography variant="caption" className="text-textGray">
-                                    {item.quantity} × {formatCurrency(item.unitPrice)}
-                                </Typography>
-                            )}
-                        </View>
-                    ))}
-                </Card>
-
-                {/* Total */}
-                <Card className="p-6 mb-6 rounded-[24px] bg-gradient-to-br from-primary/5 to-white border border-primary/20">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <Typography variant="body2" className="text-textGray">Subtotal</Typography>
-                        <Typography variant="body2">{formatCurrency(receipt.subtotal)}</Typography>
-                    </View>
-
-                    {receipt.tax > 0 && (
-                        <View className="flex-row justify-between items-center mb-3">
-                            <Typography variant="body2" className="text-textGray">Pajak</Typography>
-                            <Typography variant="body2">{formatCurrency(receipt.tax)}</Typography>
-                        </View>
-                    )}
-
-                    {receipt.discount > 0 && (
-                        <View className="flex-row justify-between items-center mb-3">
-                            <Typography variant="body2" className="text-textGray">Diskon</Typography>
-                            <Typography variant="body2" className="text-red-500">-{formatCurrency(receipt.discount)}</Typography>
-                        </View>
-                    )}
-
-                    <View className="h-[1px] bg-gray-200 my-3" />
-
-                    <View className="flex-row justify-between items-center">
-                        <Typography variant="h3" weight="bold">Total</Typography>
-                        <Typography variant="h3" weight="bold" className="text-primary">
-                            {formatCurrency(receipt.total)}
-                        </Typography>
-                    </View>
-
-                    {receipt.paymentMethod && (
-                        <View className="mt-4 pt-4 border-t border-gray-200">
-                            <View className="flex-row justify-between items-center">
-                                <Typography variant="body2" className="text-textGray">Metode Pembayaran</Typography>
-                                <Typography variant="body2" weight="semibold" className="text-primary">
-                                    {receipt.paymentMethod.toUpperCase()}
-                                </Typography>
-                            </View>
-                        </View>
-                    )}
-                </Card>
-
-                {/* Notes */}
-                {receipt.notes && (
-                    <Card className="p-6 mb-6 rounded-[24px] bg-blue-50 border border-blue-100">
-                        <Typography variant="caption" weight="semibold" className="text-blue-700 mb-2">
-                            Catatan
-                        </Typography>
-                        <Typography variant="body2" className="text-blue-900 italic">
-                            {receipt.notes}
-                        </Typography>
-                    </Card>
-                )}
-
-                {/* Footer Info */}
-                <Card className="p-4 mb-6 rounded-[20px] bg-gray-50">
-                    <Typography variant="caption" className="text-center text-textGray">
-                        Struk digital ini valid dan dapat digunakan sebagai bukti transaksi
-                    </Typography>
-                </Card>
-
+                </View>
+ 
                 {/* Action Buttons */}
-                <View className="mb-8" style={{ gap: 12 }}>
+                <View className="mt-8 mb-10" style={{ gap: 12 }}>
                     <Button
                         title={sharing ? "Menyiapkan Gambar..." : "Bagikan Gambar Struk"}
                         onPress={handleShareAsImage}

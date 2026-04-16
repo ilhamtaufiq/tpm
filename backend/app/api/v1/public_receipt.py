@@ -10,8 +10,9 @@ from datetime import datetime
 import io
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 import json
+import re
 
 from app.database.connection import get_db
 from app.models.bengkel import TransaksiPenjualanBengkel
@@ -170,94 +171,112 @@ def get_font_path(bold=False):
     return None
 
 def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
-    """Generate a beautiful 1200x630 OG image for the receipt"""
-    # Create canvas (1200x630 is optimal for Facebook/WhatsApp/Twitter)
+    """Generate a thermal-style OG image for the receipt"""
+    # Create canvas (1200x630)
     width, height = 1200, 630
-    # Create a nice gradient background (Blue to Navy)
-    img = Image.new('RGB', (width, height), color='#023C69')
+    
+    # Receipt-like background (off-white)
+    img = Image.new('RGB', (width, height), color='#f3f4f6')
     draw = ImageDraw.Draw(img)
     
-    # Branded Header
-    draw.rectangle([0, 0, width, 120], fill='#023C69')
-    draw.rectangle([0, 120, width, 128], fill='#EE2737') # Red separator
+    # Draw "Paper"
+    paper_width = 500
+    paper_x = (width - paper_width) // 2
+    draw.rectangle([paper_x, 20, paper_x + paper_width, height - 20], fill="white", outline="#d1d5db")
     
     # Load fonts
     font_path = get_font_path(bold=False)
     font_bold_path = get_font_path(bold=True)
     
     try:
-        title_font = ImageFont.truetype(font_bold_path, 60) if font_bold_path else ImageFont.load_default()
-        subtitle_font = ImageFont.truetype(font_path, 30) if font_path else ImageFont.load_default()
-        label_font = ImageFont.truetype(font_bold_path, 24) if font_bold_path else ImageFont.load_default()
-        value_font = ImageFont.truetype(font_path, 36) if font_path else ImageFont.load_default()
-        amount_font = ImageFont.truetype(font_bold_path, 80) if font_bold_path else ImageFont.load_default()
+        header_font = ImageFont.truetype(font_bold_path, 32) if font_bold_path else ImageFont.load_default()
+        sub_header_font = ImageFont.truetype(font_path, 18) if font_path else ImageFont.load_default()
+        body_font = ImageFont.truetype(font_path, 20) if font_path else ImageFont.load_default()
+        body_bold_font = ImageFont.truetype(font_bold_path, 20) if font_bold_path else ImageFont.load_default()
+        total_font = ImageFont.truetype(font_bold_path, 36) if font_bold_path else ImageFont.load_default()
     except:
-        title_font = ImageFont.load_default()
-        subtitle_font = ImageFont.load_default()
-        label_font = ImageFont.load_default()
-        value_font = ImageFont.load_default()
-        amount_font = ImageFont.load_default()
+        header_font = ImageFont.load_default()
+        sub_header_font = ImageFont.load_default()
+        body_font = ImageFont.load_default()
+        body_bold_font = ImageFont.load_default()
+        total_font = ImageFont.load_default()
     
-    # Draw Logo/Company Name
-    draw.text((60, 30), "TIGA PUTRA MOTOR", font=title_font, fill="white")
-    draw.text((60, 90), "Bengkel, Variasi & Jual Beli Mobil", font=subtitle_font, fill="#e5e7eb")
+    y = 60
+    # Business Name
+    draw.text((width/2, y), data['companyName'], font=header_font, fill="black", anchor="mm")
+    y += 40
+    draw.text((width/2, y), data['companyAddress'], font=sub_header_font, fill="black", anchor="mm")
+    y += 25
+    draw.text((width/2, y), f"Telp: {data['companyPhone']}", font=sub_header_font, fill="black", anchor="mm")
     
-    # White Card in the middle
-    card_margin = 60
-    draw.rectangle([card_margin, 160, width-card_margin, height-60], fill="white", outline="#e5e7eb")
+    y += 30
+    # Dashed Divider
+    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
+        draw.line([x, y, x + 5, y], fill="black", width=1)
     
-    # Draw Details
-    # Left Column
-    draw.text((100, 200), "NO. STRUK", font=label_font, fill="#9ca3af")
-    draw.text((100, 230), f"#{data['transactionNumber']}", font=value_font, fill="#111827")
+    y += 20
+    # Info
+    draw.text((paper_x + 30, y), "No. Nota:", font=body_font, fill="black")
+    draw.text((paper_x + paper_width - 30, y), data['transactionNumber'], font=body_bold_font, fill="black", anchor="ra")
+    y += 30
     
-    draw.text((100, 310), "NAMA PELANGGAN", font=label_font, fill="#9ca3af")
-    draw.text((100, 340), data['customerName'], font=value_font, fill="#111827")
-    
-    # Right Column
-    draw.text((600, 200), "IDENTITAS KENDARAAN", font=label_font, fill="#9ca3af")
-    plate = data.get('vehiclePlate', '-')
-    vtype = data.get('vehicleType', '-')
-    draw.text((600, 230), f"{plate} / {vtype}", font=value_font, fill="#111827")
-    
-    draw.text((600, 310), "TANGGAL", font=label_font, fill="#9ca3af")
+    # Date
     try:
         dt = datetime.fromisoformat(data['date'])
-        formatted_date = dt.strftime("%d %b %Y, %H:%M")
+        formatted_date = dt.strftime("%d/%m/%Y %H:%M")
     except:
         formatted_date = data['date']
-    draw.text((600, 340), formatted_date, font=value_font, fill="#111827")
+    draw.text((paper_x + 30, y), "Tanggal:", font=body_font, fill="black")
+    draw.text((paper_x + paper_width - 30, y), formatted_date, font=body_font, fill="black", anchor="ra")
+    y += 30
     
-    # Bottom Horizontal Line
-    draw.line([100, 420, width-100, 420], fill="#f3f4f6", width=2)
+    # Customer
+    draw.text((paper_x + 30, y), "Pelanggan:", font=body_font, fill="black")
+    draw.text((paper_x + paper_width - 30, y), data['customerName'], font=body_font, fill="black", anchor="ra")
+    y += 40
     
-    # Total Amount
-    draw.text((100, 460), "TOTAL PEMBAYARAN", font=label_font, fill="#023C69")
+    # Items
+    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
+        draw.line([x, y, x + 5, y], fill="black", width=1)
+    y += 20
+    
+    # Only show first 3 items to avoid overflow
+    items = data.get("items", [])
+    for i, item in enumerate(items[:4]):
+        desc = item['description'].upper()
+        if len(desc) > 30: desc = desc[:27] + "..."
+        draw.text((paper_x + 30, y), desc, font=body_bold_font, fill="black")
+        y += 25
+        qty_str = f"{int(item['quantity'])} x {item['unitPrice']:,.0f}"
+        sub_str = f"{item['subtotal']:,.0f}"
+        draw.text((paper_x + 40, y), qty_str, font=body_font, fill="black")
+        draw.text((paper_x + paper_width - 30, y), sub_str, font=body_font, fill="black", anchor="ra")
+        y += 35
+    
+    if len(items) > 4:
+        draw.text((width/2, y), f"... and {len(items)-4} more items ...", font=sub_header_font, fill="gray", anchor="mm")
+        y += 30
+
+    y = height - 180 # Pin summary to bottom-ish
+    for x in range(paper_x + 20, paper_x + paper_width - 20, 10):
+        draw.line([x, y, x + 5, y], fill="black", width=1)
+    y += 20
+    
+    # Total
+    draw.text((paper_x + 30, y), "TOTAL", font=total_font, fill="black")
     total_str = f"Rp {data['total']:,.0f}"
-    draw.text((100, 490), total_str, font=amount_font, fill="#023C69")
+    draw.text((paper_x + paper_width - 30, y), total_str, font=total_font, fill="black", anchor="ra")
     
-    # Status Badge
+    y += 60
     status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
-    status_color = "#10B981" if status_text == "LUNAS" else "#EF4444"
-    
-    # Measure text for badge
-    # In newer Pillow version, use draw.textbbox
-    try:
-        text_bbox = draw.textbbox((0, 0), status_text, font=label_font)
-        text_w = text_bbox[2] - text_bbox[0]
-        text_h = text_bbox[3] - text_bbox[1]
-    except:
-        text_w, text_h = 100, 30 # fallback
-        
-    badge_x = width - card_margin - text_w - 60
-    draw.rectangle([badge_x - 20, 490, badge_x + text_w + 20, 490 + text_h + 30], fill=status_color)
-    draw.text((badge_x, 490 + 10), status_text, font=label_font, fill="white")
+    draw.text((width/2, y), f"*** {status_text} ***", font=body_bold_font, fill="black", anchor="mm")
     
     # Save to bytes
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     buf.seek(0)
     return buf
+
 
 @router.get("/image/{receipt_type}/{transaction_id}")
 async def get_receipt_image(
@@ -307,10 +326,9 @@ async def view_receipt(
         return HTMLResponse(content="<div style='text-align:center; padding: 50px;'><h1 style='color:#EE2737;'>Struk tidak ditemukan</h1><p>Pastikan link yang Anda buka sudah benar.</p></div>", status_code=404)
 
 def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transaction_id: str = "") -> str:
-    """Generate a premium HTML receipt with OG tags"""
+    """Generate a thermal-style HTML receipt with OG tags"""
     
     # Base URL for OG Image
-    # Ideally this would come from settings or request
     base_url = "https://tpm.cianjur.space"
     image_url = f"{base_url}/api/v1/public/receipt/image/{receipt_type}/{transaction_id}"
     page_url = f"{base_url}/api/v1/public/receipt/view/{receipt_type}/{transaction_id}"
@@ -322,21 +340,23 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     if plate:
         desc += f" ({plate})"
     desc += f" senilai Rp {data['total']:,.0f}"
+
+    items_html = ""
     for item in data.get("items", []):
         items_html += f"""
-        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px;">
-            <div style="flex: 1; padding-right: 12px;">
-                <div style="font-weight: 600; color: #1f2937; margin-bottom: 2px;">{item['description']}</div>
-                <div style="font-size: 13px; color: #6b7280;">{int(item['quantity'])} x Rp {item['unitPrice']:,.0f}</div>
+        <div class="item-row">
+            <div class="item-desc">{item['description'].upper()}</div>
+            <div class="item-details">
+                <span>{int(item['quantity'])} x {item['unitPrice']:,.0f}</span>
+                <span>{item['subtotal']:,.0f}</span>
             </div>
-            <div style="font-weight: 700; color: #111827; white-space: nowrap;">Rp {item['subtotal']:,.0f}</div>
         </div>
         """
 
     # Format Date
     try:
         dt = datetime.fromisoformat(data['date'])
-        formatted_date = dt.strftime("%d %b %Y, %H:%M")
+        formatted_date = dt.strftime("%d/%m/%Y %H:%M")
     except:
         formatted_date = data['date']
 
@@ -345,15 +365,17 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     payment_status_html = ""
     if remaining > 0:
         payment_status_html = f"""
-        <div style="display: flex; justify-content: space-between; color: #10B981; font-size: 14px; margin-bottom: 4px;">
-            <span>Sudah Dibayar</span>
-            <span>Rp {data.get('paid', 0):,.0f}</span>
+        <div class="summary-row">
+            <span>SUDAH DIBAYAR</span>
+            <span>{data.get('paid', 0):,.0f}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; color: #EF4444; font-size: 14px; font-weight: 700;">
-            <span>Sisa Tagihan</span>
-            <span>Rp {remaining:,.0f}</span>
+        <div class="summary-row" style="font-weight: bold;">
+            <span>SISA TAGIHAN</span>
+            <span>{remaining:,.0f}</span>
         </div>
         """
+    else:
+        payment_status_html = '<div class="summary-row" style="font-weight: bold; text-align: center; display: block;">*** LUNAS ***</div>'
 
     return f"""
     <!DOCTYPE html>
@@ -369,117 +391,260 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
         <meta property="og:title" content="Struk Digital - TIGA PUTRA MOTOR">
         <meta property="og:description" content="{desc}">
         <meta property="og:image" content="{image_url}">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
 
-        <!-- Twitter -->
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:url" content="{page_url}">
-        <meta property="twitter:title" content="Struk Digital - TIGA PUTRA MOTOR">
-        <meta property="twitter:description" content="{desc}">
-        <meta property="twitter:image" content="{image_url}">
-
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
-            body {{ font-family: 'Outfit', sans-serif; background-color: #f3f4f6; margin: 0; padding: 16px; color: #374151; }}
-            .receipt-card {{ background: white; max-width: 500px; margin: 0 auto; border-radius: 32px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); overflow: hidden; border: 1px solid #e5e7eb; }}
-            .header {{ background-color: #023C69; color: white; padding: 40px 24px; text-align: center; border-bottom: 6px solid #EE2737; }}
-            .content {{ padding: 32px 20px; }}
-            .business-name {{ font-size: 26px; font-weight: 700; margin-bottom: 6px; letter-spacing: -1px; }}
-            .business-info {{ font-size: 13px; opacity: 0.8; margin-bottom: 2px; }}
-            .section-title {{ font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; margin-top: 32px; border-left: 3px solid #EE2737; padding-left: 10px; }}
-            .info-grid {{ display: flex; flex-wrap: wrap; margin-bottom: 24px; gap: 20px; }}
-            .info-item {{ flex: 1; min-width: 140px; }}
-            .info-item label {{ display: block; font-size: 10px; color: #9ca3af; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }}
-            .info-item span {{ font-size: 14px; font-weight: 600; color: #111827; }}
-            .total-box {{ background-color: #f9fafb; border-radius: 20px; padding: 24px; margin-top: 32px; border: 1px solid #f3f4f6; }}
-            .total-row {{ display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; color: #6b7280; }}
-            .grand-total {{ font-size: 24px; font-weight: 700; color: #023C69; margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb; }}
-            .footer {{ text-align: center; padding: 32px 24px; font-size: 13px; color: #9ca3af; line-height: 1.6; background-color: #f9fafb; }}
-            .btn {{ display: block; width: 100%; padding: 18px; background: #023C69; color: white; text-decoration: none; border-radius: 16px; font-weight: 700; text-align: center; margin-top: 24px; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(2, 60, 105, 0.2); }}
-            .btn:active {{ transform: scale(0.98); }}
-            @media print {{ .btn {{ display: none; }} body {{ padding: 0; background: white; }} .receipt-card {{ box-shadow: none; border: none; max-width: 100%; border-radius: 0; }} }}
+            @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+            
+            body {{ 
+                font-family: 'Courier Prime', 'Courier', monospace; 
+                background-color: #e5e7eb; 
+                margin: 0; 
+                padding: 20px 10px; 
+                color: #000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }}
+            
+            .receipt-container {{ 
+                background: white; 
+                width: 100%;
+                max-width: 380px; 
+                padding: 20px;
+                box-sizing: border-box;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }}
+            
+            .header {{ text-align: center; margin-bottom: 10px; }}
+            .business-name {{ font-size: 18px; font-weight: 700; margin-bottom: 2px; }}
+            .business-info {{ font-size: 11px; margin-bottom: 2px; }}
+            
+            .divider {{ border-top: 1px dashed #000; margin: 10px 0; }}
+            
+            .info-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
+            
+            .item-row {{ margin-bottom: 8px; font-size: 12px; }}
+            .item-desc {{ font-weight: bold; margin-bottom: 2px; }}
+            .item-details {{ display: flex; justify-content: space-between; }}
+            
+            .summary-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
+            .grand-total {{ font-size: 16px; font-weight: 700; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; margin: 10px 0; }}
+            
+            .footer {{ text-align: center; margin-top: 20px; font-size: 11px; line-height: 1.4; }}
+            
+            .btn-container {{ width: 100%; max-width: 380px; margin-top: 20px; }}
+            .btn {{ 
+                display: block; 
+                width: 100%; 
+                padding: 15px; 
+                background: #023C69; 
+                color: white; 
+                text-decoration: none; 
+                border-radius: 8px; 
+                font-weight: 700; 
+                text-align: center; 
+                border: none; 
+                cursor: pointer;
+                font-family: sans-serif;
+            }}
+            
+            @media print {{ 
+                .btn-container {{ display: none; }} 
+                body {{ padding: 0; background: white; }} 
+                .receipt-container {{ box-shadow: none; max-width: 100%; }} 
+            }}
         </style>
     </head>
     <body>
-        <div class="receipt-card">
+        <div class="receipt-container">
             <div class="header">
-                <div class="business-name">TIGA PUTRA MOTOR</div>
-                <div class="business-info">Bengkel, Variasi & Jual Beli Mobil</div>
-                <div class="business-info">Jl. Raya Cianjur Sukabumi KM 5, Cianjur</div>
-                <div class="business-info">WhatsApp: 0877-2022-5244</div>
+                <div class="business-name">{data['companyName']}</div>
+                <div class="business-info">{data['companyAddress']}</div>
+                <div class="business-info">Telp: {data['companyPhone']}</div>
             </div>
             
-            <div class="content">
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>No. Struk</label>
-                        <span>#{data['transactionNumber']}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Waktu Transaksi</label>
-                        <span>{formatted_date}</span>
-                    </div>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <label>Nama Pelanggan</label>
-                        <span>{data['customerName']}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>Identitas Kendaraan</label>
-                        <span>{data.get('vehiclePlate', '-')} / {data.get('vehicleType', '-')}</span>
-                    </div>
-                </div>
-
-                <div class="section-title">Item Transaksi</div>
-                <div class="items-list">
-                    {items_html}
-                </div>
-
-                <div class="total-box">
-                    <div class="total-row">
-                        <span>Subtotal</span>
-                        <span>Rp {data.get('subtotal', 0):,.0f}</span>
-                    </div>
-                    {f'<div class="total-row" style="color:#EE2737;"><span>Diskon</span><span>- Rp {data["discount"]:,.0f}</span></div>' if data.get('discount', 0) > 0 else ''}
-                    
-                    <div class="grand-total">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span>Total</span>
-                            <span>Rp {data['total']:,.0f}</span>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                        {payment_status_html if payment_status_html else f'<div style="display: flex; justify-content: space-between; color: #10B981; font-weight: 700;"><span>Status</span><span>LUNAS</span></div>'}
-                    </div>
-                </div>
-
-                <button class="btn" onclick="window.print()">Simpan / Cetak Struk</button>
+            <div class="divider"></div>
+            
+            <div class="info-row">
+                <span>No. Nota:</span>
+                <span>{data['transactionNumber']}</span>
             </div>
+            <div class="info-row">
+                <span>Tanggal:</span>
+                <span>{formatted_date}</span>
+            </div>
+            <div class="info-row">
+                <span>Pelanggan:</span>
+                <span>{data['customerName']}</span>
+            </div>
+            {f'<div class="info-row"><span>No. Polisi:</span><span>{data["vehiclePlate"]}</span></div>' if data.get("vehiclePlate") else ''}
+            
+            <div class="divider"></div>
+            
+            <div class="items-list">
+                {items_html}
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="summary">
+                <div class="summary-row">
+                    <span>SUBTOTAL</span>
+                    <span>{data.get('subtotal', 0):,.0f}</span>
+                </div>
+                {f'<div class="summary-row"><span>DISKON</span><span>-{data["discount"]:,.0f}</span></div>' if data.get('discount', 0) > 0 else ''}
+                
+                <div class="summary-row grand-total">
+                    <span>TOTAL</span>
+                    <span>{data['total']:,.0f}</span>
+                </div>
+                
+                {payment_status_html}
+                
+                <div class="summary-row" style="margin-top: 5px;">
+                    <span>METODE</span>
+                    <span>{str(data.get('paymentMethod', '-')).upper()}</span>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
             
             <div class="footer">
-                <strong>Terima kasih atas kunjungan Anda!</strong><br>
-                Kepuasan pelanggan adalah prioritas kami.<br>
-                <span>Hanya berlaku sebagai bukti pembayaran sah.</span>
+                <div>TERIMA KASIH</div>
+                <div>LAYANAN PELANGGAN: {data['companyPhone']}</div>
+                <div style="margin-top: 5px;">{data.get('notes', '')}</div>
             </div>
+        </div>
+        
+        <div class="btn-container">
+            <button class="btn" onclick="window.print()">SIMPAN / CETAK STRUK</button>
         </div>
     </body>
     </html>
     """
 
 
+
 @router.get("/{receipt_type}/{transaction_id}/pdf")
-async def get_receipt_pdf(receipt_type: str, transaction_id: str):
+async def get_receipt_pdf(
+    receipt_type: str, 
+    transaction_id: str,
+    db: Session = Depends(get_db)
+):
     """
-    Download receipt as PDF
-    
-    Example: GET /public/receipt/bengkel/123/pdf
+    Download receipt as PDF using reportlab
+    Filename: nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal
     """
-    # TODO: Implement PDF generation
-    return {
-        "message": "PDF generation coming soon",
-        "downloadUrl": f"/public/receipt/{receipt_type}/{transaction_id}/pdf"
-    }
+    try:
+        if receipt_type == "bengkel":
+            data = get_bengkel_receipt(db, transaction_id)
+        elif receipt_type == "jasa_angkut":
+            data = get_jasa_angkut_receipt(db, transaction_id)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid receipt type")
+            
+        # Generate PDF
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import A5
+        from reportlab.lib import colors
+        
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A5)
+        width, height = A5
+        
+        # Header
+        p.setFont("Helvetica-Bold", 16)
+        p.drawCentredString(width/2, height - 50, data['companyName'])
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width/2, height - 65, data['companyAddress'])
+        p.drawCentredString(width/2, height - 80, f"Telp: {data['companyPhone']}")
+        
+        p.line(30, height - 90, width - 30, height - 90)
+        
+        # Receipt Info
+        p.setFont("Helvetica", 11)
+        y = height - 110
+        p.drawString(30, y, f"No. Nota: {data['transactionNumber']}")
+        
+        try:
+            dt = datetime.fromisoformat(data['date'])
+            formatted_date = dt.strftime("%d/%m/%Y %H:%M")
+        except:
+            formatted_date = data['date']
+            
+        p.drawRightString(width - 30, y, f"Tanggal: {formatted_date}")
+        y -= 20
+        p.drawString(30, y, f"Pelanggan: {data['customerName']}")
+        
+        if data.get('vehiclePlate'):
+            y -= 20
+            p.drawString(30, y, f"No. Polisi: {data['vehiclePlate']} / {data.get('vehicleType', '-')}")
+            
+        y -= 30
+        p.line(30, y, width - 30, y)
+        y -= 20
+        
+        # Items Table Header
+        p.setFont("Helvetica-Bold", 11)
+        p.drawString(30, y, "ITEM")
+        p.drawRightString(width - 120, y, "QTY x HARGA")
+        p.drawRightString(width - 30, y, "SUBTOTAL")
+        y -= 15
+        p.line(30, y, width - 30, y)
+        y -= 20
+        
+        # Items list
+        p.setFont("Helvetica", 10)
+        for item in data.get('items', []):
+            if y < 50: # Page break logic simplified (A5 is small)
+                p.showPage()
+                y = height - 50
+                p.setFont("Helvetica", 10)
+            
+            p.drawString(30, y, item['description'][:40])
+            p.drawRightString(width - 120, y, f"{int(item['quantity'])} x {item['unitPrice']:,.0f}")
+            p.drawRightString(width - 30, y, f"{item['subtotal']:,.0f}")
+            y -= 15
+            
+        y -= 10
+        p.line(30, y, width - 30, y)
+        y -= 25
+        
+        # Total
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(30, y, "TOTAL")
+        p.drawRightString(width - 30, y, f"Rp {data['total']:,.0f}")
+        
+        y -= 30
+        status_text = "LUNAS" if data.get('remaining', 0) <= 0 else "BELUM LUNAS"
+        p.drawCentredString(width/2, y, f"*** {status_text} ***")
+        
+        y -= 40
+        p.setFont("Helvetica-Oblique", 9)
+        p.drawCentredString(width/2, y, "Terima kasih atas kunjungan Anda")
+        
+        p.save()
+        buffer.seek(0)
+        
+        # Generate Filename
+        # nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal
+        def clean(s):
+            return re.sub(r'[^a-zA-Z0-9]', '_', str(s))
+            
+        try:
+            dt = datetime.fromisoformat(data['date'])
+            date_part = dt.strftime("%d%m%Y")
+        except:
+            date_part = datetime.now().strftime("%d%m%Y")
+            
+        filename = f"{clean(data['transactionNumber'])}-{clean(data['customerName'])}-{clean(data.get('vehiclePlate', 'NoPol'))}-{date_part}.pdf"
+        
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
+        
+    except Exception as e:
+        print(f"Error generating PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
