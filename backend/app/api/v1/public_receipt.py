@@ -245,7 +245,7 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
         total_font = ImageFont.load_default()
     
     # Logo
-    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "logo_tpm.png")
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static", "logo_tpm.png")
     y = 30
     logo_img = None
     
@@ -414,7 +414,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     # Load default logo as base64 for embedding
     logo_b64 = ""
     try:
-        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static")
         logo_path = os.path.join(static_dir, "logo_tpm.png")
         if os.path.exists(logo_path):
             with open(logo_path, "rb") as f:
@@ -670,7 +670,7 @@ async def get_receipt_pdf(
         width, height = A5
         
         # Logo
-        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "static")
         logo_path = os.path.join(static_dir, "logo_tpm.png")
         y_cursor = height - 40
         
