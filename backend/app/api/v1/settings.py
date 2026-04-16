@@ -18,14 +18,24 @@ def get_settings(db: DBSession, current_user: CurrentUser):
         # For now let's allow read, but we might want to restrict this
         pass
         
-    smtp_setting = db.query(SystemSetting).filter(SystemSetting.key == "smtp_config").first()
+    print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
     
-    resp = {}
+    resp = {
+        "smtp": None,
+        "print": None
+    }
+    
     if smtp_setting and smtp_setting.value:
         try:
             resp["smtp"] = json.loads(smtp_setting.value)
         except:
-            resp["smtp"] = None
+            pass
+            
+    if print_setting and print_setting.value:
+        try:
+            resp["print"] = json.loads(print_setting.value)
+        except:
+            pass
         
     return resp
 
@@ -46,6 +56,14 @@ def update_settings(data: SettingsUpdate, db: DBSession, current_user: CurrentUs
             db.add(smtp_setting)
         
         smtp_setting.value = json.dumps(data.smtp.model_dump())
+        
+    if data.print:
+        print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
+        if not print_setting:
+            print_setting = SystemSetting(key="print_config", description="Printing and Branding Configuration")
+            db.add(print_setting)
+        
+        print_setting.value = json.dumps(data.print.model_dump())
         
     db.commit()
     return {"message": "Pengaturan berhasil diperbarui"}

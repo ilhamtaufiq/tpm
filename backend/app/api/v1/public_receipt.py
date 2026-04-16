@@ -13,10 +13,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 import json
 import re
+import base64
 
 from app.database.connection import get_db
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
+from app.models.system_setting import SystemSetting
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
 
@@ -47,6 +49,27 @@ async def get_receipt(
     except Exception as e:
         print(f"Error fetching receipt: {e}")
         raise HTTPException(status_code=404, detail="Receipt not found")
+
+
+def apply_branding(db: Session, receipt: Dict[str, Any]):
+    """Apply system branding settings to receipt data"""
+    try:
+        print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
+        if print_setting and print_setting.value:
+            config = json.loads(print_setting.value)
+            receipt["companyName"] = config.get("company_name", receipt.get("companyName", "TIGA PUTRA MOTOR"))
+            receipt["companyAddress"] = config.get("company_address", receipt.get("companyAddress", ""))
+            receipt["companyPhone"] = config.get("company_phone", receipt.get("companyPhone", ""))
+            # Use footer as default notes if notes is empty
+            if not receipt.get("notes") and config.get("footer"):
+                receipt["notes"] = config.get("footer")
+            # Store custom logo if available
+            if config.get("logo_uri"):
+                receipt["customLogo"] = config.get("logo_uri")
+    except Exception as e:
+        print(f"Error applying branding: {e}")
+    
+    return receipt
 
 
 def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
@@ -104,7 +127,7 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "companyPhone": "087720225244"
     }
     
-    return receipt
+    return apply_branding(db, receipt)
 
 
 def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
@@ -147,7 +170,7 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "companyPhone": "087720225244"
     }
     
-    return receipt
+    return apply_branding(db, receipt)
 
 
 
@@ -204,20 +227,37 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
     # Logo
     logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "logo_tpm.png")
     y = 30
-    if os.path.exists(logo_path):
+    logo_img = None
+    
+    # Try custom logo first
+    if data.get("customLogo") and data["customLogo"] != "tpm_default":
         try:
-            logo = Image.open(logo_path).convert("RGBA")
+            header, encoded = data["customLogo"].split(",", 1)
+            logo_data = base64.b64decode(encoded)
+            logo_img = Image.open(io.BytesIO(logo_data)).convert("RGBA")
+        except:
+            pass
+            
+    # Fallback to default asset
+    if not logo_img and os.path.exists(logo_path):
+        try:
+            logo_img = Image.open(logo_path).convert("RGBA")
+        except:
+            pass
+            
+    if logo_img:
+        try:
             # Resize logo to fit well in header (e.g. 100px height)
-            aspect = logo.width / logo.height
+            aspect = logo_img.width / logo_img.height
             logo_w = int(80 * aspect)
             logo_h = 80
-            logo = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+            logo_img = logo_img.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
             
             # Create a white background for the logo paste if it has transparency
-            img.paste(logo, (int(width/2 - logo_w/2), y), mask=logo)
+            img.paste(logo_img, (int(width/2 - logo_w/2), y), mask=logo_img)
             y += logo_h + 10
         except Exception as e:
-            print(f"Error loading logo for OG image: {e}")
+            print(f"Error drawing logo in OG image: {e}")
             pass
 
     # Business Name
@@ -498,7 +538,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
         <div class="receipt-container">
             <div class="header">
                 <div class="logo-container">
-                    <img src="/static/logo_tpm.png" alt="Logo" onerror="this.style.display='none'">
+                    <img src="{data.get('customLogo') if data.get('customLogo') and data['customLogo'] != 'tpm_default' else '/static/logo_tpm.png'}" alt="Logo" onerror="this.style.display='none'">
                 </div>
                 <div class="business-name">{data['companyName']}</div>
                 <div class="business-info">{data['companyAddress']}</div>
@@ -600,11 +640,22 @@ async def get_receipt_pdf(
         logo_path = os.path.join(static_dir, "logo_tpm.png")
         y_cursor = height - 40
         
-        if os.path.exists(logo_path):
+        logo_img_pdf = None
+        if data.get("customLogo") and data["customLogo"] != "tpm_default":
+            try:
+                header, encoded = data["customLogo"].split(",", 1)
+                logo_data = base64.b64decode(encoded)
+                logo_img_pdf = io.BytesIO(logo_data)
+            except:
+                pass
+        
+        if not logo_img_pdf and os.path.exists(logo_path):
+            logo_img_pdf = logo_path
+            
+        if logo_img_pdf:
             try:
                 # Place logo centered
-                logo_h = 40
-                p.drawImage(logo_path, width/2 - 40, y_cursor - 40, width=80, height=logo_h, mask='auto', preserveAspectRatio=True)
+                p.drawImage(logo_img_pdf, width/2 - 40, y_cursor - 40, width=80, height=40, mask='auto', preserveAspectRatio=True)
                 y_cursor -= 50
             except:
                 pass

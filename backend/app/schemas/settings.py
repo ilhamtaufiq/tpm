@@ -9,8 +9,18 @@ class SMTPSetting(BaseModel):
     use_tls: bool = True
     sender_name: str = Field("TPM System", example="TPM Tiga Putra Motor")
 
+class PrintSetting(BaseModel):
+    company_name: str = Field(..., max_length=100)
+    company_address: str = Field(..., max_length=255)
+    company_phone: str = Field(..., max_length=50)
+    header: Optional[str] = None
+    footer: Optional[str] = None
+    logo_uri: Optional[str] = None  # Base64 logo
+
 class SettingsUpdate(BaseModel):
     smtp: Optional[SMTPSetting] = None
+    print: Optional[PrintSetting] = None
 
 class SystemSettingResponse(BaseModel):
-    smtp: Optional[SMTPSetting] = None
+    smtp: Optional[dict] = None
+    print: Optional[dict] = None

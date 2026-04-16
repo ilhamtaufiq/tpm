@@ -8,6 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { router } from 'expo-router';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
+import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
 
@@ -59,6 +60,24 @@ export default function PrintSettingsScreen() {
         try {
             setSaving(true);
             await printSettingsService.saveSettings(settings);
+            
+            // Sync to backend for public receipts and other users
+            try {
+                await settingsService.updateSettings({
+                    print: {
+                        company_name: settings.companyName,
+                        company_address: settings.companyAddress,
+                        company_phone: settings.companyPhone,
+                        header: settings.header,
+                        footer: settings.footer,
+                        logo_uri: settings.logoUri || undefined
+                    }
+                });
+            } catch (syncError) {
+                console.warn('Failed to sync settings to backend:', syncError);
+                // We still show success for local save, but maybe log it
+            }
+
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',

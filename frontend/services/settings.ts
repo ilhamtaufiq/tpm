@@ -9,8 +9,18 @@ export interface SMTPSettings {
     sender_name: string;
 }
 
+export interface PrintSettings {
+    company_name: string;
+    company_address: string;
+    company_phone: string;
+    header?: string;
+    footer?: string;
+    logo_uri?: string;
+}
+
 export interface SystemSettings {
     smtp?: SMTPSettings;
+    print?: PrintSettings;
 }
 
 export const settingsService = {
