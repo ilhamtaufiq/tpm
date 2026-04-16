@@ -559,7 +559,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
         </div>
         
         <div class="btn-container">
-            <a href="/public/receipt/{receipt_type}/{transaction_id}/pdf" class="btn">SIMPAN SEBAGAI PDF</a>
+            <a href="/api/v1/public/receipt/{receipt_type}/{transaction_id}/pdf" class="btn">SIMPAN SEBAGAI PDF</a>
             <button class="btn btn-secondary" onclick="window.print()">CETAK STRUK</button>
         </div>
     </body>
