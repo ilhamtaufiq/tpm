@@ -113,7 +113,13 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                         {/* Header */}
                         <View style={{ alignItems: 'center', marginBottom: 8 * zoom }}>
                             {settings.logoUri ? (
-                                <Image source={{ uri: settings.logoUri }} style={{ width: 60 * zoom, height: 60 * zoom, marginBottom: 4 * zoom }} resizeMode="contain" />
+                                <Image 
+                                    source={settings.logoUri === 'tpm_default' 
+                                        ? require('../../assets/logo_tpm.png') 
+                                        : { uri: settings.logoUri }} 
+                                    style={{ width: 60 * zoom, height: 60 * zoom, marginBottom: 4 * zoom }} 
+                                    resizeMode="contain" 
+                                />
                             ) : null}
                             <Typography style={{ fontSize: 16 * zoom, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 * zoom, fontFamily: 'monospace' }}>
                                 {settings.companyName || 'TIGA PUTRA MOTOR'}

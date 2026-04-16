@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Image } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -398,11 +398,19 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
  */
 async function ensureLogoBase64(uri: string | null): Promise<string | null> {
     if (!uri) return null;
-    if (uri.startsWith('data:')) return uri;
-    if (Platform.OS === 'web') return uri; // Web handles local/remote URIs better
+    
+    // Handle default TPM logo
+    let targetUri = uri;
+    if (uri === 'tpm_default') {
+        const asset = Image.resolveAssetSource(require('../assets/logo_tpm.png'));
+        targetUri = asset.uri;
+    }
+
+    if (targetUri.startsWith('data:')) return targetUri;
+    if (Platform.OS === 'web') return targetUri; // Web handles local/remote URIs better
 
     try {
-        const response = await fetch(uri);
+        const response = await fetch(targetUri);
         const blob = await response.blob();
         return new Promise((resolve) => {
             const reader = new FileReader();

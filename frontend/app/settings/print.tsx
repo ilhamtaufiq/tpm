@@ -253,7 +253,9 @@ export default function PrintSettingsScreen() {
                     {settings.logoUri ? (
                         <View className="items-center mb-4">
                             <Image
-                                source={{ uri: settings.logoUri }}
+                                source={settings.logoUri === 'tpm_default' 
+                                    ? require('../../assets/logo_tpm.png') 
+                                    : { uri: settings.logoUri }}
                                 style={{ width: 120, height: 120, borderRadius: 16 }}
                                 resizeMode="contain"
                             />

@@ -17,7 +17,7 @@ export interface PrintSettings {
 const DEFAULT_SETTINGS: PrintSettings = {
     header: 'TPM SUPER APP',
     footer: 'Terima kasih telah menggunakan layanan kami',
-    logoUri: null,
+    logoUri: 'tpm_default',
     paperSize: '80mm',
     companyName: 'TPM Business',
     companyAddress: 'Jl. Contoh No. 123, Jakarta',
