@@ -348,9 +348,10 @@ def get_profit_summary(
         }
 
     # Total Pengeluaran (Hanya gaji dan pengeluaran operasional, termasuk Prive tapi TANPA pembelian part)
-    # Pembelian part tidak dihitung sebagai beban di sini karena sudah masuk ke HPP di Laba Kotor
+    # PER USER REQUEST: Exclude car management costs from general ops because they are
+    # already subtracted inside "mobil['laba_tpm']" (as HPP) or capitalized in Inventory.
     total_pengeluaran = (
-        pengeluaran["total_pengeluaran"] + 
+        (float(pengeluaran["total_pengeluaran"] or 0) - raw_mobil_total) + 
         gaji_summary["total"] +
         float(trip_costs)
     )

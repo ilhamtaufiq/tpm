@@ -18,22 +18,44 @@ def get_settings(db: DBSession, current_user: CurrentUser):
         # For now let's allow read, but we might want to restrict this
         pass
         
-    print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
-    
+    # Retrieve from DB with safety
+    try:
+        smtp_setting = db.query(SystemSetting).filter(SystemSetting.key == "smtp_config").first()
+        print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
+    except:
+        smtp_setting = None
+        print_setting = None
+
+    # Default values
     resp = {
         "smtp": None,
-        "print": None
+        "print": {
+            "company_name": "Tiga Putra Motor",
+            "company_address": "Cianjur, Jawa Barat",
+            "company_phone": "+62 856 5999 4407",
+            "header": "TPM SUPER APP",
+            "footer": "Terima kasih telah menggunakan layanan kami",
+            "logo_uri": "tpm_default",
+            "show_qr_code": True,
+            "paper_size": "80mm"
+        }
     }
     
+    # Merge DB values if available
     if smtp_setting and smtp_setting.value:
         try:
-            resp["smtp"] = json.loads(smtp_setting.value)
+            val = json.loads(smtp_setting.value)
+            if isinstance(val, dict):
+                resp["smtp"] = val
         except:
             pass
             
     if print_setting and print_setting.value:
         try:
-            resp["print"] = json.loads(print_setting.value)
+            val = json.loads(print_setting.value)
+            if isinstance(val, dict):
+                # Merge DB config into defaults to preserve missing keys
+                resp["print"].update(val)
         except:
             pass
         

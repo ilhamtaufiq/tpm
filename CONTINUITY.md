@@ -3,7 +3,8 @@
 ## Goal
 - Fix missing "Beban Gaji" (Salary Expense) in the Laba Rugi (Profit and Loss) report.
 - Align public digital receipt display with the thermal printer receipt format.
-- Implement PDF download for public receipts with custom filenames.
+- Resolve double-counting of car capital costs in P&L and Neraca reports.
+- Synchronize system-wide print settings between Web and Mobile platforms.
  
 ## Constraints/Assumptions
 - Salary data is fetched from `SlipGaji` model via `SlipGajiService`.
@@ -14,20 +15,19 @@
 ## Key Decisions
 - Found that `backend/app/api/v1/dashboard.py` was merging salary summary incorrectly; updated to deep-merge all summary fields.
 - Refactored `PublicReceiptPage` (frontend) and `generate_html_receipt`/`generate_receipt_image` (backend) to use a thermal printer aesthetic.
-- Implemented `get_receipt_pdf` in `backend/app/api/v1/public_receipt.py` using **ReportLab**.
-- Set `Content-Disposition` on backend and specific `fileUri` on frontend (via `downloadAsync`) to enforce the requested filename format.
+- Fixed `NameError` in `backend/app/api/v1/settings.py` which prevented Web/Mobile synchronization.
+- Excluded car management costs from `total_beban` in both Neraca and P&L endpoints to prevent double-counting.
  
 ## State
 - **Done**: 
     - Fixed salary merging logic in `backend/app/api/v1/dashboard.py`.
-    - Renamed "Biaya Gaji" to "Beban Gaji" for accounting professional terminology.
-    - Updated `PublicReceiptPage` to use thermal printer style.
-    - Updated backend HTML receipt and OG Image to match thermal printer style.
-    - Implemented PDF download with filename format: `nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal`.
-    - Synchronized Print Settings between Web and Mobile by fetching from backend API in mobile app.
-    - Fixed thermal receipt formatting issue ('2' prefix and wrapping) by using safer tags and cleaning input strings.
-- **Now**: Handing off to user to verify sync and print quality.
-- **Next**: Await user feedback on thermal printer output compatibility.
+    - Resolved double-counting in Neraca by excluding capitalized car costs from `total_beban`.
+    - Resolved double-counting in P&L (`profit-summary`) by excluding car management costs from general ops.
+    - Split HPP in Laba Rugi UI to show "Harga Beli" vs "Biaya Lainnya".
+    - Fixed `NameError` bug in Settings API to enable Web/Mobile synchronization.
+    - Implemented PDF download with specific filename format for receipts.
+- **Now**: Verifying that financial figures match manual calculations for cars.
+- **Next**: Final verification of print settings synchronization across devices.
  
 ## Open Questions
 - None at the moment.
