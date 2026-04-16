@@ -887,6 +887,7 @@ class PenjualanMobilService:
             .with_entities(
                 func.sum(TransaksiPenjualanMobil.harga_jual).label("total_penjualan"),
                 func.sum(TransaksiPenjualanMobil.total_modal).label("total_modal"),
+                func.sum(Mobil.harga_beli).label("total_harga_beli"),
                 func.sum(TransaksiPenjualanMobil.laba_kotor).label("total_laba_kotor"),
                 func.sum(TransaksiPenjualanMobil.laba_investor).label("total_laba_investor"),
                 func.sum(TransaksiPenjualanMobil.laba_tpm).label("total_laba_tpm"),
@@ -1023,6 +1024,7 @@ class PenjualanMobilService:
             "batal_count": batal_count,
             "total_penjualan": float(aggregates.total_penjualan or 0),
             "total_modal": float(aggregates.total_modal or 0),
+            "total_harga_beli": float(aggregates.total_harga_beli or 0),
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),

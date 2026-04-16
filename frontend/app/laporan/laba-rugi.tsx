@@ -478,9 +478,14 @@ export default function LabaRugiScreen() {
                     <Row label="1. Total Penjualan Unit" value={totalPenjualan} bold large />
 
                     <View className="bg-slate-50/50 p-3 rounded-xl mb-3 border border-slate-100">
-                        <Row label="2. Manajemen Biaya Unit" value={modalDasar} isNegative />
-                        <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(Pajak, BBN, dll)</Typography>
+                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">Harga Pokok Penjualan (HPP)</Typography>
+                        
+                        <Row label="2a. Harga Beli Unit Terjual" value={reportData?.mobil_details?.total_harga_beli || 0} isNegative />
+                        
+                        <Row label="2b. Biaya Lainnya (Pajak, BBN, dll)" value={(reportData?.mobil_details?.total_modal || 0) - (reportData?.mobil_details?.total_harga_beli || 0) + (reportData?.mobil_details?.capital_period_ops || 0)} isNegative />
 
+                        <View className="h-[0.5px] bg-slate-200 w-full my-2 border-dashed border-[0.5px] border-slate-300" />
+                        
                         <Row label="3. Biaya Perbaikan Unit" value={biayaPerbaikan} isNegative />
                         <Typography variant="caption" className="text-slate-400 ml-4 -mt-1">(Sparepart & Servis Bengkel)</Typography>
                     </View>

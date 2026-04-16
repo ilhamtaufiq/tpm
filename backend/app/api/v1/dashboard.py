@@ -1356,8 +1356,13 @@ def get_neraca(
     prive_total = float(pengeluaran_details.get("prive", {}).get("total", 0))
     
     # Beban = pengeluaran operasional + trip costs (excluding prive, which is separate)
+    # PER USER REQUEST: Exclude car management costs from "total_beban" because they are
+    # already subtracted inside "laba_mobil_tpm" or capitalized in "stok_mobil" (Aktiva).
+    raw_units = pengeluaran.get("per_unit", {})
+    biaya_mobil = float(raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("mobil", 0))
+    
     trip_costs = float(muatan_summ.get("details", {}).get("biaya_lainnya", 0))
-    total_beban = float(pengeluaran["total_pengeluaran"] or 0) + float(gaji_summary["total"] or 0) + trip_costs - prive_total
+    total_beban = (float(pengeluaran["total_pengeluaran"] or 0) - biaya_mobil) + float(gaji_summary["total"] or 0) + trip_costs - prive_total
     
     laba_ditahan = total_laba_kotor - total_beban
     prive = prive_total
