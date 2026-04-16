@@ -304,9 +304,14 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
         return `${d}/${m}/${y} ${h}:${min}`;
     };
 
-    let text = `<C><B>${settings.companyName || 'TIGA PUTRA MOTOR'}</B></C>\n`;
-    text += `<C>${settings.companyAddress || 'jl.raya cianjur sukabumi km 5'}</C>\n`;
-    text += `<C>HP: ${settings.companyPhone || '087720225244'}</C>\n`;
+    const cleanStr = (str: string) => (str || '').trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const companyName = cleanStr(settings.companyName || 'TIGA PUTRA MOTOR');
+    const companyAddress = cleanStr(settings.companyAddress || 'jl.raya cianjur sukabumi km 5');
+    const companyPhone = cleanStr(settings.companyPhone || '087720225244');
+
+    let text = `<C><B>${companyName}</B></C>\n`;
+    text += `<C>${companyAddress}</C>\n`;
+    text += `<C>HP: ${companyPhone}</C>\n`;
     text += `${divider}\n`;
 
     text += `No Nota  : ${data.transactionNumber}\n`;
