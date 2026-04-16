@@ -24,8 +24,10 @@
     - Updated `PublicReceiptPage` to use thermal printer style.
     - Updated backend HTML receipt and OG Image to match thermal printer style.
     - Implemented PDF download with filename format: `nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal`.
-- **Now**: Handing off to user.
-- **Next**: Await user feedback.
+    - Synchronized Print Settings between Web and Mobile by fetching from backend API in mobile app.
+    - Fixed thermal receipt formatting issue ('2' prefix and wrapping) by using safer tags and cleaning input strings.
+- **Now**: Handing off to user to verify sync and print quality.
+- **Next**: Await user feedback on thermal printer output compatibility.
  
 ## Open Questions
 - None at the moment.

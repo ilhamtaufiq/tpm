@@ -61,5 +61,23 @@ export const printSettingsService = {
             console.error('Error resetting print settings:', error);
             throw error;
         }
+    },
+
+    /**
+     * Helper to map backend settings to frontend settings
+     */
+    fromSystemSettings(systemSettings: any): Partial<PrintSettings> {
+        if (!systemSettings || !systemSettings.print) return {};
+        const p = systemSettings.print;
+        return {
+            companyName: p.company_name,
+            companyAddress: p.company_address,
+            companyPhone: p.company_phone,
+            header: p.header,
+            footer: p.footer,
+            logoUri: p.logo_uri,
+            showQRCode: p.show_qr_code !== undefined ? p.show_qr_code : true,
+            paperSize: p.paper_size || '80mm'
+        };
     }
 };

@@ -38,6 +38,19 @@ export default function PrintSettingsScreen() {
     const loadSettings = async () => {
         try {
             setLoading(true);
+            
+            // Try to fetch from backend first for synchronization
+            try {
+                const systemSettings = await settingsService.getSettings();
+                if (systemSettings && systemSettings.print) {
+                    const mapped = printSettingsService.fromSystemSettings(systemSettings);
+                    // Update local storage too so offline works with latest settings
+                    await printSettingsService.saveSettings(mapped);
+                }
+            } catch (syncError) {
+                console.warn('Could not sync with backend, using local settings:', syncError);
+            }
+
             const data = await printSettingsService.getSettings();
             setSettings(data);
         } catch (error) {

@@ -304,14 +304,16 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
         return `${d}/${m}/${y} ${h}:${min}`;
     };
 
-    const cleanStr = (str: string) => (str || '').trim().replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const cleanStr = (str: string) => (str || '').trim().replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[^\x20-\x7E]/g, '');
     const companyName = cleanStr(settings.companyName || 'TIGA PUTRA MOTOR');
     const companyAddress = cleanStr(settings.companyAddress || 'jl.raya cianjur sukabumi km 5');
     const companyPhone = cleanStr(settings.companyPhone || '087720225244');
 
-    let text = `<C><B>${companyName}</B></C>\n`;
-    text += `<C>${companyAddress}</C>\n`;
-    text += `<C>HP: ${companyPhone}</C>\n`;
+    // Use [C] and [B] if the printer prefers them, but <C> and <B> are standard for this library
+    // Trying lowercase for better compatibility with some firmware
+    let text = `<center><b>${companyName}</b></center>\n`;
+    text += `<center>${companyAddress}</center>\n`;
+    text += `<center>HP: ${companyPhone}</center>\n`;
     text += `${divider}\n`;
 
     text += `No Nota  : ${data.transactionNumber}\n`;
@@ -337,7 +339,7 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
     let layananHTML = '';
     const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
     if (services.length > 0) {
-        text += `<C>LAYANAN</C>\n`;
+        text += `<center>LAYANAN</center>\n`;
         services.forEach(item => {
             text += renderItem(item);
         });
@@ -352,7 +354,7 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
         } else {
             text += `${divider}\n`;
         }
-        text += `<C>SPARE PART</C>\n`;
+        text += `<center>SPARE PART</center>\n`;
         parts.forEach(item => {
             text += renderItem(item);
         });
@@ -383,11 +385,11 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
     }
     
     if (data.vehiclePlate) {
-        text += `<C>${data.vehiclePlate}</C>\n`;
+        text += `<center>${data.vehiclePlate}</center>\n`;
         text += `${divider}\n`;
     }
 
-    text += `<C>${settings.footer || 'Terimakasih'}</C>\n`;
+    text += `<center>${settings.footer || 'Terimakasih'}</center>\n`;
     text += `\n\n\n\n`; // Feed space
 
     return text;
