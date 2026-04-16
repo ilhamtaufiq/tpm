@@ -143,11 +143,11 @@ export default function LabaRugiScreen() {
                     <span class="text-error">(${formatCurrency(bengkelData.biayaOps)})</span>
                 </div>
                 <div class="row-item">
-                    <span>Biaya Gaji</span>
+                    <span>Beban Gaji</span>
                     <span class="text-error">(${formatCurrency(bengkelData.biayaGaji)})</span>
                 </div>
                 <div class="row-item">
-                    <span>Biaya Lembur</span>
+                    <span>Beban Lembur</span>
                     <span class="text-error">(${formatCurrency(bengkelData.biayaLembur)})</span>
                 </div>
                 <div class="row-item row-total">
@@ -390,8 +390,8 @@ export default function LabaRugiScreen() {
                 <View className="bg-slate-50 p-4 rounded-xl border border-slate-100 w-full mb-4">
                     <Typography variant="caption" weight="bold" className="text-slate-400 mb-2 uppercase tracking-wider">Beban Operasional</Typography>
                     <Row label="Biaya Operasional" value={bengkelData.biayaOps} small isNegative />
-                    <Row label="Biaya Gaji" value={bengkelData.biayaGaji} small isNegative />
-                    <Row label="Biaya Lembur" value={bengkelData.biayaLembur} small isNegative />
+                    <Row label="Beban Gaji" value={bengkelData.biayaGaji} small isNegative />
+                    <Row label="Beban Lembur" value={bengkelData.biayaLembur} small isNegative />
                 </View>
 
                 <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${labaBersih >= 0 ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>

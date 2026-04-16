@@ -1,33 +1,29 @@
-# Continuity Ledger - TPM Workshop Project
+# Continuity Ledger - TPM Local Development
 
 ## Goal
-Fix financial reporting discrepancy where cash sparepart purchases are categorized as transfer in "Laporan Perubahan Modal" and ensure Mobil Detail modal works correctly on Android.
+Fix missing "Beban Gaji" (Salary Expense) in the Laba Rugi (Profit and Loss) report.
 
 ## Constraints/Assumptions
-- Backend: FastAPI/Python
-- Frontend: Expo/React Native/TypeScript
-- Database: PostgreSQL (via SQLAlchemy)
-- Payment methods: TUNAI (Cash) and TRANSFER (Bank)
-- Cash Accounts: `KAS_UNIT_BENGKEL`, `KAS_UTAMA`, `KAS_UNIT_MOBIL`, `KAS_UNIT_JASA_ANGKUT`, `CASH`.
+- Salary data is fetched from `SlipGaji` model via `SlipGajiService`.
+- Only `LUNAS` (Paid) salaries are included in the report.
+- The frontend expects `reportData.pengeluaran_details.gaji.total_gaji_pokok`.
 
 ## Key Decisions
-- [2026-04-16] Standardized `MobilDetail` modal to use `BottomSheetScrollView` and removed `Date.now()` cache-buster on media URLs to resolve Android rendering issues.
-- [2026-04-16] Identified backend bug in `get_capital_report` and `get_neraca` where `method_filter == 'cash'` incorrectly only included `KasBankJenis.CASH`, excluding unit-specific and main cash accounts.
+- Found that `backend/app/api/v1/dashboard.py` was merging salary summary into the existing `pengeluaran_details` but only updating `total` and `count`, losing the `total_gaji_pokok` and `total_uang_lembur` fields required by the frontend.
+- Updated the merge logic to perform a deep-merge of all summary fields.
 
 ## State
-- Done:
-  - Investigated frontend purchase submission logic: Confirmed `metode: 'TUNAI'` and `kas_jenis: 'KAS_UNIT_BENGKEL'` are correctly sent.
-  - Investigated backend `get_capital_report` and `get_neraca`: Located the hardcoded `KasBankJenis.CASH` check in `get_kas_sum` helper.
-  - Applied fix to `get_kas_sum` in `backend/app/api/v1/dashboard.py` to include all cash-account types.
-- Now:
-  - Awaiting user verification for both report categorization and Android modal visibility.
-- Next:
-  - Close issue once verified.
+- **Done**: 
+    - Analyzed `laba-rugi.tsx` mapping.
+    - Identified data loss in `dashboard.py`.
+    - Fixed the merge logic in `backend/app/api/v1/dashboard.py`.
+- **Now**: Verifying if other sections need salary data.
+- **Next**: Final report to user.
 
 ## Open Questions
-- None at the moment.
+- Is "Beban Gaji" expected to be shown in the overall overhead section as well, or is the current workshop-only attribution sufficient?
 
 ## Working Set
+- `frontend/app/laporan/laba-rugi.tsx`
 - `backend/app/api/v1/dashboard.py`
-- `frontend/app/bengkel/purchase/index.tsx`
-- `frontend/app/laporan/perubahan-modal.tsx`
+- `backend/app/services/slip_gaji_service.py`

@@ -251,10 +251,14 @@ def get_profit_summary(
     
     # Add salaries
     if "gaji" in per_kategori:
-        per_kategori["gaji"]["total"] += gaji_summary["total"]
-        per_kategori["gaji"]["count"] += gaji_summary["count"]
+        for key, value in gaji_summary.items():
+            if key in per_kategori["gaji"] and isinstance(value, (int, float, Decimal)):
+                per_kategori["gaji"][key] += value
+            else:
+                per_kategori["gaji"][key] = value
     else:
         per_kategori["gaji"] = gaji_summary
+
 
     # Final summary for Category details
     pengeluaran_details = per_kategori
