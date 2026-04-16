@@ -16,6 +16,8 @@ export interface PrintSettings {
     header?: string;
     footer?: string;
     logo_uri?: string;
+    show_qr_code?: boolean;
+    paper_size?: string;
 }
 
 export interface SystemSettings {

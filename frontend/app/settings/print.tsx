@@ -70,7 +70,9 @@ export default function PrintSettingsScreen() {
                         company_phone: settings.companyPhone,
                         header: settings.header,
                         footer: settings.footer,
-                        logo_uri: settings.logoUri || undefined
+                        logo_uri: settings.logoUri || undefined,
+                        show_qr_code: settings.showQRCode,
+                        paper_size: settings.paperSize
                     }
                 });
             } catch (syncError) {

@@ -76,12 +76,13 @@ def apply_branding(db: Session, receipt: Dict[str, Any]):
         print_setting = db.query(SystemSetting).filter(SystemSetting.key == "print_config").first()
         if print_setting and print_setting.value:
             config = json.loads(print_setting.value)
-            receipt["companyName"] = config.get("company_name", receipt.get("companyName", "TIGA PUTRA MOTOR"))
-            receipt["companyAddress"] = config.get("company_address", receipt.get("companyAddress", ""))
-            receipt["companyPhone"] = config.get("company_phone", receipt.get("companyPhone", ""))
-            # Use footer as default notes if notes is empty
-            if not receipt.get("notes") and config.get("footer"):
-                receipt["notes"] = config.get("footer")
+            receipt["companyName"] = config.get("company_name", receipt.get("companyName", "Tiga Putra Motor"))
+            receipt["companyAddress"] = config.get("company_address", receipt.get("companyAddress", "Cianjur, Jawa Barat"))
+            receipt["companyPhone"] = config.get("company_phone", receipt.get("companyPhone", "+62 856 5999 4407"))
+            receipt["customHeader"] = config.get("header")
+            receipt["customFooter"] = config.get("footer")
+            receipt["showQRCode"] = config.get("show_qr_code", True)
+            receipt["paperSize"] = config.get("paper_size", "80mm")
             # Store custom logo if available
             if config.get("logo_uri"):
                 receipt["customLogo"] = config.get("logo_uri")
@@ -486,7 +487,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             .receipt-container {{ 
                 background: white; 
                 width: 100%;
-                max-width: 380px; 
+                max-width: {'300px' if data.get('paperSize') == '58mm' else '400px'}; 
                 padding: 20px;
                 box-sizing: border-box;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -556,6 +557,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     <body>
         <div class="receipt-container">
             <div class="header">
+                {f'<div style="text-align:center; font-size:10px; margin-bottom:5px;">{data["customHeader"]}</div>' if data.get("customHeader") else ''}
                 <div class="logo-container">
                     <img src="{data.get('customLogo') if data.get('customLogo') and data['customLogo'] != 'tpm_default' else '/static/logo_tpm.png'}" alt="Logo" onerror="this.style.display='none'">
                 </div>
@@ -613,7 +615,9 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             <div class="footer">
                 <div>TERIMA KASIH</div>
                 <div>LAYANAN PELANGGAN: {data['companyPhone']}</div>
+                {f'<div style="margin-top: 10px; font-weight: bold;">{data["customFooter"]}</div>' if data.get("customFooter") else ''}
                 <div style="margin-top: 5px;">{data.get('notes', '')}</div>
+                {f'<div style="margin-top: 15px; border: 1px solid #ddd; padding: 10px; display: inline-block; font-size: 8px;">DIGITAL RECEIPT VERIFIED</div>' if data.get("showQRCode") else ''}
             </div>
         </div>
         
@@ -671,13 +675,17 @@ async def get_receipt_pdf(
         if not logo_img_pdf and os.path.exists(logo_path):
             logo_img_pdf = logo_path
             
-        if logo_img_pdf:
             try:
                 # Place logo centered
                 p.drawImage(logo_img_pdf, width/2 - 40, y_cursor - 40, width=80, height=40, mask='auto', preserveAspectRatio=True)
                 y_cursor -= 50
             except:
                 pass
+
+        # Header Text from settings
+        if data.get("customHeader"):
+            p.setFont("Helvetica", 8)
+            p.drawCentredString(width/2, y_cursor + 45, data["customHeader"])
 
         # Header
         p.setFont("Helvetica-Bold", 16)
@@ -752,7 +760,17 @@ async def get_receipt_pdf(
         
         y -= 40
         p.setFont("Helvetica-Oblique", 9)
-        p.drawCentredString(width/2, y, "Terima kasih atas kunjungan Anda")
+        p.drawCentredString(width/2, y, "TERIMA KASIH")
+        if data.get("customFooter"):
+            y -= 12
+            p.setFont("Helvetica-Bold", 9)
+            p.drawCentredString(width/2, y, data["customFooter"])
+            
+        if data.get("showQRCode"):
+            y -= 25
+            p.setFont("Helvetica", 7)
+            p.rect(width/2 - 50, y - 5, 100, 15)
+            p.drawCentredString(width/2, y, "DIGITAL RECEIPT VERIFIED")
         
         p.save()
         buffer.seek(0)
