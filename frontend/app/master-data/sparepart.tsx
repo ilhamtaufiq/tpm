@@ -950,6 +950,139 @@ export default function SparePartMasterScreen() {
         </View>
     );
 
+    const renderListHeader = () => (
+        <View className="pt-2">
+            {/* Compact Dashboard Stats */}
+            <View className="mb-4">
+                <View className="flex-row space-x-3 mb-3">
+                    <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
+                        <View className="bg-primary/10 p-2 rounded-xl mr-3">
+                            <Package size={14} color="#023C69" />
+                        </View>
+                        <View>
+                            <Typography className="text-textGray text-[10px] font-bold uppercase">Total</Typography>
+                            <Typography variant="h3" weight="bold" className="text-textMain text-lg leading-tight">{stats.total}</Typography>
+                        </View>
+                    </View>
+                    <View className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex-row items-center">
+                        <View className="bg-indigo-50 p-2 rounded-xl mr-3">
+                            <Coins size={14} color="#4F46E5" />
+                        </View>
+                        <View className="flex-1">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase">Modal Stok</Typography>
+                            <Typography variant="h3" weight="bold" className="text-primary text-sm leading-tight" numberOfLines={1}>
+                                {Number(stockValueData?.total_value || 0).toLocaleString('id-ID')}
+                            </Typography>
+                        </View>
+                    </View>
+                </View>
+
+                {stats.lowStock > 0 ? (
+                    <View className="bg-red-50 p-3 rounded-2xl border border-red-100 flex-row items-center">
+                        <AlertTriangle size={14} color="#EF4444" className="mr-3 ml-1" />
+                        <Typography className="text-red-700 font-bold text-xs flex-1">{stats.lowStock} Barang Stok Menipis</Typography>
+                        <View className="bg-red-200/50 px-2 py-0.5 rounded-lg">
+                            <Typography className="text-red-800 text-[10px] font-bold">PERHATIKAN</Typography>
+                        </View>
+                    </View>
+                ) : (
+                    <View className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex-row items-center">
+                        <CheckCircle2 size={14} color="#10B981" className="mr-3 ml-1" />
+                        <Typography className="text-emerald-800 font-bold text-xs">Stok Semua Barang Aman</Typography>
+                    </View>
+                )}
+            </View>
+
+            {/* Load All Button Trigger */}
+            <View className="mb-4">
+                {hasNextPage && !isShowingAll ? (
+                    <Pressable
+                        onPress={() => {
+                            setIsShowingAll(true);
+                            setSelectedIds([]);
+                        }}
+                        className="bg-primary/5 p-3 rounded-2xl border border-primary/20 flex-row items-center justify-center"
+                    >
+                        <Sparkles size={16} color="#023C69" className="mr-2" />
+                        <Typography className="text-primary font-bold text-xs">Tampilkan Semua ({stats.total} item)</Typography>
+                    </Pressable>
+                ) : isShowingAll ? (
+                    <View className="flex-row items-center justify-between bg-amber-50 p-2.5 rounded-2xl border border-amber-100">
+                        <View className="flex-row items-center">
+                            <Sparkles size={14} color="#D97706" className="mr-2 ml-1" />
+                            <Typography className="text-amber-800 font-bold text-[10px]">Mode Semua Data Aktif</Typography>
+                        </View>
+                        <Pressable
+                            onPress={() => {
+                                setIsShowingAll(false);
+                                setSelectedIds([]);
+                            }}
+                            className="bg-white px-3 py-1 rounded-xl border border-amber-200"
+                        >
+                            <Typography className="text-amber-700 font-bold text-[10px]">Halaman</Typography>
+                        </Pressable>
+                    </View>
+                ) : null}
+            </View>
+
+            {/* Bulk Actions Header */}
+            <View className="mb-2">
+                <View className="flex-row items-center justify-between px-1">
+                    <View className="flex-row items-center">
+                        <Pressable
+                            onPress={toggleSelectAll}
+                            className="flex-row items-center mr-3"
+                        >
+                            <View className={`w-5 h-5 rounded border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                {selectedIds.length === sparePartsList.length && sparePartsList.length > 0 && <Check size={12} color="white" />}
+                            </View>
+                            <Typography className="ml-2 text-[11px] font-bold text-textGray">Pilih Semua</Typography>
+                        </Pressable>
+
+                        {selectedIds.length > 0 && (
+                            <Typography className="text-[10px] font-bold text-white px-2 py-0.5 bg-primary rounded-full">
+                                {selectedIds.length}
+                            </Typography>
+                        )}
+                    </View>
+
+                    <View className="flex-row space-x-2">
+                        {selectedIds.length > 0 ? (
+                            <View className="flex-row items-center space-x-2">
+                                <Pressable
+                                    onPress={() => setIsPrintModalVisible(true)}
+                                    className="w-10 h-10 bg-indigo-50 items-center justify-center rounded-2xl border border-indigo-100"
+                                >
+                                    <Printer size={18} color="#4F46E5" />
+                                </Pressable>
+                                <Pressable
+                                    onPress={handleBulkDelete}
+                                    className="w-10 h-10 bg-red-50 rounded-2xl items-center justify-center border border-red-100"
+                                >
+                                    <Trash2 size={18} color="#EF4444" />
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setIsExportModalVisible(true)}
+                                    className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center border border-emerald-100"
+                                >
+                                    <Download size={18} color="#10B981" />
+                                </Pressable>
+                            </View>
+                        ) : (
+                            <Pressable
+                                onPress={() => setIsExportModalVisible(true)}
+                                className="px-3 py-2 bg-gray-50 rounded-xl flex-row items-center border border-gray-100"
+                            >
+                                <Download size={14} color="#4B5563" className="mr-2" />
+                                <Typography className="text-[10px] font-bold text-gray-600">Download XLS</Typography>
+                            </Pressable>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
@@ -1011,155 +1144,9 @@ export default function SparePartMasterScreen() {
                 </View>
             )}
 
-            {/* Dashboard Stats (In-Page) */}
-            {!sheetVisible && (
-                <View className="px-6 mb-4 mt-2">
-                    <Card className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
-                        <View className="flex-row justify-between items-center mb-4">
-                            <View className="flex-row items-center">
-                                <View className="bg-primary/10 p-2 rounded-xl mr-3">
-                                    <Package size={16} color="#023C69" />
-                                </View>
-                                <Typography className="text-textGray text-sm font-bold">Total Barang</Typography>
-                            </View>
-                            <Typography variant="h2" weight="bold" className="text-textMain text-2xl tracking-tight">{stats.total}</Typography>
-                        </View>
 
-                        <View className="flex-row justify-between items-center mb-4 pt-4 border-t border-gray-100 border-dashed">
-                            <View className="flex-row items-center">
-                                <View className="bg-indigo-50 p-2 rounded-xl mr-3">
-                                    <Coins size={16} color="#4F46E5" />
-                                </View>
-                                <Typography className="text-textGray text-sm font-bold">Total Modal Stok</Typography>
-                            </View>
-                            <Typography variant="h2" weight="bold" className="text-primary text-xl tracking-tight">
-                                Rp {Number(stockValueData?.total_value || 0).toLocaleString('id-ID')}
-                            </Typography>
-                        </View>
 
-                        {stats.lowStock > 0 ? (
-                            <View className="bg-red-50 p-3 rounded-2xl border border-red-100 flex-row items-center">
-                                <View className="bg-red-100 p-1.5 rounded-lg mr-3">
-                                    <AlertTriangle size={14} color="#EF4444" />
-                                </View>
-                                <View>
-                                    <Typography className="text-red-500 text-[10px] font-bold uppercase tracking-widest">Perhatian</Typography>
-                                    <Typography className="text-red-700 font-bold text-xs">{stats.lowStock} Barang Stok Menipis</Typography>
-                                </View>
-                            </View>
-                        ) : (
-                            <View className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 flex-row items-center">
-                                <View className="bg-emerald-100 p-1.5 rounded-lg mr-3">
-                                    <Package size={14} color="#10B981" />
-                                </View>
-                                <View>
-                                    <Typography className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest">Status Aman</Typography>
-                                    <Typography className="text-emerald-800 font-bold text-xs">Stok Semua Barang Aman</Typography>
-                                </View>
-                            </View>
-                        )}
-                    </Card>
-                </View>
-            )}
 
-            {/* Load All Button Trigger */}
-            {!sheetVisible && (
-                <View className="px-6 mb-2 mt-4">
-                    {hasNextPage && !isShowingAll ? (
-                        <Pressable
-                            onPress={() => {
-                                setIsShowingAll(true);
-                                setSelectedIds([]);
-                            }}
-                            className="bg-primary/5 p-4 rounded-[28px] border border-primary/20 flex-row items-center justify-center shadow-sm"
-                        >
-                            <Sparkles size={20} color="#023C69" className="mr-3" />
-                            <View>
-                                <Typography className="text-primary font-bold text-sm">Tampilkan Semua Sparepart</Typography>
-                                <Typography className="text-primary/60 text-[10px] font-medium uppercase tracking-tight">Muat total {stats.total} item untuk aksi massal</Typography>
-                            </View>
-                        </Pressable>
-                    ) : isShowingAll ? (
-                        <View className="flex-row items-center justify-between bg-amber-50 p-3 rounded-2xl border border-amber-100">
-                            <View className="flex-row items-center">
-                                <View className="bg-amber-100 p-1.5 rounded-lg mr-3">
-                                    <Sparkles size={14} color="#D97706" />
-                                </View>
-                                <Typography className="text-amber-800 font-bold text-xs">Mode Semua Data Aktif</Typography>
-                            </View>
-                            <Pressable
-                                onPress={() => {
-                                    setIsShowingAll(false);
-                                    setSelectedIds([]);
-                                }}
-                                className="bg-white px-3 py-1.5 rounded-xl border border-amber-200"
-                            >
-                                <Typography className="text-amber-700 font-bold text-[10px]">Mode Halaman</Typography>
-                            </Pressable>
-                        </View>
-                    ) : null}
-                </View>
-            )}
-
-            {/* Bulk Actions Header */}
-            {!sheetVisible && (
-                <View className="px-6 mb-4">
-                    <Card className="bg-white p-3 rounded-3xl border border-gray-100 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <Pressable
-                                onPress={toggleSelectAll}
-                                className="flex-row items-center mr-4"
-                            >
-                                <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === sparePartsList.length && sparePartsList.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
-                                    {selectedIds.length === sparePartsList.length && sparePartsList.length > 0 && <Check size={14} color="white" />}
-                                </View>
-                                <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
-                            </Pressable>
-
-                            {selectedIds.length > 0 && (
-                                <Typography className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded-lg">
-                                    {selectedIds.length} terpilih
-                                </Typography>
-                            )}
-                        </View>
-
-                        <View className="flex-row space-x-2">
-                            {selectedIds.length > 0 ? (
-                                <>
-                                    <View className="flex-row bg-indigo-50 border border-indigo-100 rounded-2xl p-1 mr-2">
-                                        <Pressable
-                                            onPress={() => setIsPrintModalVisible(true)}
-                                            className="w-10 h-10 items-center justify-center"
-                                        >
-                                            <Printer size={18} color="#4F46E5" />
-                                        </Pressable>
-                                    </View>
-                                    <Pressable
-                                        onPress={handleBulkDelete}
-                                        className="w-10 h-10 bg-red-50 rounded-2xl items-center justify-center border border-red-100"
-                                    >
-                                        <Trash2 size={18} color="#EF4444" />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={() => setIsExportModalVisible(true)}
-                                        className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center border border-emerald-100"
-                                    >
-                                        <Download size={18} color="#10B981" />
-                                    </Pressable>
-                                </>
-                            ) : (
-                                <Pressable
-                                    onPress={() => setIsExportModalVisible(true)}
-                                    className="px-4 py-2.5 bg-gray-50 rounded-2xl flex-row items-center border border-gray-100"
-                                >
-                                    <Download size={16} color="#4B5563" className="mr-2" />
-                                    <Typography className="text-xs font-bold text-gray-600">Download XLS</Typography>
-                                </Pressable>
-                            )}
-                        </View>
-                    </Card>
-                </View>
-            )}
 
             {/* List */}
             {isLoading ? (
@@ -1171,7 +1158,8 @@ export default function SparePartMasterScreen() {
                     data={sparePartsList}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
+                    ListHeaderComponent={renderListHeader}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 6 }}
                     onEndReached={() => hasNextPage && !isFetchingNextPage && fetchNextPage()}
                     onEndReachedThreshold={0.5}
                     refreshControl={
@@ -1430,7 +1418,7 @@ export default function SparePartMasterScreen() {
             {/* Import Progress Modal */}
             <BaseModal
                 visible={isImportProgressVisible}
-                onClose={importStep === 'done' || importStep === 'error' ? handleCloseImportProgress : undefined}
+                onClose={importStep === 'done' || importStep === 'error' ? handleCloseImportProgress : () => {}}
                 title="Import Sparepart"
             >
                 <View className="p-6">
