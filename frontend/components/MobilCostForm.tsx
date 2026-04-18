@@ -130,10 +130,18 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                 deskripsi: newLainnya.deskripsi || newLainnya.kategori || 'Biaya Admin & Pajak',
                 jumlah: finalAmount,
                 tanggal: new Date().toISOString().split('T')[0],
-                metode_bayar: newLainnya.metode_bayar,
+                metode_bayar: isSplitPayment ? 'SPLIT' : (newLainnya.metode_bayar === 'TUNAI_MOBIL' || newLainnya.metode_bayar === 'TUNAI_UTAMA' ? 'TUNAI' : newLainnya.metode_bayar),
+                kas_jenis: isSplitPayment ? undefined : (
+                    newLainnya.metode_bayar === 'TUNAI_MOBIL' ? 'KAS_UNIT_MOBIL' : 
+                    (newLainnya.metode_bayar === 'TUNAI_UTAMA' ? 'KAS_UTAMA' : 
+                    (newLainnya.metode_bayar === 'TRANSFER' ? 'BANK_UTAMA' : undefined))
+                ),
                 payments: isSplitPayment ? payments.map(p => ({
-                    metode: p.metode,
-                    nominal: parseNumber(p.nominal)
+                    metode: p.metode === 'TUNAI_MOBIL' || p.metode === 'TUNAI_UTAMA' ? 'TUNAI' : p.metode,
+                    nominal: parseNumber(p.nominal),
+                    kas_jenis: p.metode === 'TUNAI_MOBIL' ? 'KAS_UNIT_MOBIL' : 
+                                (p.metode === 'TUNAI_UTAMA' ? 'KAS_UTAMA' : 
+                                (p.metode === 'TRANSFER' ? 'BANK_UTAMA' : undefined))
                 })).filter(p => p.nominal > 0) : []
             }
         };
@@ -280,13 +288,17 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                                 </View>
 
                                 <View className="flex-row flex-wrap gap-2 mb-3">
-                                    {['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT'].map((m) => (
+                                    {[
+                                        { id: 'TUNAI_MOBIL', label: 'TUNAI MOBIL' },
+                                        { id: 'TUNAI_UTAMA', label: 'TUNAI UTAMA' },
+                                        { id: 'TRANSFER', label: 'TRANSFER (BCA UTAMA)' }
+                                    ].map((m) => (
                                         <Pressable
-                                            key={m}
-                                            onPress={() => updatePaymentRow(p.id, 'metode', m)}
-                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
+                                            key={m.id}
+                                            onPress={() => updatePaymentRow(p.id, 'metode', m.id)}
+                                            className={`px-3 py-1.5 rounded-xl border ${p.metode === m.id ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white'}`}
                                         >
-                                            <Typography variant="caption" weight={p.metode === m ? 'bold' : 'medium'} className={p.metode === m ? 'text-primary' : 'text-textGray'}>{m}</Typography>
+                                            <Typography variant="caption" weight={p.metode === m.id ? 'bold' : 'medium'} className={p.metode === m.id ? 'text-primary' : 'text-textGray'}>{m.label}</Typography>
                                         </Pressable>
                                     ))}
                                 </View>
@@ -311,13 +323,17 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
                         <View className="flex-1">
                             <Typography variant="caption" className="text-textGray mb-2 font-medium ml-1">Metode Bayar</Typography>
                             <View className="flex-row flex-wrap gap-2">
-                                {['TUNAI', 'TRANSFER', 'DEBIT'].map((m) => (
+                                {[
+                                    { id: 'TUNAI_MOBIL', label: 'TUNAI MOBIL' },
+                                    { id: 'TUNAI_UTAMA', label: 'TUNAI UTAMA' },
+                                    { id: 'TRANSFER', label: 'TRANSFER (BCA UTAMA)' }
+                                ].map((m) => (
                                     <Pressable
-                                        key={m}
-                                        onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m })}
-                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m ? 'border-primary bg-primary/10' : 'border-gray-100'}`}
+                                        key={m.id}
+                                        onPress={() => setNewLainnya({ ...newLainnya, metode_bayar: m.id })}
+                                        className={`px-3 py-2 rounded-xl border ${newLainnya.metode_bayar === m.id ? 'border-primary bg-primary/10' : 'border-gray-100'}`}
                                     >
-                                        <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m ? 'text-primary' : 'text-gray-400'}>{m}</Typography>
+                                        <Typography variant="caption" weight="bold" className={newLainnya.metode_bayar === m.id ? 'text-primary' : 'text-gray-400'}>{m.label}</Typography>
                                     </Pressable>
                                 ))}
                             </View>

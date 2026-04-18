@@ -16,10 +16,10 @@ from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
-from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService
+from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutBiayaLainnya, JasaAngkutPartService, ArmadaJasaAngkut
 from app.models.mobil import Mobil, MobilBiayaLainnya, TransaksiPenjualanMobil
 from app.models.bengkel import PembelianSparePart, TransaksiPenjualanBengkel, PengeluaranBengkel
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType, ExpenseCategory
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from app.utils.cache import build_key, get_cached, set_cached, invalidate_cache_prefix
 from sqlalchemy import func, or_, case
@@ -286,31 +286,91 @@ def get_profit_summary(
     raw_units = pengeluaran.get("per_unit", {})
     
     # 1. Mobil: Split General Ops vs Car Capital
-    # Only for cars NOT sold in the current period (to avoid double counting with HPP total_modal)
-    # Convert to set of strings for fast and reliable comparison
     sold_mobil_ids = {str(m['mobil_id']) for m in mobil.get("sold_list", []) if m.get('mobil_id')}
-    mobil_unit_breakdown = pengeluaran.get("mobil_unit", {})
+    mobil_unit_breakdown = pengeluaran.get("mobil_unit", {}).copy()
     
-    # Separate costs for cars sold this period (already in total_modal) vs unsold cars
-    # This prevents the 150k Pajak/STNK from being added twice if the car was sold this month
+    # NEW: Include internal workshop repairs (TransaksiPenjualanBengkel)
+    # These are not in PengeluaranBengkel table but represent real unit costs
+    internal_workshop_costs = db.query(
+        TransaksiPenjualanBengkel.mobil_id,
+        func.sum(TransaksiPenjualanBengkel.grand_total)
+    ).filter(
+        TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+        TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+        TransaksiPenjualanBengkel.mobil_id.is_not(None),
+        TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil'])
+    ).group_by(TransaksiPenjualanBengkel.mobil_id).all()
+    
+    for m_id, total in internal_workshop_costs:
+        m_id_str = str(m_id)
+        if m_id_str not in mobil_unit_breakdown:
+            mobil_unit_breakdown[m_id_str] = {}
+        
+        # Add to BIAYA_OPERASIONAL (Repair)
+        current = mobil_unit_breakdown[m_id_str].get(ExpenseCategory.BIAYA_OPERASIONAL.value, 0)
+        mobil_unit_breakdown[m_id_str][ExpenseCategory.BIAYA_OPERASIONAL.value] = float(current) + float(total)
+    
+    # Row 2b & Row 3: Sum directly from categorized ledger data for ALL cars in this period
+    # We include sold cars too because their 'total_modal' snapshot might not include 
+    # the very latest costs recorded today via the ledger.
     capital_unsold_mobil_ops = 0
-    for m_id, val in mobil_unit_breakdown.items():
-        if str(m_id) not in sold_mobil_ids:
-            capital_unsold_mobil_ops += float(val)
+    mobil_biaya_bengkel = 0
+    
+    for m_id, categories in mobil_unit_breakdown.items():
+        # Row 2b: Pajak, BBN, etc (mapped to BIAYA_LAINNYA)
+        capital_unsold_mobil_ops += float(categories.get(ExpenseCategory.BIAYA_LAINNYA.value, 0))
+        # Row 3: Repairs, Maintenance (mapped to BIAYA_OPERASIONAL)
+        mobil_biaya_bengkel += float(categories.get(ExpenseCategory.BIAYA_OPERASIONAL.value, 0))
 
+    # PER USER REQUEST: Baris 7 must come ONLY from the DOMPET UNIT (KAS_UNIT_MOBIL)
+    # Get total outgoings from Mobil Wallet
+    wallet_mobil_outflow = float(db.query(func.sum(KasBank.nominal)).filter(
+        KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
+        KasBank.tipe == KasBankType.KELUAR,
+        KasBank.tanggal >= tanggal_dari,
+        KasBank.tanggal <= tanggal_sampai
+    ).scalar() or 0)
+    
+    # Get how much of the unit-specific costs (Baris 2b & 3) were paid from THIS wallet
+    wallet_unit_specific_outgoings = float(db.query(func.sum(KasBank.nominal))
+        .join(PengeluaranBengkel, KasBank.referensi_id == PengeluaranBengkel.id)
+        .filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai,
+            PengeluaranBengkel.mobil_id.is_not(None)
+        ).scalar() or 0)
+    
+    # Row 7 is the residual of the drawer
+    general_mobil_ops = wallet_mobil_outflow - wallet_unit_specific_outgoings
+    
+    # Define raw_mobil_total for profit calculation at the bottom
     raw_mobil_total = float(
         raw_units.get("penjualan_mobil", 0) + 
         raw_units.get("jual_beli_mobil", 0) + 
         raw_units.get("mobil", 0)
     )
     
-    general_mobil_ops = raw_mobil_total - sum(mobil_unit_breakdown.values())
-    
     pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
     pengeluaran_unit_details["mobil"] = general_mobil_ops
     
     # 2. Jasa Angkut: Split General Ops vs Armada/Trip Ops
     ja_armada_breakdown = pengeluaran.get("jasa_angkut_armada", {}).copy()
+    
+    # NEW: Include internal workshop repairs (TransaksiPenjualanBengkel)
+    ja_workshop_repairs = db.query(
+        ArmadaJasaAngkut.nama,
+        func.sum(TransaksiPenjualanBengkel.grand_total)
+    ).join(ArmadaJasaAngkut, TransaksiPenjualanBengkel.armada_id == ArmadaJasaAngkut.id).filter(
+        TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+        TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+        TransaksiPenjualanBengkel.armada_id.is_not(None),
+        TransaksiPenjualanBengkel.kategori == 'jasa_angkut'
+    ).group_by(ArmadaJasaAngkut.nama).all()
+    
+    for a_name, total in ja_workshop_repairs:
+        ja_armada_breakdown[a_name] = ja_armada_breakdown.get(a_name, 0) + float(total)
     trip_armada_breakdown = muatan.get("details", {}).get("operasional_per_armada", {})
     
     # Aggregate all armada specific costs (Maintenance from Pengeluaran + BBM/Tol/Parkir from Trips)
@@ -321,13 +381,12 @@ def get_profit_summary(
     raw_ja_total = float(raw_units.get("jasa_angkut", 0))
     general_ja_ops = raw_ja_total - sum(ja_armada_breakdown.values())
     
-    pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
-    pengeluaran_unit_details["mobil"] = general_mobil_ops
     pengeluaran_unit_details["jasa_angkut"] = general_ja_ops
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
     
     # Add capital/specific values to summary for UI categorization
     mobil["capital_period_ops"] = capital_unsold_mobil_ops
+    mobil["biaya_bengkel"] = mobil_biaya_bengkel
     
     # Jasa Angkut details for P&L
     ja_biaya_bengkel = float(muatan.get("details", {}).get("biaya_bengkel") or 0)
@@ -344,9 +403,8 @@ def get_profit_summary(
         ja_armada_breakdown[arm] = ja_armada_breakdown.get(arm, 0) + float(val)
         
     # Subtract repairs from the breakdown
-    for arm, repair_val in bengkel_per_armada.items():
-        if arm in ja_armada_breakdown:
-            ja_armada_breakdown[arm] = max(0, ja_armada_breakdown[arm] - float(repair_val))
+    for arm, val in ja_armada_breakdown.items():
+        ja_armada_breakdown[arm] = max(0, float(val) - float(bengkel_per_armada.get(arm, 0)))
 
     pengeluaran_unit_details["jasa_angkut_armada"] = ja_armada_breakdown
     pengeluaran_unit_details["mobil_unit"] = mobil_unit_breakdown
@@ -366,8 +424,8 @@ def get_profit_summary(
     # Total JA Costs = Row 2 (Repairs) + Row 3 (Ops Armada) + Row 4 (General JA Ops)
     total_ja_costs = muatan["details"].get("biaya_bengkel", 0) + muatan["details"].get("armada_period_ops", 0) + general_ja_ops
     
-    # Total Mobil Costs = Car Maintenance (unsold) + General Mobil Ops
-    total_mobil_costs = capital_unsold_mobil_ops + general_mobil_ops
+    # Total Mobil Costs = Car Maintenance (unsold) + Baris 2b (Pajak etc) + Baris 7 (General Mobil Ops)
+    total_mobil_costs = mobil_biaya_bengkel + capital_unsold_mobil_ops + general_mobil_ops
     
     total_pengeluaran = (
         (float(pengeluaran["total_pengeluaran"] or 0) - raw_mobil_total - raw_ja_total) + 

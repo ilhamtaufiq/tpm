@@ -13,7 +13,7 @@ from app.config import settings
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService, TransaksiPenjualanMobil
 from app.models.bengkel import SparePart, PengeluaranBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, HutangSource, HutangStatus, ExpenseCategory
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory
 from app.models.keuangan import HutangUsaha, HutangStatus
 from app.services.kas_bank_integration import create_kas_entry
 
@@ -474,6 +474,7 @@ class MobilService:
         deskripsi: str,
         jumlah: Decimal,
         metode_bayar: PaymentMethod = PaymentMethod.TUNAI,
+        kas_jenis: Optional[KasBankJenis] = None,
         payments: Optional[List[Dict[str, Any]]] = None,
         catatan: Optional[str] = None,
         user_id: Optional[int] = None,
@@ -489,14 +490,22 @@ class MobilService:
 
         nomor_transaksi = self._generate_pengeluaran_nomor()
 
+        # Map frontend kategori to ExpenseCategory for ledger tracking
+        # Improved mapping to capture common repair keywords
+        repair_keywords = ["perbaikan", "service", "servis", "bengkel", "perawatan", "sparepart", "part"]
+        is_repair = kategori == "Perawatan Bengkel" or any(k in (kategori or "").lower() for k in repair_keywords)
+        
+        ledger_category = ExpenseCategory.BIAYA_OPERASIONAL if is_repair else ExpenseCategory.BIAYA_LAINNYA
+
         biaya = PengeluaranBengkel(
             nomor_transaksi=nomor_transaksi,
             tanggal=tanggal,
             bisnis_kategori="jasa_angkut" if kategori == "Jasa Angkut" else "mobil",
             mobil_id=mobil_id,
-            kategori=ExpenseCategory.BIAYA_OPERASIONAL,
+            kategori=ledger_category,
             deskripsi=f"[{kategori}] {deskripsi}" if kategori else deskripsi,
             jumlah=jumlah,
+            metode_bayar=metode_bayar,
             catatan=catatan,
             created_by=user_id
         )
@@ -504,12 +513,25 @@ class MobilService:
         self.db.add(biaya)
         self.db.flush()
 
+        # CRITICAL: Also add to MobilBiayaLainnya for HPP and car record tracking
+        # This was missing and caused Baris 2b/3 to be 0 or incorrect in reports
+        mobil_biaya = MobilBiayaLainnya(
+            mobil_id=mobil_id,
+            tanggal=tanggal,
+            kategori=kategori,
+            deskripsi=deskripsi,
+            jumlah=jumlah,
+            catatan=f"ID Pengeluaran: {biaya.id}"
+        )
+        self.db.add(mobil_biaya)
+
         # Record to KasBank if not internal/bengkel
         if kategori != "Perawatan Bengkel":
             if payments:
                 for p in payments:
-                    p_jumlah = Decimal(str(p.get("jumlah", 0)))
+                    p_jumlah = Decimal(str(p.get("nominal", p.get("jumlah", 0))))
                     p_metode = p.get("metode", PaymentMethod.TUNAI)
+                    p_kas_jenis = p.get("kas_jenis")
                     if p_jumlah > 0:
                         create_kas_entry(
                             db=self.db,
@@ -518,6 +540,7 @@ class MobilService:
                             nominal=p_jumlah,
                             sumber=KasBankSource.JUAL_BELI_MOBIL,
                             metode_bayar=p_metode,
+                            kas_jenis=p_kas_jenis,
                             referensi_id=biaya.id,
                             nomor_referensi=nomor_transaksi,
                             keterangan=f"Biaya {kategori} ({p_metode.upper()}) - {mobil.nomor_plat}: {deskripsi}",
@@ -532,6 +555,7 @@ class MobilService:
                     nominal=jumlah,
                     sumber=KasBankSource.JUAL_BELI_MOBIL,
                     metode_bayar=metode_bayar,
+                    kas_jenis=kas_jenis,
                     referensi_id=biaya.id,
                     nomor_referensi=nomor_transaksi,
                     keterangan=f"Biaya {kategori} - {mobil.nomor_plat}: {deskripsi}",

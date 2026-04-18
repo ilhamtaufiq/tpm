@@ -225,6 +225,7 @@ class MobilBiayaCreate(BaseModel):
     deskripsi: str
     jumlah: Decimal = Field(..., ge=0)
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
+    kas_jenis: Optional[KasBankJenis] = None
     payments: Optional[List[PaymentItem]] = None
     catatan: Optional[str] = None
 
