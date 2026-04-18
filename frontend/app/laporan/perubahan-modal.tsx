@@ -221,22 +221,12 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(report.section_a.details?.laba_bengkel || 0)}</td>
                         </tr>
                         <tr>
-                            <td colspan="2">TOTAL LABA MOBIL (TPM)</td>
-                            <td class="amount">${formatCurrency(report.section_a.details?.laba_mobil_tpm || 0)}</td>
+                            <td colspan="2">TOTAL LABA MOBIL</td>
+                            <td class="amount">${formatCurrency(report.section_a.details?.laba_kotor_mobil || 0)}</td>
                         </tr>
                         <tr>
-                            <td colspan="2">TOTAL LABA JASA ANGKUT (NET)</td>
-                            <td class="amount">${formatCurrency((report.section_a.details?.laba_jasa_angkut || 0) - (report.section_a.details?.biaya_jasa_angkut || 0))}</td>
-                        </tr>
-                        <tr class="sub-row">
-                            <td style="padding-left: 20px;">- Pemasukan Jasa Angkut</td>
+                            <td colspan="2">TOTAL LABA JASA ANGKUT</td>
                             <td class="amount">${formatCurrency(report.section_a.details?.laba_jasa_angkut || 0)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="sub-row border-bottom" style="color: #be123c;">
-                            <td style="padding-left: 20px;">- Biaya Muatan & Armada</td>
-                            <td class="amount">(${formatCurrency(report.section_a.details?.biaya_jasa_angkut || 0)})</td>
-                            <td></td>
                         </tr>
                         <tr>
                             <td colspan="2">TOTAL LABA KOTOR (UNIT)</td>
@@ -404,15 +394,15 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(c_op_ja)}</td>
                             <td></td>
                         </tr>
-                        ${report.section_c.operasional_unit_details?.jasa_angkut_armada ? 
-                            Object.entries(report.section_c.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => `
+                        ${report.section_c.operasional_unit_details?.jasa_angkut_armada ?
+                    Object.entries(report.section_c.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => `
                             <tr class="green-row sub-row" style="font-style: italic; opacity: 0.8;">
                                 <td style="padding-left: 40px;">> ${name}</td>
                                 <td class="amount">${formatCurrency(val as number)}</td>
                                 <td></td>
                             </tr>
                             `).join('') : ''
-                        }
+                }
                         <tr class="green-row">
                             <td>BEBAN GAJI KARYAWAN</td>
                             <td class="amount">${formatCurrency(c_gaji)}</td>
@@ -661,34 +651,26 @@ export default function LaporanPerubahanModalScreen() {
                         <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
                         <Row label="Aset Tetap" value={data.aset_tetap} />
                     </View>
-                    
+
                     <View className="bg-slate-50 rounded-xl p-4 border border-slate-100 w-full shadow-sm shadow-slate-100/50">
                         <Typography variant="caption" weight="bold" className="mb-3 text-slate-500 uppercase tracking-widest text-[10px]">Rincian Laba Operasional</Typography>
-                        
+
                         <View className="space-y-1">
                             <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
-                            
+
                             <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
-                                <Row label="2. Laba Kotor Mobil" value={details.laba_kotor_mobil} small />
-                                <Row label="   Porsi Investor" value={details.laba_investor_mobil} small isNegative color="text-rose-500" />
-                                <View className="mt-1 bg-white p-2 rounded-lg border border-slate-100">
-                                    <Row label="Laba Bersih Mobil" value={details.laba_mobil} small bold color="text-slate-800" />
-                                </View>
+                                <Row label="2. Laba Mobil" value={details.laba_kotor_mobil} small />
                             </View>
-                            
+
                             <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
-                                <Row label="3. Pendapatan Jasa Angkut" value={details.laba_jasa_angkut} small />
-                                <Row label="   Biaya Muatan & Armada" value={details.biaya_jasa_angkut} small isNegative color="text-rose-500" />
-                                <View className="mt-1 bg-white p-2 rounded-lg border border-slate-100">
-                                    <Row label="Laba Bersih Jasa Angkut" value={details.laba_jasa_angkut - details.biaya_jasa_angkut} small bold color="text-slate-800" />
-                                </View>
+                                <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
                             </View>
                         </View>
-                        
+
                         <View className="h-px bg-blue-200/60 my-3" />
                         <Row label="Total Laba Kotor (Unit)" value={data.total_laba} bold color="text-blue-700" />
                     </View>
-                    
+
                     <View className="pt-3 border-t-2 border-dashed border-slate-200">
                         <Row label="TOTAL A (Laba dan Modal)" value={data.total_a} bold large color="text-slate-800" />
                     </View>
@@ -795,18 +777,18 @@ export default function LaporanPerubahanModalScreen() {
                             <Row label="Operasional Umum (Overhead)" value={data.operasional_unit_details?.umum} small isNegative color="text-slate-600" />
                             <Row label="Operasional Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative color="text-slate-600" />
                             <Row label="Operasional Mobil" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
-                            
+
                             <View>
                                 <Row label="Operasional Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
                                 {data.operasional_unit_details?.jasa_angkut_armada && Object.keys(data.operasional_unit_details.jasa_angkut_armada).length > 0 && (
                                     <View className="ml-3 mt-1.5 p-2 bg-white/50 rounded-lg border border-orange-100/50 space-y-1">
                                         {Object.entries(data.operasional_unit_details.jasa_angkut_armada).map(([name, val]) => (
-                                            <Row 
-                                                key={name} 
-                                                label={name} 
-                                                value={val as number} 
-                                                small 
-                                                isNegative 
+                                            <Row
+                                                key={name}
+                                                label={name}
+                                                value={val as number}
+                                                small
+                                                isNegative
                                                 color="text-slate-500"
                                             />
                                         ))}
@@ -884,21 +866,21 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="bg-white/10 rounded-2xl p-5 border border-white/10 backdrop-blur-md mb-6 w-full shadow-inner">
                         <View className="space-y-3 w-full">
                             <Row label="Kas Tunai (Tunai & Brankas Unit)" value={data.cash} isDark />
-                            
+
                             {data.unit_details && Object.keys(data.unit_details).length > 0 && (
                                 <View className="bg-black/20 rounded-xl p-3.5 space-y-2 mt-1 border border-white/5">
                                     {Object.entries(data.unit_details).map(([unit, val]) => (
-                                        <Row 
-                                            key={unit} 
-                                            label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()} 
-                                            value={val as number} 
-                                            small 
-                                            isDark 
+                                        <Row
+                                            key={unit}
+                                            label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()}
+                                            value={val as number}
+                                            small
+                                            isDark
                                         />
                                     ))}
                                 </View>
                             )}
-                            
+
                             <Row className="mt-1" label="Kas Bank / Transfer" value={data.transfer} isDark />
                         </View>
 
@@ -924,12 +906,12 @@ export default function LaporanPerubahanModalScreen() {
                                     <AlertTriangle size={14} color="#FDA4AF" className="mr-1.5" />
                                     <Typography className="text-rose-200 text-xs font-bold">BUTUH PENYESUAIAN</Typography>
                                 </View>
-                                
+
                                 <View className="space-y-1.5">
                                     <Row label="Modal Teoritis [ (A-B) - C + E ]" value={data.modal_komponen} small color="text-indigo-200" isDark />
                                     <Row label="Selisih / Penyesuaian" value={data.penyesuaian} small bold color="text-rose-300" isDark />
                                 </View>
-                                
+
                                 <Typography variant="caption" className="text-indigo-200/60 leading-normal mt-1 text-[10px]">
                                     *Selisih terjadi karena perbedaan perhitungan teoritis komponen dengan total saldo riil.
                                 </Typography>

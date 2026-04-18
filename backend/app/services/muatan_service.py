@@ -957,18 +957,50 @@ class MuatanService:
             )
         )
         
-        total_operasional = float((operasional_q.scalar() or 0) + (fixed_costs_q.scalar() or 0))
-        
-        # TOTAL ALL COSTS for the unit
-        total_expenses = total_biaya_bengkel + total_operasional
-        
-        # FINAL NET PROFIT for the unit
-        laba_tpm_net = total_pendapatan - total_expenses
+        total_biaya_trip = float(fixed_costs_q.scalar() or 0)
 
-        # ... (rest of breakdown for wallet display stays similar) ...
-        # --- NEW CASH BREAKDOWN FOR WALLET ---
+        # 4. Operational & Maintenance Costs for the unit
+        # (Workshop repairs, fleet maintenance logs, and general wallet outflows)
+        from app.models.keuangan import KasBank
+        from app.utils.constants import KasBankSource, KasBankType, PaymentMethod
+        
+        # General Wallet Outflows (excluding transfers and internal bookkeeping)
+        wallet_out_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.KELUAR,
+            ~KasBank.keterangan.like("Transfer ke %"),
+            # Exclude internal workshop/part payments as they are already counted in biaya_bengkel
+            KasBank.sumber != KasBankSource.BENGKEL,
+            KasBank.sumber != KasBankSource.PEMBELIAN_PART,
+            or_(KasBank.metode_bayar != PaymentMethod.INTERNAL, KasBank.metode_bayar == None)
+        )
+        if tanggal_dari: wallet_out_q = wallet_out_q.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai: wallet_out_q = wallet_out_q.filter(KasBank.tanggal <= tanggal_sampai)
+        
+        wallet_out = float(wallet_out_q.scalar() or 0)
 
-        # --- NEW CASH BREAKDOWN FOR WALLET ---
+        # Combine all non-trip costs as "Operational Unit Costs"
+        total_biaya_operasional_unit = total_biaya_bengkel + float(operasional_q.scalar() or 0) + wallet_out
+
+        # Breakdown Jasa Angkut by Armada for display purposes
+        from app.models.jasa_angkut import ArmadaJasaAngkut
+        armada_ja_query = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(KasBank.nominal)
+        ).join(
+            KasBank, KasBank.referensi_id == ArmadaJasaAngkut.id
+        ).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.JASA_ANGKUT
+        )
+        if tanggal_dari: armada_ja_query = armada_ja_query.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai: armada_ja_query = armada_ja_query.filter(KasBank.tanggal <= tanggal_sampai)
+        
+        by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
+        armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
+
+        # Cash Breakdown for Jasa Angkut Wallet
         # 1. Total Tunai (Payments entering KAS_UNIT_JASA_ANGKUT)
         total_tunai_q = self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
@@ -1005,9 +1037,7 @@ class MuatanService:
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
 
-        # Breakdown of bengkel per armada
-        from app.models.jasa_angkut import ArmadaJasaAngkut
-        
+        # --- Aggregate Maintenance Breakdown per Armada (from Invoice & Logs) ---
         bengkel_armada_query = self.db.query(
             ArmadaJasaAngkut.nama,
             func.sum(TransaksiPenjualanBengkel.grand_total)
@@ -1019,7 +1049,6 @@ class MuatanService:
         )
         if tanggal_dari: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
-        
         bengkel_armada_parts = bengkel_armada_query.group_by(ArmadaJasaAngkut.nama).all()
         
         bengkel_tambahan_armada_query = self.db.query(
@@ -1035,59 +1064,44 @@ class MuatanService:
         )
         if tanggal_dari: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
-        
         bengkel_armada_tambahan = bengkel_tambahan_armada_query.group_by(ArmadaJasaAngkut.nama).all()
         
         bengkel_per_armada = {}
         for nama, total in bengkel_armada_parts:
-            if nama:
-                bengkel_per_armada[nama] = float(total or 0)
+            if nama: bengkel_per_armada[nama] = float(total or 0)
         for nama, total in bengkel_armada_tambahan:
-            if nama:
-                bengkel_per_armada[nama] = bengkel_per_armada.get(nama, 0) + float(total or 0)
+            if nama: bengkel_per_armada[nama] = bengkel_per_armada.get(nama, 0) + float(total or 0)
 
+        # Final Result Dictionary
         result_dict = {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
             "partial_count": partial_count,
             "unpaid_count": unpaid_count,
             "batal_count": batal_count,
-            "hutang_supir_count": active_count, # Mapped as active_trips in dashboard
+            "hutang_supir_count": active_count,
             "total_pendapatan": total_pendapatan,
             "total_laba_supir": total_laba_supir,
-            "total_biaya": total_expenses,
-            "laba_tpm": laba_tpm_net,
-
+            "total_biaya_trip": total_biaya_trip,
+            "total_biaya_operasional_unit": total_biaya_operasional_unit,
+            "total_biaya": total_biaya_trip + total_biaya_operasional_unit,
+            "laba_gross": total_pendapatan - total_biaya_trip,
+            "laba_tpm": total_pendapatan - total_biaya_trip - total_biaya_operasional_unit,
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_JASA_ANGKUT)),
             "total_tunai": float(total_tunai_q.scalar() or 0),
             "total_transfer": float(total_transfer_q.scalar() or 0),
             "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
+            "jasa_angkut_armada": armada_ja_summary,
             "details": {
                 "gross_share_tpm": total_pendapatan,
-                "biaya_lainnya": total_operasional,
+                "biaya_lainnya": float(operasional_q.scalar() or 0) + wallet_out,
                 "biaya_bengkel": total_biaya_bengkel,
                 "bengkel_per_armada": bengkel_per_armada,
-                "operasional_per_armada": {} # Will be populated below
+                "operasional_per_armada": {} # Populated below
             }
         }
 
-        # --- Aggregate Operational Breakdown per Armada ---
-        # 1. Dynamic Operational Costs (from JasaAngkutBiayaLainnya table)
-        dynamic_op_q = self.db.query(
-            ArmadaJasaAngkut.nama,
-            func.sum(JasaAngkutBiayaLainnya.jumlah)
-        ).join(ArmadaJasaAngkut, JasaAngkutBiayaLainnya.armada_id == ArmadaJasaAngkut.id).outerjoin(
-            MuatanJasaAngkut, JasaAngkutBiayaLainnya.muatan_id == MuatanJasaAngkut.id
-        ).filter(
-            or_(MuatanJasaAngkut.id.is_(None), MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL),
-            JasaAngkutBiayaLainnya.kategori == "Operasional"
-        )
-        if tanggal_dari: dynamic_op_q = dynamic_op_q.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
-        if tanggal_sampai: dynamic_op_q = dynamic_op_q.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
-        dynamic_ops = dynamic_op_q.group_by(ArmadaJasaAngkut.nama).all()
-
-        # 2. Fixed Operational Costs (from MuatanJasaAngkut columns: BBM, Tol, Parkir, Lainnya)
-        # Per user request: include (BBM, Tol, Parkir, & Umum/Lainnya)
+        # Filter and Aggregate Operational Breakdown per Armada
         fixed_op_q = self.db.query(
             ArmadaJasaAngkut.nama,
             func.sum(
@@ -1102,16 +1116,12 @@ class MuatanService:
         if tanggal_dari: fixed_op_q = fixed_op_q.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
         if tanggal_sampai: fixed_op_q = fixed_op_q.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
         fixed_ops = fixed_op_q.group_by(ArmadaJasaAngkut.nama).all()
-
-        # Merge results
+        
         op_per_armada = {}
-        for name, amount in dynamic_ops:
-            if name: op_per_armada[name] = float(amount or 0)
         for name, amount in fixed_ops:
-            if name: op_per_armada[name] = op_per_armada.get(name, 0) + float(amount or 0)
+            if name: op_per_armada[name] = float(amount or 0)
 
         result_dict["details"]["operasional_per_armada"] = op_per_armada
-        
         return result_dict
 
 

@@ -431,9 +431,9 @@ export default function LabaRugiScreen() {
                     <Row label="2. Biaya Sparepart & Servis" value={reportData?.jasa_angkut_details?.biaya_bengkel || 0} isNegative />
 
                     <Row label="3. Biaya Operasional Armada" value={armadaOps} bold large isNegative />
-                    <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(BBM, Tol, Parkir, & Umum)</Typography>
+                    <Typography variant="caption" className="text-slate-400 ml-4 mb-2 -mt-1">(BBM, Tol, Parkir, & Ops Armada)</Typography>
 
-                    <Row label="4. Biaya Umum Unit" value={generalOps} isNegative />
+                    <Row label="4. Biaya Umum Kantor/Unit" value={generalOps} isNegative />
 
                     <View className="h-[1px] bg-slate-100 w-full my-4" />
 
