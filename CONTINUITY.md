@@ -5,6 +5,7 @@
 - Align public digital receipt display with the thermal printer receipt format.
 - Resolve double-counting of car capital costs in P&L and Neraca reports.
 - Synchronize system-wide print settings between Web and Mobile platforms.
+- Improve Date Selector UI and fix non-responsive Print Date button in `slip-gaji.tsx`.
  
 ## Constraints/Assumptions
 - Salary data is fetched from `SlipGaji` model via `SlipGajiService`.
@@ -26,13 +27,15 @@
     - Split HPP in Laba Rugi UI to show "Harga Beli" vs "Biaya Lainnya".
     - Fixed `NameError` bug in Settings API to enable Web/Mobile synchronization.
     - Implemented PDF download with specific filename format for receipts.
-- **Now**: Verifying that financial figures match manual calculations for cars.
+    - Revamped Slip Gaji date range UI and fixed mobile responsiveness for print date selection.
+- **Now**: Verifying date range filtering and summary calculations in `SlipGajiScreen`.
 - **Next**: Final verification of print settings synchronization across devices.
  
 ## Open Questions
 - None at the moment.
  
 ## Working Set
+- `frontend/app/sdm/slip-gaji.tsx`
 - `frontend/app/laporan/laba-rugi.tsx`
 - `backend/app/api/v1/dashboard.py`
 - `frontend/app/receipt/[type]/[id].tsx`

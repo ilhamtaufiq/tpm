@@ -217,6 +217,28 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(a5)}</td>
                         </tr>
                         <tr>
+                            <td colspan="2">TOTAL LABA BENGKEL</td>
+                            <td class="amount">${formatCurrency(report.section_a.details?.laba_bengkel || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">TOTAL LABA MOBIL (TPM)</td>
+                            <td class="amount">${formatCurrency(report.section_a.details?.laba_mobil_tpm || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">TOTAL LABA JASA ANGKUT (NET)</td>
+                            <td class="amount">${formatCurrency((report.section_a.details?.laba_jasa_angkut || 0) - (report.section_a.details?.biaya_jasa_angkut || 0))}</td>
+                        </tr>
+                        <tr class="sub-row">
+                            <td style="padding-left: 20px;">- Pemasukan Jasa Angkut</td>
+                            <td class="amount">${formatCurrency(report.section_a.details?.laba_jasa_angkut || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="sub-row border-bottom" style="color: #be123c;">
+                            <td style="padding-left: 20px;">- Biaya Muatan & Armada</td>
+                            <td class="amount">(${formatCurrency(report.section_a.details?.biaya_jasa_angkut || 0)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
                             <td colspan="2">TOTAL LABA KOTOR (UNIT)</td>
                             <td class="amount">${formatCurrency(a6)}</td>
                         </tr>
@@ -654,7 +676,13 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
                             </View>
                             
-                            <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
+                                <Row label="3. Pendapatan Jasa Angkut" value={details.laba_jasa_angkut} small />
+                                <Row label="   Biaya Muatan & Armada" value={details.biaya_jasa_angkut} small isNegative color="text-rose-500" />
+                                <View className="mt-1 bg-white p-2 rounded-lg border border-slate-100">
+                                    <Row label="Laba Bersih Jasa Angkut" value={details.laba_jasa_angkut - details.biaya_jasa_angkut} small bold color="text-slate-800" />
+                                </View>
+                            </View>
                         </View>
                         
                         <View className="h-px bg-blue-200/60 my-3" />

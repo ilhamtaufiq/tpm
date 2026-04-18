@@ -556,62 +556,57 @@ def get_capital_report(
     hpp_bengkel = bengkel_summ["total_hpp"] # Total HPP Parts
     hpp_mobil = mobil_summ["total_modal"]   # Total Modal Mobil (Harga Beli + Biaya)
     
-    # Laba (Gross Profit contributions)
-    # IMPORTANT: For reconciliation, we must use FULL laba_kotor_mobil (including investor share)
-    # because the FULL selling price enters as cash. The investor payout is a SEPARATE expense
-    # tracked in Section C (jb_mobil KELUAR). Using only laba_tpm here would create a gap.
-    laba_bengkel = bengkel_summ["total_laba_kotor"]
-    laba_kotor_mobil = mobil_summ["total_laba_kotor"]  # Full gross profit (investor + TPM)
-    laba_mobil_tpm = mobil_summ["laba_tpm"]             # TPM share only (for display)
-    laba_investor_mobil = mobil_summ["laba_investor"]    # Investor share (for display)
+    # For Section A, we want to show the Unit Performance.
+    # Laba Kotor Unit = Income - Direct Costs (HPP/Operational)
+    laba_bengkel = bengkel_summ["total_laba_kotor"] # Selling - HPP
+    laba_kotor_mobil = mobil_summ["total_laba_kotor"] # Selling - (Beli + Prep)
+    laba_mobil_tpm = mobil_summ["laba_tpm"]
+    laba_investor_mobil = mobil_summ["laba_investor"]
     
-    # Use Jasa Angkut Gross (before trip costs) because trip costs are subtracted in Section C
-    laba_jasa_angkut_gross = muatan_summ["total_pendapatan"] - muatan_summ.get("total_laba_supir", 0)
-    laba_jasa_angkut_tpm = muatan_summ["laba_tpm"] # For display/ref
+    # Jasa Angkut: Show Income vs Costs in Section A for transparency
+    laba_jasa_angkut_gross = muatan_summ["total_pendapatan"] # Income - Supir
+    biaya_jasa_angkut = muatan_summ["total_biaya"]          # Trip Costs + Maintenance
+    laba_jasa_angkut_net = muatan_summ["laba_tpm"]          # Net (Gross - Costs)
     
-    # Total laba uses FULL car profit and GROSS Jasa Angkut profit
-    total_laba_kotor = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_gross
+    # Total laba for reconciliation vs Cash
+    # We use Net profits here so total_a reflects the current value of the capital.
+    total_laba_unit = laba_bengkel + laba_kotor_mobil + laba_jasa_angkut_net
     
     # 2c. INITIAL STOCK & ASSETS CALCULATION
-    # If there is inventory or fixed assets that were never bought through the system,
-    # it must be treated as initial capital to avoid reconciliation "penyesuaian".
+    # ... (skipping unchanged part in code but keeping the context) ...
     from app.services.spare_part_service import SparePartService
     sparepart_service = SparePartService(db)
     current_stock_value = sparepart_service.get_stock_value()["total_value"]
     
-    # Total historical purchases for parts
     from app.models.bengkel import PembelianSparePart
     total_purchases = db.query(func.sum(PembelianSparePart.grand_total)).scalar() or 0
     modal_awal_persediaan = max(0, current_stock_value - float(total_purchases))
 
-    # Fixed Assets (Total value of all active assets)
     from app.models.keuangan import Aset
     total_fixed_assets = db.query(func.sum(Aset.harga_beli)).filter(Aset.status == AssetStatus.AKTIF).scalar() or 0
-    
-    # Combined adjustment for unrecorded initial assets
     modal_awal_total = modal_awal_persediaan + float(total_fixed_assets)
 
-    # 2b. Internal bengkel for TERSEDIA cars — no bilateral KasBank.
-    # Cost is tracked via Piutang (BENGKEL → JB MOBIL) in Section B.
+    # SEC A TOTAL: Initial Capital + Realized Assets + All Profits
+    # This represents everything that SHOULD exist in Cash/Receivables/Inventory.
+    total_a = float(setoran_modal) + float(hpp_bengkel) + float(hpp_mobil) + float(total_laba_unit) + float(modal_awal_total)
 
     # A. Summary
     section_a = {
         "setoran_modal": setoran_modal,
         "hpp_bengkel": hpp_bengkel,
-        "hpp_mobil": mobil_summ["total_modal"],  # Full HPP including parts (realized)
-        "total_laba": total_laba_kotor,
-        "internal_bengkel_mobil": 0,
+        "hpp_mobil": hpp_mobil,
+        "total_laba": total_laba_unit,
         "details": {
             "laba_bengkel": laba_bengkel,
             "laba_kotor_mobil": laba_kotor_mobil,
             "laba_investor_mobil": laba_investor_mobil,
             "laba_mobil_tpm": laba_mobil_tpm,
-            "laba_jasa_angkut": float(muatan_summ.get("total_pendapatan", 0)),  # USE GROSS for reconciliation
+            "laba_jasa_angkut": laba_jasa_angkut_net,
         },
         "aset_persediaan": modal_awal_persediaan,
         "aset_tetap": float(total_fixed_assets),
         "modal_persediaan": modal_awal_total,
-        "total_a": setoran_modal + hpp_bengkel + mobil_summ["total_modal"] + (total_laba_kotor - laba_jasa_angkut_tpm + float(muatan_summ.get("total_pendapatan", 0))) + modal_awal_total
+        "total_a": total_a
     }
 
     # --- B. Piutang ---
@@ -795,7 +790,12 @@ def get_capital_report(
     # 4. Beban Operasional, Gaji, Prive (From KasBank)
     # Include unit-specific operational sources to ensure cash reconciliation
     biaya_opr_p = get_kas_sum(KasBankSource.PENGELUARAN, KasBankType.KELUAR)
-    biaya_opr_ja = get_kas_sum(KasBankSource.JASA_ANGKUT, KasBankType.KELUAR)
+    
+    # IMPORTANT: Jasa Angkut Trip/Maintenance costs are now accounted for in Section A (Net Laba).
+    # To avoid double-counting in reconciliation, we exclude them from Section C.
+    # Only "General/Overhead" costs that were NOT part of the muatan profit calc should remain here.
+    # For simplicity, since almost all JA costs are trip/armada costs, we move them fully to Section A.
+    biaya_opr_ja = 0 
     biaya_opr_b = get_kas_sum(KasBankSource.BENGKEL, KasBankType.KELUAR)
     
     biaya_opr = biaya_opr_p + biaya_opr_ja + biaya_opr_b
@@ -945,12 +945,7 @@ def get_capital_report(
         "penyesuaian": penyesuaian,
     }
 
-    print(f"DEBUG RECON: A={section_a['total_a']}, B={section_b['total_b']}, C={section_c['total_c']}, E={total_e}")
-    print(f"DEBUG RECON: formula={modal_komponen}, bank={total_kas}, penyesuaian={penyesuaian}")
-    print(f"DEBUG RECON DETAIL A: setoran={setoran_modal}, hpp_bengkel={hpp_bengkel}, hpp_mobil={mobil_summ['total_modal']}, laba_total={total_laba_kotor} (bengkel={laba_bengkel}, mobil_kotor={laba_kotor_mobil}, investor={laba_investor_mobil}, tpm={laba_mobil_tpm}, JA={laba_jasa_angkut_tpm})")
-    print(f"DEBUG RECON DETAIL B: lainnya={p_lainnya_net}, mobil={p_mobil_net}, part={p_part_jual_mobil}, JA={p_supir_ja_net}, kary={p_karyawan_net}, usaha={p_usaha_net}")
-    print(f"DEBUG RECON DETAIL C: beli_part={total_beli_part}, beli_mobil={total_beli_mobil}, jb_cash={jb_mobil_cash}, jb_transfer={jb_mobil_transfer}, opr={biaya_opr}, gaji={biaya_gaji}, prive={prive}, lainnya={lainnya_net_out}")
-    print(f"DEBUG RECON DETAIL: internal_bilateral_keluar={internal_bilateral_keluar}")
+    # Result summary
     result = {
         "section_a": section_a,
         "section_b": section_b,

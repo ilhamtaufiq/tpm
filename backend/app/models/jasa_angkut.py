@@ -172,9 +172,9 @@ class MuatanJasaAngkut(Base, TimestampMixin):
     def calculate_profit(self) -> None:
         """Calculate profit split between TPM and driver.
         
-        New Logic: Operational costs are NOT deducted from the trip's laba_tpm.
-        Instead, they are recorded as armada-level expenses in reports.
-        laba_tpm represents the Gross TPM Share.
+        Operational costs (BBM, Tol, Maintenance/Bengkel, etc.) are deducted from 
+        the TPM's share (50%) of the gross margin. 
+        The driver receives 50% of the gross margin (Gross Profit Split).
         """
         # Calculate revenue from trading
         self.pendapatan_kotor = self.harga_jual - self.harga_beli
@@ -189,16 +189,16 @@ class MuatanJasaAngkut(Base, TimestampMixin):
             sum(ps.total for ps in self.part_services)
         )
         
-        # Trip Laba Kotor is now Gross Margin for report consistency
-        self.laba_kotor = self.pendapatan_kotor
+        # Net Profit Margin
+        self.laba_kotor = self.pendapatan_kotor - self.total_biaya
         
-        # Driver share from GROSS revenue (50%)
+        # Driver share (usually 50% of gross margin)
         persentase_supir = Decimal("100") - self.persentase_tpm
         self.laba_supir = (self.pendapatan_kotor * persentase_supir / 100).quantize(Decimal("0.01"))
         
-        # TPM Share is also GROSS (50%)
-        # Operational expenses are reported separately per armada in the Laba Rugi report.
-        self.laba_tpm = self.pendapatan_kotor - self.laba_supir
+        # TPM Share is the remaining 50% MINUS all operational costs (including Bengkel)
+        # This can be negative if costs exceed the 50% margin
+        self.laba_tpm = (self.pendapatan_kotor - self.laba_supir) - self.total_biaya
 
 
     def __repr__(self) -> str:

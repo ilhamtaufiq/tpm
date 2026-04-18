@@ -907,25 +907,22 @@ class MuatanService:
             .count()
         )
 
-        # Aggregate values (Excluding cancelled for financial totals)
+        # Aggregate values from Muatan table
         aggregates = query.filter(MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL).with_entities(
             func.sum(MuatanJasaAngkut.pendapatan_kotor - MuatanJasaAngkut.laba_supir).label("total_pendapatan"),
             func.sum(MuatanJasaAngkut.laba_supir).label("total_laba_supir"),
-            func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya"),
-            func.sum(MuatanJasaAngkut.laba_kotor).label("total_laba_kotor"),
-            func.sum(MuatanJasaAngkut.laba_tpm).label("total_laba_tpm"),
+            func.sum(MuatanJasaAngkut.total_biaya).label("total_biaya_linked"),
         ).first()
-
 
         total_pendapatan = float(aggregates.total_pendapatan or 0)
         total_laba_supir = float(aggregates.total_laba_supir or 0)
-        total_biaya_all = float(aggregates.total_biaya or 0)
+        total_biaya_linked = float(aggregates.total_biaya_linked or 0)
 
-        # Breakdown for Report Details
-        # 1. Biaya Bengkel Total
+        # 1. Biaya Bengkel Total (Linked + Unlinked)
         from app.models.bengkel import TransaksiPenjualanBengkel
         from app.models.jasa_angkut import JasaAngkutPartService
 
+        # All JA workshop repairs in period
         bengkel_parts = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
@@ -933,24 +930,43 @@ class MuatanService:
         if tanggal_dari: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
         
-        bengkel_tambahan = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).join(MuatanJasaAngkut).filter(
-            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL,
+        # All JA supplemental maintenance in period
+        bengkel_tambahan_q = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).filter(
             JasaAngkutBiayaLainnya.kategori == "Perawatan Bengkel"
         )
-        if tanggal_dari: bengkel_tambahan = bengkel_tambahan.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-        if tanggal_sampai: bengkel_tambahan = bengkel_tambahan.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        if tanggal_dari: bengkel_tambahan_q = bengkel_tambahan_q.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_tambahan_q = bengkel_tambahan_q.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
         
-        total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
+        total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan_q.scalar() or 0))
 
-        # 2. Biaya Lainnya (Muatan Operational Costs completely excluding Workshop)
-        bengkel_inside_muatan = self.db.query(func.sum(JasaAngkutPartService.total)).join(MuatanJasaAngkut).filter(
-            MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+        # 2. Operational Costs (Everything from JasaAngkutBiayaLainnya in category 'Operasional')
+        operasional_q = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).filter(
+            JasaAngkutBiayaLainnya.kategori == "Operasional"
         )
-        if tanggal_dari: bengkel_inside_muatan = bengkel_inside_muatan.filter(MuatanJasaAngkut.tanggal >= tanggal_dari)
-        if tanggal_sampai: bengkel_inside_muatan = bengkel_inside_muatan.filter(MuatanJasaAngkut.tanggal <= tanggal_sampai)
+        if tanggal_dari: operasional_q = operasional_q.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: operasional_q = operasional_q.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
+        
+        # 3. Fixed Trip Costs from Muatan table (BBM, Tol, etc.)
+        fixed_costs_q = query.filter(MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL).with_entities(
+            func.sum(
+                MuatanJasaAngkut.biaya_bbm + 
+                MuatanJasaAngkut.biaya_tol + 
+                MuatanJasaAngkut.biaya_parkir + 
+                MuatanJasaAngkut.biaya_makan +
+                MuatanJasaAngkut.biaya_lainnya
+            )
+        )
+        
+        total_operasional = float((operasional_q.scalar() or 0) + (fixed_costs_q.scalar() or 0))
+        
+        # TOTAL ALL COSTS for the unit
+        total_expenses = total_biaya_bengkel + total_operasional
+        
+        # FINAL NET PROFIT for the unit
+        laba_tpm_net = total_pendapatan - total_expenses
 
-        total_bengkel_inside_muatan = float((bengkel_inside_muatan.scalar() or 0) + (bengkel_tambahan.scalar() or 0))
-        total_biaya_lainnya = total_biaya_all - total_bengkel_inside_muatan
+        # ... (rest of breakdown for wallet display stays similar) ...
+        # --- NEW CASH BREAKDOWN FOR WALLET ---
 
         # --- NEW CASH BREAKDOWN FOR WALLET ---
         # 1. Total Tunai (Payments entering KAS_UNIT_JASA_ANGKUT)
@@ -1039,8 +1055,8 @@ class MuatanService:
             "hutang_supir_count": active_count, # Mapped as active_trips in dashboard
             "total_pendapatan": total_pendapatan,
             "total_laba_supir": total_laba_supir,
-            "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
-            "laba_tpm": float(aggregates.total_laba_tpm or 0),
+            "total_biaya": total_expenses,
+            "laba_tpm": laba_tpm_net,
 
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_JASA_ANGKUT)),
             "total_tunai": float(total_tunai_q.scalar() or 0),
@@ -1048,7 +1064,7 @@ class MuatanService:
             "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
             "details": {
                 "gross_share_tpm": total_pendapatan,
-                "biaya_lainnya": total_biaya_lainnya,
+                "biaya_lainnya": total_operasional,
                 "biaya_bengkel": total_biaya_bengkel,
                 "bengkel_per_armada": bengkel_per_armada,
                 "operasional_per_armada": {} # Will be populated below

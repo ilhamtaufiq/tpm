@@ -39,16 +39,13 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
         method = PaymentMethod.TUNAI
 
     # POLICY: Unit-specific isolation. 
-    # - CASH (Tunai) stays in the unit-specific drawer (KAS_UNIT_...).
-    # - TRANSFER flows directly to the Main Bank account (Akun Utama).
-    # - INTERNAL (Mutasi Antar Unit) flows to Central Cash (KAS_UTAMA) to avoid physical drawer discrepancies.
+    # - TRANSFER flows directly to the Main Bank account (Akun Utama) as it is physically moved to Bank.
+    # - For other methods (TUNAI/INTERNAL), they are recorded in the unit-specific drawer 
+    #   to ensure the Unit Wallet reflects the true Net Balance of that unit.
     if method == PaymentMethod.TRANSFER:
         return KasBankJenis.BANK_UTAMA
     
-    if method == PaymentMethod.INTERNAL:
-        return KasBankJenis.KAS_UTAMA
-
-    # Cash mapping based on business unit
+    # Map based on business unit for Tunai and Internal (Bookkeeping) movements
     if sumber == KasBankSource.BENGKEL:
         return KasBankJenis.KAS_UNIT_BENGKEL
     elif sumber == KasBankSource.JASA_ANGKUT:
@@ -56,7 +53,7 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
     elif sumber == KasBankSource.JUAL_BELI_MOBIL:
         return KasBankJenis.KAS_UNIT_MOBIL
 
-    # Default to Main Cash for non-unit specific or legacy entries
+    # Default to Main Cash for non-unit specific or central internal entries
     return KasBankJenis.KAS_UTAMA
 
 

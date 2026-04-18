@@ -203,14 +203,8 @@ class TransaksiBengkelService:
         
         # For jasa_angkut / jual_beli_mobil: payment method is INTERNAL
         # Cost is deducted from Laba TPM (jasa_angkut) or added to HPP (mobil)
-        is_internal_jasa_angkut = (
-            getattr(data, 'kategori', 'umum') == 'jasa_angkut' 
-            and getattr(data, 'muatan_id', None)
-        )
-        is_internal_mobil = (
-            getattr(data, 'kategori', 'umum') == 'jual_beli_mobil'
-            and getattr(data, 'mobil_id', None)
-        )
+        is_internal_jasa_angkut = (getattr(data, "kategori", "umum") == "jasa_angkut")
+        is_internal_mobil = (getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
         if is_internal_jasa_angkut:
             # Internal transactions for jasa_angkut are still considered paid internally
@@ -421,7 +415,7 @@ class TransaksiBengkelService:
                     catatan=f"Trans Bengkel: {transaksi.nomor_transaksi}"
                 ))
             
-            if muatan:
+            if muatan and transaksi.muatan_id:
                 self.db.flush() # Ensure PartService records are in session
                 # Refresh to pick up newly added part_services
                 self.db.refresh(muatan)
@@ -596,8 +590,8 @@ class TransaksiBengkelService:
         total_pembayaran = Decimal("0")
         metode_utama = data.metode_bayar
         
-        is_internal_jasa_angkut = (data.kategori == 'jasa_angkut' and data.muatan_id)
-        is_internal_mobil = (data.kategori == 'jual_beli_mobil' and data.mobil_id)
+        is_internal_jasa_angkut = (data.kategori == "jasa_angkut")
+        is_internal_mobil = (data.kategori == "jual_beli_mobil" and data.mobil_id)
         
         if is_internal_jasa_angkut:
             total_pembayaran = grand_total

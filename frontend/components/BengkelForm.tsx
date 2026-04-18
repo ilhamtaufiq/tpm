@@ -367,21 +367,24 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     };
 
     const handleSubmit = async () => {
-        const isInternalTransaction = (kategori === 'jasa_angkut' && !!selectedArmada) || (kategori === 'jual_beli_mobil' && !!selectedMobil);
+        const isJasaAngkutInternal = kategori === 'jasa_angkut' && !!selectedArmada;
+        const isMobilInternal = kategori === 'jual_beli_mobil' && !!selectedMobil;
+        const isInternalTransaction = isJasaAngkutInternal || isMobilInternal;
+
         const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0);
         let finalPlat = nomorPlat;
         let finalCustomer = selectedCustomer ? selectedCustomer.nama : guestName;
         let finalJenis = jenisKendaraan;
 
         // Auto-fill from selectedArmada if category is jasa_angkut
-        if (kategori === 'jasa_angkut' && selectedArmada) {
+        if (isJasaAngkutInternal) {
             finalPlat = selectedArmada.nopol || finalPlat;
             finalCustomer = `Armada ${selectedArmada.nama || selectedArmada.nopol}`;
             finalJenis = 'Armada Jasa Angkut';
         }
 
         // Auto-fill from selectedMobil if category is jual_beli_mobil
-        if (kategori === 'jual_beli_mobil' && selectedMobil) {
+        if (isMobilInternal) {
             finalPlat = selectedMobil.nomor_plat || finalPlat;
             finalCustomer = 'TPM (Internal)';
             finalJenis = `${selectedMobil.merek || ''} ${selectedMobil.model || ''}`.trim() || 'Mobil';
@@ -439,7 +442,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: isInternalTransaction ? 'INTERNAL' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || '')),
+            metode_bayar: isJasaAngkutInternal ? 'INTERNAL' : (isMobilInternal ? 'KREDIT' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || ''))),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
                 .map(s => ({
@@ -455,19 +458,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     harga_jual: Number(parseNumber(p.harga.toString())) || 0
                 })),
             diskon: Number(parseNumber(diskon)) || 0,
-            payments: isInternalTransaction
+            payments: isJasaAngkutInternal
                 ? [{ metode: 'INTERNAL', jumlah: grandTotal }]
-                : payments
+                : (isMobilInternal ? [] : payments
                     .filter(p => p.metode)
                     .map(p => ({
                         metode: p.metode.toUpperCase(),
                         jumlah: Number(parseNumber(p.nominal)) || 0,
                         kas_jenis: p.metode.toUpperCase() === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined,
                         catatan: p.catatan || ''
-                    })),
-            jumlah_bayar: isInternalTransaction
+                    }))),
+            jumlah_bayar: isJasaAngkutInternal
                 ? grandTotal
-                : payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0),
+                : (isMobilInternal ? 0 : payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0)),
             catatan: catatan
         };
 
@@ -1071,7 +1074,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     <Typography variant="caption" className="text-emerald-600 leading-5">
                                         {kategori === 'jasa_angkut'
                                             ? `Biaya bengkel ini akan otomatis mengurangi Laba TPM (50%) dari trip muatan ${selectedMuatan?.nomor_transaksi}. Tidak ada pembayaran tunai/transfer.`
-                                            : `Biaya bengkel ini akan otomatis ditambahkan ke HPP mobil ${selectedMobil?.nomor_plat}. Tidak ada pembayaran tunai/transfer.`
+                                            : `Biaya bengkel ini akan dicatat sebagai Hutang Unit Mobil dan otomatis ditambahkan ke HPP. Pelunasan dilakukan saat mobil terjual.`
                                         }
                                     </Typography>
                                 </View>
@@ -1233,8 +1236,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     <View className="flex-row justify-between items-center">
                         <View>
                             <Typography variant="body2" weight="bold">Total Akhir</Typography>
-                            {(kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
-                                <Typography variant="caption" className="text-emerald-500 font-medium">{kategori === 'jasa_angkut' ? 'Potong dari Laba TPM' : 'Masuk HPP Mobil'}</Typography>
+                            {kategori === 'jasa_angkut' && selectedArmada ? (
+                                <Typography variant="caption" className="text-emerald-500 font-medium">Potong dari Laba TPM</Typography>
+                            ) : kategori === 'jual_beli_mobil' && selectedMobil ? (
+                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Unit (Dibayar saat Terjual)</Typography>
                             ) : (
                                 <View>
                                     {(() => {

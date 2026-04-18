@@ -602,45 +602,58 @@ export default function SlipGajiScreen() {
                 contentContainerStyle={{ paddingTop: 24, paddingBottom: 100 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
-                {/* Range Selection Card */}
+                {/* Range Selection Card - Unified Periode */}
                 <View className="mx-6 mb-6">
-                    <View className="flex-row space-x-3 mb-4">
-                        <Pressable
-                            onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
-                            className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm"
-                        >
-                            <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
-                            <Typography className="text-textMain font-bold text-sm">{startDate}</Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
-                            className="flex-1 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm"
-                        >
-                            <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
-                            <Typography className="text-textMain font-bold text-sm">{endDate}</Typography>
-                        </Pressable>
-                    </View>
+                    <Card className="p-6 rounded-[32px] shadow-xl border border-gray-100 mb-4 bg-white">
+                        <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4 text-center">Periode Laporan & Slip</Typography>
+                        
+                        <View className="flex-row items-center justify-between pb-4 border-b border-gray-50">
+                            <Pressable
+                                onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
+                                className="flex-1 items-center"
+                                hitSlop={10}
+                            >
+                                <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
+                                <Typography className="text-textMain font-bold text-base">{startDate}</Typography>
+                            </Pressable>
+                            
+                            <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
+                                <ArrowRight size={16} color="#023C69" />
+                            </View>
 
-                    {/* Date Selection Card - PREMIUM */}
-                    <Pressable
-                        onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
-                        className="bg-white p-6 rounded-[32px] shadow-xl border border-gray-100 flex-row items-center"
-                    >
-                        <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
-                            <Calendar size={28} color="#023C69" />
+                            <Pressable
+                                onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
+                                className="flex-1 items-center"
+                                hitSlop={10}
+                            >
+                                <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
+                                <Typography className="text-textMain font-bold text-base">{endDate}</Typography>
+                            </Pressable>
                         </View>
-                        <View className="flex-1">
-                            <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Tanggal Cetak Slip</Typography>
-                            <Typography className="text-textMain font-bold text-xl">{slipDate}</Typography>
-                        </View>
-                        <View className="bg-primary/10 px-4 py-2 rounded-full">
-                            <Typography className="text-primary text-[10px] font-black uppercase">Ubah</Typography>
-                        </View>
-                    </Pressable>
+
+                        <Pressable
+                            onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
+                            className="mt-4 bg-primary/5 rounded-2xl p-4 flex-row items-center justify-between border border-primary/10"
+                            hitSlop={10}
+                        >
+                            <View className="flex-row items-center">
+                                <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
+                                    <Calendar size={20} color="#023C69" />
+                                </View>
+                                <View>
+                                    <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest">Tanggal Cetak Slip</Typography>
+                                    <Typography className="text-textMain font-bold text-sm">{slipDate}</Typography>
+                                </View>
+                            </View>
+                            <View className="bg-primary/20 px-3 py-1.5 rounded-full">
+                                <Typography className="text-primary text-[8px] font-black uppercase">Ubah</Typography>
+                            </View>
+                        </Pressable>
+                    </Card>
                 </View>
 
                 {/* Search & Tabs Area */}
-                <View className="flex-1 z-20">
+                <View className="flex-1">
                     <View className="mx-6 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px]">
 
                     {/* Glassmorphic Search */}
