@@ -544,7 +544,9 @@ class MuatanService:
             # FIX: Only delete 'Operasional' costs (preserve 'Perawatan Bengkel')
             self.db.query(JasaAngkutBiayaLainnya).filter(
                 JasaAngkutBiayaLainnya.muatan_id == muatan.id,
-                JasaAngkutBiayaLainnya.kategori == "Operasional"
+                # Categories can be 'Operasional', 'Biaya Operasional', 'General', etc.
+                # We'll normalize to lowercase and check for presence of 'operasional' or 'ops'
+                func.lower(JasaAngkutBiayaLainnya.kategori).in_(["operasional", "biaya operasional", "ops"])
             ).delete()
             
             # Add new costs
@@ -1065,12 +1067,32 @@ class MuatanService:
         if tanggal_dari: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_tambahan_armada_query = bengkel_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
         bengkel_armada_tambahan = bengkel_tambahan_armada_query.group_by(ArmadaJasaAngkut.nama).all()
+
+        # Operational category breakdown from manual JasaAngkutBiayaLainnya
+        ops_tambahan_armada_query = self.db.query(
+            ArmadaJasaAngkut.nama,
+            func.sum(JasaAngkutBiayaLainnya.jumlah)
+        ).join(
+            ArmadaJasaAngkut, JasaAngkutBiayaLainnya.armada_id == ArmadaJasaAngkut.id
+        ).outerjoin(
+            MuatanJasaAngkut, JasaAngkutBiayaLainnya.muatan_id == MuatanJasaAngkut.id
+        ).filter(
+            or_(MuatanJasaAngkut.id.is_(None), MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL),
+            func.lower(JasaAngkutBiayaLainnya.kategori).in_(["operasional", "biaya operasional", "ops"])
+        )
+        if tanggal_dari: ops_tambahan_armada_query = ops_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: ops_tambahan_armada_query = ops_tambahan_armada_query.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
+        ops_armada_tambahan = ops_tambahan_armada_query.group_by(ArmadaJasaAngkut.nama).all()
         
         bengkel_per_armada = {}
         for nama, total in bengkel_armada_parts:
             if nama: bengkel_per_armada[nama] = float(total or 0)
         for nama, total in bengkel_armada_tambahan:
             if nama: bengkel_per_armada[nama] = bengkel_per_armada.get(nama, 0) + float(total or 0)
+
+        ops_manual_per_armada = {}
+        for nama, total in ops_armada_tambahan:
+            if nama: ops_manual_per_armada[nama] = float(total or 0)
 
         # Final Result Dictionary
         result_dict = {
@@ -1097,7 +1119,8 @@ class MuatanService:
                 "biaya_lainnya": float(operasional_q.scalar() or 0) + wallet_out,
                 "biaya_bengkel": total_biaya_bengkel,
                 "bengkel_per_armada": bengkel_per_armada,
-                "operasional_per_armada": {} # Populated below
+                "operasional_per_armada": {}, # Populated below
+                "operasional_manual_per_armada": ops_manual_per_armada
             }
         }
 

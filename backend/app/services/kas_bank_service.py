@@ -62,6 +62,7 @@ class KasBankService:
         self,
         data: KasBankCreate,
         user_id: Optional[int] = None,
+        commit: bool = True,
     ) -> KasBank:
         """Create a new cash/bank transaction."""
         # Get current balance
@@ -96,10 +97,14 @@ class KasBankService:
         kas_bank.calculate_saldo(saldo_sebelum)
 
         self.db.add(kas_bank)
-        self.db.commit()
-        self.db.refresh(kas_bank)
+        if commit:
+            self.db.commit()
+            self.db.refresh(kas_bank)
+        else:
+            self.db.flush()
 
         return kas_bank
+
 
     def get_by_id(self, kas_bank_id: int) -> KasBank:
         """Get transaction by ID."""

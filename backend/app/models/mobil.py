@@ -122,45 +122,50 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     def total_biaya(self) -> Decimal:
         """Calculate total additional expenses (BBN, pajak, etc.).
         This contributes to HPP (Harga Pokok Penjualan).
+        Excludes 'Perawatan Bengkel' as those are categorized under part_service.
         """
-        # Include ALL records from 'biaya_lainnya' (except Perawatan Bengkel)
-        # and ALL records from 'pengeluaran_bengkel' assigned to this car.
-        biaya_lain_total = sum(b.jumlah for b in self.biaya_lainnya if b.kategori != "Perawatan Bengkel") if self.biaya_lainnya else Decimal(0)
-        pengeluaran_hpp_total = sum(p.jumlah for p in self.pengeluaran_bengkel) if self.pengeluaran_bengkel else Decimal(0)
+        # Primary source: biaya_lainnya (which mirrors PengeluaranBengkel if added via MobilService)
+        # We exclude 'Perawatan Bengkel' keywords to keep it to HPP/Prep costs.
+        hpp_keywords = ["Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
         
-        return biaya_lain_total + pengeluaran_hpp_total
+        biaya_total = sum(
+            b.jumlah for b in self.biaya_lainnya 
+            if b.kategori != "Perawatan Bengkel" 
+            and any(k.lower() in (b.deskripsi or "").lower() or k.lower() in (b.kategori or "").lower() for k in hpp_keywords)
+        ) if self.biaya_lainnya else Decimal(0)
+        
+        return biaya_total
 
     @property
     def total_part_service(self) -> Decimal:
-        """Calculate total part/service costs from both MobilPartService and TransaksiPenjualanBengkel.
-        This DOES NOT contribute to HPP, but is deducted from final profit.
-        Avoids double counting by excluding MobilPartService records that originated from a workshop transaction.
+        """Calculate total maintenance costs (Repairs, Spareparts, etc.).
+        Consolidates from:
+        1. TransaksiPenjualanBengkel (Internal workshop bills)
+        2. MobilBiayaLainnya with 'Perawatan Bengkel' category or repair keywords
+        3. MobilPartService (Historical/Legacy manual entries)
         """
-        # Old mirrored records in MobilPartService (exclude those with "Pengeluaran Bengkel:" as well)
+        # 1. Workshop bills (Internal/External reported via workshop module)
+        bengkel_total = sum(
+            t.grand_total for t in self.bengkel_perbaikan 
+            if t.kategori in ['jual_beli_mobil', 'mobil', 'penjualan_mobil']
+        ) if self.bengkel_perbaikan else Decimal(0)
+
+        # 2. Repair/Ops costs recorded via Mobil Unit expenses
+        # Filter for everything NOT captured in total_biaya (HPP)
+        hpp_keywords = ["Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
+        biaya_ops_total = sum(
+            b.jumlah for b in self.biaya_lainnya 
+            if b.kategori == "Perawatan Bengkel" or not any(k.lower() in (b.deskripsi or "").lower() or k.lower() in (b.kategori or "").lower() for k in hpp_keywords)
+        ) if self.biaya_lainnya else Decimal(0)
+
+        # 3. Manual entries in MobilPartService (Old system)
+        # Only include if not already mirrored from other sources
         manual_total = sum(
             p.total for p in self.part_services 
             if not p.catatan or ("Trans Bengkel:" not in p.catatan and "Pengeluaran Bengkel:" not in p.catatan)
         ) if self.part_services else Decimal(0)
         
-        # Workshop transactions specifically categorized for car sales
-        # Also include any MobilBiayaLainnya explicitly marked as "Perawatan Bengkel"
-        biaya_bengkel_total = sum(
-            b.jumlah for b in self.biaya_lainnya if b.kategori == "Perawatan Bengkel"
-        ) if self.biaya_lainnya else Decimal(0)
-
-        bengkel_total = sum(
-            t.grand_total for t in self.bengkel_perbaikan 
-            if t.kategori == 'jual_beli_mobil'
-        ) if self.bengkel_perbaikan else Decimal(0)
-
-        # Direct links to Workshop operational expenses (Exclude those already counted as HPP/Tax/Fee)
-        hpp_keywords = ["[Pajak]", "Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
-        pengeluaran_bengkel_total = sum(
-            p.jumlah for p in self.pengeluaran_bengkel
-            if not any(k.lower() in p.deskripsi.lower() for k in hpp_keywords)
-        ) if self.pengeluaran_bengkel else Decimal(0)
-        
-        return manual_total + bengkel_total + biaya_bengkel_total + pengeluaran_bengkel_total
+        return bengkel_total + biaya_ops_total + manual_total
 
     @property
     def hpp(self) -> Decimal:

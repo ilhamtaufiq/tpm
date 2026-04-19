@@ -176,6 +176,17 @@ class PenjualanMobilService:
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanMobil:
         """Create a new car sales transaction."""
+        # 0. Pre-check: Prevent double sale (Database unique constraint fallback)
+        existing = self.db.query(TransaksiPenjualanMobil).filter(
+            TransaksiPenjualanMobil.mobil_id == data.mobil_id,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Mobil ini sudah memiliki data penjualan ({existing.nomor_transaksi})",
+            )
+
         # Validate car
         mobil = self._validate_mobil(data.mobil_id)
 
@@ -330,9 +341,6 @@ class PenjualanMobilService:
 
         self.db.add(transaksi)
 
-        # 4. Settle Associated Financial Obligations (Workshop Piutangs & Unit Hutangs)
-        self._settle_unit_financial_obligations(mobil, data.tanggal, nomor_transaksi, user_id)
-
         # Update car status based on payment
         if status_bayar == PaymentStatus.LUNAS:
             mobil.status = CarStatus.TERJUAL
@@ -354,7 +362,7 @@ class PenjualanMobilService:
                 telepon_debitur=customer.telepon if customer else data.telepon_pembeli,
                 alamat_debitur=customer.alamat if customer else data.alamat_pembeli,
                 sumber=PiutangSource.JUAL_BELI_MOBIL,
-                referensi_id=None,  # Will update after commit
+                referensi_id=None,  # Will update after flushing transaksi
                 nomor_referensi=nomor_transaksi,
                 nominal_piutang=sisa_bayar,
                 total_dibayar=Decimal("0"),
@@ -364,22 +372,15 @@ class PenjualanMobilService:
                 created_by=user_id,
             )
             self.db.add(piutang)
-
-        self.db.commit()
-        self.db.refresh(transaksi)
-
-        # Update piutang referensi_id
+            
+        # Flush everything before creating KasBank entries so IDs are available
+        self.db.flush()
+        
+        # Update piutang referensi_id if created
         if status_bayar != PaymentStatus.LUNAS:
-            piutang_record = (
-                self.db.query(PiutangUsaha)
-                .filter(PiutangUsaha.nomor_referensi == nomor_transaksi)
-                .first()
-            )
-            if piutang_record:
-                piutang_record.referensi_id = transaksi.id
-                self.db.commit()
+            piutang.referensi_id = transaksi.id
 
-        # Record DP payment to kas/bank if any
+        # 4. Record DP payment to kas/bank if any
         if data.dp > 0:
             keterangan_prefix = "Lunas" if status_bayar == PaymentStatus.LUNAS else "DP"
             if hasattr(data, 'payments') and data.payments:
@@ -397,6 +398,7 @@ class PenjualanMobilService:
                             keterangan=f"{keterangan_prefix} mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat}) - {p.metode}",
                             user_id=user_id,
                             kas_jenis=p.kas_jenis,
+                            commit=False # ATOMIC
                         )
             else:
                 create_kas_entry(
@@ -410,9 +412,20 @@ class PenjualanMobilService:
                     nomor_referensi=transaksi.nomor_transaksi,
                     keterangan=f"{keterangan_prefix} mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                     user_id=user_id,
+                    commit=False # ATOMIC
                 )
+        
+        # 5. Settle Associated Financial Obligations (Workshop Piutangs & Unit Hutangs)
+        # Process this AFTER adding funds to JUAL_BELI_MOBIL to avoid insufficient funds error for Internal transfers.
+        self._settle_unit_financial_obligations(mobil, data.tanggal, nomor_transaksi, user_id)
+
+        # FINAL SINGLE COMMIT
+        self.db.commit()
+        self.db.refresh(transaksi)
 
         return transaksi
+
+
 
     def _settle_unit_financial_obligations(
         self, 
@@ -460,6 +473,7 @@ class PenjualanMobilService:
                 referensi_id=None, nomor_referensi=ref_no,
                 keterangan=f"Pelunasan Piutang Internal via Penjualan {mobil.nomor_plat}",
                 user_id=user_id,
+                commit=False # ATOMIC
             )
             # 2. KELUAR from JB Mobil (Settling the repair cost)
             create_kas_entry(
@@ -469,6 +483,8 @@ class PenjualanMobilService:
                 referensi_id=None, nomor_referensi=ref_no,
                 keterangan=f"Pelunasan Biaya Repair Internal {mobil.nomor_plat}",
                 user_id=user_id,
+                allow_negative=True, # Safety for internal reclassifications
+                commit=False # ATOMIC
             )
 
         # --- B. HUTANG (PAYABLES) SETTLEMENT ---
@@ -704,8 +720,7 @@ class PenjualanMobilService:
                     mobil.status = CarStatus.TERJUAL
                     mobil.tanggal_terjual = date.today()
 
-        self.db.commit()
-        self.db.refresh(transaksi)
+        self.db.flush()
 
         # Record payment to kas/bank
         for metode, nominal, kas_jenis in payments:
@@ -722,9 +737,14 @@ class PenjualanMobilService:
                     keterangan=f"Pembayaran cicilan mobil {transaksi.nomor_transaksi} ({metode})",
                     user_id=user_id,
                     kas_jenis=kas_jenis,
+                    commit=False
                 )
 
+        self.db.commit()
+        self.db.refresh(transaksi)
+
         return transaksi
+
 
     def cancel_booking(
         self,
@@ -796,8 +816,7 @@ class PenjualanMobilService:
             piutang.sisa_piutang = Decimal("0")
             piutang.catatan = f"Booking dibatalkan. {catatan_batal}"
 
-        self.db.commit()
-        self.db.refresh(transaksi)
+        self.db.flush()
 
         # 4. Note: We DO NOT record a new MASUK for the penalty because it is
         # already in the bank from the original DP. We only record the REFUND (KELUAR).
@@ -837,12 +856,47 @@ class PenjualanMobilService:
                         nomor_referensi=transaksi.nomor_transaksi,
                         keterangan=f"Refund pembatalan booking {transaksi.nomor_transaksi} ({metode})",
                         user_id=user_id,
+                        commit=False
                     )
 
+        self.db.commit()
+        self.db.refresh(transaksi)
+
         return transaksi
 
+    def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
+        """Get transaction by ID."""
+        transaksi = (
+            self.db.query(TransaksiPenjualanMobil)
+            .options(
+                joinedload(TransaksiPenjualanMobil.mobil),
+                joinedload(TransaksiPenjualanMobil.customer),
+            )
+            .filter(TransaksiPenjualanMobil.id == transaksi_id)
+            .first()
+        )
+        if not transaksi:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaksi tidak ditemukan",
+            )
+        
+        # Add piutang_id to the response
+        piutang = (
+            self.db.query(PiutangUsaha.id, PiutangUsaha.sisa_piutang)
+            .filter(
+                PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+                PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
+            )
+            .first()
+        )
+        if piutang:
+            transaksi.piutang_id = piutang.id
+            # Sync sisa_bayar with latest piutang status
+            transaksi.sisa_bayar = piutang.sisa_piutang
 
         return transaksi
+
 
     def get_summary(
         self,

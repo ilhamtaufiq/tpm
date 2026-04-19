@@ -1,42 +1,35 @@
-# Continuity Ledger - TPM Local Development
- 
+# CONTINUITY.md
+
 ## Goal
-- Fix missing "Beban Gaji" (Salary Expense) in the Laba Rugi (Profit and Loss) report.
-- Align public digital receipt display with the thermal printer receipt format.
-- Resolve double-counting of car capital costs in P&L and Neraca reports.
-- Synchronize system-wide print settings between Web and Mobile platforms.
-- Improve Date Selector UI and fix non-responsive Print Date button in `slip-gaji.tsx`.
- 
+Standardize and resolve discrepancies in "Jasa Angkut" and "Mobil" financial reporting within the "Laporan Perubahan Modal" report.
+
+## Success Criteria
+- [x] Integrate workshop repair costs into Jasa Angkut reporting per armada.
+- [x] Separate manual operational expenses from general overhead.
+- [x] Integrate "HPP Mobil" grouping (Purchase, Prep, Repair).
+- [x] Include **Internal Workshop Repairs** (TransaksiPenjualanBengkel) in HPP Mobil.
+- [x] Fix **Double Counting** in car modal (HPP/Estimasi Modal) by consolidating data sources in `mobil.py`.
+- [x] Synchronize "Total Beban Operasional" with its detailed breakdown.
+- [x] Resolve **100k Selisih/Discrepancy** by adding unpaid internal workshop bills to Section E (Hutang).
+- [x] Fixed `AttributeError` for `status_bayar` and `grand_total` logic in `dashboard.py`.
+
 ## Constraints/Assumptions
-- Salary data is fetched from `SlipGaji` model via `SlipGajiService`.
-- Only `LUNAS` (Paid) salaries are included in the report.
-- The public receipt mirrors the physical layout (monospace, dashed lines, simplicity).
-- PDF Filename format: `nomor_transaksi-nama_pelanggan-nomor_polisi-tanggal.pdf`.
- 
+- Reporting must distinguish between unit-level overhead and asset-specific costs.
+- Column names in `bengkel.py` are `status_bayar` and `grand_total`.
+
 ## Key Decisions
-- Found that `backend/app/api/v1/dashboard.py` was merging salary summary incorrectly; updated to deep-merge all summary fields.
-- Refactored `PublicReceiptPage` (frontend) and `generate_html_receipt`/`generate_receipt_image` (backend) to use a thermal printer aesthetic.
-- Fixed `NameError` in `backend/app/api/v1/settings.py` which prevented Web/Mobile synchronization.
-- Excluded car management costs from `total_beban` in both Neraca and P&L endpoints to prevent double-counting.
- 
+- **HPP Mobil**: Includes Purchase Price, Prep Costs (Taxes), and ALL Repairs (External + Internal).
+
 ## State
 - **Done**: 
-    - Fixed salary merging logic in `backend/app/api/v1/dashboard.py`.
-    - Resolved double-counting in Neraca by excluding capitalized car costs from `total_beban`.
-    - Resolved double-counting in P&L (`profit-summary`) by excluding car management costs from general ops.
-    - Split HPP in Laba Rugi UI to show "Harga Beli" vs "Biaya Lainnya".
-    - Fixed `NameError` bug in Settings API to enable Web/Mobile synchronization.
-    - Implemented PDF download with specific filename format for receipts.
-    - Revamped Slip Gaji date range UI and fixed mobile responsiveness for print date selection.
-- **Now**: Verifying date range filtering and summary calculations in `SlipGajiScreen`.
-- **Next**: Final verification of print settings synchronization across devices.
- 
+  - Fixed property access errors in `dashboard.py`.
+  - Verified math is now balanced.
+- **Now**: Report is finalized and verified.
+- **Next**: Conclusion.
+
 ## Open Questions
-- None at the moment.
- 
+- None.
+
 ## Working Set
-- `frontend/app/sdm/slip-gaji.tsx`
-- `frontend/app/laporan/laba-rugi.tsx`
-- `backend/app/api/v1/dashboard.py`
-- `frontend/app/receipt/[type]/[id].tsx`
-- `backend/app/api/v1/public_receipt.py`
+- Backend: `app/models/mobil.py`, `app/api/v1/dashboard.py`
+- Frontend: `app/laporan/perubahan-modal.tsx`

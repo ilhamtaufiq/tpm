@@ -70,6 +70,7 @@ def create_kas_entry(
     user_id: Optional[int] = None,
     kas_jenis: Optional[KasBankJenis] = None,
     allow_negative: bool = False,
+    commit: bool = True,
 ) -> KasBank:
     """Create a kas/bank entry for financial transactions.
     
@@ -94,4 +95,5 @@ def create_kas_entry(
         allow_negative=allow_negative,
     )
 
-    return service.create(data, user_id)
+    return service.create(data, user_id, commit=commit)
+
