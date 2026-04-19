@@ -412,7 +412,7 @@ export default function LabaRugiScreen() {
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Biaya Langsung Armada</Typography>
                         <Row label="Biaya Pemeliharaan (Bengkel)" value={maintenanceOps} isNegative color="text-rose-600" />
-                        <Row label="Biaya Operasional (BBM, Tol, dll)" value={armadaOps - generalOps} isNegative color="text-rose-600" />
+                        <Row label="Biaya Operasional (BBM, Tol, dll)" value={armadaOps} isNegative color="text-rose-600" />
                     </View>
 
                     {/* 3. INDIRECT COSTS */}
