@@ -439,17 +439,23 @@ export default function LabaRugiScreen() {
     const renderMobilSection = () => {
         const totalPenjualan = reportData?.mobil_details?.total_penjualan || 0;
 
-        // Accounting breakdown for HPP calculation
+        // Optimized 3-bucket logic for Mobil Unit
         const hargaBeliUnit = reportData?.mobil_details?.total_harga_beli || 0;
-        const biayaLainnya = (reportData?.mobil_details?.total_modal || 0) - (reportData?.mobil_details?.total_harga_beli || 0) + (reportData?.mobil_details?.capital_period_ops || 0);
-        const biayaPerbaikan = reportData?.mobil_details?.biaya_bengkel || 0;
+        
+        // Pocket 2: Preparation (Taxes/Admin/Accs) - Captured from Sold car snapshots + Period Unsold costs
+        const biayaPersiapan = ((reportData?.mobil_details?.total_modal || 0) - (reportData?.mobil_details?.total_harga_beli || 0)) + (reportData?.mobil_details?.capital_period_ops || 0);
+        
+        // Pocket 1: Maintenance & Restoration (Internal + External Workshop)
+        const biayaBengkel = reportData?.mobil_details?.biaya_bengkel || 0;
 
-        // Modal Dasar (HPP) = Harga Beli + Pengurusan (Pajak/BBN) + Perbaikan
-        const totalHPP = hargaBeliUnit + biayaLainnya + biayaPerbaikan;
+        // Total HPP Unit = Price + Prep + Repair
+        const totalHPP = hargaBeliUnit + biayaPersiapan + biayaBengkel;
         const labaKotorUnit = totalPenjualan - totalHPP;
 
         const labaInvestor = reportData?.mobil_details?.laba_investor || 0;
-        const operasionalBisnis = reportData?.pengeluaran_unit_details?.mobil || 0;
+        
+        // Pocket 3: General Business Overhead (Residual Wallet Outflows)
+        const operasionalBisnis = reportData?.mobil_details?.general_unit_ops || 0;
 
         // Net Profit Calculation
         const netTPM = labaKotorUnit - labaInvestor - operasionalBisnis;
@@ -477,11 +483,11 @@ export default function LabaRugiScreen() {
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                         <Row label="Beban Harga Beli Unit" value={hargaBeliUnit} isNegative color="text-rose-600" />
-                        <Row label="Beban Pengurusan (Pajak, BBN)" value={biayaLainnya} isNegative color="text-rose-600" />
-                        <Row label="Beban Restorasi & Perbaikan" value={biayaPerbaikan} isNegative color="text-rose-600" />
+                        <Row label="Beban Persiapan Unit (Pajak/ADM)" value={biayaPersiapan} isNegative color="text-rose-600" />
+                        <Row label="Beban Bengkel & Restorasi" value={biayaBengkel} isNegative color="text-rose-600" />
 
                         <View className="h-[0.5px] bg-slate-200 w-full my-2 border-dashed border-[0.5px] border-slate-300" />
-                        <Row label="Total HPP Unit" value={totalHPP} bold isNegative color="text-slate-800" />
+                        <Row label="Total Modal Unit (HPP)" value={totalHPP} bold isNegative color="text-slate-800" />
                     </View>
 
                     {/* 3. GROSS PROFIT */}

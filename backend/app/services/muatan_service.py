@@ -1002,6 +1002,16 @@ class MuatanService:
         by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
         armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
 
+        # Calculate only workshop costs that came out of the wallet
+        bengkel_wallet_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.BENGKEL
+        )
+        if tanggal_dari: bengkel_wallet_q = bengkel_wallet_q.filter(KasBank.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_wallet_q = bengkel_wallet_q.filter(KasBank.tanggal <= tanggal_sampai)
+        total_biaya_bengkel_from_wallet = float(bengkel_wallet_q.scalar() or 0)
+
         # Cash Breakdown for Jasa Angkut Wallet
         # 1. Total Tunai (Payments entering KAS_UNIT_JASA_ANGKUT)
         total_tunai_q = self.db.query(func.sum(KasBank.nominal)).filter(
@@ -1118,10 +1128,12 @@ class MuatanService:
                 "gross_share_tpm": total_pendapatan,
                 "biaya_lainnya": float(operasional_q.scalar() or 0) + wallet_out,
                 "biaya_bengkel": total_biaya_bengkel,
+                "total_biaya_bengkel_from_wallet": total_biaya_bengkel_from_wallet,
                 "bengkel_per_armada": bengkel_per_armada,
                 "operasional_per_armada": {}, # Populated below
                 "operasional_manual_per_armada": ops_manual_per_armada
             }
+
         }
 
         # Filter and Aggregate Operational Breakdown per Armada

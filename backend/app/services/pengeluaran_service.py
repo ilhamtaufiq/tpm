@@ -267,7 +267,7 @@ class PengeluaranService:
             tanggal_sampai = today
 
         query = self.db.query(PengeluaranBengkel).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
 
         if tanggal_dari:
@@ -280,7 +280,7 @@ class PengeluaranService:
         
         # Calculate sum separately to be safe from with_entities issues
         sum_query = self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
         if tanggal_dari:
             sum_query = sum_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -295,7 +295,7 @@ class PengeluaranService:
             func.count(PengeluaranBengkel.id),
             func.sum(PengeluaranBengkel.jumlah)
         ).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
         if tanggal_dari:
             cat_query = cat_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -317,10 +317,10 @@ class PengeluaranService:
 
         # By business unit
         unit_query = self.db.query(
-            PengeluaranBengkel.bisnis_kategori,
+            func.lower(PengeluaranBengkel.bisnis_kategori),
             func.sum(PengeluaranBengkel.jumlah)
         ).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
         if tanggal_dari:
             unit_query = unit_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -338,7 +338,7 @@ class PengeluaranService:
         ).join(
             ArmadaJasaAngkut, PengeluaranBengkel.armada_id == ArmadaJasaAngkut.id
         ).filter(
-            PengeluaranBengkel.bisnis_kategori == "jasa_angkut"
+            func.lower(PengeluaranBengkel.bisnis_kategori) == "jasa_angkut"
         )
         if tanggal_dari:
             armada_ja_query = armada_ja_query.filter(PengeluaranBengkel.tanggal >= tanggal_dari)
@@ -355,7 +355,7 @@ class PengeluaranService:
             PengeluaranBengkel.kategori,
             func.sum(PengeluaranBengkel.jumlah)
         ).filter(
-            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
             PengeluaranBengkel.mobil_id.is_not(None)
         )
         if tanggal_dari:
@@ -394,7 +394,7 @@ class PengeluaranService:
         """Get daily expense summary."""
         query = self.db.query(PengeluaranBengkel).filter(
             PengeluaranBengkel.tanggal == tanggal,
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         )
 
         count = query.count()
@@ -403,7 +403,7 @@ class PengeluaranService:
         total = (
             self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
                 PengeluaranBengkel.tanggal == tanggal,
-                PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+                func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
             ).scalar()
             or Decimal("0")
         )
@@ -414,7 +414,7 @@ class PengeluaranService:
             func.sum(PengeluaranBengkel.jumlah).label("total"),
         ).filter(
             PengeluaranBengkel.tanggal == tanggal,
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         ).group_by(PengeluaranBengkel.kategori)
         
         by_category = by_category_query.all()
@@ -442,7 +442,7 @@ class PengeluaranService:
         base_filter = [
             PengeluaranBengkel.tanggal >= start_date,
             PengeluaranBengkel.tanggal <= end_date,
-            PengeluaranBengkel.bisnis_kategori.in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
+            func.lower(PengeluaranBengkel.bisnis_kategori).in_(["umum", "bengkel", "penjualan_mobil", "jasa_angkut", "mobil", "jual_beli_mobil"])
         ]
 
         query = self.db.query(PengeluaranBengkel).filter(*base_filter)

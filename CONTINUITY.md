@@ -23,8 +23,9 @@ Standardize and resolve discrepancies in "Jasa Angkut" and "Mobil" financial rep
 ## State
 - **Done**: 
   - Fixed property access errors in `dashboard.py`.
-  - Verified math is now balanced.
-- **Now**: Report is finalized and verified.
+  - Resolved discrepancy where internal workshop repairs were incorrectly subtracted from wallet totals, causing "Beban Umum Unit" to show as zero.
+  - Verified math is now balanced and all expense tiers (Maintenance, Ops, Overhead) are correctly populated.
+- **Now**: Report is fully synchronized and unit general overhead is accurately reflected.
 - **Next**: Conclusion.
 
 ## Open Questions

@@ -790,7 +790,7 @@ export default function LaporanPerubahanModalScreen() {
                         <View className="mt-3 pt-3 border-t border-orange-200/50 space-y-1.5">
                             <Row label="Operasional Umum (Overhead)" value={data.operasional_unit_details?.umum} small isNegative color="text-slate-600" />
                             <Row label="Operasional Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative color="text-slate-600" />
-                            <Row label="Operasional Mobil" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
+                            <Row label="Operasional Mobil (Khusus Unit)" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
                             <Row label="Operasional Jasa Angkut (Overhead)" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
                         </View>
                         {data.operasional_unit_details?.jasa_angkut_bengkel > 0 && (

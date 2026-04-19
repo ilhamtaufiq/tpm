@@ -283,9 +283,28 @@ def get_profit_summary(
 
     # Normalize unit details for the frontend
     pengeluaran_unit_details = {}
-    raw_units = pengeluaran.get("per_unit", {})
     
-    # 1. Mobil: Split General Ops vs Car Capital
+    # NEW: Fetch total cash outflows directly from wallets (KasBank) to ensure accuracy with "Fitur Dompet"
+    from app.models.keuangan import KasBank
+    from app.utils.constants import KasBankType, KasBankJenis
+
+    def get_unit_wallet_out(jenis_list, start, end):
+        q = db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis.in_(jenis_list),
+            KasBank.tipe == KasBankType.KELUAR
+        )
+        if start:
+            q = q.filter(KasBank.tanggal >= start)
+        if end:
+            q = q.filter(KasBank.tanggal <= end)
+        return float(q.scalar() or 0)
+
+    raw_ja_total = get_unit_wallet_out([KasBankJenis.KAS_UNIT_JASA_ANGKUT], tanggal_dari, tanggal_sampai)
+    raw_mobil_total = get_unit_wallet_out([KasBankJenis.KAS_UNIT_MOBIL], tanggal_dari, tanggal_sampai)
+    raw_bengkel_total = get_unit_wallet_out([KasBankJenis.KAS_UNIT_BENGKEL], tanggal_dari, tanggal_sampai)
+
+    raw_units = pengeluaran.get("per_unit", {})
+
     sold_mobil_ids = {str(m['mobil_id']) for m in mobil.get("sold_list", []) if m.get('mobil_id')}
     mobil_unit_breakdown = pengeluaran.get("mobil_unit", {}).copy()
     
@@ -325,38 +344,28 @@ def get_profit_summary(
         if m_id not in sold_mobil_ids:
             capital_unsold_mobil_ops += float(categories.get(ExpenseCategory.BIAYA_LAINNYA.value, 0))
 
-    # PER USER REQUEST: Baris 7 must come ONLY from the DOMPET UNIT (KAS_UNIT_MOBIL)
-    # Get total outgoings from Mobil Wallet
-    wallet_mobil_outflow = float(db.query(func.sum(KasBank.nominal)).filter(
-        KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
-        KasBank.tipe == KasBankType.KELUAR,
-        KasBank.tanggal >= tanggal_dari,
-        KasBank.tanggal <= tanggal_sampai
-    ).scalar() or 0)
+    # Step 4: Define explicit buckets for Jual Beli Mobil per User Request
+    # Bucket 1: Biaya Bengkel (Maintenance/Repairs)
+    # mobil_biaya_bengkel was calculated above in the loop (includes internal + manual repairs)
     
-    # Get how much of the unit-specific costs (Baris 2b & 3) were paid from THIS wallet
-    wallet_unit_specific_outgoings = float(db.query(func.sum(KasBank.nominal))
-        .join(PengeluaranBengkel, KasBank.referensi_id == PengeluaranBengkel.id)
-        .filter(
-            KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.tanggal >= tanggal_dari,
-            KasBank.tanggal <= tanggal_sampai,
-            PengeluaranBengkel.mobil_id.is_not(None)
-        ).scalar() or 0)
+    # Bucket 2: Biaya Persiapan Unit (Pajak, ADM, Variasi - Unsold)
+    # capital_unsold_mobil_ops was calculated above in the loop (categorized as BIAYA_LAINNYA)
     
-    # Row 7 is the residual of the drawer
-    general_mobil_ops = wallet_mobil_outflow - wallet_unit_specific_outgoings
+    # Bucket 3: Operasional Unit Bisnis (Pure Overhead/Untagged Wallet Outflows)
+    # Total tagged car costs from wallet only (excluding internal workshop costs added above)
+    tagged_wallet_cars_only = pengeluaran.get("mobil_unit", {})
+    total_tagged_cars_wallet = sum(sum(float(v) for v in cats.values()) for cats in tagged_wallet_cars_only.values())
+    general_mobil_ops = max(0, raw_mobil_total - total_tagged_cars_wallet)
     
-    # Define raw_mobil_total for profit calculation at the bottom
-    raw_mobil_total = float(
-        raw_units.get("penjualan_mobil", 0) + 
-        raw_units.get("jual_beli_mobil", 0) + 
-        raw_units.get("mobil", 0)
-    )
-    
-    pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
+    # Final mappings for Mobil Unit
     pengeluaran_unit_details["mobil"] = general_mobil_ops
+    pengeluaran_unit_details["bengkel"] = raw_units.get("bengkel", 0)
+    
+    # Add standardized Mobil details to response
+    mobil["biaya_bengkel"] = mobil_biaya_bengkel
+    mobil["capital_period_ops"] = capital_unsold_mobil_ops
+    mobil["general_unit_ops"] = general_mobil_ops
+
     
     # 2. Jasa Angkut: Split General Ops vs Armada/Trip Ops
     ja_armada_breakdown = pengeluaran.get("jasa_angkut_armada", {}).copy()
@@ -381,9 +390,35 @@ def get_profit_summary(
     for arm, val in ja_armada_breakdown.items():
         all_armada_specific += float(val)
     
-    raw_ja_total = float(raw_units.get("jasa_angkut", 0))
-    general_ja_ops = raw_ja_total - sum(ja_armada_breakdown.values())
+    # Step 3: Define explicit buckets for Jasa Angkut per User Request
+    # Bucket 1: Bengkel (Maintenance - Internal + Fleet-Specific from Wallet)
+    ja_expenses_bengkel = float(muatan.get("details", {}).get("biaya_bengkel") or 0)
     
+    # Bucket 2: Operasional Armada (Trip Costs + Manual Fleet Ops from Wallet (Excluding Workshop))
+    ja_expenses_trip = float(muatan.get("total_biaya_trip", 0))
+    
+    # Calculate fleet-specific manual ops from wallet
+    ja_fleet_manual_total = sum(ja_armada_breakdown.values())
+    bengkel_per_armada = muatan.get("details", {}).get("bengkel_per_armada", {})
+    ja_fleet_manual_bengkel_total = sum(float(v) for v in bengkel_per_armada.values())
+    
+    # Bucket 2: Operasional Armada (All Tagged Fleet Ops from Wallet - Excluding Workshop)
+    # ja_fleet_manual_total already contains all tagged items (Maintenance + Ops)
+    ja_armada_period_ops = max(0, ja_fleet_manual_total - ja_fleet_manual_bengkel_total)
+
+    # Bucket 3: Operasional Unit Bisnis (Pure Overhead/Untagged Wallet Outflows)
+    ja_wallet_total = float(raw_units.get("jasa_angkut", 0))
+    # General unit ops is whatever is left in the wallet after subtracting TAGGED wallet items.
+    # We use pengeluaran.get("jasa_angkut_armada") which contains only items that came out of the JA wallet.
+    ja_tagged_wallet_total = sum(float(v) for v in pengeluaran.get("jasa_angkut_armada", {}).values())
+    general_ja_ops = max(0, ja_wallet_total - ja_tagged_wallet_total)
+
+    muatan["details"]["armada_period_ops"] = ja_armada_period_ops
+    muatan["details"]["biaya_bengkel"] = ja_expenses_bengkel
+
+
+    
+    # Update Unit Details 
     pengeluaran_unit_details["jasa_angkut"] = general_ja_ops
     pengeluaran_unit_details["umum"] = raw_units.get("umum", 0)
     
@@ -391,27 +426,28 @@ def get_profit_summary(
     mobil["capital_period_ops"] = capital_unsold_mobil_ops
     mobil["biaya_bengkel"] = mobil_biaya_bengkel
     
-    # Jasa Angkut details for P&L
-    ja_biaya_bengkel = float(muatan.get("details", {}).get("biaya_bengkel") or 0)
-    muatan["details"]["biaya_bengkel"] = ja_biaya_bengkel
-    
-    # PER USER REQUEST: Row 3 should ONLY be BBM/Ops (from trip breakdowns)
-    # Excluding general expenses and maintenance.
-    armada_period_ops = float(trip_costs) # Sum of BBM, Tol, etc from muatan_jasa_angkut
-    muatan["details"]["armada_period_ops"] = max(0, armada_period_ops)
+    # Jasa Angkut details for P&L lists
+    muatan["details"]["biaya_bengkel"] = ja_expenses_bengkel
+    muatan["details"]["armada_period_ops"] = ja_armada_period_ops
 
-    
-    # Merge armada breakdowns for detailed lists
-    # And subtract repairs from the breakdown to stay consistent with Row 3
+    # Refine armada breakdown for the detailed list to match the buckets
+    # Combine trip components (+bbm/tol) with the wallet's categorized maintenance/ops
     bengkel_per_armada = muatan.get("details", {}).get("bengkel_per_armada", {})
-    for arm, val in trip_armada_breakdown.items():
-        ja_armada_breakdown[arm] = ja_armada_breakdown.get(arm, 0) + float(val)
+    ops_trip_per_armada = muatan.get("details", {}).get("operasional_per_armada", {})
+    
+    ja_detailed_armada_breakdown = {}
+    for arm_name in sorted(set(list(ja_armada_breakdown.keys()) + list(ops_trip_per_armada.keys()))):
+        arm_total_ops = float(ja_armada_breakdown.get(arm_name, 0)) + float(ops_trip_per_armada.get(arm_name, 0))
+        arm_bengkel = float(bengkel_per_armada.get(arm_name, 0))
         
-    # Subtract repairs from the breakdown
-    for arm, val in ja_armada_breakdown.items():
-        ja_armada_breakdown[arm] = max(0, float(val) - float(bengkel_per_armada.get(arm, 0)))
+        # Consistent with P&L Row 3: Armada Ops should exclude bengkel
+        ja_detailed_armada_breakdown[arm_name] = {
+            "total": arm_total_ops,
+            "ops": max(0, arm_total_ops - arm_bengkel), # Clean Ops
+            "bengkel": arm_bengkel
+        }
 
-    pengeluaran_unit_details["jasa_angkut_armada"] = ja_armada_breakdown
+    pengeluaran_unit_details["jasa_angkut_armada"] = ja_detailed_armada_breakdown
     pengeluaran_unit_details["mobil_unit"] = mobil_unit_breakdown
 
     # Add Purchases (as requested by user)
@@ -423,6 +459,8 @@ def get_profit_summary(
             "total": pembelian_summ["total_nilai"],
             "count": pembelian_summ["total_transaksi"]
         }
+
+
 
     # Total Pengeluaran (Hanya gaji dan pengeluaran operasional, termasuk Prive tapi TANPA pembelian part)
     # PER USER REQUEST: Profit Bersih should deduct ALL unit costs.
@@ -877,31 +915,53 @@ def get_capital_report(
     internal_bilateral_keluar = float(q_internal_bilateral.scalar() or 0)
     jb_mobil_cash = max(jb_mobil_cash - internal_bilateral_keluar, 0)  # Remove internal entries
 
-    # 4. Beban Operasional, Gaji, Prive (From KasBank)
-    # Include unit-specific operational sources to ensure cash reconciliation
-    # Exclude Jasa Angkut wallet because it's now fully handled in Section A (Net Laba JA)
+    # Jasa Angkut Maintenance & Operasional (Cash Reconciliation for Section C)
+    # total_ja_wallet_out represents the REAL cash that left the unit.
+    total_ja_wallet_out = float(raw_units.get("jasa_angkut", 0))
+    
+    # We split this total into Maintenance (ja_bengkel) and Operations (biaya_opr_ja)
+    ja_cash_bengkel = float(muatan_summ.get("details", {}).get("total_biaya_bengkel_from_wallet", 0))
+    biaya_opr_ja = max(0, total_ja_wallet_out - ja_cash_bengkel)
+    ja_bengkel = ja_cash_bengkel 
+
+    # Jual Beli Mobil Maintenance & Operasional (Cash Reconciliation for Section C)
+    total_mobil_wallet_out = float(raw_units.get("mobil", 0)) # Cleaned above in summary
+    
+    # Split into Bengkel Mobil vs Ops/Persiapan Mobil
+    # Matches P&L Logic: Bucket 1 vs (Bucket 2+3)
+    # Calculate pure cash maintenance for Mobil (tagged and paid from wallet)
+    mobil_cash_bengkel_q = db.query(func.sum(KasBank.nominal)).join(
+        PengeluaranBengkel, KasBank.referensi_id == PengeluaranBengkel.id
+    ).filter(
+        KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
+        KasBank.tipe == KasBankType.KELUAR,
+        PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_OPERASIONAL, # Repairs
+        PengeluaranBengkel.mobil_id.is_not(None)
+    )
+    if tanggal_dari: mobil_cash_bengkel_q = mobil_cash_bengkel_q.filter(KasBank.tanggal >= tanggal_dari)
+    if tanggal_sampai: mobil_cash_bengkel_q = mobil_cash_bengkel_q.filter(KasBank.tanggal <= tanggal_sampai)
+    
+    mobil_cash_bengkel = float(mobil_cash_bengkel_q.scalar() or 0)
+    biaya_opr_mobil = max(0, total_mobil_wallet_out - mobil_cash_bengkel)
+    mobil_bengkel = mobil_cash_bengkel
+
+    # Final sum for Section C
+    # Exclude BOTH JA and Mobil from general drawer to have dedicated unit buckets
     biaya_opr_p_q = db.query(func.sum(KasBank.nominal)).filter(
         KasBank.sumber == KasBankSource.PENGELUARAN,
         KasBank.tipe == KasBankType.KELUAR,
-        KasBank.jenis != KasBankJenis.KAS_UNIT_JASA_ANGKUT
+        KasBank.jenis != KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+        KasBank.jenis != KasBankJenis.KAS_UNIT_MOBIL
     )
     if tanggal_dari: biaya_opr_p_q = biaya_opr_p_q.filter(KasBank.tanggal >= tanggal_dari)
     if tanggal_sampai: biaya_opr_p_q = biaya_opr_p_q.filter(KasBank.tanggal <= tanggal_sampai)
     biaya_opr_p = float(biaya_opr_p_q.scalar() or 0)
-    
-    # Jasa Angkut Maintenance & Operasional (Direct from muatan_service breakdown)
-    # Includes: Trip Costs (BBM/Tol) + Workshop + Wallet Outflows
-    ja_trip_total = muatan_summ.get("total_biaya_trip", 0)
-    ja_unit_total = muatan_summ.get("total_biaya_operasional_unit", 0)
-    ja_bengkel = muatan_summ.get("details", {}).get("biaya_bengkel", 0)
-    
-    # Per User Request: Remove workshop costs from the main Jasa Angkut operational total
-    # as they are now displayed in a separate section.
-    biaya_opr_ja = float(ja_trip_total) + float(ja_unit_total) - float(ja_bengkel)
-    
+
     biaya_opr_b = get_kas_sum(KasBankSource.BENGKEL, KasBankType.KELUAR)
-    biaya_opr = biaya_opr_p + biaya_opr_ja + biaya_opr_b
-    
+    biaya_opr = biaya_opr_p + biaya_opr_ja + biaya_opr_mobil + biaya_opr_b
+    ja_bengkel_total = ja_bengkel # To be used in report
+    mobil_bengkel_total = mobil_bengkel
+
     biaya_gaji = float(gaji_summary.get("total_gaji_pokok", 0) + gaji_summary.get("total_uang_lembur", 0))
     prive = get_kas_sum(KasBankSource.PRIVE, KasBankType.KELUAR)
 
@@ -910,21 +970,12 @@ def get_capital_report(
     raw_units = pengeluaran_summ.get("per_unit", {})
 
     # Combine breakdown from Pengeluaran (Wallet) + Muatan (Trip stats)
-    raw_ja_armada = pengeluaran_summ.get("jasa_angkut_armada", {}) # From Pengeluaran breakdown
+    # Structured breakdown per armada for the report section
+    raw_ja_armada = muatan_summ.get("jasa_angkut_armada", {})
     ja_trip_breakdown = muatan_summ.get("details", {}).get("operasional_per_armada", {})
-    ja_manual_breakdown = muatan_summ.get("details", {}).get("operasional_manual_per_armada", {})
+    ja_manual_breakdown = muatan_summ.get("details", {}).get("manual_per_armada", {})
     jasa_angkut_bengkel_breakdown = muatan_summ.get("details", {}).get("bengkel_per_armada", {})
     
-    ja_full_armada_breakdown = {}
-    # Combine all non-workshop ops for the main unit row
-    for name, val in raw_ja_armada.items():
-        ja_full_armada_breakdown[name] = ja_full_armada_breakdown.get(name, 0) + float(val)
-    for name, val in ja_trip_breakdown.items():
-        ja_full_armada_breakdown[name] = ja_full_armada_breakdown.get(name, 0) + float(val)
-    for name, val in ja_manual_breakdown.items():
-        ja_full_armada_breakdown[name] = ja_full_armada_breakdown.get(name, 0) + float(val)
-
-    # Structured breakdown per armada for the new report section
     ja_detailed_armada_breakdown = {}
     all_armada_names = set(
         list(raw_ja_armada.keys()) + 
@@ -981,6 +1032,31 @@ def get_capital_report(
     if tanggal_sampai: q_internal_b = q_internal_b.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
     m_internal_b_cost = float(q_internal_b.scalar() or 0)
 
+    # SECTION C: PENGELUARAN UNIT BISNIS (Outflows)
+    # Using direct wallet outflows to ensure reconciliation with P&L
+    def get_wallet_out(jenis_list, start, end):
+        q = db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis.in_(jenis_list),
+            KasBank.tipe == "KELUAR"
+        )
+        if start:
+            q = q.filter(KasBank.tanggal >= start)
+        if end:
+            q = q.filter(KasBank.tanggal <= end)
+        return float(q.scalar() or 0)
+
+    c_ja = float(get_wallet_out([KasBankJenis.KAS_UNIT_JASA_ANGKUT], tanggal_dari, tanggal_sampai))
+    c_mobil = float(get_wallet_out([KasBankJenis.KAS_UNIT_MOBIL], tanggal_dari, tanggal_sampai))
+    c_bengkel = float(get_wallet_out([KasBankJenis.KAS_UNIT_BENGKEL], tanggal_dari, tanggal_sampai))
+
+    total_c = c_ja + c_mobil + c_bengkel
+
+    operasional_unit_details = {
+        "Bengkel": c_bengkel,
+        "jasa_angkut": c_ja,
+        "mobil": c_mobil
+    }
+
     
     m_bengkel_cost = m_ledger_bengkel + m_internal_b_cost
 
@@ -988,23 +1064,24 @@ def get_capital_report(
     biaya_persiapan_display = m_prep_cost
 
     # REFINED: Unit Overhead Details (Exclude what's moved to HPP or Armada sections)
-    # ja_unit_total includes EVERYTHING; ja_armada_total_all has specific repairs+ops
-    biaya_opr_ja_overhead = float(ja_trip_total) + float(ja_unit_total) - float(ja_armada_total_all)
     
-    # Mobil Overhead: exclude car-specific prep and repairs (ONLY those already in the ledger)
-    raw_mobil_total_ledger = float(raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("mobil", 0))
-    biaya_opr_mobil_overhead = max(0, raw_mobil_total_ledger - m_prep_cost - m_ledger_bengkel)
+    # Re-calculate operasional_unit_details with the clean variables
+    # Split Mobil into Prep vs Overhead for UI clarity
+    total_mobil_prep = m_prep_cost
+    total_mobil_overhead = max(0, biaya_opr_mobil - total_mobil_prep)
 
     operasional_unit_details = {
-        "bengkel": float(raw_units.get("bengkel", 0) + biaya_opr_b),
-        "mobil": biaya_opr_mobil_overhead,
-        "jasa_angkut": biaya_opr_ja_overhead, # Now represents overhead/untagged only
-        "umum": max(0, biaya_opr_p - (float(raw_units.get("mobil", 0) + raw_units.get("penjualan_mobil", 0) + raw_units.get("jual_beli_mobil", 0) + raw_units.get("bengkel", 0)))),
-        "jasa_angkut_armada": ja_full_armada_breakdown,
-        "jasa_angkut_bengkel": ja_armada_total_all,
-        "jasa_angkut_bengkel_breakdown": muatan_summ.get("details", {}).get("bengkel_per_armada", {}),
-        "jasa_angkut_detailed_breakdown": ja_detailed_armada_breakdown
+        "umum": biaya_opr_p,
+        "bengkel": biaya_opr_b,
+        "mobil": total_mobil_overhead, # Bucket 3 Only (Overhead)
+        "mobil_prep": total_mobil_prep,  # Bucket 2 Only (Preparation)
+        "jasa_angkut": biaya_opr_ja,   # Bucket 2 + 3 (Trip + Overhead)
+        "jasa_angkut_bengkel": ja_bengkel_total, # Bucket 1 (Maintenance)
+        "mobil_bengkel": mobil_bengkel_total     # Bucket 1 (Maintenance)
     }
+
+    # Add detailed breakdown for JA UI loop
+    operasional_unit_details["jasa_angkut_detailed_breakdown"] = ja_detailed_armada_breakdown
 
     # Adjust Pengembalian Investor: subtract stock prep/repair costs already included in jb_mobil outflows
     # This prevents counting them in BOTH HPP and Returns section.
@@ -1035,7 +1112,7 @@ def get_capital_report(
         total_beli_part +
         total_beli_mobil + m_prep_cost + m_ledger_bengkel + # ONLY external cash outflows
         (investor_net_returns + h_investor_accrued) +
-        biaya_opr_p + biaya_opr_ja + biaya_opr_b + # Overheads
+        biaya_opr_p + biaya_opr_ja + biaya_opr_mobil + biaya_opr_b + # Overheads
         ja_bengkel + biaya_gaji + prive +
         lainnya_net_out
     )
