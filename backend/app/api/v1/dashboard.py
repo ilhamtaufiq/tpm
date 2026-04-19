@@ -395,9 +395,11 @@ def get_profit_summary(
     ja_biaya_bengkel = float(muatan.get("details", {}).get("biaya_bengkel") or 0)
     muatan["details"]["biaya_bengkel"] = ja_biaya_bengkel
     
-    # PER USER REQUEST: Row 3 should ONLY be BBM/Ops (e.g. 50k), excluding repairs (100k)
-    armada_period_ops = (all_armada_specific + float(trip_costs)) - ja_biaya_bengkel
+    # PER USER REQUEST: Row 3 should ONLY be BBM/Ops (from trip breakdowns)
+    # Excluding general expenses and maintenance.
+    armada_period_ops = float(trip_costs) # Sum of BBM, Tol, etc from muatan_jasa_angkut
     muatan["details"]["armada_period_ops"] = max(0, armada_period_ops)
+
     
     # Merge armada breakdowns for detailed lists
     # And subtract repairs from the breakdown to stay consistent with Row 3
