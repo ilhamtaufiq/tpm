@@ -491,27 +491,27 @@ export const keuanganService = {
         return response.data;
     },
 
-    getProfitSummary: async (params?: {
-        tanggal_dari?: string;
-        tanggal_sampai?: string;
-    }) => {
-        const response = await api.get('/dashboard/profit-summary', { params });
-        return response.data;
-    },
-
-    getCapitalReport: async (params?: {
-        tanggal_dari?: string;
-        tanggal_sampai?: string;
-    }) => {
-        const response = await api.get('/dashboard/capital-report', { params });
-        return response.data;
-    },
-
     getNeracaReport: async (params?: {
         tanggal_dari?: string;
         tanggal_sampai?: string;
     }) => {
-        const response = await api.get('/dashboard/neraca', { params });
+        const response = await api.get('/laporan/neraca', { params });
+        return response.data;
+    },
+
+    getLabaRugiReport: async (params?: {
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }) => {
+        const response = await api.get('/laporan/laba-rugi', { params });
+        return response.data;
+    },
+
+    getModalReport: async (params?: {
+        tanggal_dari?: string;
+        tanggal_sampai?: string;
+    }) => {
+        const response = await api.get('/laporan/perubahan-modal', { params });
         return response.data;
     },
 

@@ -207,7 +207,15 @@ export const useKasBankMonthlySummary = (tahun: number, bulan: number) => {
 export const useCapitalReport = (params?: any, options?: { refetchInterval?: number }) => {
     return useQuery({
         queryKey: ['capital_report', params],
-        queryFn: () => keuanganService.getCapitalReport(params),
+        queryFn: () => keuanganService.getModalReport(params),
+        ...options
+    });
+};
+
+export const useLabaRugiReport = (params?: any, options?: { refetchInterval?: number }) => {
+    return useQuery({
+        queryKey: ['laba_rugi_report', params],
+        queryFn: () => keuanganService.getLabaRugiReport(params),
         ...options
     });
 };

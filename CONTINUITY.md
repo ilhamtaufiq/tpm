@@ -1,36 +1,38 @@
-# CONTINUITY.md
+# Continuity Ledger - 2026-04-19
 
 ## Goal
-Standardize and resolve discrepancies in "Jasa Angkut" and "Mobil" financial reporting within the "Laporan Perubahan Modal" report.
-
-## Success Criteria
-- [x] Integrate workshop repair costs into Jasa Angkut reporting per armada.
-- [x] Separate manual operational expenses from general overhead.
-- [x] Integrate "HPP Mobil" grouping (Purchase, Prep, Repair).
-- [x] Include **Internal Workshop Repairs** (TransaksiPenjualanBengkel) in HPP Mobil.
-- [x] Fix **Double Counting** in car modal (HPP/Estimasi Modal) by consolidating data sources in `mobil.py`.
-- [x] Synchronize "Total Beban Operasional" with its detailed breakdown.
-- [x] Resolve **100k Selisih/Discrepancy** by adding unpaid internal workshop bills to Section E (Hutang).
-- [x] Fixed `AttributeError` for `status_bayar` and `grand_total` logic in `dashboard.py`.
+Fix financial report discrepancies in "Laporan Perubahan Modal", specifically focusing on the accurate partitioning of mobile unit costs (Prep vs repairs) and resolving reporting errors (KeyError, NameError).
 
 ## Constraints/Assumptions
-- Reporting must distinguish between unit-level overhead and asset-specific costs.
-- Column names in `bengkel.py` are `status_bayar` and `grand_total`.
+- Mobile unit costs are split between wallet expenses (Ledger) and workshop internal transfers.
+- Wallet expenses use categories: BIAYA_LAINNYA (Prep), BIAYA_OPERASIONAL (Repairs), BIAYA_UMUM (Overhead).
+- Workshop internal transfers use categories: 'jual_beli_mobil', 'mobil', 'penjualan_mobil'.
+- "Section A" (Profit) should use Gross Profit to prevent double-deduction of expenses already counted in "Section C".
 
 ## Key Decisions
-- **HPP Mobil**: Includes Purchase Price, Prep Costs (Taxes), and ALL Repairs (External + Internal).
+- **Partitioning**: Used `PengeluaranBengkel` for wallet outflows and `TransaksiPenjualanBengkel` for workshop work.
+- **Deduplication**: Avoided double-counting by clearly separating sources (Ledger vs Workshop) and categories.
+- **Section A**: Updated to use Gross Profit (Pendapatan - Harga Beli) for Mobil unit, moving all operational costs (Prep/Repair) to Section C.
 
 ## State
-- **Done**: 
-  - Fixed property access errors in `dashboard.py`.
-  - Resolved discrepancy where internal workshop repairs were incorrectly subtracted from wallet totals, causing "Beban Umum Unit" to show as zero.
-  - Verified math is now balanced and all expense tiers (Maintenance, Ops, Overhead) are correctly populated.
-- **Now**: Report is fully synchronized and unit general overhead is accurately reflected.
-- **Next**: Conclusion.
+### Done
+- Fixed `KeyError: 'total_hpp'` by adding the key to unit breakdown in `BaseReportService`.
+- Fixed `NameError` in `ModalService` for Section A return fields.
+- Expanded workshop category filter in `PenjualanMobilService.get_summary` to include 'mobil' and 'penjualan_mobil'.
+- Refactored `BaseReportService.get_unit_financial_breakdown` to properly partition Ledger costs from Workshop costs.
+- Verified fix with debug script: "Biaya Manajemen Unit (Prep)" and "Bengkel Unit Bisnis Mobil" now show 100k each (total 200k) matching the user's data.
+
+### Now
+- Task completed and verified.
+
+### Next
+- User verification on production data.
+- Add drill-down features for these totals if requested.
 
 ## Open Questions
 - None.
 
-## Working Set
-- Backend: `app/models/mobil.py`, `app/api/v1/dashboard.py`
-- Frontend: `app/laporan/perubahan-modal.tsx`
+## Working set
+- `backend/app/services/reports/base.py`
+- `backend/app/services/reports/modal_service.py`
+- `backend/app/services/penjualan_mobil_service.py`

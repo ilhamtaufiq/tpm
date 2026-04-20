@@ -330,10 +330,11 @@ class PengeluaranService:
         by_unit = unit_query.group_by(PengeluaranBengkel.bisnis_kategori).all()
         unit_summary = {row[0]: float(row[1] or 0) for row in by_unit}
 
-        # Breakdown Jasa Angkut by Armada
+        # Breakdown Jasa Angkut by Armada AND Category
         from app.models.jasa_angkut import ArmadaJasaAngkut
         armada_ja_query = self.db.query(
             ArmadaJasaAngkut.nama,
+            PengeluaranBengkel.kategori,
             func.sum(PengeluaranBengkel.jumlah)
         ).join(
             ArmadaJasaAngkut, PengeluaranBengkel.armada_id == ArmadaJasaAngkut.id
@@ -345,8 +346,16 @@ class PengeluaranService:
         if tanggal_sampai:
             armada_ja_query = armada_ja_query.filter(PengeluaranBengkel.tanggal <= tanggal_sampai)
         
-        by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama).all()
-        armada_ja_summary = {row[0]: float(row[1] or 0) for row in by_armada_ja}
+        by_armada_ja = armada_ja_query.group_by(ArmadaJasaAngkut.nama, PengeluaranBengkel.kategori).all()
+        
+        armada_ja_summary = {}
+        for row in by_armada_ja:
+            name = str(row[0])
+            kat = row[1]
+            if hasattr(kat, 'value'): kat = kat.value
+            val = float(row[2] or 0)
+            if name not in armada_ja_summary: armada_ja_summary[name] = {}
+            armada_ja_summary[name][str(kat)] = val
 
         # Breakdown Jual Beli Mobil by Mobil ID
         from app.models.mobil import Mobil

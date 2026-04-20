@@ -11,6 +11,7 @@ import { keuanganService } from '../../services/keuangan';
 import { Alert, Modal } from 'react-native';
 import { printReportHTML } from '../../utils/printReport';
 import { formatCurrency } from '../../utils/format';
+import { useLabaRugiReport } from '../../hooks/useKeuangan';
 import { Card } from '../../components/ui/Card';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
@@ -49,35 +50,10 @@ export default function LabaRugiScreen() {
         return format(date, 'yyyy', { locale: localeID });
     };
 
-    const [reportData, setReportData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            let dari, sampai;
-            if (filterType === 'daily') {
-                dari = format(date, 'yyyy-MM-dd');
-                sampai = dari;
-            } else if (filterType === 'monthly') {
-                dari = format(startOfMonth(date), 'yyyy-MM-dd');
-                sampai = format(endOfMonth(date), 'yyyy-MM-dd');
-            } else {
-                dari = format(startOfYear(date), 'yyyy-MM-dd');
-                sampai = format(endOfYear(date), 'yyyy-MM-dd');
-            }
-
-            const data = await keuanganService.getProfitSummary({
-                tanggal_dari: dari,
-                tanggal_sampai: sampai
-            });
-            setReportData(data);
-        } catch (error) {
-            console.error('Error fetching report data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const { data: reportData, isLoading, refetch: fetchData } = useLabaRugiReport({
+        tanggal_dari: format(filterType === 'daily' ? date : (filterType === 'monthly' ? startOfMonth(date) : startOfYear(date)), 'yyyy-MM-dd'),
+        tanggal_sampai: format(filterType === 'daily' ? date : (filterType === 'monthly' ? endOfMonth(date) : endOfYear(date)), 'yyyy-MM-dd')
+    });
 
     useFocusEffect(
         React.useCallback(() => {
@@ -93,20 +69,20 @@ export default function LabaRugiScreen() {
         }
     };
 
-    // Bengkel Data Mapping
+    // Bengkel Data Mapping (New Schema)
+    const bengkelUnit = reportData?.units?.bengkel || {};
     const bengkelData = {
-        penjualan: reportData?.bengkel_details?.total_penjualan || 0,
-        hpp: reportData?.bengkel_details?.total_hpp || 0,
-        biayaOps: reportData?.pengeluaran_unit_details?.bengkel || 0,
-        biayaGaji: reportData?.pengeluaran_details?.gaji?.total_gaji_pokok || 0,
-        biayaLembur: reportData?.pengeluaran_details?.gaji?.total_uang_lembur || 0,
+        penjualan: bengkelUnit.revenue || 0,
+        hpp: bengkelUnit.hpp || 0,
+        biayaOps: bengkelUnit.beban_operasional || 0,
+        biayaGaji: bengkelUnit.beban_gaji || 0,
+        biayaLembur: 0, // Now integrated in beban_gaji or separate in backend if needed
+        laba_kotor: bengkelUnit.laba_kotor || 0,
+        laba_bersih: bengkelUnit.laba_bersih || 0
     };
 
-    const priveTotal = reportData?.pengeluaran_details?.prive?.total || 0;
-
-    const labaKotor = bengkelData.penjualan - bengkelData.hpp;
-    const totalBiaya = bengkelData.biayaOps + bengkelData.biayaGaji + bengkelData.biayaLembur - (reportData?.pengeluaran_details?.gaji?.total_potongan_kasbon || 0);
-    const labaBersih = labaKotor - totalBiaya;
+    const priveTotal = reportData?.summary?.prive || 0;
+    const labaBersihTotal = reportData?.summary?.laba_bersih || 0;
 
     const handleExportPDF = async (mode: 'preview' | 'download' = 'preview') => {
         if (!reportData) return;
@@ -116,112 +92,84 @@ export default function LabaRugiScreen() {
                 <div class="section-header" style="background: #2563eb; color: white;">UNIT BENGKEL</div>
                 <div class="row-item">
                     <span>I. PENDAPATAN OPERASIONAL</span>
-                    <span>${formatCurrency(bengkelData.penjualan)}</span>
-                </div>
-                <div class="row-item row-sub">
-                    <span>- Penjualan (Sparepart & Jasa)</span>
-                    <span>${formatCurrency(reportData?.bengkel_details?.total_parts + reportData?.bengkel_details?.total_jasa || 0)}</span>
-                </div>
-                <div class="row-item row-sub">
-                    <span>- Diskon Penjualan</span>
-                    <span class="text-error">(${formatCurrency(reportData?.bengkel_details?.total_diskon || 0)})</span>
+                    <span>${formatCurrency(reportData?.units?.bengkel?.revenue || 0)}</span>
                 </div>
                 <div class="row-item">
                     <span>II. BEBAN POKOK PENJUALAN (HPP)</span>
-                    <span class="text-error">(${formatCurrency(bengkelData.hpp)})</span>
+                    <span class="text-error">(${formatCurrency(reportData?.units?.bengkel?.hpp || 0)})</span>
                 </div>
                 <div class="row-item row-total" style="background: #f8fafc;">
                     <span>III. LABA KOTOR BENGKEL</span>
-                    <span class="font-bold">${formatCurrency(labaKotor)}</span>
+                    <span class="font-bold">${formatCurrency(reportData?.units?.bengkel?.laba_kotor || 0)}</span>
                 </div>
                 <div class="row-item" style="margin-top: 10px;">
                     <span>IV. BEBAN OPERASIONAL UNIT</span>
-                    <span class="text-error">(${formatCurrency(bengkelData.biayaOps + bengkelData.biayaGaji + bengkelData.biayaLembur)})</span>
+                    <span class="text-error">(${formatCurrency((reportData?.units?.bengkel?.beban_operasional || 0) + (reportData?.units?.bengkel?.beban_gaji || 0))})</span>
                 </div>
                 <div class="row-item row-total" style="background: #f0fdf4; border-top: 2px solid #16a34a;">
                     <span>V. LABA BERSIH BENGKEL</span>
-                    <span class="font-bold">${formatCurrency(labaBersih)}</span>
+                    <span class="font-bold">${formatCurrency(reportData?.units?.bengkel?.laba_bersih || 0)}</span>
                 </div>
 
                 <div class="section-header" style="background: #059669; color: white;">UNIT JASA ANGKUT</div>
                 <div class="row-item">
                     <span>I. PENDAPATAN JASA (BAGIAN TPM)</span>
-                    <span>${formatCurrency(reportData?.jasa_angkut_details?.gross_share_tpm || 0)}</span>
+                    <span>${formatCurrency(reportData?.units?.jasa_angkut?.revenue || 0)}</span>
                 </div>
                 <div class="row-item">
-                    <span>II. BIAYA LANGSUNG ARMADA</span>
-                    <span class="text-error">(${formatCurrency((reportData?.jasa_angkut_details?.biaya_bengkel || 0) + (reportData?.jasa_angkut_details?.armada_period_ops || 0))})</span>
+                    <span>II. BIAYA DIRECT (ARMADA & MAINTENANCE)</span>
+                    <span class="text-error">(${formatCurrency((reportData?.units?.jasa_angkut?.beban_operasional || 0) + (reportData?.units?.jasa_angkut?.maintenance || 0))})</span>
                 </div>
                 <div class="row-item">
                     <span>III. BEBAN UMUM UNIT</span>
-                    <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.jasa_angkut || 0)})</span>
+                    <span class="text-error">(${formatCurrency(reportData?.units?.jasa_angkut?.beban_umum || 0)})</span>
                 </div>
                 <div class="row-item row-total" style="background: #f0fdf4; border-top: 2px solid #059669;">
                     <span>IV. LABA BERSIH JASA ANGKUT</span>
-                    <span class="font-bold">${formatCurrency((reportData?.jasa_angkut_details?.gross_share_tpm || 0) - (reportData?.jasa_angkut_details?.biaya_bengkel || 0) - (reportData?.jasa_angkut_details?.armada_period_ops || 0) - (reportData?.pengeluaran_unit_details?.jasa_angkut || 0))}</span>
+                    <span class="font-bold">${formatCurrency(reportData?.units?.jasa_angkut?.laba_bersih || 0)}</span>
                 </div>
 
                 <div class="section-header" style="background: #f59e0b; color: white;">UNIT JUAL BELI MOBIL</div>
                 <div class="row-item">
-                    <span>I. PENDAPATAN PENJUALAN UNIT</span>
-                    <span>${formatCurrency(reportData?.mobil_details?.total_penjualan || 0)}</span>
+                    <span>I. PENDAPATAN JUAL BELI</span>
+                    <span>${formatCurrency(reportData?.units?.mobil?.revenue || 0)}</span>
                 </div>
                 <div class="row-item">
-                    <span>II. BEBAN POKOK PENJUALAN (HPP)</span>
-                    <span class="text-error">(${formatCurrency((reportData?.mobil_details?.total_modal || 0) + (reportData?.mobil_details?.capital_period_ops || 0) + (reportData?.mobil_details?.biaya_bengkel || 0))})</span>
+                    <span>II. BEBAN POKOK MOBIL (HPP)</span>
+                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.hpp || 0)})</span>
                 </div>
-                <div class="row-item row-sub">
-                    <span>- Harga Beli Unit</span>
-                    <span>${formatCurrency(reportData?.mobil_details?.total_harga_beli || 0)}</span>
-                </div>
-                <div class="row-item row-sub">
-                    <span>- Pajak, BBN & Adm</span>
-                    <span>${formatCurrency((reportData?.mobil_details?.total_modal || 0) - (reportData?.mobil_details?.total_harga_beli || 0) + (reportData?.mobil_details?.capital_period_ops || 0))}</span>
-                </div>
-                <div class="row-item row-sub">
-                    <span>- Restorasi & Perbaikan</span>
-                    <span>${formatCurrency(reportData?.mobil_details?.biaya_bengkel || 0)}</span>
+                <div class="row-item">
+                    <span>III. BIAYA PREP & MAINTENANCE</span>
+                    <span class="text-error">(${formatCurrency((reportData?.units?.mobil?.beban_operasional || 0) + (reportData?.units?.mobil?.maintenance || 0))})</span>
                 </div>
                 <div class="row-item row-total" style="background: #fefce8;">
-                    <span>III. LABA KOTOR UNIT</span>
-                    <span class="font-bold">${formatCurrency((reportData?.mobil_details?.total_penjualan || 0) - ((reportData?.mobil_details?.total_modal || 0) + (reportData?.mobil_details?.capital_period_ops || 0) + (reportData?.mobil_details?.biaya_bengkel || 0)))}</span>
-                </div>
-                <div class="row-item">
-                    <span>IV. BEBAN KOMISI & OPS BISNIS</span>
-                    <span class="text-error">(${formatCurrency((reportData?.mobil_details?.laba_investor || 0) + (reportData?.pengeluaran_unit_details?.mobil || 0))})</span>
-                </div>
-                <div class="row-item row-total" style="background: #f0fdf4; border-top: 2px solid #f59e0b;">
-                    <span>V. LABA BERSIH MOBIL (TPM)</span>
-                    <span class="font-bold">${formatCurrency((reportData?.mobil_details?.laba_tpm || 0) - (reportData?.pengeluaran_unit_details?.mobil || 0))}</span>
+                    <span>IV. LABA BERSIH MOBIL (TPM)</span>
+                    <span class="font-bold">${formatCurrency(reportData?.units?.mobil?.laba_bersih || 0)}</span>
                 </div>
 
                 <div class="section-header" style="background: #334155; color: white;">BIAYA UMUM & PRIVE</div>
                 <div class="row-item">
-                    <span>Beban Adm. & Umum Kantor Pusat</span>
-                    <span class="text-error">(${formatCurrency(reportData?.pengeluaran_unit_details?.umum || 0)})</span>
-                </div>
-                <div class="row-item">
-                    <span>Beban Lainnya (Non-Operasional)</span>
-                    <span class="text-error">(${formatCurrency(reportData?.pengeluaran_details?.biaya_lainnya?.total || 0)})</span>
+                    <span>Biaya Operasional Pusat</span>
+                    <span class="text-error">(${formatCurrency(reportData?.summary?.total_beban_umum || 0)})</span>
                 </div>
                 <div class="row-item">
                     <span>Penarikan Prive Pemilik</span>
-                    <span class="text-error">(${formatCurrency(priveTotal)})</span>
+                    <span class="text-error">(${formatCurrency(reportData?.summary?.prive || 0)})</span>
                 </div>
 
                 <div style="margin-top:40px; padding:25px; background:#0f172a; border-radius:15px; color: white;">
                     <div style="font-size:18px; font-weight:bold; margin-bottom:15px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;">REKAPITULASI AKHIR</div>
                     <div class="row-item" style="border:none; color: #cbd5e1;">
-                        <span>Total Laba Bersih Unit (Sebelum Prive)</span>
-                        <span>${formatCurrency((reportData?.laba_bersih || 0) + priveTotal)}</span>
+                        <span>Total Laba Bersih Operasional</span>
+                        <span>${formatCurrency(reportData?.summary?.laba_operasional || 0)}</span>
                     </div>
                     <div class="row-item" style="border:none; color: #cbd5e1; margin-bottom: 15px;">
                         <span>Prive Pemilik</span>
-                        <span style="color: #fca5a5;">(${formatCurrency(priveTotal)})</span>
+                        <span style="color: #fca5a5;">(${formatCurrency(reportData?.summary?.prive || 0)})</span>
                     </div>
                     <div class="row-item row-total" style="font-size:24px; color: #ffffff; border-top: 2px solid white; padding-top: 15px;">
                         <span>PROFIT BERSIH AKHIR</span>
-                        <span class="font-bold">${formatCurrency(reportData?.laba_bersih || 0)}</span>
+                        <span class="font-bold">${formatCurrency(reportData?.summary?.laba_bersih || 0)}</span>
                     </div>
                 </div>
             `;
@@ -353,7 +301,7 @@ export default function LabaRugiScreen() {
 
                 {/* 3. LABA KOTOR */}
                 <View className="bg-blue-50/50 w-full p-4 rounded-xl border border-blue-100/60 mb-5">
-                    <Row label="Laba Kotor Bengkel" value={labaKotor} bold large color="text-blue-800" />
+                    <Row label="Laba Kotor Bengkel" value={bengkelData.laba_kotor} bold large color="text-blue-800" />
                 </View>
 
                 {/* 4. BEBAN OPERASIONAL */}
@@ -365,13 +313,13 @@ export default function LabaRugiScreen() {
                 </View>
 
                 {/* FINAL PROFIT */}
-                <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${labaBersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${bengkelData.laba_bersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                     <View>
                         <Typography variant="body2" weight="bold" className="text-white">IV. Laba/Rugi Bersih Unit</Typography>
                         <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Beban Operasional</Typography>
                     </View>
                     <Typography variant="h3" weight="bold" className="text-white">
-                        {labaBersih < 0 ? `(${formatCurrency(Math.abs(labaBersih))})` : formatCurrency(labaBersih)}
+                        {bengkelData.laba_bersih < 0 ? `(${formatCurrency(Math.abs(bengkelData.laba_bersih))})` : formatCurrency(bengkelData.laba_bersih)}
                     </Typography>
                 </View>
             </View>
@@ -379,12 +327,12 @@ export default function LabaRugiScreen() {
     );
 
     const renderJasaAngkutSection = () => {
-        const grossJasaAngkut = (reportData?.jasa_angkut_details?.gross_share_tpm || 0);
-        const armadaOps = reportData?.jasa_angkut_details?.armada_period_ops || 0;
-        const maintenanceOps = reportData?.jasa_angkut_details?.biaya_bengkel || 0;
-        const generalOps = reportData?.pengeluaran_unit_details?.jasa_angkut || 0;
-
-        const netJasaAngkut = grossJasaAngkut - maintenanceOps - armadaOps - generalOps;
+        const unit = reportData?.units?.jasa_angkut || {};
+        const revenue = unit.revenue || 0;
+        const maintenance = unit.maintenance || 0;
+        const directOps = unit.beban_operasional || 0;
+        const generalOps = unit.beban_umum || 0;
+        const netProfit = unit.laba_bersih || 0;
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -401,34 +349,30 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    {/* 1. REVENUE */}
                     <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Operasional</Typography>
-                    <Row label="Bagian TPM (Net Driver)" value={grossJasaAngkut} bold large color="text-slate-800" />
+                    <Row label="Bagian TPM (Net Driver)" value={revenue} bold large color="text-slate-800" />
                     <View className="bg-slate-50/50 rounded-lg p-2 mt-1 mb-4 border border-slate-100">
                         <Typography variant="caption" className="text-slate-400 italic text-[10px] px-1 text-center">Sudah termasuk potongan bagian supir</Typography>
                     </View>
 
-                    {/* 2. DIRECT COSTS */}
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 border border-slate-100">
-                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Biaya Langsung Armada</Typography>
-                        <Row label="Biaya Pemeliharaan (Bengkel)" value={maintenanceOps} isNegative color="text-rose-600" />
-                        <Row label="Biaya Operasional (BBM, Tol, dll)" value={armadaOps} isNegative color="text-rose-600" />
+                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Biaya Armada & Maintenance</Typography>
+                        <Row label="Pemeliharaan (Bengkel)" value={maintenance} isNegative color="text-rose-600" />
+                        <Row label="Operasional (BBM, Tol, dll)" value={directOps} isNegative color="text-rose-600" />
                     </View>
 
-                    {/* 3. INDIRECT COSTS */}
                     <View className="p-1 px-3 mb-4">
-                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-1 uppercase tracking-widest text-[10px]">III. Biaya Tidak Langsung</Typography>
-                        <Row label="Beban Umum Unit Jasa Angkut" value={generalOps} isNegative />
+                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-1 uppercase tracking-widest text-[10px]">III. Biaya Umum Unit</Typography>
+                        <Row label="Beban Umum Jasa Angkut" value={generalOps} isNegative />
                     </View>
 
-                    {/* FINAL PROFIT */}
-                    <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netJasaAngkut >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                    <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netProfit >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba/Rugi Bersih Unit</Typography>
-                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya Armada & Umum</Typography>
+                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih Unit</Typography>
+                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Final Profit Share</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
-                            {netJasaAngkut < 0 ? `(${formatCurrency(Math.abs(netJasaAngkut))})` : formatCurrency(netJasaAngkut)}
+                            {netProfit < 0 ? `(${formatCurrency(Math.abs(netProfit))})` : formatCurrency(netProfit)}
                         </Typography>
                     </View>
                 </View>
@@ -437,28 +381,13 @@ export default function LabaRugiScreen() {
     };
 
     const renderMobilSection = () => {
-        const totalPenjualan = reportData?.mobil_details?.total_penjualan || 0;
-
-        // Optimized 3-bucket logic for Mobil Unit
-        const hargaBeliUnit = reportData?.mobil_details?.total_harga_beli || 0;
-        
-        // Pocket 2: Preparation (Taxes/Admin/Accs) - Captured from Sold car snapshots + Period Unsold costs
-        const biayaPersiapan = ((reportData?.mobil_details?.total_modal || 0) - (reportData?.mobil_details?.total_harga_beli || 0)) + (reportData?.mobil_details?.capital_period_ops || 0);
-        
-        // Pocket 1: Maintenance & Restoration (Internal + External Workshop)
-        const biayaBengkel = reportData?.mobil_details?.biaya_bengkel || 0;
-
-        // Total HPP Unit = Price + Prep + Repair
-        const totalHPP = hargaBeliUnit + biayaPersiapan + biayaBengkel;
-        const labaKotorUnit = totalPenjualan - totalHPP;
-
-        const labaInvestor = reportData?.mobil_details?.laba_investor || 0;
-        
-        // Pocket 3: General Business Overhead (Residual Wallet Outflows)
-        const operasionalBisnis = reportData?.mobil_details?.general_unit_ops || 0;
-
-        // Net Profit Calculation
-        const netTPM = labaKotorUnit - labaInvestor - operasionalBisnis;
+        const unit = reportData?.units?.mobil || {};
+        const revenue = unit.revenue || 0;
+        const hpp = unit.hpp || 0;
+        const maintenance = unit.maintenance || 0;
+        const directOps = unit.beban_operasional || 0;
+        const generalOps = unit.beban_umum || 0;
+        const netProfit = unit.laba_bersih || 0;
 
         return (
             <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
@@ -475,55 +404,28 @@ export default function LabaRugiScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    {/* 1. SALES */}
                     <Typography variant="caption" weight="bold" className="text-amber-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Penjualan</Typography>
-                    <Row label="Total Penjualan Unit (Gross)" value={totalPenjualan} bold large color="text-slate-800" />
+                    <Row label="Total Penjualan Unit (Gross)" value={revenue} bold large color="text-slate-800" />
 
-                    {/* 2. COST OF SALES (HPP) */}
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
-                        <Row label="Beban Harga Beli Unit" value={hargaBeliUnit} isNegative color="text-rose-600" />
-                        <Row label="Beban Persiapan Unit (Pajak/ADM)" value={biayaPersiapan} isNegative color="text-rose-600" />
-                        <Row label="Beban Bengkel & Restorasi" value={biayaBengkel} isNegative color="text-rose-600" />
-
-                        <View className="h-[0.5px] bg-slate-200 w-full my-2 border-dashed border-[0.5px] border-slate-300" />
-                        <Row label="Total Modal Unit (HPP)" value={totalHPP} bold isNegative color="text-slate-800" />
+                        <Row label="Harga Beli Unit" value={hpp} isNegative color="text-rose-600" />
+                        <Row label="Restorasi & Perbaikan (Bengkel)" value={maintenance} isNegative color="text-rose-600" />
+                        <Row label="Biaya Persiapan (Pajak, BBN, dll)" value={directOps} isNegative color="text-rose-600" />
                     </View>
 
-                    {/* 3. GROSS PROFIT */}
-                    <View className="bg-amber-50/50 w-full p-4 rounded-xl border border-amber-100/60 mb-5">
-                        <Row label="Laba Kotor Unit" value={labaKotorUnit} bold large color="text-amber-800" />
-                    </View>
-
-                    {/* 4. EXPENSES & PROFIT SHARE */}
                     <View className="p-1 px-3 mb-4">
-                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Komisi & Beban Operasional</Typography>
-                        <Row label="Beban Bagi Hasil Investor" value={labaInvestor} isNegative color="text-rose-500" />
-                        <Row label="Beban Operasional Kantor Bisnis" value={operasionalBisnis} isNegative />
-                        <Typography variant="caption" className="text-slate-400 ml-4 italic text-[10px] -mt-1">(Listrik, Admin, Sewa Unit)</Typography>
+                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Umum Unit</Typography>
+                        <Row label="Beban Umum & Operaisonal" value={generalOps} isNegative />
                     </View>
 
-                    {/* PIUTANG BANNER */}
-                    {(reportData?.mobil_details?.piutang_nilai || 0) > 0 && (
-                        <View className="bg-amber-100/80 rounded-xl p-3 mb-5 border border-amber-200/50 flex-row items-center">
-                            <View className="w-8 h-8 rounded-full bg-amber-200 items-center justify-center mr-3">
-                                <DollarSign size={16} className="text-amber-700" />
-                            </View>
-                            <View className="flex-1">
-                                <Typography variant="caption" weight="bold" className="text-amber-800 uppercase text-[9px] tracking-widest">Ada Piutang Pending</Typography>
-                                <Typography variant="body2" weight="bold" className="text-amber-900">{formatCurrency(reportData?.mobil_details?.piutang_nilai || 0)}</Typography>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* FINAL PROFIT */}
-                    <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netTPM >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                    <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netProfit >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
                             <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih TPM</Typography>
-                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Komisi & Operasional</Typography>
+                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya & Operasional</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
-                            {netTPM < 0 ? `(${formatCurrency(Math.abs(netTPM))})` : formatCurrency(netTPM)}
+                            {netProfit < 0 ? `(${formatCurrency(Math.abs(netProfit))})` : formatCurrency(netProfit)}
                         </Typography>
                     </View>
                 </View>
@@ -538,19 +440,19 @@ export default function LabaRugiScreen() {
                     <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center mr-3 border border-white/10">
                         <ArrowDownLeft size={18} color="white" />
                     </View>
-                    <Typography variant="h4" weight="bold" className="text-white tracking-tight">Beban Adm. & Umum</Typography>
+                    <Typography variant="h4" weight="bold" className="text-white tracking-tight">Biaya Operasional Pusat</Typography>
                 </View>
                 <View className="bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
-                    <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">G&A Expenses</Typography>
+                    <Typography weight="bold" className="text-white text-[10px] uppercase tracking-widest">Tiga Putra Motor</Typography>
                 </View>
             </View>
 
             <View className="p-5 w-full">
-                <Row label="Beban Operasional Kantor (Pusat)" value={reportData?.pengeluaran_unit_details?.umum || 0} isNegative bold large color="text-slate-800" />
+                <Row label="Total Beban Umum & Lainnya" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
 
                 <View className="bg-slate-50 rounded-xl p-3 mt-3 w-full border border-slate-100 italic">
                     <Typography variant="caption" className="text-slate-500 leading-snug text-[11px]">
-                        *Beban administrasi pusat yang tidak dialokasikan ke unit bisnis spesifik.
+                        *Beban administrasi pusat dan biaya lainnya yang tidak dialokasikan ke unit bisnis spesifik.
                     </Typography>
                 </View>
             </View>
@@ -594,8 +496,8 @@ export default function LabaRugiScreen() {
     );
 
     const renderFinalRecap = () => {
-        const finalProfit = reportData?.laba_bersih || 0;
-        const totalProfitBeforePrive = finalProfit + priveTotal;
+        const finalProfit = reportData?.summary?.laba_bersih || 0;
+        const totalProfitBeforePrive = reportData?.summary?.laba_operasional || 0;
 
         return (
             <Card className="bg-indigo-950 p-6 rounded-[40px] shadow-2xl shadow-indigo-900/40 mb-12 overflow-hidden relative w-full border border-indigo-900">

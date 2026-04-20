@@ -951,7 +951,7 @@ class PenjualanMobilService:
         
         # Total Bengkel (All workshop transactions tied to jual_beli_mobil, plus Perawatan Bengkel)
         bengkel_parts_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
-            TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil',
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_parts_q = bengkel_parts_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
@@ -1010,6 +1010,12 @@ class PenjualanMobilService:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
+        
+        # 4. Total car purchases in period (Realization)
+        total_pembelian_period_q = self.db.query(func.sum(Mobil.harga_beli)).filter(Mobil.deleted_at.is_(None))
+        if tanggal_dari: total_pembelian_period_q = total_pembelian_period_q.filter(Mobil.tanggal_masuk >= tanggal_dari)
+        if tanggal_sampai: total_pembelian_period_q = total_pembelian_period_q.filter(Mobil.tanggal_masuk <= tanggal_sampai)
+        total_pembelian_period = float(total_pembelian_period_q.scalar() or 0)
         # Breakdown of bengkel per mobil
         
         bengkel_mobil_query = self.db.query(
@@ -1019,7 +1025,7 @@ class PenjualanMobilService:
         ).join(
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil',
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
@@ -1079,6 +1085,7 @@ class PenjualanMobilService:
             "total_penjualan": float(aggregates.total_penjualan or 0),
             "total_modal": float(aggregates.total_modal or 0),
             "total_harga_beli": float(aggregates.total_harga_beli or 0),
+            "total_pembelian_period": total_pembelian_period,
             "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": float(aggregates.total_laba_tpm or 0),

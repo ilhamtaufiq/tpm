@@ -31,6 +31,7 @@ from app.api.v1 import (
     user_cash,
     backup,
     trash,
+    laporan,
 )
 
 
@@ -57,6 +58,7 @@ api_router.include_router(piutang.router)
 api_router.include_router(hutang.router)
 api_router.include_router(kas_bank.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(laporan.router)
 api_router.include_router(maintenance.router)
 api_router.include_router(armada.router)
 api_router.include_router(assets.router)

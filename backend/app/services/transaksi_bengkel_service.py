@@ -206,15 +206,11 @@ class TransaksiBengkelService:
         is_internal_jasa_angkut = (getattr(data, "kategori", "umum") == "jasa_angkut")
         is_internal_mobil = (getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
-        if is_internal_jasa_angkut:
-            # Internal transactions for jasa_angkut are still considered paid internally
+        if is_internal_jasa_angkut or is_internal_mobil:
+            # Internal transactions for JA and JB Mobil are considered paid internally
+            # This moves cash between unit wallets immediately
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
-        elif is_internal_mobil:
-            # Internal transactions for JB Mobil are recorded as Piutang to JB Mobil unit
-            # This will be cleared when the car is sold
-            total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.INTERNAL # Or create a specific internal method if needed
         elif data.payments:
             total_pembayaran = sum(p.jumlah for p in data.payments)
             # If multiple methods used, set main method as SPLIT
@@ -294,7 +290,7 @@ class TransaksiBengkelService:
                 nama_debitur=debtor_name,
                 telepon_debitur=customer.telepon if customer else None,
                 alamat_debitur=customer.alamat if customer else None,
-                sumber=PiutangSource.BENGKEL,
+                sumber=PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL,
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
                 nominal_piutang=out_amount,
@@ -312,15 +308,23 @@ class TransaksiBengkelService:
 
         # Update Piutang's referensi_id and process DP if any
         if not is_internal_jasa_angkut:
+            # Determine correct sumber based on category
+            piutang_sumber = PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL
             piutang_record = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.nomor_referensi == nomor_transaksi,
-                PiutangUsaha.sumber == PiutangSource.BENGKEL
+                PiutangUsaha.sumber == piutang_sumber
             ).first()
             if piutang_record:
                 piutang_record.referensi_id = transaksi.id
-                
-                # Check for DP - Record it as a payment to the piutang
-                if total_pembayaran > 0:
+
+                if is_internal_mobil:
+                    # Internal JB Mobil: bilateral cash has already moved via KasBank.
+                    # Mark piutang as LUNAS immediately so it doesn't inflate Section B.
+                    piutang_record.status = PiutangStatus.LUNAS
+                    piutang_record.total_dibayar = piutang_record.nominal_piutang
+                    piutang_record.sisa_piutang = Decimal("0")
+                elif total_pembayaran > 0:
+                    # External customer: process DP payment against piutang
                     from app.services.piutang_service import PiutangService
                     from app.schemas.keuangan import PembayaranPiutangSplit
                     
@@ -448,10 +452,11 @@ class TransaksiBengkelService:
                     referensi_id=ref_id, nomor_referensi=ref_num,
                     keterangan=f"Biaya Repair Internal via Bengkel: {ref_num}",
                     user_id=user_id,
+                    allow_negative=True,
                 )
 
         # Record internal transfer for integrated units
-        if is_internal_jasa_angkut:
+        if is_internal_jasa_angkut or is_internal_mobil:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
         
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
@@ -731,7 +736,7 @@ class TransaksiBengkelService:
             if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
-        if is_internal_jasa_angkut:
+        if is_internal_jasa_angkut or is_internal_mobil:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
 
         self.db.commit()
@@ -959,6 +964,7 @@ class TransaksiBengkelService:
             func.sum(TransaksiPenjualanBengkel.hpp_parts).label("total_hpp"),
             func.sum(TransaksiPenjualanBengkel.laba_kotor).label("total_laba"),
             func.sum(TransaksiPenjualanBengkel.diskon).label("total_diskon"),
+            func.sum(case((TransaksiPenjualanBengkel.metode_bayar == PaymentMethod.INTERNAL, TransaksiPenjualanBengkel.grand_total), else_=0)).label("total_internal"),
         ).first()
 
 
@@ -1057,7 +1063,7 @@ class TransaksiBengkelService:
             "total_laba_kotor": float(aggregates.total_laba or 0),
             "total_tunai": float(payment_aggregates.total_tunai or 0),
             "total_transfer": float(payment_aggregates.total_transfer or 0),
-            "total_internal": float(payment_aggregates.total_internal or 0),
+            "total_internal": float(aggregates.total_internal or 0),
             "total_dana_masuk": float(manual_inflow),
             "total_dana_dari_utama": float(dana_dari_utama),
             "total_dana_keluar": float(manual_outflow),

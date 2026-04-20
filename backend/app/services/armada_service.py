@@ -191,6 +191,7 @@ class ArmadaService:
         # 2. Workshop repairs history (by nopol or by muatan link or by direct armada_id)
         muatan_ids = [m.id for m in muatan_history]
         perbaikan_history = self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
             or_(
                 TransaksiPenjualanBengkel.armada_id == armada_id,
                 TransaksiPenjualanBengkel.nomor_plat == armada.nopol,
