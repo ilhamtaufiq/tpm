@@ -378,7 +378,7 @@ class BaseReportService:
         laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
         laba_ja_tpm = float(ja_revenue_tpm)
 
-        total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm - post_sale_mobil_expenses
+        total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             float(ja_details.get("armada_period_ops", 0)) + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
@@ -425,6 +425,7 @@ class BaseReportService:
                     "armada_ops_ledger": ja_tagged_from_wallet,
                     "trip_costs": ja_expenses_trip,
                     "overhead": general_ja_overhead,
+                    "double_exp_adjustment": ja_double_exp,
                     "total_outflow_wallet": raw_ja_outflow,
                     "prive": float(ja_prive_unit)
                 },

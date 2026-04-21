@@ -21,11 +21,20 @@ class LabaRugiService(BaseReportService):
         b_laba_bersih = b_laba_kotor - b_gaji - b_ops
 
         # 2. JASA ANGKUT
-        ja_revenue = ja["revenue_tpm"]
+        # Show Gross Revenue (Net TPM + Trip Costs) so it balances with shown expenses
+        ja_trip_costs = ja.get("trip_costs", 0)
+        ja_revenue_net = ja["revenue_tpm"]
+        ja_revenue_gross = ja_revenue_net + ja_trip_costs
+        
         ja_maintenance = ja["repairs"]
-        ja_ops = ja["armada_ops"] + ja["armada_ops_ledger"] + ja["trip_costs"]
+        # ja_ops includes: Automated Trip Costs + (Manual Wallet Ops - Duplicates)
+        ja_double = ja.get("double_exp_adjustment", 0)
+        ja_ops_final = ja_trip_costs + (ja.get("armada_ops_ledger", 0) - ja_double) + ja.get("armada_ops", 0)
+        
         ja_overhead = ja["overhead"]
-        ja_laba_bersih = ja_revenue - ja_maintenance - ja_ops - ja_overhead
+        
+        # Net Profit remains the same but calculations are transparent
+        ja_laba_bersih = ja_revenue_gross - ja_maintenance - ja_ops_final - ja_overhead
 
         # 3. MOBIL (Accrual-based to match Modal Report)
         # We only count performance of units SOLD within the period
@@ -64,8 +73,8 @@ class LabaRugiService(BaseReportService):
                     "laba_bersih": b_laba_bersih
                 },
                 "jasa_angkut": {
-                    "revenue": ja_revenue,
-                    "beban_operasional": ja_ops,
+                    "revenue": ja_revenue_gross,
+                    "beban_operasional": ja_ops_final,
                     "maintenance": ja_maintenance,
                     "beban_umum": ja_overhead,
                     "laba_bersih": ja_laba_bersih
