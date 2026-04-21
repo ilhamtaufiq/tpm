@@ -259,7 +259,23 @@ class BaseReportService:
         
         # POOL shared
         p_cat = pengeluaran_summary["per_kategori"].get(ExpenseCategory.PRIVE.value.lower(), {})
-        prive_total = float(p_cat.get("total", 0) if isinstance(p_cat, dict) else p_cat)
+        prive_total_ledger = float(p_cat.get("total", 0) if isinstance(p_cat, dict) else p_cat)
+        
+        # Robust Prive Check: Scan KasBank for entries that might be missing from the ledger 
+        # (Where user records a payout but forgets the matching Journal entry)
+        prive_unrecorded = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            or_(
+                KasBank.keterangan.ilike("Pencairan %"),
+                KasBank.keterangan.ilike("Prive %"),
+                KasBank.keterangan.ilike("%pembagian laba%")
+            ),
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        
+        prive_total = max(prive_total_ledger, prive_unrecorded)
+
         mobil_entity_total = (
             float(pengeluaran_summary["per_unit"].get("mobil", 0)) + 
             float(pengeluaran_summary["per_unit"].get("jual_beli_mobil", 0)) + 
@@ -384,9 +400,10 @@ class BaseReportService:
         total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
-            float(ja_details.get("armada_period_ops", 0)) + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
+            ja_expenses_trip + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
             general_mobil_overhead - ja_double_exp
         )
+
 
         return {
             "periode": {"dari": tanggal_dari, "sampai": tanggal_sampai},
