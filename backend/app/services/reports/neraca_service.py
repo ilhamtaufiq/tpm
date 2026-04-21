@@ -4,8 +4,7 @@ from typing import Dict, Any
 from sqlalchemy import func, or_
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, PiutangUsaha, HutangUsaha, Aset
-from app.models.mobil import Mobil
-from app.models.bengkel import SparePart
+# Global imports for types and common models
 from app.utils.constants import (
     KasBankJenis, 
     PiutangStatus, 
@@ -21,6 +20,9 @@ from app.utils.constants import (
 class NeracaService(BaseReportService):
     def get_report(self, as_of_date: date) -> Dict[str, Any]:
         """Laporan Neraca (Balance Sheet) as of a specific date."""
+        from app.models.mobil import TransaksiPenjualanMobil, Mobil
+        from app.models.bengkel import SparePart
+        from app.utils.constants import InvestorDisbursementStatus, OwnershipType
         
         # 1. ASSETS
         
@@ -80,8 +82,6 @@ class NeracaService(BaseReportService):
         hutang_lainnya = get_hutang_sum(HutangSource.LAINNYA)
         
         # Add accrual for Investor Profit and pending payouts
-        from app.models.mobil import TransaksiPenjualanMobil, Mobil
-        from app.utils.constants import InvestorDisbursementStatus, OwnershipType
         
         hutang_investor = float(self.db.query(
             func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
