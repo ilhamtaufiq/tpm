@@ -516,7 +516,7 @@ class TransaksiBengkelService:
         # (similar to void but keeps the main transaction)
         piutang = self.db.query(PiutangUsaha).filter(
             PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
-            PiutangUsaha.sumber == PiutangSource.BENGKEL
+            PiutangUsaha.sumber.in_([PiutangSource.BENGKEL, PiutangSource.JUAL_BELI_MOBIL])
         ).first()
 
         self.db.query(KasBank).filter(
@@ -669,7 +669,7 @@ class TransaksiBengkelService:
                 nama_debitur=debtor_name,
                  telepon_debitur=customer.telepon if customer else None,
                 alamat_debitur=customer.alamat if customer else None,
-                sumber=PiutangSource.BENGKEL,
+                sumber=PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL,
                 referensi_id=transaksi.id,
                 nomor_referensi=transaksi.nomor_transaksi,
                 nominal_piutang=grand_total,

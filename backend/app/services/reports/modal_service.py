@@ -52,36 +52,50 @@ class ModalService(BaseReportService):
         persediaan_mobil = float(data["assets"].get("persediaan_mobil", 0))
         aset_tetap = float(data["assets"].get("tetap", 0))
         
+        hpp_bengkel_val = float(b.get("total_hpp", 0))
+        hpp_mobil_val = float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0))
+
         # Section A should represent Total Capital Position (Base + Period Additions)
         # We must include the liquid opening balance to reconcile points-in-time correctly.
         total_a = (
             data.get("opening_balance", 0) +  # Liquid cash at start
             setoran_modal +                   # New cash injected
             total_laba +                      # TPM's earned share
+            hpp_bengkel_val +                # Capital returned from parts sold
+            hpp_mobil_val +                  # Capital returned from cars sold
             persediaan_part +                 # Capital in spare part inventory
             persediaan_mobil +                # Capital in car inventory
             aset_tetap                        # Capital in fixed assets
         )
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
-        def _piutang_saldo(*sumber_list) -> float:
+        def _piutang_saldo(*sumber_list, internal_jb_mobil: str = "all") -> float:
             """Sum sisa_piutang for given sources that are not fully paid.
             Excludes internal unit-to-unit receivables to maintain global report balance.
             """
             query = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
                 PiutangUsaha.sumber.in_(sumber_list),
                 PiutangUsaha.status != PiutangStatus.LUNAS,
-                ~PiutangUsaha.nama_debitur.ilike("%MOBIL%"),
-                ~PiutangUsaha.nama_debitur.ilike("%UNIT%")
             )
+            # Split receivables for JUAL_BELI_MOBIL:
+            # - internal_jb_mobil="only_internal": receivable from internal bengkel cost to car stock (JB MOBIL - <plat>)
+            # - internal_jb_mobil="exclude_internal": customer receivables only
+            if internal_jb_mobil == "only_internal":
+                query = query.filter(PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
+            elif internal_jb_mobil == "exclude_internal":
+                query = query.filter(
+                    ~PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"),
+                    ~PiutangUsaha.nama_debitur.ilike("%UNIT%")
+                )
             return float(query.scalar() or 0)
 
         section_b = {
-            "piutang_usaha": _piutang_saldo(PiutangSource.BENGKEL),
-            "piutang_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL), # Credit sales to customers
-            # Internal repair receivables must be 0 in this report because they are 
-            # capitalized in the car's HPP value.
-            "piutang_part_mobil": 0, 
+            "piutang_usaha": _piutang_saldo(PiutangSource.BENGKEL, internal_jb_mobil="exclude_internal"),
+            # Credit sales to external customers.
+            "piutang_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="exclude_internal"),
+            # Internal bengkel costs for JB Mobil: recognized as workshop receivable
+            # and settled when the car is sold.
+            "piutang_part_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="only_internal"),
             "piutang_jasa_angkut": _piutang_saldo(PiutangSource.JASA_ANGKUT),
             "piutang_karyawan": _piutang_saldo(PiutangSource.KASBON_KARYAWAN),
             "piutang_lainnya": _piutang_saldo(PiutangSource.LAINNYA),
@@ -142,8 +156,8 @@ class ModalService(BaseReportService):
                 "bengkel": b["total_expenses"],
                 "mobil": m["overhead"],
                 "jasa_angkut": ja["overhead"],
-                "mobil_bengkel": m["repairs_total"],
-                "mobil_prep": m["prep_total"],
+                "mobil_bengkel": 0,  # repairs for sold cars are already in book value, don't double-deduct
+                "mobil_prep": m["prep_total"],  # prep cost in cash that needs to be deducted
                 "jasa_angkut_bengkel": ja["repairs"] + ja["armada_ops_ledger"],
                 "jasa_angkut_detailed_breakdown": self._get_ja_breakdown(
                     data["raw_summaries"]["pengeluaran"].get("jasa_angkut_armada", {}),
@@ -158,13 +172,15 @@ class ModalService(BaseReportService):
         }
         
         section_c["total_c"] = (
-            # section_c["pembelian_part"]["total"] +  <-- Excluded
-            # section_c["pembelian_mobil"]["total"] + <-- Excluded
-            section_c["pengembalian_investor"]["total"] + 
-            section_c["operasional"] + 
-            section_c["gaji"] + 
-            section_c["lembur"] + 
-            section_c["prive"] + 
+            # Cash purchases reduce cash (total_d) and must be included to match actual cash position
+            section_c["pembelian_part"]["cash"] +
+            section_c["pembelian_mobil"]["cash"] +
+            section_c["operasional_unit_details"]["mobil_prep"] +
+            section_c["pengembalian_investor"]["total"] +
+            section_c["operasional"] +
+            section_c["gaji"] +
+            section_c["lembur"] +
+            section_c["prive"] +
             section_c["kasbon_karyawan"]
         )
 
@@ -234,6 +250,7 @@ class ModalService(BaseReportService):
                 "aset_tetap": aset_tetap,
                 "total_laba": total_laba,
                 "total_a": total_a,
+                "opening_balance": data.get("opening_balance", 0),
                 "details": {
                     "laba_bengkel": laba_bengkel,
                     "hpp_bengkel": b["total_hpp"],
