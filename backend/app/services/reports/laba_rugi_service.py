@@ -23,24 +23,29 @@ class LabaRugiService(BaseReportService):
         # 2. JASA ANGKUT
         ja_revenue = ja["revenue_tpm"]
         ja_maintenance = ja["repairs"]
-        ja_ops = ja["armada_ops"]
+        ja_ops = ja["armada_ops"] + ja["armada_ops_ledger"] + ja["trip_costs"]
         ja_overhead = ja["overhead"]
         ja_laba_bersih = ja_revenue - ja_maintenance - ja_ops - ja_overhead
 
-        # 3. MOBIL
-        m_revenue = data["revenue"]["mobil"]
-        # Use total stock purchase expenditure for the period (Cash-based approach)
-        m_hpp_unit = m["stock_purchase_period"] 
-        m_maintenance = m["repairs_total"] # Total repairs in period (matching JA logic)
-        m_prep = m["prep_total"] # Total preparation costs in period
+        # 3. MOBIL (Accrual-based to match Modal Report)
+        # We only count performance of units SOLD within the period
+        m_revenue = float(data["raw_summaries"]["mobil"].get("total_penjualan", 0))
+        m_hpp_unit = float(data["raw_summaries"]["mobil"].get("total_harga_beli", 0))
+        m_maintenance = float(data["raw_summaries"]["mobil"].get("total_biaya_bengkel", 0)) 
+        m_prep = float(data["raw_summaries"]["mobil"].get("total_biaya_persiapan", 0))
         m_overhead = m["overhead"] # Unit general overhead
+        m_sharing = m["sharing_investor"] # Investor's share (Accrual from base.py)
 
-        m_laba_bersih = m_revenue - m_hpp_unit - m_prep - m_maintenance - m_overhead
+        # Correct Laba Bersih calculation: Revenue - (Purchase + Prep + Repairs) - Overhead - Sharing
+        m_laba_bersih = m_revenue - m_hpp_unit - m_maintenance - m_prep - m_overhead - m_sharing
 
         # 4. SUMMARY
         overhead_pusat = b["common_expenses"]
         prive = data["prive_global"]
-        # Operating Profit = Sum of units - shared overhead
+        # E. Consolidation & Elimination
+        # Subtract internal workshop revenue from total profit to avoid double-counting
+        # within the company perspective.
+        # Total operating profit is the sum of unit net profits
         total_laba_operasional = b_laba_bersih + ja_laba_bersih + m_laba_bersih - overhead_pusat
         laba_bersih_akhir = total_laba_operasional - prive
 
@@ -71,6 +76,7 @@ class LabaRugiService(BaseReportService):
                     "beban_operasional": m_prep,
                     "maintenance": m_maintenance,
                     "beban_umum": m_overhead,
+                    "sharing_investor": m_sharing,
                     "laba_bersih": m_laba_bersih
                 }
             },

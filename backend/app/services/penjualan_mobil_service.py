@@ -435,35 +435,40 @@ class PenjualanMobilService:
         user_id: Optional[int] = None
     ):
         """Robustly settle any outstanding workshop piutangs and unit payables (Hutangs) for this unit."""
-        # --- A. PIUTANG (RECEIVABLES) SETTLEMENT ---
-        # Workshop transactions for this car
-        workshop_nos = [t.nomor_transaksi for t in mobil.bengkel_perbaikan if t.kategori == 'jual_beli_mobil']
+        # --- A. PIUTANG (RECEIVABLES) & WORKSHOP SETTLEMENT ---
+        # 1. Update all unpaid workshop transactions for this car to LUNAS directly
+        # This fixes the "Belum Bayar" status in the Workshop Index regardless of category
+        self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.mobil_id == mobil.id,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS
+        ).update({
+            "status_bayar": PaymentStatus.LUNAS,
+            "jumlah_bayar": TransaksiPenjualanBengkel.grand_total,
+            "status_pengerjaan": WorkshopStatus.SELESAI
+        }, synchronize_session='fetch')
+
+        # 2. Update linked Piutang records
+        workshop_nos = [t.nomor_transaksi for t in mobil.bengkel_perbaikan]
         
-        internal_piutangs = (
-            self.db.query(PiutangUsaha)
-            .filter(
-                or_(
-                    PiutangUsaha.nomor_referensi.in_(workshop_nos),
-                    PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
-                    PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
-                ),
-                PiutangUsaha.sumber == PiutangSource.BENGKEL,
-                PiutangUsaha.status != PiutangStatus.LUNAS
-            )
-            .all()
+        internal_pi_q = self.db.query(PiutangUsaha).filter(
+            or_(
+                PiutangUsaha.nomor_referensi.in_(workshop_nos),
+                PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
+                PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
+            ),
+            PiutangUsaha.status != PiutangStatus.LUNAS
         )
         
+        # Calculate amount settled for any logging/adjustments if needed
         total_piutang_settled = Decimal("0")
-        for p in internal_piutangs:
-            amount = p.sisa_piutang
-            if amount <= 0: continue
-            total_piutang_settled += amount
+        for p in internal_pi_q.all():
+            total_piutang_settled += p.sisa_piutang
             p.status = PiutangStatus.LUNAS
             p.total_dibayar = p.nominal_piutang
             p.sisa_piutang = Decimal("0")
             p.tanggal_lunas = tanggal
             p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
-            
+
         if total_piutang_settled > 0:
             # 1. MASUK to Workshop (Paying their receivable)
             create_kas_entry(
@@ -1076,6 +1081,25 @@ class PenjualanMobilService:
             if key not in sold_keys:
                 total_biaya_bengkel_unsold += val
 
+        # Calculate total dynamic modal (Full cost: Price + Prep + Dandan)
+        total_full_modal = Decimal("0")
+        total_external_modal = Decimal("0") # Just price + prep
+        for m_id in [r[0] for r in sold_results]:
+            m_obj = self.db.query(Mobil).get(m_id)
+            if m_obj:
+                total_full_modal += m_obj.total_modal
+                total_external_modal += m_obj.hpp
+        
+        # This is the TRUE external gross profit (Sales - (Buy + Prep + PartsCost))
+        # But for unit net, we use full modal (including internal profit transfer)
+        dynamic_laba_unit = Decimal(aggregates.total_penjualan or 0) - total_full_modal
+        
+        # Calculate preparation costs (HPP - Price)
+        total_prep = float(total_external_modal - (aggregates.total_harga_beli or 0))
+        
+        total_laba_kotor_val = float(dynamic_laba_unit)
+        total_laba_tpm_val = float(dynamic_laba_unit - (aggregates.total_laba_investor or 0))
+
         return {
             "total_transaksi": total_count,
             "lunas_count": lunas_count,
@@ -1083,12 +1107,13 @@ class PenjualanMobilService:
             "unpaid_count": unpaid_count,
             "batal_count": batal_count,
             "total_penjualan": float(aggregates.total_penjualan or 0),
-            "total_modal": float(aggregates.total_modal or 0),
+            "total_modal": float(total_external_modal), # What user calls HPP
             "total_harga_beli": float(aggregates.total_harga_beli or 0),
+            "total_biaya_persiapan": total_prep,
             "total_pembelian_period": total_pembelian_period,
-            "total_laba_kotor": float(aggregates.total_laba_kotor or 0),
+            "total_laba_kotor": total_laba_kotor_val,
             "laba_investor": float(aggregates.total_laba_investor or 0),
-            "laba_tpm": float(aggregates.total_laba_tpm or 0),
+            "laba_tpm": total_laba_tpm_val,
             "total_dp": float(aggregates.total_dp or 0),
             "total_biaya_bengkel": total_biaya_bengkel,
             "total_biaya_bengkel_unsold": total_biaya_bengkel_unsold,

@@ -49,12 +49,13 @@ export default function FinanceTab() {
     ) : 0;
 
     const totalPengeluaran = dashboard?.pengeluaran.total || 0;
+    const commonOverhead = dashboard?.pengeluaran.breakdown.umum || 0;
 
     const totalLabaBersih = dashboard ? (
         (dashboard.bengkel?.laba_kotor || 0) +
         (dashboard.mobil?.laba_tpm || 0) +
         (dashboard.jasa_angkut?.laba_tpm || 0) -
-        totalPengeluaran
+        commonOverhead
     ) : 0;
 
     // Aggregate sub-accounts for summary cards

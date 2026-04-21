@@ -1131,7 +1131,8 @@ class MuatanService:
                 "total_biaya_bengkel_from_wallet": total_biaya_bengkel_from_wallet,
                 "bengkel_per_armada": bengkel_per_armada,
                 "operasional_per_armada": {}, # Populated below
-                "operasional_manual_per_armada": ops_manual_per_armada
+                "operasional_manual_per_armada": ops_manual_per_armada,
+                "armada_period_ops": float(operasional_q.scalar() or 0)
             }
 
         }

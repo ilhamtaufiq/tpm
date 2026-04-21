@@ -696,6 +696,10 @@ export default function BengkelScreen() {
                                         Menunggu Pelunasan Jasa Angkut
                                     </Typography>
                                 )
+                            ) : selectedItem.kategori === 'jual_beli_mobil' && selectedItem.mobil_id ? (
+                                <Typography variant="caption" className="text-orange-600 font-bold">
+                                    Hutang Unit (Piutang JB Mobil) — Dibayar saat Terjual
+                                </Typography>
                             ) : (selectedItem.grand_total > (selectedItem.jumlah_bayar || 0)) && (
                                 <Typography variant="caption" className="text-rose-600 font-bold">
                                     Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}

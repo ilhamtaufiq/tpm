@@ -53,8 +53,8 @@ class NeracaService(BaseReportService):
         piutang_lainnya = get_piutang_sum(PiutangSource.LAINNYA)
         total_piutang = piutang_bengkel + piutang_mobil + piutang_ja + piutang_karyawan + piutang_lainnya
 
-        # Inventory
-        total_stock_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+        # Inventory (Mobil stock value includes Buy + Prep + Dandan = total_modal)
+        total_stock_mobil = float(self.db.query(func.sum(Mobil.total_modal)).filter(
             Mobil.tanggal_masuk <= as_of_date,
             or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of_date)
         ).scalar() or 0)
@@ -78,16 +78,29 @@ class NeracaService(BaseReportService):
         hutang_part = get_hutang_sum(HutangSource.PEMBELIAN_PART)
         hutang_mobil = get_hutang_sum(HutangSource.PEMBELIAN_MOBIL) + get_hutang_sum(HutangSource.JUAL_BELI_MOBIL)
         hutang_lainnya = get_hutang_sum(HutangSource.LAINNYA)
-        total_liabilities = hutang_part + hutang_mobil + hutang_lainnya
+        
+        # Add accrual for Investor Profit and pending payouts
+        from app.models.mobil import TransaksiPenjualanMobil, Mobil
+        from app.utils.constants import InvestorDisbursementStatus, OwnershipType
+        
+        hutang_investor = float(self.db.query(
+            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+            TransaksiPenjualanMobil.tanggal <= as_of_date,
+            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+        ).scalar() or 0)
+        
+        total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor
 
-        # 3. EQUITY & PROFIT (Calculated from project start)
-        # We need a performance snapshot from the beginning to as_of_date to get "Retained Earnings"
+        # 3. EQUITY & PROFIT (Consolidated from reports logic)
         start_of_time = date(2020, 1, 1) 
         hist = self.get_unit_financial_breakdown(start_of_time, as_of_date)
 
-        laba_bengkel = hist["units"]["bengkel"]["laba_kotor"] - hist["units"]["bengkel"]["gaji"]
-        laba_ja = hist["units"]["jasa_angkut"]["revenue_tpm"] - hist["units"]["jasa_angkut"]["repairs"] - hist["units"]["jasa_angkut"]["armada_ops"] - hist["units"]["jasa_angkut"]["overhead"]
-        laba_mobil = hist["revenue"]["mobil"] - (hist["units"]["mobil"]["purchase_hpp"] + hist["units"]["mobil"]["prep_hpp"]) - hist["units"]["mobil"]["repairs"] - hist["units"]["mobil"]["overhead"]
+        # Net Profits of units (These are already netted by our new dynamic logic)
+        laba_bengkel = hist["units"]["bengkel"]["laba_kotor"] - hist["units"]["bengkel"]["total_expenses"] - hist["units"]["bengkel"]["gaji"]
+        laba_ja = hist["units"]["jasa_angkut"]["revenue_tpm"] - (hist["units"]["jasa_angkut"]["repairs"] + hist["units"]["jasa_angkut"]["armada_ops"] + hist["units"]["jasa_angkut"]["overhead"])
+        laba_mobil = float(hist["units"]["mobil"]["laba_tpm"])
         
         total_laba = laba_bengkel + laba_ja + laba_mobil
         prive = hist["prive_global"]
@@ -135,6 +148,7 @@ class NeracaService(BaseReportService):
             "modal": {
                 "setoran_modal": setoran_modal,
                 "modal_persediaan": total_stock_parts + total_stock_mobil,
+                "laba_kotor": total_laba + overhead_umum,
                 "laba_ditahan": total_laba,
                 "detail_laba": {
                     "bengkel": laba_bengkel,
@@ -143,12 +157,13 @@ class NeracaService(BaseReportService):
                 },
                 "total_beban": overhead_umum,
                 "prive": prive,
+                "pencairan_investor": 0, # This can be expanded later if needed
                 "total_modal": total_modal_komponen
             },
             "hutang": {
                 "hutang_part": hutang_part,
                 "hutang_mobil": hutang_mobil,
-                "hutang_investor": 0,
+                "hutang_investor": hutang_investor,
                 "hutang_lainnya": hutang_lainnya,
                 "total_hutang": total_liabilities
             },

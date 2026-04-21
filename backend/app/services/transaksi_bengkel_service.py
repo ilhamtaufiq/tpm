@@ -206,11 +206,16 @@ class TransaksiBengkelService:
         is_internal_jasa_angkut = (getattr(data, "kategori", "umum") == "jasa_angkut")
         is_internal_mobil = (getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
-        if is_internal_jasa_angkut or is_internal_mobil:
-            # Internal transactions for JA and JB Mobil are considered paid internally
-            # This moves cash between unit wallets immediately
+        if is_internal_jasa_angkut:
+            # Internal transactions for Jasa Angkut are considered paid internally
+            # This moves cash from Jasa Angkut profit to Bengkel immediately
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
+        elif is_internal_mobil:
+            # Internal transactions for JB Mobil are NOT paid immediately
+            # They stay as Piutang (receivable) until the car is sold
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.KREDIT
         elif data.payments:
             total_pembayaran = sum(p.jumlah for p in data.payments)
             # If multiple methods used, set main method as SPLIT
@@ -318,11 +323,9 @@ class TransaksiBengkelService:
                 piutang_record.referensi_id = transaksi.id
 
                 if is_internal_mobil:
-                    # Internal JB Mobil: bilateral cash has already moved via KasBank.
-                    # Mark piutang as LUNAS immediately so it doesn't inflate Section B.
-                    piutang_record.status = PiutangStatus.LUNAS
-                    piutang_record.total_dibayar = piutang_record.nominal_piutang
-                    piutang_record.sisa_piutang = Decimal("0")
+                    # Internal JB Mobil: keep as Piutang (receivable) until car is sold.
+                    # We do NOT mark as LUNAS here anymore.
+                    pass
                 elif total_pembayaran > 0:
                     # External customer: process DP payment against piutang
                     from app.services.piutang_service import PiutangService
@@ -456,7 +459,7 @@ class TransaksiBengkelService:
                 )
 
         # Record internal transfer for integrated units
-        if is_internal_jasa_angkut or is_internal_mobil:
+        if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
         
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
@@ -602,8 +605,9 @@ class TransaksiBengkelService:
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
         elif is_internal_mobil:
+            # Consistent with create logic
             total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.INTERNAL
+            metode_utama = PaymentMethod.KREDIT
         elif data.payments:
             total_pembayaran = sum(p.jumlah for p in data.payments)
             metodes = list(set(p.metode for p in data.payments if p.jumlah > 0))
@@ -736,7 +740,7 @@ class TransaksiBengkelService:
             if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
-        if is_internal_jasa_angkut or is_internal_mobil:
+        if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
 
         self.db.commit()

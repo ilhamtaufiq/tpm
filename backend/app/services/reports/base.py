@@ -1,5 +1,7 @@
-from app.utils.constants import AssetStatus
-from datetime import date
+from app.utils.constants import HutangSource, AssetStatus
+from app.models import PembayaranHutang
+from app.services.pembelian_part_service import PembelianPartService
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Optional, Dict, Any, List
 from sqlalchemy import func, or_, and_, case
@@ -10,6 +12,7 @@ from app.services.pengeluaran_service import PengeluaranService
 from app.services.penjualan_mobil_service import PenjualanMobilService
 from app.services.muatan_service import MuatanService
 from app.services.slip_gaji_service import SlipGajiService
+from app.services.kas_bank_service import KasBankService
 
 from app.models.bengkel import TransaksiPenjualanBengkel, PengeluaranBengkel, SparePart
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
@@ -19,10 +22,12 @@ from app.models.keuangan import KasBank, Aset, PiutangUsaha, HutangUsaha
 from app.utils.constants import (
     KasBankSource, 
     KasBankType, 
-    KasBankJenis, 
+    KasBankJenis,
+    PaymentStatus,
     ExpenseCategory, 
     OwnershipType,
-    CarStatus
+    CarStatus,
+    PaymentMethod
 )
 
 class BaseReportService:
@@ -38,8 +43,17 @@ class BaseReportService:
         bengkel_service = TransaksiBengkelService(self.db)
         bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
 
+        # Correct Opening Balance (Total system balance as of start of day)
+        kas_bank_service = KasBankService(self.db)
+        closing_yesterday = tanggal_dari - timedelta(days=1)
+        opening_summary = kas_bank_service.get_all_balances(as_of=closing_yesterday)
+        saldo_awal = opening_summary.get("total_saldo", 0)
+
         pengeluaran_service = PengeluaranService(self.db)
         pengeluaran_summary = pengeluaran_service.get_summary(tanggal_dari, tanggal_sampai)
+
+        pembelian_part_service = PembelianPartService(self.db)
+        pembelian_part_summary = pembelian_part_service.get_summary(tanggal_dari, tanggal_sampai)
 
         mobil_service = PenjualanMobilService(self.db)
         mobil_summary = mobil_service.get_summary(tanggal_dari, tanggal_sampai)
@@ -63,7 +77,7 @@ class BaseReportService:
         raw_bengkel_outflow = float(get_wallet_outflow(KasBankJenis.KAS_UNIT_BENGKEL))
 
         # MOBIL Logic
-        sold_mobil_ids = [str(m.id) for m in self.db.query(Mobil.id).filter(
+        sold_mobil_ids = [m.id for m in self.db.query(Mobil.id).filter(
             Mobil.status == CarStatus.TERJUAL,
             Mobil.tanggal_terjual >= tanggal_dari,
             Mobil.tanggal_terjual <= tanggal_sampai
@@ -81,31 +95,52 @@ class BaseReportService:
             PengeluaranBengkel.tanggal <= tanggal_sampai
         ).group_by(PengeluaranBengkel.mobil_id, PengeluaranBengkel.kategori).all()
 
-        mobil_detailed_expenses = {}
-        for mid, kat, total in mobil_unit_ledger:
-            mid_s = str(mid)
-            if mid_s not in mobil_detailed_expenses: mobil_detailed_expenses[mid_s] = {}
-            mobil_detailed_expenses[mid_s][str(kat)] = float(total or 0)
-
         hpp_sold_price = float(mobil_summary.get("total_harga_beli", 0))
         hpp_sold_prep = max(0, float(mobil_summary.get("total_modal", 0)) - hpp_sold_price)
         
-        new_purchase_ids = {str(m.id) for m in self.db.query(Mobil.id).filter(
+        new_purchase_ids = {m.id for m in self.db.query(Mobil.id).filter(
             Mobil.tanggal_masuk >= tanggal_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
         ).all()}
 
-        capital_unsold_purchase = 0
+        # Fix: capital_unsold_purchase should be ALL unsold cars bought in this period
+        # not just those with detailed expenses.
+        capital_unsold_purchase = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+            Mobil.id.in_(list(new_purchase_ids)),
+            Mobil.id.notin_(list(sold_mobil_ids))
+        ).scalar() or 0)
+
+        # Workshop Bills (Internal Transfer)
+        workshop_bills = float(mobil_summary.get("total_biaya_bengkel", 0))
+        workshop_bills_unsold = float(mobil_summary.get("total_biaya_bengkel_unsold", 0))
+        
         capital_unsold_prep = 0
         capital_unsold_repairs = 0
         
         # Total value of ALL car stock bought in this period (regardless of sale status)
         total_stock_purchase_period = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
-            Mobil.tanggal_masuk >= tanggal_dari,
-            Mobil.tanggal_masuk <= tanggal_sampai,
+            or_(
+                and_(Mobil.tanggal_masuk >= tanggal_dari, Mobil.tanggal_masuk <= tanggal_sampai),
+                and_(func.date(Mobil.created_at) >= tanggal_dari, func.date(Mobil.created_at) <= tanggal_sampai)
+            ),
             Mobil.deleted_at.is_(None)
         ).scalar() or 0)
+
+        # Unpaid portion (Hutang) for those purchases
+        purchase_stock_unpaid = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.created_at >= tanggal_dari,
+            HutangUsaha.created_at <= (datetime.combine(tanggal_sampai, time.max) if isinstance(tanggal_sampai, date) else tanggal_sampai)
+        ).scalar() or 0)
+        
+        capital_total_prep_period = 0
+        capital_total_repairs_period = 0
+        
+        mobil_detailed_expenses = {}
+        for mid, kat, total in mobil_unit_ledger:
+            if mid not in mobil_detailed_expenses: mobil_detailed_expenses[mid] = {}
+            mobil_detailed_expenses[mid][str(kat)] = float(total or 0)
         
         capital_total_prep_period = 0
         capital_total_repairs_period = 0
@@ -121,14 +156,7 @@ class BaseReportService:
             if mid not in sold_mobil_ids:
                 capital_unsold_prep += prep_ledger
                 capital_unsold_repairs += repairs_ledger
-                if mid in new_purchase_ids:
-                    m_obj = self.db.get(Mobil, int(mid))
-                    if m_obj: capital_unsold_purchase += float(m_obj.harga_beli or 0)
 
-        # Workshop Bills (Internal Transfer)
-        workshop_bills = float(mobil_summary.get("total_biaya_bengkel", 0))
-        workshop_bills_unsold = float(mobil_summary.get("total_biaya_bengkel_unsold", 0))
-        
         # Repairs Total = Workshop Bills + Repairs from Ledger
         repairs_total_period = workshop_bills + capital_total_repairs_period
         prep_total_period = capital_total_prep_period
@@ -238,17 +266,100 @@ class BaseReportService:
         raw_ja_outflow = ja_wallet_out
 
 
-        # Assets & Stock (Simplified snapshot)
-        aset_tetap = float(self.db.query(func.sum(Aset.harga_beli)).filter(Aset.status == AssetStatus.AKTIF).scalar() or 0)
-        aset_persediaan = float(self.db.query(func.sum(SparePart.stok * SparePart.harga_beli)).scalar() or 0)
+        # Assets & Stock (Snapshot as of tanggal_sampai)
+        aset_tetap = float(self.db.query(func.sum(Aset.harga_beli)).filter(
+            Aset.status == AssetStatus.AKTIF,
+            Aset.tanggal_beli <= tanggal_sampai
+        ).scalar() or 0)
+        
+        # Part Stock
+        part_stock = float(self.db.query(func.sum(SparePart.stok * SparePart.harga_beli)).scalar() or 0)
+        # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
+        # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
+        car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+            Mobil.tanggal_masuk <= tanggal_sampai,
+            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > tanggal_sampai),
+            Mobil.deleted_at.is_(None)
+        ).scalar() or 0)
+        
+        # Add improvement costs (Prep & Repairs) to unsold car stock value
+        # to ensure they are treated as Assets (Inventory) rather than Period Expenses.
+        car_stock += (capital_unsold_prep + mobil_total_repairs_unsold)
+        
+        aset_persediaan = part_stock + car_stock
 
         # Piutang (Cumulative as of end date)
         piutang_usaha = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(PiutangUsaha.tanggal <= tanggal_sampai).scalar() or 0)
-        hutang_total = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(HutangUsaha.tanggal <= tanggal_sampai).scalar() or 0)
+        
+        # Robust point-in-time Debt calculation (Nominal - Paid up to date)
+        def get_debt_balance_at_date(source_list: list) -> float:
+            # 1. Main HutangUsaha table
+            nominal = self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+                HutangUsaha.sumber.in_(source_list),
+                HutangUsaha.tanggal <= tanggal_sampai
+            ).scalar() or 0
+            
+            paid = self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
+                HutangUsaha.sumber.in_(source_list),
+                PembayaranHutang.tanggal <= tanggal_sampai
+            ).scalar() or 0
+            
+            total_hu = float(nominal - paid)
 
+            # 2. Accrued Expenses from PengeluaranBengkel (If source is LAINNYA)
+            total_accrued = 0
+            if HutangSource.LAINNYA in source_list:
+                # Sum of all KREDIT expenses
+                nominal_accrued = self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
+                    PengeluaranBengkel.metode_bayar == PaymentMethod.KREDIT,
+                    PengeluaranBengkel.tanggal <= tanggal_sampai
+                ).scalar() or 0
+                
+                # Sum of all payments to those expenses (via KasBank with source PENGELUARAN)
+                # Note: this is a simplification, but works if we assume KREDIT expenses stay open until paid via KasBank
+                paid_accrued = self.db.query(func.sum(KasBank.nominal)).filter(
+                    KasBank.sumber == KasBankSource.PENGELUARAN,
+                    KasBank.tipe == KasBankType.KELUAR,
+                    KasBank.tanggal <= tanggal_sampai,
+                    # We only count payments that were for previous KREDIT transactions 
+                    # (this is hard to distinguish without a direct link, but typically 
+                    # manual KasBank entries for debt settlement will have PENGELUARAN source)
+                ).scalar() or 0
+                
+                # Wait, this might be risky. Let's stick to HutangUsaha if the system is designed to use it.
+                # Actually, PengeluaranService.create SKIPS KasBank for KREDIT.
+                # So if it's KREDIT, it's just a number in the ledger.
+                total_accrued = float(nominal_accrued)
+            
+            return total_hu + total_accrued
+
+        # Debt Position at End date
+        hutang_part = get_debt_balance_at_date([HutangSource.PEMBELIAN_PART])
+        hutang_mobil = get_debt_balance_at_date([HutangSource.PEMBELIAN_MOBIL, HutangSource.JUAL_BELI_MOBIL])
+        hutang_lainnya = get_debt_balance_at_date([HutangSource.LAINNYA])
+        hutang_total = hutang_part + hutang_mobil + hutang_lainnya
+
+        # Internal Elimination: Workshop revenue from internal car unit repairs
+        internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        # Summary of profits for Section A (TPM portion only to match reconciliation)
+        laba_mobil_gross = float(mobil_summary.get("total_laba_kotor", 0))
+        laba_mobil_tpm = float(mobil_summary.get("laba_tpm", 0))
+        laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
+        laba_ja_tpm = float(ja_revenue_tpm)
+
+        total_laba_gross = laba_mobil_gross + laba_bengkel_kotor + laba_ja_tpm
 
         return {
             "periode": {"dari": tanggal_dari, "sampai": tanggal_sampai},
+            "internal_elimination": internal_elimination,
+            "opening_balance": saldo_awal,
+            "laba_tpm": total_laba_gross,
             "revenue": {
                 "bengkel": float(bengkel_summary["total_penjualan"]),
                 "mobil": float(mobil_summary["total_penjualan"]),
@@ -257,10 +368,15 @@ class BaseReportService:
             },
             "units": {
                 "mobil": {
+                    "total_laba_kotor": laba_mobil_gross, 
+                    "total_laba_tpm": laba_mobil_tpm,
+                    "sharing_investor": laba_mobil_gross - laba_mobil_tpm,
                     "purchase_hpp": hpp_sold_price,
                     "prep_hpp": hpp_sold_prep,
                     "stock_purchase_period": total_stock_purchase_period,
-                    "purchase_stock_period": capital_unsold_purchase,
+                    "purchase_stock_period": total_stock_purchase_period,
+                    "purchase_stock_unpaid": purchase_stock_unpaid,
+                    "purchase_unsold_period": capital_unsold_purchase,
                     "prep_stock_period": capital_unsold_prep + mobil_total_repairs_unsold,
                     "repairs": mobil_total_repairs_sold,
                     "repairs_total": repairs_total_period,
@@ -270,7 +386,7 @@ class BaseReportService:
                     "prive": float(mobil_prive_unit)
                 },
                 "jasa_angkut": {
-                    "revenue_tpm": ja_revenue_tpm,
+                    "revenue_tpm": laba_ja_tpm,
                     "repairs": ja_expenses_bengkel,
                     "armada_ops": float(ja_details.get("armada_period_ops", 0)),
                     "armada_ops_ledger": ja_tagged_from_wallet,
@@ -280,7 +396,7 @@ class BaseReportService:
                     "prive": float(ja_prive_unit)
                 },
                 "bengkel": {
-                    "laba_kotor": float(bengkel_summary["total_laba_kotor"]),
+                    "laba_kotor": laba_bengkel_kotor,
                     "total_hpp": float(bengkel_summary["total_hpp"]),
                     "common_expenses": bengkel_common,
                     "total_expenses": bengkel_ops_total,
@@ -289,17 +405,30 @@ class BaseReportService:
                     "prive": float(b_prive_unit)
                 }
             },
+            "operasional": (
+                bengkel_ops_total + bengkel_common + 
+                float(ja_details.get("armada_period_ops", 0)) + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
+                general_mobil_overhead
+            ),
+            "prive_global": prive_total,
             "assets": {
                 "tetap": aset_tetap,
-                "persediaan": aset_persediaan
+                "persediaan_part": part_stock,
+                "persediaan_mobil": car_stock
             },
-            "prive_global": prive_total,
             "raw_summaries": {
                 "bengkel": bengkel_summary,
                 "pengeluaran": pengeluaran_summary,
+                "pembelian_part": pembelian_part_summary,
                 "mobil": mobil_summary,
                 "muatan": muatan_summary,
-                "gaji": gaji_summary
+                "gaji": gaji_summary,
+                "hutang": {
+                    "part": hutang_part,
+                    "mobil": hutang_mobil,
+                    "lainnya": hutang_lainnya,
+                    "total": hutang_total,
+                },
+                "opening_balance": saldo_awal
             }
         }
-

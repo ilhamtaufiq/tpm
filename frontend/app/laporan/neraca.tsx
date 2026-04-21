@@ -668,11 +668,15 @@ export default function NeracaScreen() {
                                         
                                         <div class="row-item" style="margin-top:10px;">
                                             <span>Piutang Bengkel</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_bengkel)}</span>
+                                            <span>${formatCurrency(report.aktiva_lancar.piutang_usaha)}</span>
                                         </div>
                                         <div class="row-item">
                                             <span>Piutang Mobil</span>
                                             <span>${formatCurrency(report.aktiva_lancar.piutang_mobil)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Piutang Jasa Angkut</span>
+                                            <span>${formatCurrency(report.aktiva_lancar.piutang_jasa_angkut)}</span>
                                         </div>
                                         <div class="row-item row-total">
                                             <span>Total Piutang</span>
@@ -735,6 +739,10 @@ export default function NeracaScreen() {
                                         <div class="row-item">
                                             <span>Hutang Mobil</span>
                                             <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
+                                        </div>
+                                        <div class="row-item">
+                                            <span>Hutang Investor</span>
+                                            <span>${formatCurrency(report.hutang.hutang_investor)}</span>
                                         </div>
                                         <div class="row-item row-total">
                                             <span>TOTAL HUTANG</span>

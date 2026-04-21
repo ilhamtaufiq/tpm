@@ -139,11 +139,15 @@ export default function LabaRugiScreen() {
                     <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.hpp || 0)})</span>
                 </div>
                 <div class="row-item">
-                    <span>III. BIAYA PREP & MAINTENANCE</span>
-                    <span class="text-error">(${formatCurrency((reportData?.units?.mobil?.beban_operasional || 0) + (reportData?.units?.mobil?.maintenance || 0))})</span>
+                    <span>III. BIAYA PERSIAPAN (PAJAK, BBN, DLL)</span>
+                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.beban_operasional || 0)})</span>
+                </div>
+                <div class="row-item">
+                    <span>IV. BAGI HASIL INVESTOR</span>
+                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.sharing_investor || 0)})</span>
                 </div>
                 <div class="row-item row-total" style="background: #fefce8;">
-                    <span>IV. LABA BERSIH MOBIL (TPM)</span>
+                    <span>V. LABA BERSIH MOBIL (TPM)</span>
                     <span class="font-bold">${formatCurrency(reportData?.units?.mobil?.laba_bersih || 0)}</span>
                 </div>
 
@@ -307,7 +311,7 @@ export default function LabaRugiScreen() {
                 {/* 4. BEBAN OPERASIONAL */}
                 <View className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 w-full mb-4">
                     <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Operasional Unit</Typography>
-                    <Row label="Beban Gaji Mekanik" value={bengkelData.biayaGaji} isNegative />
+                    <Row label="Beban Gaji Karyawan" value={bengkelData.biayaGaji} isNegative />
                     <Row label="Beban Lembur" value={bengkelData.biayaLembur} isNegative />
                     <Row label="Beban Operasional Unit" value={bengkelData.biayaOps} isNegative />
                 </View>
@@ -410,19 +414,20 @@ export default function LabaRugiScreen() {
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                         <Row label="Harga Beli Unit" value={hpp} isNegative color="text-rose-600" />
-                        <Row label="Restorasi & Perbaikan (Bengkel)" value={maintenance} isNegative color="text-rose-600" />
                         <Row label="Biaya Persiapan (Pajak, BBN, dll)" value={directOps} isNegative color="text-rose-600" />
+                        <Row label="Biaya Perbaikan (Workshop)" value={maintenance} isNegative color="text-rose-600" />
                     </View>
 
                     <View className="p-1 px-3 mb-4">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Umum Unit</Typography>
-                        <Row label="Beban Umum & Operaisonal" value={generalOps} isNegative />
+                        <Row label="Bagi Hasil Investor" value={unit.sharing_investor || 0} isNegative color="text-rose-600" />
+                        <Row label="Beban Umum & Operasional" value={generalOps} isNegative />
                     </View>
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${netProfit >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
                             <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih TPM</Typography>
-                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya & Operasional</Typography>
+                            <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya & Share</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
                             {netProfit < 0 ? `(${formatCurrency(Math.abs(netProfit))})` : formatCurrency(netProfit)}

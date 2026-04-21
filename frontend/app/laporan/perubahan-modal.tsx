@@ -90,14 +90,15 @@ export default function LaporanPerubahanModalScreen() {
             const a2 = report.section_a.hpp_bengkel || 0;
             const a3 = report.section_a.hpp_mobil || 0;
             const a4 = a2 + a3;
-            const a5 = a1 + a4 + (report.section_a.modal_persediaan || 0); // Laba & Modal Awal + HPP + Assets
+            // Asset stock from Section A
+            const a_stok_part = report.section_a.persediaan_part || 0;
+            const a_stok_mobil = report.section_a.persediaan_mobil || 0;
+            const a_aset_tetap = report.section_a.aset_tetap || 0;
+            const a5 = a1 + a4 + a_stok_part + a_stok_mobil + a_aset_tetap; // Capital + HPP + Stock + Assets
 
             // A.6 (Gross Profit)
             const a6 = report.section_a.total_laba || 0;
-            // internal_bengkel_mobil removed (no longer bilateral)
-            const a7 = report.section_a.total_a || 0; // Total A from Backend
-            const a_aset_persediaan = report.section_a.aset_persediaan || 0;
-            const a_aset_tetap = report.section_a.aset_tetap || 0;
+            const a7 = report.section_a.total_a || 0; 
 
             // B. Piutang
             const b1 = report.section_b.piutang_lainnya || 0;
@@ -107,12 +108,13 @@ export default function LaporanPerubahanModalScreen() {
             const b5 = report.section_b.piutang_karyawan || 0;
             const b6 = report.section_b.piutang_usaha || 0;
 
-            const b7 = report.section_b.total_b || 0; // Total B from Backend (including assets)
-            const b8 = a7 - b7; // Intermediate balance (A.7 - B.7) - Stock assets are in both A and B, so they cancel out to find cash.
-            const b_aset_persediaan = report.section_b.aset_persediaan || 0;
+            const b7 = report.section_b.total_b || 0; 
+            const b8 = a7 - b7; 
+            const b_stok_part = report.section_b.stok_part || 0;
+            const b_stok_mobil = report.section_b.stok_mobil || 0;
             const b_aset_tetap = report.section_b.aset_tetap || 0;
             const b_total_piutang = (b1 + b2 + b3 + b4 + b5 + b6);
-            const b_total_aset = (b_aset_persediaan + b_aset_tetap);
+            const b_total_aset = (b_stok_part + b_stok_mobil + b_aset_tetap);
 
             // C. Pengurang
             const c_part_cash = report.section_c.pembelian_part?.cash || 0;
@@ -202,20 +204,21 @@ export default function LaporanPerubahanModalScreen() {
                         </tr>
                         <tr>
                             <td>PERSEDIAAN SPAREPART</td>
-                            <td class="amount">${formatCurrency(a_aset_persediaan)}</td>
+                            <td class="amount">${formatCurrency(report.section_a.persediaan_part || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="border-bottom">
+                            <td>PERSEDIAAN UNIT MOBIL</td>
+                            <td class="amount">${formatCurrency(report.section_a.persediaan_mobil || 0)}</td>
                             <td></td>
                         </tr>
                         <tr class="border-bottom">
                             <td>ASET TETAP</td>
-                            <td class="amount">${formatCurrency(a_aset_tetap)}</td>
+                            <td class="amount">${formatCurrency(report.section_a.aset_tetap || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="2" class="amount"></td>
-                            <td class="amount">${formatCurrency(a4 + (report.section_a.modal_persediaan || 0))}</td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td colspan="2" class="amount"></td>
+                            <td colspan="2" class="amount">Subtotal Modal & Inventaris</td>
                             <td class="amount">${formatCurrency(a5)}</td>
                         </tr>
                         <tr>
@@ -296,7 +299,12 @@ export default function LaporanPerubahanModalScreen() {
                         </tr>
                         <tr>
                             <td style="padding-left: 20px;">PERSEDIAAN SPAREPART</td>
-                            <td class="amount">${formatCurrency(b_aset_persediaan)}</td>
+                            <td class="amount">${formatCurrency(b_stok_part)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td style="padding-left: 20px;">PERSEDIAAN UNIT MOBIL</td>
+                            <td class="amount">${formatCurrency(b_stok_mobil)}</td>
                             <td></td>
                         </tr>
                         <tr class="border-bottom">
@@ -333,29 +341,41 @@ export default function LaporanPerubahanModalScreen() {
                         </tr>
                         <tr class="green-row sub-row">
                             <td style="padding-left: 20px;">a. Cash</td>
-                            <td class="amount">${formatCurrency(c_part_cash)}</td>
+                            <td class="amount">${formatCurrency(report.section_c.pembelian_part?.cash)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row sub-row">
                             <td style="padding-left: 20px;">b. Transfer</td>
-                            <td class="amount">${formatCurrency(c_part_transfer)}</td>
+                            <td class="amount">${formatCurrency(report.section_c.pembelian_part?.transfer)}</td>
                             <td></td>
                         </tr>
+                        ${report.section_c.pembelian_part?.accrued > 0 ? `
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px; color: #991b1b;">c. Kredit / Hutang</td>
+                            <td class="amount" style="color: #991b1b;">${formatCurrency(report.section_c.pembelian_part.accrued)}</td>
+                            <td></td>
+                        </tr>` : ''}
                         <tr class="green-row">
                             <td><b>TOTAL PEMBELIAN MOBIL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_mobil_total)}</b></td>
+                            <td class="amount"><b>${formatCurrency(report.section_c.pembelian_mobil?.total)}</b></td>
                             <td></td>
                         </tr>
                         <tr class="green-row sub-row">
                             <td style="padding-left: 20px;">a. Cash</td>
-                            <td class="amount">${formatCurrency(c_mobil_cash)}</td>
+                            <td class="amount">${formatCurrency(report.section_c.pembelian_mobil?.cash)}</td>
                             <td></td>
                         </tr>
                         <tr class="green-row sub-row">
                             <td style="padding-left: 20px;">b. Transfer</td>
-                            <td class="amount">${formatCurrency(c_mobil_transfer)}</td>
+                            <td class="amount">${formatCurrency(report.section_c.pembelian_mobil?.transfer)}</td>
                             <td></td>
                         </tr>
+                        ${report.section_c.pembelian_mobil?.accrued > 0 ? `
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px; color: #991b1b;">c. Kredit / Hutang</td>
+                            <td class="amount" style="color: #991b1b;">${formatCurrency(report.section_c.pembelian_mobil.accrued)}</td>
+                            <td></td>
+                        </tr>` : ''}
                          <tr class="green-row border-bottom">
                             <td><b>TOTAL ARUS KELUAR JB MOBIL</b></td>
                             <td class="amount"><b>${formatCurrency(c_inv_total)}</b></td>
@@ -378,7 +398,7 @@ export default function LaporanPerubahanModalScreen() {
                         </tr>` : ''}
                         <tr class="green-row">
                             <td><b>TOTAL BEBAN OPERASIONAL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_op)}</b></td>
+                            <td class="amount"><b>${formatCurrency(c_op_umum + c_op_bengkel + c_op_mobil + c_op_ja)}</b></td>
                             <td></td>
                         </tr>
                         <tr class="green-row sub-row">
@@ -399,26 +419,6 @@ export default function LaporanPerubahanModalScreen() {
                         <tr class="green-row sub-row">
                             <td style="padding-left: 20px;">- Operasional Unit Bisnis Jasa Angkut</td>
                             <td class="amount">${formatCurrency(c_op_ja)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row">
-                            <td><b>BIAYA PENGELUARAN JUAL BELI MOBIL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_mobil_total + c_jtb_mobil_bengkel + c_jtb_mobil_prep)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Pembelian Mobil</td>
-                            <td class="amount">${formatCurrency(c_mobil_total)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Bengkel Unit Bisnis Mobil</td>
-                            <td class="amount">${formatCurrency(c_jtb_mobil_bengkel)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Biaya Manajemen Unit (Pajak, ADM, Variasi)</td>
-                            <td class="amount">${formatCurrency(c_jtb_mobil_prep)}</td>
                             <td></td>
                         </tr>
                         ${report.section_c.operasional_unit_details?.jasa_angkut_bengkel > 0 ? `
@@ -447,6 +447,21 @@ export default function LaporanPerubahanModalScreen() {
                             </tr>` : ''}
                         `).join('')}
                         ` : ''}
+                        <tr class="green-row">
+                            <td><b>BEBAN BIAYA JUAL BELI MOBIL</b></td>
+                            <td class="amount"><b>${formatCurrency(c_mobil_total + c_jtb_mobil_prep)}</b></td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Pembelian Unit Mobil</td>
+                            <td class="amount">${formatCurrency(c_mobil_total)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="green-row sub-row">
+                            <td style="padding-left: 20px;">- Biaya Persiapan (Pajak, BBN, dll)</td>
+                            <td class="amount">${formatCurrency(c_jtb_mobil_prep)}</td>
+                            <td></td>
+                        </tr>
                         <tr class="green-row">
                             <td>BEBAN GAJI KARYAWAN</td>
                             <td class="amount">${formatCurrency(c_gaji)}</td>
@@ -686,27 +701,32 @@ export default function LaporanPerubahanModalScreen() {
                     </View>
                     <Typography variant="h4" weight="bold" className="text-blue-900 tracking-tight">A. Laba dan Modal Awal</Typography>
                 </View>
-
                 <View className="p-5 space-y-4 w-full">
                     <View className="space-y-1">
-                        <Row label="Setoran Modal" value={data.setoran_modal} />
-                        <Row label="Persediaan Sparepart" value={data.aset_persediaan} />
-                        <Row label="HPP / Modal Bengkel" value={data.hpp_bengkel} />
-                        <Row label="HPP / Modal Jual Beli Mobil" value={data.hpp_mobil} />
-                        <Row label="Aset Tetap" value={data.aset_tetap} />
+                        <Row label="Total Setoran Modal" value={data.setoran_modal} bold />
                     </View>
 
                     <View className="bg-slate-50 rounded-xl p-4 border border-slate-100 w-full shadow-sm shadow-slate-100/50">
                         <Typography variant="caption" weight="bold" className="mb-3 text-slate-500 uppercase tracking-widest text-[10px]">Rincian Laba Operasional</Typography>
 
                         <View className="space-y-1">
-                            <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
-
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
-                                <Row label="2. Laba Mobil" value={details.laba_kotor_mobil} small />
+                            <View className="mb-2">
+                                <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
+                                {details.hpp_bengkel > 0 && (
+                                    <View className="pl-4">
+                                        <Typography variant="caption" className="text-slate-400 italic text-[9px]">Termasuk HPP Bengkel: {formatCurrency(details.hpp_bengkel)}</Typography>
+                                    </View>
+                                )}
                             </View>
 
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2 space-y-1">
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2">
+                                <Row label="2. Laba Mobil" value={details.laba_kotor_mobil} small />
+                                <View className="pl-4">
+                                    <Typography variant="caption" className="text-slate-400 italic text-[9px]">Berdasarkan HPP/Modal Mobil: {formatCurrency(details.hpp_mobil)}</Typography>
+                                </View>
+                            </View>
+
+                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2">
                                 <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
                             </View>
                         </View>
@@ -731,27 +751,28 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="w-8 h-8 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
                         <Wallet size={18} className="text-emerald-600" />
                     </View>
-                    <Typography variant="h4" weight="bold" className="text-emerald-900 tracking-tight">B. Piutang & Aset</Typography>
+                    <Typography variant="h4" weight="bold" className="text-emerald-900 tracking-tight">B. Piutang & Aset Persediaan</Typography>
                 </View>
 
-                <View className="p-5 w-full">
-                    <View className="mb-5">
+                <View className="p-5 space-y-5 w-full">
+                    <View className="mb-2">
                         <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.1 Piutang Tersebar</Typography>
                         <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
-                            <Row label="Piutang Usaha (Bengkel)" value={data.piutang_usaha} small />
-                            <Row label="Piutang Unit Mobil" value={data.piutang_mobil} small />
+                            <Row label="Piutang Usaha (Bengkel Umum)" value={data.piutang_usaha} small />
+                            <Row label="Piutang Pembelian Mobil (Unit)" value={data.piutang_mobil} small />
                             <Row label="Piutang Sparepart / Servis Mobil" value={data.piutang_part_mobil} small />
                             <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} small />
                             <Row label="Piutang Karyawan" value={data.piutang_karyawan || 0} small />
-                            <Row label="Piutang Lainnya" value={data.piutang_lainnya || 0} small />
+                            <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />
                         </View>
                     </View>
 
-                    <View className="mb-5">
-                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.2 Nilai Aset</Typography>
+                    <View>
+                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.2 Persediaan & Aset Fisik</Typography>
                         <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
-                            <Row label="Persediaan Sparepart" value={data.aset_persediaan} small />
-                            <Row label="Nilai Aset Tetap" value={data.aset_tetap} small />
+                            <Row label="Persediaan Sparepart (Stok Sparepart)" value={data.stok_part} small />
+                            <Row label="Persediaan Unit Mobil (Stok Mobil)" value={data.stok_mobil} small />
+                            <Row label="Aset Tetap (Kantor/Alat)" value={data.aset_tetap} small />
                         </View>
                     </View>
 
@@ -781,6 +802,9 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
                                 <Row label="Pembayaran Cash" value={data.pembelian_part?.cash} small />
                                 <Row label="Pembayaran Transfer" value={data.pembelian_part?.transfer} small />
+                                {data.pembelian_part?.accrued > 0 && (
+                                    <Row label="Kredit atau Hutang" value={data.pembelian_part?.accrued} small color="text-rose-500" />
+                                )}
                             </View>
                         </View>
                     )}
@@ -801,7 +825,7 @@ export default function LaporanPerubahanModalScreen() {
                     )}
 
                     <View className="bg-orange-50/40 p-3.5 rounded-xl border border-orange-100/50 w-full">
-                        <Row label="Total Beban Operasional" value={data.operasional} bold color="text-orange-800" />
+                        <Row label="Total Beban Operasional" value={(data.operasional_unit_details?.umum || 0) + (data.operasional_unit_details?.bengkel || 0) + (data.operasional_unit_details?.mobil || 0) + (data.operasional_unit_details?.jasa_angkut || 0)} bold color="text-orange-800" />
                         <View className="mt-3 pt-3 border-t border-orange-200/50 space-y-1.5">
                             <Row label="Operasional Umum" value={data.operasional_unit_details?.umum} small isNegative color="text-slate-600" />
                             <Row label="Operasional Unit Bisnis Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative color="text-slate-600" />
@@ -809,14 +833,6 @@ export default function LaporanPerubahanModalScreen() {
                             <Row label="Operasional Unit Bisnis Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
                         </View>
                         
-                        {/* Jual Beli Mobil Group */}
-                        <View className="mt-4 pt-3 border-t border-orange-200/50 space-y-1.5">
-                            <Typography variant="caption" weight="bold" className="text-orange-800/60 uppercase tracking-widest text-[9px] mb-1">Pengeluaran Jual Beli Mobil</Typography>
-                            <Row label="Pembelian Mobil" value={data.hpp_mobil?.pembelian} small isNegative color="text-slate-600" />
-                            <Row label="Bengkel Unit Bisnis Mobil" value={data.operasional_unit_details?.mobil_bengkel} small isNegative color="text-slate-600" />
-                            <Row label="Biaya Manajemen Unit (Prep)" value={data.operasional_unit_details?.mobil_prep} small isNegative color="text-slate-600" />
-                        </View>
-
                         {Object.keys(data.operasional_unit_details?.jasa_angkut_detailed_breakdown || {}).length > 0 && (
                             <View className="mt-4 pt-3 border-t border-orange-200/50 w-full">
                                 <Typography variant="caption" weight="bold" className="text-rose-800/60 uppercase tracking-widest text-[9px] mb-2">Operasional Jasa Angkut (Per Armada)</Typography>
@@ -833,6 +849,20 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
                             </View>
                         )}
+                    </View>
+
+                    {/* Beban Biaya Jual Beli Mobil */}
+                    <View className="mt-4 pt-3 border-t border-orange-200/50 space-y-1.5">
+                        <Typography variant="caption" weight="bold" className="text-orange-800/60 uppercase tracking-widest text-[9px] mb-1">Beban Biaya Jual Beli Mobil</Typography>
+                        <Row label="Total Pembelian Unit" value={data.pembelian_mobil?.total} small isNegative color="text-orange-900" bold />
+                        <View className="pl-4 border-l border-orange-200 space-y-1 mt-1">
+                            <Row label="Bayar Cash" value={data.pembelian_mobil?.cash} small color="text-slate-500" />
+                            <Row label="Bayar Transfer" value={data.pembelian_mobil?.transfer} small color="text-slate-500" />
+                            {data.pembelian_mobil?.accrued > 0 && (
+                                <Row label="Kredit / Hutang Unit" value={data.pembelian_mobil?.accrued} small color="text-rose-500" />
+                            )}
+                        </View>
+                        <Row label="Biaya Persiapan (Pajak, BBN, dll)" value={data.operasional_unit_details?.mobil_prep} small isNegative color="text-slate-600" />
                     </View>
 
                     <View className="space-y-2 px-1 pt-2 w-full">

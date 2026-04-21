@@ -1,15 +1,20 @@
+from app.utils.constants import CarStatus
 from datetime import date
 from typing import Dict, Any
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha
+from app.models.mobil import Mobil, TransaksiPenjualanMobil
 from app.utils.constants import (
     KasBankSource, 
     KasBankType, 
     KasBankJenis,
     PiutangStatus,
     PiutangSource,
-    HutangStatus
+    HutangStatus,
+    InvestorDisbursementStatus,
+    OwnershipType,
+    PaymentStatus
 )
 class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
@@ -28,61 +33,98 @@ class ModalService(BaseReportService):
             KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
-        # Calculate GROSS Profit for Section A (COGS Purchase only, Prep/Repairs in Section C)
-        laba_bengkel = b["laba_kotor"]
-        laba_mobil = data["revenue"]["mobil"] - m["purchase_hpp"]
-        laba_ja = ja["revenue_tpm"]
-        total_laba = laba_bengkel + laba_mobil + laba_ja
+        # Calculate GROSS Profit for Section A (Display consistency: 1M row = 1M total)
+        laba_bengkel = float(b.get("laba_kotor", 0))
+        laba_mobil_gross = float(m.get("total_laba_kotor", 0))
+        laba_ja = float(ja.get("revenue_gross", 0)) or float(ja.get("revenue_tpm", 0))
         
-        total_a = setoran_modal + b["total_hpp"] + m["purchase_hpp"] + data["assets"]["persediaan"] + data["assets"]["tetap"] + total_laba
+        # Sharing investor is moved to Section C (Operational Expense) 
+        # to prevent double counting since it is also in Section E (Liabilities)
+        sharing_investor_accrual = float(m.get("sharing_investor", 0))
+
+        total_laba = laba_bengkel + laba_mobil_gross + laba_ja
+        
+        # Section A should represent Total Capital Position (Base + Period Additions)
+        # We must include the liquid opening balance to reconcile points-in-time correctly.
+        total_a = (
+            data.get("opening_balance", 0) + # Liquid cash at start
+            setoran_modal + # New cash injected
+            total_laba # TPM's earned share
+        )
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
         def _piutang_saldo(*sumber_list) -> float:
-            """Sum sisa_piutang for given sources that are not fully paid."""
-            return float(
-                self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                    PiutangUsaha.sumber.in_(sumber_list),
-                    PiutangUsaha.status != PiutangStatus.LUNAS,
-                ).scalar() or 0
+            """Sum sisa_piutang for given sources that are not fully paid.
+            Excludes internal unit-to-unit receivables to maintain global report balance.
+            """
+            query = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.sumber.in_(sumber_list),
+                PiutangUsaha.status != PiutangStatus.LUNAS,
+                ~PiutangUsaha.nama_debitur.ilike("%MOBIL%"),
+                ~PiutangUsaha.nama_debitur.ilike("%UNIT%")
             )
+            return float(query.scalar() or 0)
 
         section_b = {
-            # Piutang bengkel umum (kategori umum, bukan jual_beli_mobil)
             "piutang_usaha": _piutang_saldo(PiutangSource.BENGKEL),
-            "piutang_mobil": 0,  # reserved for future direct mobil sale credit
-            # Piutang bengkel yang terkait dengan perbaikan mobil jual beli
-            "piutang_part_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL),
+            "piutang_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL), # Credit sales to customers
+            # Internal repair receivables must be 0 in this report because they are 
+            # capitalized in the car's HPP value.
+            "piutang_part_mobil": 0, 
             "piutang_jasa_angkut": _piutang_saldo(PiutangSource.JASA_ANGKUT),
             "piutang_karyawan": _piutang_saldo(PiutangSource.KASBON_KARYAWAN),
             "piutang_lainnya": _piutang_saldo(PiutangSource.LAINNYA),
-            "aset_persediaan": data["assets"]["persediaan"],
+            "stok_part": data["assets"]["persediaan_part"],
+            "stok_mobil": data["assets"]["persediaan_mobil"],
             "aset_tetap": data["assets"]["tetap"],
-            "total_b": 0
         }
-        section_b["total_b"] = sum(v for k, v in section_b.items() if k != "total_b")
+        
+        # Calculate Total Section B (Cash is not in B, only receivables and stock)
+        total_b = sum([v for k, v in section_b.items() if isinstance(v, (int, float))])
+        section_b["total_b"] = total_b
 
         # Section C: Pengurang
+        # 1. Total real cash out today (Capital + Profit)
+        real_payouts = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai,
+            KasBank.keterangan.like("%Pencairan%")
+        ).scalar() or 0)
+        
+        # 2. Pending accrual for units sold today but NOT yet paid
+        pending_accrual = float(self.db.query(
+            func.sum(TransaksiPenjualanMobil.laba_investor)
+        ).filter(
+            TransaksiPenjualanMobil.tanggal >= tanggal_dari,
+            TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
+            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+        ).scalar() or 0)
+
         section_c = {
             "pembelian_part": {
-                "total": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("pembelian_sparepart", {}).get("total", 0),
-                "cash": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("pembelian_sparepart", {}).get("cash", 0),
-                "transfer": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("pembelian_sparepart", {}).get("transfer", 0),
+                "total": data["raw_summaries"]["pembelian_part"].get("total_nilai", 0),
+                "cash": data["raw_summaries"]["pembelian_part"].get("total_nilai", 0) - data["raw_summaries"]["pembelian_part"].get("belum_lunas_nilai", 0),
+                "transfer": 0,
+                "accrued": data["raw_summaries"]["pembelian_part"].get("belum_lunas_nilai", 0),
             },
-            "hpp_mobil": {
-                "pembelian": m["purchase_stock_period"],
-                "cash": 0,
-                "transfer": m["purchase_stock_period"],
+            "pembelian_mobil": {
+                "total": m["purchase_stock_period"],
+                "cash": m["purchase_stock_period"] - m["purchase_stock_unpaid"],
+                "transfer": 0,
+                "accrued": m["purchase_stock_unpaid"],
             },
             "pengembalian_investor": {
-                "total": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("bagi_hasil", {}).get("total", 0),
-                "cash": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("bagi_hasil", {}).get("cash", 0),
-                "transfer": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("bagi_hasil", {}).get("transfer", 0),
-                "accrued": 0
+                "total": real_payouts + pending_accrual,
+                "cash": real_payouts,
+                "transfer": 0,
+                "accrued": pending_accrual
             },
             "operasional": (
                 b["total_expenses"] + b["common_expenses"] + 
                 ja["armada_ops"] + ja["armada_ops_ledger"] + ja["overhead"] + ja["repairs"] +
-                m["overhead"] + m["repairs_total"] + m["prep_total"]
+                m["overhead"]
             ),
             "operasional_unit_details": {
                 "umum": b["common_expenses"],
@@ -99,14 +141,14 @@ class ModalService(BaseReportService):
             },
             "gaji": b["gaji"],
             "lembur": float(data["raw_summaries"]["gaji"].get("total_lembur", 0)),
-            "prive": data["prive_global"],
+            "prive": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("prive", {}).get("total", 0),
             "kasbon_karyawan": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("kasbon", {}).get("total", 0) or data["raw_summaries"]["pengeluaran"]["per_kategori"].get("kasbon_karyawan", {}).get("total", 0),
-            "transaksi_lainnya": 0,
             "total_c": 0
         }
+        
         section_c["total_c"] = (
-            section_c["pembelian_part"]["total"] + 
-            section_c["hpp_mobil"]["pembelian"] + 
+            # section_c["pembelian_part"]["total"] +  <-- Excluded
+            # section_c["pembelian_mobil"]["total"] + <-- Excluded
             section_c["pengembalian_investor"]["total"] + 
             section_c["operasional"] + 
             section_c["gaji"] + 
@@ -116,14 +158,37 @@ class ModalService(BaseReportService):
         )
 
         # Section E: Hutang
+        # These are point-in-time balances already calculated in BaseReportService
+        h_summary = data["raw_summaries"].get("hutang", {})
+        # Note: Nominal Investor is ALREADY in Setoran Modal (Section A).
+        # We only track the accrued profit share (Laba Investor) and already disbursed amounts.
+        
+        # 1. Unsold investor units: 0 debt for capital (already in Setoran A)
+        unsold_investor_debt = 0 
+
+        # 2. Sold investor units debt: ONLY track the profit share being owed.
+        # Capital is returning to our pool from sale price.
+        sold_investor_debt = float(self.db.query(
+            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+        ).scalar() or 0)
+
+        pending_investor_debt = unsold_investor_debt + sold_investor_debt
+
         section_e = {
-            "hutang_part": float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).scalar() or 0),
-            "hutang_mobil": 0,
-            "hutang_investor": 0,
-            "hutang_lainnya": 0,
-            "total_e": 0
+            "hutang_part": h_summary.get("part", 0),
+            "hutang_mobil": h_summary.get("mobil", 0),
+            "hutang_investor": pending_investor_debt,
+            "hutang_lainnya": max(0, h_summary.get("total", 0) - (h_summary.get("part", 0) + h_summary.get("mobil", 0))),
         }
-        section_e["total_e"] = sum(v for k, v in section_e.items() if k != "total_e")
+        section_e["total_e"] = (
+            section_e["hutang_part"] + 
+            section_e["hutang_mobil"] + 
+            section_e["hutang_investor"] + 
+            section_e["hutang_lainnya"]
+        )
 
         # Section D: Final Reconciliation
         theoretical_modal = (total_a - section_b["total_b"] - section_c["total_c"] + section_e["total_e"])
@@ -151,15 +216,13 @@ class ModalService(BaseReportService):
             "periode": data["periode"],
             "section_a": {
                 "setoran_modal": setoran_modal,
-                "hpp_bengkel": b["total_hpp"],
-                "hpp_mobil": m["purchase_hpp"],
                 "total_laba": total_laba,
-                "total_a": total_a,
-                "aset_persediaan": data["assets"]["persediaan"],
-                "aset_tetap": data["assets"]["tetap"],
+                "total_a": setoran_modal + total_laba,
                 "details": {
                     "laba_bengkel": laba_bengkel,
-                    "laba_kotor_mobil": laba_mobil,
+                    "hpp_bengkel": b["total_hpp"],
+                    "laba_kotor_mobil": float(m.get("total_laba_kotor", 0)),
+                    "hpp_mobil": m["purchase_hpp"] + m["prep_hpp"],
                     "laba_jasa_angkut": laba_ja
                 }
             },
@@ -171,7 +234,7 @@ class ModalService(BaseReportService):
                 "transfer": transfer_only,
                 "total_d": total_d,
                 "penyesuaian": penyesuaian,
-                "modal_komponen": total_a - section_b["total_b"] + section_e["total_e"]
+                "modal_komponen": total_a - section_b["total_b"] - section_c["total_c"] + section_e["total_e"]
             },
             "section_e": section_e
         }
