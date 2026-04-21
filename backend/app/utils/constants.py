@@ -65,6 +65,7 @@ class MuatanStatus(str, Enum):
 
     PROSES = "PROSES"
     SELESAI = "SELESAI"
+    BATAL = "BATAL"
 
     @classmethod
     def _missing_(cls, value: object) -> "MuatanStatus | None":

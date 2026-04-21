@@ -16,6 +16,7 @@ from app.services.slip_gaji_service import SlipGajiService
 from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
+from app.services.reports.laba_rugi_service import LabaRugiService
 from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType, ExpenseCategory
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from app.models.bengkel import PengeluaranBengkel
@@ -89,15 +90,25 @@ def get_dashboard_summary(
     
     overhead_data = {str(unit).lower(): float(total or 0) for unit, total in overhead_by_unit.group_by(PengeluaranBengkel.bisnis_kategori).all()}
 
+    # --- Integrated Laba Rugi Logic for Consistency ---
+    lr_service = LabaRugiService(db)
+    # We call get_report but use the same logic/summaries.
+    # To avoid repeating all queries, we could refactor, but for 30s cached dashboard,
+    # calling the service is the safest way to ensure 100% agreement.
+    lr_report = lr_service.get_report(tanggal_dari, tanggal_sampai)
+    total_laba_operasional = lr_report["summary"]["laba_operasional"]
+    laba_bersih_akhir = lr_report["summary"]["laba_bersih"]
+    # ---------------------------------------------------
+
     result = {
         "periode": {
             "dari": tanggal_dari.isoformat() if tanggal_dari else None,
             "sampai": tanggal_sampai.isoformat() if tanggal_sampai else None,
         },
         "bengkel": {
-            "total_penjualan": bengkel_summary["total_penjualan"],
             "total_transaksi": bengkel_summary["total_transaksi"],
             "laba_kotor": bengkel_summary["total_laba_kotor"],
+            "laba_bersih": float(lr_report["units"]["bengkel"]["laba_bersih"]),
             "total_pengeluaran": overhead_data.get("bengkel", 0) + overhead_data.get("umum", 0),
             "saldo_cash": float(kas_bank_summary.get("kas_unit_bengkel", {}).get("saldo", 0)),
         },
@@ -111,6 +122,7 @@ def get_dashboard_summary(
             "total_transaksi": mobil_summary["total_transaksi"],
             "laba_kotor": float(mobil_summary["laba_tpm"]),
             "laba_tpm": float(mobil_summary["laba_tpm"]),
+            "laba_bersih": float(lr_report["units"]["mobil"]["laba_bersih"]),
             "total_pengeluaran": (
                 overhead_data.get("penjualan_mobil", 0) + 
                 overhead_data.get("mobil", 0) + 
@@ -123,6 +135,7 @@ def get_dashboard_summary(
             "total_pendapatan": float(muatan_summary["total_pendapatan"]),
             "total_transaksi": muatan_summary["total_transaksi"],
             "laba_tpm": float(muatan_summary["laba_tpm"]),
+            "laba_bersih": float(lr_report["units"]["jasa_angkut"]["laba_bersih"]),
             "total_pengeluaran": overhead_data.get("jasa_angkut", 0) + muatan_summary.get("details", {}).get("biaya_lainnya", 0),
             "active_trips": muatan_summary["hutang_supir_count"],
             "saldo_cash": float(kas_bank_summary.get("kas_unit_jasa_angkut", {}).get("saldo", 0)),
@@ -140,6 +153,10 @@ def get_dashboard_summary(
         },
         "kas_bank": kas_bank_summary,
         "active_trips": muatan_summary["hutang_supir_count"],  # For BusinessPulse
+        
+        # Consistent P&L Totals from LabaRugiService
+        "laba_operasional": float(total_laba_operasional),
+        "laba_bersih": float(laba_bersih_akhir)
     }
     set_cached(_cache_key, result)
     return result

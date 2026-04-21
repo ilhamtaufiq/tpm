@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -608,33 +608,33 @@ export default function SlipGajiScreen() {
                         <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4 text-center">Periode Laporan & Slip</Typography>
                         
                         <View className="flex-row items-center justify-between pb-4 border-b border-gray-50">
-                            <Pressable
+                            <TouchableOpacity
                                 onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
                                 className="flex-1 items-center"
-                                hitSlop={10}
+                                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                             >
                                 <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
                                 <Typography className="text-textMain font-bold text-base">{startDate}</Typography>
-                            </Pressable>
+                            </TouchableOpacity>
                             
                             <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                                 <ArrowRight size={16} color="#023C69" />
                             </View>
 
-                            <Pressable
+                            <TouchableOpacity
                                 onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
                                 className="flex-1 items-center"
-                                hitSlop={10}
+                                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                             >
                                 <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
                                 <Typography className="text-textMain font-bold text-base">{endDate}</Typography>
-                            </Pressable>
+                            </TouchableOpacity>
                         </View>
 
-                        <Pressable
+                        <TouchableOpacity
                             onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
                             className="mt-4 bg-primary/5 rounded-2xl p-4 flex-row items-center justify-between border border-primary/10"
-                            hitSlop={10}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
                             <View className="flex-row items-center">
                                 <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
@@ -648,7 +648,7 @@ export default function SlipGajiScreen() {
                             <View className="bg-primary/20 px-3 py-1.5 rounded-full">
                                 <Typography className="text-primary text-[8px] font-black uppercase">Ubah</Typography>
                             </View>
-                        </Pressable>
+                        </TouchableOpacity>
                     </Card>
                 </View>
 

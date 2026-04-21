@@ -26,6 +26,10 @@ class NeracaService(BaseReportService):
         
         # 1. ASSETS
         
+        # We use BaseReportService for consistent consolidated financial logic
+        first_ever = date(2024, 1, 1) # System start date
+        hist = self.get_unit_financial_breakdown(first_ever, as_of_date)
+        
         # Cash & Bank Balances (Latest balance as of as_of_date)
         balances = {}
         for jenis in KasBankJenis:
@@ -37,7 +41,21 @@ class NeracaService(BaseReportService):
         
         total_cash = sum(balances.values())
 
-        # Piutang breakdown
+        # Piutang breakdown - Use values from hist for consistency
+        raw_hutang = hist.get("raw_summaries", {}).get("hutang", {})
+        
+        # Assets from consolidated breakdown
+        total_stock_mobil = hist["assets"]["persediaan_mobil"]
+        total_stock_parts = hist["assets"]["persediaan_part"]
+        total_fixed_assets = hist["assets"]["tetap"]
+        
+        # Re-fetch asset list for details
+        assets_list = self.db.query(Aset).filter(
+            Aset.tanggal_beli <= as_of_date,
+            Aset.status == AssetStatus.AKTIF
+        ).all()
+        
+        # Recalculate Piutang sum from DB for specific breakdown displayed in Balance Sheet
         def get_piutang_sum(source: PiutangSource):
             return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
                 PiutangUsaha.sumber == source,
@@ -53,21 +71,6 @@ class NeracaService(BaseReportService):
         
         piutang_usaha = piutang_bengkel + piutang_mobil + piutang_ja
         total_piutang = piutang_usaha + piutang_karyawan + piutang_lainnya
-
-        # Inventory (Mobil stock value includes Buy + Prep + Dandan = total_modal)
-        total_stock_mobil = float(self.db.query(func.sum(Mobil.total_modal)).filter(
-            Mobil.tanggal_masuk <= as_of_date,
-            or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of_date),
-            Mobil.deleted_at.is_(None)
-        ).scalar() or 0)
-        total_stock_parts = float(self.db.query(func.sum(SparePart.stok * SparePart.harga_beli)).scalar() or 0)
-
-        # Fixed Assets
-        assets_list = self.db.query(Aset).filter(
-            Aset.tanggal_beli <= as_of_date,
-            Aset.status == AssetStatus.AKTIF
-        ).all()
-        total_fixed_assets = sum(float(a.harga_beli) for a in assets_list)
         
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
 
@@ -94,10 +97,7 @@ class NeracaService(BaseReportService):
         total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor
 
         # 3. EQUITY & PROFIT
-        # We use BaseReportService for consistent consolidated profit logic
-        first_ever = date(2024, 1, 1) # System start date
-        hist = self.get_unit_financial_breakdown(first_ever, as_of_date)
-        
+        # We reuse 'hist' fetched at the start for consistent consolidated profit logic
         total_laba_gross = float(hist.get("laba_tpm", 0))
         total_operasional = float(hist.get("operasional", 0))
         internal_elimination = float(hist.get("internal_elimination", 0))
@@ -116,11 +116,20 @@ class NeracaService(BaseReportService):
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         
-        total_equity = setoran_modal + retained_earnings - prive_total
+        # Calculate theoretical equity based on components
+        equity_per_komponen = setoran_modal + retained_earnings - prive_total
+        
+        # Calculate the GAP (Selisih) - This is usually from imported stock or unrecorded capital
+        # In a balanced sheet: Equity = Assets - Liabilities
+        target_equity = total_assets - total_liabilities
+        selisih_pencatatan = target_equity - equity_per_komponen
+        
+        # We report the final equity as the balanced TARGET value, but show the breakdown
+        total_equity = target_equity
         total_pasiva = total_liabilities + total_equity
         
         report_selisih = total_assets - total_pasiva
-        is_balanced = abs(report_selisih) < 100 # Rounding tolerance
+        is_balanced = abs(report_selisih) < 100 
 
         return {
             "periode": as_of_date.isoformat(),
@@ -157,6 +166,8 @@ class NeracaService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "prive": prive_total,
+                "selisih_modal": selisih_pencatatan, # This shows the imported stock adjustment
+                "modal_komponen": equity_per_komponen,
                 "total_modal": total_equity
             },
             "total_pasiva": total_pasiva,

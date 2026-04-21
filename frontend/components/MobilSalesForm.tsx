@@ -153,7 +153,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                     setDialogConfig({
                         visible: true,
                         title: 'Validasi',
-                        message: 'Silakan pilih metode pembayaran untuk DP (Tunai, Transfer, atau Internal)',
+                        message: 'Silakan pilih metode pembayaran untuk DP (Tunai atau Transfer)',
                         variant: 'warning'
                     });
                     return;
@@ -320,7 +320,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 </View>
 
                                 <View className="flex-row flex-wrap gap-2 mb-3">
-                                    {['TUNAI', 'TRANSFER', 'INTERNAL'].map((m) => (
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
                                         <Pressable
                                             key={m}
                                             onPress={() => updatePaymentRow(p.id, 'metode', m)}
@@ -392,12 +392,6 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
                                 className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'TRANSFER' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
                             >
                                 <Typography weight="bold" className={`uppercase ${metodeBayar === 'TRANSFER' ? 'text-primary' : 'text-gray-400'}`}>Transfer</Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setMetodeBayar('INTERNAL')}
-                                className={`flex-1 py-3.5 items-center rounded-2xl border-2 ${metodeBayar === 'INTERNAL' ? 'border-primary bg-primary/10 shadow-sm' : 'border-gray-100'}`}
-                            >
-                                <Typography weight="bold" className={`uppercase ${metodeBayar === 'INTERNAL' ? 'text-primary' : 'text-gray-400'}`}>Internal</Typography>
                             </Pressable>
                         </View>
 

@@ -254,6 +254,8 @@ class MuatanUpdate(BaseModel):
     
     persentase_tpm: Optional[Decimal] = None
     status: Optional[MuatanStatus] = None
+    status_bayar: Optional[PaymentStatus] = None
+    metode_bayar: Optional[PaymentMethod] = None
     payments: Optional[List[PaymentDetail]] = None
     kas_jenis: Optional[KasBankJenis] = None
     catatan: Optional[str] = None

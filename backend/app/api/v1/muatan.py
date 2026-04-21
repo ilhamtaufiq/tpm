@@ -186,6 +186,18 @@ def delete_muatan(
     return {"message": "Muatan berhasil dihapus"}
 
 
+@router.post("/{muatan_id}/void")
+def void_muatan(
+    muatan_id: int,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Void/Cancel transport load and reverse finance."""
+    service = MuatanService(db)
+    service.void_muatan(muatan_id)
+    return {"message": "Muatan berhasil dibatalkan"}
+
+
 # Additional costs endpoints
 @router.post("/{muatan_id}/biaya")
 def add_biaya(

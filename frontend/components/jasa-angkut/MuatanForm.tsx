@@ -1066,7 +1066,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             <View>
                                 <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2">
-                                    {['TUNAI', 'TRANSFER', 'INTERNAL'].map((m) => (
+                                    {['TUNAI', 'TRANSFER'].map((m) => (
                                         <Pressable
                                             key={m}
                                             onPress={() => updateField('metode_bayar', m)}

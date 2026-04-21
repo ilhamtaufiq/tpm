@@ -148,7 +148,7 @@ class ModalService(BaseReportService):
             },
             "operasional": (
                 b["total_expenses"] + b["common_expenses"] + 
-                ja["armada_ops"] + ja["armada_ops_ledger"] + ja["overhead"] + ja["repairs"] +
+                ja["trip_costs"] + ja["armada_ops_ledger"] + ja["overhead"] + ja["repairs"] +
                 m["overhead"]
             ),
             "operasional_unit_details": {
@@ -172,9 +172,10 @@ class ModalService(BaseReportService):
         }
         
         section_c["total_c"] = (
-            # Cash purchases reduce cash (total_d) and must be included to match actual cash position
-            section_c["pembelian_part"]["cash"] +
-            section_c["pembelian_mobil"]["cash"] +
+            # Use total values for purchases as Section E (Hutang) offsets the unpaid portion.
+            # This ensures credit purchases are neutral in the theoretical cash pool until paid.
+            section_c["pembelian_part"]["total"] +
+            section_c["pembelian_mobil"]["total"] +
             section_c["operasional_unit_details"]["mobil_prep"] +
             section_c["pengembalian_investor"]["total"] +
             section_c["operasional"] +
@@ -293,6 +294,13 @@ class ModalService(BaseReportService):
         # 3. Add legacy manual operational costs per armada (from old BiayaLainnya inputs)
         ops_per_armada = muatan_data.get("details", {}).get("operasional_manual_per_armada", {})
         for name, amount in ops_per_armada.items():
+            if name not in summary:
+                summary[name] = {"bengkel": 0, "ops": 0}
+            summary[name]["ops"] += float(amount)
+
+        # 4. Add fixed costs (BBM, Tol, Parkir, etc.) per armada
+        fixed_per_armada = muatan_data.get("details", {}).get("fixed_per_armada", {})
+        for name, amount in fixed_per_armada.items():
             if name not in summary:
                 summary[name] = {"bengkel": 0, "ops": 0}
             summary[name]["ops"] += float(amount)

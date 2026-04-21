@@ -42,7 +42,9 @@ import {
     useMuatanSummary,
     useActiveArmada,
     usePayMuatanSplit,
-    useUpdateMuatanStatus
+    useUpdateMuatanStatus,
+    useVoidMuatan,
+    useDeleteMuatan
 } from '../../hooks/useJasaAngkut';
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -117,6 +119,8 @@ export default function JasaAngkutScreen() {
     });
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
     const updateStatusMutation = useUpdateMuatanStatus();
+    const voidMuatanMutation = useVoidMuatan();
+    const deleteMuatanMutation = useDeleteMuatan();
     const queryClient = useQueryClient();
 
     const { data: balances } = useKasBankBalances();
@@ -998,6 +1002,51 @@ export default function JasaAngkutScreen() {
         });
     };
 
+    const handleCancelMuatan = async (tripId: number) => {
+        setDialogConfig({
+            visible: true,
+            title: "Batalkan Muatan",
+            message: 'Apakah Anda yakin ingin membatalkan muatan ini? Seluruh catatan keuangan (Kas/Bank & Piutang) yang terkait dengan ritase ini akan dihapus/dibalikkan.',
+            variant: 'warning',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    setActionLoading(true);
+                    await voidMuatanMutation.mutateAsync(tripId);
+
+                    // Update the local selected trip state if open
+                    if (selectedTrip && selectedTrip.id === tripId) {
+                        setSelectedTrip(null);
+                        handleCloseSheet();
+                    }
+
+                    setTimeout(() => {
+                        setDialogConfig({
+                            visible: true,
+                            title: "Sukses",
+                            message: "Muatan berhasil dibatalkan",
+                            variant: 'success',
+                            type: 'alert'
+                        });
+                    }, 500);
+                } catch (error) {
+                    console.error("Gagal membatalkan muatan:", error);
+                    setTimeout(() => {
+                        setDialogConfig({
+                            visible: true,
+                            title: "Error",
+                            message: getErrorMessage(error, "Gagal membatalkan muatan"),
+                            variant: 'error',
+                            type: 'alert'
+                        });
+                    }, 500);
+                } finally {
+                    setActionLoading(false);
+                }
+            }
+        });
+    };
+
     const closeDialog = () => {
         setDialogConfig(prev => ({ ...prev, visible: false }));
     };
@@ -1109,6 +1158,16 @@ export default function JasaAngkutScreen() {
                             className="rounded-3xl h-14"
                             icon={<Edit size={20} color="#023C69" />}
                         />
+
+                        {trip.status !== 'BATAL' && (
+                            <TouchableOpacity
+                                onPress={() => handleCancelMuatan(trip.id)}
+                                className="flex-row items-center justify-center bg-rose-50 py-4 rounded-3xl border border-rose-100"
+                            >
+                                <X size={20} color="#E11D48" />
+                                <Typography weight="bold" className="text-rose-600 ml-2">Batalkan Muatan</Typography>
+                            </TouchableOpacity>
+                        )}
                         {trip.piutang_id && trip.status_bayar !== 'LUNAS' && (
                             <Button
                                 title="Pelunasan / Bayar Cicilan"

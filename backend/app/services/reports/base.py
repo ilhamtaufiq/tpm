@@ -142,15 +142,12 @@ class BaseReportService:
             if mid not in mobil_detailed_expenses: mobil_detailed_expenses[mid] = {}
             mobil_detailed_expenses[mid][str(kat)] = float(total or 0)
         
-        # Identify double-counted JA expenses
-        # (Where user records a manual Keluar for a cost already inside 'total_biaya' of a trip)
-        ja_double_exp = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber == KasBankSource.JASA_ANGKUT,
-            KasBank.keterangan.ilike("Biaya Operational Muatan %"),
-            KasBank.tanggal >= tanggal_dari,
-            KasBank.tanggal <= tanggal_sampai
-        ).scalar() or 0)
+        # 0. JA Double-Count Check
+        # (Where an expense is recorded in both MuatanForm AND manual KasBank)
+        # Note: we used to subtract this, but it turns out MuatanService automatic entries 
+        # are only in KasBank and JasaAngkutBiayaLainnya, not in PengeluaranBengkel (ledger).
+        # So subtraction from ledger-based totals is incorrect.
+        ja_double_exp = 0
 
         
         # Actually, let's just find ALL Jasa Angkut manual operational expenses that should be ignored
@@ -414,7 +411,7 @@ class BaseReportService:
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             ja_expenses_trip + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
-            general_mobil_overhead - ja_double_exp
+            general_mobil_overhead
         )
 
 

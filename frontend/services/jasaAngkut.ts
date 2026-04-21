@@ -74,8 +74,8 @@ export interface Muatan {
     persentase_tpm: number;
     laba_tpm: number;
     laba_supir: number;
-    status: 'PROSES' | 'SELESAI';
-    status_bayar: 'LUNAS' | 'BELUM_LUNAS';
+    status: 'PROSES' | 'SELESAI' | 'BATAL';
+    status_bayar: 'LUNAS' | 'BELUM_LUNAS' | 'BATAL';
     metode_bayar?: PaymentMethod;
     tanggal_bayar?: string;
     biaya_tambahan?: BiayaLainnya[];
@@ -119,8 +119,8 @@ export interface MuatanCreate {
     biaya_parkir?: number;
     biaya_lainnya?: number;
     persentase_tpm?: number; // Default 50
-    status?: 'PROSES' | 'SELESAI';
-    status_bayar?: 'LUNAS' | 'BELUM_LUNAS';
+    status?: 'PROSES' | 'SELESAI' | 'BATAL';
+    status_bayar?: 'LUNAS' | 'BELUM_LUNAS' | 'BATAL';
     metode_bayar?: PaymentMethod;
     biaya_operasional?: any[];
     catatan?: string;
@@ -281,13 +281,18 @@ export const jasaAngkutService = {
         return response.data;
     },
 
-    updateMuatanStatus: async (id: number, status: 'PROSES' | 'SELESAI') => {
+    updateMuatanStatus: async (id: number, status: 'PROSES' | 'SELESAI' | 'BATAL') => {
         const response = await api.patch(`/muatan/${id}/status`, null, { params: { status } });
         return response.data;
     },
 
     deleteMuatan: async (id: number) => {
         const response = await api.delete(`/muatan/${id}`);
+        return response.data;
+    },
+
+    voidMuatan: async (id: number) => {
+        const response = await api.post(`/muatan/${id}/void`);
         return response.data;
     },
 

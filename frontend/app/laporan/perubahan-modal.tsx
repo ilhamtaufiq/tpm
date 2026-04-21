@@ -94,10 +94,10 @@ export default function LaporanPerubahanModalScreen() {
             const a_stok_mobil = report.section_a.persediaan_mobil || 0;
             const a_aset_tetap = report.section_a.aset_tetap || 0;
             const a_total_laba = report.section_a.total_laba || 0;
-            
+
             // Subtotal Modal & Persediaan (Base Capital)
             const a_subtotal = a_opening + a_setoran + a_hpp_b + a_hpp_m + a_stok_part + a_stok_mobil + a_aset_tetap;
-            const a_total = report.section_a.total_a || 0; 
+            const a_total = report.section_a.total_a || 0;
 
             // B. Piutang
             const b1 = report.section_b.piutang_lainnya || 0;
@@ -107,8 +107,8 @@ export default function LaporanPerubahanModalScreen() {
             const b5 = report.section_b.piutang_karyawan || 0;
             const b6 = report.section_b.piutang_usaha || 0;
 
-            const b7 = report.section_b.total_b || 0; 
-            const b8 = a_total - b7; 
+            const b7 = report.section_b.total_b || 0;
+            const b8 = a_total - b7;
             const b_stok_part = report.section_b.stok_part || 0;
             const b_stok_mobil = report.section_b.stok_mobil || 0;
             const b_aset_tetap = report.section_b.aset_tetap || 0;
@@ -714,7 +714,7 @@ export default function LaporanPerubahanModalScreen() {
                     <View className="space-y-4">
                         <Row label="1. Saldo Awal (Kas & Bank)" value={data.opening_balance} bold />
                         <Row label="2. Total Setoran Modal (Baru)" value={data.setoran_modal} bold />
-                        
+
                         {(data.hpp_bengkel > 0 || data.hpp_mobil > 0) && (
                             <View className="bg-orange-50/50 rounded-xl p-4 border border-orange-100/60 w-full mb-1">
                                 <Typography variant="caption" weight="bold" className="mb-2 text-orange-700/70 uppercase tracking-widest text-[10px]">Return of Capital (HPP Produk Terjual)</Typography>
@@ -788,7 +788,7 @@ export default function LaporanPerubahanModalScreen() {
                         <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.1 Piutang Tersebar</Typography>
                         <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
                             <Row label="Piutang Usaha (Bengkel Umum)" value={data.piutang_usaha} small />
-                            <Row label="Piutang Pembelian Mobil (Unit)" value={data.piutang_mobil} small />
+                            <Row label="Piutang Jual Beli Mobil (Unit)" value={data.piutang_mobil} small />
                             <Row label="Piutang Sparepart / Servis Mobil" value={data.piutang_part_mobil} small />
                             <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} small />
                             <Row label="Piutang Karyawan" value={data.piutang_karyawan || 0} small />
@@ -861,7 +861,7 @@ export default function LaporanPerubahanModalScreen() {
                             <Row label="Operasional Unit Bisnis Mobil" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
                             <Row label="Operasional Unit Bisnis Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
                         </View>
-                        
+
                         {Object.keys(data.operasional_unit_details?.jasa_angkut_detailed_breakdown || {}).length > 0 && (
                             <View className="mt-4 pt-3 border-t border-orange-200/50 w-full">
                                 <Typography variant="caption" weight="bold" className="text-rose-800/60 uppercase tracking-widest text-[9px] mb-2">Operasional Jasa Angkut (Per Armada)</Typography>

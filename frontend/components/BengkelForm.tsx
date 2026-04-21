@@ -574,11 +574,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         }}
                     />
 
-                    <View className="mt-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                        <Typography variant="caption" className="text-emerald-700 italic">
-                            * Transaksi ini akan tercatat sebagai biaya operasional armada dan mengurangi Net Profit (Laba TPM).
-                        </Typography>
-                    </View>
                 </View>
             )}
             {/* ===== MOBIL PICKER (Jual Beli Mobil) ===== */}
@@ -1064,16 +1059,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             <View className="mb-6">
                 <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm">
 
-                    {/* Jasa Angkut Internal Banner */}
-                    {(kategori === 'jasa_angkut' && selectedMuatan) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
+                    {/* Jasa Angkut / Jual Beli Mobil Internal Banner */}
+                    {(kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
                         <View className="mb-4">
-                            <View className="flex-row items-start bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                                <Info size={18} color="#10B981" style={{ marginTop: 2 }} />
+                            <View className="flex-row items-center bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                <Info size={18} color="#10B981" />
                                 <View className="ml-3 flex-1">
-                                    <Typography variant="body2" weight="bold" className="text-emerald-800 mb-1">Pembayaran Internal</Typography>
-                                    <Typography variant="caption" className="text-emerald-600 leading-5">
+                                    <Typography variant="body2" weight="bold" className="text-emerald-800">Pembayaran Internal</Typography>
+                                    <Typography variant="caption" className="text-emerald-600 mt-1">
                                         {kategori === 'jasa_angkut'
-                                            ? `Biaya bengkel ini akan otomatis mengurangi Laba TPM (50%) dari trip muatan ${selectedMuatan?.nomor_transaksi}. Tidak ada pembayaran tunai/transfer.`
+                                            ? `Biaya bengkel ini akan dicatat sebagai biaya operasional armada dan otomatis mengurangi Laba TPM. Tidak ada pembayaran tunai/transfer.`
                                             : `Biaya bengkel ini akan dicatat sebagai Hutang Unit Mobil dan otomatis ditambahkan ke HPP. Pelunasan dilakukan saat mobil terjual.`
                                         }
                                     </Typography>
@@ -1237,9 +1232,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         <View>
                             <Typography variant="body2" weight="bold">Total Akhir</Typography>
                             {kategori === 'jasa_angkut' && selectedArmada ? (
-                                <Typography variant="caption" className="text-emerald-500 font-medium">Potong dari Laba TPM</Typography>
+                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Internal Unit (Potong Laba TPM)</Typography>
                             ) : kategori === 'jual_beli_mobil' && selectedMobil ? (
-                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Unit (Dibayar saat Terjual)</Typography>
+                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Internal Unit (HPP Mobil)</Typography>
                             ) : (
                                 <View>
                                     {(() => {

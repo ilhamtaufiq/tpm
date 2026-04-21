@@ -203,7 +203,7 @@ export const useAddMuatanCost = () => {
 export const useUpdateMuatanStatus = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, status }: { id: number; status: 'PROSES' | 'SELESAI' }) =>
+        mutationFn: ({ id, status }: { id: number; status: 'PROSES' | 'SELESAI' | 'BATAL' }) =>
             jasaAngkutService.updateMuatanStatus(id, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['muatan'] });
@@ -211,6 +211,33 @@ export const useUpdateMuatanStatus = () => {
             queryClient.invalidateQueries({ queryKey: ['armada_active'] });
             queryClient.invalidateQueries({ queryKey: ['supir_active'] });
             queryClient.invalidateQueries({ queryKey: ['armada_detail'] });
+        },
+    });
+};
+
+export const useVoidMuatan = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => jasaAngkutService.voidMuatan(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['muatan'] });
+            queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['piutang'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['armada_detail'] });
+        },
+    });
+};
+
+export const useDeleteMuatan = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => jasaAngkutService.deleteMuatan(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['muatan'] });
+            queryClient.invalidateQueries({ queryKey: ['muatan_summary'] });
         },
     });
 };

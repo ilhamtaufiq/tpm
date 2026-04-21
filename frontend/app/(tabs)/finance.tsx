@@ -51,12 +51,7 @@ export default function FinanceTab() {
     const totalPengeluaran = dashboard?.pengeluaran.total || 0;
     const commonOverhead = dashboard?.pengeluaran.breakdown.umum || 0;
 
-    const totalLabaBersih = dashboard ? (
-        (dashboard.bengkel?.laba_kotor || 0) +
-        (dashboard.mobil?.laba_tpm || 0) +
-        (dashboard.jasa_angkut?.laba_tpm || 0) -
-        commonOverhead
-    ) : 0;
+    const totalLabaBersih = dashboard?.laba_operasional ?? 0;
 
     // Aggregate sub-accounts for summary cards
     const aggregateCash = dashboard?.kas_bank ? (
@@ -343,7 +338,7 @@ export default function FinanceTab() {
                             <View className="flex-row items-center justify-between mb-1">
                                 <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Bengkel & POS</Typography>
                                 <Typography weight="bold" className="text-primary text-sm">
-                                    {formatCurrency(dashboard?.bengkel?.laba_kotor || 0)}
+                                    {formatCurrency(dashboard?.bengkel?.laba_bersih || dashboard?.bengkel?.laba_kotor || 0)}
                                 </Typography>
                             </View>
                             <View className="flex-row items-center justify-between">
@@ -369,7 +364,7 @@ export default function FinanceTab() {
                             <View className="flex-row items-center justify-between mb-1">
                                 <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Jual Beli Mobil</Typography>
                                 <Typography weight="bold" className="text-primary text-sm">
-                                    {formatCurrency(dashboard?.mobil?.laba_tpm || 0)}
+                                    {formatCurrency(dashboard?.mobil?.laba_bersih || dashboard?.mobil?.laba_tpm || 0)}
                                 </Typography>
                             </View>
                             <View className="flex-row items-center justify-between">
@@ -395,7 +390,7 @@ export default function FinanceTab() {
                             <View className="flex-row items-center justify-between mb-1">
                                 <Typography variant="body1" weight="bold" className="text-textMain tracking-tight">Jasa Angkut</Typography>
                                 <Typography weight="bold" className="text-primary text-sm">
-                                    {formatCurrency(dashboard?.jasa_angkut?.laba_tpm || 0)}
+                                    {formatCurrency(dashboard?.jasa_angkut?.laba_bersih || dashboard?.jasa_angkut?.laba_tpm || 0)}
                                 </Typography>
                             </View>
                             <View className="flex-row items-center justify-between">
