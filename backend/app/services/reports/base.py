@@ -146,9 +146,12 @@ class BaseReportService:
         # (Where user records a manual Keluar for a cost already inside 'total_biaya' of a trip)
         ja_double_exp = float(self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL, # Or JA source if applicable
-            KasBank.keterangan.ilike("Biaya Operational Muatan %")
+            KasBank.sumber == KasBankSource.JASA_ANGKUT,
+            KasBank.keterangan.ilike("Biaya Operational Muatan %"),
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
+
         
         # Actually, let's just find ALL Jasa Angkut manual operational expenses that should be ignored
         # to avoid double deduction from net profit.

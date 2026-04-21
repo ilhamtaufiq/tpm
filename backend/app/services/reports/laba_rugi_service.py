@@ -27,11 +27,12 @@ class LabaRugiService(BaseReportService):
         ja_revenue_gross = ja_revenue_net + ja_trip_costs
         
         ja_maintenance = ja["repairs"]
-        # ja_ops includes: Automated Trip Costs + (Manual Wallet Ops - Duplicates)
+        # ja_ops includes: Total Trip Costs (Fixed + Linked Manual) + (Manual Wallet Tags - Duplicates)
         ja_double = ja.get("double_exp_adjustment", 0)
-        ja_ops_final = ja_trip_costs + (ja.get("armada_ops_ledger", 0) - ja_double) + ja.get("armada_ops", 0)
+        ja_ops_final = ja_trip_costs + (ja.get("armada_ops_ledger", 0) - ja_double)
         
         ja_overhead = ja["overhead"]
+
         
         # Net Profit remains the same but calculations are transparent
         ja_laba_bersih = ja_revenue_gross - ja_maintenance - ja_ops_final - ja_overhead

@@ -941,13 +941,15 @@ class MuatanService:
         
         total_biaya_bengkel = float((bengkel_parts.scalar() or 0) + (bengkel_tambahan_q.scalar() or 0))
 
-        # 2. Operational Costs (Everything from JasaAngkutBiayaLainnya in category 'Operasional')
+        # 2. Operational Costs Linked to specific Muatan (Manual entries)
         operasional_q = self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).filter(
             JasaAngkutBiayaLainnya.kategori == "Operasional"
         )
         if tanggal_dari: operasional_q = operasional_q.filter(JasaAngkutBiayaLainnya.tanggal >= tanggal_dari)
         if tanggal_sampai: operasional_q = operasional_q.filter(JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai)
         
+        ja_muatan_manual_ops = float(operasional_q.scalar() or 0)
+
         # 3. Fixed Trip Costs from Muatan table (BBM, Tol, etc.)
         fixed_costs_q = query.filter(MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL).with_entities(
             func.sum(
@@ -959,7 +961,8 @@ class MuatanService:
             )
         )
         
-        total_biaya_trip = float(fixed_costs_q.scalar() or 0)
+        # Total Trip Costs = Fixed Columns + Manual Muatan-Linked Entries
+        total_biaya_trip = float(fixed_costs_q.scalar() or 0) + ja_muatan_manual_ops
 
         # 4. Operational & Maintenance Costs for the unit
         # (Workshop repairs, fleet maintenance logs, and general wallet outflows)
@@ -982,7 +985,8 @@ class MuatanService:
         wallet_out = float(wallet_out_q.scalar() or 0)
 
         # Combine all non-trip costs as "Operational Unit Costs"
-        total_biaya_operasional_unit = total_biaya_bengkel + float(operasional_q.scalar() or 0) + wallet_out
+        total_biaya_operasional_unit = total_biaya_bengkel + wallet_out
+
 
         # Breakdown Jasa Angkut by Armada for display purposes
         from app.models.jasa_angkut import ArmadaJasaAngkut

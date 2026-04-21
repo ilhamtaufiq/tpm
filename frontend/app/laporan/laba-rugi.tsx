@@ -354,10 +354,11 @@ export default function LabaRugiScreen() {
 
                 <View className="p-5 w-full">
                     <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Operasional</Typography>
-                    <Row label="Bagian TPM (Net Driver)" value={revenue} bold large color="text-slate-800" />
+                    <Row label="Pendapatan Jasa (Kotor Unit)" value={revenue} bold large color="text-slate-800" />
                     <View className="bg-slate-50/50 rounded-lg p-2 mt-1 mb-4 border border-slate-100">
-                        <Typography variant="caption" className="text-slate-400 italic text-[10px] px-1 text-center">Sudah termasuk potongan bagian supir</Typography>
+                        <Typography variant="caption" className="text-slate-400 italic text-[10px] px-1 text-center">Bagian TPM sebelum dikurangi biaya operasional trip</Typography>
                     </View>
+
 
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Biaya Armada & Maintenance</Typography>
