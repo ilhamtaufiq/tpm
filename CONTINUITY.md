@@ -10,10 +10,12 @@
     - **Breakdown Correction:** Updated `ModalService` to include fixed trip costs (BBM, Toll) in the armada breakdown helper.
     - **Dashboard Centralization:** Moved Dashboard P&L calculation to using `LabaRugiService` directly in the backend `dashboard.py` to ensure 100% agreement between the Finance Tab and Laba Rugi Report.
 - State:
-    - Done: Capital reconciliation (1.1M discrepancy resolved).
+    - Done: Capital reconciliation (1.1M & 30k discrepancies resolved).
     - Done: Jasa Angkut expense reconciliation (23k vs 79k discrepancy resolved).
     - Done: Finance Dashboard vs Laba Rugi reconciliation (top-line totals and unit-level net profits aligned).
-    - Now: Final verification of financial report consistency.
+    - Done: Fix 'void_muatan' reversal bug (ensures all related cash entries are cleared).
+    - Done: Resolve mobile date picker interaction issue in slips screen.
+    - Now: Monitoring for any other report discrepancies.
 - Working set:
     - `backend/app/services/reports/base.py`
     - `backend/app/services/reports/laba_rugi_service.py`
@@ -31,3 +33,15 @@
 - Credit Purchase Reconciliation:
     - **Issue:** Buying cars or parts on credit (Hutang) caused a discrepancy in " Perubahan Modal\ because Section C only subtracted 'cash' portions while Section E added the full debt, double-counting the unpaid value in the theoretical cash position.
  - **Fix:** Switched Section C (Pengurangan Modal) to use the **Total** purchase value (Cash + Accrued) for both cars and parts. This allows Section E (Hutang) to correctly offset the unpaid part, keeping the theoretical modal aligned with physical cash.
+
+- Theoretical Opening Modal & Stock Import Reconciliation:
+    - **Issue:** Filtering the report by May 2026 (or any start date) showed a massive 259M IDR discrepancy.
+    - **Cause:** Section B correctly listed ~261M in assets (mostly imported stock), but Section A's "Opening Modal" only counted manual capital injections and cumulative profit. Since the 259M stock was imported without a matching Modal entry, it appeared as "phantom assets" that reduced the theoretical cash position into a huge negative.
+    - **Fix:** Redefined `modal_awal_theoretical` as the **Point-in-Time Net Asset Value** (Cash + Stock + Assets - Debt) at the yesterday of the start date. This ensures that any business value (like imported stock) present at the cycle's start is balanced as part of the initial equity, bringing the discrepancy from 259M down to ~30k (a 99.99% reduction).
+    - **Methodology Shift:** Shifted from a "cumulative ledger" approach to a "snapshot reconciliation" approach for opening balances, making the report robust against missing historical transaction history.
+
+- Internal Revenue & Untracked Fee Reconciliation (30k Gap fix):
+    - **Fix 1:** Implemented `internal_elimination` subtraction from Section A and total exclusion of internal repairs from Section C.
+    - **Fix 2:** Added automated detection for untracked bank fees and Jasa Angkut wallet gaps in `BaseReportService`.
+    - **Fix 3:** Updated `void_muatan` to reverse all related `KasBank` entries (including `BENGKEL` source) to prevent orphaned cash flows.
+

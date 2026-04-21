@@ -874,10 +874,11 @@ class MuatanService:
             piutang.sisa_piutang = Decimal("0")
             piutang.catatan = (piutang.catatan or "") + " | DIBATALKAN"
 
-        # 2. Reverse related KasBank entries (Direct Payments & Operational Costs)
+        # 2. Reverse related KasBank entries (Direct Payments, Operational Costs, and Workshop Repairs)
         kas_entries_direct = self.db.query(KasBank).filter(
             KasBank.referensi_id == muatan.id,
-            KasBank.sumber == KasBankSource.JASA_ANGKUT,
+            # We reverse ALL entries linked to this muatan to ensure cash reconciliation remains balanced.
+            # This includes JASA_ANGKUT (payouts/revenue) and BENGKEL (internal workshop repairs).
         ).all()
         for entry in kas_entries_direct:
             self._reverse_kas_entry(entry, "Void Muatan")

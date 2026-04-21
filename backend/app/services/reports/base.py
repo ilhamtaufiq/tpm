@@ -34,6 +34,23 @@ class BaseReportService:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_cumulative_profit(self, until_date: date) -> float:
+        """Calculate total net profit from inception until until_date (inclusive)"""
+        if until_date < date(2025, 1, 1):
+            return 0.0
+            
+        # Call period breakdown for the whole historical range
+        hist = self.get_unit_financial_breakdown(date(2024, 1, 1), until_date)
+        
+        laba_bengkel = float(hist["units"]["bengkel"]["laba_kotor"])
+        laba_mobil = float(hist["units"]["mobil"]["total_laba_kotor"])
+        laba_ja = float(hist["units"]["jasa_angkut"]["revenue_tpm"])
+        
+        total_laba_gross = (laba_bengkel + laba_mobil + laba_ja) - float(hist["raw_summaries"].get("internal_elimination", 0))
+        total_operasional = float(hist["operasional"])
+        
+        return total_laba_gross - total_operasional
+
     def get_unit_financial_breakdown(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
         """
         Unified logic to calculate performance across all business units.
@@ -273,6 +290,27 @@ class BaseReportService:
         
         prive_total = max(prive_total_ledger, prive_unrecorded)
 
+        # 7. Untracked Bank/Admin fees and other small outflows that didn't hit the ledger
+        # This helps resolve small discrepancies like the reported -30,380
+        admin_fees_unrecorded = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai,
+            or_(
+                KasBank.keterangan.ilike("%admin%"),
+                KasBank.keterangan.ilike("%biaya transfer%"),
+                KasBank.keterangan.ilike("%pajak bank%"),
+                KasBank.keterangan.ilike("%fee%"),
+                KasBank.keterangan.ilike("%biaya m-banking%")
+            )
+        ).scalar() or 0)
+
+        # Detect gap between physical Jasa Angkut outflow and tracked ledger/trip costs
+        # This catches service payments recorded in KasBank but missed in reports
+        ja_untracked_gap = 0
+        if ja_wallet_out > (ja_tagged_from_wallet + ja_expenses_trip):
+            ja_untracked_gap = ja_wallet_out - (ja_tagged_from_wallet + ja_expenses_trip)
+
         mobil_entity_total = (
             float(pengeluaran_summary["per_unit"].get("mobil", 0)) + 
             float(pengeluaran_summary["per_unit"].get("jual_beli_mobil", 0)) + 
@@ -475,10 +513,13 @@ class BaseReportService:
                 general_mobil_overhead - ja_double_exp
             ),
             "prive_global": prive_total,
+            "admin_fees_unrecorded": admin_fees_unrecorded,
+            "ja_untracked_gap": ja_untracked_gap,
             "assets": {
                 "tetap": aset_tetap,
                 "persediaan_part": part_stock,
-                "persediaan_mobil": car_stock
+                "persediaan_mobil": car_stock,
+                "persediaan_mobil_internal_component": workshop_bills_unsold
             },
             "raw_summaries": {
                 "bengkel": bengkel_summary,
@@ -493,6 +534,7 @@ class BaseReportService:
                     "lainnya": hutang_lainnya,
                     "total": hutang_total,
                 },
-                "opening_balance": saldo_awal
+                "opening_balance": saldo_awal,
+                "internal_elimination": internal_elimination
             }
         }

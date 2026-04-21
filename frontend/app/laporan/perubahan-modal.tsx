@@ -96,7 +96,8 @@ export default function LaporanPerubahanModalScreen() {
             const a_total_laba = report.section_a.total_laba || 0;
 
             // Subtotal Modal & Persediaan (Base Capital)
-            const a_subtotal = a_opening + a_setoran + a_hpp_b + a_hpp_m + a_stok_part + a_stok_mobil + a_aset_tetap;
+            // Note: a_opening now includes theoretical assets + cash at start.
+            const a_subtotal = a_opening + a_setoran;
             const a_total = report.section_a.total_a || 0;
 
             // B. Piutang
@@ -108,7 +109,13 @@ export default function LaporanPerubahanModalScreen() {
             const b6 = report.section_b.piutang_usaha || 0;
 
             const b7 = report.section_b.total_b || 0;
-            const b8 = a_total - b7;
+            // c4 and e1 are already defined below from the section objects
+
+            // Theoretical Modal formula: A - B + E
+            // Note: C (Operating Expenses) is already inside A (Profit)
+            const theoretical = a_total - b7 + (report.section_e.total_e || 0);
+            const b8 = a_total - b7; // Modal after Assets (Informative)
+
             const b_stok_part = report.section_b.stok_part || 0;
             const b_stok_mobil = report.section_b.stok_mobil || 0;
             const b_aset_tetap = report.section_b.aset_tetap || 0;
@@ -149,11 +156,12 @@ export default function LaporanPerubahanModalScreen() {
             const e_lainnya = report.section_e.hutang_lainnya || 0;
             const e1 = report.section_e.total_e || 0;
 
-            const c5 = report.section_d.theoretical_modal || 0; // Modal Berjalan (A - B - C + E) from Backend
-
             // Final Balances
             const finalCash = report.section_d.cash || 0;
             const finalTransfer = report.section_d.transfer || 0;
+
+            const c5 = report.section_d.theoretical_modal || theoretical; // Use backend if available
+            const penyesuaian = report.section_d.penyesuaian || ((finalCash + finalTransfer) - c5);
 
             const html = `
                 <html>
@@ -537,10 +545,19 @@ export default function LaporanPerubahanModalScreen() {
                             <td colspan="2"></td>
                             <td class="amount">${formatCurrency(e1)}</td>
                         </tr>
-                        <tr class="total-bar" style="background-color: #be123c;">
-                            <td colspan="2">MODAL BERJALAN (= SALDO KAS & BANK)</td>
+                        <tr class="total-bar" style="background-color: #3b82f6;">
+                            <td colspan="2">MODAL BERJALAN (THEORETICAL: A-B-C+E)</td>
+                            <td class="amount">${formatCurrency(c5)}</td>
+                        </tr>
+                         <tr class="total-bar" style="background-color: #be123c;">
+                            <td colspan="2">SALDO KAS & BANK FISIK (AKTUAL)</td>
                             <td class="amount">${formatCurrency(finalCash + finalTransfer)}</td>
                         </tr>
+                        ${Math.abs(penyesuaian) > 10 ? `
+                        <tr class="pink-box">
+                            <td colspan="2">PENYESUAIAN / SELISIH (ADM BANK & FEES)</td>
+                            <td class="amount">${formatCurrency(penyesuaian)}</td>
+                        </tr>` : ''}
                     </table>
 
                     <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
@@ -899,7 +916,7 @@ export default function LaporanPerubahanModalScreen() {
                             )}
                         </View>
                         <Row label="Biaya Persiapan (Pajak, BBN, dll)" value={data.operasional_unit_details?.mobil_prep} small isNegative color="text-slate-600" />
-                        <Row label="Biaya Bengkel Unit (Servis/Perbaikan)" value={data.operasional_unit_details?.mobil_bengkel} small isNegative color="text-slate-600" />
+                        {/* <Row label="Biaya Bengkel Unit (Servis/Perbaikan)" value={data.operasional_unit_details?.mobil_bengkel} small isNegative color="text-slate-600" /> */}
                     </View>
 
                     <View className="space-y-2 px-1 pt-2 w-full">
@@ -1012,7 +1029,7 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
 
                                 <View className="space-y-1.5">
-                                    <Row label="Modal Teoritis [ (A-B) - C + E ]" value={data.modal_komponen} small color="text-indigo-200" isDark />
+                                    <Row label="Modal Teoritis [ (A-B) + E ]" value={data.modal_komponen} small color="text-indigo-200" isDark />
                                     <Row label="Selisih / Penyesuaian" value={data.penyesuaian} small bold color="text-rose-300" isDark />
                                 </View>
 
