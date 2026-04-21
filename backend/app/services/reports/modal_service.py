@@ -43,13 +43,24 @@ class ModalService(BaseReportService):
         sharing_investor_accrual = float(m.get("sharing_investor", 0))
 
         total_laba = laba_bengkel + laba_mobil_gross + laba_ja
+
+        # Snapshot inventory/fixed assets that represent capital tied in non-cash assets.
+        # These values are also shown in Section A breakdown and must be capitalized
+        # so Section B (which lists the same assets as non-cash components) does not
+        # create artificial negative theoretical modal.
+        persediaan_part = float(data["assets"].get("persediaan_part", 0))
+        persediaan_mobil = float(data["assets"].get("persediaan_mobil", 0))
+        aset_tetap = float(data["assets"].get("tetap", 0))
         
         # Section A should represent Total Capital Position (Base + Period Additions)
         # We must include the liquid opening balance to reconcile points-in-time correctly.
         total_a = (
-            data.get("opening_balance", 0) + # Liquid cash at start
-            setoran_modal + # New cash injected
-            total_laba # TPM's earned share
+            data.get("opening_balance", 0) +  # Liquid cash at start
+            setoran_modal +                   # New cash injected
+            total_laba +                      # TPM's earned share
+            persediaan_part +                 # Capital in spare part inventory
+            persediaan_mobil +                # Capital in car inventory
+            aset_tetap                        # Capital in fixed assets
         )
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
@@ -216,8 +227,13 @@ class ModalService(BaseReportService):
             "periode": data["periode"],
             "section_a": {
                 "setoran_modal": setoran_modal,
+                "hpp_bengkel": float(b.get("total_hpp", 0)),
+                "hpp_mobil": float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0)),
+                "persediaan_part": persediaan_part,
+                "persediaan_mobil": persediaan_mobil,
+                "aset_tetap": aset_tetap,
                 "total_laba": total_laba,
-                "total_a": setoran_modal + total_laba,
+                "total_a": total_a,
                 "details": {
                     "laba_bengkel": laba_bengkel,
                     "hpp_bengkel": b["total_hpp"],

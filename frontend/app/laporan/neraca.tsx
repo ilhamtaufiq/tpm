@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Alert } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
@@ -10,6 +10,8 @@ import {
 } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import { printReportHTML } from '../../utils/printReport';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 
@@ -462,6 +464,166 @@ export default function NeracaScreen() {
         );
     };
 
+    const buildNeracaExportHtml = () => {
+        if (!report) return '';
+
+        return `
+            <div class="section-header">AKTIVA (ASSETS)</div>
+            <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
+            <div class="row-item">
+                <span>Kas Tunai</span>
+                <span>${formatCurrency(report.aktiva_lancar.kas_tunai)}</span>
+            </div>
+            <div class="row-item">
+                <span>Kas Bank</span>
+                <span>${formatCurrency(report.aktiva_lancar.kas_bank)}</span>
+            </div>
+            <div class="row-item row-total">
+                <span>Total Kas & Bank</span>
+                <span>${formatCurrency(report.aktiva_lancar.total_kas_bank)}</span>
+            </div>
+            
+            <div class="row-item" style="margin-top:10px;">
+                <span>Piutang Bengkel</span>
+                <span>${formatCurrency(report.aktiva_lancar.piutang_usaha)}</span>
+            </div>
+            <div class="row-item">
+                <span>Piutang Mobil</span>
+                <span>${formatCurrency(report.aktiva_lancar.piutang_mobil)}</span>
+            </div>
+            <div class="row-item">
+                <span>Piutang Jasa Angkut</span>
+                <span>${formatCurrency(report.aktiva_lancar.piutang_jasa_angkut)}</span>
+            </div>
+            <div class="row-item row-total">
+                <span>Total Piutang</span>
+                <span>${formatCurrency(report.aktiva_lancar.total_piutang)}</span>
+            </div>
+
+            <div class="row-item" style="margin-top:10px;">
+                <span>Persediaan Sparepart</span>
+                <span>${formatCurrency(report.aktiva_lancar.persediaan_sparepart)}</span>
+            </div>
+            <div class="row-item">
+                <span>Stok Mobil</span>
+                <span>${formatCurrency(report.aktiva_lancar.stok_mobil)}</span>
+            </div>
+            <div class="row-item row-total">
+                <span>TOTAL AKTIVA LANCAR</span>
+                <span class="font-bold">${formatCurrency(report.aktiva_lancar.total_aktiva_lancar)}</span>
+            </div>
+
+            <div style="font-weight:bold; color:#4338CA; margin:20px 0 10px 0;">AKTIVA TETAP</div>
+            ${report.aktiva_tetap.detail_aset?.map((aset: any) => `
+                <div class="row-item row-sub">
+                    <span>${aset.kode} - ${aset.nama}</span>
+                    <span>${formatCurrency(aset.harga_beli)}</span>
+                </div>
+            `).join('')}
+            <div class="row-item row-total">
+                <span>TOTAL AKTIVA TETAP</span>
+                <span class="font-bold">${formatCurrency(report.aktiva_tetap.total_aktiva_tetap)}</span>
+            </div>
+
+            <div class="row-item row-total" style="font-size:16px; background:#059669; color:white; padding:10px; border-radius:5px; margin-top:20px;">
+                <span>TOTAL AKTIVA</span>
+                <span class="font-bold">${formatCurrency(report.total_aktiva)}</span>
+            </div>
+
+            <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
+            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
+            <div class="row-item">
+                <span>Setoran Modal</span>
+                <span>${formatCurrency(report.modal.setoran_modal)}</span>
+            </div>
+            <div class="row-item">
+                <span>Laba Ditahan</span>
+                <span>${formatCurrency(report.modal.laba_ditahan)}</span>
+            </div>
+            <div class="row-item">
+                <span>Prive</span>
+                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
+            </div>
+            <div class="row-item row-total">
+                <span>TOTAL MODAL</span>
+                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
+            </div>
+            <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
+            <div class="row-item">
+                <span>Hutang Part</span>
+                <span>${formatCurrency(report.hutang.hutang_part)}</span>
+            </div>
+            <div class="row-item">
+                <span>Hutang Mobil</span>
+                <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
+            </div>
+            <div class="row-item">
+                <span>Hutang Investor</span>
+                <span>${formatCurrency(report.hutang.hutang_investor)}</span>
+            </div>
+            <div class="row-item row-total">
+                <span>TOTAL HUTANG</span>
+                <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
+            </div>
+
+            <div class="row-item row-total" style="font-size:16px; background:#7C3AED; color:white; padding:10px; border-radius:5px; margin-top:20px;">
+                <span>TOTAL PASIVA</span>
+                <span class="font-bold">${formatCurrency(report.total_pasiva)}</span>
+            </div>
+
+            <div style="margin-top:30px; padding:15px; border:2px solid ${report.is_balanced ? '#059669' : '#D97706'}; border-radius:10px; text-align:center;">
+                <div style="font-weight:bold; font-size:14px; color:${report.is_balanced ? '#059669' : '#D97706'};">
+                    STATUS NERACA: ${report.is_balanced ? 'SEIMBANG (BALANCED)' : 'SELISIH (UNBALANCED)'}
+                </div>
+                ${report.selisih !== 0 ? `<div style="font-size:12px; margin-top:5px;">Selisih: ${formatCurrency(report.selisih)}</div>` : ''}
+            </div>
+        `;
+    };
+
+    const handleExportPDF = async (mode: 'preview' | 'download' = 'preview') => {
+        if (!report) return;
+        setIsExporting(true);
+        try {
+            const html = buildNeracaExportHtml();
+            if (mode === 'preview') {
+                await printReportHTML(html, {
+                    title: 'Laporan Neraca',
+                    dateRange: getFormattedDate()
+                });
+            } else {
+                const fullHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="utf-8"></head>
+                    <body>${html}</body>
+                    </html>
+                `;
+                if (Platform.OS === 'web') {
+                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    const link = document.createElement('a');
+                    link.href = uri;
+                    link.download = `Laporan_Neraca_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(uri, {
+                            mimeType: 'application/pdf',
+                            dialogTitle: 'Laporan Neraca',
+                            UTI: 'com.adobe.pdf'
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            Alert.alert('Error', mode === 'preview' ? 'Gagal mencetak laporan' : 'Gagal membuat PDF');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     // ==========================================
     // MAIN RENDER
     // ==========================================
@@ -646,129 +808,9 @@ export default function NeracaScreen() {
 
                         <View className="flex-row gap-4">
                             <Pressable
-                                onPress={async () => {
+                                onPress={() => {
                                     setShowExportMenu(false);
-                                    if (!report) return;
-                                    try {
-                                        const html = `
-                                        <div class="section-header">AKTIVA (ASSETS)</div>
-                                        <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
-                                        <div class="row-item">
-                                            <span>Kas Tunai</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.kas_tunai)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Kas Bank</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.kas_bank)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>Total Kas & Bank</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.total_kas_bank)}</span>
-                                        </div>
-                                        
-                                        <div class="row-item" style="margin-top:10px;">
-                                            <span>Piutang Bengkel</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_usaha)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Piutang Mobil</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_mobil)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Piutang Jasa Angkut</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_jasa_angkut)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>Total Piutang</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.total_piutang)}</span>
-                                        </div>
-
-                                        <div class="row-item" style="margin-top:10px;">
-                                            <span>Persediaan Sparepart</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.persediaan_sparepart)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Stok Mobil</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.stok_mobil)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL AKTIVA LANCAR</span>
-                                            <span class="font-bold">${formatCurrency(report.aktiva_lancar.total_aktiva_lancar)}</span>
-                                        </div>
-
-                                        <div style="font-weight:bold; color:#4338CA; margin:20px 0 10px 0;">AKTIVA TETAP</div>
-                                        ${report.aktiva_tetap.detail_aset?.map((aset: any) => `
-                                            <div class="row-item row-sub">
-                                                <span>${aset.kode} - ${aset.nama}</span>
-                                                <span>${formatCurrency(aset.harga_beli)}</span>
-                                            </div>
-                                        `).join('')}
-                                        <div class="row-item row-total">
-                                            <span>TOTAL AKTIVA TETAP</span>
-                                            <span class="font-bold">${formatCurrency(report.aktiva_tetap.total_aktiva_tetap)}</span>
-                                        </div>
-
-                                        <div class="row-item row-total" style="font-size:16px; background:#059669; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                                            <span>TOTAL AKTIVA</span>
-                                            <span class="font-bold">${formatCurrency(report.total_aktiva)}</span>
-                                        </div>
-
-                                        <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-                                          <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
-                                        <div class="row-item">
-                                            <span>Setoran Modal</span>
-                                            <span>${formatCurrency(report.modal.setoran_modal)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Laba Ditahan</span>
-                                            <span>${formatCurrency(report.modal.laba_ditahan)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Prive</span>
-                                            <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL MODAL</span>
-                                            <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
-                                        </div>
-                                        <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
-                                        <div class="row-item">
-                                            <span>Hutang Part</span>
-                                            <span>${formatCurrency(report.hutang.hutang_part)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Hutang Mobil</span>
-                                            <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Hutang Investor</span>
-                                            <span>${formatCurrency(report.hutang.hutang_investor)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL HUTANG</span>
-                                            <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
-                                        </div>
-
-                                        <div class="row-item row-total" style="font-size:16px; background:#7C3AED; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                                            <span>TOTAL PASIVA</span>
-                                            <span class="font-bold">${formatCurrency(report.total_pasiva)}</span>
-                                        </div>
-
-                                        <div style="margin-top:30px; padding:15px; border:2px solid ${report.is_balanced ? '#059669' : '#D97706'}; border-radius:10px; text-align:center;">
-                                            <div style="font-weight:bold; font-size:14px; color:${report.is_balanced ? '#059669' : '#D97706'};">
-                                                STATUS NERACA: ${report.is_balanced ? 'SEIMBANG (BALANCED)' : 'SELISIH (UNBALANCED)'}
-                                            </div>
-                                            ${report.selisih !== 0 ? `<div style="font-size:12px; margin-top:5px;">Selisih: ${formatCurrency(report.selisih)}</div>` : ''}
-                                        </div>
-                                    `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Neraca',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal mencetak laporan');
-                                    }
+                                    setTimeout(() => handleExportPDF('preview'), 100);
                                 }}
                                 className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
                             >
@@ -780,122 +822,9 @@ export default function NeracaScreen() {
                             </Pressable>
 
                             <Pressable
-                                onPress={async () => {
+                                onPress={() => {
                                     setShowExportMenu(false);
-                                    if (!report) return;
-                                    try {
-                                        const html = `
-                                        <div class="section-header">AKTIVA (ASSETS)</div>
-                                        <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
-                                        <div class="row-item">
-                                            <span>Kas Tunai</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.kas_tunai)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Kas Bank</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.kas_bank)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>Total Kas & Bank</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.total_kas_bank)}</span>
-                                        </div>
-                                        
-                                        <div class="row-item" style="margin-top:10px;">
-                                            <span>Piutang Bengkel</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_bengkel)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Piutang Mobil</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.piutang_mobil)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>Total Piutang</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.total_piutang)}</span>
-                                        </div>
-
-                                        <div class="row-item" style="margin-top:10px;">
-                                            <span>Persediaan Sparepart</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.persediaan_sparepart)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Stok Mobil</span>
-                                            <span>${formatCurrency(report.aktiva_lancar.stok_mobil)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL AKTIVA LANCAR</span>
-                                            <span class="font-bold">${formatCurrency(report.aktiva_lancar.total_aktiva_lancar)}</span>
-                                        </div>
-
-                                        <div style="font-weight:bold; color:#4338CA; margin:20px 0 10px 0;">AKTIVA TETAP</div>
-                                        ${report.aktiva_tetap.detail_aset?.map((aset: any) => `
-                                            <div class="row-item row-sub">
-                                                <span>${aset.kode} - ${aset.nama}</span>
-                                                <span>${formatCurrency(aset.harga_beli)}</span>
-                                            </div>
-                                        `).join('')}
-                                        <div class="row-item row-total">
-                                            <span>TOTAL AKTIVA TETAP</span>
-                                            <span class="font-bold">${formatCurrency(report.aktiva_tetap.total_aktiva_tetap)}</span>
-                                        </div>
-
-                                        <div class="row-item row-total" style="font-size:16px; background:#059669; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                                            <span>TOTAL AKTIVA</span>
-                                            <span class="font-bold">${formatCurrency(report.total_aktiva)}</span>
-                                        </div>
-
-                                        <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-                                        <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
-                                        <div class="row-item">
-                                            <span>Hutang Part</span>
-                                            <span>${formatCurrency(report.hutang.hutang_part)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Hutang Mobil</span>
-                                            <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL HUTANG</span>
-                                            <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
-                                        </div>
-
-                                        <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
-                                        <div class="row-item">
-                                            <span>Setoran Modal</span>
-                                            <span>${formatCurrency(report.modal.setoran_modal)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Laba Ditahan</span>
-                                            <span>${formatCurrency(report.modal.laba_ditahan)}</span>
-                                        </div>
-                                        <div class="row-item">
-                                            <span>Prive</span>
-                                            <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
-                                        </div>
-                                        <div class="row-item row-total">
-                                            <span>TOTAL MODAL</span>
-                                            <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
-                                        </div>
-
-                                        <div class="row-item row-total" style="font-size:16px; background:#7C3AED; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                                            <span>TOTAL PASIVA</span>
-                                            <span class="font-bold">${formatCurrency(report.total_pasiva)}</span>
-                                        </div>
-
-                                        <div style="margin-top:30px; padding:15px; border:2px solid ${report.is_balanced ? '#059669' : '#D97706'}; border-radius:10px; text-align:center;">
-                                            <div style="font-weight:bold; font-size:14px; color:${report.is_balanced ? '#059669' : '#D97706'};">
-                                                STATUS NERACA: ${report.is_balanced ? 'SEIMBANG (BALANCED)' : 'SELISIH (UNBALANCED)'}
-                                            </div>
-                                            ${report.selisih !== 0 ? `<div style="font-size:12px; margin-top:5px;">Selisih: ${formatCurrency(report.selisih)}</div>` : ''}
-                                        </div>
-                                    `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Neraca',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal membuat PDF');
-                                    }
+                                    setTimeout(() => handleExportPDF('download'), 100);
                                 }}
                                 className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
                             >

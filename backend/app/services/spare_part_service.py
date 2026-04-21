@@ -372,12 +372,12 @@ class SparePartService:
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
         # For normal items: modal = stok × harga_beli
-        # For Always Ready (999): modal = 0 (karena ini barang jasa/tanpa stok fisik)
+        # For Always Ready (999): modal = 1 × harga_beli
         result = (
             self.db.query(
                 func.sum(
                     case(
-                        (SparePart.stok == 999, 0),
+                        (SparePart.stok == 999, SparePart.harga_beli),
                         else_=SparePart.stok * SparePart.harga_beli
                     )
                 ).label("total_value"),
@@ -564,6 +564,16 @@ class SparePartService:
             harga_jual = Decimal(str(row[4] or 0))
 
             stok = None
+
+            # Detect Always Ready marker first.
+            # Business rule: Always Ready parts use sentinel stok=999 but
+            # are valued as 1x harga_beli in inventory modal calculations.
+            always_ready = False
+            if len(row) > 8 and row[8] is not None:
+                ar_val = str(row[8]).strip().lower()
+                always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
+            if always_ready:
+                stok = Decimal("999")
             
             # --- TWEAK MODAL: Force stock to match Excel's "Total Modal" ---
             # Total Modal is at column H (index 7). If it's explicitly > 0, calculate the exact stock 
@@ -575,21 +585,13 @@ class SparePartService:
                 except InvalidOperation:
                     pass
             
-            if excel_modal > 0 and harga_beli > 0:
+            if stok is None and excel_modal > 0 and harga_beli > 0:
                 stok = excel_modal / harga_beli
 
             # --- FALLBACK: Use actual 'stok' column or Always Ready ---
             if stok is None:
-                # Check Always Ready flag (column I, index 8)
-                always_ready = False
-                if len(row) > 8 and row[8] is not None:
-                    ar_val = str(row[8]).strip().lower()
-                    always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
-                
                 stok_raw = row[5]
-                if always_ready:
-                    stok = Decimal("999")
-                elif stok_raw is not None:
+                if stok_raw is not None:
                     stok_str = str(stok_raw).strip()
                     try:
                         stok = Decimal(stok_str) if stok_str else Decimal("0")
@@ -645,9 +647,6 @@ class SparePartService:
         try:
             stok = int(row[6]) if row[6] is not None else 0
             harga_beli = Decimal(str(row[8] or 0))
-            
-            if stok == 999:
-                harga_beli = Decimal("0")
             
             return {
                 "kode": kode,

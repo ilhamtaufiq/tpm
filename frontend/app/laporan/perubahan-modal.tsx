@@ -279,12 +279,7 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(b5)}</td>
                             <td></td>
                         </tr>
-                         <tr class="border-bottom">
-                            <td style="padding-left: 20px;">PIUTANG LAINNYA</td>
-                            <td class="amount">${formatCurrency(b1)}</td>
-                            <td></td>
-                        </tr>
-                         <tr class="border-bottom">
+                        <tr class="border-bottom">
                             <td style="padding-left: 20px;">PIUTANG UNIT BENGKEL</td>
                             <td class="amount">${formatCurrency(b6)}</td>
                             <td></td>
@@ -733,6 +728,15 @@ export default function LaporanPerubahanModalScreen() {
 
                         <View className="h-px bg-blue-200/60 my-3" />
                         <Row label="Total Laba Kotor (Unit)" value={data.total_laba} bold color="text-blue-700" />
+                    </View>
+
+                    <View className="bg-blue-50/40 rounded-xl p-4 border border-blue-100/60 w-full">
+                        <Typography variant="caption" weight="bold" className="mb-3 text-blue-700/70 uppercase tracking-widest text-[10px]">Komponen Persediaan & Aset</Typography>
+                        <View className="space-y-1">
+                            <Row label="Persediaan Sparepart" value={data.persediaan_part || 0} small />
+                            <Row label="Persediaan Unit Mobil" value={data.persediaan_mobil || 0} small />
+                            <Row label="Aset Tetap" value={data.aset_tetap || 0} small />
+                        </View>
                     </View>
 
                     <View className="pt-3 border-t-2 border-dashed border-slate-200">

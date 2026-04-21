@@ -317,7 +317,20 @@ class BaseReportService:
         ).scalar() or 0)
         
         # Part Stock
-        part_stock = float(self.db.query(func.sum(SparePart.stok * SparePart.harga_beli)).scalar() or 0)
+        # Keep consistent with spare part stock valuation rules:
+        # - "Always Ready" items use stok=999 sentinel and are valued as 1x harga_beli.
+        # - Normal items are valued as stok * harga_beli.
+        # - Ignore soft-deleted rows.
+        part_stock = float(self.db.query(
+            func.sum(
+                case(
+                    (SparePart.stok == 999, SparePart.harga_beli),
+                    else_=SparePart.stok * SparePart.harga_beli
+                )
+            )
+        ).filter(
+            SparePart.deleted_at.is_(None)
+        ).scalar() or 0)
         # Car Stock (Available as of date: masuk <= sampai AND (keluar is null OR keluar > sampai))
         # Total Capitalized Value = Purchase Price + Prep + Repairs for unsold cars
         car_stock = float(self.db.query(func.sum(Mobil.harga_beli)).filter(

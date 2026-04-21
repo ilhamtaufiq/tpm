@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, ArrowDownLeft, DollarSign, Download, Eye, Share2, X, Truck } from 'lucide-react-native';
@@ -13,6 +13,8 @@ import { printReportHTML } from '../../utils/printReport';
 import { formatCurrency } from '../../utils/format';
 import { useLabaRugiReport } from '../../hooks/useKeuangan';
 import { Card } from '../../components/ui/Card';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -178,10 +180,39 @@ export default function LabaRugiScreen() {
                 </div>
             `;
 
-            await printReportHTML(html, {
-                title: 'Laporan Laba Rugi',
-                dateRange: getFormattedDate()
-            });
+            if (mode === 'preview') {
+                await printReportHTML(html, {
+                    title: 'Laporan Laba Rugi',
+                    dateRange: getFormattedDate()
+                });
+            } else {
+                const fullHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="utf-8"></head>
+                    <body>${html}</body>
+                    </html>
+                `;
+
+                if (Platform.OS === 'web') {
+                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    const link = document.createElement('a');
+                    link.href = uri;
+                    link.download = `Laporan_Laba_Rugi_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(uri, {
+                            mimeType: 'application/pdf',
+                            dialogTitle: 'Laporan Laba Rugi',
+                            UTI: 'com.adobe.pdf'
+                        });
+                    }
+                }
+            }
         } catch (e) {
             Alert.alert('Error', 'Gagal memproses dokumen PDF');
         } finally {
