@@ -142,8 +142,21 @@ class BaseReportService:
             if mid not in mobil_detailed_expenses: mobil_detailed_expenses[mid] = {}
             mobil_detailed_expenses[mid][str(kat)] = float(total or 0)
         
+        # Identify double-counted JA expenses
+        # (Where user records a manual Keluar for a cost already inside 'total_biaya' of a trip)
+        ja_double_exp = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL, # Or JA source if applicable
+            KasBank.keterangan.ilike("Biaya Operational Muatan %")
+        ).scalar() or 0)
+        
+        # Actually, let's just find ALL Jasa Angkut manual operational expenses that should be ignored
+        # to avoid double deduction from net profit.
+        
         capital_total_prep_period = 0
         capital_total_repairs_period = 0
+        capital_unsold_prep = 0
+        capital_unsold_repairs = 0
         
         for mid, cats in mobil_detailed_expenses.items():
             # Ledger-based costs from PengeluaranBengkel (Wallet Outflow)
@@ -213,7 +226,19 @@ class BaseReportService:
             PengeluaranBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0
         
-        general_mobil_overhead = max(0, total_mobil_unit_expenses - total_tagged_from_mobil_ledger - float(mobil_prive_unit))
+        # Identify Post-Sale Expenses (expenses added to a car AFTER it was sold)
+        # These are effectively period expenses because they weren't capitalized in HPP.
+        post_sale_mobil_expenses = float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).join(Mobil).filter(
+            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+            PengeluaranBengkel.tanggal > Mobil.tanggal_terjual,
+            PengeluaranBengkel.tanggal >= tanggal_dari,
+            PengeluaranBengkel.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        # Identify double-counted Car expenses
+        # (Where an expense is in both mobil_biaya_lainnya AND pengeluaran_bengkel)
+        # We subtract tagged expenses from the total to prevent double deduction.
+        general_mobil_overhead = max(0, total_mobil_unit_expenses - total_tagged_from_mobil_ledger - float(mobil_prive_unit) + post_sale_mobil_expenses)
 
         # JA Calculation
         ja_details = muatan_summary.get("details", {})
@@ -341,7 +366,7 @@ class BaseReportService:
 
         # Internal Elimination: Workshop revenue from internal car unit repairs
         internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut', 'bengkel']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
@@ -353,13 +378,21 @@ class BaseReportService:
         laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
         laba_ja_tpm = float(ja_revenue_tpm)
 
-        total_laba_gross = laba_mobil_gross + laba_bengkel_kotor + laba_ja_tpm
+        total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm - post_sale_mobil_expenses
+        total_operasional = (
+            bengkel_ops_total + bengkel_common + 
+            float(ja_details.get("armada_period_ops", 0)) + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
+            general_mobil_overhead - ja_double_exp
+        )
 
         return {
             "periode": {"dari": tanggal_dari, "sampai": tanggal_sampai},
+            "retained_earnings": total_laba_gross - internal_elimination - total_operasional,
+            "laba_tpm": total_laba_gross - internal_elimination - total_operasional, # Legacy support
+            "total_operasional": total_operasional,
             "internal_elimination": internal_elimination,
+            "ja_double_exp_adjustment": ja_double_exp,
             "opening_balance": saldo_awal,
-            "laba_tpm": total_laba_gross,
             "revenue": {
                 "bengkel": float(bengkel_summary["total_penjualan"]),
                 "mobil": float(mobil_summary["total_penjualan"]),
@@ -408,7 +441,7 @@ class BaseReportService:
             "operasional": (
                 bengkel_ops_total + bengkel_common + 
                 float(ja_details.get("armada_period_ops", 0)) + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
-                general_mobil_overhead
+                general_mobil_overhead - ja_double_exp
             ),
             "prive_global": prive_total,
             "assets": {
