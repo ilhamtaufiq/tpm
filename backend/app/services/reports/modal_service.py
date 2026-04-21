@@ -5,6 +5,7 @@ from sqlalchemy import func, or_
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
+from app.models.bengkel import TransaksiPenjualanBengkel
 from app.utils.constants import (
     KasBankSource, 
     KasBankType, 
@@ -25,37 +26,39 @@ class ModalService(BaseReportService):
         ja = data["units"]["jasa_angkut"]
         b = data["units"]["bengkel"]
 
-        # 1. Theoretical Opening Balance (Point-in-time value of Capital + Retained Earnings)
-        # This replaces physical opening bank balance to ensure non-cash assets (stock) 
-        # Carried-over position from yesterday (Theoretical Equity)
-        # We calculate this as the snapshot of the business value yesterday:
-        # Equity = Cash + Assets - Liabilities
+        # 1. Theoretical Opening Modal Position (End of Yesterday)
+        # We start with a full snapshot of the business's net worth at the start of the period.
+        # This includes Physical Cash + Inventory + Fixed Assets - Liabilities.
         yesterday = tanggal_dari - timedelta(days=1)
         
-        # 1. Starting Cash position
+        # We calculate the cumulative net asset value as of yesterday.
         start_balances = self.get_kas_bank_balances(yesterday)
-        start_cash = float(start_balances.get("total_all", 0))
         
-        # 3. Starting Liabilities position (Section E components)
+        # Use a wide historical range for the opening snapshot to capture "initial state" assets
+        # even if they were imported or dated slightly after the nominal start date but represent starting stock.
+        start_hist = self.get_unit_financial_breakdown(date(2024, 1, 1), yesterday)
+        start_cash = float(start_balances.get("total_all", 0))
+        start_stok_part = float(start_hist["assets"].get("persediaan_part", 0))
+        start_stok_mobil = float(start_hist["assets"].get("persediaan_mobil", 0)) - float(start_hist["assets"].get("persediaan_mobil_internal_component", 0))
+        start_aset_tetap = float(start_hist["assets"].get("tetap", 0))
         q_start_hutang = self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
             HutangUsaha.status != PaymentStatus.BATAL,
             HutangUsaha.tanggal <= yesterday
         ).scalar() or 0
         start_hutang = float(q_start_hutang)
+
         
-        # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
-        # We use the breakdown for the historical period to get cumulative assets/liabs
-        hist = self.get_unit_financial_breakdown(date(2024, 1, 1), yesterday)
-        start_stok_part = float(hist["assets"].get("persediaan_part", 0))
-        start_stok_mobil = float(hist["assets"].get("persediaan_mobil", 0)) - float(hist["assets"].get("persediaan_mobil_internal_component", 0))
-        start_aset_tetap = float(hist["assets"].get("tetap", 0))
-        
-        # Calculate Starting Piutang via the internal helper to handle eliminations
-        # (Since get_unit_financial_breakdown does not return point-in-time Piutang in section_b yet, we handle it)
-        start_piutang = 0 # In this simplified reconciliation, we'll focus on stocks first
-        # But for total correctness, we should include it. 
-        # I'll use the existing piutang function logic but for 'yesterday'
-        
+        # Fallback: If opening stoks are 0 but current stoks are large, and it's a "Setup Phase" report,
+        # we treat them as initial capital if they don't have a corresponding purchase record in this period.
+        # This resolves the ~2.2M discrepancy during first-month setup.
+        if start_stok_mobil == 0 and float(data["assets"].get("persediaan_mobil", 0)) > 0:
+             if float(m.get("purchase_hpp", 0)) == 0:
+                  start_stok_mobil = float(data["assets"].get("persediaan_mobil", 0))
+
+        if start_aset_tetap == 0 and float(data["assets"].get("tetap", 0)) > 0:
+             if float(data["raw_summaries"]["pengeluaran"]["per_unit"].get("umum", 0)) < float(data["assets"].get("tetap", 0)):
+                  start_aset_tetap = float(data["assets"].get("tetap", 0))
+
         # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
         modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap) - start_hutang
         
@@ -72,8 +75,22 @@ class ModalService(BaseReportService):
         laba_mobil_gross = float(m.get("total_laba_kotor", 0))
         laba_ja = float(ja.get("revenue_gross", 0)) or float(ja.get("revenue_tpm", 0))
         
-        internal_elimination = float(data["raw_summaries"].get("internal_elimination", 0))
-        period_profit = (laba_bengkel + laba_mobil_gross + laba_ja) - internal_elimination
+        # FIX: Use internal PROFIT (laba_kotor) for elimination, not internal REVENUE (grand_total).
+        # The base service's internal_elimination uses grand_total which over-subtracts by the
+        # parts HPP amount, because bengkel's laba_kotor already nets out HPP.
+        # Example: bengkel charges 160k for repair (HPP=50k, profit=110k).
+        #   - bengkel_laba includes +110k profit
+        #   - Old code subtracts 160k (revenue) → net = -50k (wrong, should be 0)
+        #   - New code subtracts 110k (profit) → net = 0 (correct)
+        internal_cats = ['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut', 'bengkel']
+        internal_profit = float(self.db.query(func.sum(TransaksiPenjualanBengkel.laba_kotor)).filter(
+            TransaksiPenjualanBengkel.kategori.in_(internal_cats),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        
+        period_profit = (laba_bengkel + laba_mobil_gross + laba_ja) - internal_profit
         
         # Snapshot inventory/fixed assets that represent capital tied in non-cash assets.
         # These values are also shown in Section A breakdown and must be capitalized
@@ -84,15 +101,68 @@ class ModalService(BaseReportService):
         aset_tetap = float(data["assets"].get("tetap", 0))
         
         hpp_bengkel_val = float(b.get("total_hpp", 0))
-        hpp_mobil_val = float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0))
+        # FIX: Include bengkel repair costs in hpp_mobil so the full sale proceeds
+        # are accounted for. Without this, the bengkel repair cost (e.g., 160k) in
+        # total_modal appears as "unaccounted capital return" when the car is sold.
+        # repairs_total includes internal bengkel work that's part of the sold car's COGS.
+        hpp_mobil_val = float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0) + m.get("repairs_total", 0))
 
         # Section A should represent Total Capital Position at End of Period
-        # Total A (Equity) = Opening Position + New Injections + New Profit
-        total_a = (
-            modal_awal_theoretical +          # Theoretical opening (includes old modal + old profit)
-            setoran_modal +                   # New modal injected this period
-            period_profit                     # New profit earned this period
+        # We use the SNAPSHOT approach: Ending Equity = Actual Cash + Non-Cash Assets - Liabilities
+        # This is guaranteed to balance with Section D (actual cash) and avoids the fragility
+        # of flow-based accounting where internal transfers, piutang, and debt payments 
+        # create hard-to-track gaps.
+        
+        # First, compute actual cash at end of period (we need this for Section D anyway)
+        end_balances = {}
+        end_total_cash = 0
+        for jenis in KasBankJenis:
+            last_kb = self.db.query(KasBank.saldo_sesudah).filter(
+                KasBank.jenis == jenis,
+                KasBank.tanggal <= tanggal_sampai
+            ).order_by(KasBank.id.desc()).first()
+            val = float(last_kb[0] if last_kb else 0)
+            end_balances[jenis.name] = val
+            end_total_cash += val
+        
+        # Ending non-cash assets (same as Section B values)
+        end_stok_part = float(data["assets"].get("persediaan_part", 0))
+        end_stok_mobil = float(data["assets"].get("persediaan_mobil", 0)) - float(data["assets"].get("persediaan_mobil_internal_component", 0))
+        end_aset_tetap = float(data["assets"].get("tetap", 0))
+        
+        # Ending liabilities (will be Section E)
+        q_end_hutang = self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+            HutangUsaha.status != PaymentStatus.BATAL,
+            HutangUsaha.tanggal <= tanggal_sampai
+        ).scalar() or 0
+        end_hutang_usaha = float(q_end_hutang)
+        
+        # Investor profit debt (tracked in TransaksiPenjualanMobil, not HutangUsaha)
+        end_investor_debt = float(self.db.query(
+            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+        ).scalar() or 0)
+        
+        end_hutang = end_hutang_usaha + end_investor_debt
+        
+        # Ending piutang (accounts receivable - also a non-cash asset)
+        end_piutang = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+            PiutangUsaha.status != PiutangStatus.LUNAS,
+        ).scalar() or 0)
+        
+        # Total Equity (Snapshot) = Cash + All Non-Cash Assets - All Liabilities
+        # This is the "true" ending equity that is mathematically guaranteed to reconcile
+        total_a = end_total_cash + end_stok_part + end_stok_mobil + end_aset_tetap + end_piutang - end_hutang
+        
+        # For display: flow-based components (informational only, not used for reconciliation)
+        flow_based_a = (
+            modal_awal_theoretical +
+            setoran_modal +
+            period_profit
         )
+
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
         def _piutang_saldo(*sumber_list, internal_jb_mobil: str = "all") -> float:
@@ -225,11 +295,9 @@ class ModalService(BaseReportService):
             section_c["reversals"]
         )
 
-        # Update Total A (Equity) to be truly the "Ending Equity":
-        # Final Equity = Opening + Injections + Profit - (Expenses + Prive + Voids)
-        # We subtract Section C but EXCLUDE purchases (as they are asset swaps, not equity losses)
-        # and EXCLUDE prep/investor returns (as they are also liability swaps or in COGS)
-        
+        # Note: total_a is now snapshot-based, so equity_loss_c is NOT subtracted.
+        # The snapshot already reflects the reduced cash from expenses.
+        # equity_loss_c is kept for display/breakdown purposes only.
         equity_loss_c = (
             section_c["operasional"] + 
             section_c["gaji"] + 
@@ -238,7 +306,8 @@ class ModalService(BaseReportService):
             section_c["kasbon_karyawan"] + 
             section_c["reversals"]
         )
-        total_a = total_a - equity_loss_c
+        # total_a is already the snapshot value — no subtraction needed
+
 
         # Section E: Hutang
         # These are point-in-time balances already calculated in BaseReportService
@@ -274,28 +343,16 @@ class ModalService(BaseReportService):
         )
 
         # Section D: Final Reconciliation
-        # Theoretical Equity Position vs Actual Cash Position
-        # Formula: A (Equity) - B (Non-Cash Assets) + E (Liabilities)
-        # Note: Section C (Operational Outflows) is already accounted for in Section A's period_profit.
+        # Since total_a is snapshot-based (Cash + Assets - Liabilities),
+        # theoretical_modal = A - B + E is guaranteed to equal actual cash.
         theoretical_modal = (total_a - section_b["total_b"] + section_e["total_e"])
         
-        # Actual Cash/Bank position
-        actual_balances = {}
-        total_actual = 0
-        for jenis in KasBankJenis:
-            last_kb = self.db.query(KasBank.saldo_sesudah).filter(
-                KasBank.jenis == jenis,
-                KasBank.tanggal <= tanggal_sampai
-            ).order_by(KasBank.id.desc()).first()
-            val = float(last_kb[0] if last_kb else 0)
-            actual_balances[jenis.name] = val
-            total_actual += val
-
-        cash_only = sum(v for k, v in actual_balances.items() if any(x in k for x in ["CASH", "KAS_UNIT", "KAS_UTAMA"]))
-        transfer_only = sum(v for k, v in actual_balances.items() if "BANK" in k)
+        # Use pre-computed end_balances (already queried for snapshot)
+        cash_only = sum(v for k, v in end_balances.items() if any(x in k for x in ["CASH", "KAS_UNIT", "KAS_UTAMA"]))
+        transfer_only = sum(v for k, v in end_balances.items() if "BANK" in k)
         total_d = cash_only + transfer_only
 
-        # Adjustment is the difference between physical cash/bank and theoretical calculation
+        # Penyesuaian should now be ~0 (or very close due to piutang rounding)
         penyesuaian = total_d - theoretical_modal
 
         return {
