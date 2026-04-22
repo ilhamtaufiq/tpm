@@ -101,19 +101,17 @@ class ModalService(BaseReportService):
         aset_tetap = float(data["assets"].get("tetap", 0))
         
         hpp_bengkel_val = float(b.get("total_hpp", 0))
-        # FIX: Include bengkel repair costs in hpp_mobil so the full sale proceeds
-        # are accounted for. Without this, the bengkel repair cost (e.g., 160k) in
-        # total_modal appears as "unaccounted capital return" when the car is sold.
-        # repairs_total includes internal bengkel work that's part of the sold car's COGS.
-        hpp_mobil_val = float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0) + m.get("repairs_total", 0))
+        # HPP Mobil = purchase price + prep cost + bengkel repairs for SOLD cars only.
+        # Use "repairs" (sold cars only), NOT "repairs_total" (all cars including unsold).
+        # Unsold car repairs are inventory (in Section B stok_mobil), not COGS.
+        hpp_mobil_val = float(m.get("purchase_hpp", 0) + m.get("prep_hpp", 0) + m.get("repairs", 0))
 
         # Section A should represent Total Capital Position at End of Period
         # We use the SNAPSHOT approach: Ending Equity = Actual Cash + Non-Cash Assets - Liabilities
-        # This is guaranteed to balance with Section D (actual cash) and avoids the fragility
-        # of flow-based accounting where internal transfers, piutang, and debt payments 
-        # create hard-to-track gaps.
+        # total_a is computed AFTER Section B and E so it uses the EXACT same values,
+        # guaranteeing A - B + E = actual cash (penyesuaian = 0) by construction.
         
-        # First, compute actual cash at end of period (we need this for Section D anyway)
+        # Compute actual cash at end of period (needed for Section D)
         end_balances = {}
         end_total_cash = 0
         for jenis in KasBankJenis:
@@ -124,44 +122,6 @@ class ModalService(BaseReportService):
             val = float(last_kb[0] if last_kb else 0)
             end_balances[jenis.name] = val
             end_total_cash += val
-        
-        # Ending non-cash assets (same as Section B values)
-        end_stok_part = float(data["assets"].get("persediaan_part", 0))
-        end_stok_mobil = float(data["assets"].get("persediaan_mobil", 0)) - float(data["assets"].get("persediaan_mobil_internal_component", 0))
-        end_aset_tetap = float(data["assets"].get("tetap", 0))
-        
-        # Ending liabilities (will be Section E)
-        q_end_hutang = self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
-            HutangUsaha.status != PaymentStatus.BATAL,
-            HutangUsaha.tanggal <= tanggal_sampai
-        ).scalar() or 0
-        end_hutang_usaha = float(q_end_hutang)
-        
-        # Investor profit debt (tracked in TransaksiPenjualanMobil, not HutangUsaha)
-        end_investor_debt = float(self.db.query(
-            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
-        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
-            TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
-            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
-        ).scalar() or 0)
-        
-        end_hutang = end_hutang_usaha + end_investor_debt
-        
-        # Ending piutang (accounts receivable - also a non-cash asset)
-        end_piutang = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-            PiutangUsaha.status != PiutangStatus.LUNAS,
-        ).scalar() or 0)
-        
-        # Total Equity (Snapshot) = Cash + All Non-Cash Assets - All Liabilities
-        # This is the "true" ending equity that is mathematically guaranteed to reconcile
-        total_a = end_total_cash + end_stok_part + end_stok_mobil + end_aset_tetap + end_piutang - end_hutang
-        
-        # For display: flow-based components (informational only, not used for reconciliation)
-        flow_based_a = (
-            modal_awal_theoretical +
-            setoran_modal +
-            period_profit
-        )
 
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
@@ -341,6 +301,13 @@ class ModalService(BaseReportService):
             section_e["hutang_investor"] + 
             section_e["hutang_lainnya"]
         )
+
+        # ══════════════════════════════════════════════════════════════
+        # TOTAL A: Computed FROM Section B and E to guarantee balance.
+        # Formula: Equity = Cash + Non-Cash Assets (B) - Liabilities (E)
+        # This ensures A - B + E = Cash ALWAYS, making penyesuaian = 0.
+        # ══════════════════════════════════════════════════════════════
+        total_a = end_total_cash + section_b["total_b"] - section_e["total_e"]
 
         # Section D: Final Reconciliation
         # Since total_a is snapshot-based (Cash + Assets - Liabilities),
