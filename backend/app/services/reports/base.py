@@ -449,7 +449,8 @@ class BaseReportService:
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             ja_expenses_trip + ja_tagged_from_wallet + general_ja_overhead + ja_expenses_bengkel +
-            general_mobil_overhead
+            general_mobil_overhead + 
+            admin_fees_unrecorded + ja_untracked_gap
         )
 
 

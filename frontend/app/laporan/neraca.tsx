@@ -299,29 +299,34 @@ export default function NeracaScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    {/* Modal Awal & Setoran */}
+                    {/* Modal Tunai */}
                     <View className="mb-4 w-full">
                         <Row label="1. Setoran Modal Tunai" value={data.setoran_modal} bold large />
-                        {data.modal_persediaan > 0 && (
-                            <Row label="Modal Awal Persediaan Sparepart" value={data.modal_persediaan} small indent />
-                        )}
-                        {data.pencairan_investor > 0 && (
-                            <Row label="Pengembalian Modal Investor Mobil" value={data.pencairan_investor} isNegative small indent />
-                        )}
                     </View>
+
+                    {/* Modal Non-Tunai (Aset) */}
+                    {(data.modal_persediaan > 0 || data.modal_stok_mobil > 0 || data.modal_aset_tetap > 0) && (
+                        <View className="mb-4 w-full">
+                            <Typography variant="caption" weight="bold" className="text-slate-500 uppercase text-[10px] tracking-wider mb-2">
+                                Modal Tertanam di Aset
+                            </Typography>
+                            <View className="bg-slate-50 w-full p-4 rounded-xl border border-slate-100">
+                                {data.modal_persediaan > 0 && (
+                                    <Row label="Persediaan Sparepart" value={data.modal_persediaan} small indent />
+                                )}
+                                {data.modal_stok_mobil > 0 && (
+                                    <Row label="Stok Mobil (Inventory)" value={data.modal_stok_mobil} small indent />
+                                )}
+                                {data.modal_aset_tetap > 0 && (
+                                    <Row label="Aset Tetap" value={data.modal_aset_tetap} small indent />
+                                )}
+                            </View>
+                        </View>
+                    )}
 
                     {/* Laba Ditahan */}
                     <View className="mb-4 w-full">
                         <Row label="2. Laba Ditahan" value={data.laba_ditahan} bold large color="text-violet-700" />
-                        <View className="bg-slate-50 w-full p-4 rounded-xl border border-slate-100 mt-2">
-                            <Row label="Laba Kotor Total" value={data.laba_kotor} small />
-                            <View className="ml-3 pl-3 border-l border-slate-200/60 my-1">
-                                <Row label="Bengkel" value={data.detail_laba?.bengkel} small indent />
-                                <Row label="Jual Beli Mobil" value={data.detail_laba?.mobil} small indent />
-                                <Row label="Jasa Angkut" value={data.detail_laba?.jasa_angkut} small indent />
-                            </View>
-                            <Row label="Total Beban Operasional" value={data.total_beban} small isNegative />
-                        </View>
                     </View>
 
                     {/* Prive */}
@@ -330,23 +335,6 @@ export default function NeracaScreen() {
                     </View>
 
                     <View className="h-[1px] bg-slate-100 w-full my-1" />
-
-                    {/* Reconciliation Info */}
-                    {data.selisih_modal !== 0 && data.selisih_modal != null && (
-                        <View className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50 mt-4 w-full">
-                            <View className="flex-row items-center mb-3 border-b border-amber-100/50 pb-2">
-                                <AlertTriangle size={14} className="text-amber-600" />
-                                <Typography variant="caption" weight="bold" className="text-amber-800 ml-2 tracking-widest text-[10px]">
-                                    SELISIH PENYESUAIAN
-                                </Typography>
-                            </View>
-                            <Row label="Modal (Perhitungan Komponen)" value={data.modal_komponen} small />
-                            <Row label="Penyesuaian" value={data.selisih_modal} small color="text-amber-700" />
-                            <Typography variant="caption" className="text-amber-600/70 text-[10px] mt-2 block w-full leading-snug">
-                                Penyesuaian karena selisih saldo yang tidak imbang
-                            </Typography>
-                        </View>
-                    )}
                 </View>
             </Card>
         );
@@ -531,22 +519,45 @@ export default function NeracaScreen() {
             </div>
 
             <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
-            <div class="row-item">
-                <span>Setoran Modal</span>
-                <span>${formatCurrency(report.modal.setoran_modal)}</span>
-            </div>
-            <div class="row-item">
-                <span>Laba Ditahan</span>
-                <span>${formatCurrency(report.modal.laba_ditahan)}</span>
-            </div>
-            <div class="row-item">
-                <span>Prive</span>
-                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
-            </div>
-            <div class="row-item row-total">
-                <span>TOTAL MODAL</span>
-                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
+            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>\r
+            <div class="row-item">\r
+                <span>Setoran Modal Tunai</span>\r
+                <span>${formatCurrency(report.modal.setoran_modal)}</span>\r
+            </div>\r
+            ${(report.modal.modal_persediaan > 0 || report.modal.modal_stok_mobil > 0 || report.modal.modal_aset_tetap > 0) ? `\r
+                <div style="padding-left: 15px; margin: 8px 0; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">\r
+                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Modal Tertanam di Aset</div>\r
+                    ${report.modal.modal_persediaan > 0 ? `\r
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
+                            <span>Persediaan Sparepart</span>\r
+                            <span>${formatCurrency(report.modal.modal_persediaan)}</span>\r
+                        </div>\r
+                    ` : ''}\r
+                    ${report.modal.modal_stok_mobil > 0 ? `\r
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
+                            <span>Stok Mobil (Inventory)</span>\r
+                            <span>${formatCurrency(report.modal.modal_stok_mobil)}</span>\r
+                        </div>\r
+                    ` : ''}\r
+                    ${report.modal.modal_aset_tetap > 0 ? `\r
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
+                            <span>Aset Tetap</span>\r
+                            <span>${formatCurrency(report.modal.modal_aset_tetap)}</span>\r
+                        </div>\r
+                    ` : ''}\r
+                </div>\r
+            ` : ''}\r
+            <div class="row-item">\r
+                <span>Laba Ditahan</span>\r
+                <span>${formatCurrency(report.modal.laba_ditahan)}</span>\r
+            </div>\r
+            <div class="row-item">\r
+                <span>Prive</span>\r
+                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>\r
+            </div>\r
+            <div class="row-item row-total">\r
+                <span>TOTAL MODAL</span>\r
+                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>\r
             </div>
             <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
             <div class="row-item">

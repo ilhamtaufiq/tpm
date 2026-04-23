@@ -1,3 +1,4 @@
+from app.utils.constants import AssetStatus
 from app.utils.constants import CarStatus
 from datetime import date, timedelta
 from typing import Dict, Any
@@ -114,14 +115,34 @@ class ModalService(BaseReportService):
         # Compute actual cash at end of period (needed for Section D)
         end_balances = {}
         end_total_cash = 0
+        cash_val = 0
+        transfer_val = 0
+        unit_details = {}
+        
         for jenis in KasBankJenis:
             last_kb = self.db.query(KasBank.saldo_sesudah).filter(
                 KasBank.jenis == jenis,
                 KasBank.tanggal <= tanggal_sampai
             ).order_by(KasBank.id.desc()).first()
             val = float(last_kb[0] if last_kb else 0)
-            end_balances[jenis.name] = val
+            
+            name = jenis.name
+            end_balances[name] = val
             end_total_cash += val
+            
+            # Categorize
+            if name in ["KAS_UTAMA", "CASH"]:
+                cash_val += val
+            elif "BANK" in name:
+                transfer_val += val
+            elif "KAS_UNIT" in name:
+                cash_val += val  # Included in cash for Section D display "Tunai & Brankas Unit"
+                unit_details[name.lower()] = val
+            else:
+                if name.startswith("KAS"):
+                    cash_val += val
+                else:
+                    transfer_val += val
 
 
         # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
@@ -314,12 +335,7 @@ class ModalService(BaseReportService):
         # theoretical_modal = A - B + E is guaranteed to equal actual cash.
         theoretical_modal = (total_a - section_b["total_b"] + section_e["total_e"])
         
-        # Use pre-computed end_balances (already queried for snapshot)
-        cash_only = sum(v for k, v in end_balances.items() if any(x in k for x in ["CASH", "KAS_UNIT", "KAS_UTAMA"]))
-        transfer_only = sum(v for k, v in end_balances.items() if "BANK" in k)
-        total_d = cash_only + transfer_only
-
-        # Penyesuaian should now be ~0 (or very close due to piutang rounding)
+        total_d = cash_val + transfer_val
         penyesuaian = total_d - theoretical_modal
 
         return {
@@ -347,8 +363,9 @@ class ModalService(BaseReportService):
             "section_c": section_c,
             "section_d": {
                 "theoretical_modal": theoretical_modal,
-                "cash": cash_only,
-                "transfer": transfer_only,
+                "cash": cash_val,
+                "transfer": transfer_val,
+                "unit_details": unit_details,
                 "total_d": total_d,
                 "penyesuaian": penyesuaian,
                 "modal_komponen": total_a - section_b["total_b"] - section_c["total_c"] + section_e["total_e"]

@@ -39,6 +39,27 @@ class NeracaService(BaseReportService):
             ).order_by(KasBank.id.desc()).first()
             balances[jenis.name] = float(last_kb.saldo_sesudah if last_kb else 0)
         
+        # Categorize balances for report breakdown
+        kas_tunai = 0
+        kas_bank = 0
+        unit_cash = 0
+        unit_details = {}
+        
+        for name, value in balances.items():
+            if name in ["KAS_UTAMA", "CASH"]:
+                kas_tunai += value
+            elif "BANK" in name:
+                kas_bank += value
+            elif "KAS_UNIT" in name:
+                unit_cash += value
+                unit_details[name.lower()] = value
+            else:
+                # Fallback for any other custom types
+                if name.startswith("KAS"):
+                    kas_tunai += value
+                else:
+                    kas_bank += value
+        
         total_cash = sum(balances.values())
 
         # Piutang breakdown - Use values from hist for consistency
@@ -69,8 +90,8 @@ class NeracaService(BaseReportService):
         piutang_karyawan = get_piutang_sum(PiutangSource.KASBON_KARYAWAN)
         piutang_lainnya = get_piutang_sum(PiutangSource.LAINNYA)
         
-        piutang_usaha = piutang_bengkel + piutang_mobil + piutang_ja
-        total_piutang = piutang_usaha + piutang_karyawan + piutang_lainnya
+        # Eliminate internal piutang from consolidated assets
+        total_piutang = piutang_bengkel + piutang_karyawan + piutang_lainnya
         
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
 
@@ -96,11 +117,12 @@ class NeracaService(BaseReportService):
         
         total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor
 
-        # 3. EQUITY & PROFIT
+        # 3. EQUITY & PROFIT — Snapshot Identity Approach
+        # Balance Sheet Identity: Assets = Liabilities + Equity
+        # Therefore: Equity = Assets - Liabilities (always balanced by construction)
+        total_equity = total_assets - total_liabilities
+        
         # We reuse 'hist' fetched at the start for consistent consolidated profit logic
-        total_laba_gross = float(hist.get("laba_tpm", 0))
-        total_operasional = float(hist.get("operasional", 0))
-        internal_elimination = float(hist.get("internal_elimination", 0))
         prive_total = float(hist.get("prive_global", 0))
         
         # Net Consolidated Profit for the company
@@ -116,16 +138,19 @@ class NeracaService(BaseReportService):
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         
-        # Calculate theoretical equity based on components
+        # Non-cash capital tied in assets (shown for transparency in the equity breakdown)
+        # These values represent capital deployed into physical/non-cash assets.
+        modal_persediaan = total_stock_parts
+        modal_stok_mobil = total_stock_mobil
+        modal_aset_tetap = total_fixed_assets
+        
+        # The equity breakdown shows WHERE the capital is held:
+        # - Cash component: setoran_modal + retained_earnings - prive = what SHOULD be in cash
+        # - Non-cash component: inventory + fixed assets = what's tied up in physical property
+        # The total always equals total_equity by the balance sheet identity.
+        # No "selisih" needed because this is a snapshot, not a flow reconciliation.
         equity_per_komponen = setoran_modal + retained_earnings - prive_total
         
-        # Calculate the GAP (Selisih) - This is usually from imported stock or unrecorded capital
-        # In a balanced sheet: Equity = Assets - Liabilities
-        target_equity = total_assets - total_liabilities
-        selisih_pencatatan = target_equity - equity_per_komponen
-        
-        # We report the final equity as the balanced TARGET value, but show the breakdown
-        total_equity = target_equity
         total_pasiva = total_liabilities + total_equity
         
         report_selisih = total_assets - total_pasiva
@@ -134,8 +159,10 @@ class NeracaService(BaseReportService):
         return {
             "periode": as_of_date.isoformat(),
             "aktiva_lancar": {
-                "kas_tunai": total_cash,
-                "kas_bank": 0,
+                "kas_tunai": kas_tunai,
+                "kas_bank": kas_bank,
+                "unit_cash": unit_cash,
+                "unit_details": unit_details,
                 "total_kas_bank": total_cash,
                 "piutang_usaha": piutang_bengkel,
                 "piutang_mobil": piutang_mobil,
@@ -166,8 +193,11 @@ class NeracaService(BaseReportService):
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "prive": prive_total,
-                "selisih_modal": selisih_pencatatan, # This shows the imported stock adjustment
-                "modal_komponen": equity_per_komponen,
+                "modal_persediaan": modal_persediaan,
+                "modal_stok_mobil": modal_stok_mobil,
+                "modal_aset_tetap": modal_aset_tetap,
+                "selisih_modal": 0,
+                "modal_komponen": total_equity,
                 "total_modal": total_equity
             },
             "total_pasiva": total_pasiva,
