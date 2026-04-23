@@ -74,7 +74,7 @@ export default function LabaRugiScreen() {
     // Bengkel Data Mapping (New Schema)
     const bengkelUnit = reportData?.units?.bengkel || {};
     const bengkelData = {
-        penjualan: bengkelUnit.revenue || 0,
+        penjualan: reportData?.bengkel_details?.total_subtotal || (bengkelUnit.revenue + (reportData?.bengkel_details?.total_diskon || 0)),
         hpp: bengkelUnit.hpp || 0,
         biayaOps: bengkelUnit.beban_operasional || 0,
         biayaGaji: bengkelUnit.beban_gaji || 0,

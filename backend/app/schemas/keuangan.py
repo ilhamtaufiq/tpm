@@ -331,6 +331,7 @@ class KasBankSummary(BaseModel):
     saldo: Decimal
     total_masuk_bulan_ini: Decimal
     total_keluar_bulan_ini: Decimal
+    sub_balances: Optional[dict] = None
 
 
 class KasBankAllSummary(BaseModel):

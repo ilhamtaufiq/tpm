@@ -55,8 +55,39 @@ class KasBankService:
         if as_of:
             query = query.filter(KasBank.tanggal <= as_of)
             
-        last_record = query.order_by(KasBank.id.desc()).first()
+        last_record = query.order_by(KasBank.id.desc(), KasBank.created_at.desc()).first()
         return last_record.saldo_sesudah if last_record else Decimal("0")
+
+    def _get_virtual_balance(
+        self,
+        jenis: KasBankJenis,
+        sumber: KasBankSource,
+        as_of: Optional[date] = None
+    ) -> Decimal:
+        """Get virtual balance for a specific source within a kas/bank type."""
+        query = self.db.query(KasBank).filter(
+            KasBank.jenis == jenis,
+            KasBank.sumber == sumber
+        )
+        
+        if as_of:
+            query = query.filter(KasBank.tanggal <= as_of)
+            
+        masuk = (
+            query.filter(KasBank.tipe == KasBankType.MASUK)
+            .with_entities(func.sum(KasBank.nominal))
+            .scalar()
+            or Decimal("0")
+        )
+        
+        keluar = (
+            query.filter(KasBank.tipe == KasBankType.KELUAR)
+            .with_entities(func.sum(KasBank.nominal))
+            .scalar()
+            or Decimal("0")
+        )
+        
+        return masuk - keluar
 
     def create(
         self,
@@ -253,6 +284,15 @@ class KasBankService:
         for jenis in KasBankJenis:
             key = jenis.value.lower()
             balance_info = self.get_balance(jenis, as_of=as_of)
+            
+            # Add virtual sub-balances for Bank Utama (Unit Profits in Bank)
+            if jenis == KasBankJenis.BANK_UTAMA:
+                balance_info["sub_balances"] = {
+                    "jasa_angkut": float(self._get_virtual_balance(jenis, KasBankSource.JASA_ANGKUT, as_of)),
+                    "bengkel": float(self._get_virtual_balance(jenis, KasBankSource.BENGKEL, as_of)),
+                    "mobil": float(self._get_virtual_balance(jenis, KasBankSource.JUAL_BELI_MOBIL, as_of)),
+                }
+                
             result[key] = balance_info
             total_saldo += Decimal(str(balance_info["saldo"]))
 

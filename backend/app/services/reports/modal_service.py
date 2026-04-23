@@ -285,9 +285,9 @@ class ModalService(BaseReportService):
             section_c["lembur"] + 
             section_c["prive"] + 
             section_c["kasbon_karyawan"] + 
-            section_c["reversals"]
+            section_c["reversals"] +
+            section_c["pengembalian_investor"]["total"]
         )
-        # total_a is already the snapshot value — no subtraction needed
 
 
         # Section E: Hutang
@@ -324,16 +324,17 @@ class ModalService(BaseReportService):
         )
 
         # ══════════════════════════════════════════════════════════════
-        # TOTAL A: Computed FROM Section B and E to guarantee balance.
-        # Formula: Equity = Cash + Non-Cash Assets (B) - Liabilities (E)
-        # This ensures A - B + E = Cash ALWAYS, making penyesuaian = 0.
+        # TOTAL A: Sum of theoretical components as shown in UI.
         # ══════════════════════════════════════════════════════════════
-        total_a = end_total_cash + section_b["total_b"] - section_e["total_e"]
+        total_a = modal_awal_theoretical + setoran_modal + period_profit
 
         # Section D: Final Reconciliation
-        # Since total_a is snapshot-based (Cash + Assets - Liabilities),
-        # theoretical_modal = A - B + E is guaranteed to equal actual cash.
-        theoretical_modal = (total_a - section_b["total_b"] + section_e["total_e"])
+        # 1. Start with Total A (Theoretical Input)
+        # 2. Subtract actual equity losses (Expenses, Prive, etc from Section C)
+        # 3. Adjust for Non-Cash Assets (B) and Liabilities (E) to find Theoretical Cash.
+        
+        theoretical_equity = total_a - equity_loss_c
+        theoretical_modal = theoretical_equity - section_b["total_b"] + section_e["total_e"]
         
         total_d = cash_val + transfer_val
         penyesuaian = total_d - theoretical_modal

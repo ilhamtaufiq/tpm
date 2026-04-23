@@ -181,6 +181,7 @@ export interface KasBankBalance {
     saldo: number;
     total_masuk_bulan_ini: number;
     total_keluar_bulan_ini: number;
+    sub_balances?: Record<string, number>;
 }
 
 export interface KasBankAllBalances {
@@ -194,6 +195,7 @@ export interface KasBankAllBalances {
     bank_bca?: KasBankBalance;
     bank_mandiri?: KasBankBalance;
     bank_bri?: KasBankBalance;
+    bank_lainnya?: KasBankBalance;
     total_saldo: number;
 }
 

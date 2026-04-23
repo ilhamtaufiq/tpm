@@ -207,10 +207,17 @@ class TransaksiBengkelService:
         is_internal_mobil = (getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
         if is_internal_jasa_angkut:
-            # Internal transactions for Jasa Angkut are considered paid internally
-            # This moves cash from Jasa Angkut profit to Bengkel immediately
+            # Internal transactions for Jasa Angkut are considered paid immediately
             total_pembayaran = grand_total
-            metode_utama = PaymentMethod.INTERNAL
+            # Respect user's choice (Tunai vs Transfer from Bank)
+            user_metode = data.metode_bayar
+            if data.payments and len(data.payments) > 0:
+                user_metode = data.payments[0].metode
+            
+            if user_metode == PaymentMethod.TRANSFER:
+                metode_utama = PaymentMethod.TRANSFER
+            else:
+                metode_utama = PaymentMethod.INTERNAL # Default to internal cash bookkeeping
         elif is_internal_mobil:
             # Internal transactions for JB Mobil are NOT paid immediately
             # They stay as Piutang (receivable) until the car is sold
@@ -460,29 +467,34 @@ class TransaksiBengkelService:
 
         # Record internal transfer for integrated units
         if is_internal_jasa_angkut:
-            record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
+            record_bilateral_payment(grand_total, metode_utama, transaksi.id, transaksi.nomor_transaksi)
         
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
         # (Internal Mobil and non-internal partial payments are already handled via Piutang system)
         elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
             if total_pembayaran > 0:
-                # If multiple payments exist, record each one
+                # Record payments capped at grand_total (excess is 'kembalian')
+                remaining_to_record = grand_total
                 if data.payments:
                     for p in data.payments:
-                        if p.jumlah > 0:
+                        if remaining_to_record <= 0:
+                            break
+                        rec_amount = min(p.jumlah, remaining_to_record)
+                        if rec_amount > 0:
                             create_kas_entry(
                                 db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
-                                nominal=p.jumlah, sumber=KasBankSource.BENGKEL, 
+                                nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                                 keterangan=f"Pembayaran Bengkel: {nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
                             )
+                            remaining_to_record -= rec_amount
                 else:
                     # Single payment
                     create_kas_entry(
                         db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
-                        nominal=total_pembayaran, sumber=KasBankSource.BENGKEL, 
+                        nominal=grand_total, sumber=KasBankSource.BENGKEL, 
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                         keterangan=f"Pembayaran Lunas Bengkel: {nomor_transaksi}",
@@ -742,6 +754,33 @@ class TransaksiBengkelService:
 
         if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
+        elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
+            # Re-create KasBank entries for regular LUNAS transactions (FIX: were missing in update)
+            if total_pembayaran > 0:
+                remaining_to_record = grand_total
+                if data.payments:
+                    for p in data.payments:
+                        if remaining_to_record <= 0: break
+                        rec_amount = min(p.jumlah, remaining_to_record)
+                        if rec_amount > 0:
+                            create_kas_entry(
+                                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                                nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
+                                metode_bayar=p.metode,
+                                referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
+                                keterangan=f"Pembayaran (EDIT) Bengkel: {transaksi.nomor_transaksi} ({p.metode})",
+                                user_id=user_id,
+                            )
+                            remaining_to_record -= rec_amount
+                else:
+                    create_kas_entry(
+                        db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                        nominal=grand_total, sumber=KasBankSource.BENGKEL, 
+                        metode_bayar=metode_utama,
+                        referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
+                        keterangan=f"Pembayaran Lunas (EDIT) Bengkel: {transaksi.nomor_transaksi}",
+                        user_id=user_id,
+                    )
 
         self.db.commit()
 
@@ -963,6 +1002,7 @@ class TransaksiBengkelService:
         # Aggregate values (Excluding cancelled for financial totals)
         aggregates = query.filter(TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL).with_entities(
             func.sum(TransaksiPenjualanBengkel.grand_total).label("total_penjualan"),
+            func.sum(TransaksiPenjualanBengkel.subtotal).label("total_subtotal"),
             func.sum(TransaksiPenjualanBengkel.total_parts).label("total_parts"),
             func.sum(TransaksiPenjualanBengkel.total_jasa).label("total_jasa"),
             func.sum(TransaksiPenjualanBengkel.hpp_parts).label("total_hpp"),
@@ -1060,6 +1100,7 @@ class TransaksiBengkelService:
             "proses": status_map.get("proses", 0),
             "selesai": status_map.get("selesai", 0),
             "total_penjualan": float(aggregates.total_penjualan or 0),
+            "total_subtotal": float(aggregates.total_subtotal or 0),
             "total_parts": float(aggregates.total_parts or 0),
             "total_jasa": float(aggregates.total_jasa or 0),
             "total_diskon": float(aggregates.total_diskon or 0),
@@ -1190,6 +1231,10 @@ class TransaksiBengkelService:
         """
         transaksi = self.get_by_id(transaksi_id)
 
+        # 0. Check if already cancelled to prevent double stock restoration
+        if transaksi.status_bayar == PaymentStatus.BATAL:
+            return True
+
         # 1. Restore spare part stock
         for detail in transaksi.detail_parts:
             spare_part = (
@@ -1235,7 +1280,7 @@ class TransaksiBengkelService:
             
             # Set Piutang status to BATAL instead of deleting
             piutang.status = PiutangStatus.BATAL
-            piutang.sisa = 0
+            piutang.sisa_piutang = 0
 
         # 4. Remove linked costs (Mobil & Jasa Angkut)
         self.db.query(MobilPartService).filter(

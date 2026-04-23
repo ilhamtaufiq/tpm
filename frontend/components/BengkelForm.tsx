@@ -8,10 +8,11 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode } from 'lucide-react-native';
+import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode, Banknote, Wallet, Building2 } from 'lucide-react-native';
 import { BarcodeScannerModal } from './ui/BarcodeScannerModal';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
+import { useKasBankBalances } from '../hooks/useKeuangan';
 import { useMobilList } from '../hooks/useMobil';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from './ui/MasterDataSelector';
@@ -67,6 +68,12 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scannerMode, setScannerMode] = useState<'sparepart' | 'plate' | 'vessel'>('sparepart');
     const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
+
+    const { data: balancesData } = useKasBankBalances();
+    const jasaAngkutCash = balancesData?.kas_unit_jasa_angkut?.saldo || 0;
+    const bankUtamaJasaAngkut = balancesData?.bank_utama?.sub_balances?.jasa_angkut || 0;
+    const bankUtamaBengkel = balancesData?.bank_utama?.sub_balances?.bengkel || 0;
+    const bankUtamaMobil = balancesData?.bank_utama?.sub_balances?.mobil || 0;
 
     // API Hooks
     const { data: sparePartsData } = useSparePartsList();
@@ -442,7 +449,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: isJasaAngkutInternal ? 'INTERNAL' : (isMobilInternal ? 'KREDIT' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || ''))),
+            metode_bayar: isJasaAngkutInternal 
+                ? (payments[0]?.metode?.toUpperCase() || 'INTERNAL') 
+                : (isMobilInternal ? 'KREDIT' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || ''))),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
                 .map(s => ({
@@ -459,7 +468,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 })),
             diskon: Number(parseNumber(diskon)) || 0,
             payments: isJasaAngkutInternal
-                ? [{ metode: 'INTERNAL', jumlah: grandTotal }]
+                ? [{ metode: payments[0]?.metode?.toUpperCase() || 'INTERNAL', jumlah: grandTotal }]
                 : (isMobilInternal ? [] : payments
                     .filter(p => p.metode)
                     .map(p => ({
@@ -536,6 +545,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                             key={cat.key}
                             onPress={() => {
                                 setKategori(cat.key);
+                                if (cat.key === 'jasa_angkut') {
+                                    setIsSplitPayment(false);
+                                    setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                                }
                                 if (cat.key !== 'jasa_angkut') {
                                     setSelectedMuatan(null);
                                     setSelectedArmada(null);
@@ -1059,82 +1072,125 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             <View className="mb-6">
                 <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm">
 
-                    {/* Jasa Angkut / Jual Beli Mobil Internal Banner */}
-                    {(kategori === 'jasa_angkut' && selectedArmada) || (kategori === 'jual_beli_mobil' && selectedMobil) ? (
+                    {/* Jual Beli Mobil: Internal Deferred Payment */}
+                    {(kategori === 'jual_beli_mobil' && selectedMobil) && (
                         <View className="mb-4">
-                            <View className="flex-row items-center bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                                <Info size={18} color="#10B981" />
+                            <View className="flex-row items-center bg-amber-50 p-4 rounded-2xl border border-amber-100">
+                                <Info size={18} color="#D97706" />
                                 <View className="ml-3 flex-1">
-                                    <Typography variant="body2" weight="bold" className="text-emerald-800">Pembayaran Internal</Typography>
-                                    <Typography variant="caption" className="text-emerald-600 mt-1">
-                                        {kategori === 'jasa_angkut'
-                                            ? `Biaya bengkel ini akan dicatat sebagai biaya operasional armada dan otomatis mengurangi Laba TPM. Tidak ada pembayaran tunai/transfer.`
-                                            : `Biaya bengkel ini akan dicatat sebagai Hutang Unit Mobil dan otomatis ditambahkan ke HPP. Pelunasan dilakukan saat mobil terjual.`
-                                        }
+                                    <Typography variant="body2" weight="bold" className="text-amber-800">Internal Jual Beli</Typography>
+                                    <Typography variant="caption" className="text-amber-600 mt-1">
+                                        Biaya bengkel ini akan dicatat sebagai Hutang Unit Mobil dan otomatis ditambahkan ke HPP. Pelunasan dilakukan saat mobil terjual.
                                     </Typography>
                                 </View>
                             </View>
                         </View>
-                    ) : (
+                    )}
+
+                    {/* Jasa Angkut: Internal Unit Spent (Visible Payment Method) */}
+                    {(kategori === 'jasa_angkut' && selectedArmada) && (
+                        <View className="mb-4">
+                            <View className="flex-row items-center bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                <Info size={18} color="#10B981" />
+                                <View className="ml-3 flex-1">
+                                    <Typography variant="body2" weight="bold" className="text-emerald-800">Biaya Internal Jasa Angkut</Typography>
+                                    <Typography variant="caption" className="text-emerald-600 mt-1">
+                                        Pilih sumber dana (Tunai Unit atau Transfer Bank). Biaya ini akan otomatis memotong laba unit Jasa Angkut terkait.
+                                    </Typography>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Standard Payment UI: Not for Jual Beli Mobil Internal */}
+                    {!(kategori === 'jual_beli_mobil' && selectedMobil) && (
                         <>
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography weight="semibold">Metode Pembayaran</Typography>
-                                <Pressable
-                                    onPress={() => {
-                                        setIsSplitPayment(!isSplitPayment);
-                                        // Reset payments to a single empty entry if switching from split to single
-                                        if (isSplitPayment) {
-                                            setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
-                                        }
-                                    }}
-                                    className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
-                                >
-                                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
-                                        {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
-                                    </Typography>
-                                </Pressable>
+                                {kategori !== 'jasa_angkut' && (
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsSplitPayment(!isSplitPayment);
+                                            // Reset payments to a single empty entry if switching from split to single
+                                            if (isSplitPayment) {
+                                                setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                                            }
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
+                                    >
+                                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                                        </Typography>
+                                    </Pressable>
+                                )}
                             </View>
 
                             {/* Basic Mode: Single Payment */}
                             {!isSplitPayment && (
                                 <View className="flex-row space-x-3 mb-4">
                                     <View className="flex-[1.5]">
-                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Metode</Typography>
-                                        <View className="flex-row space-x-1">
-                                            {['Tunai', 'Transfer'].map((m) => (
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Sumber Pembayaran</Typography>
+                                        <View className="flex-row space-x-2">
+                                            {[
+                                                { label: 'Dompet', value: 'Tunai', balance: kategori === 'jasa_angkut' ? jasaAngkutCash : (kategori === 'umum' ? (balancesData?.kas_unit_bengkel?.saldo || 0) : 0), icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
+                                                { label: 'Bank', value: 'Transfer', balance: kategori === 'jasa_angkut' ? bankUtamaJasaAngkut : (kategori === 'umum' ? bankUtamaBengkel : (balancesData?.bank_utama?.saldo || 0)), icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
+                                            ].map((m) => (
                                                 <Pressable
-                                                    key={m}
+                                                    key={m.value}
                                                     onPress={() => {
                                                         const newP = [...payments];
                                                         if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
-                                                        // Toggle selection: if already selected, unselect it
-                                                        newP[0].metode = newP[0].metode === m ? '' : m;
+                                                        newP[0].metode = newP[0].metode === m.value ? '' : m.value;
+                                                        // For jasa_angkut, nominal is always pas
+                                                        if (kategori === 'jasa_angkut' && newP[0].metode) {
+                                                            newP[0].nominal = formatNumber(grandTotal.toString());
+                                                        }
                                                         setPayments(newP);
                                                     }}
-                                                    className={`flex-1 py-2 rounded-xl items-center border ${payments[0]?.metode === m ? 'bg-primary border-primary' : 'bg-white border-white'}`}
+                                                    className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-slate-50 border-slate-100'}`}
                                                 >
-                                                    <Typography className={payments[0]?.metode === m ? 'text-white text-[10px] font-bold' : 'text-gray-700 text-[10px] font-medium'}>{m}</Typography>
+                                                    <View className="flex-row items-center mb-0.5">
+                                                        {m.icon}
+                                                        <Typography className={`ml-1.5 ${payments[0]?.metode === m.value ? 'text-white text-[10px] font-bold' : 'text-slate-600 text-[10px] font-semibold'}`}>{m.label}</Typography>
+                                                    </View>
+                                                    <Typography className={`text-[8px] ${payments[0]?.metode === m.value ? 'text-white/80' : 'text-slate-400'}`}>
+                                                        {formatCurrency(m.balance)}
+                                                    </Typography>
                                                 </Pressable>
                                             ))}
                                         </View>
                                     </View>
-                                    <View className="flex-1">
-                                        <Typography variant="caption" weight="bold" className="text-primary mb-2 ml-1">DP / Bayar (Rp)</Typography>
-                                        <Input
-                                            placeholder="0"
-                                            keyboardType="numeric"
-                                            containerClassName="mb-0"
-                                            innerContainerClassName="!bg-white border-gray-100"
-                                            className="h-10 text-sm font-bold"
-                                            value={payments[0]?.nominal || ''}
-                                            onChangeText={(val) => {
-                                                const newP = [...payments];
-                                                if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
-                                                newP[0].nominal = formatNumber(val);
-                                                setPayments(newP);
-                                            }}
-                                        />
-                                    </View>
+                                    {kategori !== 'jasa_angkut' && (
+                                        <View className="flex-1">
+                                            <View className="flex-row items-center justify-between mb-2 ml-1">
+                                                <Typography variant="caption" weight="bold" className="text-primary">DP / Bayar (Rp)</Typography>
+                                                <Pressable
+                                                    onPress={() => {
+                                                        const newP = [...payments];
+                                                        if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                        newP[0].nominal = formatNumber(grandTotal.toString());
+                                                        setPayments(newP);
+                                                    }}
+                                                >
+                                                    <Typography className="text-[9px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">BAYAR PAS</Typography>
+                                                </Pressable>
+                                            </View>
+                                            <Input
+                                                placeholder="0"
+                                                keyboardType="numeric"
+                                                containerClassName="mb-0"
+                                                innerContainerClassName="!bg-white border-gray-100"
+                                                className="h-10 text-sm font-bold"
+                                                value={payments[0]?.nominal || ''}
+                                                onChangeText={(val) => {
+                                                    const newP = [...payments];
+                                                    if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                    newP[0].nominal = formatNumber(val);
+                                                    setPayments(newP);
+                                                }}
+                                            />
+                                        </View>
+                                    )}
                                 </View>
                             )}
 
@@ -1166,7 +1222,20 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 </View>
                                             </View>
                                             <View className="flex-1">
-                                                {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Nominal</Typography>}
+                                                <View className="flex-row items-center justify-between mb-1">
+                                                    {idx === 0 ? <Typography variant="caption" weight="medium" className="text-textGray px-1">Nominal</Typography> : <View />}
+                                                    <Pressable
+                                                        onPress={() => {
+                                                            const newP = [...payments];
+                                                            const otherPayments = newP.filter((_, i) => i !== idx).reduce((acc, cr) => acc + (Number(parseNumber(cr.nominal)) || 0), 0);
+                                                            newP[idx].nominal = formatNumber(Math.max(0, grandTotal - otherPayments).toString());
+                                                            setPayments(newP);
+                                                        }}
+                                                        className="px-1"
+                                                    >
+                                                        <Typography className="text-[8px] text-primary font-bold">LUNASKAN</Typography>
+                                                    </Pressable>
+                                                </View>
                                                 <Input
                                                     placeholder="0"
                                                     keyboardType="numeric"
@@ -1209,57 +1278,94 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     )}
 
                     <View className="flex-row space-x-3 mb-4">
-                        <View className="flex-1">
-                            <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Diskon Total (Rp)</Typography>
-                            <Input
-                                placeholder="0"
-                                keyboardType="numeric"
-                                containerClassName="mb-0"
-                                innerContainerClassName="!bg-white border-gray-100"
-                                className="h-10 text-sm font-bold"
-                                value={diskon}
-                                onChangeText={(val) => setDiskon(formatNumber(val))}
-                            />
-                        </View>
-                        <View className="flex-1 justify-end items-end pb-2">
+                        {kategori !== 'jasa_angkut' && (
+                            <View className="flex-1">
+                                <View className="flex-row items-center justify-between mb-1 ml-1">
+                                    <Typography variant="caption" weight="semibold" className="text-gray-600">Diskon Total (Rp)</Typography>
+                                    <Pressable
+                                        onPress={() => {
+                                            const roundedTotal = Math.floor(total / 1000) * 1000;
+                                            const diff = total - roundedTotal;
+                                            if (diff > 0) {
+                                                setDiskon(formatNumber(diff.toString()));
+                                            }
+                                        }}
+                                    >
+                                        <Typography className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">BULATKAN KE 1.000</Typography>
+                                    </Pressable>
+                                </View>
+                                <Input
+                                    placeholder="0"
+                                    keyboardType="numeric"
+                                    containerClassName="mb-0"
+                                    innerContainerClassName="!bg-white border-gray-100"
+                                    className="h-10 text-sm font-bold"
+                                    value={diskon}
+                                    onChangeText={(val) => setDiskon(formatNumber(val))}
+                                />
+                            </View>
+                        )}
+                        <View className={`flex-1 justify-end items-end pb-2 ${kategori === 'jasa_angkut' ? 'items-start' : ''}`}>
                             <Typography variant="caption" className="text-gray-500 font-medium">Subtotal: {formatCurrency(total)}</Typography>
                         </View>
                     </View>
 
                     <View className="h-[1px] bg-primary/10 mb-4" />
 
-                    <View className="flex-row justify-between items-center">
-                        <View>
-                            <Typography variant="body2" weight="bold">Total Akhir</Typography>
+                    <View className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                        <View className="flex-row justify-between items-center mb-1">
+                            <Typography variant="body2" weight="bold" className="text-slate-500 uppercase tracking-wider text-[10px]">Ringkasan Pembayaran</Typography>
                             {kategori === 'jasa_angkut' && selectedArmada ? (
-                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Internal Unit (Potong Laba TPM)</Typography>
-                            ) : kategori === 'jual_beli_mobil' && selectedMobil ? (
-                                <Typography variant="caption" className="text-orange-500 font-bold">Hutang Internal Unit (HPP Mobil)</Typography>
-                            ) : (
-                                <View>
-                                    {(() => {
-                                        const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0);
-                                        if (grandTotal > totalPaid) {
-                                            return (
-                                                <Typography variant="caption" className="text-rose-600 font-bold">
-                                                    {totalPaid === 0 ? 'Piutang / Hutang 100%' : `Sisa Piutang: ${formatCurrency(grandTotal - totalPaid)}`}
-                                                </Typography>
-                                            );
-                                        } else if (totalPaid > grandTotal) {
-                                            return (
-                                                <Typography variant="caption" className="text-emerald-600 font-bold">
-                                                    Kembalian: {formatCurrency(totalPaid - grandTotal)}
-                                                </Typography>
-                                            );
-                                        }
-                                        return <Typography variant="caption" className="text-emerald-500 font-medium">Lunas</Typography>;
-                                    })()}
+                                <View className="bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
+                                    <Typography className="text-orange-600 font-bold text-[9px]">POTONG LABA UNIT</Typography>
                                 </View>
-                            )}
+                            ) : kategori === 'jual_beli_mobil' && selectedMobil ? (
+                                <View className="bg-orange-50 px-2 py-1 rounded-lg border border-orange-100">
+                                    <Typography className="text-orange-600 font-bold text-[9px]">CAPITAL HPP MOBIL</Typography>
+                                </View>
+                            ) : null}
                         </View>
-                        <Typography variant="h2" weight="bold" className="text-primary text-xl">
-                            {formatCurrency(grandTotal)}
-                        </Typography>
+
+                        <View className="flex-row justify-between items-end">
+                            <View className="flex-1">
+                                {!(kategori === 'jasa_angkut' || kategori === 'jual_beli_mobil') && (
+                                    <View>
+                                        {(() => {
+                                            const totalPaid = payments.reduce((acc, p) => acc + (Number(parseNumber(p.nominal)) || 0), 0);
+                                            if (grandTotal > totalPaid) {
+                                                return (
+                                                    <View className="bg-rose-50 self-start px-2 py-1 rounded-lg border border-rose-100 mt-1">
+                                                        <Typography variant="caption" className="text-rose-600 font-bold text-[10px]">
+                                                            {totalPaid === 0 ? 'PIUTANG 100%' : `SISA PIUTANG: ${formatCurrency(grandTotal - totalPaid)}`}
+                                                        </Typography>
+                                                    </View>
+                                                );
+                                            } else if (totalPaid > grandTotal) {
+                                                return (
+                                                    <View className="bg-emerald-50 self-start px-3 py-1.5 rounded-2xl flex-row items-center mt-2 border border-emerald-100 shadow-sm">
+                                                        <Banknote size={14} color="#10B981" />
+                                                        <Typography variant="caption" className="text-emerald-700 font-bold ml-2 text-[11px]">
+                                                            KEMBALIAN: {formatCurrency(totalPaid - grandTotal)}
+                                                        </Typography>
+                                                    </View>
+                                                );
+                                            }
+                                            return <View className="bg-emerald-50 self-start px-2 py-1 rounded-lg border border-emerald-100 mt-1">
+                                                <Typography variant="caption" className="text-emerald-600 font-bold text-[10px]">LUNAS</Typography>
+                                            </View>;
+                                        })()}
+                                    </View>
+                                )}
+                                <Typography variant="caption" className="text-slate-400 mt-1">Klik tombol simpan untuk finalisasi</Typography>
+                            </View>
+
+                            <View className="items-end">
+                                <Typography variant="caption" className="text-slate-400 line-through mb-1">{diskon !== '0' ? formatCurrency(total) : ''}</Typography>
+                                <Typography variant="h2" weight="bold" className="text-primary text-2xl tracking-tighter">
+                                    {formatCurrency(grandTotal)}
+                                </Typography>
+                            </View>
+                        </View>
                     </View>
                 </Card>
             </View>
