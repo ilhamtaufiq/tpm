@@ -135,6 +135,7 @@ export default function PiutangUsahaScreen() {
         { id: Date.now(), metode: '', nominal: '', catatan: '' }
     ]);
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
+    const [createUnit, setCreateUnit] = useState<string>('BENGKEL');
 
     const handleOpenDetail = (piutang: Piutang) => {
         setSelectedPiutang(piutang);
@@ -203,6 +204,7 @@ export default function PiutangUsahaScreen() {
                 nama_debitur: createName,
                 nominal_piutang: parseNumber(createAmount),
                 catatan: createNote,
+                unit: createUnit || undefined,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
@@ -281,6 +283,31 @@ export default function PiutangUsahaScreen() {
                                 variant="caption"
                             >
                                 {label}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
+            <View className="mb-6">
+                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Unit Bisnis Penanggung</Typography>
+                <View className="flex-row flex-wrap gap-2">
+                    {[
+                        { label: 'Bengkel', value: 'BENGKEL' },
+                        { label: 'Jasa Angkut', value: 'JASA_ANGKUT' },
+                        { label: 'Mobil', value: 'JUAL_BELI_MOBIL' }
+                    ].map((u) => (
+                        <Pressable
+                            key={u.value}
+                            onPress={() => setCreateUnit(u.value)}
+                            className={`px-4 py-2.5 rounded-2xl border ${createUnit === u.value ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
+                        >
+                            <Typography
+                                className={createUnit === u.value ? 'text-primary' : 'text-gray-400'}
+                                weight={createUnit === u.value ? 'bold' : 'medium'}
+                                variant="caption"
+                            >
+                                {u.label}
                             </Typography>
                         </Pressable>
                     ))}

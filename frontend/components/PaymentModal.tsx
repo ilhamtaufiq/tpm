@@ -10,6 +10,7 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
 import { getErrorMessage } from '../utils/error';
+import { keuanganService } from '../services/keuangan';
 
 interface PaymentModalProps {
     visible: boolean;
@@ -21,6 +22,7 @@ interface PaymentModalProps {
     allowedMethods?: string[];
     type?: 'piutang' | 'hutang';
     kas_jenis?: string;
+    unit?: string;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -32,7 +34,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     title = 'Catat Pembayaran',
     allowedMethods,
     type = 'piutang',
-    kas_jenis
+    kas_jenis,
+    unit
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
@@ -40,6 +43,32 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     ]);
     const [paymentNote, setPaymentNote] = useState('');
     const [loading, setLoading] = useState(false);
+    const [allBalances, setAllBalances] = useState<any>(null);
+
+    React.useEffect(() => {
+        if (visible) {
+            keuanganService.getKasBankBalances()
+                .then(setAllBalances)
+                .catch(console.error);
+        }
+    }, [visible]);
+
+    const unitBankBalance = useMemo(() => {
+        if (!allBalances || !unit) return null;
+        
+        // Map unit key to sub_balance key
+        const mapping: Record<string, string> = {
+            'BENGKEL': 'bengkel',
+            'JASA_ANGKUT': 'jasa_angkut',
+            'JUAL_BELI_MOBIL': 'mobil'
+        };
+        
+        const subKey = mapping[unit];
+        if (subKey && allBalances.bank_utama?.sub_balances) {
+            return allBalances.bank_utama.sub_balances[subKey] || 0;
+        }
+        return null;
+    }, [allBalances, unit]);
 
     const sheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
@@ -214,6 +243,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 </Pressable>
                             ))}
                         </View>
+
+                        {p.metode === 'TRANSFER' && unitBankBalance !== null && (
+                            <View className="flex-row items-center mb-5 bg-blue-50/50 p-3 rounded-xl border border-blue-100/30">
+                                <Wallet size={12} color="#023C69" />
+                                <Typography variant="caption" className="text-primary/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
+                                    Saldo Unit: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(unitBankBalance)}</Typography>
+                                </Typography>
+                            </View>
+                        )}
 
                         <Input
                             label="Nominal Pembayaran (Rp)"

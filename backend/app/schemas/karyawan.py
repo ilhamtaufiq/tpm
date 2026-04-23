@@ -9,6 +9,7 @@ from app.utils.constants import (
     EmployeeStatus,
     PaymentStatus,
     PaymentMethod,
+    KasBankSource,
 )
 
 
@@ -252,6 +253,7 @@ class KasbonCreate(BaseModel):
     keterangan: Optional[str] = None
     metode_bayar: Optional[PaymentMethod] = None
     catatan: Optional[str] = None
+    unit: Optional[KasBankSource] = Field(default=KasBankSource.BENGKEL)
     payments: Optional[List[Dict[str, Any]]] = None # For split disbursement: {metode: PaymentMethod, nominal: Decimal, catatan: str}
 
 
@@ -278,6 +280,7 @@ class KasbonResponse(BaseModel):
     jumlah_bayar: Decimal = Decimal("0")
     tanggal_lunas: Optional[date] = None
     catatan: Optional[str] = None
+    unit: KasBankSource = KasBankSource.BENGKEL
     created_at: datetime
 
     model_config = {"from_attributes": True}

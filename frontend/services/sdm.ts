@@ -91,6 +91,7 @@ export interface Kasbon {
     piutang_id?: number;
     jumlah_bayar?: number;
     tanggal_lunas?: string;
+    unit?: string;
     created_at: string;
 }
 
@@ -404,7 +405,15 @@ export const sdmService = {
         return response.data;
     },
 
-    createKasbon: async (data: { karyawan_id: number; tanggal: string; nominal: number; metode_bayar: string; keterangan?: string; payments?: Array<{ metode: string; nominal: number; catatan?: string }> }): Promise<Kasbon> => {
+    createKasbon: async (data: { 
+        karyawan_id: number; 
+        tanggal: string; 
+        nominal: number; 
+        metode_bayar: string; 
+        unit?: string;
+        keterangan?: string; 
+        payments?: Array<{ metode: string; nominal: number; catatan?: string }> 
+    }): Promise<Kasbon> => {
         const response = await api.post('/kasbon', data);
         return response.data;
     },

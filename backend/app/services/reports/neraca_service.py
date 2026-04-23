@@ -77,36 +77,62 @@ class NeracaService(BaseReportService):
         ).all()
         
         # Recalculate Piutang sum from DB for specific breakdown displayed in Balance Sheet
-        def get_piutang_sum(source: PiutangSource):
+        # Use 'unit' field if possible, fallback to 'sumber'
+        def get_piutang_sum_by_unit(unit: KasBankSource):
             return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber == source,
+                PiutangUsaha.unit == unit,
                 PiutangUsaha.tanggal <= as_of_date,
                 PiutangUsaha.status != PiutangStatus.LUNAS
             ).scalar() or 0)
 
-        piutang_bengkel = get_piutang_sum(PiutangSource.BENGKEL)
-        piutang_mobil = get_piutang_sum(PiutangSource.JUAL_BELI_MOBIL)
-        piutang_ja = get_piutang_sum(PiutangSource.JASA_ANGKUT)
-        piutang_karyawan = get_piutang_sum(PiutangSource.KASBON_KARYAWAN)
-        piutang_lainnya = get_piutang_sum(PiutangSource.LAINNYA)
+        # Legacy sources (for records before migration)
+        def get_piutang_sum_by_source(source: PiutangSource):
+            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.sumber == source,
+                PiutangUsaha.unit.is_(None), # Only legacy
+                PiutangUsaha.tanggal <= as_of_date,
+                PiutangUsaha.status != PiutangStatus.LUNAS
+            ).scalar() or 0)
+
+        # Unit-specific Piutang (Total = Unit Source + Records assigned to unit)
+        piutang_bengkel = get_piutang_sum_by_unit(KasBankSource.BENGKEL) + get_piutang_sum_by_source(PiutangSource.BENGKEL)
+        piutang_ja = get_piutang_sum_by_unit(KasBankSource.JASA_ANGKUT) + get_piutang_sum_by_source(PiutangSource.JASA_ANGKUT)
+        piutang_mobil = get_piutang_sum_by_unit(KasBankSource.JUAL_BELI_MOBIL) + get_piutang_sum_by_source(PiutangSource.JUAL_BELI_MOBIL)
         
-        # Eliminate internal piutang from consolidated assets
-        total_piutang = piutang_bengkel + piutang_karyawan + piutang_lainnya
+        # Kasbon and Others without specific unit mapping will use source only
+        piutang_karyawan = get_piutang_sum_by_source(PiutangSource.KASBON_KARYAWAN)
+        piutang_lainnya = get_piutang_sum_by_source(PiutangSource.LAINNYA)
+        
+        # Sum all for total assets
+        total_piutang = piutang_bengkel + piutang_ja + piutang_mobil + piutang_karyawan + piutang_lainnya
         
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
 
         # 2. LIABILITIES
-        def get_hutang_sum(source: HutangSource):
+        def get_hutang_sum_by_unit(unit: KasBankSource):
             return float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
-                HutangUsaha.sumber == source,
+                HutangUsaha.unit == unit,
                 HutangUsaha.tanggal <= as_of_date,
                 HutangUsaha.status != HutangStatus.LUNAS
             ).scalar() or 0)
 
-        hutang_part = get_hutang_sum(HutangSource.PEMBELIAN_PART)
-        hutang_mobil = get_hutang_sum(HutangSource.PEMBELIAN_MOBIL) + get_hutang_sum(HutangSource.JUAL_BELI_MOBIL)
-        hutang_lainnya = get_hutang_sum(HutangSource.LAINNYA)
+        def get_hutang_sum_by_source(source: HutangSource):
+            return float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+                HutangUsaha.sumber == source,
+                HutangUsaha.unit.is_(None),
+                HutangUsaha.tanggal <= as_of_date,
+                HutangUsaha.status != HutangStatus.LUNAS
+            ).scalar() or 0)
+
+        hutang_part = get_hutang_sum_by_source(HutangSource.PEMBELIAN_PART)
+        hutang_mobil = get_hutang_sum_by_source(HutangSource.PEMBELIAN_MOBIL) + get_hutang_sum_by_source(HutangSource.JUAL_BELI_MOBIL)
+        hutang_lainnya = get_hutang_sum_by_source(HutangSource.LAINNYA)
         
+        # Unit specific hutang (e.g. from manual entry)
+        hutang_bengkel = get_hutang_sum_by_unit(KasBankSource.BENGKEL)
+        hutang_ja = get_hutang_sum_by_unit(KasBankSource.JASA_ANGKUT)
+        hutang_mobil_unit = get_hutang_sum_by_unit(KasBankSource.JUAL_BELI_MOBIL)
+
         # Hutang Investor (Laba yang belum dicairkan)
         hutang_investor = float(self.db.query(
             func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
@@ -114,8 +140,8 @@ class NeracaService(BaseReportService):
             TransaksiPenjualanMobil.tanggal <= as_of_date,
             TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
         ).scalar() or 0)
-        
-        total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor
+
+        total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor + hutang_bengkel + hutang_ja + hutang_mobil_unit
 
         # 3. EQUITY & PROFIT — Snapshot Identity Approach
         # Balance Sheet Identity: Assets = Liabilities + Equity

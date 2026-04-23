@@ -21,6 +21,7 @@ from app.utils.constants import (
     EmployeeStatus,
     PaymentStatus,
     PaymentMethod,
+    KasBankSource,
 )
 
 
@@ -207,6 +208,11 @@ class KasbonKaryawan(Base, TimestampMixin):
     created_by: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id"),
         nullable=True,
+    )
+    unit: Mapped[KasBankSource] = mapped_column(
+        SQLEnum(KasBankSource),
+        default=KasBankSource.BENGKEL,
+        index=True,
     )
 
     # Relationships

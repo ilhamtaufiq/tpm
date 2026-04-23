@@ -50,6 +50,7 @@ export default function KasbonScreen() {
         karyawan_nama: '',
         jumlah: '',
         metode_bayar: 'tunai',
+        unit: 'BENGKEL',
         keterangan: '',
     });
     const [showKaryawanPicker, setShowKaryawanPicker] = useState(false);
@@ -124,7 +125,14 @@ export default function KasbonScreen() {
     };
 
     const openAddForm = () => {
-        setFormData({ karyawan_id: 0, karyawan_nama: '', jumlah: '', metode_bayar: 'tunai', keterangan: '' });
+        setFormData({ 
+            karyawan_id: 0, 
+            karyawan_nama: '', 
+            jumlah: '', 
+            metode_bayar: 'tunai', 
+            unit: 'BENGKEL',
+            keterangan: '' 
+        });
         setDisbursements([{ id: Date.now(), metode: 'tunai', nominal: '' }]);
         setIsSplitDisbursement(false);
         if (Platform.OS === 'web') {
@@ -173,6 +181,7 @@ export default function KasbonScreen() {
                 tanggal: new Date().toISOString().split('T')[0],
                 nominal: nominalTotal,
                 metode_bayar: formData.metode_bayar as any,
+                unit: formData.unit,
                 keterangan: formData.keterangan || undefined,
                 payments: payoutData
             });
@@ -339,6 +348,29 @@ export default function KasbonScreen() {
                             </ScrollView>
                         </View>
                     )}
+                </View>
+
+                <View className="mb-6">
+                    <Typography className="mb-3 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Bisnis Penanggung *</Typography>
+                    <View className="flex-row gap-3">
+                        {[
+                            { key: 'BENGKEL', label: 'Bengkel' },
+                            { key: 'JASA_ANGKUT', label: 'Jasa Angkut' },
+                            { key: 'JUAL_BELI_MOBIL', label: 'Mobil' }
+                        ].map((u) => (
+                            <Pressable
+                                key={u.key}
+                                onPress={() => setFormData({ ...formData, unit: u.key })}
+                                className={`flex-1 py-4 items-center rounded-2xl border ${formData.unit === u.key ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
+                            >
+                                <Typography
+                                    className={`text-[10px] font-bold tracking-tight ${formData.unit === u.key ? 'text-white' : 'text-textGray'}`}
+                                >
+                                    {u.label}
+                                </Typography>
+                            </Pressable>
+                        ))}
+                    </View>
                 </View>
 
                 <Input
@@ -738,6 +770,7 @@ export default function KasbonScreen() {
                     }}
                     id={selectedKasbon.piutang_id}
                     initialAmount={Number(selectedKasbon.nominal)}
+                    unit={selectedKasbon.unit}
                     title={`Pelunasan Kasbon: ${selectedKasbon.karyawan_nama}`}
                 />
             )}

@@ -884,17 +884,18 @@ export default function JasaAngkutScreen() {
                                     } else if (expenseMode === 'PIUTANG') {
                                         await createPiutangMutation.mutateAsync({
                                             tanggal: new Date().toISOString().split('T')[0],
-                                            sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'JASA_ANGKUT',
+                                            sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'LAINNYA',
+                                            unit: 'JASA_ANGKUT',
                                             nama_debitur: debiturName,
                                             referensi_id: expensePiutangType === 'KASBON' ? selectedKaryawan?.id : undefined,
                                             nominal_piutang: parseNumber(expenseAmount),
                                             metode_pembayaran: 'TUNAI',
-                                            catatan: expenseNote || `Pemberian kasbon/piutang dari Unit Jasa Angkut`,
+                                            catatan: expenseNote || `Pemberian ${expensePiutangType === 'KASBON' ? 'kasbon' : 'piutang umum'} dari Unit Jasa Angkut`,
                                             payments: [{
                                                 metode: 'TUNAI',
                                                 nominal: parseNumber(expenseAmount),
                                                 kas_jenis: 'KAS_UNIT_JASA_ANGKUT',
-                                                catatan: 'Disbursement from Unit Cash'
+                                                catatan: `Disbursement for ${expensePiutangType}`
                                             }]
                                         });
                                     } else {

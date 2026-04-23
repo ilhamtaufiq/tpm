@@ -42,6 +42,7 @@ class PiutangCreate(BaseModel):
     sumber: PiutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = Field(None, max_length=30)
+    unit: Optional[KasBankSource] = None
     customer_id: Optional[int] = None
     nama_debitur: str = Field(..., min_length=2, max_length=100)
     telepon_debitur: Optional[str] = Field(None, max_length=20)
@@ -69,6 +70,7 @@ class PiutangResponse(BaseModel):
     sumber: PiutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = None
+    unit: Optional[KasBankSource] = None
     customer_id: Optional[int] = None
     nama_debitur: str
     telepon_debitur: Optional[str] = None
@@ -124,6 +126,7 @@ class HutangCreate(BaseModel):
     sumber: HutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = Field(None, max_length=30)
+    unit: Optional[KasBankSource] = None
     supplier_id: Optional[int] = None
     nama_kreditur: str = Field(..., min_length=2, max_length=100)
     telepon_kreditur: Optional[str] = Field(None, max_length=20)
@@ -151,6 +154,7 @@ class HutangResponse(BaseModel):
     sumber: HutangSource
     referensi_id: Optional[int] = None
     nomor_referensi: Optional[str] = None
+    unit: Optional[KasBankSource] = None
     supplier_id: Optional[int] = None
     nama_kreditur: str
     telepon_kreditur: Optional[str] = None

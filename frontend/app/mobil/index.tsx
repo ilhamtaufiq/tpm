@@ -739,17 +739,18 @@ export default function MobilInventoryScreen() {
                                         // CREATE PIUTANG (Money out from Unit)
                                         await createPiutangMutation.mutateAsync({
                                             tanggal: new Date().toISOString().split('T')[0],
-                                            sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'JUAL_BELI_MOBIL',
+                                            sumber: expensePiutangType === 'KASBON' ? 'KASBON_KARYAWAN' : 'LAINNYA',
+                                            unit: 'JUAL_BELI_MOBIL',
                                             nama_debitur: debiturName,
                                             referensi_id: expensePiutangType === 'KASBON' ? selectedKaryawan?.id : undefined,
                                             nominal_piutang: parseNumber(expenseAmount),
                                             metode_pembayaran: 'TUNAI',
-                                            catatan: expenseNote || `Pemberian kasbon/piutang dari Unit Mobil`,
+                                            catatan: expenseNote || `Pemberian ${expensePiutangType === 'KASBON' ? 'kasbon' : 'piutang umum'} dari Unit Mobil`,
                                             payments: [{
                                                 metode: 'TUNAI',
                                                 nominal: parseNumber(expenseAmount),
                                                 kas_jenis: 'KAS_UNIT_MOBIL',
-                                                catatan: 'Disbursement from Unit Cash'
+                                                catatan: `Disbursement for ${expensePiutangType}`
                                             }]
                                         });
                                     } else {

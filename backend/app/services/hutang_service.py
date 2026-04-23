@@ -64,6 +64,17 @@ class HutangService:
         # Generate number
         nomor_hutang = self._generate_nomor_hutang()
 
+        # Map unit if not provided
+        unit_source = data.unit
+        if not unit_source:
+             if data.sumber == HutangSource.PEMBELIAN_PART:
+                 unit_source = KasBankSource.BENGKEL
+             elif data.sumber == HutangSource.PEMBELIAN_MOBIL:
+                 unit_source = KasBankSource.JUAL_BELI_MOBIL
+             elif data.sumber == HutangSource.JUAL_BELI_MOBIL:
+                 unit_source = KasBankSource.JUAL_BELI_MOBIL
+             # Add more mappings as needed
+
         hutang = HutangUsaha(
             nomor_hutang=nomor_hutang,
             tanggal=data.tanggal,
@@ -80,6 +91,7 @@ class HutangService:
             tanggal_jatuh_tempo=data.tanggal_jatuh_tempo,
             status=HutangStatus.BELUM_LUNAS,
             catatan=data.catatan,
+            unit=unit_source,
             created_by=user_id,
         )
 
@@ -306,7 +318,7 @@ class HutangService:
                 tanggal=data.tanggal,
                 tipe=KasBankType.KELUAR,
                 nominal=p_detail.nominal,
-                sumber=KasBankSource.HUTANG,
+                sumber=hutang.unit or KasBankSource.HUTANG,
                 metode_bayar=p_detail.metode,
                 referensi_id=pembayaran.id,
                 nomor_referensi=hutang.nomor_hutang,

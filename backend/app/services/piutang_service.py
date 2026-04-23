@@ -66,10 +66,21 @@ class PiutangService:
         # Generate number
         nomor_piutang = self._generate_nomor_piutang()
 
+        # Map unit
+        unit_source = data.unit
+        if not unit_source:
+             if data.sumber == PiutangSource.BENGKEL:
+                 unit_source = KasBankSource.BENGKEL
+             elif data.sumber == PiutangSource.JASA_ANGKUT:
+                 unit_source = KasBankSource.JASA_ANGKUT
+             elif data.sumber == PiutangSource.JUAL_BELI_MOBIL:
+                 unit_source = KasBankSource.JUAL_BELI_MOBIL
+
         piutang = PiutangUsaha(
             nomor_piutang=nomor_piutang,
             tanggal=data.tanggal,
             sumber=data.sumber,
+            unit=unit_source,
             referensi_id=data.referensi_id,
             nomor_referensi=data.nomor_referensi,
             customer_id=data.customer_id,
@@ -149,15 +160,22 @@ class PiutangService:
                     PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
                     PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
                 }
-                unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+                # Map unit source: Prioritize explicit unit field, then fallback to source-based mapping
+                unit_source = piutang.unit if piutang.unit else source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
 
                 # Automatic label based on unit
-                unit_label = {
+                unit_label_map = {
                     PiutangSource.BENGKEL: "Bengkel",
                     PiutangSource.JASA_ANGKUT: "Jasa Angkut",
                     PiutangSource.JUAL_BELI_MOBIL: "Mobil",
                     PiutangSource.KASBON_KARYAWAN: "Kasbon",
-                }.get(piutang.sumber, "Piutang")
+                }
+                
+                # Get label from unit if set, otherwise from source mapping
+                if piutang.unit:
+                    unit_label = piutang.unit.value.replace('_', ' ').title()
+                else:
+                    unit_label = unit_label_map.get(piutang.sumber, "Piutang")
 
                 create_kas_entry(
                     db=self.db,
@@ -168,7 +186,7 @@ class PiutangService:
                     metode_bayar=p_detail.metode,
                     referensi_id=piutang.id,
                     nomor_referensi=piutang.nomor_piutang,
-                    keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                    keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({p_detail.metode.value.upper()})",
                     user_id=user_id,
                     kas_jenis=p_detail.kas_jenis,
                 )
@@ -183,15 +201,21 @@ class PiutangService:
                 PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
                 PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
             }
-            unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+            # Map unit source: Prioritize explicit unit field, then fallback to source-based mapping
+            unit_source = piutang.unit if piutang.unit else source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
             
             # Automatic label based on unit
-            unit_label = {
+            unit_label_map = {
                 PiutangSource.BENGKEL: "Bengkel",
                 PiutangSource.JASA_ANGKUT: "Jasa Angkut",
                 PiutangSource.JUAL_BELI_MOBIL: "Mobil",
                 PiutangSource.KASBON_KARYAWAN: "Kasbon",
-            }.get(piutang.sumber, "Piutang")
+            }
+            
+            if piutang.unit:
+                unit_label = piutang.unit.value.replace('_', ' ').title()
+            else:
+                unit_label = unit_label_map.get(piutang.sumber, "Piutang")
 
             create_kas_entry(
                 db=self.db,
@@ -202,7 +226,7 @@ class PiutangService:
                 metode_bayar=data.metode_pembayaran,
                 referensi_id=piutang.id,
                 nomor_referensi=piutang.nomor_piutang,
-                keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({data.metode_pembayaran.upper()})",
+                keterangan=f"[{unit_label}] Pemberian piutang kepada {piutang.nama_debitur} ({data.metode_pembayaran.value.upper()})",
                 user_id=user_id,
             )
 
@@ -462,25 +486,38 @@ class PiutangService:
 
             # POLICY: Map PiutangSource to unit-specific KasBankSource. 
             # This ensures that CASH (Tunai) stays in the source unit drawer (KAS_UNIT_...).
-            # Note: TRANFER (Transfer) will still flow to the Main Bank account (Akun Utama) 
-            # as per general Kas/Bank mapping logic in get_kas_jenis.
             from app.utils.constants import KasBankSource
 
-            source_mapping = {
-                PiutangSource.BENGKEL: KasBankSource.BENGKEL,
-                PiutangSource.JASA_ANGKUT: KasBankSource.JASA_ANGKUT,
-                PiutangSource.JUAL_BELI_MOBIL: KasBankSource.JUAL_BELI_MOBIL,
-                PiutangSource.KASBON_KARYAWAN: KasBankSource.KASBON,
-            }
-            unit_source = source_mapping.get(piutang.sumber, KasBankSource.PIUTANG)
+            # Prioritize the explicit 'unit' field added in migration
+            if piutang.unit:
+                unit_source = piutang.unit
+                # Clean label: KAS_UNIT_JASA_ANGKUT -> Jasa Angkut
+                unit_label = str(unit_source.name if hasattr(unit_source, 'name') else unit_source).replace('KAS_UNIT_', '').replace('_', ' ').title()
+            else:
+                # Legacy fallback logic
+                unit_source = KasBankSource.PIUTANG
+                unit_label = "Piutang"
 
-            # Automatic label based on unit
-            unit_label = {
-                PiutangSource.BENGKEL: "Bengkel",
-                PiutangSource.JASA_ANGKUT: "Jasa Angkut",
-                PiutangSource.JUAL_BELI_MOBIL: "Mobil",
-                PiutangSource.KASBON_KARYAWAN: "Kasbon",
-            }.get(piutang.sumber, "Piutang")
+                if piutang.sumber == PiutangSource.BENGKEL:
+                    unit_source = KasBankSource.BENGKEL
+                    unit_label = "Bengkel"
+                elif piutang.sumber == PiutangSource.JASA_ANGKUT:
+                    unit_source = KasBankSource.JASA_ANGKUT
+                    unit_label = "Jasa Angkut"
+                elif piutang.sumber == PiutangSource.JUAL_BELI_MOBIL:
+                    unit_source = KasBankSource.JUAL_BELI_MOBIL
+                    unit_label = "Mobil"
+                elif piutang.sumber == PiutangSource.KASBON_KARYAWAN:
+                    # Resolve unit from original kasbon record
+                    from app.models.karyawan import KasbonKaryawan
+                    kasbon = self.db.query(KasbonKaryawan).filter(KasbonKaryawan.id == piutang.referensi_id).first()
+                    if kasbon:
+                        unit_source = kasbon.unit
+                        unit_label = "Kasbon " + str(kasbon.unit).split('.')[-1].replace('_', ' ').title()
+                    else:
+                        unit_source = KasBankSource.KASBON
+                        unit_label = "Kasbon"
+
 
             # Record to KasBank (Money In)
             create_kas_entry(
