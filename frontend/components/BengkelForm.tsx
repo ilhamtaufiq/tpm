@@ -158,8 +158,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         setTotal(subtotal);
 
         const discAmount = Number(parseNumber(diskon)) || 0;
-        setGrandTotal(Math.max(0, subtotal - discAmount));
-    }, [services, parts, diskon]);
+        const calculatedGrandTotal = Math.max(0, subtotal - discAmount);
+        setGrandTotal(calculatedGrandTotal);
+
+        // Auto-sync payment for Jasa Angkut
+        if (kategori === 'jasa_angkut' && !isSplitPayment) {
+            setPayments([{
+                id: payments[0]?.id || Date.now(),
+                metode: 'Transfer',
+                nominal: formatNumber(calculatedGrandTotal.toString()),
+                catatan: payments[0]?.catatan || ''
+            }]);
+        }
+    }, [services, parts, diskon, kategori, isSplitPayment]);
 
     const serviceCount = useMemo(() => services.filter(s => s.nama_jasa.trim().length > 0).length, [services]);
     const partCount = useMemo(() => parts.filter(p => p.spare_part_id !== 0).length, [parts]);
@@ -449,8 +460,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: isJasaAngkutInternal 
-                ? (payments[0]?.metode?.toUpperCase() || 'INTERNAL') 
+            metode_bayar: isJasaAngkutInternal
+                ? (payments[0]?.metode?.toUpperCase() || 'INTERNAL')
                 : (isMobilInternal ? 'KREDIT' : (isSplitPayment ? 'SPLIT' : (totalPaid === 0 ? 'KREDIT' : payments[0]?.metode?.toUpperCase() || ''))),
             detail_services: services
                 .filter(s => s.nama_jasa.trim().length >= 2)
@@ -547,7 +558,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 setKategori(cat.key);
                                 if (cat.key === 'jasa_angkut') {
                                     setIsSplitPayment(false);
-                                    setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                                    // Auto-set to Transfer and full amount for Jasa Angkut
+                                    setPayments([{
+                                        id: Date.now(),
+                                        metode: 'Transfer',
+                                        nominal: formatNumber(grandTotal.toString()),
+                                        catatan: ''
+                                    }]);
                                 }
                                 if (cat.key !== 'jasa_angkut') {
                                     setSelectedMuatan(null);
@@ -1095,7 +1112,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 <View className="ml-3 flex-1">
                                     <Typography variant="body2" weight="bold" className="text-emerald-800">Biaya Internal Jasa Angkut</Typography>
                                     <Typography variant="caption" className="text-emerald-600 mt-1">
-                                        Pilih sumber dana (Tunai Unit atau Transfer Bank). Biaya ini akan otomatis memotong laba unit Jasa Angkut terkait.
+                                        Biaya ini akan otomatis memotong laba dari bank unit Jasa Angkut terkait.
                                     </Typography>
                                 </View>
                             </View>
@@ -1125,15 +1142,15 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 )}
                             </View>
 
-                            {/* Basic Mode: Single Payment */}
-                            {!isSplitPayment && (
+                            {/* Basic Mode: Single Payment (Hidden for Jasa Angkut as it is auto-transfer) */}
+                            {!isSplitPayment && kategori !== 'jasa_angkut' && (
                                 <View className="flex-row space-x-3 mb-4">
                                     <View className="flex-[1.5]">
                                         <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Sumber Pembayaran</Typography>
                                         <View className="flex-row space-x-2">
                                             {[
-                                                { label: 'Dompet', value: 'Tunai', balance: kategori === 'jasa_angkut' ? jasaAngkutCash : (kategori === 'umum' ? (balancesData?.kas_unit_bengkel?.saldo || 0) : 0), icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
-                                                { label: 'Bank', value: 'Transfer', balance: kategori === 'jasa_angkut' ? bankUtamaJasaAngkut : (kategori === 'umum' ? bankUtamaBengkel : (balancesData?.bank_utama?.saldo || 0)), icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
+                                                { label: 'Dompet', value: 'Tunai', balance: kategori === 'umum' ? (balancesData?.kas_unit_bengkel?.saldo || 0) : 0, icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
+                                                { label: 'Bank', value: 'Transfer', balance: kategori === 'umum' ? bankUtamaBengkel : (balancesData?.bank_utama?.saldo || 0), icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
                                             ].map((m) => (
                                                 <Pressable
                                                     key={m.value}
@@ -1141,10 +1158,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                         const newP = [...payments];
                                                         if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
                                                         newP[0].metode = newP[0].metode === m.value ? '' : m.value;
-                                                        // For jasa_angkut, nominal is always pas
-                                                        if (kategori === 'jasa_angkut' && newP[0].metode) {
-                                                            newP[0].nominal = formatNumber(grandTotal.toString());
-                                                        }
                                                         setPayments(newP);
                                                     }}
                                                     className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-slate-50 border-slate-100'}`}
@@ -1160,8 +1173,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             ))}
                                         </View>
                                     </View>
-                                    {kategori !== 'jasa_angkut' && (
-                                        <View className="flex-1">
+                                    <View className="flex-1">
                                             <View className="flex-row items-center justify-between mb-2 ml-1">
                                                 <Typography variant="caption" weight="bold" className="text-primary">DP / Bayar (Rp)</Typography>
                                                 <Pressable
@@ -1190,7 +1202,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 }}
                                             />
                                         </View>
-                                    )}
                                 </View>
                             )}
 
