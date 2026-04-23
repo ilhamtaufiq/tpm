@@ -445,6 +445,7 @@ class KasBankService:
         tanggal: date,
         keterangan: str,
         user_id: Optional[int] = None,
+        sumber: Optional[KasBankSource] = None,
     ) -> Dict[str, KasBank]:
         """Transfer between kas/bank accounts."""
         if dari == ke:
@@ -454,6 +455,19 @@ class KasBankService:
             )
 
 
+
+        # Determine source (unit attribution)
+        # If not provided, try to infer from unit-specific accounts
+        final_sumber = sumber
+        if not final_sumber:
+            if dari == KasBankJenis.KAS_UNIT_JASA_ANGKUT or ke == KasBankJenis.KAS_UNIT_JASA_ANGKUT:
+                final_sumber = KasBankSource.JASA_ANGKUT
+            elif dari == KasBankJenis.KAS_UNIT_BENGKEL or ke == KasBankJenis.KAS_UNIT_BENGKEL:
+                final_sumber = KasBankSource.BENGKEL
+            elif dari == KasBankJenis.KAS_UNIT_MOBIL or ke == KasBankJenis.KAS_UNIT_MOBIL:
+                final_sumber = KasBankSource.JUAL_BELI_MOBIL
+            else:
+                final_sumber = KasBankSource.LAINNYA
 
         # Check source balance
         source_balance = self._get_current_balance(dari)
@@ -469,7 +483,7 @@ class KasBankService:
             jenis=dari,
             tipe=KasBankType.KELUAR,
             nominal=nominal,
-            sumber=KasBankSource.LAINNYA,
+            sumber=final_sumber,
             keterangan=f"Transfer ke {ke.value}: {keterangan}",
         )
         keluar = self.create(keluar_data, user_id)
@@ -480,7 +494,7 @@ class KasBankService:
             jenis=ke,
             tipe=KasBankType.MASUK,
             nominal=nominal,
-            sumber=KasBankSource.LAINNYA,
+            sumber=final_sumber,
             nomor_referensi=keluar.nomor_transaksi,
             keterangan=f"Transfer dari {dari.value}: {keterangan}",
         )
