@@ -250,6 +250,7 @@ class PembelianPartService:
                 telepon_kreditur=supplier.telepon if supplier else None,
                 alamat_kreditur=supplier.alamat if supplier else None,
                 sumber=HutangSource.PEMBELIAN_PART,
+                unit=KasBankSource.BENGKEL,
                 referensi_id=pembelian.id,
                 nomor_referensi=pembelian.nomor_transaksi,
                 nominal_hutang=sisa_hutang,

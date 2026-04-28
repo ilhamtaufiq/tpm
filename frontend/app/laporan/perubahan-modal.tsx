@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, GestureResponderEvent, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
-import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, DollarSign, Wallet, Download, Eye, Share2, X, AlertTriangle } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Wallet, Download, Eye, Share2, X, AlertTriangle, Building, Truck, Car } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import * as Print from 'expo-print';
@@ -15,7 +15,6 @@ import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
 import { useCapitalReport } from '../../hooks/useKeuangan';
 
-// Types
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function LaporanPerubahanModalScreen() {
@@ -25,7 +24,6 @@ export default function LaporanPerubahanModalScreen() {
     const [showExportMenu, setShowExportMenu] = useState(false);
     const { themeColors } = useUIStore();
 
-    // Date Navigation helpers
     const handlePrev = () => {
         if (filterType === 'daily') setDate(subDays(date, 1));
         else if (filterType === 'monthly') setDate(subMonths(date, 1));
@@ -50,11 +48,9 @@ export default function LaporanPerubahanModalScreen() {
         return format(date, 'yyyy', { locale: localeID });
     };
 
-    // calculate date params
     const getDateParams = () => {
         let start = date;
         let end = date;
-
         if (filterType === 'monthly') {
             start = startOfMonth(date);
             end = endOfMonth(date);
@@ -62,7 +58,6 @@ export default function LaporanPerubahanModalScreen() {
             start = startOfYear(date);
             end = endOfYear(date);
         }
-
         return {
             tanggal_dari: format(start, 'yyyy-MM-dd'),
             tanggal_sampai: format(end, 'yyyy-MM-dd'),
@@ -85,83 +80,27 @@ export default function LaporanPerubahanModalScreen() {
         if (!report) return;
         setIsExporting(true);
         try {
-            // A. Data Mapping
-            const a_opening = report.section_a.opening_balance || 0;
-            const a_setoran = report.section_a.setoran_modal || 0;
-            const a_hpp_b = report.section_a.hpp_bengkel || 0;
-            const a_hpp_m = report.section_a.hpp_mobil || 0;
-            const a_stok_part = report.section_a.persediaan_part || 0;
-            const a_stok_mobil = report.section_a.persediaan_mobil || 0;
-            const a_aset_tetap = report.section_a.aset_tetap || 0;
-            const a_total_laba = report.section_a.total_laba || 0;
-
-            // Subtotal Modal & Persediaan (Base Capital)
-            // Note: a_opening now includes theoretical assets + cash at start.
-            const a_subtotal = a_opening + a_setoran;
-            const a_total = report.section_a.total_a || 0;
-
-            // B. Piutang
-            const b1 = report.section_b.piutang_lainnya || 0;
-            const b2 = report.section_b.piutang_mobil || 0;
-            const b3 = report.section_b.piutang_part_mobil || 0;
-            const b4 = report.section_b.piutang_jasa_angkut || 0;
-            const b5 = report.section_b.piutang_karyawan || 0;
-            const b6 = report.section_b.piutang_usaha || 0;
-
-            const b7 = report.section_b.total_b || 0;
-            // c4 and e1 are already defined below from the section objects
-
-            // Theoretical Modal formula: A - B + E
-            // Note: C (Operating Expenses) is already inside A (Profit)
-            const theoretical = a_total - b7 + (report.section_e.total_e || 0);
-            const b8 = a_total - b7; // Modal after Assets (Informative)
-
-            const b_stok_part = report.section_b.stok_part || 0;
-            const b_stok_mobil = report.section_b.stok_mobil || 0;
-            const b_aset_tetap = report.section_b.aset_tetap || 0;
-            const b_total_piutang = (b1 + b2 + b3 + b4 + b5 + b6);
-            const b_total_aset = (b_stok_part + b_stok_mobil + b_aset_tetap);
-
-            // C. Pengurang
-            const c_part_cash = report.section_c.pembelian_part?.cash || 0;
-            const c_part_transfer = report.section_c.pembelian_part?.transfer || 0;
-            const c_part_total = report.section_c.pembelian_part?.total || 0;
-            const c_mobil_cash = report.section_c.pembelian_mobil?.cash || 0;
-            const c_mobil_transfer = report.section_c.pembelian_mobil?.transfer || 0;
-            const c_mobil_total = report.section_c.pembelian_mobil?.total || 0;
-            const c_inv_cash = report.section_c.pengembalian_investor?.cash || 0;
-            const c_inv_transfer = report.section_c.pengembalian_investor?.transfer || 0;
-            const c_inv_total = report.section_c.pengembalian_investor?.total || 0;
-            const c_op = report.section_c.operasional || 0;
-            const c_op_umum = report.section_c.operasional_unit_details?.umum || 0;
-            const c_op_bengkel = report.section_c.operasional_unit_details?.bengkel || 0;
-            const c_op_mobil = report.section_c.operasional_unit_details?.mobil || 0;
-            const c_op_ja = report.section_c.operasional_unit_details?.jasa_angkut || 0;
-            const c_jtb_mobil_bengkel = report.section_c.operasional_unit_details?.mobil_bengkel || 0;
-            const c_jtb_mobil_prep = report.section_c.operasional_unit_details?.mobil_prep || 0;
-            const c_gaji = report.section_c.gaji || 0;
-            const c_lembur = report.section_c.lembur || 0;
-            const c_prive = report.section_c.prive || 0;
-            const c_prep = report.section_c.biaya_persiapan_display || 0;
-            const c_inv_termasuk_prep = report.section_c.pengembalian_investor?.termasuk_biaya_persiapan || 0;
-            const c_kasbon = report.section_c.kasbon_karyawan || 0;
-            const c_lainnya = report.section_c.transaksi_lainnya || 0;
-
-            const c4 = report.section_c.total_c || 0; // Total C from Backend (includes all)
-
-            // E. Hutang
-            const e_part = report.section_e.hutang_part || 0;
-            const e_mobil = report.section_e.hutang_mobil || 0;
-            const e_investor = report.section_e.hutang_investor || 0;
-            const e_lainnya = report.section_e.hutang_lainnya || 0;
-            const e1 = report.section_e.total_e || 0;
-
-            // Final Balances
-            const finalCash = report.section_d.cash || 0;
-            const finalTransfer = report.section_d.transfer || 0;
-
-            const c5 = report.section_d.theoretical_modal || theoretical; // Use backend if available
-            const penyesuaian = report.section_d.penyesuaian || ((finalCash + finalTransfer) - c5);
+            const r = report;
+            const modal_awal = r.modal_awal || 0;
+            const setoran = r.penambahan?.setoran_modal || 0;
+            const non_kas = r.penambahan?.modal_non_kas || 0;
+            const laba = r.penambahan?.laba_kotor || 0;
+            const tot_penambahan = r.penambahan?.total || 0;
+            
+            const gaji = r.pengurangan?.gaji || 0;
+            const lembur = r.pengurangan?.lembur || 0;
+            const ops_umum = r.pengurangan?.ops_umum || 0;
+            const ops_bengkel = r.pengurangan?.ops_bengkel || 0;
+            const ops_mobil = r.pengurangan?.ops_mobil || 0;
+            const ops_ja = r.pengurangan?.ops_ja || 0;
+            const prive = r.pengurangan?.prive || 0;
+            const pengembalian = r.pengurangan?.pengembalian_modal || 0;
+            const tot_pengurangan = r.pengurangan?.total || 0;
+            
+            const modal_akhir = r.modal_akhir || 0;
+            
+            const info = r.info || {};
+            const aset = info.aset || {};
 
             const html = `
                 <html>
@@ -171,516 +110,308 @@ export default function LaporanPerubahanModalScreen() {
                         body { font-family: 'Helvetica', sans-serif; font-size: 10px; color: #000; padding: 20px; }
                         .header { text-align: center; font-weight: bold; margin-bottom: 20px; }
                         .title { font-size: 14px; text-transform: uppercase; margin-bottom: 5px; }
-                        .period { font-size: 10px; margin-top: 2px; }
-                        
+                        .subtitle { font-size: 11px; margin-bottom: 3px; }
+                        .date { font-size: 10px; color: #666; margin-bottom: 20px; }
                         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        td { padding: 4px 6px; }
-                        .amount { text-align: right; }
-                        
-                        .section-head { background-color: #93c5fd; font-weight: bold; border: 1px solid #fff; }
-                        .total-bar { background-color: #3b82f6; color: white; font-weight: bold; }
-                        .green-row { background-color: #bbf7d0; }
-                        .pink-box { background-color: #fca5a5; font-weight: bold; }
-                        
-                        .border-bottom { border-bottom: 1px solid #000; }
-                        .sub-row { font-size: 9px; color: #555; }
+                        th, td { padding: 8px 4px; border-bottom: 1px solid #ddd; text-align: left; }
+                        .amount { text-align: right; font-family: monospace; font-size: 11px; }
+                        .section-title { font-weight: bold; background-color: #f5f5f5; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+                        .total-row { font-weight: bold; background-color: #eef; border-top: 1px solid #000; }
+                        .sub-row { color: #444; }
+                        .italic { font-style: italic; color: #666; }
+                        .text-muted { color: #666; }
+                        .footer { margin-top: 30px; font-size: 9px; color: #888; text-align: center; }
                     </style>
                 </head>
                 <body>
                     <div class="header">
-                        <div class="title">LAPORAN SISA LABA & MODAL DI TANGAN TPM</div>
-                        <div class="period">PERIODE: ${format(new Date(getDateParams().tanggal_dari), 'dd MMM yyyy', { locale: localeID })} - ${format(new Date(getDateParams().tanggal_sampai), 'dd MMM yyyy', { locale: localeID }).toUpperCase()}</div>
-                        <div class="period">Waktu Cetak: ${new Date().toLocaleString('id-ID')}</div>
+                        <div class="title">LAPORAN PERUBAHAN MODAL</div>
+                        <div class="subtitle">BENGKEL TPM</div>
+                        <div class="date">Periode: ${getHeaderDate()}</div>
                     </div>
 
-                    <!-- SECTION A -->
-                    <table cellspacing="0">
-                        <tr class="section-head">
-                            <td colspan="2">MODAL & INVENTARIS</td>
-                            <td class="amount"></td>
+                    <table>
+                        <tr class="section-title">
+                            <td colspan="3">A. MODAL AWAL</td>
                         </tr>
                         <tr>
-                            <td>SALDO AWAL (KAS & BANK)</td>
-                            <td class="amount">${formatCurrency(a_opening)}</td>
+                            <td>Modal Awal (1 ${getHeaderDate()})</td>
+                            <td class="amount">${formatCurrency(modal_awal)}</td>
                             <td></td>
-                        </tr>
-                        <tr>
-                            <td>TOTAL SETORAN MODAL (PERIODE INI)</td>
-                            <td class="amount">${formatCurrency(a_setoran)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>PENGEMBALIAN MODAL PART (HPP TERJUAL)</td>
-                            <td class="amount">${formatCurrency(a_hpp_b)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>PENGEMBALIAN MODAL MOBIL (HPP TERJUAL)</td>
-                            <td class="amount">${formatCurrency(a_hpp_m)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>PERSEDIAAN SPAREPART (STOK)</td>
-                            <td class="amount">${formatCurrency(a_stok_part)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>PERSEDIAAN UNIT MOBIL (STOK)</td>
-                            <td class="amount">${formatCurrency(a_stok_mobil)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td>ASET TETAP</td>
-                            <td class="amount">${formatCurrency(a_aset_tetap)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="amount"><b>Subtotal Modal & Inventaris</b></td>
-                            <td class="amount"><b>${formatCurrency(a_subtotal)}</b></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">TOTAL LABA KOTOR BENGKEL</td>
-                            <td class="amount">${formatCurrency(report.section_a.details?.laba_bengkel || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">TOTAL LABA KOTOR MOBIL</td>
-                            <td class="amount">${formatCurrency(report.section_a.details?.laba_kotor_mobil || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">TOTAL LABA KOTOR JASA ANGKUT</td>
-                            <td class="amount">${formatCurrency(report.section_a.details?.laba_jasa_angkut || 0)}</td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td colspan="2" class="amount"><b>Total Laba Kotor (Unit)</b></td>
-                            <td class="amount"><b>${formatCurrency(a_total_laba)}</b></td>
                         </tr>
 
-                        <tr class="total-bar">
-                            <td colspan="2">TOTAL A (MODAL & LABA KOTOR)</td>
-                            <td class="amount">${formatCurrency(a_total)}</td>
+                        <tr class="section-title">
+                            <td colspan="3">B. PENAMBAHAN MODAL</td>
+                        </tr>
+                        <tr>
+                            <td>Setoran Modal Tunai</td>
+                            <td class="amount">${formatCurrency(setoran)}</td>
+                            <td></td>
+                        </tr>
+                        ${non_kas > 0 ? `
+                        <tr>
+                            <td>Modal Non-Kas (Aset Import)</td>
+                            <td class="amount">${formatCurrency(non_kas)}</td>
+                            <td></td>
+                        </tr>` : ''}
+                        <tr>
+                            <td>Laba Kotor Konsolidasi</td>
+                            <td class="amount">${formatCurrency(laba)}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td>TOTAL PENAMBAHAN MODAL</td>
+                            <td class="amount">${formatCurrency(tot_penambahan)}</td>
+                            <td></td>
+                        </tr>
+
+                        <tr class="section-title">
+                            <td colspan="3">C. PENGURANGAN MODAL</td>
+                        </tr>
+                        <tr>
+                            <td>Beban Gaji Karyawan</td>
+                            <td class="amount">(${formatCurrency(gaji)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Beban Lembur</td>
+                            <td class="amount">(${formatCurrency(lembur)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Beban Operasional: Umum</td>
+                            <td class="amount">(${formatCurrency(ops_umum)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Beban Operasional: Bengkel</td>
+                            <td class="amount">(${formatCurrency(ops_bengkel)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Beban Operasional: Jasa Angkut</td>
+                            <td class="amount">(${formatCurrency(ops_ja)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Beban Operasional: Jual Beli Mobil</td>
+                            <td class="amount">(${formatCurrency(ops_mobil)})</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Prive (Pengambilan Pribadi)</td>
+                            <td class="amount">(${formatCurrency(prive)})</td>
+                            <td></td>
+                        </tr>
+                        ${pengembalian > 0 ? `
+                        <tr>
+                            <td>Pengembalian Modal / Dividen</td>
+                            <td class="amount">(${formatCurrency(pengembalian)})</td>
+                            <td></td>
+                        </tr>` : ''}
+                        <tr class="total-row">
+                            <td>TOTAL PENGURANGAN MODAL</td>
+                            <td class="amount">(${formatCurrency(tot_pengurangan)})</td>
+                            <td></td>
+                        </tr>
+
+                        <tr class="section-title">
+                            <td colspan="2" style="font-size: 12px;">MODAL AKHIR (A + B - C)</td>
+                            <td class="amount" style="font-size: 12px; font-weight: bold;">${formatCurrency(modal_akhir)}</td>
                         </tr>
                     </table>
 
-                    <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
-
-                    <!-- SECTION B -->
-                    <table cellspacing="0">
-                        <tr>
-                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #f1f5f9; padding-bottom: 8px;">B. PIUTANG & ASET:</td>
+                    <div style="page-break-before: always;"></div>
+                    <div class="header">
+                        <div class="title">INFORMASI TAMBAHAN (INFO ONLY)</div>
+                    </div>
+                    
+                    <table>
+                        <tr class="section-title">
+                            <td colspan="3">1. RINCIAN KONTRIBUSI LABA</td>
                         </tr>
                         <tr>
-                            <td colspan="3" style="font-weight: bold; padding-left: 10px; color: #475569;">B.1 PIUTANG</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 20px;">PIUTANG LAINNYA</td>
-                            <td class="amount">${formatCurrency(b1)}</td>
-                            <td></td>
-                        </tr>
-                         <tr>
-                            <td style="padding-left: 20px;">PIUTANG UNIT MOBIL</td>
-                            <td class="amount">${formatCurrency(b2)}</td>
+                            <td>Kontribusi Laba Bengkel Umum</td>
+                            <td class="amount">${formatCurrency(info.laba_bengkel || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td style="padding-left: 20px;">PIUTANG SPAREPART / SERVIS MOBIL</td>
-                            <td class="amount">${formatCurrency(b3)}</td>
+                            <td>Kontribusi Laba Jual Beli Mobil</td>
+                            <td class="amount">${formatCurrency(info.laba_mobil || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td style="padding-left: 20px;">PIUTANG UNIT JASA ANGKUT</td>
-                            <td class="amount">${formatCurrency(b4)}</td>
-                            <td></td>
-                        </tr>
-                         <tr>
-                            <td style="padding-left: 20px;">PIUTANG KARYAWAN</td>
-                            <td class="amount">${formatCurrency(b5)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td style="padding-left: 20px;">PIUTANG UNIT BENGKEL</td>
-                            <td class="amount">${formatCurrency(b6)}</td>
+                            <td>Kontribusi Laba Jasa Angkut</td>
+                            <td class="amount">${formatCurrency(info.laba_jasa_angkut || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="font-style: italic; padding-left: 20px;">Subtotal Piutang</td>
-                            <td class="amount" style="border-top: 1px dashed #ccc;">${formatCurrency(b_total_piutang)}</td>
+                            <td>Pengeluaran Overhead Gabungan</td>
+                            <td class="amount">(${formatCurrency(info.overhead_gaji || 0)})</td>
+                            <td></td>
                         </tr>
 
-                        <tr>
-                            <td colspan="3" style="font-weight: bold; padding-left: 10px; color: #475569; padding-top: 8px;">B.2 ASET</td>
+                        <tr class="section-title">
+                            <td colspan="3">2. POSISI ASET SAAT INI</td>
                         </tr>
                         <tr>
-                            <td style="padding-left: 20px;">PERSEDIAAN SPAREPART</td>
-                            <td class="amount">${formatCurrency(b_stok_part)}</td>
+                            <td>Kas & Bank (Gabungan)</td>
+                            <td class="amount">${formatCurrency(aset.kas_bank || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td style="padding-left: 20px;">PERSEDIAAN UNIT MOBIL</td>
-                            <td class="amount">${formatCurrency(b_stok_mobil)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td style="padding-left: 20px;">ASET TETAP</td>
-                            <td class="amount">${formatCurrency(b_aset_tetap)}</td>
+                            <td>Persediaan Sparepart</td>
+                            <td class="amount">${formatCurrency(aset.stok_part || 0)}</td>
                             <td></td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="font-style: italic; padding-left: 20px;">Subtotal Aset</td>
-                            <td class="amount" style="border-top: 1px dashed #ccc;">${formatCurrency(b_total_aset)}</td>
+                            <td>Stok Unit Mobil</td>
+                            <td class="amount">${formatCurrency(aset.stok_mobil || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Aset Tetap (Peralatan)</td>
+                            <td class="amount">${formatCurrency(aset.aset_tetap || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Total Piutang Usaha</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.total || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Total Hutang Usaha</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.total || 0)}</td>
+                            <td></td>
                         </tr>
 
-                        <tr class="total-bar">
-                            <td colspan="2">TOTAL B (PIUTANG & ASET)</td>
-                            <td class="amount">${formatCurrency(b7)}</td>
+                        <tr class="section-title">
+                            <td colspan="3">3. RINCIAN PIUTANG</td>
                         </tr>
-                        <tr class="total-bar" style="background-color: #475569;">
-                            <td colspan="2">LABA & MODAL BERSIH (A-B)</td>
-                            <td class="amount">${formatCurrency(b8)}</td>
+                        <tr>
+                            <td>Piutang Bengkel</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.breakdown?.bengkel || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Piutang Jasa Angkut</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.breakdown?.ja || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Piutang Jual Beli Mobil</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.breakdown?.mobil || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Piutang Kasbon Karyawan</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.breakdown?.kasbon || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Piutang Lainnya</td>
+                            <td class="amount">${formatCurrency(aset.piutang?.breakdown?.lainnya || 0)}</td>
+                            <td></td>
+                        </tr>
+
+                        <tr class="section-title">
+                            <td colspan="3">4. RINCIAN HUTANG</td>
+                        </tr>
+                        <tr>
+                            <td>Hutang Bengkel (Sparepart)</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.breakdown?.bengkel || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Hutang Jasa Angkut</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.breakdown?.ja || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Hutang Jual Beli Mobil</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.breakdown?.mobil || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Hutang Investor</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.breakdown?.investor || 0)}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Hutang Lainnya</td>
+                            <td class="amount">${formatCurrency(aset.hutang?.breakdown?.lainnya || 0)}</td>
+                            <td></td>
                         </tr>
                     </table>
 
-                    <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
-
-                    <!-- SECTION C -->
-                    <table cellspacing="0">
-                        <tr>
-                            <td colspan="3" style="font-weight: bold; font-style: italic;">PENGURANG LABA & MODAL:</td>
-                        </tr>
-                        <tr class="green-row">
-                            <td><b>TOTAL PEMBELIAN PART</b></td>
-                            <td class="amount"><b>${formatCurrency(c_part_total)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">a. Cash</td>
-                            <td class="amount">${formatCurrency(report.section_c.pembelian_part?.cash)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">b. Transfer</td>
-                            <td class="amount">${formatCurrency(report.section_c.pembelian_part?.transfer)}</td>
-                            <td></td>
-                        </tr>
-                        ${report.section_c.pembelian_part?.accrued > 0 ? `
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px; color: #991b1b;">c. Kredit / Hutang</td>
-                            <td class="amount" style="color: #991b1b;">${formatCurrency(report.section_c.pembelian_part.accrued)}</td>
-                            <td></td>
-                        </tr>` : ''}
-                        <tr class="green-row">
-                            <td><b>TOTAL PEMBELIAN MOBIL</b></td>
-                            <td class="amount"><b>${formatCurrency(report.section_c.pembelian_mobil?.total)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">a. Cash</td>
-                            <td class="amount">${formatCurrency(report.section_c.pembelian_mobil?.cash)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">b. Transfer</td>
-                            <td class="amount">${formatCurrency(report.section_c.pembelian_mobil?.transfer)}</td>
-                            <td></td>
-                        </tr>
-                        ${report.section_c.pembelian_mobil?.accrued > 0 ? `
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px; color: #991b1b;">c. Kredit / Hutang</td>
-                            <td class="amount" style="color: #991b1b;">${formatCurrency(report.section_c.pembelian_mobil.accrued)}</td>
-                            <td></td>
-                        </tr>` : ''}
-                         <tr class="green-row border-bottom">
-                            <td><b>TOTAL ARUS KELUAR JB MOBIL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_inv_total)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">a. Cash</td>
-                            <td class="amount">${formatCurrency(c_inv_cash)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row border-bottom">
-                            <td style="padding-left: 20px;">b. Transfer</td>
-                            <td class="amount">${formatCurrency(c_inv_transfer)}</td>
-                            <td></td>
-                        </tr>
-                        ${c_prep ? `<tr class="green-row sub-row">
-                            <td style="padding-left: 20px; font-style: italic;">*termasuk Biaya Persiapan Mobil: ${formatCurrency(c_prep)}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>` : ''}
-                        <tr class="green-row">
-                            <td><b>TOTAL BEBAN OPERASIONAL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_op_umum + c_op_bengkel + c_op_mobil + c_op_ja)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Operasional Umum</td>
-                            <td class="amount">${formatCurrency(c_op_umum)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Operasional Unit Bisnis Bengkel</td>
-                            <td class="amount">${formatCurrency(c_op_bengkel)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Operasional Unit Bisnis Mobil</td>
-                            <td class="amount">${formatCurrency(c_op_mobil)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Operasional Unit Bisnis Jasa Angkut</td>
-                            <td class="amount">${formatCurrency(c_op_ja)}</td>
-                            <td></td>
-                        </tr>
-                        ${report.section_c.operasional_unit_details?.jasa_angkut_bengkel > 0 ? `
-                        <tr class="green-row">
-                            <td style="color: #991b1b;"><b>BIAYA OPERASIONAL JASA ANGKUT (PER ARMADA)</b></td>
-                            <td class="amount" style="color: #991b1b;"><b>${formatCurrency(report.section_c.operasional_unit_details.jasa_angkut_bengkel)}</b></td>
-                            <td></td>
-                        </tr>
-                        ${Object.entries(report.section_c.operasional_unit_details.jasa_angkut_detailed_breakdown || {}).map(([name, detail]: [string, any]) => `
-                            <tr class="green-row sub-row" style="font-weight: bold; background-color: #fff1f2;">
-                                <td style="padding-left: 20px;">• ${name}</td>
-                                <td class="amount">${formatCurrency(detail.total)}</td>
-                                <td></td>
-                            </tr>
-                            ${detail.bengkel > 0 ? `
-                            <tr class="green-row sub-row" style="font-size: 0.85em; opacity: 0.8;">
-                                <td style="padding-left: 40px;">- Biaya Bengkel</td>
-                                <td class="amount">${formatCurrency(detail.bengkel)}</td>
-                                <td></td>
-                            </tr>` : ''}
-                            ${detail.ops > 0 ? `
-                            <tr class="green-row sub-row" style="font-size: 0.85em; opacity: 0.8;">
-                                <td style="padding-left: 40px;">- Biaya Ops</td>
-                                <td class="amount">${formatCurrency(detail.ops)}</td>
-                                <td></td>
-                            </tr>` : ''}
-                        `).join('')}
-                        ` : ''}
-                        <tr class="green-row">
-                            <td><b>BEBAN BIAYA JUAL BELI MOBIL</b></td>
-                            <td class="amount"><b>${formatCurrency(c_mobil_total + c_jtb_mobil_prep + c_jtb_mobil_bengkel)}</b></td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Pembelian Unit Mobil</td>
-                            <td class="amount">${formatCurrency(c_mobil_total)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Biaya Persiapan (Pajak, BBN, dll)</td>
-                            <td class="amount">${formatCurrency(c_jtb_mobil_prep)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row sub-row">
-                            <td style="padding-left: 20px;">- Biaya Bengkel Unit (Servis/Perbaikan)</td>
-                            <td class="amount">${formatCurrency(c_jtb_mobil_bengkel)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row">
-                            <td>BEBAN GAJI KARYAWAN</td>
-                            <td class="amount">${formatCurrency(c_gaji)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row">
-                            <td>BEBAN LEMBUR KARYAWAN</td>
-                            <td class="amount">${formatCurrency(c_lembur)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="green-row border-bottom">
-                            <td>PRIVE (PENGAMBILAN PEMILIK)</td>
-                            <td class="amount">${formatCurrency(c_prive)}</td>
-                            <td></td>
-                        </tr>
-                        ${c_kasbon ? `<tr class="green-row border-bottom">
-                            <td>KASBON KARYAWAN (NET)</td>
-                            <td class="amount">${formatCurrency(c_kasbon)}</td>
-                            <td></td>
-                        </tr>` : ''}
-                        ${c_lainnya ? `<tr class="green-row border-bottom">
-                            <td>TRANSAKSI LAINNYA (NET)</td>
-                            <td class="amount">${formatCurrency(c_lainnya)}</td>
-                            <td></td>
-                        </tr>` : ''}
-                         <tr>
-                            <td colspan="2"></td>
-                            <td class="amount">${formatCurrency(c4)}</td>
-                        </tr>
-                         <tr class="total-bar">
-                            <td colspan="2">LABA & MODAL (A-B-C)</td>
-                            <td class="amount">${formatCurrency(b8 - c4)}</td>
-                        </tr>
-                    </table>
-
-                    <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
-
-                    <!-- SECTION E -->
-                    <table cellspacing="0">
-                        <tr>
-                            <td colspan="3" style="font-weight: bold; font-style: italic; background-color: #fee2e2;">E. HUTANG / KEWAJIBAN:</td>
-                        </tr>
-                        <tr>
-                            <td>HUTANG PEMBELIAN PART</td>
-                            <td class="amount">${formatCurrency(e_part)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>HUTANG PEMBELIAN MOBIL</td>
-                            <td class="amount">${formatCurrency(e_mobil)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>HUTANG INVESTOR</td>
-                            <td class="amount">${formatCurrency(e_investor)}</td>
-                            <td></td>
-                        </tr>
-                        <tr class="border-bottom">
-                            <td>HUTANG LAINNYA</td>
-                            <td class="amount">${formatCurrency(e_lainnya)}</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2"></td>
-                            <td class="amount">${formatCurrency(e1)}</td>
-                        </tr>
-                        <tr class="total-bar" style="background-color: #3b82f6;">
-                            <td colspan="2">MODAL BERJALAN (THEORETICAL: A-B-C+E)</td>
-                            <td class="amount">${formatCurrency(c5)}</td>
-                        </tr>
-                         <tr class="total-bar" style="background-color: #be123c;">
-                            <td colspan="2">SALDO KAS & BANK FISIK (AKTUAL)</td>
-                            <td class="amount">${formatCurrency(finalCash + finalTransfer)}</td>
-                        </tr>
-                        ${Math.abs(penyesuaian) > 10 ? `
-                        <tr class="pink-box">
-                            <td colspan="2">PENYESUAIAN / SELISIH (ADM BANK & FEES)</td>
-                            <td class="amount">${formatCurrency(penyesuaian)}</td>
-                        </tr>` : ''}
-                    </table>
-
-                    <div style="height: 10px; background-color: #6b7280; margin-bottom: 10px;"></div>
-
-                    <!-- SECTION D -->
-                     <table cellspacing="0" class="pink-box">
-                        <tr>
-                            <td rowspan="2" style="vertical-align: middle; text-align: center; font-weight: bold; width: 40%">SISA LABA & MODAL DI TANGAN AKHIR</td>
-                            <td class="amount border-bottom" style="width: 30%">${formatCurrency(finalCash)}</td>
-                            <td style="font-style: italic; font-size: 8px; width: 30%">*UANG CASH</td>
-                        </tr>
-                        <tr>
-                            <td class="amount">${formatCurrency(finalTransfer)}</td>
-                            <td style="font-style: italic; font-size: 8px;">*UANG DI BANK</td>
-                        </tr>
-                    </table>
-
+                    <div class="footer">
+                        Dokumen ini dihasilkan secara otomatis oleh Sistem TPM pada ${format(new Date(), 'dd MMM yyyy HH:mm')}.
+                    </div>
                 </body>
                 </html>
             `;
 
-            if (Platform.OS === 'web') {
-                if (mode === 'preview') {
-                    const printWindow = (window as any).open('', '_blank');
-                    if (printWindow) {
-                        printWindow.document.write(html);
-                        printWindow.document.close();
-                        printWindow.focus();
-                    } else {
-                        alert("Popup diblokir. Izinkan popup untuk mencetak PDF.");
-                    }
-                } else {
-                    // Direct Download for Web using html2pdf.js
-                    try {
-                        const html2pdf = require('html2pdf.js');
-                        const element = document.createElement('div');
-                        element.innerHTML = html;
-                        element.style.padding = '20px';
-
-                        const opt = {
-                            margin: 0,
-                            filename: `Laporan_Perubahan_Modal_${format(new Date(), 'yyyyMMdd')}.pdf`,
-                            image: { type: 'jpeg', quality: 0.98 },
-                            html2canvas: { scale: 2, useCORS: true, logging: false },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                        };
-
-                        await html2pdf().from(element).set(opt).save();
-                    } catch (err) {
-                        console.error("Direct download failed, falling back:", err);
-                        // Fallback to basic print to file which might open dialog
-                        const { uri } = await Print.printToFileAsync({ html });
-                        const link = document.createElement('a');
-                        link.href = uri;
-                        link.download = `Laporan_Perubahan_Modal_${format(new Date(), 'yyyyMMdd')}.pdf`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }
-                }
-            } else {
-                // Native Platform
-                if (mode === 'preview') {
-                    await Print.printAsync({ html });
-                } else {
-                    const { uri } = await Print.printToFileAsync({ html });
-                    await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
-                }
+            const { uri } = await Print.printToFileAsync({ html });
+            if (mode === 'preview') {
+                await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
             }
         } catch (error) {
-            console.error(error);
-            alert(`Gagal membuat PDF: ${error}`);
+            console.error('Error generating PDF:', error);
+            alert('Gagal membuat file PDF laporan');
         } finally {
             setIsExporting(false);
+            setShowExportMenu(false);
         }
     };
 
-    const renderHeader = () => (
-        <>
-            {/* Header */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl z-20">
-                <View className="flex-row items-center justify-between mb-8">
+    const Row = ({ label, value, bold = false, small = false, isNegative = false, color = "text-slate-700" }: any) => (
+        <View className="flex-row justify-between items-center w-full">
+            <Typography variant={small ? "caption" : "body2"} weight={bold ? "bold" : "normal"} className={"flex-1 pr-4 " + color}>
+                {label}
+            </Typography>
+            <Typography variant={small ? "caption" : "body1"} weight="bold" className={`${isNegative ? 'text-rose-600' : 'text-slate-800'}`}>
+                {isNegative ? `(${formatCurrency(Math.abs(value))})` : formatCurrency(value)}
+            </Typography>
+        </View>
+    );
+
+    return (
+        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+            <Stack.Screen options={{ headerShown: false }} />
+
+            <View className="bg-white px-4 pt-2 pb-4 shadow-sm z-20">
+                <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
+                        <Pressable onPress={handleBack} className="p-2 -ml-2 rounded-full active:bg-slate-100">
+                            <ChevronLeft size={24} color={themeColors.text} />
                         </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Laba & Modal</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Laporan Komprehensif TPM</Typography>
-                        </View>
-                    </View>
-                    <View className="flex-row items-center">
-                        <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5 mr-2">
-                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">
-                                {getHeaderDate()}
+                        <View className="ml-2">
+                            <Typography variant="h3" weight="bold" className="text-slate-800">
+                                Perubahan Modal
+                            </Typography>
+                            <Typography variant="caption" className="text-slate-500">
+                                Statement of Changes in Equity
                             </Typography>
                         </View>
-                        <Pressable
-                            onPress={() => setShowExportMenu(true)}
-                            disabled={isExporting}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            {isExporting ? <ActivityIndicator size="small" color="white" /> : <Download size={22} color="white" />}
-                        </Pressable>
                     </View>
+                    <Pressable
+                        onPress={() => setShowExportMenu(true)}
+                        disabled={isExporting || isLoading}
+                        className={`w-10 h-10 rounded-full items-center justify-center ${isExporting ? 'bg-slate-100' : 'bg-primary/10'}`}
+                    >
+                        {isExporting ? <ActivityIndicator size="small" color={themeColors.primary} /> : <Download size={20} color={themeColors.primary} />}
+                    </Pressable>
                 </View>
 
-                {/* Filter Tabs */}
-                <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
+                <View className="flex-row bg-slate-100 p-1 rounded-xl">
                     {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
                         <Pressable
                             key={type}
                             onPress={() => setFilterType(type)}
-                            className={`flex-1 py-2.5 items-center rounded-xl ${filterType === type ? 'bg-primary shadow-lg border border-white/10' : ''}`}
+                            className={`flex-1 py-2 items-center justify-center rounded-lg ${filterType === type ? 'bg-white shadow-sm' : ''}`}
                         >
-                            <Typography
-                                variant="caption"
-                                weight="bold"
-                                className={filterType === type ? 'text-white' : 'text-white/40'}
-                            >
+                            <Typography variant="caption" weight={filterType === type ? 'bold' : 'medium'} className={filterType === type ? 'text-primary' : 'text-slate-500'}>
                                 {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
                             </Typography>
                         </Pressable>
@@ -688,495 +419,275 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
             </View>
 
-            {/* Date Navigator */}
-            <View className="px-6 -mt-6 z-30">
-                <View className="bg-surface p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                    <Pressable
-                        onPress={handlePrev}
-                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                    >
+            <View className="px-4 -mt-4 z-30 pt-8 pb-4">
+                <View className="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex-row items-center">
+                    <Pressable onPress={handlePrev} className="w-12 h-12 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
                         <ChevronLeft size={20} color={themeColors.text} />
                     </Pressable>
-
                     <View className="flex-1 flex-row items-center justify-center">
                         <Calendar size={18} color={themeColors.primary} className="mr-2" />
-                        <Typography variant="body2" weight="bold" className="text-text capitalize tracking-tight">
+                        <Typography variant="body2" weight="bold" className="text-slate-800 capitalize tracking-tight">
                             {getFormattedDate()}
                         </Typography>
                     </View>
-
-                    <Pressable
-                        onPress={handleNext}
-                        className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100"
-                    >
+                    <Pressable onPress={handleNext} className="w-12 h-12 bg-slate-50 rounded-xl items-center justify-center border border-slate-100">
                         <ChevronRight size={20} color={themeColors.text} />
                     </Pressable>
                 </View>
             </View>
-        </>
-    );
 
-    const renderSectionA = () => {
-        const data = report?.section_a || {};
-        const details = data.details || {};
-        return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
-                <View className="bg-blue-50/70 px-5 py-4 flex-row items-center border-b border-blue-100/50 w-full">
-                    <View className="w-8 h-8 rounded-full bg-blue-100/80 items-center justify-center mr-3">
-                        <ArrowUpRight size={18} className="text-blue-600" />
-                    </View>
-                    <Typography variant="h4" weight="bold" className="text-blue-900 tracking-tight">A. Laba dan Modal Awal</Typography>
-                </View>
-                <View className="p-5 space-y-4 w-full">
-                    <View className="space-y-4">
-                        <Row label="1. Saldo Awal (Kas & Bank)" value={data.opening_balance} bold />
-                        <Row label="2. Total Setoran Modal (Baru)" value={data.setoran_modal} bold />
-
-                        {(data.hpp_bengkel > 0 || data.hpp_mobil > 0) && (
-                            <View className="bg-orange-50/50 rounded-xl p-4 border border-orange-100/60 w-full mb-1">
-                                <Typography variant="caption" weight="bold" className="mb-2 text-orange-700/70 uppercase tracking-widest text-[10px]">Return of Capital (HPP Produk Terjual)</Typography>
-                                <View className="space-y-1">
-                                    {data.hpp_bengkel > 0 && <Row label="HPP Bengkel (Part Terpakai)" value={data.hpp_bengkel} small />}
-                                    {data.hpp_mobil > 0 && <Row label="HPP Unit Mobil Terjual" value={data.hpp_mobil} small />}
-                                </View>
-                            </View>
-                        )}
-                    </View>
-
-                    <View className="bg-slate-50 rounded-xl p-4 border border-slate-100 w-full shadow-sm shadow-slate-100/50">
-                        <Typography variant="caption" weight="bold" className="mb-3 text-slate-500 uppercase tracking-widest text-[10px]">Rincian Laba Operasional</Typography>
-
-                        <View className="space-y-1">
-                            <View className="mb-2">
-                                <Row label="1. Laba Bengkel" value={details.laba_bengkel} small />
-                                {details.hpp_bengkel > 0 && (
-                                    <View className="pl-4">
-                                        <Typography variant="caption" className="text-slate-400 italic text-[9px]">Termasuk HPP Bengkel: {formatCurrency(details.hpp_bengkel)}</Typography>
-                                    </View>
-                                )}
-                            </View>
-
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2">
-                                <Row label="2. Laba Mobil" value={details.laba_kotor_mobil} small />
-                                <View className="pl-4">
-                                    <Typography variant="caption" className="text-slate-400 italic text-[9px]">Berdasarkan HPP/Modal Mobil: {formatCurrency(details.hpp_mobil)}</Typography>
-                                </View>
-                            </View>
-
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 mb-2">
-                                <Row label="3. Laba Jasa Angkut" value={details.laba_jasa_angkut} small />
-                            </View>
-                        </View>
-
-                        <View className="h-px bg-blue-200/60 my-3" />
-                        <Row label="Total Laba Kotor (Unit)" value={data.total_laba} bold color="text-blue-700" />
-                    </View>
-
-                    <View className="bg-blue-50/40 rounded-xl p-4 border border-blue-100/60 w-full">
-                        <Typography variant="caption" weight="bold" className="mb-3 text-blue-700/70 uppercase tracking-widest text-[10px]">Komponen Persediaan & Aset</Typography>
-                        <View className="space-y-1">
-                            <Row label="Persediaan Sparepart" value={data.persediaan_part || 0} small />
-                            <Row label="Persediaan Unit Mobil" value={data.persediaan_mobil || 0} small />
-                            <Row label="Aset Tetap" value={data.aset_tetap || 0} small />
-                        </View>
-                    </View>
-
-                    <View className="pt-3 border-t-2 border-dashed border-slate-200">
-                        <Row label="TOTAL A (Laba dan Modal)" value={data.total_a} bold large color="text-slate-800" />
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
-    const renderSectionB = () => {
-        const data = report?.section_b || {};
-        return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
-                <View className="bg-emerald-50/70 px-5 py-4 flex-row items-center border-b border-emerald-100/50 w-full">
-                    <View className="w-8 h-8 rounded-full bg-emerald-100/80 items-center justify-center mr-3">
-                        <Wallet size={18} className="text-emerald-600" />
-                    </View>
-                    <Typography variant="h4" weight="bold" className="text-emerald-900 tracking-tight">B. Piutang & Aset Persediaan</Typography>
-                </View>
-
-                <View className="p-5 space-y-5 w-full">
-                    <View className="mb-2">
-                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.1 Piutang Tersebar</Typography>
-                        <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
-                            <Row label="Piutang Usaha (Bengkel Umum)" value={data.piutang_usaha} small />
-                            <Row label="Piutang Jual Beli Mobil (Unit)" value={data.piutang_mobil} small />
-                            <Row label="Piutang Sparepart / Servis Mobil" value={data.piutang_part_mobil} small />
-                            <Row label="Piutang Jasa Angkut" value={data.piutang_jasa_angkut} small />
-                            <Row label="Piutang Karyawan" value={data.piutang_karyawan || 0} small />
-                            <Row label="Piutang Lainnya" value={data.piutang_lainnya} small />
-                        </View>
-                    </View>
-
-                    <View>
-                        <Typography variant="caption" weight="bold" className="text-emerald-700/70 mb-2 uppercase tracking-widest pl-1 text-[10px]">B.2 Persediaan & Aset Fisik</Typography>
-                        <View className="space-y-1 bg-emerald-50/30 p-3.5 rounded-xl border border-emerald-100/50">
-                            <Row label="Persediaan Sparepart (Stok Sparepart)" value={data.stok_part} small />
-                            <Row label="Persediaan Unit Mobil (Stok Mobil)" value={data.stok_mobil} small />
-                            <Row label="Aset Tetap (Kantor/Alat)" value={data.aset_tetap} small />
-                        </View>
-                    </View>
-
-                    <View className="pt-3 border-t-2 border-dashed border-emerald-200/70">
-                        <Row label="TOTAL B (Piutang & Aset)" value={data.total_b} bold large color="text-emerald-700" />
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
-    const renderSectionC = () => {
-        const data = report?.section_c || {};
-        return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
-                <View className="bg-rose-50/70 px-5 py-4 flex-row items-center border-b border-rose-100/50 w-full">
-                    <View className="w-8 h-8 rounded-full bg-rose-100/80 items-center justify-center mr-3">
-                        <ArrowDownLeft size={18} className="text-rose-600" />
-                    </View>
-                    <Typography variant="h4" weight="bold" className="text-rose-900 tracking-tight">C. Pengurangan Modal</Typography>
-                </View>
-
-                <View className="p-5 space-y-4 w-full">
-                    {data.pembelian_part?.total > 0 && (
-                        <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                            <Row label="Total Pembelian Part" value={data.pembelian_part?.total} bold />
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
-                                <Row label="Pembayaran Cash" value={data.pembelian_part?.cash} small />
-                                <Row label="Pembayaran Transfer" value={data.pembelian_part?.transfer} small />
-                                {data.pembelian_part?.accrued > 0 && (
-                                    <Row label="Kredit atau Hutang" value={data.pembelian_part?.accrued} small color="text-rose-500" />
-                                )}
-                            </View>
-                        </View>
-                    )}
-
-
-
-                    {data.pengembalian_investor?.total > 0 && (
-                        <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                            <Row label="Bagi Hasil / Payout Investor" value={data.pengembalian_investor?.total} bold />
-                            <View className="mt-2 pt-2 border-t border-slate-200/60 space-y-1">
-                                <Row label="Pembayaran Cash" value={data.pengembalian_investor?.cash} small />
-                                <Row label="Pembayaran Transfer" value={data.pengembalian_investor?.transfer} small />
-                                {data.pengembalian_investor?.accrued > 0 && (
-                                    <Row label="Penyesuaian Kewajiban (Hutang)" value={data.pengembalian_investor?.accrued} small color="text-rose-500" />
-                                )}
-                            </View>
-                        </View>
-                    )}
-
-                    <View className="bg-orange-50/40 p-3.5 rounded-xl border border-orange-100/50 w-full">
-                        <Row label="Total Beban Operasional" value={(data.operasional_unit_details?.umum || 0) + (data.operasional_unit_details?.bengkel || 0) + (data.operasional_unit_details?.mobil || 0) + (data.operasional_unit_details?.jasa_angkut || 0)} bold color="text-orange-800" />
-                        <View className="mt-3 pt-3 border-t border-orange-200/50 space-y-1.5">
-                            <Row label="Operasional Umum" value={data.operasional_unit_details?.umum} small isNegative color="text-slate-600" />
-                            <Row label="Operasional Unit Bisnis Bengkel" value={data.operasional_unit_details?.bengkel} small isNegative color="text-slate-600" />
-                            <Row label="Operasional Unit Bisnis Mobil" value={data.operasional_unit_details?.mobil} small isNegative color="text-slate-600" />
-                            <Row label="Operasional Unit Bisnis Jasa Angkut" value={data.operasional_unit_details?.jasa_angkut} small isNegative color="text-slate-600" />
-                        </View>
-
-                        {Object.keys(data.operasional_unit_details?.jasa_angkut_detailed_breakdown || {}).length > 0 && (
-                            <View className="mt-4 pt-3 border-t border-orange-200/50 w-full">
-                                <Typography variant="caption" weight="bold" className="text-rose-800/60 uppercase tracking-widest text-[9px] mb-2">Operasional Jasa Angkut (Per Armada)</Typography>
-                                <View className="space-y-2">
-                                    {Object.entries(data.operasional_unit_details.jasa_angkut_detailed_breakdown || {}).map(([name, detail]: [string, any]) => (
-                                        <View key={name} className="bg-white/40 p-2 rounded-lg border border-orange-100/50 shadow-sm">
-                                            <Typography variant="body2" className="text-slate-900 mb-2">{`• ${name}`}</Typography>
-                                            <View className="flex flex-col gap-1 pl-4 mt-1 border-l border-slate-200">
-                                                {detail.bengkel > 0 && <Row label="Biaya Bengkel" value={detail.bengkel} small isNegative color="text-slate-500" />}
-                                                {detail.ops > 0 && <Row label="Biaya Ops" value={detail.ops} small isNegative color="text-slate-500" />}
-                                            </View>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        )}
-                    </View>
-
-                    {/* Beban Biaya Jual Beli Mobil */}
-                    <View className="mt-4 pt-3 border-t border-orange-200/50 space-y-1.5">
-                        <Typography variant="caption" weight="bold" className="text-orange-800/60 uppercase tracking-widest text-[9px] mb-1">Beban Biaya Jual Beli Mobil</Typography>
-                        <Row
-                            label="Total Pembelian Unit"
-                            value={(data.pembelian_mobil?.total || 0) + (data.operasional_unit_details?.mobil_prep || 0) + (data.operasional_unit_details?.mobil_bengkel || 0)}
-                            small
-                            isNegative
-                            color="text-orange-900"
-                            bold
-                        />
-                        <View className="pl-4 border-l border-orange-200 space-y-1 mt-1">
-                            <Row label="Bayar Cash" value={data.pembelian_mobil?.cash} small color="text-slate-500" />
-                            <Row label="Bayar Transfer" value={data.pembelian_mobil?.transfer} small color="text-slate-500" />
-                            {data.pembelian_mobil?.accrued > 0 && (
-                                <Row label="Kredit / Hutang Unit" value={data.pembelian_mobil?.accrued} small color="text-rose-500" />
-                            )}
-                        </View>
-                        <Row label="Biaya Persiapan (Pajak, BBN, dll)" value={data.operasional_unit_details?.mobil_prep} small isNegative color="text-slate-600" />
-                        {/* <Row label="Biaya Bengkel Unit (Servis/Perbaikan)" value={data.operasional_unit_details?.mobil_bengkel} small isNegative color="text-slate-600" /> */}
-                    </View>
-
-                    <View className="space-y-2 px-1 pt-2 w-full">
-                        <Row label="Beban Gaji Karyawan" value={data.gaji} isNegative />
-                        <Row label="Beban Lembur Karyawan" value={data.lembur} isNegative />
-                        <Row label="Prive (Pengambilan Pemilik)" value={data.prive} isNegative />
-                        {data.kasbon_karyawan > 0 && <Row label="Kasbon Karyawan (Net)" value={data.kasbon_karyawan} isNegative />}
-                        {data.transaksi_lainnya > 0 && <Row label="Transaksi Lainnya (Net)" value={data.transaksi_lainnya} isNegative />}
-                    </View>
-
-                    <View className="pt-4 mt-2 border-t-2 border-dashed border-rose-200/70">
-                        <Row label="TOTAL C (Pengurangan Modal)" value={data.total_c} bold large color="text-rose-600" />
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
-    const renderSectionE = () => {
-        const data = report?.section_e || {};
-        return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
-                <View className="bg-amber-50/70 px-5 py-4 flex-row items-center border-b border-amber-100/50 w-full">
-                    <View className="w-8 h-8 rounded-full bg-amber-100/80 items-center justify-center mr-3">
-                        <AlertTriangle size={18} className="text-amber-600" />
-                    </View>
-                    <Typography variant="h4" weight="bold" className="text-amber-900 tracking-tight">E. Hutang / Kewajiban</Typography>
-                </View>
-
-                <View className="p-5 space-y-2.5 w-full">
-                    <Row label="Hutang Pembelian Part" value={data.hutang_part} />
-                    <Row label="Hutang Pembelian Mobil" value={data.hutang_mobil} />
-                    <Row label="Hutang Investor" value={data.hutang_investor} />
-                    <Row label="Hutang Lainnya" value={data.hutang_lainnya} />
-
-                    <View className="pt-3 mt-1 border-t-2 border-dashed border-amber-200/70 w-full">
-                        <Row label="TOTAL E (Hutang Belum Lunas)" value={data.total_e} color="text-amber-600" bold large />
-                    </View>
-
-                    <View className="mt-4 bg-amber-50/80 rounded-xl p-3 border border-amber-100/50">
-                        <Typography variant="caption" className="text-amber-700/80 leading-snug">
-                            Hutang memposisikan kewajiban yang belum dibayar tunai. Nilai positif ini ditambahkan kembali dalam rekonsiliasi karena merepresentasikan kas yang secara fisik masih ada dalam kendali.
-                        </Typography>
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
-    const renderSectionD = () => {
-        const data = report?.section_d || {};
-        return (
-            <Card className="mb-10 overflow-hidden border-0 shadow-lg shadow-indigo-900/10 bg-indigo-600 rounded-3xl w-full relative">
-                <View className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500 rounded-full opacity-40" />
-                <View className="absolute -bottom-16 -left-16 w-40 h-40 bg-indigo-700 rounded-full opacity-40" />
-
-                <View className="p-6 relative z-10 w-full">
-                    <View className="flex-row items-center mb-6">
-                        <View className="w-12 h-12 rounded-2xl bg-white/10 items-center justify-center mr-4 backdrop-blur-md border border-white/10">
-                            <Wallet size={24} color="white" />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="h3" weight="bold" className="text-white tracking-tight">F. Total Modal & Kas</Typography>
-                            <Typography variant="caption" className="text-indigo-200 mt-1">Keselarasan Sistem dan Laporan</Typography>
-                        </View>
-                    </View>
-
-                    <View className="bg-white/10 rounded-2xl p-5 border border-white/10 backdrop-blur-md mb-6 w-full shadow-inner">
-                        <View className="space-y-3 w-full">
-                            <Row label="Kas Tunai (Tunai & Brankas Unit)" value={data.cash} isDark />
-
-                            {data.unit_details && Object.keys(data.unit_details).length > 0 && (
-                                <View className="bg-black/20 rounded-xl p-3.5 space-y-2 mt-1 border border-white/5">
-                                    {Object.entries(data.unit_details).map(([unit, val]) => (
-                                        <Row
-                                            key={unit}
-                                            label={unit.replace('kas_unit_', '').replace(/_/g, ' ').toUpperCase()}
-                                            value={val as number}
-                                            small
-                                            isDark
-                                        />
-                                    ))}
-                                </View>
-                            )}
-
-                            <Row className="mt-1" label="Kas Bank / Transfer" value={data.transfer} isDark />
-                        </View>
-
-                        <View className="h-px bg-white/20 my-4" />
-
-                        <View className="flex-row justify-between items-center w-full">
-                            <Typography className="text-indigo-100" variant="body1" weight="medium">Total Saldo Riil</Typography>
-                            <Typography weight="bold" className="text-white text-3xl tracking-tighter">{formatCurrency(data.total_d || 0)}</Typography>
-                        </View>
-                    </View>
-
-                    <View className="bg-slate-900/40 rounded-2xl p-5 border border-white/10 backdrop-blur-xl w-full">
-                        <View className="flex-row items-center mb-5">
-                            <View className="w-1.5 h-4 bg-indigo-400 rounded-full mr-2.5" />
-                            <Typography variant="caption" weight="bold" className="text-indigo-100 uppercase tracking-widest text-[10px]">Rekonsiliasi Modal Teoritis</Typography>
-                        </View>
-
-                        <Row label="Modal Berdasarkan Sistem" value={data.theoretical_modal} bold large color="text-white" isDark />
-
-                        {data.penyesuaian !== undefined && Math.abs(data.penyesuaian) >= 1 ? (
-                            <View className="mt-5 pt-5 border-t border-white/10 w-full space-y-3">
-                                <View className="flex-row items-center bg-rose-500/20 px-3 py-1.5 rounded-lg border border-rose-500/30 self-start mb-1">
-                                    <AlertTriangle size={14} color="#FDA4AF" className="mr-1.5" />
-                                    <Typography className="text-rose-200 text-xs font-bold">BUTUH PENYESUAIAN</Typography>
-                                </View>
-
-                                <View className="space-y-1.5">
-                                    <Row label="Modal Teoritis [ (A-B) + E ]" value={data.modal_komponen} small color="text-indigo-200" isDark />
-                                    <Row label="Selisih / Penyesuaian" value={data.penyesuaian} small bold color="text-rose-300" isDark />
-                                </View>
-
-                                <Typography variant="caption" className="text-indigo-200/60 leading-normal mt-1 text-[10px]">
-                                    *Selisih terjadi karena perbedaan perhitungan teoritis komponen dengan total saldo riil.
-                                </Typography>
-                            </View>
-                        ) : (
-                            <View className="mt-5 pt-5 border-t border-white/10">
-                                <View className="flex-row items-center bg-emerald-500/20 px-4 py-2.5 rounded-xl border border-emerald-500/30 w-full justify-center">
-                                    <View className="w-6 h-6 rounded-full bg-emerald-500/40 items-center justify-center mr-2.5">
-                                        <Typography className="text-emerald-100 text-xs font-bold">✓</Typography>
-                                    </View>
-                                    <Typography className="text-emerald-100/90 text-sm font-bold tracking-wide">REKONSILIASI SEIMBANG</Typography>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            </Card>
-        );
-    };
-
-    return (
-        <SafeAreaView className="flex-1 bg-slate-50">
-            <StatusBar barStyle="light-content" />
-            <Stack.Screen options={{ headerShown: false }} />
-
-            {renderHeader()}
-
-            <ScrollView
-                className="flex-1 px-4 pt-5"
-                contentContainerStyle={{ paddingBottom: 40 }}
-                refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={refetch} />}
+            <ScrollView 
+                className="flex-1"
+                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
+                refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={refetch} colors={[themeColors.primary]} />}
             >
-                {isLoading ? (
-                    <View className="py-20">
+                {isLoading && !report ? (
+                    <View className="py-12 items-center justify-center">
                         <ActivityIndicator size="large" color={themeColors.primary} />
+                        <Typography variant="body2" className="mt-4 text-slate-500">Menyusun Laporan...</Typography>
+                    </View>
+                ) : !report ? (
+                    <View className="py-12 items-center justify-center">
+                        <AlertTriangle size={48} color="#94a3b8" className="mb-4" />
+                        <Typography variant="body1" className="text-slate-500">Data laporan tidak tersedia</Typography>
                     </View>
                 ) : (
-                    <>
-                        {renderSectionA()}
-                        {renderSectionB()}
-                        {renderSectionC()}
-                        {renderSectionE()}
-                        {renderSectionD()}
-                    </>
+                    <View className="w-full space-y-4">
+                        {/* A. MODAL AWAL */}
+                        <Card className="overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                            <View className="bg-slate-50 px-5 py-3 flex-row items-center border-b border-slate-100">
+                                <View className="w-8 h-8 rounded-full bg-slate-200 items-center justify-center mr-3">
+                                    <Wallet size={16} className="text-slate-600" />
+                                </View>
+                                <Typography variant="body1" weight="bold" className="text-slate-800">A. Modal Awal</Typography>
+                            </View>
+                            <View className="p-4">
+                                <Row label="Saldo Modal Awal" value={report.modal_awal} bold />
+                            </View>
+                        </Card>
+
+                        {/* B. PENAMBAHAN MODAL */}
+                        <Card className="overflow-hidden border-0 shadow-sm shadow-emerald-200/50 bg-white rounded-2xl w-full">
+                            <View className="bg-emerald-50 px-5 py-3 flex-row items-center border-b border-emerald-100">
+                                <View className="w-8 h-8 rounded-full bg-emerald-100 items-center justify-center mr-3">
+                                    <ArrowUpRight size={16} className="text-emerald-600" />
+                                </View>
+                                <Typography variant="body1" weight="bold" className="text-emerald-900">B. Penambahan Modal</Typography>
+                            </View>
+                            <View className="p-4 space-y-3">
+                                <Row label="Setoran Modal Tunai" value={report.penambahan?.setoran_modal} />
+                                {report.penambahan?.modal_non_kas?.total > 0 && (
+                                    <>
+                                        <Row label="Modal Non-Kas (Aset Import)" value={report.penambahan?.modal_non_kas?.total} bold />
+                                        <View className="pl-4">
+                                            {report.penambahan?.modal_non_kas?.aset_tetap > 0 && (
+                                                <Row label="• Modal Aset Tetap" value={report.penambahan?.modal_non_kas?.aset_tetap} />
+                                            )}
+                                            {report.penambahan?.modal_non_kas?.stok_part > 0 && (
+                                                <Row label="• Modal Stok Sparepart" value={report.penambahan?.modal_non_kas?.stok_part} />
+                                            )}
+                                            {report.penambahan?.modal_non_kas?.stok_mobil > 0 && (
+                                                <Row label="• Modal Stok Mobil" value={report.penambahan?.modal_non_kas?.stok_mobil} />
+                                            )}
+                                        </View>
+                                    </>
+                                )}
+                                <Row label="Laba Kotor Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
+                                <View className="pl-4">
+                                    <Row label="• Laba Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} />
+
+                                    <Row label="• Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
+                                    <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
+                                </View>
+                                
+                                {report.penambahan?.penambahan_stok?.total > 0 && (
+                                    <>
+                                        <Row label="Peningkatan Stok (Asset Conversion)" value={report.penambahan?.penambahan_stok?.total} bold />
+                                        <View className="pl-4">
+                                            {report.penambahan?.penambahan_stok?.mobil > 0 && (
+                                                <Row label="• Stok Unit Mobil" value={report.penambahan?.penambahan_stok?.mobil} />
+                                            )}
+                                            {report.penambahan?.penambahan_stok?.sparepart > 0 && (
+                                                <Row label="• Stok Sparepart" value={report.penambahan?.penambahan_stok?.sparepart} />
+                                            )}
+                                        </View>
+                                    </>
+                                )}
+                                
+                                <View className="pt-3 border-t border-emerald-100">
+                                    <Row label="Total Penambahan" value={report.penambahan?.total} bold color="text-emerald-700" />
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* C. PENGURANGAN MODAL */}
+                        <Card className="overflow-hidden border-0 shadow-sm shadow-rose-200/50 bg-white rounded-2xl w-full">
+                            <View className="bg-rose-50 px-5 py-3 flex-row items-center border-b border-rose-100">
+                                <View className="w-8 h-8 rounded-full bg-rose-100 items-center justify-center mr-3">
+                                    <ArrowDownLeft size={16} className="text-rose-600" />
+                                </View>
+                                <Typography variant="body1" weight="bold" className="text-rose-900">C. Pengurangan Modal</Typography>
+                            </View>
+                            <View className="p-4 space-y-3">
+                                <Row label="Beban Gaji Karyawan" value={report.pengurangan?.gaji} isNegative />
+                                <Row label="Beban Lembur" value={report.pengurangan?.lembur} isNegative />
+                                <Row label="Beban Operasional: Umum" value={report.pengurangan?.ops_umum} isNegative />
+                                <Row label="Beban Operasional: Bengkel" value={report.pengurangan?.ops_bengkel} isNegative />
+                                {report.pengurangan?.ops_ja?.total > 0 && (
+                                    <>
+                                        <Row label="Beban Operasional: Jasa Angkut" value={report.pengurangan?.ops_ja?.total} isNegative />
+                                        <View className="pl-4">
+                                            {report.pengurangan?.ops_ja?.unit > 0 && (
+                                                <Row label="◦ Biaya Unit (Dompet)" value={report.pengurangan?.ops_ja?.unit} isNegative />
+                                            )}
+                                            {report.pengurangan?.ops_ja?.trip > 0 && (
+                                                <Row label="◦ Biaya Trip & Armada" value={report.pengurangan?.ops_ja?.trip} isNegative />
+                                            )}
+                                        </View>
+                                    </>
+                                )}
+                                <Row label="Beban Operasional: Jual Beli Mobil" value={report.pengurangan?.ops_mobil} isNegative />
+                                <Row label="Prive (Pengambilan Pribadi)" value={report.pengurangan?.prive} isNegative />
+                                {report.pengurangan?.pengembalian_modal > 0 && (
+                                    <Row label="Pengembalian Modal / Dividen" value={report.pengurangan?.pengembalian_modal} isNegative />
+                                )}
+                                {report.pengurangan?.pembelian_mobil > 0 && (
+                                    <Row label="Pembelian Unit Mobil (Stok)" value={report.pengurangan?.pembelian_mobil} isNegative />
+                                )}
+                                {report.pengurangan?.pembelian_sparepart > 0 && (
+                                    <Row label="Pembelian Sparepart (Stok)" value={report.pengurangan?.pembelian_sparepart} isNegative />
+                                )}
+                                
+                                <View className="pt-3 border-t border-rose-100">
+                                    <Row label="Total Pengurangan" value={report.pengurangan?.total} bold color="text-rose-700" />
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* MODAL AKHIR */}
+                        <Card className="overflow-hidden border-0 shadow-lg shadow-blue-200/50 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl w-full mt-2">
+                            <View className="p-5 flex-row justify-between items-center w-full">
+                                <Typography variant="h4" weight="bold" className="text-white">MODAL AKHIR</Typography>
+                                <Typography variant="h3" weight="bold" className="text-white">
+                                    {formatCurrency(report.modal_akhir)}
+                                </Typography>
+                            </View>
+                        </Card>
+
+                        {/* VALIDASI BALANCE */}
+                        {report.info?.validasi && (
+                            <Card className={`overflow-hidden border border-slate-100 shadow-sm rounded-2xl w-full mt-2 ${report.info.validasi.status === 'BALANCE' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
+                                <View className="p-4">
+                                    <View className="flex-row justify-between items-center mb-3">
+                                        <Typography variant="caption" weight="bold" className={`${report.info.validasi.status === 'BALANCE' ? 'text-emerald-700' : 'text-rose-700'} uppercase tracking-widest`}>
+                                            Validasi Laporan
+                                        </Typography>
+                                        <View className={`px-2 py-0.5 rounded-full ${report.info.validasi.status === 'BALANCE' ? 'bg-emerald-200' : 'bg-rose-200'}`}>
+                                            <Typography variant="caption" weight="bold" className={report.info.validasi.status === 'BALANCE' ? 'text-emerald-800' : 'text-rose-800'}>
+                                                {report.info.validasi.status}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                    <View className="space-y-2">
+                                        <Row label="Modal Akhir (Teoritis)" value={report.info.validasi.modal_teoritis} small color={report.info.validasi.status === 'BALANCE' ? 'text-emerald-900/60' : 'text-rose-900/60'} />
+                                        <Row label="Total Aset Bersih (Aktual)" value={report.info.validasi.modal_aktual} small color={report.info.validasi.status === 'BALANCE' ? 'text-emerald-900/60' : 'text-rose-900/60'} />
+                                        <View className={`pt-2 border-t ${report.info.validasi.status === 'BALANCE' ? 'border-emerald-200' : 'border-rose-200'}`}>
+                                            <Row label="Selisih Rekonsiliasi" value={report.info.validasi.selisih} small bold color={report.info.validasi.status === 'BALANCE' ? 'text-emerald-900' : 'text-rose-900'} />
+                                        </View>
+                                    </View>
+                                </View>
+                            </Card>
+                        )}
+
+                        <View className="my-4 flex-row items-center justify-center">
+                            <View className="h-px bg-slate-200 flex-1" />
+                            <Typography variant="caption" className="px-4 text-slate-400 font-bold uppercase tracking-widest">Informasi Tambahan</Typography>
+                            <View className="h-px bg-slate-200 flex-1" />
+                        </View>
+
+                        {/* INFO KONTRIBUSI LABA */}
+                        <Card className="overflow-hidden border border-slate-100 shadow-sm bg-white rounded-2xl w-full mb-2">
+                            <View className="p-4">
+                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Kontribusi Laba</Typography>
+                                <View className="space-y-2">
+                                    <Row label="Kontribusi Laba Bengkel Umum" value={report.info?.laba_bengkel} small />
+                                    <Row label="Kontribusi Laba Jual Beli Mobil" value={report.info?.laba_mobil} small />
+                                    <Row label="Kontribusi Laba Jasa Angkut" value={report.info?.laba_jasa_angkut} small />
+                                    <Row label="Pengeluaran Overhead Gabungan" value={report.info?.overhead_gaji} small isNegative />
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* INFO STOK MOBIL */}
+                        <Card className="overflow-hidden border border-slate-100 shadow-sm bg-white rounded-2xl w-full mb-2">
+                            <View className="p-4">
+                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Persediaan Mobil</Typography>
+                                <View className="space-y-2">
+                                    <Row label="Harga Beli Unit" value={report.info?.aset?.stok_mobil?.unit_hanya} small />
+                                    <Row label="Biaya Persiapan (Prep)" value={report.info?.aset?.stok_mobil?.biaya_persiapan} small />
+                                    <Row label="Perbaikan Bengkel Internal" value={report.info?.aset?.stok_mobil?.perbaikan_internal} small />
+                                    <Row label="Perbaikan Bengkel External" value={report.info?.aset?.stok_mobil?.perbaikan_external} small />
+                                    <View className="pt-2 border-t border-slate-50">
+                                        <Row label="Total Aset Mobil" value={report.info?.aset?.stok_mobil?.total} small bold />
+                                    </View>
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* INFO PIUTANG */}
+                        <Card className="overflow-hidden border border-slate-100 shadow-sm bg-white rounded-2xl w-full mb-2">
+                            <View className="p-4">
+                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Piutang</Typography>
+                                <View className="space-y-2">
+                                    <Row label="Piutang Bengkel" value={report.info?.aset?.piutang?.breakdown?.bengkel} small />
+                                    <Row label="Piutang Jasa Angkut" value={report.info?.aset?.piutang?.breakdown?.ja} small />
+                                    <Row label="Piutang Jual Beli Mobil" value={report.info?.aset?.piutang?.breakdown?.mobil} small />
+                                    <Row label="Piutang Kasbon Karyawan" value={report.info?.aset?.piutang?.breakdown?.kasbon} small />
+                                    <Row label="Piutang Lainnya" value={report.info?.aset?.piutang?.breakdown?.lainnya} small />
+                                    <View className="pt-2 border-t border-slate-50">
+                                        <Row label="Total Piutang" value={report.info?.aset?.piutang?.total} small bold />
+                                    </View>
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* INFO HUTANG */}
+                        <Card className="overflow-hidden border border-slate-100 shadow-sm bg-white rounded-2xl w-full mb-8">
+                            <View className="p-4">
+                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Hutang</Typography>
+                                <View className="space-y-2">
+                                    <Row label="Hutang Bengkel (Sparepart)" value={report.info?.aset?.hutang?.breakdown?.bengkel} small />
+                                    <Row label="Hutang Jasa Angkut" value={report.info?.aset?.hutang?.breakdown?.ja} small />
+                                    <Row label="Hutang Jual Beli Mobil" value={report.info?.aset?.hutang?.breakdown?.mobil} small />
+                                    <Row label="Hutang Investor" value={report.info?.aset?.hutang?.breakdown?.investor} small />
+                                    <Row label="Hutang Lainnya" value={report.info?.aset?.hutang?.breakdown?.lainnya} small />
+                                    <View className="pt-2 border-t border-slate-50">
+                                        <Row label="Total Hutang" value={report.info?.aset?.hutang?.total} small bold />
+                                    </View>
+                                </View>
+                            </View>
+                        </Card>
+                    </View>
                 )}
             </ScrollView>
 
-            {/* Export Action Menu */}
-            <Modal
-                visible={showExportMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowExportMenu(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-slate-900/40 justify-end backdrop-blur-sm"
-                    onPress={() => setShowExportMenu(false)}
-                >
-                    <Pressable onPress={e => e.stopPropagation()} className="bg-white rounded-t-[32px] p-6 pb-10 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-6 w-full">
-                            <View>
-                                <Typography variant="h3" weight="bold" className="text-slate-800">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-slate-500">Pilih metode ekspor PDF</Typography>
-                            </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2.5 rounded-full active:bg-slate-200">
-                                <X size={20} className="text-slate-600" />
+            <Modal visible={showExportMenu} transparent animationType="fade">
+                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
+                    <View className="bg-white rounded-t-3xl p-6 pb-8">
+                        <View className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
+                        <Typography variant="h3" weight="bold" className="mb-6 text-center text-gray-800">Export Laporan</Typography>
+                        <View className="flex-row justify-center space-x-6">
+                            <Pressable onPress={() => handleExportPDF('preview')} className="items-center">
+                                <View className="w-16 h-16 bg-blue-50 rounded-2xl items-center justify-center mb-2">
+                                    <Eye size={28} color={themeColors.primary} />
+                                </View>
+                                <Typography variant="caption" weight="medium">Preview PDF</Typography>
                             </Pressable>
                         </View>
-
-                        <View className="flex-row gap-4 w-full">
-                            <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('preview'), 100);
-                                }}
-                                className="flex-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm shadow-slate-200 items-center active:bg-slate-50"
-                            >
-                                <View className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl items-center justify-center mb-3">
-                                    <Eye size={28} className="text-blue-600" />
-                                </View>
-                                <Typography weight="bold" className="text-slate-700">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-slate-500 text-center mt-1">Pratinjau PDF</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('download'), 100);
-                                }}
-                                className="flex-1 bg-primary p-5 rounded-2xl shadow-md shadow-primary/30 items-center active:bg-primary-dark"
-                            >
-                                <View className="w-14 h-14 bg-white/20 rounded-2xl items-center justify-center mb-3">
-                                    <Download size={28} color="white" />
-                                </View>
-                                <Typography weight="bold" className="text-white">Download</Typography>
-                                <Typography variant="caption" className="text-primary-100 text-center mt-1">Simpan File</Typography>
-                            </Pressable>
-                        </View>
-                    </Pressable>
+                    </View>
                 </Pressable>
             </Modal>
         </SafeAreaView>
     );
 }
-
-// Helper Row Component
-const Row = ({
-    label,
-    value,
-    bold,
-    small,
-    large,
-    color,
-    isNegative,
-    isDark,
-    themeColors,
-    className
-}: {
-    label: string,
-    value: number,
-    bold?: boolean,
-    small?: boolean,
-    large?: boolean,
-    color?: string,
-    isNegative?: boolean,
-    isDark?: boolean,
-    themeColors?: any,
-    className?: string
-}) => (
-    <View className={`flex-row justify-between items-center py-[2px] w-full ${className || ''}`}>
-        <Typography
-            variant={small ? 'caption' : 'body2'}
-            className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
-        >
-            {label}
-        </Typography>
-        <Typography
-            variant={large ? 'h3' : small ? 'body2' : 'body1'}
-            weight={bold ? 'bold' : 'semibold'}
-            className={`${color || (isDark ? 'text-white' : 'text-slate-800')} text-right flex-shrink-0`}
-        >
-            {isNegative && value > 0 ? `(${formatCurrency(value)})` : formatCurrency(value || 0)}
-        </Typography>
-    </View>
-);
-

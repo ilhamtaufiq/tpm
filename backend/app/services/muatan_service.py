@@ -312,6 +312,7 @@ class MuatanService:
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
                 sumber=PiutangSource.JASA_ANGKUT,
+                unit=KasBankSource.JASA_ANGKUT,
                 referensi_id=muatan.id,
                 nomor_referensi=muatan.nomor_transaksi,
                 customer_id=None,

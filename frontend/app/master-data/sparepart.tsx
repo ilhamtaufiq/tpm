@@ -1553,6 +1553,46 @@ export default function SparePartMasterScreen() {
                                         )}
                                     </View>
                                 )}
+
+                                {/* Modal Validation */}
+                                {importResult.total_modal_db !== undefined && (
+                                    <View className={`p-3 rounded-2xl border ${importResult.modal_verified ? 'bg-emerald-50 border-emerald-100' : importResult.modal_warning ? 'bg-red-50 border-red-200' : 'bg-indigo-50 border-indigo-100'}`}>
+                                        <View className="flex-row justify-between items-center mb-1">
+                                            <Typography className={`text-sm font-bold ${importResult.modal_verified ? 'text-emerald-700' : importResult.modal_warning ? 'text-red-700' : 'text-indigo-700'}`}>
+                                                {importResult.modal_verified ? '✅ Modal Terverifikasi' : importResult.modal_warning ? '⚠️ Selisih Modal' : '💰 Total Modal'}
+                                            </Typography>
+                                        </View>
+                                        <View className="flex-row justify-between items-center">
+                                            <Typography className="text-[11px] text-gray-600">Modal di Database</Typography>
+                                            <Typography weight="bold" className="text-[11px]">
+                                                Rp {Number(importResult.total_modal_db || 0).toLocaleString('id-ID')}
+                                            </Typography>
+                                        </View>
+                                        {importResult.total_fix_excel !== undefined && (
+                                            <>
+                                                <View className="flex-row justify-between items-center mt-0.5">
+                                                    <Typography className="text-[11px] text-gray-600">Total Fix (Excel)</Typography>
+                                                    <Typography weight="bold" className="text-[11px]">
+                                                        Rp {Number(importResult.total_fix_excel || 0).toLocaleString('id-ID')}
+                                                    </Typography>
+                                                </View>
+                                                {importResult.modal_diff > 0 && (
+                                                    <View className="flex-row justify-between items-center mt-0.5">
+                                                        <Typography className="text-[11px] text-red-600 font-bold">Selisih</Typography>
+                                                        <Typography weight="bold" className="text-[11px] text-red-600">
+                                                            Rp {Number(importResult.modal_diff || 0).toLocaleString('id-ID')}
+                                                        </Typography>
+                                                    </View>
+                                                )}
+                                            </>
+                                        )}
+                                        {importResult.modal_warning && (
+                                            <Typography className="text-[10px] text-red-500 mt-2 italic">
+                                                {importResult.modal_warning}
+                                            </Typography>
+                                        )}
+                                    </View>
+                                )}
                             </View>
 
                             <Button

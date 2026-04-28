@@ -372,12 +372,12 @@ class SparePartService:
     def get_stock_value(self) -> Dict[str, Any]:
         """Get total stock value."""
         # For normal items: modal = stok × harga_beli
-        # For Always Ready (999): modal = 1 × harga_beli
+        # For Always Ready (999): modal = 0 (catalog reference only, no physical stock)
         result = (
             self.db.query(
                 func.sum(
                     case(
-                        (SparePart.stok == 999, SparePart.harga_beli),
+                        (SparePart.stok == 999, 0),
                         else_=SparePart.stok * SparePart.harga_beli
                     )
                 ).label("total_value"),
@@ -552,8 +552,9 @@ class SparePartService:
         E(4): Harga Jual
         F(5): Stok
         G(6): Satuan
-        H(7): Total Modal (ignored, calculated field)
-        I(8): Always Ready (optional, true/ya/yes/1 = stok 999)
+        H(7): Total Modal (used to derive exact stok for normal items)
+        I(8): Always Ready (optional, true/ya/yes/1 = stok 999, modal=0)
+        K(10): Total Fix (validation total, read separately)
         """
         nama = str(row[1]).strip() if row[1] else None
         if not nama:
@@ -565,19 +566,21 @@ class SparePartService:
 
             stok = None
 
-            # Detect Always Ready marker first.
-            # Business rule: Always Ready parts use sentinel stok=999 but
-            # are valued as 1x harga_beli in inventory modal calculations.
+            # Detect Always Ready marker:
+            # 1. Explicit col I marker (true/ya/yes/1)
+            # 2. Stok column contains text like "Tanpa Stok"
             always_ready = False
             if len(row) > 8 and row[8] is not None:
                 ar_val = str(row[8]).strip().lower()
                 always_ready = ar_val in ('true', 'ya', 'yes', '1', 'v', '✓', 'always ready')
-            if always_ready:
-                stok = Decimal("999")
             
-            # --- TWEAK MODAL: Force stock to match Excel's "Total Modal" ---
-            # Total Modal is at column H (index 7). If it's explicitly > 0, calculate the exact stock 
-            # so the DB's stok * harga_beli perfectly matches the Excel summary.
+            # Also detect from stok column text
+            stok_raw = row[5]
+            stok_str = str(stok_raw or '').strip()
+            if not always_ready and stok_str.lower() in ('tanpa stok', 'always ready', 'ar'):
+                always_ready = True
+            
+            # --- Read Excel's "Total Modal" (col H) as source of truth ---
             excel_modal = Decimal("0")
             if len(row) > 7 and row[7]:
                 try:
@@ -585,19 +588,23 @@ class SparePartService:
                 except InvalidOperation:
                     pass
             
-            if stok is None and excel_modal > 0 and harga_beli > 0:
-                stok = excel_modal / harga_beli
-
-            # --- FALLBACK: Use actual 'stok' column or Always Ready ---
-            if stok is None:
-                stok_raw = row[5]
-                if stok_raw is not None:
-                    stok_str = str(stok_raw).strip()
+            if always_ready:
+                if excel_modal > 0 and harga_beli > 0:
+                    # AR item WITH physical stock: derive actual stok from modal
+                    # DB will store real stok so valuation = stok × harga_beli = excel_modal
+                    stok = excel_modal / harga_beli
+                else:
+                    # AR item catalog only: sentinel stok=999, modal=0 in valuation
+                    stok = Decimal("999")
+            else:
+                # Normal item: use Total Modal to derive exact stok if available
+                if excel_modal > 0 and harga_beli > 0:
+                    stok = excel_modal / harga_beli
+                elif stok_raw is not None:
                     try:
                         stok = Decimal(stok_str) if stok_str else Decimal("0")
                     except InvalidOperation:
-                        # Text like "Tanpa Stok" or completely invalid string
-                        stok = Decimal("999")
+                        stok = Decimal("0")
                 else:
                     stok = Decimal("0")
             
@@ -706,6 +713,17 @@ class SparePartService:
         # Auto-detect format
         detected_format = self._detect_format(sheet)
 
+        # Read Total Fix from column K (index 10) if present (stok_format)
+        total_fix_excel = None
+        if detected_format == 'stok_format':
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if len(row) > 10 and row[10] is not None:
+                    try:
+                        total_fix_excel = float(row[10])
+                    except (ValueError, TypeError):
+                        pass
+                    break
+
         results = {
             "total": 0,
             "success": 0,
@@ -807,6 +825,26 @@ class SparePartService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Import gagal: {str(e)}"
             )
+        
+        # ===================================================================
+        # PHASE 3: Post-import validation — compare DB modal vs Total Fix
+        # ===================================================================
+        stock_value = self.get_stock_value()
+        db_total_modal = stock_value["total_value"]
+        results["total_modal_db"] = db_total_modal
+        
+        if total_fix_excel is not None:
+            results["total_fix_excel"] = total_fix_excel
+            diff = abs(db_total_modal - total_fix_excel)
+            results["modal_diff"] = diff
+            if diff >= 1:
+                results["modal_warning"] = (
+                    f"⚠️ Total modal di database (Rp {db_total_modal:,.0f}) "
+                    f"tidak sesuai dengan Total Fix di Excel (Rp {total_fix_excel:,.0f}). "
+                    f"Selisih: Rp {diff:,.0f}"
+                )
+            else:
+                results["modal_verified"] = True
         
         return results
 

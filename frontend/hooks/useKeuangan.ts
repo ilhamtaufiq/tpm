@@ -227,6 +227,15 @@ export const useNeracaReport = (params?: any, options?: { refetchInterval?: numb
         ...options
     });
 };
+
+export const useValidateReports = (params?: any, options?: { refetchInterval?: number }) => {
+    return useQuery({
+        queryKey: ['validate_reports', params],
+        queryFn: () => keuanganService.validateReports(params),
+        enabled: false, // Only run on-demand
+        ...options
+    });
+};
 // =============================================
 // INVESTOR DISBURSEMENT
 // =============================================

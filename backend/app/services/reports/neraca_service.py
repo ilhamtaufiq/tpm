@@ -14,7 +14,8 @@ from app.utils.constants import (
     PiutangSource,
     HutangSource,
     KasBankSource,
-    KasBankType
+    KasBankType,
+    PaymentStatus
 )
 
 class NeracaService(BaseReportService):
@@ -63,10 +64,17 @@ class NeracaService(BaseReportService):
         total_cash = sum(balances.values())
 
         # Piutang breakdown - Use values from hist for consistency
-        raw_hutang = hist.get("raw_summaries", {}).get("hutang", {})
+        raw_piutang = hist.get("raw_summaries", {}).get("piutang", {})
+        piutang_bengkel = raw_piutang.get("breakdown", {}).get("bengkel", 0)
+        piutang_ja = raw_piutang.get("breakdown", {}).get("ja", 0)
+        piutang_mobil = raw_piutang.get("breakdown", {}).get("mobil", 0)
+        piutang_karyawan = raw_piutang.get("breakdown", {}).get("kasbon", 0)
+        piutang_lainnya = raw_piutang.get("breakdown", {}).get("lainnya", 0)
+        total_piutang = raw_piutang.get("total", 0)
         
         # Assets from consolidated breakdown
-        total_stock_mobil = hist["assets"]["persediaan_mobil"]
+        raw_stock_mobil = hist["assets"]["persediaan_mobil"]
+        total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         total_stock_parts = hist["assets"]["persediaan_part"]
         total_fixed_assets = hist["assets"]["tetap"]
         
@@ -76,109 +84,138 @@ class NeracaService(BaseReportService):
             Aset.status == AssetStatus.AKTIF
         ).all()
         
-        # Recalculate Piutang sum from DB for specific breakdown displayed in Balance Sheet
-        # Use 'unit' field if possible, fallback to 'sumber'
-        def get_piutang_sum_by_unit(unit: KasBankSource):
-            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.unit == unit,
-                PiutangUsaha.tanggal <= as_of_date,
-                PiutangUsaha.status != PiutangStatus.LUNAS
-            ).scalar() or 0)
-
-        # Legacy sources (for records before migration)
-        def get_piutang_sum_by_source(source: PiutangSource):
-            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber == source,
-                PiutangUsaha.unit.is_(None), # Only legacy
-                PiutangUsaha.tanggal <= as_of_date,
-                PiutangUsaha.status != PiutangStatus.LUNAS
-            ).scalar() or 0)
-
-        # Unit-specific Piutang (Total = Unit Source + Records assigned to unit)
-        piutang_bengkel = get_piutang_sum_by_unit(KasBankSource.BENGKEL) + get_piutang_sum_by_source(PiutangSource.BENGKEL)
-        piutang_ja = get_piutang_sum_by_unit(KasBankSource.JASA_ANGKUT) + get_piutang_sum_by_source(PiutangSource.JASA_ANGKUT)
-        piutang_mobil = get_piutang_sum_by_unit(KasBankSource.JUAL_BELI_MOBIL) + get_piutang_sum_by_source(PiutangSource.JUAL_BELI_MOBIL)
-        
-        # Kasbon and Others without specific unit mapping will use source only
-        piutang_karyawan = get_piutang_sum_by_source(PiutangSource.KASBON_KARYAWAN)
-        piutang_lainnya = get_piutang_sum_by_source(PiutangSource.LAINNYA)
-        
-        # Sum all for total assets
-        total_piutang = piutang_bengkel + piutang_ja + piutang_mobil + piutang_karyawan + piutang_lainnya
-        
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
 
-        # 2. LIABILITIES
-        def get_hutang_sum_by_unit(unit: KasBankSource):
-            return float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
-                HutangUsaha.unit == unit,
-                HutangUsaha.tanggal <= as_of_date,
-                HutangUsaha.status != HutangStatus.LUNAS
-            ).scalar() or 0)
-
-        def get_hutang_sum_by_source(source: HutangSource):
-            return float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
-                HutangUsaha.sumber == source,
-                HutangUsaha.unit.is_(None),
-                HutangUsaha.tanggal <= as_of_date,
-                HutangUsaha.status != HutangStatus.LUNAS
-            ).scalar() or 0)
-
-        hutang_part = get_hutang_sum_by_source(HutangSource.PEMBELIAN_PART)
-        hutang_mobil = get_hutang_sum_by_source(HutangSource.PEMBELIAN_MOBIL) + get_hutang_sum_by_source(HutangSource.JUAL_BELI_MOBIL)
-        hutang_lainnya = get_hutang_sum_by_source(HutangSource.LAINNYA)
+        # 2. LIABILITIES - Use values from hist for consistency
+        raw_hutang = hist.get("raw_summaries", {}).get("hutang", {})
+        hutang_part = raw_hutang.get("breakdown", {}).get("bengkel", 0)
+        hutang_mobil = raw_hutang.get("breakdown", {}).get("mobil", 0)
+        hutang_investor = raw_hutang.get("breakdown", {}).get("investor", 0)
+        hutang_lainnya = raw_hutang.get("breakdown", {}).get("lainnya", 0)
         
-        # Unit specific hutang (e.g. from manual entry)
-        hutang_bengkel = get_hutang_sum_by_unit(KasBankSource.BENGKEL)
-        hutang_ja = get_hutang_sum_by_unit(KasBankSource.JASA_ANGKUT)
-        hutang_mobil_unit = get_hutang_sum_by_unit(KasBankSource.JUAL_BELI_MOBIL)
+        # Combine JA hutang (Unit JA + Lainnya assigned to JA)
+        hutang_ja = raw_hutang.get("breakdown", {}).get("ja", 0)
+        
+        total_liabilities = raw_hutang.get("total", 0)
 
-        # Hutang Investor (Laba yang belum dicairkan)
-        hutang_investor = float(self.db.query(
-            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
-        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
-            TransaksiPenjualanMobil.tanggal <= as_of_date,
-            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
-        ).scalar() or 0)
-
-        total_liabilities = hutang_part + hutang_mobil + hutang_lainnya + hutang_investor + hutang_bengkel + hutang_ja + hutang_mobil_unit
-
-        # 3. EQUITY & PROFIT — Snapshot Identity Approach
-        # Balance Sheet Identity: Assets = Liabilities + Equity
-        # Therefore: Equity = Assets - Liabilities (always balanced by construction)
-        total_equity = total_assets - total_liabilities
+        # 3. EQUITY & PROFIT — Bottom-Up Component Approach
+        # ═══════════════════════════════════════════════════════════════
+        # Instead of forcing equity = assets - liabilities (which hides
+        # errors), we compute equity from its COMPONENTS bottom-up,
+        # then compare against the balance sheet identity to find the
+        # real selisih.
+        # ═══════════════════════════════════════════════════════════════
         
         # We reuse 'hist' fetched at the start for consistent consolidated profit logic
         prive_total = float(hist.get("prive_global", 0))
         
-        # Net Consolidated Profit for the company
+        # Net Consolidated Profit for the company (now includes gaji deduction from base.py)
         retained_earnings = float(hist.get("retained_earnings", 0))
         
-        # Modal Setoran (Total cash inflow from MODAL source + Official injections)
-        setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            or_(
-                KasBank.sumber == KasBankSource.MODAL,
-                KasBank.keterangan.ilike("%Terima Dana dari Akun Utama%")
-            ),
+        # Laba bersih (after prive) for cross-validation with Laba Rugi
+        laba_bersih = float(hist.get("laba_bersih", retained_earnings - prive_total))
+        
+        # Modal Setoran Kas (Total cash inflow from MODAL source)
+        setoran_modal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.sumber == KasBankSource.MODAL,
             KasBank.tipe == KasBankType.MASUK,
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         
         # Non-cash capital tied in assets (shown for transparency in the equity breakdown)
-        # These values represent capital deployed into physical/non-cash assets.
         modal_persediaan = total_stock_parts
         modal_stok_mobil = total_stock_mobil
         modal_aset_tetap = total_fixed_assets
         
-        # The equity breakdown shows WHERE the capital is held:
-        # - Cash component: setoran_modal + retained_earnings - prive = what SHOULD be in cash
-        # - Non-cash component: inventory + fixed assets = what's tied up in physical property
-        # The total always equals total_equity by the balance sheet identity.
-        # No "selisih" needed because this is a snapshot, not a flow reconciliation.
-        equity_per_komponen = setoran_modal + retained_earnings - prive_total
+        # ═══════════════════════════════════════════════════════════════
+        # MODAL NON-KAS (Auto-balancing for imported/existing assets)
+        # ═══════════════════════════════════════════════════════════════
         
-        total_pasiva = total_liabilities + total_equity
+        # Accumulate Historical HPP because sold items reduce current inventory
+        # If we don't add them back, Setoran Modal Non-Kas will artificially drop on every sale
+        from app.models.bengkel import TransaksiPenjualanBengkel, DetailTransaksiSpareParts
+        akumulasi_hpp_parts = float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
+            TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
+        ).filter(
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal <= as_of_date
+        ).scalar() or 0)
         
+        akumulasi_hpp_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+            Mobil.status == CarStatus.TERJUAL,
+            Mobil.tanggal_terjual <= as_of_date
+        ).scalar() or 0)
+        
+        # Pengeluaran perbaikan/prep untuk mobil yang sudah laku (karena ini bagian dari HPP mobil juga)
+        from app.models.bengkel import PengeluaranBengkel
+        akumulasi_hpp_mobil_prep = float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).join(Mobil).filter(
+            PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+            Mobil.status == CarStatus.TERJUAL,
+            Mobil.tanggal_terjual <= as_of_date,
+            PengeluaranBengkel.tanggal <= as_of_date
+        ).scalar() or 0)
+
+        # Total pengeluaran kas untuk pembelian aset (part purchases + asset purchases)
+        from app.models.bengkel import PembelianSparePart
+        pembelian_part_kas = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal <= as_of_date
+        ).scalar() or 0)
+        
+        # Aset tetap yang dibeli via KasBank (pengeluaran untuk beli aset)
+        pembelian_aset_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.ASET,
+            KasBank.referensi_id.is_not(None),
+            KasBank.tanggal <= as_of_date
+        ).scalar() or 0)
+        
+        # Pembelian mobil via KasBank
+        pembelian_mobil_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
+            ~KasBank.keterangan.ilike("Transfer %"),
+            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            KasBank.tanggal <= as_of_date
+        ).scalar() or 0)
+        # Hutang yang terbentuk untuk pembelian aset (Mobil)
+        # Note: Pembelian_part_kas menggunakan grand_total yang sudah mencakup cash & hutang,
+        # jadi kita tidak perlu menambahkan HutangSource.PEMBELIAN_PART lagi.
+        from app.models.keuangan import HutangUsaha
+        from app.utils.constants import HutangSource
+        pembelian_hutang = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.tanggal <= as_of_date
+        ).scalar() or 0)
+        
+        # Non-cash capital = (current assets + sold assets) - recorded cash purchases - recorded hutang purchases
+        total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap
+        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang
+        modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
+        
+        # Combined setoran modal = kas setoran + non-kas (auto-balanced)
+        setoran_modal = setoran_modal_kas + modal_non_kas
+        
+        # ═══════════════════════════════════════════════════════════════
+        # BOTTOM-UP EQUITY: Compute from components
+        # Formula: Setoran Modal (Kas + Non-Kas) + Laba Ditahan - Prive
+        # This MUST match (Assets - Liabilities) if accounting is correct
+        # ═══════════════════════════════════════════════════════════════
+        equity_from_components = setoran_modal + retained_earnings - prive_total
+        
+        # IDENTITY-BASED EQUITY: From balance sheet identity
+        equity_from_identity = total_assets - total_liabilities
+        
+        # The REAL selisih: difference between bottom-up and identity approaches
+        # If accounting is perfect, this should be 0
+        selisih_modal = equity_from_components - equity_from_identity
+        
+        # Use bottom-up equity as total_modal (transparent, not forced)
+        total_modal = equity_from_components
+        
+        # Total Pasiva uses bottom-up equity (may NOT equal total_aktiva if there's an error)
+        total_pasiva = total_liabilities + total_modal
+        
+        # Balance check: compare total aktiva vs total pasiva (bottom-up)
         report_selisih = total_assets - total_pasiva
         is_balanced = abs(report_selisih) < 100 
 
@@ -216,17 +253,30 @@ class NeracaService(BaseReportService):
                 "total_hutang": total_liabilities
             },
             "modal": {
+                "setoran_modal_kas": setoran_modal_kas,
+                "modal_non_kas": modal_non_kas,
                 "setoran_modal": setoran_modal,
                 "laba_ditahan": retained_earnings,
                 "prive": prive_total,
                 "modal_persediaan": modal_persediaan,
                 "modal_stok_mobil": modal_stok_mobil,
                 "modal_aset_tetap": modal_aset_tetap,
-                "selisih_modal": 0,
-                "modal_komponen": total_equity,
-                "total_modal": total_equity
+                "selisih_modal": selisih_modal,
+                "modal_komponen": equity_from_components,
+                "equity_identity": equity_from_identity,
+                "total_modal": total_modal
             },
             "total_pasiva": total_pasiva,
             "selisih": report_selisih,
-            "is_balanced": is_balanced
+            "is_balanced": is_balanced,
+            "cross_validation": {
+                "laba_bersih_from_base": laba_bersih,
+                "retained_earnings": retained_earnings,
+                "prive": prive_total,
+                "equity_from_components": equity_from_components,
+                "equity_from_identity": equity_from_identity,
+                "selisih_equity": selisih_modal,
+                "kas_total": total_cash,
+                "modal_non_kas": modal_non_kas
+            }
         }

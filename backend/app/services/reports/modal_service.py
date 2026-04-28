@@ -2,11 +2,11 @@ from app.utils.constants import AssetStatus
 from app.utils.constants import CarStatus
 from datetime import date, timedelta
 from typing import Dict, Any
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from app.services.reports.base import BaseReportService
-from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha
+from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha, PembayaranHutang, PembayaranPiutang
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
-from app.models.bengkel import TransaksiPenjualanBengkel
+from app.models.bengkel import TransaksiPenjualanBengkel, PembelianSparePart, DetailTransaksiSpareParts
 from app.utils.constants import (
     KasBankSource, 
     KasBankType, 
@@ -16,7 +16,8 @@ from app.utils.constants import (
     HutangStatus,
     InvestorDisbursementStatus,
     OwnershipType,
-    PaymentStatus
+    PaymentStatus,
+    PaymentMethod
 )
 class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
@@ -40,28 +41,44 @@ class ModalService(BaseReportService):
         start_hist = self.get_unit_financial_breakdown(date(2024, 1, 1), yesterday)
         start_cash = float(start_balances.get("total_all", 0))
         start_stok_part = float(start_hist["assets"].get("persediaan_part", 0))
-        start_stok_mobil = float(start_hist["assets"].get("persediaan_mobil", 0)) - float(start_hist["assets"].get("persediaan_mobil_internal_component", 0))
+        raw_start_m_stock = start_hist["assets"].get("persediaan_mobil", 0)
+        start_stok_mobil = float(raw_start_m_stock.get("total", 0)) if isinstance(raw_start_m_stock, dict) else float(raw_start_m_stock)
         start_aset_tetap = float(start_hist["assets"].get("tetap", 0))
-        q_start_hutang = self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+        # Opening debt should be the balance as of yesterday
+        # Opening Debt = Sum(Nominal created before today) - Sum(Payments paid before today)
+        total_nominal_awal = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
             HutangUsaha.status != PaymentStatus.BATAL,
             HutangUsaha.tanggal <= yesterday
-        ).scalar() or 0
-        start_hutang = float(q_start_hutang)
+        ).scalar() or 0)
+        
+        total_paid_awal = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
+            HutangUsaha.status != PaymentStatus.BATAL,
+            HutangUsaha.tanggal <= yesterday,
+            PembayaranHutang.tanggal <= yesterday
+        ).scalar() or 0)
+        
+        start_hutang = total_nominal_awal - total_paid_awal
+        
+        # Opening piutang as of yesterday
+        total_piutang_awal = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.tanggal <= yesterday
+        ).scalar() or 0)
+        
+        total_recv_awal = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.tanggal <= yesterday,
+            PembayaranPiutang.tanggal <= yesterday
+        ).scalar() or 0)
+        
+        start_piutang = total_piutang_awal - total_recv_awal
 
         
-        # Fallback: If opening stoks are 0 but current stoks are large, and it's a "Setup Phase" report,
-        # we treat them as initial capital if they don't have a corresponding purchase record in this period.
-        # This resolves the ~2.2M discrepancy during first-month setup.
-        if start_stok_mobil == 0 and float(data["assets"].get("persediaan_mobil", 0)) > 0:
-             if float(m.get("purchase_hpp", 0)) == 0:
-                  start_stok_mobil = float(data["assets"].get("persediaan_mobil", 0))
-
-        if start_aset_tetap == 0 and float(data["assets"].get("tetap", 0)) > 0:
-             if float(data["raw_summaries"]["pengeluaran"]["per_unit"].get("umum", 0)) < float(data["assets"].get("tetap", 0)):
-                  start_aset_tetap = float(data["assets"].get("tetap", 0))
+        # Note: We rely strictly on snapshots for opening assets. 
+        # Manual fallbacks are removed to prevent double-counting when assets are bought today.
 
         # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
-        modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap) - start_hutang
+        modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap + start_piutang) - start_hutang
         
         # Modal Masuk (Setoran Baru in this period)
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -71,35 +88,163 @@ class ModalService(BaseReportService):
             KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
-        # Calculate GROSS Profit for the current period (Section A breakdown)
-        laba_bengkel = float(b.get("laba_kotor", 0))
-        laba_mobil_gross = float(m.get("total_laba_kotor", 0))
-        laba_ja = float(ja.get("revenue_gross", 0)) or float(ja.get("revenue_tpm", 0))
+        # Get Current Period Financial Breakdown (Source of Truth for unit performances)
+        data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
+        b = data["units"].get("bengkel", {})
+        m = data["units"].get("mobil", {})
+        ja = data["units"].get("jasa_angkut", {})
+
+        # Calculate period profit using retained_earnings from BaseReportService (Source of Truth)
+        # This correctly accounts for: internal elimination, trip costs, all overhead deductions
+        period_profit_sot = float(data.get("retained_earnings", 0))
         
-        # FIX: Use internal PROFIT (laba_kotor) for elimination, not internal REVENUE (grand_total).
-        # The base service's internal_elimination uses grand_total which over-subtracts by the
-        # parts HPP amount, because bengkel's laba_kotor already nets out HPP.
-        # Example: bengkel charges 160k for repair (HPP=50k, profit=110k).
-        #   - bengkel_laba includes +110k profit
-        #   - Old code subtracts 160k (revenue) → net = -50k (wrong, should be 0)
-        #   - New code subtracts 110k (profit) → net = 0 (correct)
-        internal_cats = ['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut', 'bengkel']
-        internal_profit = float(self.db.query(func.sum(TransaksiPenjualanBengkel.laba_kotor)).filter(
-            TransaksiPenjualanBengkel.kategori.in_(internal_cats),
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
-            TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
-            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
-        ).scalar() or 0)
-        
-        period_profit = (laba_bengkel + laba_mobil_gross + laba_ja) - internal_profit
+        # Unit-level breakdown for display only (Info section)
+        laba_bengkel = float(b.get("laba_kotor", 0)) - float(b.get("total_expenses", 0)) - float(b.get("common_expenses", 0))
+        laba_mobil_net = float(m.get("total_laba_kotor", 0)) - float(m.get("overhead", 0))
+        # JA net profit = revenue - trip_costs - repairs - overhead - armada_ops - armada_ops_ledger
+        laba_ja = float(ja.get("revenue_tpm", 0)) - float(ja.get("trip_costs", 0)) - float(ja.get("repairs", 0)) - float(ja.get("overhead", 0)) - float(ja.get("armada_ops", 0)) - float(ja.get("armada_ops_ledger", 0))
+        laba_bersih_unit = period_profit_sot  # Use the consolidated figure
         
         # Snapshot inventory/fixed assets that represent capital tied in non-cash assets.
         # These values are also shown in Section A breakdown and must be capitalized
         # so Section B (which lists the same assets as non-cash components) does not
         # create artificial negative theoretical modal.
         persediaan_part = float(data["assets"].get("persediaan_part", 0))
-        persediaan_mobil = float(data["assets"].get("persediaan_mobil", 0))
+        # Handle both old float and new dict format for backward compatibility during migration
+        raw_m_stock = data["assets"].get("persediaan_mobil", 0)
+        if isinstance(raw_m_stock, dict):
+            persediaan_mobil = float(raw_m_stock.get("total", 0))
+            persediaan_mobil_prep = float(raw_m_stock.get("biaya_persiapan", 0))
+            persediaan_mobil_price = float(raw_m_stock.get("harga_beli", 0))
+            persediaan_mobil_ws_int = float(raw_m_stock.get("perbaikan_internal", 0))
+            persediaan_mobil_ws_ext = float(raw_m_stock.get("perbaikan_external", 0))
+        else:
+            persediaan_mobil = float(raw_m_stock)
+            persediaan_mobil_prep = 0
+            persediaan_mobil_price = persediaan_mobil
+            persediaan_mobil_ws_int = 0
+            persediaan_mobil_ws_ext = 0
+            
         aset_tetap = float(data["assets"].get("tetap", 0))
+
+        # ══════════════════════════════════════════════════════════════
+        # MODAL NON-KAS: Period Delta
+        # Because modal_awal already includes cumulative non-cash assets,
+        # we only want to add the NEW non-cash assets introduced in this period.
+        # ══════════════════════════════════════════════════════════════
+        def get_modal_non_kas(as_of_date: date, assets_total: float) -> float:
+            from app.models.bengkel import PembelianSparePart
+            p_part = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+                PembelianSparePart.tanggal <= as_of_date
+            ).scalar() or 0)
+            # Strict matching: Only subtract cash payments that are explicitly linked to an asset ID
+            p_aset = float(self.db.query(func.sum(KasBank.nominal)).filter(
+                KasBank.tipe == KasBankType.KELUAR, 
+                KasBank.sumber == KasBankSource.ASET, 
+                KasBank.referensi_id.is_not(None),
+                KasBank.tanggal <= as_of_date
+            ).scalar() or 0)
+            p_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
+                KasBank.tipe == KasBankType.KELUAR, 
+                KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
+                ~KasBank.keterangan.ilike("Transfer %"),
+                ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+                KasBank.tanggal <= as_of_date
+            ).scalar() or 0)
+            
+            return max(0, assets_total - (p_part + p_aset + p_mobil))
+
+        from app.models.bengkel import TransaksiPenjualanBengkel, DetailTransaksiSpareParts
+        
+        # Helper to get accumulated HPP up to a specific date
+        def get_akumulasi_hpp_parts(d: date) -> float:
+            return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
+                TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
+            ).filter(
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanBengkel.tanggal <= d
+            ).scalar() or 0)
+            
+        def get_akumulasi_hpp_mobil(d: date) -> float:
+            from app.models.mobil import Mobil
+            return float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.tanggal_terjual <= d
+            ).scalar() or 0)
+            
+        def get_akumulasi_hpp_mobil_prep(d: date) -> float:
+            from app.models.bengkel import PengeluaranBengkel
+            from app.models.mobil import Mobil
+            return float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).join(Mobil).filter(
+                PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.tanggal_terjual <= d,
+                PengeluaranBengkel.tanggal <= d
+            ).scalar() or 0)
+            
+        # Snapshot Start (Yesterday)
+        p_aset_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR, 
+            KasBank.sumber == KasBankSource.ASET, 
+            KasBank.referensi_id.is_not(None),
+            KasBank.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_aset_tetap_start = max(0, start_aset_tetap - p_aset_start)
+
+        p_part_start = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_stok_part_start = max(0, (start_stok_part + get_akumulasi_hpp_parts(yesterday)) - p_part_start)
+
+        p_mobil_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR, 
+            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
+            ~KasBank.keterangan.ilike("Transfer %"),
+            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            KasBank.tanggal <= yesterday
+        ).scalar() or 0)
+        h_mobil_start = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_stok_mobil_start = max(0, (start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)) - (p_mobil_start + h_mobil_start))
+
+        # Snapshot End (Today)
+        p_aset_end = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR, 
+            KasBank.sumber == KasBankSource.ASET, 
+            KasBank.referensi_id.is_not(None),
+            KasBank.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        modal_aset_tetap_end = max(0, aset_tetap - p_aset_end)
+
+        p_part_end = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        modal_stok_part_end = max(0, (persediaan_part + get_akumulasi_hpp_parts(tanggal_sampai)) - p_part_end)
+
+        p_mobil_end = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR, 
+            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
+            ~KasBank.keterangan.ilike("Transfer %"),
+            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            KasBank.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        h_mobil_end = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        modal_stok_mobil_end = max(0, (persediaan_mobil + get_akumulasi_hpp_mobil(tanggal_sampai) + get_akumulasi_hpp_mobil_prep(tanggal_sampai)) - (p_mobil_end + h_mobil_end))
+
+        # The Change (Penambahan) is the increase during the period
+        modal_aset_tetap_delta = max(0, modal_aset_tetap_end - modal_aset_tetap_start)
+        modal_stok_part_delta = max(0, modal_stok_part_end - modal_stok_part_start)
+        modal_stok_mobil_delta = max(0, modal_stok_mobil_end - modal_stok_mobil_start)
+
+        total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta + modal_stok_mobil_delta
+        
+        # Period Profit = Accrual Profit (All units)
+        period_profit = laba_bersih_unit
         
         hpp_bengkel_val = float(b.get("total_hpp", 0))
         # HPP Mobil = purchase price + prep cost + bengkel repairs for SOLD cars only.
@@ -113,265 +258,196 @@ class ModalService(BaseReportService):
         # guaranteeing A - B + E = actual cash (penyesuaian = 0) by construction.
         
         # Compute actual cash at end of period (needed for Section D)
-        end_balances = {}
+        # Compute actual cash at end of period (for Info Aset)
         end_total_cash = 0
-        cash_val = 0
-        transfer_val = 0
-        unit_details = {}
-        
         for jenis in KasBankJenis:
             last_kb = self.db.query(KasBank.saldo_sesudah).filter(
                 KasBank.jenis == jenis,
                 KasBank.tanggal <= tanggal_sampai
             ).order_by(KasBank.id.desc()).first()
             val = float(last_kb[0] if last_kb else 0)
-            
-            name = jenis.name
-            end_balances[name] = val
             end_total_cash += val
-            
-            # Categorize
-            if name in ["KAS_UTAMA", "CASH"]:
-                cash_val += val
-            elif "BANK" in name:
-                transfer_val += val
-            elif "KAS_UNIT" in name:
-                cash_val += val  # Included in cash for Section D display "Tunai & Brankas Unit"
-                unit_details[name.lower()] = val
-            else:
-                if name.startswith("KAS"):
-                    cash_val += val
-                else:
-                    transfer_val += val
 
-
-        # Section B: Piutang & Aset — query from PiutangUsaha table partitioned by source
-        def _piutang_saldo(*sumber_list, internal_jb_mobil: str = "all") -> float:
-            """Sum sisa_piutang for given sources that are not fully paid.
-            Excludes internal unit-to-unit receivables to maintain global report balance.
-            """
-            query = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber.in_(sumber_list),
-                PiutangUsaha.status != PiutangStatus.LUNAS,
+        # Calculate Total Piutang (for Info Aset)
+        def _piutang_saldo_unit(unit: KasBankSource, *sumber_list, internal_jb_mobil: str = "all") -> float:
+            q_unit = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.unit == unit, PiutangUsaha.status != PiutangStatus.LUNAS
             )
-            # Split receivables for JUAL_BELI_MOBIL:
-            # - internal_jb_mobil="only_internal": receivable from internal bengkel cost to car stock (JB MOBIL - <plat>)
-            # - internal_jb_mobil="exclude_internal": customer receivables only
-            if internal_jb_mobil == "only_internal":
-                query = query.filter(PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
-            elif internal_jb_mobil == "exclude_internal":
-                query = query.filter(
-                    ~PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"),
-                    ~PiutangUsaha.nama_debitur.ilike("%UNIT%")
-                )
-            return float(query.scalar() or 0)
+            q_legacy = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.sumber.in_(sumber_list), PiutangUsaha.unit.is_(None), PiutangUsaha.status != PiutangStatus.LUNAS
+            )
+            if unit == KasBankSource.JUAL_BELI_MOBIL:
+                if internal_jb_mobil == "only_internal":
+                    q_unit = q_unit.filter(PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
+                    q_legacy = q_legacy.filter(PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
+                elif internal_jb_mobil == "exclude_internal":
+                    q_unit = q_unit.filter(~PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
+                    q_legacy = q_legacy.filter(~PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
+            return float(q_unit.scalar() or 0) + float(q_legacy.scalar() or 0)
 
-        # Section B: Non-Cash Assets (Stock + Fixed Assets)
-        # We subtract the internal repair component from stock value because internal work
-        # is neutral to the group's cash capital until sold.
-        persediaan_mobil_net = persediaan_mobil - float(data["assets"].get("persediaan_mobil_internal_component", 0))
-
-        section_b = {
-            "piutang_usaha": _piutang_saldo(PiutangSource.BENGKEL, internal_jb_mobil="exclude_internal"),
-            # Credit sales to external customers.
-            "piutang_mobil": _piutang_saldo(PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="exclude_internal"),
-            # Internal bengkel costs for JB Mobil: excluded from group capital
-            # to avoid double-counting with stock value and internal revenue elimination.
-            "piutang_part_mobil": 0,
-            "piutang_jasa_angkut": _piutang_saldo(PiutangSource.JASA_ANGKUT),
-            "piutang_karyawan": _piutang_saldo(PiutangSource.KASBON_KARYAWAN),
-            "piutang_lainnya": _piutang_saldo(PiutangSource.LAINNYA),
-            "stok_part": data["assets"]["persediaan_part"],
-            "stok_mobil": persediaan_mobil_net,
-            "aset_tetap": data["assets"]["tetap"],
-        }
-        
-        # Calculate Total Section B (Cash is not in B, only receivables and stock)
-        total_b = sum([v for k, v in section_b.items() if isinstance(v, (int, float))])
-        section_b["total_b"] = total_b
-
-        # Section C: Pengurang
-        # 1. Total real cash out today (Capital + Profit)
-        real_payouts = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.tanggal >= tanggal_dari,
-            KasBank.tanggal <= tanggal_sampai,
-            KasBank.keterangan.like("%Pencairan%")
-        ).scalar() or 0)
-        
-        # 2. Pending accrual for units sold today but NOT yet paid
-        pending_accrual = float(self.db.query(
-            func.sum(TransaksiPenjualanMobil.laba_investor)
-        ).filter(
-            TransaksiPenjualanMobil.tanggal >= tanggal_dari,
-            TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
-            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
-        ).scalar() or 0)
-
-        section_c = {
-            "pembelian_part": {
-                "total": data["raw_summaries"]["pembelian_part"].get("total_nilai", 0),
-                "cash": data["raw_summaries"]["pembelian_part"].get("total_nilai", 0) - data["raw_summaries"]["pembelian_part"].get("belum_lunas_nilai", 0),
-                "transfer": 0,
-                "accrued": data["raw_summaries"]["pembelian_part"].get("belum_lunas_nilai", 0),
-            },
-            "pembelian_mobil": {
-                "total": m["purchase_stock_period"],
-                "cash": m["purchase_stock_period"] - m["purchase_stock_unpaid"],
-                "transfer": 0,
-                "accrued": m["purchase_stock_unpaid"],
-            },
-            "pengembalian_investor": {
-                "total": real_payouts + pending_accrual,
-                "cash": real_payouts,
-                "transfer": 0,
-                "accrued": pending_accrual
-            },
-            "operasional": (
-                b["total_expenses"] + b["common_expenses"] + 
-                ja["trip_costs"] + ja["armada_ops_ledger"] + ja["overhead"] +
-                m["overhead"] + 
-                data["raw_summaries"].get("admin_fees_unrecorded", 0) + 
-                data["raw_summaries"].get("ja_untracked_gap", 0)
-            ),
-            "operasional_unit_details": {
-                "umum": b["common_expenses"] + data["raw_summaries"].get("admin_fees_unrecorded", 0),
-                "bengkel": b["total_expenses"],
-                "mobil": m["overhead"],
-                "jasa_angkut": ja["overhead"] + data["raw_summaries"].get("ja_untracked_gap", 0),
-                "mobil_bengkel": 0,  # internal repairs are eliminated from A and thus excluded from C
-                "jasa_angkut_bengkel": 0, # internal repairs are eliminated from A and thus excluded from C
-                "mobil_prep": m.get("prep_total", 0),
-                "jasa_angkut_detailed_breakdown": self._get_ja_breakdown(
-                    data["raw_summaries"]["pengeluaran"].get("jasa_angkut_armada", {}),
-                    data["raw_summaries"]["muatan"]
-                )
-            },
-            "gaji": b["gaji"],
-            "lembur": float(data["raw_summaries"]["gaji"].get("total_lembur", 0)),
-            "prive": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("prive", {}).get("total", 0),
-            "kasbon_karyawan": data["raw_summaries"]["pengeluaran"]["per_kategori"].get("kasbon", {}).get("total", 0) or data["raw_summaries"]["pengeluaran"]["per_kategori"].get("kasbon_karyawan", {}).get("total", 0),
-            "total_c": 0,
-            "reversals": float(self.db.query(func.sum(KasBank.nominal)).filter(
-                KasBank.tipe == KasBankType.KELUAR,
-                KasBank.tanggal >= tanggal_dari,
-                KasBank.tanggal <= tanggal_sampai,
-                KasBank.keterangan.ilike("%[VOID]%")
+        def _piutang_saldo_source(source: PiutangSource) -> float:
+            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.sumber == source, PiutangUsaha.status != PiutangStatus.LUNAS
             ).scalar() or 0)
-        }
-        
-        section_c["total_c"] = (
-            # Use total values for purchases as Section E (Hutang) offsets the unpaid portion.
-            # This ensures credit purchases are neutral in the theoretical cash pool until paid.
-            section_c["pembelian_part"]["total"] +
-            section_c["pembelian_mobil"]["total"] +
-            section_c["operasional_unit_details"]["mobil_prep"] +
-            section_c["pengembalian_investor"]["total"] +
-            section_c["operasional"] +
-            section_c["gaji"] +
-            section_c["lembur"] +
-            section_c["prive"] +
-            section_c["kasbon_karyawan"] +
-            section_c["reversals"]
+
+        total_piutang = (
+            _piutang_saldo_unit(KasBankSource.BENGKEL, PiutangSource.BENGKEL, internal_jb_mobil="exclude_internal") +
+            _piutang_saldo_unit(KasBankSource.JUAL_BELI_MOBIL, PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="exclude_internal") +
+            _piutang_saldo_unit(KasBankSource.JASA_ANGKUT, PiutangSource.JASA_ANGKUT) +
+            _piutang_saldo_source(PiutangSource.KASBON_KARYAWAN) +
+            _piutang_saldo_source(PiutangSource.LAINNYA)
         )
 
-        # Note: total_a is now snapshot-based, so equity_loss_c is NOT subtracted.
-        # The snapshot already reflects the reduced cash from expenses.
-        # equity_loss_c is kept for display/breakdown purposes only.
-        equity_loss_c = (
-            section_c["operasional"] + 
-            section_c["gaji"] + 
-            section_c["lembur"] + 
-            section_c["prive"] + 
-            section_c["kasbon_karyawan"] + 
-            section_c["reversals"] +
-            section_c["pengembalian_investor"]["total"]
-        )
-
-
-        # Section E: Hutang
-        # These are point-in-time balances already calculated in BaseReportService
-        h_summary = data["raw_summaries"].get("hutang", {})
-        # Note: Nominal Investor is ALREADY in Setoran Modal (Section A).
-        # We only track the accrued profit share (Laba Investor) and already disbursed amounts.
-        
-        # 1. Unsold investor units: 0 debt for capital (already in Setoran A)
-        unsold_investor_debt = 0 
-
-        # 2. Sold investor units debt: ONLY track the profit share being owed.
-        # Capital is returning to our pool from sale price.
-        sold_investor_debt = float(self.db.query(
-            func.sum(TransaksiPenjualanMobil.laba_investor - TransaksiPenjualanMobil.nominal_pencairan)
-        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
-            TransaksiPenjualanMobil.tipe_kepemilikan == OwnershipType.INVESTOR,
-            TransaksiPenjualanMobil.status_pencairan != InvestorDisbursementStatus.DICAIRKAN
+        # Pengurangan Modal
+        prive = float(data.get("prive_global", 0))
+        pengembalian_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.MODAL,
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
-        pending_investor_debt = unsold_investor_debt + sold_investor_debt
-
-        section_e = {
-            "hutang_part": h_summary.get("part", 0),
-            "hutang_mobil": h_summary.get("mobil", 0),
-            "hutang_investor": pending_investor_debt,
-            "hutang_lainnya": max(0, h_summary.get("total", 0) - (h_summary.get("part", 0) + h_summary.get("mobil", 0))),
-        }
-        section_e["total_e"] = (
-            section_e["hutang_part"] + 
-            section_e["hutang_mobil"] + 
-            section_e["hutang_investor"] + 
-            section_e["hutang_lainnya"]
-        )
-
-        # ══════════════════════════════════════════════════════════════
-        # TOTAL A: Sum of theoretical components as shown in UI.
-        # ══════════════════════════════════════════════════════════════
-        total_a = modal_awal_theoretical + setoran_modal + period_profit
-
-        # Section D: Final Reconciliation
-        # 1. Start with Total A (Theoretical Input)
-        # 2. Subtract actual equity losses (Expenses, Prive, etc from Section C)
-        # 3. Adjust for Non-Cash Assets (B) and Liabilities (E) to find Theoretical Cash.
+        # Beban Gaji & Lembur
+        gaji = float(b.get("gaji", 0))
+        lembur = float(b.get("lembur", 0))
         
-        theoretical_equity = total_a - equity_loss_c
-        theoretical_modal = theoretical_equity - section_b["total_b"] + section_e["total_e"]
+        # Breakdown Beban Operasional
+        ops_umum = float(b.get("common_expenses", 0)) + float(data.get("admin_fees_unrecorded", 0)) + float(data.get("ja_untracked_gap", 0))
+        ops_bengkel = float(b.get("total_expenses", 0))
+        ops_mobil = float(m.get("overhead", 0))
         
-        total_d = cash_val + transfer_val
-        penyesuaian = total_d - theoretical_modal
+        # Jasa Angkut Breakdown: Unit vs Trip/Armada
+        # Note: ja.get("armada_ops", 0) already includes trip_costs if they are recorded 
+        # in the armada expense ledger. Summing both causes double counting.
+        ops_ja_unit = float(ja.get("overhead", 0)) + float(ja.get("armada_ops_ledger", 0))
+        ops_ja_trip = float(ja.get("armada_ops", 0)) 
+        ops_ja = ops_ja_unit + ops_ja_trip
+        
+        # Note: ja.get("repairs", 0) is excluded because it's an internal workshop bill 
+        # which is already accounted for via internal_elimination in consolidated profit.
+        
+        total_ops = ops_umum + ops_bengkel + ops_mobil + ops_ja
+
+        # Laba Kotor (Gross Profit) per unit
+        laba_mobil_gross = float(data["units"]["mobil"].get("total_laba_kotor", 0))
+        laba_ja_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))
+        laba_bengkel_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
+
+        # Laba Kotor (Gross Profit) = Net Profit + All Expenses
+        laba_kotor = period_profit_sot + gaji + lembur + total_ops
+
+        # 1. Mobil Stock Rotation
+        beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.PEMBELIAN_MOBIL,
+            KasBank.tanggal >= tanggal_dari,
+            KasBank.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        
+        penambahan_stok_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+            Mobil.tanggal_masuk >= tanggal_dari,
+            Mobil.tanggal_masuk <= tanggal_sampai,
+            Mobil.deleted_at.is_(None)
+        ).scalar() or 0)
+
+        # 2. Spare Part Stock Rotation
+        penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal >= tanggal_dari,
+            PembelianSparePart.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        beli_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal_bayar >= tanggal_dari,
+            PembelianSparePart.tanggal_bayar <= tanggal_sampai,
+            PembelianSparePart.metode_bayar == PaymentMethod.TUNAI
+        ).scalar() or 0)
+
+        total_penambahan = setoran_modal + total_non_kas + laba_kotor + penambahan_stok_mobil + penambahan_stok_sparepart
+        total_pengurangan = prive + pengembalian_modal + gaji + lembur + total_ops + beli_mobil + beli_sparepart
+
+        modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
+
+        # Total overhead untuk info unit bisnis
+        total_overhead_gaji = total_ops + gaji + lembur
+
+        # Validation (Comparison: Theoretical vs Actual Assets)
+        piutang_akhir = float(data["raw_summaries"]["piutang"].get("total", 0))
+        hutang_akhir = float(data["raw_summaries"]["hutang"].get("total", 0))
+        
+        # Note: persediaan_mobil here already includes Prep (Wallet), and piutang_akhir 
+        # includes Internal Workshop repairs (Receivable). 
+        # Combined, they represent the total value increase of the car inventory.
+        modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_akhir) - hutang_akhir
+        selisih = modal_akhir - modal_aktual
 
         return {
             "periode": data["periode"],
-            "section_a": {
-                "initial_capital": modal_awal_theoretical,
+            "modal_awal": modal_awal_theoretical,
+            "penambahan": {
                 "setoran_modal": setoran_modal,
-                "hpp_bengkel": hpp_bengkel_val,
-                "hpp_mobil": hpp_mobil_val,
-                "persediaan_part": persediaan_part,
-                "persediaan_mobil": persediaan_mobil,
-                "aset_tetap": aset_tetap,
-                "total_laba": period_profit,
-                "total_a": total_a,
-                "opening_balance": modal_awal_theoretical, # for backward compatibility with frontend
-                "details": {
-                    "laba_bengkel": laba_bengkel,
-                    "hpp_bengkel": b["total_hpp"],
-                    "laba_kotor_mobil": laba_mobil_gross,
-                    "hpp_mobil": hpp_mobil_val,
-                    "laba_jasa_angkut": laba_ja
+                "modal_non_kas": {
+                    "total": total_non_kas,
+                    "aset_tetap": modal_aset_tetap_delta,
+                    "stok_part": modal_stok_part_delta,
+                    "stok_mobil": modal_stok_mobil_delta
+                },
+                "laba_kotor": {
+                    "total": laba_kotor,
+                    "mobil": laba_mobil_gross,
+                    "ja": laba_ja_gross,
+                    "bengkel": laba_bengkel_gross
+                },
+                "penambahan_stok": {
+                    "total": penambahan_stok_mobil + penambahan_stok_sparepart,
+                    "mobil": penambahan_stok_mobil,
+                    "sparepart": penambahan_stok_sparepart
+                },
+                "total": total_penambahan
+            },
+            "pengurangan": {
+                "gaji": gaji,
+                "lembur": lembur,
+                "ops_umum": ops_umum,
+                "ops_bengkel": ops_bengkel,
+                "ops_mobil": ops_mobil,
+                "ops_ja": {
+                    "total": ops_ja,
+                    "unit": ops_ja_unit,
+                    "trip": ops_ja_trip
+                },
+                "prive": prive,
+                "pengembalian_modal": pengembalian_modal,
+                "pembelian_mobil": beli_mobil,
+                "pembelian_sparepart": beli_sparepart,
+                "total": total_pengurangan
+            },
+            "modal_akhir": modal_akhir,
+            "info": {
+                "laba_bengkel": laba_bengkel,
+                "laba_mobil": laba_mobil_net,
+                "laba_jasa_angkut": laba_ja,
+                "overhead_gaji": total_overhead_gaji,
+                "aset": {
+                    "kas_bank": end_total_cash,
+                    "stok_part": persediaan_part,
+                    "stok_mobil": {
+                        "total": persediaan_mobil + persediaan_mobil_ws_int,
+                        "unit_hanya": persediaan_mobil_price,
+                        "biaya_persiapan": persediaan_mobil_prep,
+                        "perbaikan_external": persediaan_mobil_ws_ext,
+                        "perbaikan_internal": persediaan_mobil_ws_int
+                    },
+                    "aset_tetap": aset_tetap,
+                    "piutang": data["raw_summaries"].get("piutang", {}),
+                    "hutang": data["raw_summaries"].get("hutang", {})
+                },
+                "validasi": {
+                    "modal_teoritis": modal_akhir,
+                    "modal_aktual": modal_aktual,
+                    "selisih": selisih,
+                    "status": "BALANCE" if abs(selisih) < 100 else "SELISIH"
                 }
-            },
-            "section_b": section_b,
-            "section_c": section_c,
-            "section_d": {
-                "theoretical_modal": theoretical_modal,
-                "cash": cash_val,
-                "transfer": transfer_val,
-                "unit_details": unit_details,
-                "total_d": total_d,
-                "penyesuaian": penyesuaian,
-                "modal_komponen": total_a - section_b["total_b"] - section_c["total_c"] + section_e["total_e"]
-            },
-            "section_e": section_e
+            }
         }
     def get_kas_bank_balances(self, as_of: date) -> Dict[str, float]:
         """Get snapshot of all cash/bank balances at end of date"""
@@ -391,29 +467,55 @@ class ModalService(BaseReportService):
 
     def get_part_stock_value(self, as_of: date) -> float:
         """Calculate total spare part stock value as of date"""
-        # HPP calculation logic for parts
-        # This is a simplification: currently system uses current stock value
-        # In a perfect world, we'd use historical balances, but start with data available.
+        # Always Ready (stok=999) = catalog only, modal = 0
+        # Normal items = stok × harga_beli
         from app.models.bengkel import SparePart
-        return float(self.db.query(func.sum(SparePart.stok * SparePart.harga_beli)).scalar() or 0)
+        return float(self.db.query(func.sum(
+            case(
+                (SparePart.stok == 999, 0),
+                else_=SparePart.stok * SparePart.harga_beli
+            )
+        )).filter(SparePart.deleted_at.is_(None)).scalar() or 0)
 
     def get_car_stock_value(self, as_of: date) -> float:
-        """Calculate car inventory value as of date"""
-        from app.models.mobil import Mobil
-        return float(self.db.query(func.sum(Mobil.harga_beli + Mobil.biaya_persiapan)).filter(
+        """Calculate car inventory value as of date (Price + Prep).
+        Note: Internal repairs are excluded here because they are in piutang_internal.
+        """
+        from app.models.mobil import Mobil, MobilBiayaLainnya
+        
+        # 1. Base Purchase Price
+        price_q = self.db.query(func.sum(Mobil.harga_beli)).filter(
+            Mobil.tanggal_masuk <= as_of,
             or_(
-                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual.is_(None),
                 Mobil.tanggal_terjual > as_of
             ),
-            Mobil.tanggal_beli <= as_of
-        ).scalar() or 0)
+            Mobil.deleted_at.is_(None)
+        )
+        total_price = float(price_q.scalar() or 0)
+
+        # 2. Preparation Costs (from MobilBiayaLainnya)
+        # Filter for same cars (unsold as of date)
+        prep_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil).filter(
+            Mobil.tanggal_masuk <= as_of,
+            or_(
+                Mobil.tanggal_terjual.is_(None),
+                Mobil.tanggal_terjual > as_of
+            ),
+            MobilBiayaLainnya.tanggal <= as_of,
+            # Exclude category 'Perawatan Bengkel' as it's already in piutang_internal
+            MobilBiayaLainnya.kategori != "Perawatan Bengkel"
+        )
+        total_prep = float(prep_q.scalar() or 0)
+
+        return total_price + total_prep
 
     def get_fixed_asset_value(self, as_of: date) -> float:
         """Calculate fixed asset value (unrealized acquisition cost) as of date"""
         from app.models.keuangan import Aset
-        return float(self.db.query(func.sum(Aset.harga_perolehan)).filter(
-            Aset.tanggal_perolehan <= as_of,
-            or_(Aset.status == AssetStatus.AKTIF, Aset.tanggal_disposed > as_of)
+        return float(self.db.query(func.sum(Aset.harga_beli)).filter(
+            Aset.tanggal_beli <= as_of,
+            Aset.status == AssetStatus.AKTIF
         ).scalar() or 0)
 
     def _get_ja_breakdown(self, ja_armada_ledger: Dict[str, Dict[str, float]], muatan_data: Dict[str, Any]) -> Dict[str, Dict[str, float]]:

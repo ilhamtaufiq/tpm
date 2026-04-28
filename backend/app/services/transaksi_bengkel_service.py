@@ -203,8 +203,8 @@ class TransaksiBengkelService:
         
         # For jasa_angkut / jual_beli_mobil: payment method is INTERNAL
         # Cost is deducted from Laba TPM (jasa_angkut) or added to HPP (mobil)
-        is_internal_jasa_angkut = (getattr(data, "kategori", "umum") == "jasa_angkut")
-        is_internal_mobil = (getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
+        is_internal_jasa_angkut = bool(getattr(data, "kategori", "umum") == "jasa_angkut")
+        is_internal_mobil = bool(getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
         if is_internal_jasa_angkut:
             # Internal transactions for Jasa Angkut are considered paid immediately
@@ -302,10 +302,12 @@ class TransaksiBengkelService:
                 nama_debitur=debtor_name,
                 telepon_debitur=customer.telepon if customer else None,
                 alamat_debitur=customer.alamat if customer else None,
+                nominal_piutang=out_amount,
                 sumber=PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL,
+                unit=KasBankSource.BENGKEL, # Bengkel is the one who owns the receivable
+                is_internal=is_internal_mobil,
                 referensi_id=None,  # Will update after commit
                 nomor_referensi=nomor_transaksi,
-                nominal_piutang=out_amount,
                 total_dibayar=Decimal("0"),
                 sisa_piutang=out_amount,
                 status=PiutangStatus.BELUM_LUNAS,
@@ -610,8 +612,8 @@ class TransaksiBengkelService:
         total_pembayaran = Decimal("0")
         metode_utama = data.metode_bayar
         
-        is_internal_jasa_angkut = (data.kategori == "jasa_angkut")
-        is_internal_mobil = (data.kategori == "jual_beli_mobil" and data.mobil_id)
+        is_internal_jasa_angkut = bool(data.kategori == "jasa_angkut")
+        is_internal_mobil = bool(data.kategori == "jual_beli_mobil" and data.mobil_id)
         
         if is_internal_jasa_angkut:
             total_pembayaran = grand_total
@@ -689,6 +691,8 @@ class TransaksiBengkelService:
                 sisa_piutang=grand_total,
                 status=PiutangStatus.BELUM_LUNAS,
                 catatan=f"Piutang Internal JB Mobil from (EDITED) {transaksi.nomor_transaksi}" if is_internal_mobil else f"Piutang from (EDITED) {transaksi.nomor_transaksi}",
+                is_internal=is_internal_mobil,
+                unit=KasBankSource.BENGKEL,
                 created_by=user_id,
             )
             self.db.add(new_piutang)

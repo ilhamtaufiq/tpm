@@ -494,10 +494,17 @@ export const keuanganService = {
     },
 
     getNeracaReport: async (params?: {
+        as_of_date?: string;
+    }) => {
+        const response = await api.get('/laporan/neraca', { params });
+        return response.data;
+    },
+
+    validateReports: async (params?: {
         tanggal_dari?: string;
         tanggal_sampai?: string;
     }) => {
-        const response = await api.get('/laporan/neraca', { params });
+        const response = await api.get('/laporan/validate', { params });
         return response.data;
     },
 

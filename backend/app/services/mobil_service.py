@@ -217,6 +217,24 @@ class MobilService:
                 allow_negative=True,
             )
 
+        # Record incoming investor funds to balance the purchase outflow
+        if data.tipe_kepemilikan == OwnershipType.INVESTOR and data.nominal_investor > 0:
+            # We record this as KasBankSource.HUTANG so it doesn't inflate Setoran Modal
+            create_kas_entry(
+                db=self.db,
+                tanggal=data.tanggal_masuk,
+                tipe=KasBankType.MASUK,
+                nominal=data.nominal_investor,
+                sumber=KasBankSource.HUTANG,
+                metode_bayar=metode_utama if metode_utama != PaymentMethod.SPLIT else PaymentMethod.TUNAI,
+                referensi_id=mobil.id,
+                nomor_referensi=mobil.kode,
+                keterangan=f"Penerimaan Dana Investor ({data.nama_investor}) untuk Unit: {mobil.nomor_plat}",
+                user_id=user_id,
+                kas_jenis=data.kas_jenis if not data.payments else data.payments[0].kas_jenis,
+                allow_negative=True,
+            )
+
         # Record Hutang (Payable) if not fully paid
         if data.status_bayar != PaymentStatus.LUNAS:
             sisa_hutang = data.harga_beli - total_pembayaran

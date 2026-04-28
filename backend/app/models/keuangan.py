@@ -50,6 +50,7 @@ class PiutangUsaha(Base, TimestampMixin):
     referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)  # ID of source transaction
     nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     unit: Mapped[Optional[KasBankSource]] = mapped_column(SQLEnum(KasBankSource), nullable=True)
+    is_internal: Mapped[bool] = mapped_column(default=False)
 
     # Customer info
     customer_id: Mapped[Optional[int]] = mapped_column(
@@ -165,6 +166,7 @@ class HutangUsaha(Base, TimestampMixin):
     referensi_id: Mapped[Optional[int]] = mapped_column(nullable=True)
     nomor_referensi: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     unit: Mapped[Optional[KasBankSource]] = mapped_column(SQLEnum(KasBankSource), nullable=True)
+    is_internal: Mapped[bool] = mapped_column(default=False)
 
     # Supplier info
     supplier_id: Mapped[Optional[int]] = mapped_column(

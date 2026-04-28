@@ -284,26 +284,34 @@ class PenjualanMobilService:
 
         # 3. Calculate totals based on new HPP rules
         # HPP Accounting = Harga Beli + Pengeluaran (Non-Bengkel)
+        # As per user request: HPP = Beli + Persiapan (excludes internal repair)
         hpp_accounting = mobil.hpp
         
-        # total_part_service = cumulative Part & Service costs
+        # total_part_service = cumulative Part & Service costs (Internal Workshop)
         total_part_service = mobil.total_part_service
         
         # Real Modal (Investment) for profit split calculations
-        # nominal investor should be compared against this
+        # Investors split after ALL costs are covered (including internal repairs)
         real_total_modal = hpp_accounting + total_part_service
         
-        # Laba Kotor = Harga Jual - HPP_Accounting - Part_Service
-        laba_kotor = data.harga_jual - hpp_accounting - total_part_service
+        # Laba Kotor for Transaction Record = Harga Jual - HPP_Accounting
+        # Note: Internal repair is handled via separate settlement and recognized as Workshop Profit
+        laba_kotor = data.harga_jual - hpp_accounting
 
-        # Calculate profit split using real_total_modal as base
-        laba_investor, laba_tpm = self._calculate_profit_split(
-            laba_kotor,
+        # Laba for Investor Split (Real Profit) = Harga Jual - Real Total Modal
+        laba_split_investor = data.harga_jual - real_total_modal
+
+        # Calculate profit split using laba_split_investor
+        laba_investor, _ = self._calculate_profit_split(
+            laba_split_investor,
             mobil.tipe_kepemilikan,
             mobil.persentase_investor,
             mobil.nominal_investor,
-            real_total_modal, # Use total investment including parts
+            real_total_modal,
         )
+        
+        # TPM's share of this specific transaction is the remaining Accounting Laba
+        laba_tpm = laba_kotor - laba_investor
 
         # Determine payment status
         sisa_bayar = data.harga_jual - data.dp
@@ -362,6 +370,7 @@ class PenjualanMobilService:
                 telepon_debitur=customer.telepon if customer else data.telepon_pembeli,
                 alamat_debitur=customer.alamat if customer else data.alamat_pembeli,
                 sumber=PiutangSource.JUAL_BELI_MOBIL,
+                unit=KasBankSource.JUAL_BELI_MOBIL,
                 referensi_id=None,  # Will update after flushing transaksi
                 nomor_referensi=nomor_transaksi,
                 nominal_piutang=sisa_bayar,

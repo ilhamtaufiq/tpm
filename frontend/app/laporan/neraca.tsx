@@ -12,7 +12,7 @@ import { Modal } from 'react-native';
 import { printReportHTML } from '../../utils/printReport';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, endOfMonth, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 
 import { Typography } from '../../components/ui/Typography';
@@ -58,18 +58,16 @@ export default function NeracaScreen() {
     };
 
     const getDateParams = () => {
-        let start = date;
+        // Neraca is a point-in-time report (Balance Sheet)
+        // We send the END date as as_of_date
         let end = date;
         if (filterType === 'monthly') {
-            start = startOfMonth(date);
             end = endOfMonth(date);
         } else if (filterType === 'yearly') {
-            start = startOfYear(date);
             end = endOfYear(date);
         }
         return {
-            tanggal_dari: format(start, 'yyyy-MM-dd'),
-            tanggal_sampai: format(end, 'yyyy-MM-dd'),
+            as_of_date: format(end, 'yyyy-MM-dd'),
         };
     };
 
@@ -299,16 +297,28 @@ export default function NeracaScreen() {
                 </View>
 
                 <View className="p-5 w-full">
-                    {/* Modal Tunai */}
+                    {/* 1. Setoran Modal */}
                     <View className="mb-4 w-full">
-                        <Row label="1. Setoran Modal Tunai" value={data.setoran_modal} bold large />
+                        <Row label="1. Setoran Modal" value={data.setoran_modal} bold large />
+                        
+                        {/* Breakdown: Kas + Non-Kas */}
+                        {(data.setoran_modal_kas > 0 || data.modal_non_kas > 0) && (
+                            <View className="bg-violet-50/50 w-full p-3 rounded-xl border border-violet-100 mt-2">
+                                {data.setoran_modal_kas > 0 && (
+                                    <Row label="Modal Tunai (Kas)" value={data.setoran_modal_kas} small indent />
+                                )}
+                                {data.modal_non_kas > 0 && (
+                                    <Row label="Modal Non-Kas (Aset)" value={data.modal_non_kas} small indent />
+                                )}
+                            </View>
+                        )}
                     </View>
 
-                    {/* Modal Non-Tunai (Aset) */}
-                    {(data.modal_persediaan > 0 || data.modal_stok_mobil > 0 || data.modal_aset_tetap > 0) && (
+                    {/* Detail Modal Non-Kas (Breakdown per Jenis Aset) */}
+                    {data.modal_non_kas > 0 && (data.modal_persediaan > 0 || data.modal_stok_mobil > 0 || data.modal_aset_tetap > 0) && (
                         <View className="mb-4 w-full">
                             <Typography variant="caption" weight="bold" className="text-slate-500 uppercase text-[10px] tracking-wider mb-2">
-                                Modal Tertanam di Aset
+                                Detail Modal Non-Kas
                             </Typography>
                             <View className="bg-slate-50 w-full p-4 rounded-xl border border-slate-100">
                                 {data.modal_persediaan > 0 && (
@@ -403,6 +413,8 @@ export default function NeracaScreen() {
     const renderBalanceCheck = () => {
         const isBalanced = report?.is_balanced;
         const selisih = report?.selisih || 0;
+        const crossVal = report?.cross_validation || {};
+        const selisihModal = report?.modal?.selisih_modal || 0;
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
@@ -424,12 +436,63 @@ export default function NeracaScreen() {
                     <Row label="Total Pasiva (Hutang + Modal)" value={report?.total_pasiva || 0} isDark small />
                     <View className="h-[1px] bg-white/20 w-full my-3" />
                     <View className="flex-row justify-between items-center w-full">
-                        <Typography className="text-white/60 text-xs flex-1">Selisih</Typography>
-                        <Typography variant="h4" weight="bold" className={selisih === 0 ? "text-emerald-300" : "text-amber-300"}>
+                        <Typography className="text-white/60 text-xs flex-1">Selisih Neraca</Typography>
+                        <Typography variant="h4" weight="bold" className={Math.abs(selisih) < 100 ? "text-emerald-300" : "text-amber-300"}>
                             {formatCurrency(selisih)}
                         </Typography>
                     </View>
                 </View>
+
+                {/* Cross-Validation: Equity Breakdown */}
+                {crossVal.equity_from_components !== undefined && (
+                    <View className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4 w-full">
+                        <Typography variant="caption" weight="bold" className="text-white/50 uppercase tracking-widest text-[9px] mb-2">
+                            Validasi Komponen Modal
+                        </Typography>
+                        <View className="w-full">
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-white/60 flex-1">Modal (Bottom-Up)</Typography>
+                                <Typography variant="body2" weight="semibold" className="text-white/80">
+                                    {formatCurrency(crossVal.equity_from_components || 0)}
+                                </Typography>
+                            </View>
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-white/60 flex-1">Modal (Aktiva-Hutang)</Typography>
+                                <Typography variant="body2" weight="semibold" className="text-white/80">
+                                    {formatCurrency(crossVal.equity_from_identity || 0)}
+                                </Typography>
+                            </View>
+                            <View className="h-[1px] bg-white/15 w-full my-1.5" />
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-white/60 flex-1">Selisih Modal</Typography>
+                                <Typography variant="body2" weight="bold" className={Math.abs(selisihModal) < 100 ? "text-emerald-300" : "text-amber-300"}>
+                                    {formatCurrency(crossVal.selisih_equity || 0)}
+                                </Typography>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Cross-Validation: Laba Reference */}
+                {crossVal.laba_bersih_from_base !== undefined && (
+                    <View className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4 w-full">
+                        <Typography variant="caption" weight="bold" className="text-white/50 uppercase tracking-widest text-[9px] mb-2">
+                            Referensi Silang Laba Rugi
+                        </Typography>
+                        <View className="flex-row justify-between items-center py-1">
+                            <Typography variant="caption" className="text-white/60 flex-1">Laba Ditahan</Typography>
+                            <Typography variant="body2" weight="semibold" className="text-white/80">
+                                {formatCurrency(crossVal.retained_earnings || 0)}
+                            </Typography>
+                        </View>
+                        <View className="flex-row justify-between items-center py-1">
+                            <Typography variant="caption" className="text-white/60 flex-1">Laba Bersih (setelah Prive)</Typography>
+                            <Typography variant="body2" weight="semibold" className="text-white/80">
+                                {formatCurrency(crossVal.laba_bersih_from_base || 0)}
+                            </Typography>
+                        </View>
+                    </View>
+                )}
 
                 <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
                     {isBalanced ? (
@@ -519,45 +582,61 @@ export default function NeracaScreen() {
             </div>
 
             <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>\r
-            <div class="row-item">\r
-                <span>Setoran Modal Tunai</span>\r
-                <span>${formatCurrency(report.modal.setoran_modal)}</span>\r
-            </div>\r
-            ${(report.modal.modal_persediaan > 0 || report.modal.modal_stok_mobil > 0 || report.modal.modal_aset_tetap > 0) ? `\r
-                <div style="padding-left: 15px; margin: 8px 0; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">\r
-                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Modal Tertanam di Aset</div>\r
-                    ${report.modal.modal_persediaan > 0 ? `\r
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
-                            <span>Persediaan Sparepart</span>\r
-                            <span>${formatCurrency(report.modal.modal_persediaan)}</span>\r
-                        </div>\r
-                    ` : ''}\r
-                    ${report.modal.modal_stok_mobil > 0 ? `\r
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
-                            <span>Stok Mobil (Inventory)</span>\r
-                            <span>${formatCurrency(report.modal.modal_stok_mobil)}</span>\r
-                        </div>\r
-                    ` : ''}\r
-                    ${report.modal.modal_aset_tetap > 0 ? `\r
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">\r
-                            <span>Aset Tetap</span>\r
-                            <span>${formatCurrency(report.modal.modal_aset_tetap)}</span>\r
-                        </div>\r
-                    ` : ''}\r
-                </div>\r
-            ` : ''}\r
-            <div class="row-item">\r
-                <span>Laba Ditahan</span>\r
-                <span>${formatCurrency(report.modal.laba_ditahan)}</span>\r
-            </div>\r
-            <div class="row-item">\r
-                <span>Prive</span>\r
-                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>\r
-            </div>\r
-            <div class="row-item row-total">\r
-                <span>TOTAL MODAL</span>\r
-                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>\r
+            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
+            <div class="row-item">
+                <span>Setoran Modal</span>
+                <span>${formatCurrency(report.modal.setoran_modal)}</span>
+            </div>
+            ${(report.modal.setoran_modal_kas > 0 || report.modal.modal_non_kas > 0) ? `
+                <div style="padding-left: 15px; margin: 4px 0; padding: 8px 15px; background: #f5f3ff; border: 1px solid #ede9fe; border-radius: 8px;">
+                    ${report.modal.setoran_modal_kas > 0 ? `
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">
+                            <span>Modal Tunai (Kas)</span>
+                            <span>${formatCurrency(report.modal.setoran_modal_kas)}</span>
+                        </div>
+                    ` : ''}
+                    ${report.modal.modal_non_kas > 0 ? `
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">
+                            <span>Modal Non-Kas (Aset)</span>
+                            <span>${formatCurrency(report.modal.modal_non_kas)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+            ${report.modal.modal_non_kas > 0 && (report.modal.modal_persediaan > 0 || report.modal.modal_stok_mobil > 0 || report.modal.modal_aset_tetap > 0) ? `
+                <div style="padding-left: 15px; margin: 8px 0; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Detail Modal Non-Kas</div>
+                    ${report.modal.modal_persediaan > 0 ? `
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">
+                            <span>Persediaan Sparepart</span>
+                            <span>${formatCurrency(report.modal.modal_persediaan)}</span>
+                        </div>
+                    ` : ''}
+                    ${report.modal.modal_stok_mobil > 0 ? `
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">
+                            <span>Stok Mobil (Inventory)</span>
+                            <span>${formatCurrency(report.modal.modal_stok_mobil)}</span>
+                        </div>
+                    ` : ''}
+                    ${report.modal.modal_aset_tetap > 0 ? `
+                        <div class="row-item" style="font-size: 11px; color: #64748b;">
+                            <span>Aset Tetap</span>
+                            <span>${formatCurrency(report.modal.modal_aset_tetap)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+            <div class="row-item">
+                <span>Laba Ditahan</span>
+                <span>${formatCurrency(report.modal.laba_ditahan)}</span>
+            </div>
+            <div class="row-item">
+                <span>Prive</span>
+                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
+            </div>
+            <div class="row-item row-total">
+                <span>TOTAL MODAL</span>
+                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
             </div>
             <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
             <div class="row-item">

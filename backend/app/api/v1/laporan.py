@@ -53,3 +53,113 @@ def get_neraca(
     
     service = NeracaService(db)
     return service.get_report(as_of_date)
+
+
+@router.get("/validate")
+def validate_reports(
+    db: DBSession,
+    current_user: ManagerUser,
+    tanggal_dari: Optional[date] = None,
+    tanggal_sampai: Optional[date] = None,
+):
+    """
+    Cross-validate all three financial reports for the same period.
+    Checks consistency of Laba Bersih, Kas, and Hutang across reports.
+    """
+    if not tanggal_dari and not tanggal_sampai:
+        today = date.today()
+        tanggal_dari = date(today.year, today.month, 1)
+        tanggal_sampai = today
+    
+    # Run all three reports
+    lr_service = LabaRugiService(db)
+    modal_service = ModalService(db)
+    neraca_service = NeracaService(db)
+    
+    lr = lr_service.get_report(tanggal_dari, tanggal_sampai)
+    modal = modal_service.get_report(tanggal_dari, tanggal_sampai)
+    neraca = neraca_service.get_report(tanggal_sampai)  # Neraca uses end date as snapshot
+
+    # ═══════════════════════════════════════════════════════════════
+    # CHECK 1: Laba Bersih Consistency
+    # Laba Rugi laba_bersih should match Neraca retained_earnings - prive
+    # ═══════════════════════════════════════════════════════════════
+    lr_laba_bersih = float(lr["summary"]["laba_bersih"])
+    lr_laba_operasional = float(lr["summary"]["laba_operasional"])
+    neraca_retained = float(neraca["modal"]["laba_ditahan"])
+    neraca_prive = float(neraca["modal"]["prive"])
+    
+    # retained_earnings in neraca = laba_operasional in LR (before prive)
+    selisih_laba = lr_laba_operasional - neraca_retained
+    laba_ok = abs(selisih_laba) < 100
+
+    # ═══════════════════════════════════════════════════════════════
+    # CHECK 2: Kas/Bank Consistency
+    # Modal Section D cash should match Neraca Aktiva Lancar cash
+    # ═══════════════════════════════════════════════════════════════
+    modal_kas = float(modal["section_d"]["cash"])
+    modal_transfer = float(modal["section_d"]["transfer"])
+    modal_total_kas = modal_kas + modal_transfer
+    
+    neraca_kas_tunai = float(neraca["aktiva_lancar"]["kas_tunai"])
+    neraca_kas_bank = float(neraca["aktiva_lancar"]["kas_bank"])
+    neraca_unit_cash = float(neraca["aktiva_lancar"]["unit_cash"])
+    neraca_total_kas = neraca_kas_tunai + neraca_kas_bank + neraca_unit_cash
+    
+    selisih_kas = modal_total_kas - neraca_total_kas
+    kas_ok = abs(selisih_kas) < 100
+
+    # ═══════════════════════════════════════════════════════════════
+    # CHECK 3: Hutang Consistency
+    # Modal Section E total should match Neraca total hutang
+    # ═══════════════════════════════════════════════════════════════
+    modal_hutang = float(modal["section_e"]["total_e"])
+    neraca_hutang = float(neraca["hutang"]["total_hutang"])
+    
+    selisih_hutang = modal_hutang - neraca_hutang
+    hutang_ok = abs(selisih_hutang) < 100
+
+    # ═══════════════════════════════════════════════════════════════
+    # CHECK 4: Neraca Balance (Bottom-Up)
+    # ═══════════════════════════════════════════════════════════════
+    neraca_balanced = neraca.get("is_balanced", False)
+    neraca_selisih = float(neraca.get("selisih", 0))
+    
+    # Overall status
+    all_ok = laba_ok and kas_ok and hutang_ok and neraca_balanced
+
+    return {
+        "status": "SYNCED" if all_ok else "HAS_DISCREPANCY",
+        "periode": {"dari": tanggal_dari, "sampai": tanggal_sampai},
+        "checks": {
+            "laba_bersih": {
+                "status": "OK" if laba_ok else "MISMATCH",
+                "laba_rugi_operasional": lr_laba_operasional,
+                "laba_rugi_bersih": lr_laba_bersih,
+                "neraca_retained_earnings": neraca_retained,
+                "neraca_prive": neraca_prive,
+                "selisih": selisih_laba
+            },
+            "kas_bank": {
+                "status": "OK" if kas_ok else "MISMATCH",
+                "modal_section_d": modal_total_kas,
+                "neraca_aktiva_lancar": neraca_total_kas,
+                "selisih": selisih_kas
+            },
+            "hutang": {
+                "status": "OK" if hutang_ok else "MISMATCH",
+                "modal_section_e": modal_hutang,
+                "neraca_hutang": neraca_hutang,
+                "selisih": selisih_hutang
+            },
+            "neraca_balance": {
+                "status": "OK" if neraca_balanced else "UNBALANCED",
+                "total_aktiva": float(neraca["total_aktiva"]),
+                "total_pasiva": float(neraca["total_pasiva"]),
+                "selisih": neraca_selisih,
+                "equity_from_components": float(neraca.get("cross_validation", {}).get("equity_from_components", 0)),
+                "equity_from_identity": float(neraca.get("cross_validation", {}).get("equity_from_identity", 0)),
+                "selisih_equity": float(neraca.get("cross_validation", {}).get("selisih_equity", 0))
+            }
+        }
+    }
