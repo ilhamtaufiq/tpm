@@ -2,7 +2,7 @@ from app.utils.constants import AssetStatus
 from app.utils.constants import CarStatus
 from datetime import date, timedelta
 from typing import Dict, Any
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, case
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha, PembayaranHutang, PembayaranPiutang
 from app.models.mobil import Mobil, TransaksiPenjualanMobil
@@ -14,6 +14,7 @@ from app.utils.constants import (
     PiutangStatus,
     PiutangSource,
     HutangStatus,
+    HutangSource,
     InvestorDisbursementStatus,
     OwnershipType,
     PaymentStatus,
@@ -362,8 +363,49 @@ class ModalService(BaseReportService):
             PembelianSparePart.metode_bayar == PaymentMethod.TUNAI
         ).scalar() or 0)
 
-        total_penambahan = setoran_modal + total_non_kas + laba_kotor + penambahan_stok_mobil + penambahan_stok_sparepart
-        total_pengurangan = prive + pengembalian_modal + gaji + lembur + total_ops + beli_mobil + beli_sparepart
+        # 3. Hutang Baru & Pembayaran Hutang (Stock-related balancing)
+        # This fixes the 5M discrepancy when cars/parts are bought on debt.
+        # Gross stock additions must be balanced by their funding sources (Cash + New Debt).
+        
+        # New debt incurred (unpaid portion of stock bought in this period)
+        hutang_mobil_baru = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal <= tanggal_sampai,
+            HutangUsaha.status != HutangStatus.BATAL
+        ).scalar() or 0)
+        
+        hutang_part_baru = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
+            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal <= tanggal_sampai,
+            HutangUsaha.status != HutangStatus.BATAL
+        ).scalar() or 0)
+        
+        # Debt payments made in this period (needed because they reduce cash but don't increase stock)
+        pembayaran_hutang_mobil = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+        
+        pembayaran_hutang_part = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
+            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        total_penambahan = (
+            setoran_modal + total_non_kas + laba_kotor + 
+            penambahan_stok_mobil + penambahan_stok_sparepart +
+            pembayaran_hutang_mobil + pembayaran_hutang_part
+        )
+        total_pengurangan = (
+            prive + pengembalian_modal + gaji + lembur + total_ops + 
+            beli_mobil + beli_sparepart + 
+            hutang_mobil_baru + hutang_part_baru + 
+            pembayaran_hutang_mobil + pembayaran_hutang_part
+        )
 
         modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
 
@@ -402,6 +444,7 @@ class ModalService(BaseReportService):
                     "mobil": penambahan_stok_mobil,
                     "sparepart": penambahan_stok_sparepart
                 },
+                "pelunasan_hutang": pembayaran_hutang_mobil + pembayaran_hutang_part,
                 "total": total_penambahan
             },
             "pengurangan": {
@@ -419,6 +462,8 @@ class ModalService(BaseReportService):
                 "pengembalian_modal": pengembalian_modal,
                 "pembelian_mobil": beli_mobil,
                 "pembelian_sparepart": beli_sparepart,
+                "hutang_baru": hutang_mobil_baru + hutang_part_baru,
+                "pembayaran_hutang": pembayaran_hutang_mobil + pembayaran_hutang_part,
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
