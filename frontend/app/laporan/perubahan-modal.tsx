@@ -299,6 +299,26 @@ export default function LaporanPerubahanModalScreen() {
                         </div>
                         
                         <div class="info-card">
+                            <div class="info-card-title">Rincian Persediaan Mobil</div>
+                            <div class="info-row">
+                                <span>Harga Beli Unit</span>
+                                <span class="amount">${formatCurrency(aset.stok_mobil?.unit_hanya)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span>Biaya Persiapan (Prep)</span>
+                                <span class="amount">${formatCurrency(aset.stok_mobil?.biaya_persiapan)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span>Perbaikan Bengkel (Workshop)</span>
+                                <span class="amount">${formatCurrency((aset.stok_mobil?.perbaikan_internal || 0) + (aset.stok_mobil?.perbaikan_external || 0))}</span>
+                            </div>
+                            <div class="info-row" style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 3px; font-weight: 800;">
+                                <span>Total Aset Persediaan</span>
+                                <span class="amount">${formatCurrency(aset.stok_mobil?.total)}</span>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
                             <div class="info-card-title">Detail Piutang Aktif</div>
                             <div class="info-row">
                                 <span>Piutang Unit Bisnis:</span>
@@ -801,7 +821,8 @@ export default function LaporanPerubahanModalScreen() {
 
                                 <View className="space-y-1">
                                     <Row label="Harga Beli Unit" value={report.info?.aset?.stok_mobil?.unit_hanya} small />
-                                    <Row label="Biaya Persiapan (Prep)" value={(report.info?.aset?.stok_mobil?.biaya_persiapan || 0) + (report.info?.aset?.stok_mobil?.perbaikan_internal || 0) + (report.info?.aset?.stok_mobil?.perbaikan_external || 0)} small />
+                                    <Row label="Biaya Persiapan (Prep)" value={report.info?.aset?.stok_mobil?.biaya_persiapan} small />
+                                    <Row label="Perbaikan Bengkel (Workshop)" value={(report.info?.aset?.stok_mobil?.perbaikan_internal || 0) + (report.info?.aset?.stok_mobil?.perbaikan_external || 0)} small />
                                     
                                     <View className="pt-3 mt-2 border-t border-amber-100/50">
                                         <Row label="Total Aset Persediaan" value={report.info?.aset?.stok_mobil?.total} bold color="text-amber-700" />

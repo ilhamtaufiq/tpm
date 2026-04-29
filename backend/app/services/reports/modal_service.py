@@ -456,10 +456,10 @@ class ModalService(BaseReportService):
         pembelian_tunai_all = beli_mobil + beli_sparepart
         sisa_hutang_stok_baru = hutang_mobil_baru + hutang_part_baru
         
-        # We MUST include prep_total and repairs_total here because they increase the
-        # asset value in Section B (stok_mobil_baru) and thus must be neutralized in Section C.
-        capitalized_costs = float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
-        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + capitalized_costs
+        # Note: we exclude capitalized_costs from alokasi_stok_net because they are already 
+        # accounted for in total_overhead_gaji (via ops_mobil). 
+        # Including them here would double-count the use of funds.
+        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru
 
         total_penambahan = (
             setoran_modal + total_non_kas + laba_kotor + 
