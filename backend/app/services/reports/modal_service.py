@@ -65,6 +65,7 @@ class ModalService(BaseReportService):
 
         # Get Current Period Financial Breakdown (Source of Truth for unit performances)
         data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
+        internal_elimination = float(data.get("internal_elimination", 0))
         b = data["units"].get("bengkel", {})
         m = data["units"].get("mobil", {})
         ja = data["units"].get("jasa_angkut", {})
@@ -328,7 +329,7 @@ class ModalService(BaseReportService):
         laba_bengkel_tpm_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
         # Laba Kotor (Gross Profit) = Sum of all units' gross profit
-        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross
+        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross - internal_elimination
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -470,7 +471,7 @@ class ModalService(BaseReportService):
         total_pengurangan = (
             prive + pengembalian_modal + pembayaran_investor + 
             total_pembayaran_hutang_all + alokasi_stok_net + investor_capital_baru +
-            total_overhead_gaji + penambahan_piutang_period
+            total_overhead_gaji + penambahan_piutang_period - internal_elimination
         )
 
         modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
@@ -639,21 +640,35 @@ class ModalService(BaseReportService):
         )
         total_price = float(price_q.scalar() or 0)
 
-        # 2. Preparation Costs (from MobilBiayaLainnya)
-        # Filter for same cars (unsold as of date)
+        # 2. Additional Costs (Prep + Repairs)
+        # We include all costs because internal piutang is eliminated in consolidated report
         prep_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).join(Mobil).filter(
             Mobil.tanggal_masuk <= as_of,
             or_(
                 Mobil.tanggal_terjual.is_(None),
                 Mobil.tanggal_terjual > as_of
             ),
-            MobilBiayaLainnya.tanggal <= as_of,
-            # Exclude category 'Perawatan Bengkel' as it's already in piutang_internal
-            MobilBiayaLainnya.kategori != "Perawatan Bengkel"
+            MobilBiayaLainnya.tanggal <= as_of
         )
         total_prep = float(prep_q.scalar() or 0)
 
-        return total_price + total_prep
+        # 3. Internal Workshop Repairs (not in MobilBiayaLainnya)
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        repair_int_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.mobil_id.is_not(None),
+            TransaksiPenjualanBengkel.mobil_id.in_(
+                self.db.query(Mobil.id).filter(
+                    Mobil.tanggal_masuk <= as_of,
+                    or_(Mobil.tanggal_terjual.is_(None), Mobil.tanggal_terjual > as_of),
+                    Mobil.deleted_at.is_(None)
+                )
+            ),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal <= as_of
+        )
+        total_repair_int = float(repair_int_q.scalar() or 0)
+
+        return total_price + total_prep + total_repair_int
 
     def get_fixed_asset_value(self, as_of: date) -> float:
         """Calculate fixed asset value (unrealized acquisition cost) as of date"""

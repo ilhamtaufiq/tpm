@@ -445,7 +445,7 @@ class BaseReportService:
             PiutangUsaha.tanggal <= tanggal_sampai,
             or_(
                 PiutangUsaha.is_internal != True,
-                PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN # Internal Kasbon is an asset, but Car Repair is an internal transfer
             ),
             PiutangUsaha.status != PiutangStatus.BATAL
         ).scalar() or 0)
@@ -455,7 +455,7 @@ class BaseReportService:
             PiutangUsaha.tanggal <= tanggal_sampai,
             or_(
                 PiutangUsaha.is_internal != True,
-                PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
+                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
             ),
             PiutangUsaha.status != PiutangStatus.BATAL,
             PembayaranPiutang.tanggal <= tanggal_sampai
@@ -817,8 +817,7 @@ class BaseReportService:
                 "piutang": {
                     "total": piutang_usaha,
                     "breakdown": {
-                        "bengkel": piutang_bengkel_ext + piutang_bengkel_int,
-                        "bengkel_internal": piutang_bengkel_int,
+                        "bengkel": piutang_bengkel_ext,
                         "ja": piutang_ja,
                         "mobil": piutang_mobil,
                         "kasbon": piutang_kasbon,
