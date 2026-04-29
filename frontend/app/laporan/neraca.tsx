@@ -9,7 +9,7 @@ import {
     Printer, Download, Eye, Share2, X
 } from 'lucide-react-native';
 import { Modal } from 'react-native';
-import { printReportHTML } from '../../utils/printReport';
+import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, endOfMonth, endOfYear } from 'date-fns';
@@ -30,6 +30,8 @@ export default function NeracaScreen() {
     const [date, setDate] = useState(new Date());
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [showPdfPreview, setShowPdfPreview] = useState(false);
+    const [previewHtml, setPreviewHtml] = useState('');
     const { themeColors } = useUIStore();
 
     // Date Navigation
@@ -518,197 +520,235 @@ export default function NeracaScreen() {
     const buildNeracaExportHtml = () => {
         if (!report) return '';
 
+        const getHeaderDate = () => {
+            if (filterType === 'daily') return format(date, 'd MMMM yyyy', { locale: localeID });
+            if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
+            return format(date, 'yyyy', { locale: localeID });
+        };
+
         return `
-            <div class="section-header">AKTIVA (ASSETS)</div>
-            <div style="font-weight:bold; color:#059669; margin:10px 0;">AKTIVA LANCAR</div>
-            <div class="row-item">
-                <span>Kas Tunai</span>
-                <span>${formatCurrency(report.aktiva_lancar.kas_tunai)}</span>
-            </div>
-            <div class="row-item">
-                <span>Kas Bank</span>
-                <span>${formatCurrency(report.aktiva_lancar.kas_bank)}</span>
-            </div>
-            <div class="row-item row-total">
-                <span>Total Kas & Bank</span>
-                <span>${formatCurrency(report.aktiva_lancar.total_kas_bank)}</span>
-            </div>
-            
-            <div class="row-item" style="margin-top:10px;">
-                <span>Piutang Bengkel</span>
-                <span>${formatCurrency(report.aktiva_lancar.piutang_usaha)}</span>
-            </div>
-            <div class="row-item">
-                <span>Piutang Mobil</span>
-                <span>${formatCurrency(report.aktiva_lancar.piutang_mobil)}</span>
-            </div>
-            <div class="row-item">
-                <span>Piutang Jasa Angkut</span>
-                <span>${formatCurrency(report.aktiva_lancar.piutang_jasa_angkut)}</span>
-            </div>
-            <div class="row-item row-total">
-                <span>Total Piutang</span>
-                <span>${formatCurrency(report.aktiva_lancar.total_piutang)}</span>
-            </div>
-
-            <div class="row-item" style="margin-top:10px;">
-                <span>Persediaan Sparepart</span>
-                <span>${formatCurrency(report.aktiva_lancar.persediaan_sparepart)}</span>
-            </div>
-            <div class="row-item">
-                <span>Stok Mobil</span>
-                <span>${formatCurrency(report.aktiva_lancar.stok_mobil)}</span>
-            </div>
-            <div class="row-item row-total">
-                <span>TOTAL AKTIVA LANCAR</span>
-                <span class="font-bold">${formatCurrency(report.aktiva_lancar.total_aktiva_lancar)}</span>
-            </div>
-
-            <div style="font-weight:bold; color:#4338CA; margin:20px 0 10px 0;">AKTIVA TETAP</div>
-            ${report.aktiva_tetap.detail_aset?.map((aset: any) => `
-                <div class="row-item row-sub">
-                    <span>${aset.kode} - ${aset.nama}</span>
-                    <span>${formatCurrency(aset.harga_beli)}</span>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+                <style>
+                    body { font-family: 'Helvetica', sans-serif; font-size: 10.5px; color: #1e293b; padding: 40px 35px; line-height: 1.4; background-color: #fff; }
+                    .header { text-align: center; border-bottom: 2.5px solid #4f46e5; padding-bottom: 20px; margin-bottom: 25px; }
+                    .title { font-size: 20px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+                    .subtitle { font-size: 13px; color: #4f46e5; font-weight: 600; margin-bottom: 3px; }
+                    .date { font-size: 11px; color: #64748b; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+                    
+                    .amount { text-align: right; font-family: 'Courier New', monospace; font-weight: 700; font-size: 11.5px; }
+                    .section-title { background-color: #f8fafc; font-weight: 800; color: #4f46e5; text-transform: uppercase; font-size: 10px; letter-spacing: 1.5px; border-top: 1.5px solid #e2e8f0; }
+                    .total-row { font-weight: 800; background-color: #f1f5f9; color: #1e293b; border-top: 2px solid #cbd5e1; }
+                    .grand-total { font-weight: 800; background-color: #4f46e5; color: #ffffff; font-size: 13px; }
+                    .grand-total td { border-bottom: none; }
+                    
+                    .sub-item { color: #64748b; padding-left: 25px; font-size: 9.5px; font-style: italic; }
+                    .negative { color: #e11d48; }
+                    .positive { color: #059669; }
+                    
+                    .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 9px; color: #94a3b8; text-align: center; font-style: italic; }
+                    
+                    .balance-box { border-radius: 12px; padding: 15px; text-align: center; margin-top: 20px; border: 2px solid #e2e8f0; }
+                    .balance-balanced { border-color: #059669; background-color: #f0fdf4; color: #059669; }
+                    .balance-unbalanced { border-color: #e11d48; background-color: #fef2f2; color: #e11d48; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">Laporan Neraca</div>
+                    <div class="subtitle">BENGKEL TPM - POSISI KEUANGAN</div>
+                    <div class="date">Per ${getHeaderDate()}</div>
                 </div>
-            `).join('')}
-            <div class="row-item row-total">
-                <span>TOTAL AKTIVA TETAP</span>
-                <span class="font-bold">${formatCurrency(report.aktiva_tetap.total_aktiva_tetap)}</span>
-            </div>
 
-            <div class="row-item row-total" style="font-size:16px; background:#059669; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                <span>TOTAL AKTIVA</span>
-                <span class="font-bold">${formatCurrency(report.total_aktiva)}</span>
-            </div>
+                <table>
+                    <tr class="section-title">
+                        <td colspan="2">AKTIVA LANCAR</td>
+                    </tr>
+                    <tr>
+                        <td>Kas & Bank</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.total_kas_bank || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Kas Tunai Utama</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.kas_tunai || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Kas Bank</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.kas_bank || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Kas Unit Bisnis</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.unit_cash || 0)}</td>
+                    </tr>
 
-            <div class="section-header" style="background:#7C3AED; margin-top:40px;">PASIVA (LIABILITIES & EQUITY)</div>
-            <div style="font-weight:bold; color:#7C3AED; margin:20px 0 10px 0;">MODAL</div>
-            <div class="row-item">
-                <span>Setoran Modal</span>
-                <span>${formatCurrency(report.modal.setoran_modal)}</span>
-            </div>
-            ${(report.modal.setoran_modal_kas > 0 || report.modal.modal_non_kas > 0) ? `
-                <div style="padding-left: 15px; margin: 4px 0; padding: 8px 15px; background: #f5f3ff; border: 1px solid #ede9fe; border-radius: 8px;">
-                    ${report.modal.setoran_modal_kas > 0 ? `
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">
-                            <span>Modal Tunai (Kas)</span>
-                            <span>${formatCurrency(report.modal.setoran_modal_kas)}</span>
-                        </div>
-                    ` : ''}
-                    ${report.modal.modal_non_kas > 0 ? `
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">
-                            <span>Modal Non-Kas (Aset)</span>
-                            <span>${formatCurrency(report.modal.modal_non_kas)}</span>
-                        </div>
-                    ` : ''}
+                    <tr>
+                        <td>Piutang Usaha (External & Internal)</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.total_piutang || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Piutang Unit Mobil</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.piutang_mobil || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Piutang Unit Jasa Angkut</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.piutang_jasa_angkut || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Piutang Bengkel & Sparepart</td>
+                        <td class="amount">${formatCurrency((report.aktiva_lancar?.piutang_usaha || 0) + (report.aktiva_lancar?.piutang_part_mobil || 0))}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Persediaan & Stok</td>
+                        <td class="amount">${formatCurrency((report.aktiva_lancar?.persediaan_sparepart || 0) + (report.aktiva_lancar?.stok_mobil || 0))}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Stok Sparepart</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.persediaan_sparepart || 0)}</td>
+                    </tr>
+                    <tr class="sub-item">
+                        <td>◦ Stok Unit Mobil (Inventory)</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.stok_mobil || 0)}</td>
+                    </tr>
+                    
+                    <tr class="total-row">
+                        <td>TOTAL AKTIVA LANCAR</td>
+                        <td class="amount">${formatCurrency(report.aktiva_lancar?.total_aktiva_lancar || 0)}</td>
+                    </tr>
+
+                    <tr class="section-title">
+                        <td colspan="2">AKTIVA TETAP</td>
+                    </tr>
+                    ${report.aktiva_tetap?.detail_aset?.map((aset: any) => `
+                        <tr>
+                            <td>${aset.kode} - ${aset.nama}</td>
+                            <td class="amount">${formatCurrency(aset.harga_beli)}</td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">Tidak ada aset tetap</td></tr>'}
+                    
+                    <tr class="total-row">
+                        <td>TOTAL AKTIVA TETAP</td>
+                        <td class="amount">${formatCurrency(report.aktiva_tetap?.total_aktiva_tetap || 0)}</td>
+                    </tr>
+
+                    <tr style="height: 15px;"></tr>
+                    <tr class="grand-total">
+                        <td>TOTAL AKTIVA (ASSETS)</td>
+                        <td class="amount">${formatCurrency(report.total_aktiva || 0)}</td>
+                    </tr>
+
+                    <tr style="height: 25px;"></tr>
+
+                    <tr class="section-title">
+                        <td colspan="2">KEWAJIBAN / HUTANG</td>
+                    </tr>
+                    <tr>
+                        <td>Hutang Pembelian (Part & Mobil)</td>
+                        <td class="amount">${formatCurrency((report.hutang?.hutang_part || 0) + (report.hutang?.hutang_mobil || 0))}</td>
+                    </tr>
+                    <tr>
+                        <td>Hutang Investor & Pihak Ketiga</td>
+                        <td class="amount">${formatCurrency(report.hutang?.hutang_investor || 0)}</td>
+                    </tr>
+                    <tr>
+                        <td>Kewajiban Lainnya</td>
+                        <td class="amount">${formatCurrency(report.hutang?.hutang_lainnya || 0)}</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>TOTAL KEWAJIBAN</td>
+                        <td class="amount">${formatCurrency(report.hutang?.total_hutang || 0)}</td>
+                    </tr>
+
+                    <tr class="section-title">
+                        <td colspan="2">MODAL / EKUITAS</td>
+                    </tr>
+                    <tr>
+                        <td>Modal Disetor (Cash & Aset)</td>
+                        <td class="amount">${formatCurrency(report.modal?.setoran_modal || 0)}</td>
+                    </tr>
+                    <tr>
+                        <td>Laba Ditahan (Retained Earnings)</td>
+                        <td class="amount">${formatCurrency(report.modal?.laba_ditahan || 0)}</td>
+                    </tr>
+                    <tr>
+                        <td>Prive (Pengambilan Pemilik)</td>
+                        <td class="amount negative">(${formatCurrency(report.modal?.prive || 0)})</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>TOTAL MODAL</td>
+                        <td class="amount">${formatCurrency(report.modal?.total_modal || 0)}</td>
+                    </tr>
+
+                    <tr style="height: 15px;"></tr>
+                    <tr class="grand-total" style="background-color: #7c3aed;">
+                        <td>TOTAL PASIVA (LIABILITIES + EQUITY)</td>
+                        <td class="amount">${formatCurrency(report.total_pasiva || 0)}</td>
+                    </tr>
+                </table>
+
+                <div class="balance-box ${report.is_balanced ? 'balance-balanced' : 'balance-unbalanced'}">
+                    <div style="font-weight: 900; font-size: 12px; margin-bottom: 5px; text-transform: uppercase;">
+                        Status Neraca: ${report.is_balanced ? 'SEIMBANG (BALANCED)' : 'TERDAPAT SELISIH'}
+                    </div>
+                    <div style="font-size: 10px;">
+                        Selisih: ${formatCurrency(report.selisih || 0)}
+                    </div>
                 </div>
-            ` : ''}
-            ${report.modal.modal_non_kas > 0 && (report.modal.modal_persediaan > 0 || report.modal.modal_stok_mobil > 0 || report.modal.modal_aset_tetap > 0) ? `
-                <div style="padding-left: 15px; margin: 8px 0; padding: 10px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Detail Modal Non-Kas</div>
-                    ${report.modal.modal_persediaan > 0 ? `
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">
-                            <span>Persediaan Sparepart</span>
-                            <span>${formatCurrency(report.modal.modal_persediaan)}</span>
-                        </div>
-                    ` : ''}
-                    ${report.modal.modal_stok_mobil > 0 ? `
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">
-                            <span>Stok Mobil (Inventory)</span>
-                            <span>${formatCurrency(report.modal.modal_stok_mobil)}</span>
-                        </div>
-                    ` : ''}
-                    ${report.modal.modal_aset_tetap > 0 ? `
-                        <div class="row-item" style="font-size: 11px; color: #64748b;">
-                            <span>Aset Tetap</span>
-                            <span>${formatCurrency(report.modal.modal_aset_tetap)}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            ` : ''}
-            <div class="row-item">
-                <span>Laba Ditahan</span>
-                <span>${formatCurrency(report.modal.laba_ditahan)}</span>
-            </div>
-            <div class="row-item">
-                <span>Prive</span>
-                <span class="text-error">(${formatCurrency(report.modal.prive)})</span>
-            </div>
-            <div class="row-item row-total">
-                <span>TOTAL MODAL</span>
-                <span class="font-bold">${formatCurrency(report.modal.total_modal)}</span>
-            </div>
-            <div style="font-weight:bold; color:#E11D48; margin:10px 0;">HUTANG</div>
-            <div class="row-item">
-                <span>Hutang Part</span>
-                <span>${formatCurrency(report.hutang.hutang_part)}</span>
-            </div>
-            <div class="row-item">
-                <span>Hutang Mobil</span>
-                <span>${formatCurrency(report.hutang.hutang_mobil)}</span>
-            </div>
-            <div class="row-item">
-                <span>Hutang Investor</span>
-                <span>${formatCurrency(report.hutang.hutang_investor)}</span>
-            </div>
-            <div class="row-item row-total">
-                <span>TOTAL HUTANG</span>
-                <span class="font-bold">${formatCurrency(report.hutang.total_hutang)}</span>
-            </div>
 
-            <div class="row-item row-total" style="font-size:16px; background:#7C3AED; color:white; padding:10px; border-radius:5px; margin-top:20px;">
-                <span>TOTAL PASIVA</span>
-                <span class="font-bold">${formatCurrency(report.total_pasiva)}</span>
-            </div>
-
-            <div style="margin-top:30px; padding:15px; border:2px solid ${report.is_balanced ? '#059669' : '#D97706'}; border-radius:10px; text-align:center;">
-                <div style="font-weight:bold; font-size:14px; color:${report.is_balanced ? '#059669' : '#D97706'};">
-                    STATUS NERACA: ${report.is_balanced ? 'SEIMBANG (BALANCED)' : 'SELISIH (UNBALANCED)'}
+                <div class="footer">
+                    Laporan Neraca TPM Finance System<br/>
+                    Dicetak pada ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeID })}
                 </div>
-                ${report.selisih !== 0 ? `<div style="font-size:12px; margin-top:5px;">Selisih: ${formatCurrency(report.selisih)}</div>` : ''}
-            </div>
+            </body>
+            </html>
         `;
     };
 
-    const handleExportPDF = async (mode: 'preview' | 'download' = 'preview') => {
+    const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!report) return;
         setIsExporting(true);
         try {
             const html = buildNeracaExportHtml();
+            
             if (mode === 'preview') {
-                await printReportHTML(html, {
-                    title: 'Laporan Neraca',
-                    dateRange: getFormattedDate()
-                });
-            } else {
-                const fullHtml = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head><meta charset="utf-8"></head>
-                    <body>${html}</body>
-                    </html>
-                `;
+                setPreviewHtml(html);
+                setShowPdfPreview(true);
+                setShowExportMenu(false);
+            } else if (mode === 'print') {
                 if (Platform.OS === 'web') {
-                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                        printWindow.document.write(html);
+                        printWindow.document.close();
+                        printWindow.print();
+                    }
+                } else {
+                    await Print.printAsync({ html });
+                }
+            } else {
+                const { uri } = await Print.printToFileAsync({ html });
+                if (Platform.OS === 'web') {
                     const link = document.createElement('a');
                     link.href = uri;
-                    link.download = `Laporan_Neraca_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                    link.download = `Neraca_${getHeaderDate().replace(/ /g, '_')}.pdf`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } else {
-                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
-                    if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(uri, {
-                            mimeType: 'application/pdf',
-                            dialogTitle: 'Laporan Neraca',
-                            UTI: 'com.adobe.pdf'
-                        });
-                    }
+                } else if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(uri, {
+                        mimeType: 'application/pdf',
+                        dialogTitle: 'Laporan Neraca',
+                        UTI: 'com.adobe.pdf'
+                    });
                 }
             }
         } catch (e) {
-            Alert.alert('Error', mode === 'preview' ? 'Gagal mencetak laporan' : 'Gagal membuat PDF');
+            Alert.alert('Error', 'Gagal memproses laporan');
         } finally {
             setIsExporting(false);
         }
@@ -875,58 +915,105 @@ export default function NeracaScreen() {
             </ScrollView>
 
             {/* Export Action Menu */}
-            <Modal
-                visible={showExportMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowExportMenu(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-black/50 justify-end"
-                    onPress={() => setShowExportMenu(false)}
-                >
-                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
+            <Modal visible={showExportMenu} transparent animationType="fade">
+                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
+                    <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
                         <View className="flex-row justify-between items-center mb-8">
                             <View>
                                 <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
                                 <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                             </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
-                                <X size={20} color={themeColors.textGray} />
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2 rounded-full">
+                                <X size={20} color="#64748b" />
                             </Pressable>
                         </View>
 
                         <View className="flex-row gap-4">
                             <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('preview'), 100);
-                                }}
-                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
+                                onPress={() => handleExportPDF('preview')}
+                                className="flex-1 bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 items-center"
                             >
-                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
+                                <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-indigo-200">
                                     <Eye size={28} color="white" />
                                 </View>
-                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
+                                <Typography weight="bold" className="text-indigo-900">Preview</Typography>
+                                <Typography variant="caption" className="text-indigo-600/70 text-center mt-1">Lihat & Cek</Typography>
                             </Pressable>
 
                             <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('download'), 100);
-                                }}
-                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
+                                onPress={() => handleExportPDF('print')}
+                                className="flex-1 bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 items-center"
                             >
-                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
-                                    <Share2 size={28} color="white" />
+                                <View className="w-14 h-14 bg-emerald-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200">
+                                    <Printer size={28} color="white" />
                                 </View>
-                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
-                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
+                                <Typography weight="bold" className="text-emerald-900">Cetak</Typography>
+                                <Typography variant="caption" className="text-emerald-600/70 text-center mt-1">Print Langsung</Typography>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => handleExportPDF('download')}
+                                className="flex-1 bg-amber-50 p-6 rounded-[32px] border border-amber-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-amber-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-amber-200">
+                                    <Download size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-amber-900">PDF</Typography>
+                                <Typography variant="caption" className="text-amber-600/70 text-center mt-1">Simpan File</Typography>
                             </Pressable>
                         </View>
                     </View>
                 </Pressable>
+            </Modal>
+
+            {/* FULL SCREEN PDF PREVIEW MODAL */}
+            <Modal visible={showPdfPreview} animationType="slide">
+                <SafeAreaView className="flex-1 bg-white">
+                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
+                        <Pressable 
+                            onPress={() => setShowPdfPreview(false)}
+                            className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+                        >
+                            <X size={20} color="#1e293b" />
+                        </Pressable>
+                        <Typography variant="body1" weight="bold" className="text-slate-900">Preview Neraca</Typography>
+                        <Pressable 
+                            onPress={async () => {
+                                if (Platform.OS === 'web') {
+                                    const printWindow = window.open('', '_blank');
+                                    if (printWindow) {
+                                        printWindow.document.write(previewHtml);
+                                        printWindow.document.close();
+                                        printWindow.print();
+                                    }
+                                } else {
+                                    await Print.printAsync({ html: previewHtml });
+                                }
+                            }}
+                            className="flex-row items-center px-4 py-2 rounded-xl shadow-sm"
+                            style={{ backgroundColor: '#4f46e5' }}
+                        >
+                            <Download size={16} color="white" className="mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
+                        </Pressable>
+                    </View>
+                    
+                    <View className="flex-1 bg-slate-100">
+                        {Platform.OS === 'web' ? (
+                            <iframe 
+                                srcDoc={previewHtml} 
+                                style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} 
+                                title="Neraca Preview"
+                            />
+                        ) : (
+                            <WebView 
+                                originWhitelist={['*']}
+                                source={{ html: previewHtml }}
+                                style={{ flex: 1 }}
+                            />
+                        )}
+                    </View>
+                </SafeAreaView>
             </Modal>
         </SafeAreaView>
     );

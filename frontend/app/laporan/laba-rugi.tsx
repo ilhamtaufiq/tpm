@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
-import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, ArrowDownLeft, DollarSign, Download, Eye, Share2, X, Truck } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, Wallet, BarChart3, ArrowUpRight, ArrowDownLeft, DollarSign, Download, Eye, Share2, X, Truck, Printer } from 'lucide-react-native';
 import { useRouter, useFocusEffect, useNavigation, Stack } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { keuanganService } from '../../services/keuangan';
-import { Alert, Modal } from 'react-native';
-import { printReportHTML } from '../../utils/printReport';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { WebView } from 'react-native-webview';
+import { Modal, Alert, Platform } from 'react-native';
 import { formatCurrency } from '../../utils/format';
 import { useLabaRugiReport } from '../../hooks/useKeuangan';
 import { Card } from '../../components/ui/Card';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -25,6 +25,8 @@ export default function LabaRugiScreen() {
     const [date, setDate] = useState(new Date());
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [showPdfPreview, setShowPdfPreview] = useState(false);
+    const [previewHtml, setPreviewHtml] = useState('');
     const { themeColors } = useUIStore();
 
     // Date Manipulation
@@ -86,135 +88,173 @@ export default function LabaRugiScreen() {
     const priveTotal = reportData?.summary?.prive || 0;
     const labaBersihTotal = reportData?.summary?.laba_bersih || 0;
 
-    const handleExportPDF = async (mode: 'preview' | 'download' = 'preview') => {
+    const buildLabaRugiExportHtml = () => {
+        if (!reportData) return '';
+
+        const getHeaderDate = () => {
+            if (filterType === 'daily') return format(date, 'd MMMM yyyy', { locale: localeID });
+            if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
+            return format(date, 'yyyy', { locale: localeID });
+        };
+
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+                <style>
+                    body { font-family: 'Helvetica', sans-serif; font-size: 10.5px; color: #1e293b; padding: 40px 35px; line-height: 1.4; background-color: #fff; }
+                    .header { text-align: center; border-bottom: 2.5px solid #4f46e5; padding-bottom: 20px; margin-bottom: 25px; }
+                    .title { font-size: 20px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 1px; }
+                    .subtitle { font-size: 13px; color: #4f46e5; font-weight: 600; margin-bottom: 3px; }
+                    .date { font-size: 11px; color: #64748b; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+                    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+                    
+                    .amount { text-align: right; font-family: 'Courier New', monospace; font-weight: 700; font-size: 11.5px; }
+                    .section-title { background-color: #f8fafc; font-weight: 800; color: #4f46e5; text-transform: uppercase; font-size: 10.5px; letter-spacing: 1.5px; border-top: 1.5px solid #e2e8f0; }
+                    .unit-header { background-color: #4f46e5; color: #ffffff; font-weight: 800; padding: 12px 10px; font-size: 11px; }
+                    .total-row { font-weight: 800; background-color: #f1f5f9; color: #1e293b; border-top: 2px solid #cbd5e1; }
+                    .grand-total { font-weight: 800; background-color: #1e293b; color: #ffffff; font-size: 13px; }
+                    
+                    .sub-item { color: #64748b; padding-left: 25px; font-size: 9.5px; font-style: italic; }
+                    .negative { color: #e11d48; }
+                    .positive { color: #059669; }
+                    
+                    .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 9px; color: #94a3b8; text-align: center; font-style: italic; }
+                    
+                    .recap-box { border-radius: 12px; padding: 20px; background-color: #0f172a; color: #ffffff; margin-top: 30px; }
+                    .recap-title { font-weight: 900; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px; text-transform: uppercase; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">Laporan Laba Rugi</div>
+                    <div class="subtitle">BENGKEL TPM - ANALISA FINANSIAL</div>
+                    <div class="date">Periode: ${getFormattedDate()}</div>
+                </div>
+
+                <table>
+                    <!-- UNIT BENGKEL -->
+                    <tr class="unit-header"><td colspan="2">UNIT BENGKEL & SPAREPART</td></tr>
+                    <tr class="section-title"><td colspan="2">I. PENDAPATAN</td></tr>
+                    <tr><td>Penjualan Sparepart (Retail)</td><td class="amount">${formatCurrency(reportData?.bengkel_details?.total_parts || 0)}</td></tr>
+                    <tr><td>Jasa Servis & Bengkel</td><td class="amount">${formatCurrency(reportData?.bengkel_details?.total_jasa || 0)}</td></tr>
+                    <tr><td>Diskon Penjualan</td><td class="amount negative">(${formatCurrency(reportData?.bengkel_details?.total_diskon || 0)})</td></tr>
+                    <tr class="total-row"><td>TOTAL PENDAPATAN BENGKEL</td><td class="amount">${formatCurrency(reportData?.units?.bengkel?.revenue || 0)}</td></tr>
+
+                    <tr class="section-title"><td colspan="2">II. BEBAN POKOK (HPP)</td></tr>
+                    <tr><td>HPP Sparepart Terjual</td><td class="amount negative">(${formatCurrency(reportData?.units?.bengkel?.hpp || 0)})</td></tr>
+                    <tr class="total-row"><td>LABA KOTOR BENGKEL</td><td class="amount">${formatCurrency(reportData?.units?.bengkel?.laba_kotor || 0)}</td></tr>
+
+                    <tr class="section-title"><td colspan="2">III. BEBAN OPERASIONAL UNIT</td></tr>
+                    <tr><td>Beban Gaji & Lembur</td><td class="amount negative">(${formatCurrency(reportData?.units?.bengkel?.beban_gaji || 0)})</td></tr>
+                    <tr><td>Beban Operasional Bengkel</td><td class="amount negative">(${formatCurrency(reportData?.units?.bengkel?.beban_operasional || 0)})</td></tr>
+                    <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH BENGKEL</td><td class="amount positive">${formatCurrency(reportData?.units?.bengkel?.laba_bersih || 0)}</td></tr>
+
+                    <tr style="height: 25px;"></tr>
+
+                    <!-- UNIT JASA ANGKUT -->
+                    <tr class="unit-header" style="background-color: #059669;"><td colspan="2">UNIT JASA ANGKUT (LOGISTIC)</td></tr>
+                    <tr class="section-title"><td colspan="2">I. PENDAPATAN JASA</td></tr>
+                    <tr><td>Total Pendapatan Jasa (Gross)</td><td class="amount">${formatCurrency(reportData?.units?.jasa_angkut?.revenue || 0)}</td></tr>
+
+                    <tr class="section-title"><td colspan="2">II. BIAYA ARMADA & MAINTENANCE</td></tr>
+                    <tr><td>Biaya Operasional Trip (BBM, Tol, dll)</td><td class="amount negative">(${formatCurrency(reportData?.units?.jasa_angkut?.beban_operasional || 0)})</td></tr>
+                    <tr><td>Biaya Perbaikan & Maintenance</td><td class="amount negative">(${formatCurrency(reportData?.units?.jasa_angkut?.maintenance || 0)})</td></tr>
+                    
+                    <tr class="section-title"><td colspan="2">III. BEBAN UMUM UNIT</td></tr>
+                    <tr><td>Beban Umum Jasa Angkut</td><td class="amount negative">(${formatCurrency(reportData?.units?.jasa_angkut?.beban_umum || 0)})</td></tr>
+                    <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH JASA ANGKUT</td><td class="amount positive">${formatCurrency(reportData?.units?.jasa_angkut?.laba_bersih || 0)}</td></tr>
+
+                    <tr style="height: 25px;"></tr>
+
+                    <!-- UNIT MOBIL -->
+                    <tr class="unit-header" style="background-color: #d97706;"><td colspan="2">UNIT JUAL BELI MOBIL</td></tr>
+                    <tr class="section-title"><td colspan="2">I. PENDAPATAN JUAL BELI</td></tr>
+                    <tr><td>Total Penjualan Unit Mobil</td><td class="amount">${formatCurrency(reportData?.units?.mobil?.revenue || 0)}</td></tr>
+
+                    <tr class="section-title"><td colspan="2">II. BEBAN POKOK (HPP)</td></tr>
+                    <tr><td>Harga Beli Unit Mobil</td><td class="amount negative">(${formatCurrency(reportData?.units?.mobil?.hpp || 0)})</td></tr>
+                    <tr><td>Biaya Persiapan (Pajak, BBN, dll)</td><td class="amount negative">(${formatCurrency(reportData?.units?.mobil?.beban_operasional || 0)})</td></tr>
+                    <tr><td>Biaya Perbaikan (Workshop)</td><td class="amount negative">(${formatCurrency(reportData?.units?.mobil?.maintenance || 0)})</td></tr>
+
+                    <tr class="section-title"><td colspan="2">III. BAGI HASIL & UMUM</td></tr>
+                    <tr><td>Bagi Hasil Investor (Sharing)</td><td class="amount negative">(${formatCurrency(reportData?.units?.mobil?.sharing_investor || 0)})</td></tr>
+                    <tr><td>Beban Umum Unit Mobil</td><td class="amount negative">(${formatCurrency(reportData?.units?.mobil?.beban_umum || 0)})</td></tr>
+                    <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH MOBIL (TPM)</td><td class="amount positive">${formatCurrency(reportData?.units?.mobil?.laba_bersih || 0)}</td></tr>
+                </table>
+
+                <div class="recap-box">
+                    <div class="recap-title">REKAPITULASI FINANSIAL</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Total Laba Operasional Seluruh Unit</span>
+                        <span class="amount">${formatCurrency(reportData?.summary?.laba_operasional || 0)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>Beban Umum & Operasional Pusat</span>
+                        <span class="amount negative">(${formatCurrency(reportData?.summary?.total_beban_umum || 0)})</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <span>Pengambilan Prive Pemilik</span>
+                        <span class="amount negative">(${formatCurrency(reportData?.summary?.prive || 0)})</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900;">
+                        <span>LABA BERSIH AKHIR (TPM)</span>
+                        <span class="amount" style="color: #4ade80;">${formatCurrency(reportData?.summary?.laba_bersih || 0)}</span>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Laporan Laba Rugi TPM Finance System<br/>
+                    Dicetak pada ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeID })}
+                </div>
+            </body>
+            </html>
+        `;
+    };
+
+    const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!reportData) return;
         setIsExporting(true);
         try {
-            const html = `
-                <div class="section-header" style="background: #2563eb; color: white;">UNIT BENGKEL</div>
-                <div class="row-item">
-                    <span>I. PENDAPATAN OPERASIONAL</span>
-                    <span>${formatCurrency(reportData?.units?.bengkel?.revenue || 0)}</span>
-                </div>
-                <div class="row-item">
-                    <span>II. BEBAN POKOK PENJUALAN (HPP)</span>
-                    <span class="text-error">(${formatCurrency(reportData?.units?.bengkel?.hpp || 0)})</span>
-                </div>
-                <div class="row-item row-total" style="background: #f8fafc;">
-                    <span>III. LABA KOTOR BENGKEL</span>
-                    <span class="font-bold">${formatCurrency(reportData?.units?.bengkel?.laba_kotor || 0)}</span>
-                </div>
-                <div class="row-item" style="margin-top: 10px;">
-                    <span>IV. BEBAN OPERASIONAL UNIT</span>
-                    <span class="text-error">(${formatCurrency((reportData?.units?.bengkel?.beban_operasional || 0) + (reportData?.units?.bengkel?.beban_gaji || 0))})</span>
-                </div>
-                <div class="row-item row-total" style="background: #f0fdf4; border-top: 2px solid #16a34a;">
-                    <span>V. LABA BERSIH BENGKEL</span>
-                    <span class="font-bold">${formatCurrency(reportData?.units?.bengkel?.laba_bersih || 0)}</span>
-                </div>
-
-                <div class="section-header" style="background: #059669; color: white;">UNIT JASA ANGKUT</div>
-                <div class="row-item">
-                    <span>I. PENDAPATAN JASA (BAGIAN TPM)</span>
-                    <span>${formatCurrency(reportData?.units?.jasa_angkut?.revenue || 0)}</span>
-                </div>
-                <div class="row-item">
-                    <span>II. BIAYA DIRECT (ARMADA & MAINTENANCE)</span>
-                    <span class="text-error">(${formatCurrency((reportData?.units?.jasa_angkut?.beban_operasional || 0) + (reportData?.units?.jasa_angkut?.maintenance || 0))})</span>
-                </div>
-                <div class="row-item">
-                    <span>III. BEBAN UMUM UNIT</span>
-                    <span class="text-error">(${formatCurrency(reportData?.units?.jasa_angkut?.beban_umum || 0)})</span>
-                </div>
-                <div class="row-item row-total" style="background: #f0fdf4; border-top: 2px solid #059669;">
-                    <span>IV. LABA BERSIH JASA ANGKUT</span>
-                    <span class="font-bold">${formatCurrency(reportData?.units?.jasa_angkut?.laba_bersih || 0)}</span>
-                </div>
-
-                <div class="section-header" style="background: #f59e0b; color: white;">UNIT JUAL BELI MOBIL</div>
-                <div class="row-item">
-                    <span>I. PENDAPATAN JUAL BELI</span>
-                    <span>${formatCurrency(reportData?.units?.mobil?.revenue || 0)}</span>
-                </div>
-                <div class="row-item">
-                    <span>II. BEBAN POKOK MOBIL (HPP)</span>
-                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.hpp || 0)})</span>
-                </div>
-                <div class="row-item">
-                    <span>III. BIAYA PERSIAPAN (PAJAK, BBN, DLL)</span>
-                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.beban_operasional || 0)})</span>
-                </div>
-                <div class="row-item">
-                    <span>IV. BAGI HASIL INVESTOR</span>
-                    <span class="text-error">(${formatCurrency(reportData?.units?.mobil?.sharing_investor || 0)})</span>
-                </div>
-                <div class="row-item row-total" style="background: #fefce8;">
-                    <span>V. LABA BERSIH MOBIL (TPM)</span>
-                    <span class="font-bold">${formatCurrency(reportData?.units?.mobil?.laba_bersih || 0)}</span>
-                </div>
-
-                <div class="section-header" style="background: #334155; color: white;">BIAYA UMUM & PRIVE</div>
-                <div class="row-item">
-                    <span>Biaya Operasional Pusat</span>
-                    <span class="text-error">(${formatCurrency(reportData?.summary?.total_beban_umum || 0)})</span>
-                </div>
-                <div class="row-item">
-                    <span>Penarikan Prive Pemilik</span>
-                    <span class="text-error">(${formatCurrency(reportData?.summary?.prive || 0)})</span>
-                </div>
-
-                <div style="margin-top:40px; padding:25px; background:#0f172a; border-radius:15px; color: white;">
-                    <div style="font-size:18px; font-weight:bold; margin-bottom:15px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;">REKAPITULASI AKHIR</div>
-                    <div class="row-item" style="border:none; color: #cbd5e1;">
-                        <span>Total Laba Bersih Operasional</span>
-                        <span>${formatCurrency(reportData?.summary?.laba_operasional || 0)}</span>
-                    </div>
-                    <div class="row-item" style="border:none; color: #cbd5e1; margin-bottom: 15px;">
-                        <span>Prive Pemilik</span>
-                        <span style="color: #fca5a5;">(${formatCurrency(reportData?.summary?.prive || 0)})</span>
-                    </div>
-                    <div class="row-item row-total" style="font-size:24px; color: #ffffff; border-top: 2px solid white; padding-top: 15px;">
-                        <span>PROFIT BERSIH AKHIR</span>
-                        <span class="font-bold">${formatCurrency(reportData?.summary?.laba_bersih || 0)}</span>
-                    </div>
-                </div>
-            `;
-
+            const html = buildLabaRugiExportHtml();
+            
             if (mode === 'preview') {
-                await printReportHTML(html, {
-                    title: 'Laporan Laba Rugi',
-                    dateRange: getFormattedDate()
-                });
-            } else {
-                const fullHtml = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head><meta charset="utf-8"></head>
-                    <body>${html}</body>
-                    </html>
-                `;
-
+                setPreviewHtml(html);
+                setShowPdfPreview(true);
+                setShowExportMenu(false);
+            } else if (mode === 'print') {
                 if (Platform.OS === 'web') {
-                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                        printWindow.document.write(html);
+                        printWindow.document.close();
+                        printWindow.print();
+                    }
+                } else {
+                    await Print.printAsync({ html });
+                }
+            } else {
+                const { uri } = await Print.printToFileAsync({ html });
+                if (Platform.OS === 'web') {
                     const link = document.createElement('a');
                     link.href = uri;
-                    link.download = `Laporan_Laba_Rugi_${format(new Date(), 'yyyyMMdd')}.pdf`;
+                    link.download = `LabaRugi_${getFormattedDate().replace(/ /g, '_')}.pdf`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } else {
-                    const { uri } = await Print.printToFileAsync({ html: fullHtml });
-                    if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(uri, {
-                            mimeType: 'application/pdf',
-                            dialogTitle: 'Laporan Laba Rugi',
-                            UTI: 'com.adobe.pdf'
-                        });
-                    }
+                } else if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(uri, {
+                        mimeType: 'application/pdf',
+                        dialogTitle: 'Laporan Laba Rugi',
+                        UTI: 'com.adobe.pdf'
+                    });
                 }
             }
         } catch (e) {
-            Alert.alert('Error', 'Gagal memproses dokumen PDF');
+            Alert.alert('Error', 'Gagal memproses laporan');
         } finally {
             setIsExporting(false);
         }
@@ -612,58 +652,105 @@ export default function LabaRugiScreen() {
                 )}
             </ScrollView>
 
-            <Modal
-                visible={showExportMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowExportMenu(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-slate-900/40 justify-end backdrop-blur-sm"
-                    onPress={() => setShowExportMenu(false)}
-                >
-                    <Pressable onPress={e => e.stopPropagation()} className="bg-white rounded-t-[32px] p-6 pb-10 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-6 w-full">
+            <Modal visible={showExportMenu} transparent animationType="fade">
+                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
+                    <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                        <View className="flex-row justify-between items-center mb-8">
                             <View>
-                                <Typography variant="h3" weight="bold" className="text-slate-800">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-slate-500">Pilih metode ekspor PDF</Typography>
+                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
+                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
                             </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2.5 rounded-full active:bg-slate-200">
-                                <X size={20} className="text-slate-600" />
+                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2 rounded-full">
+                                <X size={20} color="#64748b" />
                             </Pressable>
                         </View>
 
-                        <View className="flex-row gap-4 w-full">
+                        <View className="flex-row gap-4">
                             <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('preview'), 100);
-                                }}
-                                className="flex-1 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm shadow-slate-200 items-center active:bg-slate-50"
+                                onPress={() => handleExportPDF('preview')}
+                                className="flex-1 bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 items-center"
                             >
-                                <View className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl items-center justify-center mb-3">
-                                    <Eye size={28} className="text-blue-600" />
+                                <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-indigo-200">
+                                    <Eye size={28} color="white" />
                                 </View>
-                                <Typography weight="bold" className="text-slate-700">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-slate-500 text-center mt-1">Pratinjau PDF</Typography>
+                                <Typography weight="bold" className="text-indigo-900">Preview</Typography>
+                                <Typography variant="caption" className="text-indigo-600/70 text-center mt-1">Lihat & Cek</Typography>
                             </Pressable>
 
                             <Pressable
-                                onPress={() => {
-                                    setShowExportMenu(false);
-                                    setTimeout(() => handleExportPDF('download'), 100);
-                                }}
-                                className="flex-1 bg-primary p-5 rounded-2xl shadow-md shadow-primary/30 items-center active:bg-primary-dark"
+                                onPress={() => handleExportPDF('print')}
+                                className="flex-1 bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 items-center"
                             >
-                                <View className="w-14 h-14 bg-white/20 rounded-2xl items-center justify-center mb-3">
+                                <View className="w-14 h-14 bg-emerald-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200">
+                                    <Printer size={28} color="white" />
+                                </View>
+                                <Typography weight="bold" className="text-emerald-900">Cetak</Typography>
+                                <Typography variant="caption" className="text-emerald-600/70 text-center mt-1">Print Langsung</Typography>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => handleExportPDF('download')}
+                                className="flex-1 bg-amber-50 p-6 rounded-[32px] border border-amber-100 items-center"
+                            >
+                                <View className="w-14 h-14 bg-amber-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-amber-200">
                                     <Download size={28} color="white" />
                                 </View>
-                                <Typography weight="bold" className="text-white">Download</Typography>
-                                <Typography variant="caption" className="text-primary-100 text-center mt-1">Simpan File</Typography>
+                                <Typography weight="bold" className="text-amber-900">PDF</Typography>
+                                <Typography variant="caption" className="text-amber-600/70 text-center mt-1">Simpan File</Typography>
                             </Pressable>
                         </View>
-                    </Pressable>
+                    </View>
                 </Pressable>
+            </Modal>
+
+            {/* FULL SCREEN PDF PREVIEW MODAL */}
+            <Modal visible={showPdfPreview} animationType="slide">
+                <SafeAreaView className="flex-1 bg-white">
+                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
+                        <Pressable 
+                            onPress={() => setShowPdfPreview(false)}
+                            className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+                        >
+                            <X size={20} color="#1e293b" />
+                        </Pressable>
+                        <Typography variant="body1" weight="bold" className="text-slate-900">Preview Laba Rugi</Typography>
+                        <Pressable 
+                            onPress={async () => {
+                                if (Platform.OS === 'web') {
+                                    const printWindow = window.open('', '_blank');
+                                    if (printWindow) {
+                                        printWindow.document.write(previewHtml);
+                                        printWindow.document.close();
+                                        printWindow.print();
+                                    }
+                                } else {
+                                    await Print.printAsync({ html: previewHtml });
+                                }
+                            }}
+                            className="flex-row items-center px-4 py-2 rounded-xl shadow-sm"
+                            style={{ backgroundColor: '#4f46e5' }}
+                        >
+                            <Download size={16} color="white" className="mr-2" />
+                            <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
+                        </Pressable>
+                    </View>
+                    
+                    <View className="flex-1 bg-slate-100">
+                        {Platform.OS === 'web' ? (
+                            <iframe 
+                                srcDoc={previewHtml} 
+                                style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} 
+                                title="Laba Rugi Preview"
+                            />
+                        ) : (
+                            <WebView 
+                                originWhitelist={['*']}
+                                source={{ html: previewHtml }}
+                                style={{ flex: 1 }}
+                            />
+                        )}
+                    </View>
+                </SafeAreaView>
             </Modal>
         </SafeAreaView>
     );
