@@ -45,38 +45,12 @@ class ModalService(BaseReportService):
         raw_start_m_stock = start_hist["assets"].get("persediaan_mobil", 0)
         start_stok_mobil = float(raw_start_m_stock.get("total", 0)) if isinstance(raw_start_m_stock, dict) else float(raw_start_m_stock)
         start_aset_tetap = float(start_hist["assets"].get("tetap", 0))
-        # Opening debt should be the balance as of yesterday
-        # Opening Debt = Sum(Nominal created before today) - Sum(Payments paid before today)
-        total_nominal_awal = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
-            HutangUsaha.status != PaymentStatus.BATAL,
-            HutangUsaha.tanggal <= yesterday
-        ).scalar() or 0)
-        
-        total_paid_awal = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
-            HutangUsaha.status != PaymentStatus.BATAL,
-            HutangUsaha.tanggal <= yesterday,
-            PembayaranHutang.tanggal <= yesterday
-        ).scalar() or 0)
-        
-        start_hutang = total_nominal_awal - total_paid_awal
-        
-        # Opening piutang as of yesterday
-        total_piutang_awal = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            PiutangUsaha.tanggal <= yesterday
-        ).scalar() or 0)
-        
-        total_recv_awal = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            PiutangUsaha.tanggal <= yesterday,
-            PembayaranPiutang.tanggal <= yesterday
-        ).scalar() or 0)
-        
-        start_piutang = total_piutang_awal - total_recv_awal
-
-        
-        # Note: We rely strictly on snapshots for opening assets. 
-        # Manual fallbacks are removed to prevent double-counting when assets are bought today.
+        # Opening debt and piutang should be the balances as of yesterday
+        # We use the raw summaries from our historical snapshot to ensure consistency 
+        # with the current period's asset calculations (including internal eliminations,
+        # investor debt, and accrued expenses).
+        start_piutang = float(start_hist["raw_summaries"]["piutang"].get("total", 0))
+        start_hutang = float(start_hist["raw_summaries"]["hutang"].get("total", 0))
 
         # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
         modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap + start_piutang) - start_hutang
@@ -271,7 +245,9 @@ class ModalService(BaseReportService):
 
         def _piutang_saldo_source(source: PiutangSource) -> float:
             return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber == source, PiutangUsaha.status != PiutangStatus.LUNAS
+                PiutangUsaha.sumber == source, 
+                PiutangUsaha.tanggal <= tanggal_sampai,
+                PiutangUsaha.status != PiutangStatus.BATAL
             ).scalar() or 0)
 
         def _piutang_saldo_unit_refined(unit: KasBankSource, source: PiutangSource, internal_jb_mobil: str = "all") -> float:
@@ -279,12 +255,14 @@ class ModalService(BaseReportService):
             q_unit = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
                 PiutangUsaha.unit == unit, 
                 PiutangUsaha.sumber == source,
-                PiutangUsaha.status != PiutangStatus.LUNAS
+                PiutangUsaha.tanggal <= tanggal_sampai,
+                PiutangUsaha.status != PiutangStatus.BATAL
             )
             q_legacy = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
                 PiutangUsaha.sumber == source, 
                 PiutangUsaha.unit.is_(None), 
-                PiutangUsaha.status != PiutangStatus.LUNAS
+                PiutangUsaha.tanggal <= tanggal_sampai,
+                PiutangUsaha.status != PiutangStatus.BATAL
             )
             if unit == KasBankSource.JUAL_BELI_MOBIL:
                 if internal_jb_mobil == "only_internal":
@@ -319,7 +297,9 @@ class ModalService(BaseReportService):
         # Breakdown Beban Operasional
         ops_umum = float(b.get("common_expenses", 0)) + float(data.get("admin_fees_unrecorded", 0)) + float(data.get("ja_untracked_gap", 0))
         ops_bengkel = float(b.get("total_expenses", 0))
-        ops_mobil = float(m.get("overhead", 0))
+        # Mobil Breakdown: Include tagged costs (prep/repairs) in operational deduction
+        # because those represent cash outflows during this period.
+        ops_mobil = float(m.get("overhead", 0)) + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
         
         # Jasa Angkut Breakdown: Unit vs Trip/Armada
         # Note: ja.get("armada_ops", 0) already includes trip_costs if they are recorded 
@@ -338,8 +318,10 @@ class ModalService(BaseReportService):
         laba_ja_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))
         laba_bengkel_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
-        # Laba Kotor (Gross Profit) = Net Profit + All Expenses
-        laba_kotor = period_profit_sot + gaji + lembur + total_ops
+        # Laba Kotor (Gross Profit) = Sum of all units' gross profit
+        # This is more accurate than the add-back method as it avoids double-counting 
+        # capitalized costs (prep/repairs) which are handled in Section B separately.
+        laba_kotor = laba_mobil_gross + laba_ja_gross + laba_bengkel_gross
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -349,11 +331,14 @@ class ModalService(BaseReportService):
             KasBank.tanggal <= tanggal_sampai
         ).scalar() or 0)
         
+        # penambahan_stok_mobil should include:
+        # 1. Purchase price of new cars bought in this period
+        # 2. Preparation/Repair costs paid in this period (as they increase asset value)
         penambahan_stok_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk >= tanggal_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
-        ).scalar() or 0)
+        ).scalar() or 0) + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
 
         # 2. Spare Part Stock Rotation
         penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
