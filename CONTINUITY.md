@@ -19,11 +19,12 @@ Resolve systemic discrepancies across financial reporting modules (Neraca, Perub
     - Integrated "Kasbon Karyawan (Umum)" into "Piutang Lainnya" reporting logic in `BaseReportService`.
     - Fixed double-counting of piutang in `ModalService` calculation.
     - Overhauled historical piutang/hutang logic in `BaseReportService` to use point-in-time (nominal - payments) logic.
+    - Restored missing Jasa Angkut operational labels and data (Unit, Armada, Trip, Repairs) in `Perubahan Modal`.
+    - Fixed discrepancy between `ModalService` and `LabaRugiService` regarding JA internal repair costs.
 - **Now**:
-    - Waiting for user to manually verify transactions for April 29th to isolate the source of the remaining 654k discrepancy.
+    - Validating cross-report consistency between Laba Rugi and Perubahan Modal.
 - **Next**:
-    - Validate mathematical consistency (Theoretical vs Actual Capital) after piutang fix.
-    - Confirm "BALANCE" status in Perubahan Modal report for April 29th.
+    - Final validation of the 654k discrepancy once user provides verification.
 
 
 ## Open Questions

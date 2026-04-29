@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
@@ -92,12 +92,9 @@ export default function LaporanPerubahanModalScreen() {
             const ops_umum = r.pengurangan?.ops_umum || 0;
             const ops_bengkel = r.pengurangan?.ops_bengkel || 0;
             const ops_mobil = r.pengurangan?.ops_mobil || 0;
-            const ops_ja = r.pengurangan?.ops_ja?.total || 0;
+            const ops_ja = r.pengurangan?.ops_ja || 0;
             const prive = r.pengurangan?.prive || 0;
             const pengembalian = r.pengurangan?.pengembalian_modal || 0;
-            const pelunasan_h = r.penambahan?.pelunasan_hutang || 0;
-            const hutang_baru = r.pengurangan?.hutang_baru || 0;
-            const bayar_hutang = r.pengurangan?.pembayaran_hutang || 0;
             const tot_pengurangan = r.pengurangan?.total || 0;
             
             const modal_akhir = r.modal_akhir || 0;
@@ -162,12 +159,6 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(laba)}</td>
                             <td></td>
                         </tr>
-                        ${pelunasan_h > 0 ? `
-                        <tr>
-                            <td>Pelunasan Hutang (Adjustment)</td>
-                            <td class="amount">${formatCurrency(pelunasan_h)}</td>
-                            <td></td>
-                        </tr>` : ''}
                         <tr class="total-row">
                             <td>TOTAL PENAMBAHAN MODAL</td>
                             <td class="amount">${formatCurrency(tot_penambahan)}</td>
@@ -202,30 +193,6 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">(${formatCurrency(ops_ja)})</td>
                             <td></td>
                         </tr>
-                        ${r.pengurangan?.ops_ja?.unit > 0 ? `
-                        <tr class="sub-row">
-                            <td style="padding-left: 20px;">◦ Biaya Operasional Unit Bisnis</td>
-                            <td class="amount">(${formatCurrency(r.pengurangan?.ops_ja?.unit)})</td>
-                            <td></td>
-                        </tr>` : ''}
-                        ${r.pengurangan?.ops_ja?.armada > 0 ? `
-                        <tr class="sub-row">
-                            <td style="padding-left: 20px;">◦ Biaya Operasional Armada</td>
-                            <td class="amount">(${formatCurrency(r.pengurangan?.ops_ja?.armada)})</td>
-                            <td></td>
-                        </tr>` : ''}
-                        ${r.pengurangan?.ops_ja?.trip > 0 ? `
-                        <tr class="sub-row">
-                            <td style="padding-left: 20px;">◦ Biaya Trip Muatan</td>
-                            <td class="amount">(${formatCurrency(r.pengurangan?.ops_ja?.trip)})</td>
-                            <td></td>
-                        </tr>` : ''}
-                        ${r.pengurangan?.ops_ja?.repairs > 0 ? `
-                        <tr class="sub-row">
-                            <td style="padding-left: 20px;">◦ Perbaikan Jasa Angkut (Internal)</td>
-                            <td class="amount">(${formatCurrency(r.pengurangan?.ops_ja?.repairs)})</td>
-                            <td></td>
-                        </tr>` : ''}
                         <tr>
                             <td>Beban Operasional: Jual Beli Mobil</td>
                             <td class="amount">(${formatCurrency(ops_mobil)})</td>
@@ -236,18 +203,6 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">(${formatCurrency(prive)})</td>
                             <td></td>
                         </tr>
-                        ${hutang_baru > 0 ? `
-                        <tr>
-                            <td>Hutang Baru (Funding Source)</td>
-                            <td class="amount">(${formatCurrency(hutang_baru)})</td>
-                            <td></td>
-                        </tr>` : ''}
-                        ${bayar_hutang > 0 ? `
-                        <tr>
-                            <td>Pembayaran Hutang (Cash Out)</td>
-                            <td class="amount">(${formatCurrency(bayar_hutang)})</td>
-                            <td></td>
-                        </tr>` : ''}
                         ${pengembalian > 0 ? `
                         <tr>
                             <td>Pengembalian Modal / Dividen</td>
@@ -527,38 +482,34 @@ export default function LaporanPerubahanModalScreen() {
                                         <Row label="Modal Non-Kas (Aset Import)" value={report.penambahan?.modal_non_kas?.total} bold />
                                         <View className="pl-4">
                                             {report.penambahan?.modal_non_kas?.aset_tetap > 0 && (
-                                                <Row label="• Modal Aset Tetap" value={report.penambahan?.modal_non_kas?.aset_tetap} />
+                                                <Row label="ΓÇó Modal Aset Tetap" value={report.penambahan?.modal_non_kas?.aset_tetap} />
                                             )}
                                             {report.penambahan?.modal_non_kas?.stok_part > 0 && (
-                                                <Row label="• Modal Stok Sparepart" value={report.penambahan?.modal_non_kas?.stok_part} />
+                                                <Row label="ΓÇó Modal Stok Sparepart" value={report.penambahan?.modal_non_kas?.stok_part} />
                                             )}
                                             {report.penambahan?.modal_non_kas?.stok_mobil > 0 && (
-                                                <Row label="• Modal Stok Mobil" value={report.penambahan?.modal_non_kas?.stok_mobil} />
+                                                <Row label="ΓÇó Modal Stok Mobil" value={report.penambahan?.modal_non_kas?.stok_mobil} />
                                             )}
                                         </View>
                                     </>
                                 )}
                                 <Row label="Laba Kotor Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
                                 <View className="pl-4">
-                                    <Row label="• Laba Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} />
+                                    <Row label="ΓÇó Laba Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} />
 
-                                    <Row label="• Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
-                                    <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
+                                    <Row label="ΓÇó Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
+                                    <Row label="ΓÇó Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
                                 </View>
                                 
-                                {report.penambahan?.pelunasan_hutang > 0 && (
-                                    <Row label="Pelunasan Hutang (Adjustment)" value={report.penambahan?.pelunasan_hutang} />
-                                )}
-
                                 {report.penambahan?.penambahan_stok?.total > 0 && (
                                     <>
                                         <Row label="Peningkatan Stok (Asset Conversion)" value={report.penambahan?.penambahan_stok?.total} bold />
                                         <View className="pl-4">
                                             {report.penambahan?.penambahan_stok?.mobil > 0 && (
-                                                <Row label="• Stok Unit Mobil" value={report.penambahan?.penambahan_stok?.mobil} />
+                                                <Row label="ΓÇó Stok Unit Mobil" value={report.penambahan?.penambahan_stok?.mobil} />
                                             )}
                                             {report.penambahan?.penambahan_stok?.sparepart > 0 && (
-                                                <Row label="• Stok Sparepart" value={report.penambahan?.penambahan_stok?.sparepart} />
+                                                <Row label="ΓÇó Stok Sparepart" value={report.penambahan?.penambahan_stok?.sparepart} />
                                             )}
                                         </View>
                                     </>
@@ -588,30 +539,16 @@ export default function LaporanPerubahanModalScreen() {
                                         <Row label="Beban Operasional: Jasa Angkut" value={report.pengurangan?.ops_ja?.total} isNegative />
                                         <View className="pl-4">
                                             {report.pengurangan?.ops_ja?.unit > 0 && (
-                                                <Row label="◦ Biaya Operasional Unit Bisnis" value={report.pengurangan?.ops_ja?.unit} isNegative />
-                                            )}
-                                            {report.pengurangan?.ops_ja?.armada > 0 && (
-                                                <Row label="◦ Biaya Operasional Armada" value={report.pengurangan?.ops_ja?.armada} isNegative />
+                                                <Row label="Γùª Biaya Unit (Dompet)" value={report.pengurangan?.ops_ja?.unit} isNegative />
                                             )}
                                             {report.pengurangan?.ops_ja?.trip > 0 && (
-                                                <Row label="◦ Biaya Trip Muatan" value={report.pengurangan?.ops_ja?.trip} isNegative />
-                                            )}
-                                            {report.pengurangan?.ops_ja?.repairs > 0 && (
-                                                <Row label="◦ Perbaikan Jasa Angkut (Internal)" value={report.pengurangan?.ops_ja?.repairs} isNegative />
+                                                <Row label="Γùª Biaya Trip & Armada" value={report.pengurangan?.ops_ja?.trip} isNegative />
                                             )}
                                         </View>
                                     </>
                                 )}
                                 <Row label="Beban Operasional: Jual Beli Mobil" value={report.pengurangan?.ops_mobil} isNegative />
                                 <Row label="Prive (Pengambilan Pribadi)" value={report.pengurangan?.prive} isNegative />
-                                
-                                {report.pengurangan?.hutang_baru > 0 && (
-                                    <Row label="Hutang Baru (Funding Source)" value={report.pengurangan?.hutang_baru} isNegative />
-                                )}
-                                {report.pengurangan?.pembayaran_hutang > 0 && (
-                                    <Row label="Pembayaran Hutang (Cash Out)" value={report.pengurangan?.pembayaran_hutang} isNegative />
-                                )}
-
                                 {report.pengurangan?.pengembalian_modal > 0 && (
                                     <Row label="Pengembalian Modal / Dividen" value={report.pengurangan?.pengembalian_modal} isNegative />
                                 )}

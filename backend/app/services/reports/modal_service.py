@@ -301,15 +301,17 @@ class ModalService(BaseReportService):
         # because those represent cash outflows during this period.
         ops_mobil = float(m.get("overhead", 0)) + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
         
-        # Jasa Angkut Breakdown: Unit vs Trip/Armada
-        # Note: ja.get("armada_ops", 0) already includes trip_costs if they are recorded 
-        # in the armada expense ledger. Summing both causes double counting.
-        ops_ja_unit = float(ja.get("overhead", 0)) + float(ja.get("armada_ops_ledger", 0))
-        ops_ja_trip = float(ja.get("armada_ops", 0)) 
-        ops_ja = ops_ja_unit + ops_ja_trip
+        # Jasa Angkut Breakdown: Unit vs Armada vs Trip vs Repairs
+        # Note: ja.get("armada_ops", 0) represents trip-level costs.
+        # ja.get("armada_ops_ledger", 0) represents armada-level tagged expenses.
+        # ja.get("overhead", 0) represents unit-level general overhead.
+        # ja.get("repairs", 0) represents internal workshop bills.
+        ops_ja_unit = float(ja.get("overhead", 0))
+        ops_ja_armada = float(ja.get("armada_ops_ledger", 0))
+        ops_ja_trip = float(ja.get("armada_ops", 0))
+        ops_ja_repairs = float(ja.get("repairs", 0))
         
-        # Note: ja.get("repairs", 0) is excluded because it's an internal workshop bill 
-        # which is already accounted for via internal_elimination in consolidated profit.
+        ops_ja = ops_ja_unit + ops_ja_armada + ops_ja_trip + ops_ja_repairs
         
         total_ops = ops_umum + ops_bengkel + ops_mobil + ops_ja
 
@@ -445,7 +447,9 @@ class ModalService(BaseReportService):
                 "ops_ja": {
                     "total": ops_ja,
                     "unit": ops_ja_unit,
-                    "trip": ops_ja_trip
+                    "armada": ops_ja_armada,
+                    "trip": ops_ja_trip,
+                    "repairs": ops_ja_repairs
                 },
                 "prive": prive,
                 "pengembalian_modal": pengembalian_modal,
