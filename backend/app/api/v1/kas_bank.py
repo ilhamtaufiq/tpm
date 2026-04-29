@@ -121,12 +121,14 @@ def transfer(
     keterangan: str,
     db: DBSession,
     current_user: ManagerUser,
+    allow_negative: bool = Query(False),
 ):
     """Transfer between kas/bank accounts."""
     service = KasBankService(db)
     return service.transfer(
         dari, ke, nominal, tanggal, keterangan, 
-        current_user.id
+        current_user.id,
+        allow_negative=allow_negative
     )
 @router.post("/adjust")
 def adjust_balance(

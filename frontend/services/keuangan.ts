@@ -475,6 +475,7 @@ export const keuanganService = {
         nominal: number;
         tanggal: string;
         keterangan: string;
+        allow_negative?: boolean;
     }) => {
         const response = await api.post('/kas-bank/transfer', null, { params: data });
         return response.data;
@@ -532,6 +533,7 @@ export const keuanganService = {
         sumber: KasBankSource;
         keterangan: string;
         catatan?: string;
+        allow_negative?: boolean;
     }): Promise<KasBankTransaction> => {
         const response = await api.post('/kas-bank', data);
         return response.data;

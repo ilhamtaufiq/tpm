@@ -444,66 +444,43 @@ class KasBankService:
         nominal: Decimal,
         tanggal: date,
         keterangan: str,
-        user_id: Optional[int] = None,
-        sumber: Optional[KasBankSource] = None,
-    ) -> Dict[str, KasBank]:
-        """Transfer between kas/bank accounts."""
+        user_id: int,
+        allow_negative: bool = False,
+    ):
+        """Transfer between accounts."""
         if dari == ke:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tidak dapat transfer ke akun yang sama",
             )
 
-
-
-        # Determine source (unit attribution)
-        # If not provided, try to infer from unit-specific accounts
-        final_sumber = sumber
-        if not final_sumber:
-            if dari == KasBankJenis.KAS_UNIT_JASA_ANGKUT or ke == KasBankJenis.KAS_UNIT_JASA_ANGKUT:
-                final_sumber = KasBankSource.JASA_ANGKUT
-            elif dari == KasBankJenis.KAS_UNIT_BENGKEL or ke == KasBankJenis.KAS_UNIT_BENGKEL:
-                final_sumber = KasBankSource.BENGKEL
-            elif dari == KasBankJenis.KAS_UNIT_MOBIL or ke == KasBankJenis.KAS_UNIT_MOBIL:
-                final_sumber = KasBankSource.JUAL_BELI_MOBIL
-            else:
-                final_sumber = KasBankSource.LAINNYA
-
-        # Check source balance
-        source_balance = self._get_current_balance(dari)
-        if nominal > source_balance:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Saldo {dari.value} tidak mencukupi. Saldo: {source_balance}",
-            )
-
-        # Create outgoing transaction
-        keluar_data = KasBankCreate(
-            tanggal=tanggal,
-            jenis=dari,
-            tipe=KasBankType.KELUAR,
-            nominal=nominal,
-            sumber=final_sumber,
-            keterangan=f"Transfer ke {ke.value}: {keterangan}",
+        # Record the transfer out
+        self.create(
+            KasBankCreate(
+                tanggal=tanggal,
+                jenis=dari,
+                tipe=KasBankType.KELUAR,
+                nominal=nominal,
+                sumber=KasBankSource.LAINNYA,
+                keterangan=f"Transfer ke {ke.value}: {keterangan}",
+                allow_negative=allow_negative,
+            ),
+            user_id,
         )
-        keluar = self.create(keluar_data, user_id)
 
-        # Create incoming transaction
-        masuk_data = KasBankCreate(
-            tanggal=tanggal,
-            jenis=ke,
-            tipe=KasBankType.MASUK,
-            nominal=nominal,
-            sumber=final_sumber,
-            nomor_referensi=keluar.nomor_transaksi,
-            keterangan=f"Transfer dari {dari.value}: {keterangan}",
+        # Record the transfer in
+        self.create(
+            KasBankCreate(
+                tanggal=tanggal,
+                jenis=ke,
+                tipe=KasBankType.MASUK,
+                nominal=nominal,
+                sumber=KasBankSource.LAINNYA,
+                keterangan=f"Transfer dari {dari.value}: {keterangan}",
+            ),
+            user_id,
         )
-        masuk = self.create(masuk_data, user_id)
-
-        return {
-            "keluar": keluar,
-            "masuk": masuk,
-        }
+        return {"status": "success"}
     def adjust_balance(
         self,
         jenis: KasBankJenis,

@@ -113,6 +113,7 @@ export default function MutasiKasScreen() {
         ke: 'BANK_UTAMA' as KasBankJenis,
         nominal: '',
         keterangan: '',
+        allow_negative: false,
     });
 
     const [modalForm, setModalForm] = useState({
@@ -178,7 +179,7 @@ export default function MutasiKasScreen() {
                     keterangan: transferForm.keterangan,
                 });
                 handleCloseSheet();
-                setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
+                setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '', allow_negative: false });
                 setTimeout(() => {
                     setDialogConfig({
                         visible: true,
@@ -197,9 +198,10 @@ export default function MutasiKasScreen() {
                 nominal: parseNumber(transferForm.nominal),
                 tanggal: new Date().toISOString().split('T')[0],
                 keterangan: transferForm.keterangan,
+                allow_negative: transferForm.allow_negative,
             });
             handleCloseSheet();
-            setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '' });
+            setTransferForm({ dari: 'KAS_UTAMA', ke: 'BANK_UTAMA', nominal: '', keterangan: '', allow_negative: false });
             setTimeout(() => {
                 setDialogConfig({
                     visible: true,
@@ -388,6 +390,20 @@ export default function MutasiKasScreen() {
                         value={transferForm.keterangan}
                         onChangeText={(v) => setTransferForm((p) => ({ ...p, keterangan: v }))}
                     />
+
+                    {/* Force Transaction Toggle */}
+                    <Pressable 
+                        onPress={() => setTransferForm(p => ({ ...p, allow_negative: !p.allow_negative }))}
+                        className="flex-row items-center mt-2 mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100"
+                    >
+                        <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${transferForm.allow_negative ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}>
+                            {transferForm.allow_negative && <Plus size={14} color="white" strokeWidth={4} />}
+                        </View>
+                        <View className="flex-1">
+                            <Typography variant="body2" weight="bold" className="text-textMain">Paksa Transaksi</Typography>
+                            <Typography variant="caption" className="text-textGray">Abaikan jika saldo tercatat tidak mencukupi</Typography>
+                        </View>
+                    </Pressable>
 
                     <Button
                         title={transferMutation.isPending ? 'Memproses...' : 'Transfer'}

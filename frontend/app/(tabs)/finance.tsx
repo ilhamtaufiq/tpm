@@ -161,6 +161,23 @@ export default function FinanceTab() {
                             <Typography weight="bold" className="text-emerald-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(aggregateCash)}
                             </Typography>
+                            
+                            {/* Detailed Cash Breakdown */}
+                            <View className="mt-2 space-y-1">
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Kantor</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_utama?.saldo || 0)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Bengkel</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_unit_bengkel?.saldo || 0)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Mobil/JA</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency((dashboard?.kas_bank?.kas_unit_mobil?.saldo || 0) + (dashboard?.kas_bank?.kas_unit_jasa_angkut?.saldo || 0))}</Typography>
+                                </View>
+                            </View>
+
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#10B981" />
                                 <Typography className="text-emerald-500 text-[9px] font-bold ml-1">
@@ -179,6 +196,23 @@ export default function FinanceTab() {
                             <Typography weight="bold" className="text-blue-600 text-base tracking-tight" numberOfLines={1} adjustsFontSizeToFit>
                                 {formatCurrency(aggregateBank)}
                             </Typography>
+
+                            {/* Detailed Bank Breakdown */}
+                            <View className="mt-2 space-y-1">
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Utama</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_utama?.saldo || 0)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">BCA</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.bank_bca?.saldo || 0)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Lainnya</Typography>
+                                    <Typography className="text-textMain text-[8px] font-bold">{formatCurrency((dashboard?.kas_bank?.bank_mandiri?.saldo || 0) + (dashboard?.kas_bank?.bank_bri?.saldo || 0) + (dashboard?.kas_bank?.bank_lainnya?.saldo || 0))}</Typography>
+                                </View>
+                            </View>
+
                             <View className="flex-row items-center mt-2 pt-2 border-t border-gray-50">
                                 <TrendingUp size={10} color="#3B82F6" />
                                 <Typography className="text-blue-500 text-[9px] font-bold ml-1">

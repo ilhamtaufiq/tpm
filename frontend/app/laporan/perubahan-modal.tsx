@@ -540,9 +540,9 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                                 
                                 <View className="space-y-1 mb-2">
-                                    <Row label="Laba Bersih Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
+                                    <Row label="Laba Kotor Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
                                     <View className="pl-4">
-                                        <Row label="• Laba Jual Beli Mobil (Net TPM)" value={report.penambahan?.laba_kotor?.mobil} />
+                                        <Row label="• Laba Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} />
                                         <Row label="• Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
                                         <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
                                     </View>
@@ -561,6 +561,19 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                                 {report.penambahan?.stok_part_baru > 0 && (
                                     <Row label="Pendanaan Stok Part (Funded)" value={report.penambahan?.stok_part_baru} small />
+                                )}
+                                {report.penambahan?.piutang_baru?.total > 0 && (
+                                    <>
+                                        <Row label="Penambahan Piutang / Kasbon (Aset)" value={report.penambahan?.piutang_baru?.total} small bold />
+                                        <View className="pl-4">
+                                            {report.penambahan?.piutang_baru?.kasbon > 0 && (
+                                                <Row label="- Kasbon Karyawan Baru" value={report.penambahan?.piutang_baru?.kasbon} small />
+                                            )}
+                                            {report.penambahan?.piutang_baru?.lainnya > 0 && (
+                                                <Row label="- Piutang Lainnya Baru" value={report.penambahan?.piutang_baru?.lainnya} small />
+                                            )}
+                                        </View>
+                                    </>
                                 )}
                                 <View className="pt-3 border-t border-emerald-100">
                                     <Row label="Total Penambahan" value={report.penambahan?.total} bold color="text-emerald-700" />
@@ -597,6 +610,58 @@ export default function LaporanPerubahanModalScreen() {
 
                                 {report.pengurangan?.alokasi_stok > 0 && (
                                     <Row label="Alokasi Dana Stok Baru (Net)" value={report.pengurangan?.alokasi_stok} small isNegative />
+                                )}
+                                {report.pengurangan?.alokasi_piutang?.total > 0 && (
+                                    <>
+                                        <Row label="Alokasi Dana Kasbon / Piutang (Net)" value={report.pengurangan?.alokasi_piutang?.total} small isNegative bold />
+                                        <View className="pl-4">
+                                            {report.pengurangan?.alokasi_piutang?.kasbon > 0 && (
+                                                <Row label="- Dana Kasbon Karyawan" value={report.pengurangan?.alokasi_piutang?.kasbon} small isNegative />
+                                            )}
+                                            {report.pengurangan?.alokasi_piutang?.lainnya > 0 && (
+                                                <Row label="- Dana Piutang Lainnya" value={report.pengurangan?.alokasi_piutang?.lainnya} small isNegative />
+                                            )}
+                                        </View>
+                                    </>
+                                )}
+
+                                {report.pengurangan?.beban_operasional?.total > 0 && (
+                                    <View className="space-y-1 mb-2 pt-2 border-t border-rose-50">
+                                        <Row label="Beban Operasional & Gaji" value={report.pengurangan?.beban_operasional?.total} bold isNegative />
+                                        <View className="pl-4 space-y-1">
+                                            {report.pengurangan?.beban_operasional?.bengkel > 0 && (
+                                                <Row label="• Beban Ops Bengkel" value={report.pengurangan?.beban_operasional?.bengkel} small isNegative />
+                                            )}
+                                            {report.pengurangan?.beban_operasional?.mobil > 0 && (
+                                                <Row label="• Beban Ops Mobil" value={report.pengurangan?.beban_operasional?.mobil} small isNegative />
+                                            )}
+                                            {report.pengurangan?.beban_operasional?.ja?.total > 0 && (
+                                                <>
+                                                    <Row label="• Beban Ops Jasa Angkut" value={report.pengurangan?.beban_operasional?.ja?.total} small isNegative bold />
+                                                    <View className="pl-4">
+                                                        {report.pengurangan?.beban_operasional?.ja?.unit > 0 && (
+                                                            <Row label="- Dompet Unit JA" value={report.pengurangan?.beban_operasional?.ja?.unit} small isNegative />
+                                                        )}
+                                                        {report.pengurangan?.beban_operasional?.ja?.armada > 0 && (
+                                                            <Row label="- Biaya Ops Armada" value={report.pengurangan?.beban_operasional?.ja?.armada} small isNegative />
+                                                        )}
+                                                        {report.pengurangan?.beban_operasional?.ja?.trip > 0 && (
+                                                            <Row label="- Biaya Ops Trip" value={report.pengurangan?.beban_operasional?.ja?.trip} small isNegative />
+                                                        )}
+                                                        {report.pengurangan?.beban_operasional?.ja?.repairs > 0 && (
+                                                            <Row label="- Perbaikan Bengkel" value={report.pengurangan?.beban_operasional?.ja?.repairs} small isNegative />
+                                                        )}
+                                                    </View>
+                                                </>
+                                            )}
+                                            {report.pengurangan?.beban_operasional?.umum > 0 && (
+                                                <Row label="• Beban Umum & Lainnya" value={report.pengurangan?.beban_operasional?.umum} small isNegative />
+                                            )}
+                                            {report.pengurangan?.beban_operasional?.gaji_lembur > 0 && (
+                                                <Row label="• Beban Gaji & Lembur" value={report.pengurangan?.beban_operasional?.gaji_lembur} small isNegative />
+                                            )}
+                                        </View>
+                                    </View>
                                 )}
 
                                 <View className="pt-3 border-t border-rose-100">
@@ -657,7 +722,40 @@ export default function LaporanPerubahanModalScreen() {
                                         <Row label="Bagi Hasil Investor" value={report.info?.laba_investor} small isNegative />
                                     )}
                                     <Row label="Laba Jasa Angkut" value={report.info?.laba_jasa_angkut} small />
-                                    <Row label="Total Beban Operasional & Gaji" value={report.info?.overhead_gaji} small isNegative />
+                                    <Row label="Total Beban Operasional & Gaji" value={report.info?.overhead_gaji} small isNegative bold />
+                                    <View className="pl-4 space-y-1 mb-2">
+                                        {report.info?.ops_bengkel > 0 && (
+                                            <Row label="• Beban Ops Bengkel" value={report.info?.ops_bengkel} small isNegative />
+                                        )}
+                                        {report.info?.ops_mobil > 0 && (
+                                            <Row label="• Beban Ops Mobil" value={report.info?.ops_mobil} small isNegative />
+                                        )}
+                                        {report.info?.ops_ja?.total > 0 && (
+                                            <>
+                                                <Row label="• Beban Ops Jasa Angkut" value={report.info?.ops_ja?.total} small isNegative bold />
+                                                <View className="pl-4">
+                                                    {report.info?.ops_ja?.unit > 0 && (
+                                                        <Row label="- Dompet Unit JA" value={report.info?.ops_ja?.unit} small isNegative />
+                                                    )}
+                                                    {report.info?.ops_ja?.armada > 0 && (
+                                                        <Row label="- Biaya Ops Armada" value={report.info?.ops_ja?.armada} small isNegative />
+                                                    )}
+                                                    {report.info?.ops_ja?.trip > 0 && (
+                                                        <Row label="- Biaya Ops Trip" value={report.info?.ops_ja?.trip} small isNegative />
+                                                    )}
+                                                    {report.info?.ops_ja?.repairs > 0 && (
+                                                        <Row label="- Perbaikan Bengkel" value={report.info?.ops_ja?.repairs} small isNegative />
+                                                    )}
+                                                </View>
+                                            </>
+                                        )}
+                                        {report.info?.ops_umum > 0 && (
+                                            <Row label="• Beban Umum & Lainnya" value={report.info?.ops_umum} small isNegative />
+                                        )}
+                                        {(report.info?.gaji > 0 || report.info?.lembur > 0) && (
+                                            <Row label="• Beban Gaji & Lembur" value={(report.info?.gaji || 0) + (report.info?.lembur || 0)} small isNegative />
+                                        )}
+                                    </View>
                                     <View className="pt-2 border-t border-slate-50">
                                         <Row label="Laba Bersih Konsolidasi" value={report.info?.laba_bersih} small bold />
                                     </View>

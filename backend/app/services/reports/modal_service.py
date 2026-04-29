@@ -313,7 +313,11 @@ class ModalService(BaseReportService):
         
         ops_ja = ops_ja_unit + ops_ja_armada + ops_ja_trip + ops_ja_repairs
         
+        # Piutang Breakdown (for info)
+        piutang_breakdown = data["raw_summaries"]["piutang"]["breakdown"]
+        
         total_ops = ops_umum + ops_bengkel + ops_mobil + ops_ja
+        total_overhead_gaji = total_ops + gaji + lembur
 
         # Laba Kotor (Gross Profit) per unit
         laba_mobil_total_kotor = float(data["units"]["mobil"].get("total_laba_kotor", 0))
@@ -408,6 +412,28 @@ class ModalService(BaseReportService):
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
+        # 4. Piutang Rotation (Neutralize receivables increase)
+        # This shows where money went (Kasbon/Piutang)
+        penambahan_piutang_period = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+            PiutangUsaha.tanggal >= tanggal_dari,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            or_(
+                PiutangUsaha.is_internal != True,
+                PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
+            )
+        ).scalar() or 0)
+        
+        # Breakdown specific for display
+        kasbon_baru = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+            PiutangUsaha.tanggal >= tanggal_dari,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
+        ).scalar() or 0)
+        
+        piutang_lain_baru = penambahan_piutang_period - kasbon_baru
+
         # ══════════════════════════════════════════════════════════════
         # MODAL CALCULATION (Theoretical)
         # ══════════════════════════════════════════════════════════════
@@ -436,19 +462,21 @@ class ModalService(BaseReportService):
         alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + capitalized_costs
 
         total_penambahan = (
-            setoran_modal + total_non_kas + period_profit_sot + 
-            pembayaran_investor + total_stok_baru_gross + investor_capital_baru
+            setoran_modal + total_non_kas + laba_kotor + 
+            pembayaran_investor + total_stok_baru_gross + investor_capital_baru +
+            penambahan_piutang_period
         )
         
         total_pengurangan = (
             prive + pengembalian_modal + pembayaran_investor + 
-            total_pembayaran_hutang_all + alokasi_stok_net + investor_capital_baru
+            total_pembayaran_hutang_all + alokasi_stok_net + investor_capital_baru +
+            total_overhead_gaji + penambahan_piutang_period
         )
 
         modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
 
         # Total overhead untuk info unit bisnis
-        total_overhead_gaji = total_ops + gaji + lembur
+        # (already calculated above)
 
         # Validation (Comparison: Theoretical vs Actual Assets)
         piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0)) - float(data["raw_summaries"]["piutang"]["breakdown"].get("bengkel_internal", 0))
@@ -471,7 +499,7 @@ class ModalService(BaseReportService):
                     "stok_mobil": modal_stok_mobil_delta
                 },
                 "laba_kotor": {
-                    "total": period_profit_sot,
+                    "total": laba_kotor,
                     "mobil": laba_mobil_tpm_gross,
                     "ja": laba_ja_tpm_gross,
                     "bengkel": laba_bengkel_tpm_gross,
@@ -480,6 +508,11 @@ class ModalService(BaseReportService):
                 "pelunasan_hutang": pembayaran_investor,
                 "stok_mobil_baru": penambahan_stok_mobil,
                 "stok_part_baru": penambahan_stok_sparepart,
+                "piutang_baru": {
+                    "total": penambahan_piutang_period,
+                    "kasbon": kasbon_baru,
+                    "lainnya": piutang_lain_baru
+                },
                 "investor_funding": investor_capital_baru,
                 "total": total_penambahan
             },
@@ -490,6 +523,25 @@ class ModalService(BaseReportService):
                 "pembayaran_investor": pembayaran_investor,
                 "pelunasan_hutang": total_pembayaran_hutang_all,
                 "alokasi_stok": alokasi_stok_net,
+                "alokasi_piutang": {
+                    "total": penambahan_piutang_period,
+                    "kasbon": kasbon_baru,
+                    "lainnya": piutang_lain_baru
+                },
+                "beban_operasional": {
+                    "total": total_overhead_gaji,
+                    "bengkel": ops_bengkel,
+                    "mobil": ops_mobil,
+                    "ja": {
+                        "total": ops_ja,
+                        "unit": ops_ja_unit,
+                        "armada": ops_ja_armada,
+                        "trip": ops_ja_trip,
+                        "repairs": ops_ja_repairs
+                    },
+                    "umum": ops_umum,
+                    "gaji_lembur": gaji + lembur
+                },
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
@@ -499,6 +551,18 @@ class ModalService(BaseReportService):
                 "laba_investor": laba_investor_periode,
                 "laba_jasa_angkut": laba_ja_tpm_gross,
                 "overhead_gaji": total_overhead_gaji,
+                "ops_bengkel": ops_bengkel,
+                "ops_mobil": ops_mobil,
+                "ops_ja": {
+                    "total": ops_ja,
+                    "unit": ops_ja_unit,
+                    "armada": ops_ja_armada,
+                    "trip": ops_ja_trip,
+                    "repairs": ops_ja_repairs
+                },
+                "ops_umum": ops_umum,
+                "gaji": gaji,
+                "lembur": lembur,
                 "laba_bersih": period_profit_sot,
                 "debug": {
                     "kas": end_total_cash,

@@ -75,6 +75,7 @@ export default function ExpensesScreen() {
         { metode: 'TUNAI', jumlah: '', kas_jenis: null },
         { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
     ]);
+    const [allowNegative, setAllowNegative] = useState(false);
 
     // API Hooks
     const { data: expensesData, isLoading, refetch } = usePengeluaranList();
@@ -123,6 +124,7 @@ export default function ExpensesScreen() {
             deskripsi,
             metode_bayar: payMetode,
             kas_jenis: kasJenis,
+            allow_negative: allowNegative,
         };
 
         if (payMetode === 'SPLIT') {
@@ -159,6 +161,7 @@ export default function ExpensesScreen() {
                     { metode: 'TUNAI', jumlah: '', kas_jenis: null },
                     { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
                 ]);
+                setAllowNegative(false);
                 showAlert('Offline Mode', 'Pengeluaran telah disimpan dalam antrean offline.');
                 return;
             }
@@ -179,6 +182,7 @@ export default function ExpensesScreen() {
                 { metode: 'TUNAI', jumlah: '', kas_jenis: null },
                 { metode: 'TRANSFER', jumlah: '', kas_jenis: null },
             ]);
+            setAllowNegative(false);
             showAlert('Sukses', 'Pengeluaran berhasil dicatat');
         } catch (error: any) {
             console.error('Failed to save expense:', error);
@@ -342,41 +346,44 @@ export default function ExpensesScreen() {
                                             />
                                         </View>
                                     )}
-                                    {bisnisKategori !== 'umum' && (
-                                        <View className="mb-6">
-                                            <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
-                                            <View className="flex-row space-x-2">
-                                                {[
-                                                    { label: 'Kantor', value: 'KAS_UTAMA' },
-                                                    ...(bisnisKategori === 'jasa_angkut' ? [
-                                                        { label: 'Unit JA', value: 'KAS_UNIT_JASA_ANGKUT' },
-                                                    ] : bisnisKategori === 'jual_beli_mobil' ? [
-                                                        { label: 'Unit Mobil', value: 'KAS_UNIT_MOBIL' },
-                                                    ] : bisnisKategori === 'bengkel' ? [
-                                                        { label: 'Unit Bengkel', value: 'KAS_UNIT_BENGKEL' },
-                                                    ] : []),
-                                                    { label: 'Bank', value: 'BANK_UTAMA' }
-                                                ].map((opt) => (
+                                    {/* Account Selection - Always Show */}
+                                    <View className="mb-6">
+                                        <Typography variant="caption" weight="bold" className="text-textGray/40 mb-3 px-1 uppercase tracking-widest">Sumber Dana (Akun)</Typography>
+                                        <View className="flex-row flex-wrap">
+                                            {[
+                                                { label: 'Kantor', value: 'KAS_UTAMA' },
+                                                { label: 'Bank', value: 'BANK_UTAMA' },
+                                                { label: 'Unit JA', value: 'KAS_UNIT_JASA_ANGKUT' },
+                                                { label: 'Unit Bengkel', value: 'KAS_UNIT_BENGKEL' },
+                                                { label: 'Unit Mobil', value: 'KAS_UNIT_MOBIL' },
+                                            ].map((opt) => {
+                                                // Highlight relevant unit if business category is selected
+                                                const isRelevant = 
+                                                    (bisnisKategori === 'jasa_angkut' && opt.value === 'KAS_UNIT_JASA_ANGKUT') ||
+                                                    (bisnisKategori === 'bengkel' && opt.value === 'KAS_UNIT_BENGKEL') ||
+                                                    (bisnisKategori === 'jual_beli_mobil' && opt.value === 'KAS_UNIT_MOBIL') ||
+                                                    (bisnisKategori === 'umum' && (opt.value === 'KAS_UTAMA' || opt.value === 'BANK_UTAMA'));
+
+                                                return (
                                                     <Pressable
-                                                        key={opt.value || 'null'}
+                                                        key={opt.value}
                                                         onPress={() => setKasJenis(opt.value)}
-                                                        className={`flex-1 p-3 rounded-2xl border items-center ${kasJenis === opt.value
-                                                            ? 'bg-primary/5 border-primary shadow-sm'
-                                                            : 'bg-gray-50 border-gray-100'
+                                                        className={`mr-2 mb-2 px-4 py-3 rounded-2xl border items-center ${kasJenis === opt.value
+                                                            ? 'bg-primary border-primary shadow-sm'
+                                                            : isRelevant ? 'bg-primary/5 border-primary/20' : 'bg-gray-50 border-gray-100'
                                                             }`}
                                                     >
                                                         <Typography
                                                             weight={kasJenis === opt.value ? 'bold' : 'medium'}
-                                                            className={`text-[9px] tracking-tighter ${kasJenis === opt.value ? 'text-primary' : 'text-textGray'}`}
-                                                            numberOfLines={1}
+                                                            className={`text-[10px] tracking-tight ${kasJenis === opt.value ? 'text-white' : isRelevant ? 'text-primary' : 'text-textGray'}`}
                                                         >
                                                             {opt.label}
                                                         </Typography>
                                                     </Pressable>
-                                                ))}
-                                            </View>
+                                                );
+                                            })}
                                         </View>
-                                    )}
+                                    </View>
                                 </View>
 
                                 <Input
@@ -486,6 +493,20 @@ export default function ExpensesScreen() {
                                         </View>
                                     </View>
                                 )}
+
+                                {/* Force Transaction Toggle */}
+                                <Pressable 
+                                    onPress={() => setAllowNegative(!allowNegative)}
+                                    className="flex-row items-center mt-2 mb-2 p-4 bg-gray-50 rounded-[28px] border border-gray-100"
+                                >
+                                    <View className={`w-6 h-6 rounded-md border-2 items-center justify-center mr-3 ${allowNegative ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}>
+                                        {allowNegative && <Plus size={14} color="white" strokeWidth={4} />}
+                                    </View>
+                                    <View className="flex-1">
+                                        <Typography variant="body2" weight="bold" className="text-textMain">Paksa Transaksi</Typography>
+                                        <Typography variant="caption" className="text-textGray">Abaikan jika saldo tercatat tidak mencukupi</Typography>
+                                    </View>
+                                </Pressable>
 
                                 <Button
                                     title="Catat Pengeluaran"
