@@ -86,7 +86,7 @@ export default function LaporanPerubahanModalScreen() {
             const non_kas = r.penambahan?.modal_non_kas || 0;
             const laba = r.penambahan?.laba_kotor || 0;
             const tot_penambahan = r.penambahan?.total || 0;
-            
+
             const gaji = r.pengurangan?.gaji || 0;
             const lembur = r.pengurangan?.lembur || 0;
             const ops_umum = r.pengurangan?.ops_umum || 0;
@@ -99,9 +99,9 @@ export default function LaporanPerubahanModalScreen() {
             const hutang_baru = r.pengurangan?.hutang_baru || 0;
             const bayar_hutang = r.pengurangan?.pembayaran_hutang || 0;
             const tot_pengurangan = r.pengurangan?.total || 0;
-            
+
             const modal_akhir = r.modal_akhir || 0;
-            
+
             const info = r.info || {};
             const aset = info.aset || {};
 
@@ -481,7 +481,7 @@ export default function LaporanPerubahanModalScreen() {
                 </View>
             </View>
 
-            <ScrollView 
+            <ScrollView
                 className="flex-1"
                 contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
@@ -538,32 +538,30 @@ export default function LaporanPerubahanModalScreen() {
                                         </View>
                                     </>
                                 )}
-                                <Row label="Laba Kotor Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
-                                <View className="pl-4">
-                                    <Row label="• Laba Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} />
-
-                                    <Row label="• Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
-                                    <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
+                                
+                                <View className="space-y-1 mb-2">
+                                    <Row label="Laba Bersih Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold />
+                                    <View className="pl-4">
+                                        <Row label="• Laba Jual Beli Mobil (Net TPM)" value={report.penambahan?.laba_kotor?.mobil} />
+                                        <Row label="• Laba Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} />
+                                        <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
+                                    </View>
                                 </View>
-                                
+
                                 {report.penambahan?.pelunasan_hutang > 0 && (
-                                    <Row label="Pelunasan Hutang (Adjustment)" value={report.penambahan?.pelunasan_hutang} />
+                                    <Row label="Pelunasan Hutang (Funding Release)" value={report.penambahan?.pelunasan_hutang} />
                                 )}
 
-                                {report.penambahan?.penambahan_stok?.total > 0 && (
-                                    <>
-                                        <Row label="Peningkatan Stok (Asset Conversion)" value={report.penambahan?.penambahan_stok?.total} bold />
-                                        <View className="pl-4">
-                                            {report.penambahan?.penambahan_stok?.mobil > 0 && (
-                                                <Row label="• Stok Unit Mobil" value={report.penambahan?.penambahan_stok?.mobil} />
-                                            )}
-                                            {report.penambahan?.penambahan_stok?.sparepart > 0 && (
-                                                <Row label="• Stok Sparepart" value={report.penambahan?.penambahan_stok?.sparepart} />
-                                            )}
-                                        </View>
-                                    </>
+                                {report.penambahan?.investor_funding > 0 && (
+                                    <Row label="Pendanaan Eksternal (Investor)" value={report.penambahan?.investor_funding} />
                                 )}
-                                
+
+                                {report.penambahan?.stok_mobil_baru > 0 && (
+                                    <Row label="Pendanaan Stok Mobil (Funded)" value={report.penambahan?.stok_mobil_baru} small />
+                                )}
+                                {report.penambahan?.stok_part_baru > 0 && (
+                                    <Row label="Pendanaan Stok Part (Funded)" value={report.penambahan?.stok_part_baru} small />
+                                )}
                                 <View className="pt-3 border-t border-emerald-100">
                                     <Row label="Total Penambahan" value={report.penambahan?.total} bold color="text-emerald-700" />
                                 </View>
@@ -579,49 +577,28 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="body1" weight="bold" className="text-rose-900">C. Pengurangan Modal</Typography>
                             </View>
                             <View className="p-4 space-y-3">
-                                <Row label="Beban Gaji Karyawan" value={report.pengurangan?.gaji} isNegative />
-                                <Row label="Beban Lembur" value={report.pengurangan?.lembur} isNegative />
-                                <Row label="Beban Operasional: Umum" value={report.pengurangan?.ops_umum} isNegative />
-                                <Row label="Beban Operasional: Bengkel" value={report.pengurangan?.ops_bengkel} isNegative />
-                                {report.pengurangan?.ops_ja?.total > 0 && (
-                                    <>
-                                        <Row label="Beban Operasional: Jasa Angkut" value={report.pengurangan?.ops_ja?.total} isNegative />
-                                        <View className="pl-4">
-                                            {report.pengurangan?.ops_ja?.unit > 0 && (
-                                                <Row label="◦ Biaya Operasional Unit Bisnis" value={report.pengurangan?.ops_ja?.unit} isNegative />
-                                            )}
-                                            {report.pengurangan?.ops_ja?.armada > 0 && (
-                                                <Row label="◦ Biaya Operasional Armada" value={report.pengurangan?.ops_ja?.armada} isNegative />
-                                            )}
-                                            {report.pengurangan?.ops_ja?.trip > 0 && (
-                                                <Row label="◦ Biaya Trip Muatan" value={report.pengurangan?.ops_ja?.trip} isNegative />
-                                            )}
-                                            {report.pengurangan?.ops_ja?.repairs > 0 && (
-                                                <Row label="◦ Perbaikan Jasa Angkut (Internal)" value={report.pengurangan?.ops_ja?.repairs} isNegative />
-                                            )}
-                                        </View>
-                                    </>
-                                )}
-                                <Row label="Beban Operasional: Jual Beli Mobil" value={report.pengurangan?.ops_mobil} isNegative />
                                 <Row label="Prive (Pengambilan Pribadi)" value={report.pengurangan?.prive} isNegative />
-                                
-                                {report.pengurangan?.hutang_baru > 0 && (
-                                    <Row label="Hutang Baru (Funding Source)" value={report.pengurangan?.hutang_baru} isNegative />
-                                )}
-                                {report.pengurangan?.pembayaran_hutang > 0 && (
-                                    <Row label="Pembayaran Hutang (Cash Out)" value={report.pengurangan?.pembayaran_hutang} isNegative />
-                                )}
 
                                 {report.pengurangan?.pengembalian_modal > 0 && (
                                     <Row label="Pengembalian Modal / Dividen" value={report.pengurangan?.pengembalian_modal} isNegative />
                                 )}
-                                {report.pengurangan?.pembelian_mobil > 0 && (
-                                    <Row label="Pembelian Unit Mobil (Stok)" value={report.pengurangan?.pembelian_mobil} isNegative />
+
+                                {report.pengurangan?.investor_funding > 0 && (
+                                    <Row label="Pendanaan Eksternal (Investor - Net)" value={report.pengurangan?.investor_funding} isNegative />
                                 )}
-                                {report.pengurangan?.pembelian_sparepart > 0 && (
-                                    <Row label="Pembelian Sparepart (Stok)" value={report.pengurangan?.pembelian_sparepart} isNegative />
+
+                                {report.pengurangan?.pembayaran_investor > 0 && (
+                                    <Row label="Pelunasan Hutang (Investor)" value={report.pengurangan?.pembayaran_investor} isNegative />
                                 )}
-                                
+
+                                {report.pengurangan?.pelunasan_hutang > 0 && (
+                                    <Row label="Pelunasan Hutang Usaha" value={report.pengurangan?.pelunasan_hutang} isNegative />
+                                )}
+
+                                {report.pengurangan?.alokasi_stok > 0 && (
+                                    <Row label="Alokasi Dana Stok Baru (Net)" value={report.pengurangan?.alokasi_stok} small isNegative />
+                                )}
+
                                 <View className="pt-3 border-t border-rose-100">
                                     <Row label="Total Pengurangan" value={report.pengurangan?.total} bold color="text-rose-700" />
                                 </View>
@@ -672,12 +649,18 @@ export default function LaporanPerubahanModalScreen() {
                         {/* INFO KONTRIBUSI LABA */}
                         <Card className="overflow-hidden border border-slate-100 shadow-sm bg-white rounded-2xl w-full mb-2">
                             <View className="p-4">
-                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Kontribusi Laba</Typography>
+                                <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Laba</Typography>
                                 <View className="space-y-2">
-                                    <Row label="Kontribusi Laba Bengkel Umum" value={report.info?.laba_bengkel} small />
-                                    <Row label="Kontribusi Laba Jual Beli Mobil" value={report.info?.laba_mobil} small />
-                                    <Row label="Kontribusi Laba Jasa Angkut" value={report.info?.laba_jasa_angkut} small />
-                                    <Row label="Pengeluaran Overhead Gabungan" value={report.info?.overhead_gaji} small isNegative />
+                                    <Row label="Laba Bengkel Umum" value={report.info?.laba_bengkel} small />
+                                    <Row label="Laba Jual Beli Mobil" value={report.info?.laba_mobil} small />
+                                    {report.info?.laba_investor > 0 && (
+                                        <Row label="Bagi Hasil Investor" value={report.info?.laba_investor} small isNegative />
+                                    )}
+                                    <Row label="Laba Jasa Angkut" value={report.info?.laba_jasa_angkut} small />
+                                    <Row label="Total Beban Operasional & Gaji" value={report.info?.overhead_gaji} small isNegative />
+                                    <View className="pt-2 border-t border-slate-50">
+                                        <Row label="Laba Bersih Konsolidasi" value={report.info?.laba_bersih} small bold />
+                                    </View>
                                 </View>
                             </View>
                         </Card>
@@ -688,9 +671,15 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Persediaan Mobil</Typography>
                                 <View className="space-y-2">
                                     <Row label="Harga Beli Unit" value={report.info?.aset?.stok_mobil?.unit_hanya} small />
-                                    <Row label="Biaya Persiapan (Prep)" value={report.info?.aset?.stok_mobil?.biaya_persiapan} small />
-                                    <Row label="Perbaikan Bengkel Internal" value={report.info?.aset?.stok_mobil?.perbaikan_internal} small />
-                                    <Row label="Perbaikan Bengkel External" value={report.info?.aset?.stok_mobil?.perbaikan_external} small />
+                                    {report.info?.aset?.stok_mobil?.biaya_persiapan > 0 && (
+                                        <Row label="Biaya Persiapan (Prep)" value={report.info?.aset?.stok_mobil?.biaya_persiapan} small />
+                                    )}
+                                    {report.info?.aset?.stok_mobil?.perbaikan_internal > 0 && (
+                                        <Row label="Perbaikan Bengkel Internal" value={report.info?.aset?.stok_mobil?.perbaikan_internal} small />
+                                    )}
+                                    {report.info?.aset?.stok_mobil?.perbaikan_external > 0 && (
+                                        <Row label="Perbaikan Bengkel External" value={report.info?.aset?.stok_mobil?.perbaikan_external} small />
+                                    )}
                                     <View className="pt-2 border-t border-slate-50">
                                         <Row label="Total Aset Mobil" value={report.info?.aset?.stok_mobil?.total} small bold />
                                     </View>
@@ -703,11 +692,21 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="p-4">
                                 <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Piutang</Typography>
                                 <View className="space-y-2">
-                                    <Row label="Piutang Bengkel" value={report.info?.aset?.piutang?.breakdown?.bengkel} small />
-                                    <Row label="Piutang Jasa Angkut" value={report.info?.aset?.piutang?.breakdown?.ja} small />
-                                    <Row label="Piutang Jual Beli Mobil" value={report.info?.aset?.piutang?.breakdown?.mobil} small />
-                                    <Row label="Piutang Kasbon Karyawan" value={report.info?.aset?.piutang?.breakdown?.kasbon} small />
-                                    <Row label="Piutang Lainnya" value={report.info?.aset?.piutang?.breakdown?.lainnya} small />
+                                    {report.info?.aset?.piutang?.breakdown?.bengkel > 0 && (
+                                        <Row label="Piutang Bengkel" value={report.info?.aset?.piutang?.breakdown?.bengkel} small />
+                                    )}
+                                    {report.info?.aset?.piutang?.breakdown?.ja > 0 && (
+                                        <Row label="Piutang Jasa Angkut" value={report.info?.aset?.piutang?.breakdown?.ja} small />
+                                    )}
+                                    {report.info?.aset?.piutang?.breakdown?.mobil > 0 && (
+                                        <Row label="Piutang Jual Beli Mobil" value={report.info?.aset?.piutang?.breakdown?.mobil} small />
+                                    )}
+                                    {report.info?.aset?.piutang?.breakdown?.kasbon > 0 && (
+                                        <Row label="Piutang Kasbon Karyawan" value={report.info?.aset?.piutang?.breakdown?.kasbon} small />
+                                    )}
+                                    {report.info?.aset?.piutang?.breakdown?.lainnya > 0 && (
+                                        <Row label="Piutang Lainnya" value={report.info?.aset?.piutang?.breakdown?.lainnya} small />
+                                    )}
                                     <View className="pt-2 border-t border-slate-50">
                                         <Row label="Total Piutang" value={report.info?.aset?.piutang?.total} small bold />
                                     </View>
@@ -720,17 +719,53 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="p-4">
                                 <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest mb-3">Rincian Hutang</Typography>
                                 <View className="space-y-2">
-                                    <Row label="Hutang Bengkel (Sparepart)" value={report.info?.aset?.hutang?.breakdown?.bengkel} small />
-                                    <Row label="Hutang Jasa Angkut" value={report.info?.aset?.hutang?.breakdown?.ja} small />
-                                    <Row label="Hutang Jual Beli Mobil" value={report.info?.aset?.hutang?.breakdown?.mobil} small />
-                                    <Row label="Hutang Investor" value={report.info?.aset?.hutang?.breakdown?.investor} small />
-                                    <Row label="Hutang Lainnya" value={report.info?.aset?.hutang?.breakdown?.lainnya} small />
+                                    {report.info?.aset?.hutang?.breakdown?.bengkel > 0 && (
+                                        <Row label="Hutang Bengkel (Sparepart)" value={report.info?.aset?.hutang?.breakdown?.bengkel} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.ja > 0 && (
+                                        <Row label="Hutang Jasa Angkut" value={report.info?.aset?.hutang?.breakdown?.ja} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.mobil > 0 && (
+                                        <Row label="Hutang Jual Beli Mobil" value={report.info?.aset?.hutang?.breakdown?.mobil} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.investor > 0 && (
+                                        <Row label="Hutang Investor" value={report.info?.aset?.hutang?.breakdown?.investor} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.uang_muka_penjualan > 0 && (
+                                        <Row label="Uang Muka Penjualan (DP)" value={report.info?.aset?.hutang?.breakdown?.uang_muka_penjualan} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.piutang_booking > 0 && (
+                                        <Row label="Piutang Belum Realisasi" value={report.info?.aset?.hutang?.breakdown?.piutang_booking} small />
+                                    )}
+                                    {report.info?.aset?.hutang?.breakdown?.lainnya > 0 && (
+                                        <Row label="Hutang Lainnya" value={report.info?.aset?.hutang?.breakdown?.lainnya} small />
+                                    )}
                                     <View className="pt-2 border-t border-slate-50">
                                         <Row label="Total Hutang" value={report.info?.aset?.hutang?.total} small bold />
                                     </View>
                                 </View>
                             </View>
                         </Card>
+
+                        {/* SMART DEBUG REKONSILIASI (Only shows if there is a discrepancy) */}
+                        {Math.abs(report.selisih || 0) > 1 && (
+                            <View className="p-4 bg-red-50 rounded-2xl space-y-2 border border-red-200 border-dashed mb-8">
+                                <View className="flex-row items-center mb-2">
+                                    <View className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                                    <Typography variant="caption" weight="bold" className="text-red-600 uppercase tracking-widest">Peringatan Selisih: Debug Mode Aktif</Typography>
+                                </View>
+                                <Row label="Total Kas & Bank" value={report.info?.debug?.kas} small />
+                                <Row label="Persediaan Part" value={report.info?.debug?.part} small />
+                                <Row label="Persediaan Mobil (incl. Prep/Repair)" value={report.info?.debug?.mobil} small />
+                                <Row label="Aset Tetap" value={report.info?.debug?.tetap} small />
+                                <Row label="Piutang Usaha (External)" value={report.info?.debug?.piutang} small />
+                                <Row label="Total Kewajiban (Hutang)" value={report.info?.debug?.hutang} small isNegative />
+                                <View className="pt-2 border-t border-red-200">
+                                    <Row label="Total Aset Bersih Aktual" value={(report.info?.debug?.kas || 0) + (report.info?.debug?.part || 0) + (report.info?.debug?.mobil || 0) + (report.info?.debug?.tetap || 0) + (report.info?.debug?.piutang || 0) - (report.info?.debug?.hutang || 0)} small bold />
+                                </View>
+                                <Typography variant="caption" className="text-red-400 mt-2 italic">* Angka di atas adalah komponen pembentuk Total Aset Aktual.</Typography>
+                            </View>
+                        )}
                     </View>
                 )}
             </ScrollView>

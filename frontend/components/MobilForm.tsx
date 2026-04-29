@@ -94,15 +94,19 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         }
 
         if (!isEdit) {
-            if (!sumberBayar) {
-                setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana', variant: 'warning' });
-                return;
-            }
-            if (sumberBayar === 'SPLIT') {
-                const hasEmptyMethod = payments.some(p => !p.sumber || parseNumber(p.jumlah) <= 0);
-                if (hasEmptyMethod) {
-                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana untuk semua nominal split', variant: 'warning' });
+            const isDebtWithoutDp = statusBayar === 'BELUM_LUNAS' && parseNumber(dp) <= 0;
+            
+            if (!isDebtWithoutDp) {
+                if (!sumberBayar) {
+                    setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana', variant: 'warning' });
                     return;
+                }
+                if (sumberBayar === 'SPLIT') {
+                    const hasEmptyMethod = payments.some(p => !p.sumber || parseNumber(p.jumlah) <= 0);
+                    if (hasEmptyMethod) {
+                        setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana untuk semua nominal split', variant: 'warning' });
+                        return;
+                    }
                 }
             }
         }
@@ -304,51 +308,59 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         {/* Payment Method & Optional DP Row */}
                         <View className="mt-4">
                             <View className="flex-row space-x-3 items-end">
-                                <View className="flex-[1.5]">
-                                    <View className="flex-row justify-between items-center mb-2">
-                                        <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-tight">Sumber Dana</Typography>
-                                        {sumberBayar === 'SPLIT' && (
-                                            <Badge label="SPLIT AKTIF" variant="warning" />
-                                        )}
-                                    </View>
-                                    <View className="flex-row flex-wrap -m-0.5">
-                                        {[
-                                            { label: 'Tunai Mobil', value: 'UNIT_TUNAI' },
-                                            { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
-                                            { label: 'Transfer', value: 'UTAMA_TRANSFER' },
-                                            { label: 'Split', value: 'SPLIT' }
-                                        ].map((m) => (
-                                            <View key={m.value} className="w-1/2 p-0.5">
-                                                <Pressable
-                                                    onPress={() => {
-                                                        setSumberBayar(m.value);
-                                                    }}
-                                                    className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-gray-100'}`}
-                                                >
-                                                    <Typography variant="caption" weight="bold" className={`text-center text-[10px] ${sumberBayar === m.value ? 'text-white' : 'text-gray-500'}`}>
-                                                        {m.label}
-                                                    </Typography>
-                                                </Pressable>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </View>
+                                {statusBayar !== 'LUNAS' && (
+                                    <Input
+                                        label="Uang Muka / DP (Rp)"
+                                        placeholder="0"
+                                        containerClassName="flex-1 mb-0"
+                                        keyboardType="numeric"
+                                        value={dp}
+                                        onChangeText={(v) => {
+                                            setDp(formatNumber(v));
+                                            // Reset sumberBayar if DP is cleared and it was Split
+                                            if (parseNumber(v) <= 0 && statusBayar === 'BELUM_LUNAS') {
+                                                // Keep it as is or reset to empty
+                                            }
+                                        }}
+                                    />
+                                )}
 
-                                {sumberBayar !== 'SPLIT' && (
-                                    statusBayar !== 'LUNAS' ? (
-                                        <Input
-                                            label="Uang Muka / DP (Rp)"
-                                            placeholder="0"
-                                            containerClassName="flex-1 mb-0"
-                                            keyboardType="numeric"
-                                            value={dp}
-                                            onChangeText={(v) => setDp(formatNumber(v))}
-                                        />
-                                    ) : (
-                                        <View className="flex-1 items-center justify-center p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                            <Typography variant="caption" weight="bold" className="text-emerald-600 text-[10px] uppercase">Lunas Terbayar</Typography>
+                                {(statusBayar === 'LUNAS' || parseNumber(dp) > 0) && (
+                                    <View className="flex-[1.5]">
+                                        <View className="flex-row justify-between items-center mb-2">
+                                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-tight">Sumber Dana</Typography>
+                                            {sumberBayar === 'SPLIT' && (
+                                                <Badge label="SPLIT AKTIF" variant="warning" />
+                                            )}
                                         </View>
-                                    )
+                                        <View className="flex-row flex-wrap -m-0.5">
+                                            {[
+                                                { label: 'Tunai Mobil', value: 'UNIT_TUNAI' },
+                                                { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                                { label: 'Transfer', value: 'UTAMA_TRANSFER' },
+                                                { label: 'Split', value: 'SPLIT' }
+                                            ].map((m) => (
+                                                <View key={m.value} className="w-1/2 p-0.5">
+                                                    <Pressable
+                                                        onPress={() => {
+                                                            setSumberBayar(m.value);
+                                                        }}
+                                                        className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-gray-100'}`}
+                                                    >
+                                                        <Typography variant="caption" weight="bold" className={`text-center text-[10px] ${sumberBayar === m.value ? 'text-white' : 'text-gray-500'}`}>
+                                                            {m.label}
+                                                        </Typography>
+                                                    </Pressable>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+
+                                {(statusBayar === 'LUNAS' && !sumberBayar) && (
+                                    <View className="flex-1 items-center justify-center p-3 bg-blue-50 rounded-2xl border border-blue-100 border-dashed">
+                                        <Typography variant="caption" weight="bold" className="text-blue-600 text-[10px] uppercase text-center">Pilih Sumber Dana</Typography>
+                                    </View>
                                 )}
                             </View>
 

@@ -252,13 +252,17 @@ class MuatanService:
 
 
             # Record operational cost to kas/bank (money going out)
+            # Use the main payment method if it is TRANSFER to satisfy user request "tidak kepotong [di bank]"
+            # Otherwise default to TUNAI as operational costs are typically paid in cash.
+            ops_metode = data.metode_bayar if data.metode_bayar == PaymentMethod.TRANSFER else PaymentMethod.TUNAI
+            
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal,
                 tipe=KasBankType.KELUAR,
                 nominal=item.jumlah,
                 sumber=KasBankSource.JASA_ANGKUT,
-                metode_bayar=PaymentMethod.TUNAI, # Usually operations are cash
+                metode_bayar=ops_metode,
                 referensi_id=muatan.id,
                 nomor_referensi=muatan.nomor_transaksi,
                 keterangan=f"Biaya Operational Muatan {nomor_transaksi}: {item.deskripsi}",
@@ -559,6 +563,20 @@ class MuatanService:
             ).delete()
             
             # Add new costs
+            # Use the main payment method if it is TRANSFER to satisfy user request "tidak kepotong [di bank]"
+            ops_metode = muatan.metode_bayar if muatan.metode_bayar == PaymentMethod.TRANSFER else PaymentMethod.TUNAI
+
+            # Delete existing KasBank entries for operational costs to synchronize with the new list
+            from app.models.keuangan import KasBank
+            from app.utils.constants import KasBankSource, KasBankType
+            
+            self.db.query(KasBank).filter(
+                KasBank.referensi_id == muatan.id,
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.keterangan.ilike(f"Biaya Operational Muatan {muatan.nomor_transaksi}:%")
+            ).delete(synchronize_session=False)
+
             for item in data.biaya_operasional:
                 biaya = JasaAngkutBiayaLainnya(
                     muatan_id=muatan.id,
@@ -570,6 +588,21 @@ class MuatanService:
                 )
                 self.db.add(biaya)
 
+                # Create corresponding KasBank entry
+                create_kas_entry(
+                    db=self.db,
+                    tanggal=muatan.tanggal,
+                    tipe=KasBankType.KELUAR,
+                    nominal=item.jumlah,
+                    sumber=KasBankSource.JASA_ANGKUT,
+                    metode_bayar=ops_metode,
+                    referensi_id=muatan.id,
+                    nomor_referensi=muatan.nomor_transaksi,
+                    keterangan=f"Biaya Operational Muatan {muatan.nomor_transaksi}: {item.deskripsi}",
+                    user_id=None,
+                    allow_negative=True,
+                    commit=False
+                )
             
             # Calculate total dynamic cost from the input list directly for profit calc
             # We must also include existing 'Perawatan Bengkel' cost if any
@@ -673,7 +706,17 @@ class MuatanService:
                         user_id=None,
                         kas_jenis=data.kas_jenis,
                     )
-                self.db.commit()
+            else:
+                # Update existing single KasBank entry if laba_tpm changed and it's not a split payment
+                # For split payments, we skip auto-update to avoid complex mapping issues
+                if muatan.metode_bayar != PaymentMethod.SPLIT and existing_kas.nominal != muatan.laba_tpm:
+                    existing_kas.nominal = muatan.laba_tpm
+                    existing_kas.metode_bayar = muatan.metode_bayar or PaymentMethod.TUNAI
+                    # Update account type based on method
+                    from app.services.kas_bank_integration import get_kas_jenis
+                    existing_kas.jenis = get_kas_jenis(existing_kas.metode_bayar, KasBankSource.JASA_ANGKUT)
+                    
+            self.db.commit()
 
         return muatan
 

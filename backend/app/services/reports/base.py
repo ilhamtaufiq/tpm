@@ -522,7 +522,44 @@ class BaseReportService:
         # Note: we assume accrued items are mostly 'lainnya' until categorized in HutangUsaha
         hutang_lainnya += nominal_accrued
 
-        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya
+        # 3. Customer Down Payments (Uang Muka Penjualan)
+        # These are received cash for cars that are not yet officially sold (status != TERJUAL)
+        customer_dp = float(self.db.query(func.sum(TransaksiPenjualanMobil.dp)).join(Mobil).filter(
+            TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).scalar() or 0)
+
+        # 4. Unearned Receivables (Piutang Booking)
+        # If a car is BOOKED, we have a Piutang record, but the revenue isn't earned yet.
+        # We must neutralize this in the equity calculation.
+        booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
+            TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).scalar() or 0)
+        
+        # Subtract any payments already made on these booking receivables as of the cutoff
+        booking_payments = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
+            TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            PembayaranPiutang.tanggal <= tanggal_sampai,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).scalar() or 0)
+        
+        net_booking_piutang = max(0, booking_receivables - booking_payments)
+
+        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang
 
         # Piutang Breakdown
         def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None) -> float:
@@ -608,15 +645,31 @@ class BaseReportService:
         # eliminating the Full Revenue leaves us with -HPP, which is the correct
         # net effect for consolidated equity (the loss of inventory value).
         internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut', 'bengkel']),
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
+        # Calculate unrealized profit from BOOKING/INDEN units to avoid double counting with stock value
+        unrealized_profit_q = self.db.query(
+            func.sum(TransaksiPenjualanMobil.laba_tpm).label("laba_tpm"),
+            func.sum(TransaksiPenjualanMobil.laba_kotor).label("laba_kotor")
+        ).join(Mobil).filter(
+            TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).first()
+
+        unrealized_tpm = float(unrealized_profit_q.laba_tpm or 0)
+        unrealized_gross = float(unrealized_profit_q.laba_kotor or 0)
+
         # Summary of profits for Section A (TPM portion only to match reconciliation)
-        laba_mobil_gross = float(mobil_summary.get("total_laba_kotor", 0))
-        laba_mobil_tpm = float(mobil_summary.get("laba_tpm", 0))
+        # We subtract unrealized portions because those units are still counted in 'car_stock'
+        laba_mobil_gross = float(mobil_summary.get("total_laba_kotor", 0)) - unrealized_gross
+        laba_mobil_tpm = float(mobil_summary.get("laba_tpm", 0)) - unrealized_tpm
         laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
         laba_ja_tpm = float(ja_revenue_tpm)
 
@@ -632,10 +685,10 @@ class BaseReportService:
         # Include ja_expenses_bengkel here.
         # Internal workshop repairs (JA -> Bengkel) are revenue for Bengkel, 
         # so they MUST be an expense for JA to balance the consolidated report.
+        # Total operational expenses (Excluding capitalized costs to avoid double-counting in equity)
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             ja_expenses_trip + ja_expenses_bengkel + ja_tagged_from_wallet + general_ja_overhead +
-            general_mobil_overhead + 
             admin_fees_unrecorded + ja_untracked_gap
         )
         
@@ -756,6 +809,8 @@ class BaseReportService:
                         "ja": hutang_ja,
                         "mobil": hutang_mobil,
                         "investor": hutang_investor,
+                        "uang_muka_penjualan": customer_dp,
+                        "piutang_booking": net_booking_piutang,
                         "lainnya": hutang_lainnya
                     }
                 },

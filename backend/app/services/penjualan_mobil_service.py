@@ -502,32 +502,9 @@ class PenjualanMobilService:
             )
 
         # --- B. HUTANG (PAYABLES) SETTLEMENT ---
-        # Settle purchase debt or unit costs manually recorded as Hutang (BBN, Pajak via Biaya Unit)
-        associated_hutangs = (
-            self.db.query(HutangUsaha)
-            .filter(
-                or_(
-                    HutangUsaha.nomor_referensi == mobil.kode,
-                    HutangUsaha.referensi_id == mobil.id,
-                    HutangUsaha.nama_kreditur.ilike(f"%{mobil.nomor_plat}%"),
-                ),
-                HutangUsaha.status != HutangStatus.LUNAS
-            )
-            .all()
-        )
-
-        for h in associated_hutangs:
-            amount = h.sisa_hutang
-            if amount <= 0: continue
-            
-            h.status = HutangStatus.LUNAS
-            h.total_dibayar = h.nominal_hutang
-            h.sisa_hutang = Decimal("0")
-            h.tanggal_lunas = tanggal
-            h.catatan = (h.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
-            # NOTE: No KasBank entry here. The financial impact of the hutang was already
-            # recorded when the cost was originally incurred (e.g. pembelian mobil, biaya BBN/pajak).
-            # Creating a KELUAR entry here would double-count the expense in the capital report.
+        # REMOVED: Automatic settlement disabled per user request.
+        # External debts must be settled manually to ensure accurate cash tracking.
+        pass
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
         """Get transaction by ID."""

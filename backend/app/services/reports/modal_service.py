@@ -5,7 +5,7 @@ from typing import Dict, Any
 from sqlalchemy import func, or_, and_, case
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, HutangUsaha, PiutangUsaha, PembayaranHutang, PembayaranPiutang
-from app.models.mobil import Mobil, TransaksiPenjualanMobil
+from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail
 from app.models.bengkel import TransaksiPenjualanBengkel, PembelianSparePart, DetailTransaksiSpareParts
 from app.utils.constants import (
     KasBankSource, 
@@ -316,14 +316,15 @@ class ModalService(BaseReportService):
         total_ops = ops_umum + ops_bengkel + ops_mobil + ops_ja
 
         # Laba Kotor (Gross Profit) per unit
-        laba_mobil_gross = float(data["units"]["mobil"].get("total_laba_kotor", 0))
-        laba_ja_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))
-        laba_bengkel_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
+        laba_mobil_total_kotor = float(data["units"]["mobil"].get("total_laba_kotor", 0))
+        laba_investor_periode = float(data["units"]["mobil"].get("laba_investor", 0))
+        laba_mobil_tpm_gross = laba_mobil_total_kotor - laba_investor_periode
+        
+        laba_ja_tpm_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))
+        laba_bengkel_tpm_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
         # Laba Kotor (Gross Profit) = Sum of all units' gross profit
-        # This is more accurate than the add-back method as it avoids double-counting 
-        # capitalized costs (prep/repairs) which are handled in Section B separately.
-        laba_kotor = laba_mobil_gross + laba_ja_gross + laba_bengkel_gross
+        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -346,6 +347,20 @@ class ModalService(BaseReportService):
         penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
             PembelianSparePart.tanggal >= tanggal_dari,
             PembelianSparePart.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        # 3. Investor Funding Rotation (Neutralize stock additions funded by investors)
+        # This prevents "Selisih" when a car is bought with investor money.
+        investor_capital_baru = float(self.db.query(func.sum(Mobil.nominal_investor)).filter(
+            Mobil.tipe_kepemilikan == OwnershipType.INVESTOR,
+            Mobil.tanggal_masuk >= tanggal_dari,
+            Mobil.tanggal_masuk <= tanggal_sampai,
+            Mobil.deleted_at.is_(None)
+        ).scalar() or 0)
+
+        pembayaran_investor = float(self.db.query(func.sum(InvestorDisbursementDetail.nominal)).join(TransaksiPenjualanMobil).filter(
+            InvestorDisbursementDetail.tanggal >= tanggal_dari,
+            InvestorDisbursementDetail.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
         beli_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
@@ -386,16 +401,48 @@ class ModalService(BaseReportService):
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
+        # Total external debt payments in this period
+        total_pembayaran_hutang = float(self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
+            HutangUsaha.is_internal != True,
+            PembayaranHutang.tanggal >= tanggal_dari,
+            PembayaranHutang.tanggal <= tanggal_sampai
+        ).scalar() or 0)
+
+        # ══════════════════════════════════════════════════════════════
+        # MODAL CALCULATION (Theoretical)
+        # ══════════════════════════════════════════════════════════════
+        # Success Formula: 
+        # Modal Akhir = Modal Awal + Setoran + Laba Bersih Konsolidasi - Prive
+        
+        # Neutralizer Logic:
+        # To maintain "BALANCE", every addition to Assets (Stock) that is NOT from Equity
+        # must be neutralized.
+        # If Stock is bought with Debt and PAID in the same period, it's neutralized by total_pembayaran_hutang.
+        # If Stock is bought with Debt and UNPAID, it's neutralized by sisa_hutang_stok_baru.
+        # If Stock is bought with Cash directly, it's neutralized by pembelian_tunai.
+        
+        total_pembayaran_hutang_all = total_pembayaran_hutang
+        total_stok_baru_gross = penambahan_stok_mobil + penambahan_stok_sparepart
+        
+        # This is the "Alokasi Dana Stok Baru (Net)" in the UI
+        # It represents the portion of stock that is NOT yet reflected in Pelunasan Hutang
+        # (i.e., Direct Cash purchases + Unpaid New Debt + Capitalized Prep/Repair costs)
+        pembelian_tunai_all = beli_mobil + beli_sparepart
+        sisa_hutang_stok_baru = hutang_mobil_baru + hutang_part_baru
+        
+        # We MUST include prep_total and repairs_total here because they increase the
+        # asset value in Section B (stok_mobil_baru) and thus must be neutralized in Section C.
+        capitalized_costs = float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
+        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + capitalized_costs
+
         total_penambahan = (
-            setoran_modal + total_non_kas + laba_kotor + 
-            penambahan_stok_mobil + penambahan_stok_sparepart +
-            pembayaran_hutang_mobil + pembayaran_hutang_part
+            setoran_modal + total_non_kas + period_profit_sot + 
+            pembayaran_investor + total_stok_baru_gross + investor_capital_baru
         )
+        
         total_pengurangan = (
-            prive + pengembalian_modal + gaji + lembur + total_ops + 
-            beli_mobil + beli_sparepart + 
-            hutang_mobil_baru + hutang_part_baru + 
-            pembayaran_hutang_mobil + pembayaran_hutang_part
+            prive + pengembalian_modal + pembayaran_investor + 
+            total_pembayaran_hutang_all + alokasi_stok_net + investor_capital_baru
         )
 
         modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
@@ -404,13 +451,12 @@ class ModalService(BaseReportService):
         total_overhead_gaji = total_ops + gaji + lembur
 
         # Validation (Comparison: Theoretical vs Actual Assets)
-        piutang_akhir = float(data["raw_summaries"]["piutang"].get("total", 0))
-        hutang_akhir = float(data["raw_summaries"]["hutang"].get("total", 0))
+        piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0)) - float(data["raw_summaries"]["piutang"]["breakdown"].get("bengkel_internal", 0))
+        hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
+        hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
         
-        # Note: persediaan_mobil here already includes Prep (Wallet), and piutang_akhir 
-        # includes Internal Workshop repairs (Receivable). 
-        # Combined, they represent the total value increase of the car inventory.
-        modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_akhir) - hutang_akhir
+        # Note: modal deltas (Imported Stock) must be added if not already in Transactions table.
+        modal_aktual = (end_total_cash + persediaan_part + modal_stok_part_delta + persediaan_mobil + modal_stok_mobil_delta + aset_tetap + piutang_external) - hutang_usaha_total
         selisih = modal_akhir - modal_aktual
 
         return {
@@ -425,46 +471,43 @@ class ModalService(BaseReportService):
                     "stok_mobil": modal_stok_mobil_delta
                 },
                 "laba_kotor": {
-                    "total": laba_kotor,
-                    "mobil": laba_mobil_gross,
-                    "ja": laba_ja_gross,
-                    "bengkel": laba_bengkel_gross
+                    "total": period_profit_sot,
+                    "mobil": laba_mobil_tpm_gross,
+                    "ja": laba_ja_tpm_gross,
+                    "bengkel": laba_bengkel_tpm_gross,
+                    "investor_share": laba_investor_periode
                 },
-                "penambahan_stok": {
-                    "total": penambahan_stok_mobil + penambahan_stok_sparepart,
-                    "mobil": penambahan_stok_mobil,
-                    "sparepart": penambahan_stok_sparepart
-                },
-                "pelunasan_hutang": pembayaran_hutang_mobil + pembayaran_hutang_part,
+                "pelunasan_hutang": pembayaran_investor,
+                "stok_mobil_baru": penambahan_stok_mobil,
+                "stok_part_baru": penambahan_stok_sparepart,
+                "investor_funding": investor_capital_baru,
                 "total": total_penambahan
             },
             "pengurangan": {
-                "gaji": gaji,
-                "lembur": lembur,
-                "ops_umum": ops_umum,
-                "ops_bengkel": ops_bengkel,
-                "ops_mobil": ops_mobil,
-                "ops_ja": {
-                    "total": ops_ja,
-                    "unit": ops_ja_unit,
-                    "armada": ops_ja_armada,
-                    "trip": ops_ja_trip,
-                    "repairs": ops_ja_repairs
-                },
                 "prive": prive,
                 "pengembalian_modal": pengembalian_modal,
-                "pembelian_mobil": beli_mobil,
-                "pembelian_sparepart": beli_sparepart,
-                "hutang_baru": hutang_mobil_baru + hutang_part_baru,
-                "pembayaran_hutang": pembayaran_hutang_mobil + pembayaran_hutang_part,
+                "investor_funding": investor_capital_baru,
+                "pembayaran_investor": pembayaran_investor,
+                "pelunasan_hutang": total_pembayaran_hutang_all,
+                "alokasi_stok": alokasi_stok_net,
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
             "info": {
-                "laba_bengkel": laba_bengkel,
-                "laba_mobil": laba_mobil_net,
-                "laba_jasa_angkut": laba_ja,
+                "laba_bengkel": laba_bengkel_tpm_gross,
+                "laba_mobil": laba_mobil_tpm_gross,
+                "laba_investor": laba_investor_periode,
+                "laba_jasa_angkut": laba_ja_tpm_gross,
                 "overhead_gaji": total_overhead_gaji,
+                "laba_bersih": period_profit_sot,
+                "debug": {
+                    "kas": end_total_cash,
+                    "part": persediaan_part,
+                    "mobil": persediaan_mobil + modal_stok_mobil_delta,
+                    "tetap": aset_tetap,
+                    "piutang": piutang_external,
+                    "hutang": hutang_usaha_total
+                },
                 "aset": {
                     "kas_bank": end_total_cash,
                     "stok_part": persediaan_part,

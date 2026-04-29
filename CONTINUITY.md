@@ -1,36 +1,32 @@
-# Continuity Ledger
+# Continuity Ledger - TPM Equity Reconciliation
 
 ## Goal
-Resolve systemic discrepancies across financial reporting modules (Neraca, Perubahan Modal, Laba Rugi) and fix runtime errors.
+Resolve persistent reconciliation variance in "Perubahan Modal" report, specifically handling debt-funded assets, capitalized costs, and booking scenarios (DP/Receivables).
 
 ## Constraints/Assumptions
-- Backend uses FastAPI/SQLAlchemy.
-- Constants are defined in `app.utils.constants`.
-- Models are in `app.models`.
+- Manual debt settlement is preferred (no auto-lunas on sale).
+- Net Asset Value (Actual) must equal Theoretical Modal (Waterfall).
+- Inventory values include capitalized preparation and repair costs.
+- Booking DPs and Booking Receivables must be treated as liabilities until the sale is final (status TERJUAL).
 
 ## Key Decisions
-- Standardize logic in `BaseReportService`.
-- Fix missing imports in `ModalService` (`HutangSource`, `case`).
+- [x] Refactored `alokasi_stok_net` to include capitalized costs (prep/repairs) to neutralize stock value increases.
+- [x] Implemented `customer_dp` (Uang Muka Penjualan) as a liability for unsold/booked units.
+- [x] Implemented `net_booking_piutang` (Piutang Belum Realisasi) as a liability for booked units to neutralize unearned receivables.
+- [x] Updated Frontend to display these new liability categories for transparency.
 
 ## State
-- **Done**:
-    - Fixed `NameError: name 'HutangSource' is not defined` in `modal_service.py`.
-    - Added `case` to `sqlalchemy` imports in `modal_service.py`.
-    - Integrated "Kasbon Karyawan (Umum)" into "Piutang Lainnya" reporting logic in `BaseReportService`.
-    - Fixed double-counting of piutang in `ModalService` calculation.
-    - Overhauled historical piutang/hutang logic in `BaseReportService` to use point-in-time (nominal - payments) logic.
-    - Restored missing Jasa Angkut operational labels and data (Unit, Armada, Trip, Repairs) in `Perubahan Modal`.
-    - Fixed discrepancy between `ModalService` and `LabaRugiService` regarding JA internal repair costs.
-- **Now**:
-    - Validating cross-report consistency between Laba Rugi and Perubahan Modal.
-- **Next**:
-    - Final validation of the 654k discrepancy once user provides verification.
-
+- **Done**: 
+    - Stock neutralization logic for capitalized costs.
+    - Booking/DP liability logic in `BaseReportService`.
+    - UI synchronization for new liability keys.
+- **Now**: Verifying balance state with the user.
+- **Next**: Final audit of `Neraca` synchronization if "Selisih" appears there.
 
 ## Open Questions
-- None at the moment.
+- None at the moment. Current logic should cover all identified discrepancy sources.
 
 ## Working Set
-- `backend/app/services/reports/base.py`
 - `backend/app/services/reports/modal_service.py`
+- `backend/app/services/reports/base.py`
 - `frontend/app/laporan/perubahan-modal.tsx`
