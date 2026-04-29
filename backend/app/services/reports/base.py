@@ -503,7 +503,7 @@ class BaseReportService:
             return float(q.scalar() or 0)
 
         # Piutang Bengkel Breakdown: External vs Internal
-        piutang_bengkel_ext = get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=False)
+        piutang_bengkel_ext = get_piutang_balance(unit=KasBankSource.BENGKEL, source=PiutangSource.BENGKEL, include_internal=False)
         piutang_bengkel_int = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
             PiutangUsaha.unit == KasBankSource.BENGKEL,
             PiutangUsaha.is_internal == True,
@@ -512,8 +512,8 @@ class BaseReportService:
             PiutangUsaha.status != PiutangStatus.BATAL
         ).scalar() or 0)
         
-        piutang_ja = get_piutang_balance(unit=KasBankSource.JASA_ANGKUT, include_internal=False)
-        piutang_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False)
+        piutang_ja = get_piutang_balance(unit=KasBankSource.JASA_ANGKUT, source=PiutangSource.JASA_ANGKUT, include_internal=False)
+        piutang_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, source=PiutangSource.JUAL_BELI_MOBIL, include_internal=False)
         piutang_kasbon = get_piutang_balance(source=PiutangSource.KASBON_KARYAWAN, include_internal=True)
         piutang_lainnya = piutang_usaha - (piutang_bengkel_ext + piutang_bengkel_int + piutang_ja + piutang_mobil + piutang_kasbon)
         # Internal Elimination: Workshop revenue from internal car unit repairs

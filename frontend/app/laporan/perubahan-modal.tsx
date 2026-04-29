@@ -95,6 +95,9 @@ export default function LaporanPerubahanModalScreen() {
             const ops_ja = r.pengurangan?.ops_ja || 0;
             const prive = r.pengurangan?.prive || 0;
             const pengembalian = r.pengurangan?.pengembalian_modal || 0;
+            const pelunasan_h = r.penambahan?.pelunasan_hutang || 0;
+            const hutang_baru = r.pengurangan?.hutang_baru || 0;
+            const bayar_hutang = r.pengurangan?.pembayaran_hutang || 0;
             const tot_pengurangan = r.pengurangan?.total || 0;
             
             const modal_akhir = r.modal_akhir || 0;
@@ -159,6 +162,12 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(laba)}</td>
                             <td></td>
                         </tr>
+                        ${pelunasan_h > 0 ? `
+                        <tr>
+                            <td>Pelunasan Hutang (Adjustment)</td>
+                            <td class="amount">${formatCurrency(pelunasan_h)}</td>
+                            <td></td>
+                        </tr>` : ''}
                         <tr class="total-row">
                             <td>TOTAL PENAMBAHAN MODAL</td>
                             <td class="amount">${formatCurrency(tot_penambahan)}</td>
@@ -203,6 +212,18 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">(${formatCurrency(prive)})</td>
                             <td></td>
                         </tr>
+                        ${hutang_baru > 0 ? `
+                        <tr>
+                            <td>Hutang Baru (Funding Source)</td>
+                            <td class="amount">(${formatCurrency(hutang_baru)})</td>
+                            <td></td>
+                        </tr>` : ''}
+                        ${bayar_hutang > 0 ? `
+                        <tr>
+                            <td>Pembayaran Hutang (Cash Out)</td>
+                            <td class="amount">(${formatCurrency(bayar_hutang)})</td>
+                            <td></td>
+                        </tr>` : ''}
                         ${pengembalian > 0 ? `
                         <tr>
                             <td>Pengembalian Modal / Dividen</td>
@@ -501,6 +522,10 @@ export default function LaporanPerubahanModalScreen() {
                                     <Row label="• Laba Bengkel" value={report.penambahan?.laba_kotor?.bengkel} />
                                 </View>
                                 
+                                {report.penambahan?.pelunasan_hutang > 0 && (
+                                    <Row label="Pelunasan Hutang (Adjustment)" value={report.penambahan?.pelunasan_hutang} />
+                                )}
+
                                 {report.penambahan?.penambahan_stok?.total > 0 && (
                                     <>
                                         <Row label="Peningkatan Stok (Asset Conversion)" value={report.penambahan?.penambahan_stok?.total} bold />
@@ -549,6 +574,14 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                                 <Row label="Beban Operasional: Jual Beli Mobil" value={report.pengurangan?.ops_mobil} isNegative />
                                 <Row label="Prive (Pengambilan Pribadi)" value={report.pengurangan?.prive} isNegative />
+                                
+                                {report.pengurangan?.hutang_baru > 0 && (
+                                    <Row label="Hutang Baru (Funding Source)" value={report.pengurangan?.hutang_baru} isNegative />
+                                )}
+                                {report.pengurangan?.pembayaran_hutang > 0 && (
+                                    <Row label="Pembayaran Hutang (Cash Out)" value={report.pengurangan?.pembayaran_hutang} isNegative />
+                                )}
+
                                 {report.pengurangan?.pengembalian_modal > 0 && (
                                     <Row label="Pengembalian Modal / Dividen" value={report.pengurangan?.pengembalian_modal} isNegative />
                                 )}

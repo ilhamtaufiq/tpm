@@ -16,15 +16,18 @@ Resolve systemic discrepancies across financial reporting modules (Neraca, Perub
 - **Done**:
     - Fixed `NameError: name 'HutangSource' is not defined` in `modal_service.py`.
     - Added `case` to `sqlalchemy` imports in `modal_service.py`.
+    - Integrated "Kasbon Karyawan (Umum)" into "Piutang Lainnya" reporting logic in `BaseReportService`.
+    - Fixed double-counting of piutang in `ModalService` calculation.
 - **Now**:
-    - Verifying fix and checking for other potential discrepancies.
+    - Finalizing UI verification for "Rincian Piutang" display.
 - **Next**:
-    - Check if the report now runs without errors.
-    - Validate mathematical consistency as per user's larger objective.
+    - Validate mathematical consistency (Theoretical vs Actual Capital) after piutang fix.
+    - Confirm "BALANCE" status in Perubahan Modal report.
 
 ## Open Questions
-- Are there other reports with similar missing imports?
+- None at the moment.
 
 ## Working Set
-- `app/services/reports/modal_service.py`
-- `app/utils/constants.py`
+- `backend/app/services/reports/base.py`
+- `backend/app/services/reports/modal_service.py`
+- `frontend/app/laporan/perubahan-modal.tsx`

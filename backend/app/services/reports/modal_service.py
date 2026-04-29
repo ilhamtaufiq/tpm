@@ -269,13 +269,22 @@ class ModalService(BaseReportService):
             val = float(last_kb[0] if last_kb else 0)
             end_total_cash += val
 
-        # Calculate Total Piutang (for Info Aset)
-        def _piutang_saldo_unit(unit: KasBankSource, *sumber_list, internal_jb_mobil: str = "all") -> float:
+        def _piutang_saldo_source(source: PiutangSource) -> float:
+            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                PiutangUsaha.sumber == source, PiutangUsaha.status != PiutangStatus.LUNAS
+            ).scalar() or 0)
+
+        def _piutang_saldo_unit_refined(unit: KasBankSource, source: PiutangSource, internal_jb_mobil: str = "all") -> float:
+            # Only count if BOTH unit and source match (avoids counting LAINNYA/KASBON here)
             q_unit = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.unit == unit, PiutangUsaha.status != PiutangStatus.LUNAS
+                PiutangUsaha.unit == unit, 
+                PiutangUsaha.sumber == source,
+                PiutangUsaha.status != PiutangStatus.LUNAS
             )
             q_legacy = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber.in_(sumber_list), PiutangUsaha.unit.is_(None), PiutangUsaha.status != PiutangStatus.LUNAS
+                PiutangUsaha.sumber == source, 
+                PiutangUsaha.unit.is_(None), 
+                PiutangUsaha.status != PiutangStatus.LUNAS
             )
             if unit == KasBankSource.JUAL_BELI_MOBIL:
                 if internal_jb_mobil == "only_internal":
@@ -286,15 +295,10 @@ class ModalService(BaseReportService):
                     q_legacy = q_legacy.filter(~PiutangUsaha.nama_debitur.ilike("JB MOBIL -%"))
             return float(q_unit.scalar() or 0) + float(q_legacy.scalar() or 0)
 
-        def _piutang_saldo_source(source: PiutangSource) -> float:
-            return float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                PiutangUsaha.sumber == source, PiutangUsaha.status != PiutangStatus.LUNAS
-            ).scalar() or 0)
-
         total_piutang = (
-            _piutang_saldo_unit(KasBankSource.BENGKEL, PiutangSource.BENGKEL, internal_jb_mobil="exclude_internal") +
-            _piutang_saldo_unit(KasBankSource.JUAL_BELI_MOBIL, PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="exclude_internal") +
-            _piutang_saldo_unit(KasBankSource.JASA_ANGKUT, PiutangSource.JASA_ANGKUT) +
+            _piutang_saldo_unit_refined(KasBankSource.BENGKEL, PiutangSource.BENGKEL, internal_jb_mobil="exclude_internal") +
+            _piutang_saldo_unit_refined(KasBankSource.JUAL_BELI_MOBIL, PiutangSource.JUAL_BELI_MOBIL, internal_jb_mobil="exclude_internal") +
+            _piutang_saldo_unit_refined(KasBankSource.JASA_ANGKUT, PiutangSource.JASA_ANGKUT) +
             _piutang_saldo_source(PiutangSource.KASBON_KARYAWAN) +
             _piutang_saldo_source(PiutangSource.LAINNYA)
         )
