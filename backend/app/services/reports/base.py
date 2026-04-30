@@ -775,7 +775,7 @@ class BaseReportService:
                 "persediaan_part": part_stock,
                 "persediaan_mobil": {
                     "total": car_stock,
-                    "harga_beli": car_stock - (snapshot_unsold_prep + snapshot_unsold_repairs_ext),
+                    "harga_beli": car_stock - (snapshot_unsold_prep + snapshot_unsold_repairs_ext + snapshot_unsold_repairs_int),
                     "biaya_persiapan": snapshot_unsold_prep,
                     "perbaikan_external": snapshot_unsold_repairs_ext,
                     "perbaikan_internal": snapshot_unsold_repairs_int

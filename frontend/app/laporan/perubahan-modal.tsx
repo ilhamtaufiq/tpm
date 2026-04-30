@@ -299,6 +299,11 @@ export default function LaporanPerubahanModalScreen() {
                             <td>◦ Harga Beli Unit</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.harga_beli || 0)})</td>
                         </tr>
+                        ${r.pengurangan?.alokasi_stok?.sparepart > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Pembelian Sparepart</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.sparepart || 0)})</td>
+                        </tr>` : ''}
                         <tr class="sub-item">
                             <td>◦ Biaya Persiapan (Prep)</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.prep || 0)})</td>
@@ -739,6 +744,12 @@ export default function LaporanPerubahanModalScreen() {
                                     </View>
                                 )}
 
+                                {report.penambahan?.stok_part_baru > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Stok Spare Part" value={report.penambahan?.stok_part_baru} bold color="text-amber-700" />
+                                    </View>
+                                )}
+
                                 <View className="flex-row flex-wrap mt-3 gap-2">
                                     {report.penambahan?.investor_funding > 0 && (
                                         <View className="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
@@ -810,6 +821,9 @@ export default function LaporanPerubahanModalScreen() {
                                         <Row label="Stok Mobil" value={report.pengurangan?.alokasi_stok?.total} bold isNegative color="text-rose-800" />
                                         <View className="ml-5 border-l-2 border-rose-50 pl-3">
                                             <Row label="Harga Beli Unit" value={report.pengurangan?.alokasi_stok?.harga_beli} small isNegative />
+                                            {report.pengurangan?.alokasi_stok?.sparepart > 0 && (
+                                                <Row label="Pembelian Sparepart" value={report.pengurangan?.alokasi_stok?.sparepart} small isNegative />
+                                            )}
                                             <Row label="Biaya Persiapan (Prep)" value={report.pengurangan?.alokasi_stok?.prep} small isNegative />
                                             <Row label="Perbaikan Bengkel" value={report.pengurangan?.alokasi_stok?.workshop} small isNegative />
                                         </View>

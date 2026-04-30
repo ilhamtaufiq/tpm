@@ -571,7 +571,8 @@ class ModalService(BaseReportService):
                 "pelunasan_hutang": total_pembayaran_hutang_all,
                 "alokasi_stok": {
                     "total": alokasi_stok_net,
-                    "harga_beli": pembelian_tunai_all + sisa_hutang_stok_baru,
+                    "harga_beli": beli_mobil + hutang_mobil_baru,
+                    "sparepart": beli_sparepart + hutang_part_baru,
                     "prep": prep_value,
                     "workshop": repair_value
                 },
