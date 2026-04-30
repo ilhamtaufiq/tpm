@@ -298,9 +298,9 @@ class ModalService(BaseReportService):
         # Breakdown Beban Operasional
         ops_umum = float(b.get("common_expenses", 0)) + float(data.get("admin_fees_unrecorded", 0)) + float(data.get("ja_untracked_gap", 0))
         ops_bengkel = float(b.get("total_expenses", 0))
-        # Mobil Breakdown: Include tagged costs (prep/repairs) in operational deduction
-        # because those represent cash outflows during this period.
-        ops_mobil = float(m.get("overhead", 0)) + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
+        # Mobil Breakdown: Only general overhead.
+        # Capitalized costs (prep/repairs) are moved to Stock Allocation.
+        ops_mobil = float(m.get("overhead", 0))
         
         # Jasa Angkut Breakdown: Unit vs Armada vs Trip vs Repairs
         # Note: ja.get("armada_ops", 0) represents trip-level costs.
@@ -329,7 +329,7 @@ class ModalService(BaseReportService):
         laba_bengkel_tpm_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
         # Laba Kotor (Gross Profit) = Sum of all units' gross profit
-        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross - internal_elimination
+        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -341,12 +341,13 @@ class ModalService(BaseReportService):
         
         # penambahan_stok_mobil should include:
         # 1. Purchase price of new cars bought in this period
-        # 2. Preparation/Repair costs paid in this period (as they increase asset value)
+        # 2. Preparation costs paid in this period (as they increase asset value)
+        # Note: repairs_total (internal workshop) is EXCLUDED because it's caught in total_non_kas delta.
         penambahan_stok_mobil = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
             Mobil.tanggal_masuk >= tanggal_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
-        ).scalar() or 0) + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
+        ).scalar() or 0) + float(m.get("prep_total", 0))
 
         # 2. Spare Part Stock Rotation
         penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
@@ -414,15 +415,13 @@ class ModalService(BaseReportService):
         ).scalar() or 0)
 
         # 4. Piutang Rotation (Neutralize receivables increase)
-        # This shows where money went (Kasbon/Piutang)
+        # This shows where money went (External Kasbon/Piutang)
+        # Internal workshop piutang is EXCLUDED as it's a consolidation elimination.
         penambahan_piutang_period = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
             PiutangUsaha.tanggal >= tanggal_dari,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
-            or_(
-                PiutangUsaha.is_internal != True,
-                PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
-            )
+            PiutangUsaha.is_internal != True
         ).scalar() or 0)
         
         # Breakdown specific for display
@@ -457,10 +456,9 @@ class ModalService(BaseReportService):
         pembelian_tunai_all = beli_mobil + beli_sparepart
         sisa_hutang_stok_baru = hutang_mobil_baru + hutang_part_baru
         
-        # Note: we exclude capitalized_costs from alokasi_stok_net because they are already 
-        # accounted for in total_overhead_gaji (via ops_mobil). 
-        # Including them here would double-count the use of funds.
-        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru
+        # Note: alokasi_stok_net now includes capitalized_costs (prep/repairs)
+        # as they represent investment into car assets.
+        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
 
         total_penambahan = (
             setoran_modal + total_non_kas + laba_kotor + 
@@ -484,8 +482,8 @@ class ModalService(BaseReportService):
         hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
         hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
         
-        # Note: modal deltas (Imported Stock) must be added if not already in Transactions table.
-        modal_aktual = (end_total_cash + persediaan_part + modal_stok_part_delta + persediaan_mobil + modal_stok_mobil_delta + aset_tetap + piutang_external) - hutang_usaha_total
+        # Modal Aktual = Aset - Kewajiban (Snapshot)
+        modal_aktual = end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external - hutang_usaha_total
         selisih = modal_akhir - modal_aktual
 
         return {
@@ -500,7 +498,7 @@ class ModalService(BaseReportService):
                     "stok_mobil": modal_stok_mobil_delta
                 },
                 "laba_kotor": {
-                    "total": laba_kotor,
+                    "total": laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross,
                     "mobil": laba_mobil_tpm_gross,
                     "ja": laba_ja_tpm_gross,
                     "bengkel": laba_bengkel_tpm_gross,
@@ -515,6 +513,7 @@ class ModalService(BaseReportService):
                     "lainnya": piutang_lain_baru
                 },
                 "investor_funding": investor_capital_baru,
+                "eliminasi_internal": 0,
                 "total": total_penambahan
             },
             "pengurangan": {
@@ -530,7 +529,8 @@ class ModalService(BaseReportService):
                     "lainnya": piutang_lain_baru
                 },
                 "beban_operasional": {
-                    "total": total_overhead_gaji,
+                    "total": total_ops,
+                    "umum": ops_umum,
                     "bengkel": ops_bengkel,
                     "mobil": ops_mobil,
                     "ja": {
@@ -540,9 +540,11 @@ class ModalService(BaseReportService):
                         "trip": ops_ja_trip,
                         "repairs": ops_ja_repairs
                     },
-                    "umum": ops_umum,
                     "gaji_lembur": gaji + lembur
                 },
+                "gaji": gaji,
+                "lembur": lembur,
+                "eliminasi_internal": internal_elimination,
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
@@ -565,6 +567,7 @@ class ModalService(BaseReportService):
                 "gaji": gaji,
                 "lembur": lembur,
                 "laba_bersih": period_profit_sot,
+                "eliminasi_internal": internal_elimination,
                 "debug": {
                     "kas": end_total_cash,
                     "part": persediaan_part,

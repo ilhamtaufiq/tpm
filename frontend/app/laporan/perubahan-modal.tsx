@@ -202,10 +202,10 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(r.penambahan?.laba_kotor?.bengkel || 0)}</td>
                         </tr>
 
-                        ${pelunasan_h > 0 ? `
+                        ${r.penambahan?.eliminasi_internal > 0 ? `
                         <tr>
-                            <td>Penyesuaian Pelunasan Hutang (Adjustment)</td>
-                            <td class="amount">${formatCurrency(pelunasan_h)}</td>
+                            <td>Eliminasi Pendapatan Internal (Workshop)</td>
+                            <td class="amount negative">(${formatCurrency(r.penambahan?.eliminasi_internal)})</td>
                         </tr>` : ''}
                         
                         <tr class="total-row">
@@ -257,10 +257,10 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount negative">(${formatCurrency(r.pengurangan?.alokasi_piutang?.total)})</td>
                         </tr>` : ''}
 
-                        ${r.pengurangan?.pelunasan_hutang > 0 ? `
+                        ${r.pengurangan?.eliminasi_internal > 0 ? `
                         <tr>
-                            <td>Pembayaran Pelunasan Hutang (Cash Out)</td>
-                            <td class="amount negative">(${formatCurrency(r.pengurangan?.pelunasan_hutang)})</td>
+                            <td>Eliminasi Biaya Internal (Workshop)</td>
+                            <td class="amount positive">${formatCurrency(r.pengurangan?.eliminasi_internal)}</td>
                         </tr>` : ''}
                         
                         <tr class="total-row">
@@ -669,6 +669,12 @@ export default function LaporanPerubahanModalScreen() {
                                     )}
                                 </View>
 
+                                {report.penambahan?.eliminasi_internal > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Eliminasi Pendapatan Internal" value={report.penambahan?.eliminasi_internal} small isNegative />
+                                    </View>
+                                )}
+
                                 <View className="pt-4 mt-2 border-t border-emerald-100">
                                     <Row label="TOTAL PENAMBAHAN" value={report.penambahan?.total} bold color="text-emerald-700" />
                                 </View>
@@ -731,6 +737,12 @@ export default function LaporanPerubahanModalScreen() {
                                         </View>
                                     )}
                                 </View>
+
+                                {report.pengurangan?.eliminasi_internal > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Eliminasi Biaya Internal (Adjust)" value={report.pengurangan?.eliminasi_internal} small color="text-emerald-600" />
+                                    </View>
+                                )}
 
                                 <View className="pt-4 mt-2 border-t border-rose-100">
                                     <Row label="TOTAL PENGURANGAN" value={report.pengurangan?.total} bold color="text-rose-700" />

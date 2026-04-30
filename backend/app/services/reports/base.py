@@ -408,12 +408,14 @@ class BaseReportService:
         snapshot_unsold_prep = float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
             PengeluaranBengkel.mobil_id.in_(unsold_car_ids),
             PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_LAINNYA,
+            PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
             PengeluaranBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
         
         snapshot_unsold_repairs_ext = float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).filter(
             PengeluaranBengkel.mobil_id.in_(unsold_car_ids),
             PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_OPERASIONAL,
+            PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
             PengeluaranBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
@@ -638,7 +640,7 @@ class BaseReportService:
             include_internal=True,
             unit_in=[KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]
         )
-        piutang_lainnya = piutang_usaha - (piutang_bengkel_ext + piutang_bengkel_int + piutang_ja + piutang_mobil + piutang_kasbon)
+        piutang_lainnya = piutang_usaha - (piutang_bengkel_ext + piutang_ja + piutang_mobil + piutang_kasbon)
 
         # Internal Elimination: Workshop revenue from internal car unit repairs
         # We eliminate the FULL revenue. Since the income is Revenue - HPP,
@@ -689,7 +691,7 @@ class BaseReportService:
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             ja_expenses_trip + ja_expenses_bengkel + ja_tagged_from_wallet + general_ja_overhead +
-            admin_fees_unrecorded + ja_untracked_gap
+            admin_fees_unrecorded + ja_untracked_gap + general_mobil_overhead
         )
         
         # ═══════════════════════════════════════════════════════════════
@@ -703,13 +705,12 @@ class BaseReportService:
         # Formula: gross_profit - gaji - ops - overhead = laba_operasional
         # This is equivalent to sum of unit net profits - central overhead.
         # ═══════════════════════════════════════════════════════════════
-        # Internal Elimination Breakdown:
-        # We must eliminate the internal revenue, but keep the HPP as an expense
-        # because the physical stock is actually gone.
-        # So, Retained Earnings should be reduced by the HPP of internal transactions.
+        # Internal Elimination:
+        # We must eliminate the internal revenue to show consolidated profit.
         
         retained_earnings = (
             total_laba_gross 
+            - internal_elimination
             - total_operasional 
             - gaji_pokok
             - gaji_lembur

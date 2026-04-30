@@ -1,37 +1,36 @@
-# Continuity Ledger - TPM Equity Reconciliation
+# Continuity Ledger - Perubahan Modal Reconciliation
 
 ## Goal
-Resolve persistent reconciliation variance in "Perubahan Modal" report, specifically handling debt-funded assets, capitalized costs, and booking scenarios (DP/Receivables). Ensure operational transparency for all business units.
+Resolve financial reporting discrepancies in "Perubahan Modal" report, specifically regarding internal workshop repairs for car trading units. 
+Success criteria:
+- Consolidated Net Income correctly reflects 0 profit for internal transfers.
+- "Penambahan Modal" and "Pengurangan Modal" totals are mathematically consistent with displayed rows.
+- Internal eliminations are explicitly shown to the user.
+- Status remains "VERIFIED BALANCE".
 
 ## Constraints/Assumptions
-- Manual debt settlement is preferred (no auto-lunas on sale).
-- Net Asset Value (Actual) must equal Theoretical Modal (Waterfall).
-- Inventory values include capitalized preparation and repair costs.
-- Booking DPs and Booking Receivables must be treated as liabilities until the sale is final (status TERJUAL).
-- "Allow Negative Balance" is an administrative override for manual reconciliation.
+- Internal repairs (category 'jual_beli_mobil') are capitalized into car stock value.
+- Equity increases when internal labor/parts are added to an asset (Profit in Bengkel) but should be eliminated at consolidation level if unrealized (car not sold).
+- CURRENT APPROACH: Fully eliminate internal revenue from profit until the car is sold.
 
 ## Key Decisions
-- [x] Refactored `alokasi_stok_net` to include capitalized costs (prep/repairs).
-- [x] Implemented `customer_dp` and `net_booking_piutang` as liabilities.
-- [x] **New**: Implemented `allow_negative` (Force Transaction) toggle in Mutasi and Expenses to bypass strict balance validation.
-- [x] **New**: Refined Jasa Angkut (JA) breakdown into Unit, Armada, Trip, and Repairs categories.
-- [x] **New**: Integrated Piutang/Kasbon rotation (Penambahan & Alokasi Dana) into Perubahan Modal sections to track fund allocation.
+- **BaseReportService**: Subtract `internal_elimination` from `retained_earnings`.
+- **ModalService**: Add `internal_elimination` as a row in both Penambahan and Pengurangan sections.
+- **ModalService**: Fix double counting where capitalized repairs were added to both Stock Growth and Non-Cash Capital.
 
 ## State
 - **Done**: 
-    - Stock neutralization logic for capitalized costs.
-    - Booking/DP liability logic in `BaseReportService`.
-    - Force transaction (allow_negative) backend & frontend implementation.
-    - Detailed JA and Piutang breakdown in `ModalService` and UI.
-- **Now**: System is balanced and provides granular visibility into unit-level operations and cash allocation.
-- **Next**: Monitor for future reconciliation gaps during month-end closing.
+  - Initial audit of `BaseReportService`, `ModalService`, and `perubahan-modal.tsx`.
+  - Fixed `BaseReportService.py` profit and piutang logic (elimination and overhead).
+  - Fixed `ModalService.py` double-counting and structure (elimination rows).
+  - Updated `perubahan-modal.tsx` UI and PDF export for transparency.
+- **Now**: Final validation.
+- **Next**: Final handoff to user.
 
-## Open Questions
-- None at the moment. Current logic covers all identified discrepancy sources and operational tracking needs.
+## Open Questions (UNCONFIRMED)
+- None at the moment.
 
 ## Working Set
-- `backend/app/services/reports/modal_service.py`
-- `backend/app/services/reports/base.py`
-- `frontend/app/laporan/perubahan-modal.tsx`
-- `frontend/app/finance/mutasi.tsx`
-- `frontend/app/finance/expenses/index.tsx`
+- backend/app/services/reports/base.py
+- backend/app/services/reports/modal_service.py
+- frontend/app/laporan/perubahan-modal.tsx
