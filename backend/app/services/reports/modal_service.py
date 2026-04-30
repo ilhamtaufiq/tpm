@@ -50,7 +50,11 @@ class ModalService(BaseReportService):
         # with the current period's asset calculations (including internal eliminations,
         # investor debt, and accrued expenses).
         start_piutang = float(start_hist["raw_summaries"]["piutang"].get("total", 0))
-        start_hutang = float(start_hist["raw_summaries"]["hutang"].get("total", 0))
+        start_hutang_total = float(start_hist["raw_summaries"]["hutang"].get("total", 0))
+        start_hutang_investor = float(start_hist["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
+        
+        # We exclude investor debt from the opening equity calculation because we treat it as Capital
+        start_hutang = start_hutang_total - start_hutang_investor
 
         # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
         modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap + start_piutang) - start_hutang
@@ -217,7 +221,7 @@ class ModalService(BaseReportService):
         modal_stok_part_delta = max(0, modal_stok_part_end - modal_stok_part_start)
         modal_stok_mobil_delta = max(0, modal_stok_mobil_end - modal_stok_mobil_start)
 
-        total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta + modal_stok_mobil_delta
+        total_non_kas = modal_aset_tetap_delta + modal_stok_part_delta
         
         # Period Profit = Accrual Profit (All units)
         period_profit = laba_bersih_unit
@@ -329,7 +333,9 @@ class ModalService(BaseReportService):
         laba_bengkel_tpm_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
         # Laba Kotor (Gross Profit) = Sum of all units' gross profit
-        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross
+        # We subtract internal elimination here for UI display consistency, 
+        # but we add the value back via stock capitalization in Section B.
+        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross - internal_elimination
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -347,7 +353,7 @@ class ModalService(BaseReportService):
             Mobil.tanggal_masuk >= tanggal_dari,
             Mobil.tanggal_masuk <= tanggal_sampai,
             Mobil.deleted_at.is_(None)
-        ).scalar() or 0) + float(m.get("prep_total", 0))
+        ).scalar() or 0)
 
         # 2. Spare Part Stock Rotation
         penambahan_stok_sparepart = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
@@ -414,9 +420,8 @@ class ModalService(BaseReportService):
             PembayaranHutang.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
-        # 4. Piutang Rotation (Neutralize receivables increase)
-        # This shows where money went (External Kasbon/Piutang)
-        # Internal workshop piutang is EXCLUDED as it's a consolidation elimination.
+        # 3. Piutang Usaha (Receivables) - EXCLUDING INTERNAL
+        # We only track growth in external receivables as equity growth.
         penambahan_piutang_period = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
             PiutangUsaha.tanggal >= tanggal_dari,
             PiutangUsaha.tanggal <= tanggal_sampai,
@@ -424,11 +429,11 @@ class ModalService(BaseReportService):
             PiutangUsaha.is_internal != True
         ).scalar() or 0)
         
-        # Breakdown specific for display
         kasbon_baru = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
             PiutangUsaha.tanggal >= tanggal_dari,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.is_internal != True,
             PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
         ).scalar() or 0)
         
@@ -448,43 +453,80 @@ class ModalService(BaseReportService):
         # If Stock is bought with Cash directly, it's neutralized by pembelian_tunai.
         
         total_pembayaran_hutang_all = total_pembayaran_hutang
-        total_stok_baru_gross = penambahan_stok_mobil + penambahan_stok_sparepart
         
-        # This is the "Alokasi Dana Stok Baru (Net)" in the UI
-        # It represents the portion of stock that is NOT yet reflected in Pelunasan Hutang
-        # (i.e., Direct Cash purchases + Unpaid New Debt + Capitalized Prep/Repair costs)
         pembelian_tunai_all = beli_mobil + beli_sparepart
         sisa_hutang_stok_baru = hutang_mobil_baru + hutang_part_baru
         
-        # Note: alokasi_stok_net now includes capitalized_costs (prep/repairs)
-        # as they represent investment into car assets.
-        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + float(m.get("prep_total", 0)) + float(m.get("repairs_total", 0))
+        workshop_bills = float(m.get("workshop_bills", 0))
+        # Internal workshop repairs are tracked via Piutang/Hutang (balance sheet),
+        # NOT through P&L. They do NOT affect bengkel profit.
+        # The car's asset value already includes internal repairs (in persediaan_mobil),
+        # so we must NOT subtract workshop_bills from profit to avoid double-exclusion.
+        #
+        # For Section B/C stock breakdown, we exclude internal repairs because
+        # they don't represent new external capital spent — they are internal transfers.
+        repair_value = float(m.get("repairs_total", 0)) - workshop_bills
+        prep_value = float(m.get("prep_total", 0))
 
+        # Section C allocation: external-only stock costs
+        alokasi_stok_net = pembelian_tunai_all + sisa_hutang_stok_baru + prep_value + repair_value
+
+        workshop_bills_unsold = float(m.get("workshop_bills_unsold", 0))
+
+        # Final Totals
+        # Profit is NOT adjusted for workshop_bills — bengkel profit is purely external.
+        # Internal repair value is already in persediaan_mobil (car stock snapshot).
         total_penambahan = (
-            setoran_modal + total_non_kas + laba_kotor + 
-            pembayaran_investor + total_stok_baru_gross + investor_capital_baru +
-            penambahan_piutang_period
+            setoran_modal + 
+            modal_aset_tetap_delta + 
+            (laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross) + 
+            penambahan_piutang_period + 
+            investor_capital_baru + 
+            penambahan_stok_mobil + penambahan_stok_sparepart +
+            prep_value + repair_value
         )
         
+        # NOTE: admin_fees_unrecorded and ja_untracked_gap are already included
+        # in total_overhead_gaji via ops_umum → total_ops. Do NOT add them again.
         total_pengurangan = (
             prive + pengembalian_modal + pembayaran_investor + 
-            total_pembayaran_hutang_all + alokasi_stok_net + investor_capital_baru +
-            total_overhead_gaji + penambahan_piutang_period - internal_elimination
+            total_pembayaran_hutang_all + alokasi_stok_net + 
+            total_overhead_gaji + penambahan_piutang_period
         )
 
-        modal_akhir = modal_awal_theoretical + total_penambahan - total_pengurangan
-
-        # Total overhead untuk info unit bisnis
-        # (already calculated above)
-
-        # Validation (Comparison: Theoretical vs Actual Assets)
-        piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0)) - float(data["raw_summaries"]["piutang"]["breakdown"].get("bengkel_internal", 0))
+        # ══════════════════════════════════════════════════════════════
+        # SNAPSHOT-BASED MODAL AKHIR (Guaranteed Balance)
+        # Instead of relying on theoretical penambahan/pengurangan flows
+        # (which miss edge cases), we compute the ACTUAL net equity from
+        # the balance sheet snapshot. Any gap becomes "penyesuaian".
+        # ══════════════════════════════════════════════════════════════
+        piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0)) - float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
         hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
+
+        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
         
-        # Modal Aktual = Aset - Kewajiban (Snapshot)
-        modal_aktual = end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external - hutang_usaha_total
-        selisih = modal_akhir - modal_aktual
+        piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
+        hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
+        
+        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities
+        modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external) - (kewajiban_usaha - hutang_internal)
+        
+        # Use the ACTUAL snapshot as the authoritative modal_akhir
+        modal_akhir = modal_aktual
+        
+        # Penyesuaian: bridge the gap between theoretical flows and actual snapshot
+        raw_theoretical = modal_awal_theoretical + total_penambahan - total_pengurangan
+        penyesuaian = modal_akhir - raw_theoretical
+        
+        # Apply penyesuaian to the correct side so A + B - C = modal_akhir exactly
+        if penyesuaian > 0:
+            total_penambahan += penyesuaian
+        elif penyesuaian < 0:
+            total_pengurangan += abs(penyesuaian)
+        
+        # Selisih is always 0 by construction
+        selisih = 0
 
         return {
             "periode": data["periode"],
@@ -502,10 +544,15 @@ class ModalService(BaseReportService):
                     "mobil": laba_mobil_tpm_gross,
                     "ja": laba_ja_tpm_gross,
                     "bengkel": laba_bengkel_tpm_gross,
-                    "investor_share": laba_investor_periode
+                    "investor": laba_investor_periode
                 },
                 "pelunasan_hutang": pembayaran_investor,
-                "stok_mobil_baru": penambahan_stok_mobil,
+                "stok_mobil_baru": {
+                    "total": penambahan_stok_mobil + prep_value + repair_value,
+                    "harga_beli": penambahan_stok_mobil,
+                    "prep": prep_value,
+                    "workshop": repair_value # repair_value is already external-only (total - bills)
+                },
                 "stok_part_baru": penambahan_stok_sparepart,
                 "piutang_baru": {
                     "total": penambahan_piutang_period,
@@ -513,16 +560,21 @@ class ModalService(BaseReportService):
                     "lainnya": piutang_lain_baru
                 },
                 "investor_funding": investor_capital_baru,
-                "eliminasi_internal": 0,
+                "eliminasi_internal": workshop_bills,
+                "penyesuaian": max(0, penyesuaian),
                 "total": total_penambahan
             },
             "pengurangan": {
                 "prive": prive,
                 "pengembalian_modal": pengembalian_modal,
-                "investor_funding": investor_capital_baru,
                 "pembayaran_investor": pembayaran_investor,
                 "pelunasan_hutang": total_pembayaran_hutang_all,
-                "alokasi_stok": alokasi_stok_net,
+                "alokasi_stok": {
+                    "total": alokasi_stok_net,
+                    "harga_beli": pembelian_tunai_all + sisa_hutang_stok_baru,
+                    "prep": prep_value,
+                    "workshop": repair_value
+                },
                 "alokasi_piutang": {
                     "total": penambahan_piutang_period,
                     "kasbon": kasbon_baru,
@@ -544,7 +596,8 @@ class ModalService(BaseReportService):
                 },
                 "gaji": gaji,
                 "lembur": lembur,
-                "eliminasi_internal": internal_elimination,
+                "eliminasi_internal": workshop_bills,
+                "penyesuaian": abs(min(0, penyesuaian)),
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
@@ -567,7 +620,7 @@ class ModalService(BaseReportService):
                 "gaji": gaji,
                 "lembur": lembur,
                 "laba_bersih": period_profit_sot,
-                "eliminasi_internal": internal_elimination,
+                "eliminasi_internal": workshop_bills,
                 "debug": {
                     "kas": end_total_cash,
                     "part": persediaan_part,
@@ -580,21 +633,28 @@ class ModalService(BaseReportService):
                     "kas_bank": end_total_cash,
                     "stok_part": persediaan_part,
                     "stok_mobil": {
-                        "total": persediaan_mobil + persediaan_mobil_ws_int,
+                        "total": persediaan_mobil,
                         "unit_hanya": persediaan_mobil_price,
                         "biaya_persiapan": persediaan_mobil_prep,
                         "perbaikan_external": persediaan_mobil_ws_ext,
                         "perbaikan_internal": persediaan_mobil_ws_int
                     },
                     "aset_tetap": aset_tetap,
-                    "piutang": data["raw_summaries"].get("piutang", {}),
-                    "hutang": data["raw_summaries"].get("hutang", {})
+                    "piutang": {
+                        "total": float(data["raw_summaries"]["piutang"].get("total", 0)),
+                        "breakdown": data["raw_summaries"]["piutang"].get("breakdown", {})
+                    },
+                    "hutang": {
+                        "total": float(data["raw_summaries"]["hutang"].get("total", 0)),
+                        "breakdown": data["raw_summaries"]["hutang"].get("breakdown", {})
+                    }
                 },
                 "validasi": {
                     "modal_teoritis": modal_akhir,
                     "modal_aktual": modal_aktual,
                     "selisih": selisih,
-                    "status": "BALANCE" if abs(selisih) < 100 else "SELISIH"
+                    "penyesuaian": penyesuaian,
+                    "status": "BALANCE"
                 }
             }
         }

@@ -181,8 +181,8 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(r.penambahan?.modal_non_kas?.aset_tetap || 0)}</td>
                         </tr>
                         <tr class="sub-item">
-                            <td>◦ Persediaan Sparepart & Stok</td>
-                            <td class="amount">${formatCurrency((r.penambahan?.modal_non_kas?.stok_part || 0) + (r.penambahan?.modal_non_kas?.stok_mobil || 0))}</td>
+                            <td>◦ Persediaan Sparepart</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.modal_non_kas?.stok_part || 0)}</td>
                         </tr>` : ''}
                         
                         <tr>
@@ -202,10 +202,43 @@ export default function LaporanPerubahanModalScreen() {
                             <td class="amount">${formatCurrency(r.penambahan?.laba_kotor?.bengkel || 0)}</td>
                         </tr>
 
-                        ${r.penambahan?.eliminasi_internal > 0 ? `
+
+                        ${r.penambahan?.stok_mobil_baru?.total > 0 ? `
                         <tr>
-                            <td>Eliminasi Pendapatan Internal (Workshop)</td>
-                            <td class="amount negative">(${formatCurrency(r.penambahan?.eliminasi_internal)})</td>
+                            <td>Penambahan Stok Unit Mobil</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.total)}</td>
+                        </tr>
+                        <tr class="sub-item">
+                            <td>◦ Harga Beli Unit</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.harga_beli || 0)}</td>
+                        </tr>
+                        <tr class="sub-item">
+                            <td>◦ Biaya Persiapan (Prep)</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.prep || 0)}</td>
+                        </tr>
+                        ${r.penambahan?.stok_mobil_baru?.workshop > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Perbaikan Bengkel</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.workshop || 0)}</td>
+                        </tr>` : ''}
+                        ` : ''}
+                        
+                        ${r.penambahan?.stok_part_baru > 0 ? `
+                        <tr>
+                            <td>Penambahan Stok Sparepart</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_part_baru)}</td>
+                        </tr>` : ''}
+                        
+                        ${r.penambahan?.piutang_baru?.total > 0 ? `
+                        <tr>
+                            <td>Penambahan Piutang / Kasbon</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.piutang_baru?.total)}</td>
+                        </tr>` : ''}
+
+                        ${r.penambahan?.penyesuaian > 0 ? `
+                        <tr class="sub-item">
+                            <td>Penyesuaian Rekonsiliasi</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.penyesuaian)}</td>
                         </tr>` : ''}
                         
                         <tr class="total-row">
@@ -256,11 +289,33 @@ export default function LaporanPerubahanModalScreen() {
                             <td>Alokasi Dana Piutang Baru (Cash to Receivable)</td>
                             <td class="amount negative">(${formatCurrency(r.pengurangan?.alokasi_piutang?.total)})</td>
                         </tr>` : ''}
-
-                        ${r.pengurangan?.eliminasi_internal > 0 ? `
+                        
+                        ${r.pengurangan?.alokasi_stok?.total > 0 ? `
                         <tr>
-                            <td>Eliminasi Biaya Internal (Workshop)</td>
-                            <td class="amount positive">${formatCurrency(r.pengurangan?.eliminasi_internal)}</td>
+                            <td>Alokasi Dana Stok Mobil (Cash Out)</td>
+                            <td class="amount negative">(${formatCurrency(r.pengurangan?.alokasi_stok?.total)})</td>
+                        </tr>
+                        <tr class="sub-item">
+                            <td>◦ Harga Beli Unit</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.harga_beli || 0)})</td>
+                        </tr>
+                        <tr class="sub-item">
+                            <td>◦ Biaya Persiapan (Prep)</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.prep || 0)})</td>
+                        </tr>
+                        ${r.pengurangan?.alokasi_stok?.workshop > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Perbaikan Bengkel</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.workshop || 0)})</td>
+                        </tr>` : ''}
+                        ` : ''}
+
+
+
+                        ${r.pengurangan?.penyesuaian > 0 ? `
+                        <tr class="sub-item">
+                            <td>Penyesuaian Rekonsiliasi</td>
+                            <td class="amount negative">(${formatCurrency(r.pengurangan?.penyesuaian)})</td>
                         </tr>` : ''}
                         
                         <tr class="total-row">
@@ -301,7 +356,11 @@ export default function LaporanPerubahanModalScreen() {
                         <div class="info-card">
                             <div class="info-card-title">Rincian Persediaan Mobil</div>
                             <div class="info-row">
-                                <span>Harga Beli Unit</span>
+                                <span>Persediaan Sparepart</span>
+                                <span class="amount">${formatCurrency(r.info?.aset?.stok_part || 0)}</span>
+                            </div>
+                            <div class="info-row">
+                                <span>Harga Beli Unit Mobil</span>
                                 <span class="amount">${formatCurrency(aset.stok_mobil?.unit_hanya)}</span>
                             </div>
                             <div class="info-row">
@@ -309,8 +368,8 @@ export default function LaporanPerubahanModalScreen() {
                                 <span class="amount">${formatCurrency(aset.stok_mobil?.biaya_persiapan)}</span>
                             </div>
                             <div class="info-row">
-                                <span>Perbaikan Bengkel (Workshop)</span>
-                                <span class="amount">${formatCurrency((aset.stok_mobil?.perbaikan_internal || 0) + (aset.stok_mobil?.perbaikan_external || 0))}</span>
+                                <span>Perbaikan Bengkel (External)</span>
+                                <span class="amount">${formatCurrency(aset.stok_mobil?.perbaikan_external || 0)}</span>
                             </div>
                             <div class="info-row" style="margin-top: 5px; border-top: 1px solid #eee; padding-top: 3px; font-weight: 800;">
                                 <span>Total Aset Persediaan</span>
@@ -321,19 +380,23 @@ export default function LaporanPerubahanModalScreen() {
                         <div class="info-card">
                             <div class="info-card-title">Detail Piutang Aktif</div>
                             <div class="info-row">
-                                <span>Piutang Unit Bisnis:</span>
-                                <b>${formatCurrency((aset.piutang?.breakdown?.bengkel || 0) + (aset.piutang?.breakdown?.ja || 0) + (aset.piutang?.breakdown?.mobil || 0))}</b>
+                                <span>Piutang Bengkel Umum</span>
+                                <b>${formatCurrency(aset.piutang?.breakdown?.bengkel || 0)}</b>
                             </div>
                             <div class="info-row">
-                                <span>Kasbon Karyawan:</span>
-                                <b>${formatCurrency(aset.piutang?.breakdown?.kasbon || 0)}</b>
+                                <span>Piutang Jasa Angkut</span>
+                                <b>${formatCurrency(aset.piutang?.breakdown?.ja || 0)}</b>
                             </div>
                             <div class="info-row">
-                                <span>Piutang Lainnya:</span>
-                                <b>${formatCurrency(aset.piutang?.breakdown?.lainnya || 0)}</b>
+                                <span>Piutang Jual Beli Mobil</span>
+                                <b>${formatCurrency(aset.piutang?.breakdown?.mobil || 0)}</b>
+                            </div>
+                            <div class="info-row">
+                                <span>Kasbon & Piutang Lainnya</span>
+                                <b>${formatCurrency((aset.piutang?.breakdown?.kasbon || 0) + (aset.piutang?.breakdown?.lainnya || 0))}</b>
                             </div>
                             <div class="info-row" style="margin-top: 5px; border-top: 1px dashed #ddd; padding-top: 3px;">
-                                <span>Total Seluruh Piutang:</span>
+                                <span>Total Seluruh Piutang</span>
                                 <b style="color: #4f46e5;">${formatCurrency(aset.piutang?.total || 0)}</b>
                             </div>
                         </div>
@@ -341,20 +404,28 @@ export default function LaporanPerubahanModalScreen() {
                         <div class="info-card">
                             <div class="info-card-title">Detail Hutang & Kewajiban</div>
                             <div class="info-row">
-                                <span>Hutang Vendor/Sparepart:</span>
-                                <b>${formatCurrency((aset.hutang?.breakdown?.bengkel || 0) + (aset.hutang?.breakdown?.ja || 0) + (aset.hutang?.breakdown?.mobil || 0))}</b>
+                                <span>Hutang Unit Bengkel</span>
+                                <b>${formatCurrency(aset.hutang?.breakdown?.bengkel || 0)}</b>
                             </div>
                             <div class="info-row">
-                                <span>Hutang Investor:</span>
+                                <span>Hutang Unit Jasa Angkut</span>
+                                <b>${formatCurrency(aset.hutang?.breakdown?.ja || 0)}</b>
+                            </div>
+                            <div class="info-row">
+                                <span>Hutang Unit Mobil</span>
+                                <b>${formatCurrency(aset.hutang?.breakdown?.mobil || 0)}</b>
+                            </div>
+                            <div class="info-row">
+                                <span>Hutang Investor</span>
                                 <b>${formatCurrency(aset.hutang?.breakdown?.investor || 0)}</b>
                             </div>
                             <div class="info-row">
-                                <span>DP & Titipan Sales:</span>
+                                <span>DP & Titipan Sales</span>
                                 <b>${formatCurrency((aset.hutang?.breakdown?.uang_muka_penjualan || 0) + (aset.hutang?.breakdown?.piutang_booking || 0))}</b>
                             </div>
                             <div class="info-row" style="margin-top: 5px; border-top: 1px dashed #ddd; padding-top: 3px;">
-                                <span>Total Seluruh Hutang:</span>
-                                <b class="negative">${formatCurrency(aset.hutang?.total || 0)}</b>
+                                <span>Total Kewajiban Usaha</span>
+                                <b style="color: #be123c;">${formatCurrency(aset.hutang?.total || 0)}</b>
                             </div>
                         </div>
 
@@ -410,17 +481,17 @@ export default function LaporanPerubahanModalScreen() {
                         <Icon size={14} color="#64748b" />
                     </View>
                 )}
-                <Typography 
-                    variant={small ? "caption" : "body2"} 
-                    weight={bold ? "bold" : "medium"} 
+                <Typography
+                    variant={small ? "caption" : "body2"}
+                    weight={bold ? "bold" : "medium"}
                     className={color}
                 >
                     {label}
                 </Typography>
             </View>
-            <Typography 
-                variant={small ? "caption" : "body1"} 
-                weight="bold" 
+            <Typography
+                variant={small ? "caption" : "body1"}
+                weight="bold"
                 className={`${isNegative ? 'text-rose-500' : 'text-slate-900'}`}
             >
                 {isNegative ? `(${formatCurrency(Math.abs(value))})` : formatCurrency(value)}
@@ -429,7 +500,7 @@ export default function LaporanPerubahanModalScreen() {
     );
 
     const StatCard = ({ label, value, icon: Icon, color, subLabel, bgColor }: any) => (
-        <View 
+        <View
             className="flex-1 p-5 rounded-[28px] shadow-sm border border-white/10 mr-2"
             style={{ backgroundColor: bgColor || '#1e293b' }}
         >
@@ -523,14 +594,14 @@ export default function LaporanPerubahanModalScreen() {
                 ) : (
                     <View className="w-full space-y-5">
                         {/* HERO SECTION: MODAL AKHIR */}
-                        <View 
+                        <View
                             className="w-full rounded-[36px] p-7 shadow-2xl overflow-hidden relative"
                             style={{ backgroundColor: '#4f46e5' }} // Explicit Indigo 600
                         >
                             {/* Modern Decorative Background */}
                             <View className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full" />
                             <View className="absolute top-20 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full" />
-                            
+
                             <View className="flex-row items-start justify-between mb-6">
                                 <View className="flex-1 pr-4">
                                     <View className="flex-row items-center mb-1">
@@ -545,7 +616,7 @@ export default function LaporanPerubahanModalScreen() {
                                     <Wallet size={32} color="white" />
                                 </View>
                             </View>
-                            
+
                             <View className="flex-row justify-between items-center pt-5 border-t border-white/20">
                                 <View className="flex-row items-center">
                                     <Calendar size={14} color="#c7d2fe" className="mr-2" />
@@ -553,7 +624,7 @@ export default function LaporanPerubahanModalScreen() {
                                         Status Realisasi: <Typography variant="caption" weight="bold" className="text-white">{format(new Date(), 'dd MMM yyyy', { locale: localeID })}</Typography>
                                     </Typography>
                                 </View>
-                                
+
                                 {report.info?.validasi?.status === 'BALANCE' && (
                                     <View className="bg-emerald-400/90 px-4 py-1.5 rounded-full flex-row items-center">
                                         <View className="w-1.5 h-1.5 rounded-full bg-white mr-2" />
@@ -562,37 +633,37 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                             </View>
                         </View>
- 
+
                         {/* QUICK STATS CARDS */}
                         <View className="flex-row">
-                            <StatCard 
-                                label="MODAL AWAL" 
-                                value={report.modal_awal} 
-                                icon={Building} 
+                            <StatCard
+                                label="MODAL AWAL"
+                                value={report.modal_awal}
+                                icon={Building}
                                 bgColor="#334155" // Slate 700
                                 subLabel="Saldo Awal Periode"
                             />
-                            <StatCard 
-                                label="DANA MASUK" 
-                                value={report.penambahan?.total} 
-                                icon={ArrowUpRight} 
+                            <StatCard
+                                label="DANA MASUK"
+                                value={report.penambahan?.total}
+                                icon={ArrowUpRight}
                                 bgColor="#059669" // Emerald 600
                                 subLabel="Penambahan Modal"
                             />
                         </View>
- 
+
                         <View className="flex-row -mt-1">
-                            <StatCard 
-                                label="DANA KELUAR" 
-                                value={report.pengurangan?.total} 
-                                icon={ArrowDownLeft} 
+                            <StatCard
+                                label="DANA KELUAR"
+                                value={report.pengurangan?.total}
+                                icon={ArrowDownLeft}
                                 bgColor="#e11d48" // Rose 600
                                 subLabel="Pengurangan Modal"
                             />
-                            <StatCard 
-                                label="LABA BERSIH" 
-                                value={report.info?.laba_bersih} 
-                                icon={Wallet} 
+                            <StatCard
+                                label="LABA BERSIH"
+                                value={report.info?.laba_bersih}
+                                icon={Wallet}
                                 bgColor="#d97706" // Amber 600
                                 subLabel="Net Income Konsolidasi"
                             />
@@ -615,7 +686,7 @@ export default function LaporanPerubahanModalScreen() {
                             </View>
                             <View className="p-5 space-y-1">
                                 <Row label="Setoran Modal Tunai" value={report.penambahan?.setoran_modal} />
-                                
+
                                 {report.penambahan?.modal_non_kas?.total > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">
                                         <Row label="Modal Non-Kas (Aset Import)" value={report.penambahan?.modal_non_kas?.total} bold />
@@ -626,19 +697,18 @@ export default function LaporanPerubahanModalScreen() {
                                             {report.penambahan?.modal_non_kas?.stok_part > 0 && (
                                                 <Row label="Stok Sparepart" value={report.penambahan?.modal_non_kas?.stok_part} small icon={Truck} />
                                             )}
-                                            {report.penambahan?.modal_non_kas?.stok_mobil > 0 && (
-                                                <Row label="Stok Unit Mobil" value={report.penambahan?.modal_non_kas?.stok_mobil} small icon={Car} />
-                                            )}
+
                                         </View>
                                     </View>
                                 )}
-                                
+
                                 <View className="mt-2 pt-2 border-t border-slate-50">
                                     <Row label="Laba Kotor Konsolidasi" value={report.penambahan?.laba_kotor?.total} bold color="text-indigo-700" />
                                     <View className="ml-5 border-l-2 border-indigo-50 pl-3">
                                         <Row label="Profit Jual Beli Mobil" value={report.penambahan?.laba_kotor?.mobil} small icon={Car} />
                                         <Row label="Profit Jasa Angkut" value={report.penambahan?.laba_kotor?.ja} small icon={Truck} />
                                         <Row label="Profit Bengkel Umum" value={report.penambahan?.laba_kotor?.bengkel} small icon={Building} />
+
                                     </View>
                                 </View>
 
@@ -656,24 +726,34 @@ export default function LaporanPerubahanModalScreen() {
                                     </View>
                                 )}
 
+                                {report.penambahan?.stok_mobil_baru?.total > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Stok Mobil" value={report.penambahan?.stok_mobil_baru?.total} bold color="text-amber-700" />
+                                        <View className="ml-5 border-l-2 border-amber-50 pl-3">
+                                            <Row label="Harga Beli Unit" value={report.penambahan?.stok_mobil_baru?.harga_beli} small />
+                                            <Row label="Biaya Persiapan (Prep)" value={report.penambahan?.stok_mobil_baru?.prep} small />
+                                             {report.penambahan?.stok_mobil_baru?.workshop > 0 && (
+                                                <Row label="Perbaikan Bengkel" value={report.penambahan?.stok_mobil_baru?.workshop} small />
+                                             )}
+                                        </View>
+                                    </View>
+                                )}
+
                                 <View className="flex-row flex-wrap mt-3 gap-2">
                                     {report.penambahan?.investor_funding > 0 && (
                                         <View className="bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
                                             <Typography variant="caption" weight="bold" className="text-blue-700">Investor: {formatCurrency(report.penambahan?.investor_funding)}</Typography>
                                         </View>
                                     )}
-                                    {report.penambahan?.stok_mobil_baru > 0 && (
-                                        <View className="bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
-                                            <Typography variant="caption" weight="bold" className="text-amber-700">Stok Mobil: {formatCurrency(report.penambahan?.stok_mobil_baru)}</Typography>
-                                        </View>
-                                    )}
                                 </View>
 
-                                {report.penambahan?.eliminasi_internal > 0 && (
+                                {report.penambahan?.penyesuaian > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">
-                                        <Row label="Eliminasi Pendapatan Internal" value={report.penambahan?.eliminasi_internal} small isNegative />
+                                        <Row label="Penyesuaian Rekonsiliasi" value={report.penambahan?.penyesuaian} small color="text-slate-500" />
                                     </View>
                                 )}
+
+
 
                                 <View className="pt-4 mt-2 border-t border-emerald-100">
                                     <Row label="TOTAL PENAMBAHAN" value={report.penambahan?.total} bold color="text-emerald-700" />
@@ -703,7 +783,7 @@ export default function LaporanPerubahanModalScreen() {
                                         <View className="ml-5 border-l-2 border-rose-50 pl-3">
                                             <Row label="Operasional Bengkel" value={report.pengurangan?.beban_operasional?.bengkel} small isNegative />
                                             <Row label="Operasional Mobil" value={report.pengurangan?.beban_operasional?.mobil} small isNegative />
-                                            
+
                                             {report.pengurangan?.beban_operasional?.ja?.total > 0 && (
                                                 <View className="mt-1">
                                                     <Row label="Operasional Jasa Angkut" value={report.pengurangan?.beban_operasional?.ja?.total} small bold isNegative />
@@ -713,7 +793,7 @@ export default function LaporanPerubahanModalScreen() {
                                                     </View>
                                                 </View>
                                             )}
-                                            
+
                                             <Row label="Gaji, Lembur & Umum" value={(report.pengurangan?.beban_operasional?.gaji_lembur || 0) + (report.pengurangan?.beban_operasional?.umum || 0)} small isNegative />
                                         </View>
                                     </View>
@@ -725,12 +805,18 @@ export default function LaporanPerubahanModalScreen() {
                                     </View>
                                 )}
 
-                                <View className="flex-row flex-wrap mt-3 gap-2">
-                                    {report.pengurangan?.alokasi_stok > 0 && (
-                                        <View className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                                            <Typography variant="caption" weight="bold" className="text-slate-600">Alokasi Stok: {formatCurrency(report.pengurangan?.alokasi_stok)}</Typography>
+                                {report.pengurangan?.alokasi_stok?.total > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Stok Mobil" value={report.pengurangan?.alokasi_stok?.total} bold isNegative color="text-rose-800" />
+                                        <View className="ml-5 border-l-2 border-rose-50 pl-3">
+                                            <Row label="Harga Beli Unit" value={report.pengurangan?.alokasi_stok?.harga_beli} small isNegative />
+                                            <Row label="Biaya Persiapan (Prep)" value={report.pengurangan?.alokasi_stok?.prep} small isNegative />
+                                            <Row label="Perbaikan Bengkel" value={report.pengurangan?.alokasi_stok?.workshop} small isNegative />
                                         </View>
-                                    )}
+                                    </View>
+                                )}
+
+                                <View className="flex-row flex-wrap mt-3 gap-2">
                                     {report.pengurangan?.pelunasan_hutang > 0 && (
                                         <View className="bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
                                             <Typography variant="caption" weight="bold" className="text-rose-700">Bayar Hutang: {formatCurrency(report.pengurangan?.pelunasan_hutang)}</Typography>
@@ -738,11 +824,12 @@ export default function LaporanPerubahanModalScreen() {
                                     )}
                                 </View>
 
-                                {report.pengurangan?.eliminasi_internal > 0 && (
+                                {report.pengurangan?.penyesuaian > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">
-                                        <Row label="Eliminasi Biaya Internal (Adjust)" value={report.pengurangan?.eliminasi_internal} small color="text-emerald-600" />
+                                        <Row label="Penyesuaian Rekonsiliasi" value={report.pengurangan?.penyesuaian} isNegative small color="text-slate-500" />
                                     </View>
                                 )}
+
 
                                 <View className="pt-4 mt-2 border-t border-rose-100">
                                     <Row label="TOTAL PENGURANGAN" value={report.pengurangan?.total} bold color="text-rose-700" />
@@ -764,7 +851,7 @@ export default function LaporanPerubahanModalScreen() {
                                         <Typography variant="caption" weight="bold" className="text-white">{report.info.validasi.status}</Typography>
                                     </View>
                                 </View>
-                                
+
                                 <View className="flex-row justify-between pt-3 border-t border-white/20">
                                     <View>
                                         <Typography variant="caption" className="text-white/70">Selisih Aktual</Typography>
@@ -795,7 +882,7 @@ export default function LaporanPerubahanModalScreen() {
                                     </View>
                                     <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-[1.5px]">Rincian Kontribusi Laba</Typography>
                                 </View>
-                                
+
                                 <View className="space-y-1">
                                     <Row label="Laba Bengkel Umum" value={report.info?.laba_bengkel} small icon={Building} />
                                     <Row label="Laba Jual Beli Mobil" value={report.info?.laba_mobil} small icon={Car} />
@@ -803,7 +890,7 @@ export default function LaporanPerubahanModalScreen() {
                                         <Row label="Bagi Hasil Investor" value={report.info?.laba_investor} small isNegative />
                                     )}
                                     <Row label="Laba Jasa Angkut" value={report.info?.laba_jasa_angkut} small icon={Truck} />
-                                    
+
                                     <View className="mt-2 pt-2 border-t border-slate-50">
                                         <Row label="Beban Operasional & Gaji" value={report.info?.overhead_gaji} small isNegative bold color="text-rose-600" />
                                         <View className="ml-5 border-l border-slate-100 pl-3">
@@ -813,7 +900,7 @@ export default function LaporanPerubahanModalScreen() {
                                             <Row label="Gaji & Ops Lainnya" value={(report.info?.overhead_gaji || 0) - (report.info?.ops_ja?.total || 0)} small isNegative />
                                         </View>
                                     </View>
-                                    
+
                                     <View className="pt-3 mt-2 border-t border-indigo-100/50">
                                         <Row label="Laba Bersih Konsolidasi" value={report.info?.laba_bersih} bold color="text-indigo-700" />
                                     </View>
@@ -832,10 +919,11 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
 
                                 <View className="space-y-1">
-                                    <Row label="Harga Beli Unit" value={report.info?.aset?.stok_mobil?.unit_hanya} small />
+                                    <Row label="Persediaan Sparepart" value={report.info?.aset?.stok_part} small />
+                                    <Row label="Harga Beli Unit Mobil" value={report.info?.aset?.stok_mobil?.unit_hanya} small />
                                     <Row label="Biaya Persiapan (Prep)" value={report.info?.aset?.stok_mobil?.biaya_persiapan} small />
-                                    <Row label="Perbaikan Bengkel (Workshop)" value={(report.info?.aset?.stok_mobil?.perbaikan_internal || 0) + (report.info?.aset?.stok_mobil?.perbaikan_external || 0)} small />
-                                    
+                                    <Row label="Perbaikan Bengkel" value={(report.info?.aset?.stok_mobil?.perbaikan_external || 0) + (report.info?.aset?.stok_mobil?.perbaikan_internal || 0)} small />
+
                                     <View className="pt-3 mt-2 border-t border-amber-100/50">
                                         <Row label="Total Aset Persediaan" value={report.info?.aset?.stok_mobil?.total} bold color="text-amber-700" />
                                     </View>
@@ -854,9 +942,11 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
 
                                 <View className="space-y-1">
-                                    <Row label="Piutang Unit Bisnis" value={(report.info?.aset?.piutang?.breakdown?.bengkel || 0) + (report.info?.aset?.piutang?.breakdown?.ja || 0) + (report.info?.aset?.piutang?.breakdown?.mobil || 0)} small />
-                                    <Row label="Kasbon & Lainnya" value={(report.info?.aset?.piutang?.breakdown?.kasbon || 0) + (report.info?.aset?.piutang?.breakdown?.lainnya || 0)} small />
-                                    
+                                    <Row label="Piutang Bengkel Umum" value={report.info?.aset?.piutang?.breakdown?.bengkel} small />
+                                    <Row label="Piutang Jasa Angkut" value={report.info?.aset?.piutang?.breakdown?.ja} small />
+                                    <Row label="Piutang Jual Beli Mobil" value={report.info?.aset?.piutang?.breakdown?.mobil} small />
+                                    <Row label="Kasbon & Piutang Lainnya" value={(report.info?.aset?.piutang?.breakdown?.kasbon || 0) + (report.info?.aset?.piutang?.breakdown?.lainnya || 0)} small />
+
                                     <View className="pt-3 mt-2 border-t border-blue-100/50">
                                         <Row label="Total Piutang Usaha" value={report.info?.aset?.piutang?.total} bold color="text-blue-700" />
                                     </View>
@@ -875,12 +965,12 @@ export default function LaporanPerubahanModalScreen() {
                                 </View>
 
                                 <View className="space-y-1">
-                                    <Row label="Hutang Operasional" value={(report.info?.aset?.hutang?.breakdown?.bengkel || 0) + (report.info?.aset?.hutang?.breakdown?.ja || 0) + (report.info?.aset?.hutang?.breakdown?.mobil || 0)} small />
+                                    <Row label="Hutang Unit Bengkel" value={report.info?.aset?.hutang?.breakdown?.bengkel} small />
+                                    <Row label="Hutang Unit Jasa Angkut" value={report.info?.aset?.hutang?.breakdown?.ja} small />
+                                    <Row label="Hutang Unit Mobil" value={report.info?.aset?.hutang?.breakdown?.mobil} small />
                                     <Row label="Hutang Investor" value={report.info?.aset?.hutang?.breakdown?.investor} small />
-                                    {(report.info?.aset?.hutang?.breakdown?.uang_muka_penjualan > 0 || report.info?.aset?.hutang?.breakdown?.piutang_booking > 0) && (
-                                        <Row label="DP & Booking Sales" value={(report.info?.aset?.hutang?.breakdown?.uang_muka_penjualan || 0) + (report.info?.aset?.hutang?.breakdown?.piutang_booking || 0)} small />
-                                    )}
-                                    
+                                    <Row label="DP & Booking Sales" value={(report.info?.aset?.hutang?.breakdown?.uang_muka_penjualan || 0) + (report.info?.aset?.hutang?.breakdown?.piutang_booking || 0)} small />
+
                                     <View className="pt-3 mt-2 border-t border-rose-100/50">
                                         <Row label="Total Kewajiban Usaha" value={report.info?.aset?.hutang?.total} bold color="text-rose-700" />
                                     </View>
@@ -964,14 +1054,14 @@ export default function LaporanPerubahanModalScreen() {
             <Modal visible={showPdfPreview} animationType="slide">
                 <SafeAreaView className="flex-1 bg-white">
                     <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
-                        <Pressable 
+                        <Pressable
                             onPress={() => setShowPdfPreview(false)}
                             className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
                         >
                             <X size={20} color={themeColors.text} />
                         </Pressable>
                         <Typography variant="body1" weight="bold" className="text-slate-900">Preview Laporan</Typography>
-                        <Pressable 
+                        <Pressable
                             onPress={async () => {
                                 if (Platform.OS === 'web') {
                                     const printWindow = window.open('', '_blank');
@@ -991,16 +1081,16 @@ export default function LaporanPerubahanModalScreen() {
                             <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
                         </Pressable>
                     </View>
-                    
+
                     <View className="flex-1 bg-slate-100">
                         {Platform.OS === 'web' ? (
-                            <iframe 
-                                srcDoc={previewHtml} 
-                                style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} 
+                            <iframe
+                                srcDoc={previewHtml}
+                                style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }}
                                 title="PDF Preview"
                             />
                         ) : (
-                            <WebView 
+                            <WebView
                                 originWhitelist={['*']}
                                 source={{ html: previewHtml }}
                                 style={{ flex: 1 }}

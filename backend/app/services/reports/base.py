@@ -32,6 +32,7 @@ from app.utils.constants import (
     KasBankJenis,
     PaymentStatus,
     PiutangStatus,
+    HutangStatus,
     ExpenseCategory, 
     OwnershipType,
     CarStatus,
@@ -427,6 +428,8 @@ class BaseReportService:
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
+        # Consolidated Inventory: Include all repairs in the stock value for transparency,
+        # neutralization happens at the equity calculation level.
         car_stock += (snapshot_unsold_prep + snapshot_unsold_repairs_ext + snapshot_unsold_repairs_int)
         
         aset_persediaan = part_stock + car_stock
@@ -442,35 +445,25 @@ class BaseReportService:
         # inventory value conversion (Workshop bill added to Car asset value).
         # We also include internal Kasbon (Staff Advances) as they represent assets.
         
-        # 1. Total Nominal
-        total_nominal_piutang = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+        # Use sisa_piutang directly — authoritative balance field.
+        # Internal piutang are settled by setting sisa=0 without PembayaranPiutang records.
+        piutang_usaha = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
-            or_(
-                PiutangUsaha.is_internal != True,
-                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN # Internal Kasbon is an asset, but Car Repair is an internal transfer
-            ),
-            PiutangUsaha.status != PiutangStatus.BATAL
-        ).scalar() or 0)
-        
-        # 2. Total Payments as of Cutoff
-        total_piutang_paid = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
-            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
             or_(
                 PiutangUsaha.is_internal != True,
                 PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
-            ),
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            PembayaranPiutang.tanggal <= tanggal_sampai
+            )
         ).scalar() or 0)
-        
-        piutang_usaha = total_nominal_piutang - total_piutang_paid
              # Debt Position at End date
-        def get_debt_balance_by_unit(source_list: list, unit: Optional[KasBankSource] = None) -> float:
+        def get_debt_balance_by_unit(source_list: list, unit: Optional[KasBankSource] = None, include_internal: bool = False) -> float:
             nominal_q = self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
                 HutangUsaha.sumber.in_(source_list),
-                HutangUsaha.is_internal != True,
                 HutangUsaha.tanggal <= tanggal_sampai
             )
+            if not include_internal:
+                nominal_q = nominal_q.filter(HutangUsaha.is_internal != True)
+            
             if unit:
                 nominal_q = nominal_q.filter(HutangUsaha.unit == unit)
             
@@ -478,8 +471,12 @@ class BaseReportService:
             
             paid_q = self.db.query(func.sum(PembayaranHutang.nominal)).join(HutangUsaha).filter(
                 HutangUsaha.sumber.in_(source_list),
+                HutangUsaha.tanggal <= tanggal_sampai,
                 PembayaranHutang.tanggal <= tanggal_sampai
             )
+            if not include_internal:
+                paid_q = paid_q.filter(HutangUsaha.is_internal != True)
+            
             if unit:
                 paid_q = paid_q.filter(HutangUsaha.unit == unit)
                 
@@ -561,96 +558,83 @@ class BaseReportService:
         
         net_booking_piutang = max(0, booking_receivables - booking_payments)
 
-        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang
+        hutang_internal = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
+            HutangUsaha.is_internal == True,
+            HutangUsaha.tanggal <= tanggal_sampai,
+            HutangUsaha.status != HutangStatus.BATAL
+        ).scalar() or 0)
+        
+        # hutang_total for balance sheet identity: Cash + Assets = Equity + Debt
+        # Must include EVERYTHING that is a liability.
+        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang + hutang_internal
 
         # Piutang Breakdown
         def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None) -> float:
-            # Point-in-time balance: sum(nominal) - sum(payments_as_of_cutoff)
+            # Use sisa_piutang directly — this is the authoritative balance field.
+            # Internal piutang (workshop bills) are settled by setting sisa=0 directly
+            # without creating PembayaranPiutang records, so nominal-minus-payments is unreliable.
             
-            # Base query for nominal
-            q_nom = self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
+            q = self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
                 PiutangUsaha.tanggal <= tanggal_sampai,
                 PiutangUsaha.status != PiutangStatus.BATAL
             )
-            
-            # Base query for payments
-            q_paid = self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
-                PiutangUsaha.tanggal <= tanggal_sampai,
-                PiutangUsaha.status != PiutangStatus.BATAL,
-                PembayaranPiutang.tanggal <= tanggal_sampai
-            )
 
             if not include_internal:
-                # Strictly external
-                q_nom = q_nom.filter(PiutangUsaha.is_internal != True)
-                q_paid = q_paid.filter(PiutangUsaha.is_internal != True)
+                q = q.filter(PiutangUsaha.is_internal != True)
             else:
-                # include_internal=True means we allow internal IF it is JB_MOBIL or KASBON
-                # (matching the global piutang_usaha logic)
                 internal_filter = or_(
                     PiutangUsaha.is_internal != True,
                     PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
                 )
-                q_nom = q_nom.filter(internal_filter)
-                q_paid = q_paid.filter(internal_filter)
+                q = q.filter(internal_filter)
                 
             if unit:
-                q_nom = q_nom.filter(PiutangUsaha.unit == unit)
-                q_paid = q_paid.filter(PiutangUsaha.unit == unit)
+                q = q.filter(PiutangUsaha.unit == unit)
 
             if unit_in:
-                q_nom = q_nom.filter(PiutangUsaha.unit.in_(unit_in))
-                q_paid = q_paid.filter(PiutangUsaha.unit.in_(unit_in))
+                q = q.filter(PiutangUsaha.unit.in_(unit_in))
                 
             if source:
-                q_nom = q_nom.filter(PiutangUsaha.sumber == source)
-                q_paid = q_paid.filter(PiutangUsaha.sumber == source)
+                q = q.filter(PiutangUsaha.sumber == source)
                 
-            nominal = q_nom.scalar() or 0
-            paid = q_paid.scalar() or 0
-            return float(nominal - paid)
+            return float(q.scalar() or 0)
 
-        # Piutang Bengkel Breakdown: External vs Internal
-        piutang_bengkel_ext = get_piutang_balance(unit=KasBankSource.BENGKEL, source=PiutangSource.BENGKEL, include_internal=False)
+        # Unit Breakdown: Include Internal for tracking, but neutralization happens in ModalService
+        piutang_bengkel = get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=True)
+        piutang_ja = get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=True)
+        piutang_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=True)
         
-        # Internal Workshop Bills (Internal Repair for units)
-        q_bengkel_int_nom = self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
-            PiutangUsaha.unit == KasBankSource.BENGKEL,
-            PiutangUsaha.is_internal == True,
-            PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
-            PiutangUsaha.tanggal <= tanggal_sampai,
-            PiutangUsaha.status != PiutangStatus.BATAL
-        )
-        q_bengkel_int_paid = self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).filter(
-            PiutangUsaha.unit == KasBankSource.BENGKEL,
-            PiutangUsaha.is_internal == True,
-            PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
-            PiutangUsaha.tanggal <= tanggal_sampai,
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            PembayaranPiutang.tanggal <= tanggal_sampai
-        )
-        piutang_bengkel_int = float((q_bengkel_int_nom.scalar() or 0) - (q_bengkel_int_paid.scalar() or 0))
-        
-        piutang_ja = get_piutang_balance(unit=KasBankSource.JASA_ANGKUT, source=PiutangSource.JASA_ANGKUT, include_internal=False)
-        piutang_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, source=PiutangSource.JUAL_BELI_MOBIL, include_internal=False)
-        
-        # Kasbon Breakdown: Only specific units go to 'Piutang Kasbon', the rest ('Umum') goes to 'Lainnya'
+        # Kasbon Breakdown: Only specific units go to 'Piutang Kasbon'
         piutang_kasbon = get_piutang_balance(
             source=PiutangSource.KASBON_KARYAWAN, 
             include_internal=True,
             unit_in=[KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]
         )
-        piutang_lainnya = piutang_usaha - (piutang_bengkel_ext + piutang_ja + piutang_mobil + piutang_kasbon)
+        
+        # Internal Total for consolidation elimination
+        piutang_internal_total = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.is_internal == True
+        ).scalar() or 0)
+
+        piutang_lainnya = piutang_usaha - (piutang_bengkel + piutang_ja + piutang_mobil + piutang_kasbon)
 
         # Internal Elimination: Workshop revenue from internal car unit repairs
-        # We eliminate the FULL revenue. Since the income is Revenue - HPP,
-        # eliminating the Full Revenue leaves us with -HPP, which is the correct
-        # net effect for consolidated equity (the loss of inventory value).
-        internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+        # We only eliminate revenue for cars that are STILL IN STOCK at the end of the period.
+        # If the car is sold, the internal revenue has been realized as consolidated cash.
+        internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).join(
+            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id, isouter=True
+        ).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
-            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+            or_(
+                Mobil.id.is_(None), # Jasa Angkut or General internal
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
         ).scalar() or 0)
 
         # Calculate unrealized profit from BOOKING/INDEN units to avoid double counting with stock value
@@ -749,6 +733,8 @@ class BaseReportService:
                     "prep_stock_period": capital_unsold_prep + mobil_total_repairs_unsold,
                     "repairs": mobil_total_repairs_sold,
                     "repairs_total": repairs_total_period,
+                    "workshop_bills": workshop_bills,
+                    "workshop_bills_unsold": workshop_bills_unsold,
                     "prep_total": prep_total_period,
                     "overhead": general_mobil_overhead,
                     "total_outflow_wallet": raw_mobil_outflow,
@@ -789,7 +775,7 @@ class BaseReportService:
                 "persediaan_part": part_stock,
                 "persediaan_mobil": {
                     "total": car_stock,
-                    "harga_beli": car_stock - (snapshot_unsold_prep + snapshot_unsold_repairs_ext + snapshot_unsold_repairs_int),
+                    "harga_beli": car_stock - (snapshot_unsold_prep + snapshot_unsold_repairs_ext),
                     "biaya_persiapan": snapshot_unsold_prep,
                     "perbaikan_external": snapshot_unsold_repairs_ext,
                     "perbaikan_internal": snapshot_unsold_repairs_int
@@ -812,16 +798,18 @@ class BaseReportService:
                         "investor": hutang_investor,
                         "uang_muka_penjualan": customer_dp,
                         "piutang_booking": net_booking_piutang,
-                        "lainnya": hutang_lainnya
+                        "lainnya": hutang_lainnya,
+                        "internal": hutang_internal
                     }
                 },
                 "piutang": {
                     "total": piutang_usaha,
                     "breakdown": {
-                        "bengkel": piutang_bengkel_ext,
+                        "bengkel": piutang_bengkel,
                         "ja": piutang_ja,
                         "mobil": piutang_mobil,
                         "kasbon": piutang_kasbon,
+                        "internal": piutang_internal_total,
                         "lainnya": piutang_lainnya
                     }
                 },
