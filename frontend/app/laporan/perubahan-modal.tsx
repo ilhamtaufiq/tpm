@@ -208,14 +208,20 @@ export default function LaporanPerubahanModalScreen() {
                             <td>Penambahan Stok Unit Mobil</td>
                             <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.total)}</td>
                         </tr>
-                        <tr class="sub-item">
-                            <td>◦ Harga Beli Unit</td>
-                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.harga_beli || 0)}</td>
+                        <tr>
+                            <td>Penambahan Stok Mobil (Aset Baru)</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.total)}</td>
                         </tr>
+                        ${r.penambahan?.stok_mobil_baru?.harga_beli > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Pembelian Unit Mobil</td>
+                            <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.harga_beli || 0)}</td>
+                        </tr>` : ''}
+                        ${r.penambahan?.stok_mobil_baru?.prep > 0 ? `
                         <tr class="sub-item">
                             <td>◦ Biaya Persiapan (Prep)</td>
                             <td class="amount">${formatCurrency(r.penambahan?.stok_mobil_baru?.prep || 0)}</td>
-                        </tr>
+                        </tr>` : ''}
                         ${r.penambahan?.stok_mobil_baru?.workshop > 0 ? `
                         <tr class="sub-item">
                             <td>◦ Perbaikan Bengkel</td>
@@ -292,22 +298,24 @@ export default function LaporanPerubahanModalScreen() {
                         
                         ${r.pengurangan?.alokasi_stok?.total > 0 ? `
                         <tr>
-                            <td>Alokasi Dana Stok Mobil (Cash Out)</td>
+                            <td>Alokasi Dana Stok Aset</td>
                             <td class="amount negative">(${formatCurrency(r.pengurangan?.alokasi_stok?.total)})</td>
                         </tr>
+                        ${r.pengurangan?.alokasi_stok?.harga_beli > 0 ? `
                         <tr class="sub-item">
-                            <td>◦ Harga Beli Unit</td>
+                            <td>◦ Pembelian Unit Mobil</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.harga_beli || 0)})</td>
-                        </tr>
+                        </tr>` : ''}
                         ${r.pengurangan?.alokasi_stok?.sparepart > 0 ? `
                         <tr class="sub-item">
-                            <td>◦ Pembelian Sparepart</td>
+                            <td>◦ Pembelian Spare Part</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.sparepart || 0)})</td>
                         </tr>` : ''}
+                        ${r.pengurangan?.alokasi_stok?.prep > 0 ? `
                         <tr class="sub-item">
                             <td>◦ Biaya Persiapan (Prep)</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.prep || 0)})</td>
-                        </tr>
+                        </tr>` : ''}
                         ${r.pengurangan?.alokasi_stok?.workshop > 0 ? `
                         <tr class="sub-item">
                             <td>◦ Perbaikan Bengkel</td>
@@ -733,13 +741,17 @@ export default function LaporanPerubahanModalScreen() {
 
                                 {report.penambahan?.stok_mobil_baru?.total > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">
-                                        <Row label="Stok Mobil" value={report.penambahan?.stok_mobil_baru?.total} bold color="text-amber-700" />
+                                        <Row label="Alokasi Stok Aset (Mobil)" value={report.penambahan?.stok_mobil_baru?.total} bold color="text-amber-700" />
                                         <View className="ml-5 border-l-2 border-amber-50 pl-3">
-                                            <Row label="Harga Beli Unit" value={report.penambahan?.stok_mobil_baru?.harga_beli} small />
-                                            <Row label="Biaya Persiapan (Prep)" value={report.penambahan?.stok_mobil_baru?.prep} small />
-                                             {report.penambahan?.stok_mobil_baru?.workshop > 0 && (
+                                            {report.penambahan?.stok_mobil_baru?.harga_beli > 0 && (
+                                                <Row label="Pembelian Unit Mobil" value={report.penambahan?.stok_mobil_baru?.harga_beli} small />
+                                            )}
+                                            {report.penambahan?.stok_mobil_baru?.prep > 0 && (
+                                                <Row label="Biaya Persiapan (Prep)" value={report.penambahan?.stok_mobil_baru?.prep} small />
+                                            )}
+                                            {report.penambahan?.stok_mobil_baru?.workshop > 0 && (
                                                 <Row label="Perbaikan Bengkel" value={report.penambahan?.stok_mobil_baru?.workshop} small />
-                                             )}
+                                            )}
                                         </View>
                                     </View>
                                 )}
@@ -818,14 +830,20 @@ export default function LaporanPerubahanModalScreen() {
 
                                 {report.pengurangan?.alokasi_stok?.total > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">
-                                        <Row label="Stok Mobil" value={report.pengurangan?.alokasi_stok?.total} bold isNegative color="text-rose-800" />
+                                        <Row label="Alokasi Dana Stok Aset" value={report.pengurangan?.alokasi_stok?.total} bold isNegative color="text-rose-800" />
                                         <View className="ml-5 border-l-2 border-rose-50 pl-3">
-                                            <Row label="Harga Beli Unit" value={report.pengurangan?.alokasi_stok?.harga_beli} small isNegative />
-                                            {report.pengurangan?.alokasi_stok?.sparepart > 0 && (
-                                                <Row label="Pembelian Sparepart" value={report.pengurangan?.alokasi_stok?.sparepart} small isNegative />
+                                            {report.pengurangan?.alokasi_stok?.harga_beli > 0 && (
+                                                <Row label="Pembelian Unit Mobil" value={report.pengurangan?.alokasi_stok?.harga_beli} small isNegative />
                                             )}
-                                            <Row label="Biaya Persiapan (Prep)" value={report.pengurangan?.alokasi_stok?.prep} small isNegative />
-                                            <Row label="Perbaikan Bengkel" value={report.pengurangan?.alokasi_stok?.workshop} small isNegative />
+                                            {report.pengurangan?.alokasi_stok?.sparepart > 0 && (
+                                                <Row label="Pembelian Spare Part" value={report.pengurangan?.alokasi_stok?.sparepart} small isNegative />
+                                            )}
+                                            {report.pengurangan?.alokasi_stok?.prep > 0 && (
+                                                <Row label="Biaya Persiapan (Prep)" value={report.pengurangan?.alokasi_stok?.prep} small isNegative />
+                                            )}
+                                            {report.pengurangan?.alokasi_stok?.workshop > 0 && (
+                                                <Row label="Perbaikan Bengkel" value={report.pengurangan?.alokasi_stok?.workshop} small isNegative />
+                                            )}
                                         </View>
                                     </View>
                                 )}

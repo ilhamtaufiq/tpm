@@ -24,7 +24,8 @@ Success criteria:
   - Fixed `BaseReportService.py` profit and piutang logic (elimination and overhead).
   - Fixed `ModalService.py` double-counting and structure (elimination rows).
   - Updated `perubahan-modal.tsx` UI and PDF export for transparency.
-- **Now**: Final validation.
+  - Fixed syntax error (':' expected) in `perubahan-modal.tsx` caused by redundant nested ternaries.
+- **Now**: Validation of financial reporting and workflow commands.
 - **Next**: Final handoff to user.
 
 ## Open Questions (UNCONFIRMED)
