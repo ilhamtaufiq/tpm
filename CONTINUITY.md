@@ -1,35 +1,34 @@
 # Continuity Ledger - Perubahan Modal Reconciliation
 
 ## Goal
-Resolve financial reporting discrepancies in "Perubahan Modal" report, specifically regarding internal workshop repairs for car trading units. 
+Simplify the "Perubahan Modal" report to align with standard accounting principles (Statement of Changes in Equity) while maintaining "VERIFIED BALANCE" status.
+
 Success criteria:
-- Consolidated Net Income correctly reflects 0 profit for internal transfers.
-- "Penambahan Modal" and "Pengurangan Modal" totals are mathematically consistent with displayed rows.
-- Internal eliminations are explicitly shown to the user.
+- UI presents a clear Beginning Balance + Profit + Contributions - Drawings = Ending Balance.
+- Asset-only movements (Cash -> Inventory) are moved to analytical breakdowns to avoid confusion in the equity statement.
+- PDF export reflects the clean, professional accounting structure.
 - Status remains "VERIFIED BALANCE".
 
 ## Constraints/Assumptions
-- Internal repairs (category 'jual_beli_mobil') are capitalized into car stock value.
-- Equity increases when internal labor/parts are added to an asset (Profit in Bengkel) but should be eliminated at consolidation level if unrealized (car not sold).
-- CURRENT APPROACH: Fully eliminate internal revenue from profit until the car is sold.
+- The backend `ModalService` provides granular data which the frontend now simplifies for presentation.
+- Any discrepancy between theoretical equity and actual net assets is shown as "Penyesuaian Saldo".
 
 ## Key Decisions
-- **BaseReportService**: Subtract `internal_elimination` from `retained_earnings`.
-- **ModalService**: Add `internal_elimination` as a row in both Penambahan and Pengurangan sections.
-- **ModalService**: Fix double counting where capitalized repairs were added to both Stock Growth and Non-Cash Capital.
+- **Simplification**: Reduced `perubahan-modal.tsx` from ~1100 to ~500 lines.
+- **Data Grouping**: Combined setoran tunai, non-kas, and funding into "Setoran Modal". Used `info.laba_bersih` as the primary profit figure.
+- **Separation of Concerns**: Moved detailed Asset Snapshots and Unit Profitability to separate cards below the main equity table.
 
 ## State
 - **Done**: 
-  - Initial audit of `BaseReportService`, `ModalService`, and `perubahan-modal.tsx`.
-  - Fixed `BaseReportService.py` profit and piutang logic (elimination and overhead).
-  - Fixed `ModalService.py` double-counting and structure (elimination rows).
-  - Updated `perubahan-modal.tsx` UI and PDF export for transparency.
-  - Fixed syntax error (':' expected) in `perubahan-modal.tsx` caused by redundant nested ternaries.
-- **Now**: Validation of financial reporting and workflow commands.
-- **Next**: Final handoff to user.
+  - Comprehensive refactoring of `perubahan-modal.tsx` UI and PDF export.
+  - Implemented `calculateSimplifiedTotals` to bridge granular backend data to standard accounting rows.
+  - Decoupled asset transformation movements from the equity statement.
+  - Updated PDF template for a more executive look.
+- **Now**: Finalizing documentation and handoff.
+- **Next**: User feedback on the simplified reporting structure.
 
 ## Open Questions (UNCONFIRMED)
-- None at the moment.
+- None.
 
 ## Working Set
 - backend/app/services/reports/base.py
