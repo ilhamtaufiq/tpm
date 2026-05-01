@@ -98,9 +98,9 @@ export default function LaporanPerubahanModalScreen() {
             const ops_ja = r.pengurangan?.ops_ja?.total || 0;
             const prive = r.pengurangan?.prive || 0;
             const pengembalian = r.pengurangan?.pengembalian_modal || 0;
-            const pelunasan_h = r.penambahan?.pelunasan_hutang || 0;
+            const pelunasan_investor = r.penambahan?.pelunasan_hutang || 0;
+            const pelunasan_h = r.pengurangan?.pelunasan_hutang?.total || 0;
             const hutang_baru = r.pengurangan?.hutang_baru || 0;
-            const bayar_hutang = r.pengurangan?.pembayaran_hutang || 0;
             const tot_pengurangan = r.pengurangan?.total || 0;
 
             const modal_akhir = r.modal_akhir || 0;
@@ -320,6 +320,28 @@ export default function LaporanPerubahanModalScreen() {
                         <tr class="sub-item">
                             <td>◦ Perbaikan Bengkel</td>
                             <td class="amount">(${formatCurrency(r.pengurangan?.alokasi_stok?.workshop || 0)})</td>
+                        </tr>` : ''}
+                        ` : ''}
+
+                        ${r.pengurangan?.pelunasan_hutang?.total > 0 ? `
+                        <tr>
+                            <td>Pembayaran / Pelunasan Hutang Usaha</td>
+                            <td class="amount negative">(${formatCurrency(r.pengurangan?.pelunasan_hutang?.total)})</td>
+                        </tr>
+                        ${r.pengurangan?.pelunasan_hutang?.mobil > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Pelunasan Unit Mobil</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.pelunasan_hutang?.mobil)})</td>
+                        </tr>` : ''}
+                        ${r.pengurangan?.pelunasan_hutang?.sparepart > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Pelunasan Spare Part</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.pelunasan_hutang?.sparepart)})</td>
+                        </tr>` : ''}
+                        ${r.pengurangan?.pelunasan_hutang?.umum > 0 ? `
+                        <tr class="sub-item">
+                            <td>◦ Pelunasan Hutang Umum</td>
+                            <td class="amount">(${formatCurrency(r.pengurangan?.pelunasan_hutang?.umum)})</td>
                         </tr>` : ''}
                         ` : ''}
 
@@ -848,13 +870,22 @@ export default function LaporanPerubahanModalScreen() {
                                     </View>
                                 )}
 
-                                <View className="flex-row flex-wrap mt-3 gap-2">
-                                    {report.pengurangan?.pelunasan_hutang > 0 && (
-                                        <View className="bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
-                                            <Typography variant="caption" weight="bold" className="text-rose-700">Bayar Hutang: {formatCurrency(report.pengurangan?.pelunasan_hutang)}</Typography>
+                                {report.pengurangan?.pelunasan_hutang?.total > 0 && (
+                                    <View className="mt-2 pt-2 border-t border-slate-50">
+                                        <Row label="Pembayaran Hutang Usaha" value={report.pengurangan?.pelunasan_hutang?.total} bold isNegative color="text-rose-800" />
+                                        <View className="ml-5 border-l-2 border-rose-50 pl-3">
+                                            {report.pengurangan?.pelunasan_hutang?.mobil > 0 && (
+                                                <Row label="Pelunasan Unit Mobil" value={report.pengurangan?.pelunasan_hutang?.mobil} small isNegative />
+                                            )}
+                                            {report.pengurangan?.pelunasan_hutang?.sparepart > 0 && (
+                                                <Row label="Pelunasan Spare Part" value={report.pengurangan?.pelunasan_hutang?.sparepart} small isNegative />
+                                            )}
+                                            {report.pengurangan?.pelunasan_hutang?.umum > 0 && (
+                                                <Row label="Pelunasan Hutang Umum" value={report.pengurangan?.pelunasan_hutang?.umum} small isNegative />
+                                            )}
                                         </View>
-                                    )}
-                                </View>
+                                    </View>
+                                )}
 
                                 {report.pengurangan?.penyesuaian > 0 && (
                                     <View className="mt-2 pt-2 border-t border-slate-50">

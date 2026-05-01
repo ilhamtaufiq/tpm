@@ -568,7 +568,12 @@ class ModalService(BaseReportService):
                 "prive": prive,
                 "pengembalian_modal": pengembalian_modal,
                 "pembayaran_investor": pembayaran_investor,
-                "pelunasan_hutang": total_pembayaran_hutang_all,
+                "pelunasan_hutang": {
+                    "total": total_pembayaran_hutang_all,
+                    "mobil": pembayaran_hutang_mobil,
+                    "sparepart": pembayaran_hutang_part,
+                    "umum": max(0, total_pembayaran_hutang_all - (pembayaran_hutang_mobil + pembayaran_hutang_part))
+                },
                 "alokasi_stok": {
                     "total": alokasi_stok_net,
                     "harga_beli": beli_mobil + hutang_mobil_baru,
