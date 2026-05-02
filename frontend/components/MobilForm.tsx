@@ -11,6 +11,7 @@ import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { formatNumber, parseNumber } from '../utils/format';
 import { onlineManager } from '@tanstack/react-query';
+import { useKasBankBalances } from '../hooks/useKeuangan';
 
 interface MobilFormProps {
     initialData?: any;
@@ -27,6 +28,9 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
     const mutation = isEdit ? updateMutation : createMutation;
     const isPending = mutation.isPending;
+
+    const { data: balancesData } = useKasBankBalances();
+    const walletBalances: any = balancesData || {};
 
     // Basic Info
     const [merek, setMerek] = useState(initialData?.merek || '');
@@ -72,6 +76,30 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
         variant: 'info'
     });
 
+    const checkBalance = (sumber: string, amount: number) => {
+        if (!onlineManager.isOnline()) return true; // Skip check if offline
+        if (!walletBalances) return true;
+
+        let kasJenis = '';
+        if (sumber === 'UNIT_TUNAI') kasJenis = 'kas_unit_mobil';
+        else if (sumber === 'UTAMA_TUNAI') kasJenis = 'kas_utama';
+        else if (sumber === 'UTAMA_TRANSFER') kasJenis = 'bank_utama';
+
+        if (!kasJenis) return true;
+
+        const balance = walletBalances[kasJenis]?.saldo || 0;
+        if (amount > balance) {
+            setDialogConfig({
+                visible: true,
+                title: 'Saldo Tidak Cukup',
+                message: `Saldo ${kasJenis.replace(/_/g, ' ').toUpperCase()} tidak mencukupi.\n\nSaldo saat ini: Rp ${formatNumber(String(balance))}\nKebutuhan: Rp ${formatNumber(String(amount))}`,
+                variant: 'error'
+            });
+            return false;
+        }
+        return true;
+    };
+
     const handleSubmit = () => {
         if (!merek || !model || !tahun || !nomorPlat || !hargaBeli) {
             setDialogConfig({
@@ -107,6 +135,15 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                         setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih sumber dana untuk semua nominal split', variant: 'warning' });
                         return;
                     }
+
+                    // Balance check for split
+                    for (const p of payments) {
+                        if (!checkBalance(p.sumber, parseNumber(p.jumlah))) return;
+                    }
+                } else {
+                    // Balance check for single source
+                    const amountToCheck = statusBayar === 'LUNAS' ? parseNumber(hargaBeli) : parseNumber(dp);
+                    if (amountToCheck > 0 && !checkBalance(sumberBayar, amountToCheck)) return;
                 }
             }
         }
@@ -343,6 +380,10 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                 <View key={m.value} className="w-1/2 p-0.5">
                                                     <Pressable
                                                         onPress={() => {
+                                                            const amountToCheck = statusBayar === 'LUNAS' ? parseNumber(hargaBeli) : parseNumber(dp);
+                                                            if (m.value !== 'SPLIT' && amountToCheck > 0) {
+                                                                if (!checkBalance(m.value, amountToCheck)) return;
+                                                            }
                                                             setSumberBayar(m.value);
                                                         }}
                                                         className={`py-2 rounded-xl items-center justify-center ${sumberBayar === m.value ? 'bg-blue-600 shadow-sm' : 'bg-gray-100'}`}
@@ -386,6 +427,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                                         <Pressable
                                                             key={opt.id}
                                                             onPress={() => {
+                                                                const amount = parseNumber(p.jumlah);
+                                                                if (amount > 0 && !checkBalance(opt.id, amount)) return;
                                                                 const newP = [...payments];
                                                                 newP[idx].sumber = opt.id;
                                                                 setPayments(newP);

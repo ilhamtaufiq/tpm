@@ -17,6 +17,7 @@ Success criteria:
 - **Simplification**: Reduced `perubahan-modal.tsx` from ~1100 to ~500 lines.
 - **Data Grouping**: Combined setoran tunai, non-kas, and funding into "Setoran Modal". Used `info.laba_bersih` as the primary profit figure.
 - **Separation of Concerns**: Moved detailed Asset Snapshots and Unit Profitability to separate cards below the main equity table.
+- **Workshop Settlement**: Automated internal workshop debt clearance upon car sale. Payments now follow the sale's method (Transfer -> Bank Utama, Cash -> Unit Wallet), allowing the unit wallet to go negative temporarily to carry repair costs.
 
 ## State
 - **Done**: 
@@ -24,8 +25,10 @@ Success criteria:
   - Implemented `calculateSimplifiedTotals` to bridge granular backend data to standard accounting rows.
   - Decoupled asset transformation movements from the equity statement.
   - Updated PDF template for a more executive look.
-- **Now**: Finalizing documentation and handoff.
-- **Next**: User feedback on the simplified reporting structure.
+  - **New**: Implemented client-side balance validation in `MobilForm.tsx` to prevent purchases that exceed wallet funds.
+  - **New**: Eliminated negative "Piutang Lainnya" artifact in Neraca by refining external receivable breakdown logic and avoiding double-counting of Kasbon.
+- **Now**: Verifying financial reporting consistency across modules.
+- **Next**: Monitor unit wallet balances and transaction logs for edge cases in split payments.
 
 ## Open Questions (UNCONFIRMED)
 - None.

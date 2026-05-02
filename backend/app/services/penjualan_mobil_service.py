@@ -425,8 +425,16 @@ class PenjualanMobilService:
                 )
         
         # 5. Settle Associated Financial Obligations (Workshop Piutangs & Unit Hutangs)
-        # Process this AFTER adding funds to JUAL_BELI_MOBIL to avoid insufficient funds error for Internal transfers.
-        self._settle_unit_financial_obligations(mobil, data.tanggal, nomor_transaksi, user_id)
+        # Process this AFTER adding funds to JUAL_BELI_MOBIL to avoid unnecessary wallet deficit.
+        # It uses the sale's payment method to decide between Cash (Wallet) or Transfer (Bank) settlement.
+        self._settle_unit_financial_obligations(
+            mobil, 
+            data.tanggal, 
+            nomor_transaksi, 
+            data.metode_bayar, 
+            data.payments, 
+            user_id
+        )
 
         # FINAL SINGLE COMMIT
         self.db.commit()
@@ -441,6 +449,8 @@ class PenjualanMobilService:
         mobil: Mobil, 
         tanggal: date, 
         ref_no: str, 
+        metode_bayar: PaymentMethod = PaymentMethod.TUNAI,
+        payments: List[Any] = [],
         user_id: Optional[int] = None
     ):
         """Robustly settle any outstanding workshop piutangs and unit payables (Hutangs) for this unit."""
@@ -478,26 +488,56 @@ class PenjualanMobilService:
             p.tanggal_lunas = tanggal
             p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
 
+        # Determine settlement method based on sale's payment method
+        # Policy: If there's any TRANSFER in the sale, we treat the internal settlement 
+        # as a TRANSFER to the workshop bank (BANK_UTAMA). Otherwise, it's TUNAI (KAS_UNIT_BENGKEL).
+        settlement_method = metode_bayar
+        
+        if metode_bayar == PaymentMethod.SPLIT:
+            # First, check the provided payments list (used during initial creation)
+            has_transfer = any(
+                (isinstance(p, tuple) and p[0] == PaymentMethod.TRANSFER) or 
+                (hasattr(p, 'metode') and p.metode == PaymentMethod.TRANSFER) 
+                for p in payments
+            )
+            
+            # If no transfer found in list, check the existing ledger (used during update_payment)
+            if not has_transfer:
+                from app.models.keuangan import KasBank
+                has_transfer = self.db.query(KasBank).filter(
+                    KasBank.nomor_referensi == ref_no,
+                    KasBank.metode_bayar == PaymentMethod.TRANSFER,
+                    KasBank.tipe == KasBankType.MASUK
+                ).first() is not None
+                
+            settlement_method = PaymentMethod.TRANSFER if has_transfer else PaymentMethod.TUNAI
+        
+        # If the sale itself is TRANSFER, prioritize it
+        if metode_bayar == PaymentMethod.TRANSFER:
+            settlement_method = PaymentMethod.TRANSFER
+
         if total_piutang_settled > 0:
             # 1. MASUK to Workshop (Paying their receivable)
+            # This goes to BANK_UTAMA if settlement_method is TRANSFER, or KAS_UNIT_BENGKEL if TUNAI/INTERNAL
             create_kas_entry(
                 db=self.db, tanggal=tanggal, tipe=KasBankType.MASUK,
                 nominal=total_piutang_settled, sumber=KasBankSource.BENGKEL, 
-                metode_bayar=PaymentMethod.INTERNAL,
+                metode_bayar=settlement_method,
                 referensi_id=None, nomor_referensi=ref_no,
-                keterangan=f"Pelunasan Piutang Internal via Penjualan {mobil.nomor_plat}",
+                keterangan=f"Pelunasan Piutang Internal via Penjualan {mobil.nomor_plat} ({settlement_method})",
                 user_id=user_id,
                 commit=False # ATOMIC
             )
             # 2. KELUAR from JB Mobil (Settling the repair cost)
+            # This goes from BANK_UTAMA if settlement_method is TRANSFER, or KAS_UNIT_MOBIL if TUNAI/INTERNAL
             create_kas_entry(
                 db=self.db, tanggal=tanggal, tipe=KasBankType.KELUAR,
                 nominal=total_piutang_settled, sumber=KasBankSource.JUAL_BELI_MOBIL, 
-                metode_bayar=PaymentMethod.INTERNAL,
+                metode_bayar=settlement_method,
                 referensi_id=None, nomor_referensi=ref_no,
-                keterangan=f"Pelunasan Biaya Repair Internal {mobil.nomor_plat}",
+                keterangan=f"Pelunasan Biaya Repair Internal {mobil.nomor_plat} ({settlement_method})",
                 user_id=user_id,
-                allow_negative=True, # Safety for internal reclassifications
+                allow_negative=True, # Critical: Allow wallet to go minus as it carries repair costs until sold
                 commit=False # ATOMIC
             )
 
@@ -705,7 +745,14 @@ class PenjualanMobilService:
             mobil = self.db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
             if mobil:
                 # Ensure internal obligations are settled if they weren't already
-                self._settle_unit_financial_obligations(mobil, date.today(), transaksi.nomor_transaksi, user_id)
+                self._settle_unit_financial_obligations(
+                    mobil, 
+                    date.today(), 
+                    transaksi.nomor_transaksi, 
+                    transaksi.metode_bayar, 
+                    [], 
+                    user_id
+                )
                 
                 if mobil.status == CarStatus.BOOKING:
                     mobil.status = CarStatus.TERJUAL
