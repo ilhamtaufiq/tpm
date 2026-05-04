@@ -76,10 +76,21 @@ class PiutangService:
              elif data.sumber == PiutangSource.JUAL_BELI_MOBIL:
                  unit_source = KasBankSource.JUAL_BELI_MOBIL
 
+        # Standardize source: Force manual unit-based entries to LAINNYA 
+        # unless it is explicitly KASBON_KARYAWAN.
+        # This ensures they appear in "Piutang Lainnya" in reports.
+        # Automated services bypass this by creating PiutangUsaha directly.
+        final_sumber = data.sumber
+        if unit_source and data.sumber not in [PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]:
+            # If a manual entry is linked to a unit but used a unit-specific source
+            # (which should be reserved for automated entries), we re-categorize it as LAINNYA
+            # to maintain report integrity for "Piutang Lainnya".
+            final_sumber = PiutangSource.LAINNYA
+
         piutang = PiutangUsaha(
             nomor_piutang=nomor_piutang,
             tanggal=data.tanggal,
-            sumber=data.sumber,
+            sumber=final_sumber,
             unit=unit_source,
             referensi_id=data.referensi_id,
             nomor_referensi=data.nomor_referensi,

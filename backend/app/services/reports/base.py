@@ -569,7 +569,7 @@ class BaseReportService:
         hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang + hutang_internal
 
         # Piutang Breakdown
-        def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None, exclude_source: Optional[PiutangSource] = None) -> float:
+        def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None, exclude_sources: Optional[List[PiutangSource]] = None) -> float:
             # Use sisa_piutang directly — this is the authoritative balance field.
             # Internal piutang (workshop bills) are settled by setting sisa=0 directly
             # without creating PembayaranPiutang records, so nominal-minus-payments is unreliable.
@@ -597,23 +597,16 @@ class BaseReportService:
             if source:
                 q = q.filter(PiutangUsaha.sumber == source)
             
-            if exclude_source:
-                q = q.filter(PiutangUsaha.sumber != exclude_source)
+            if exclude_sources:
+                q = q.filter(PiutangUsaha.sumber.notin_(exclude_sources))
                 
             return float(q.scalar() or 0)
 
-        # Unit Breakdown: Include Internal for tracking, but neutralization happens in ModalService
-        # For the Balance Sheet (Neraca) breakdown, we need the EXTERNAL version 
-        # to ensure the 'lainnya' remainder calculation is consistent with piutang_usaha.
-        piutang_bengkel = get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=True)
-        piutang_ja = get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=True)
-        piutang_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=True)
-        
         # External-only versions for breakdown subtraction
-        # We EXCLUDE Kasbon from unit-specific counts because Kasbon is reported separately
-        piutang_ext_bengkel = get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=False, exclude_source=PiutangSource.KASBON_KARYAWAN)
-        piutang_ext_ja = get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=False, exclude_source=PiutangSource.KASBON_KARYAWAN)
-        piutang_ext_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False, exclude_source=PiutangSource.KASBON_KARYAWAN)
+        # We EXCLUDE Kasbon and LAINNYA from unit-specific counts because they are reported separately
+        piutang_ext_bengkel = get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA])
+        piutang_ext_ja = get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA])
+        piutang_ext_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA])
 
         # Kasbon Breakdown: Only specific units go to 'Piutang Kasbon'
         piutang_kasbon = get_piutang_balance(
