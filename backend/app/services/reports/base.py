@@ -450,10 +450,7 @@ class BaseReportService:
         piutang_usaha = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
-            or_(
-                PiutangUsaha.is_internal != True,
-                PiutangUsaha.sumber == PiutangSource.KASBON_KARYAWAN
-            )
+            PiutangUsaha.is_internal != True
         ).scalar() or 0)
              # Debt Position at End date
         def get_debt_balance_by_unit(source_list: list, unit: Optional[KasBankSource] = None, include_internal: bool = False) -> float:
@@ -581,12 +578,6 @@ class BaseReportService:
 
             if not include_internal:
                 q = q.filter(PiutangUsaha.is_internal != True)
-            else:
-                internal_filter = or_(
-                    PiutangUsaha.is_internal != True,
-                    PiutangUsaha.sumber.in_([PiutangSource.JUAL_BELI_MOBIL, PiutangSource.KASBON_KARYAWAN])
-                )
-                q = q.filter(internal_filter)
                 
             if unit:
                 q = q.filter(PiutangUsaha.unit == unit)
@@ -611,7 +602,7 @@ class BaseReportService:
         # Kasbon Breakdown: Only specific units go to 'Piutang Kasbon'
         piutang_kasbon = get_piutang_balance(
             source=PiutangSource.KASBON_KARYAWAN, 
-            include_internal=True,
+            include_internal=False,
             unit_in=[KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]
         )
         
