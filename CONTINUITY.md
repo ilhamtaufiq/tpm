@@ -29,6 +29,7 @@ Success criteria:
   - Eliminated negative "Piutang Lainnya" artifact in Neraca.
   - **Fixed**: Missing "Piutang Sparepart Mobil" in Neraca. Corrected filters to use `PiutangSource` instead of `unit`.
   - **Balanced**: Restored full "Stok Mobil" value in Neraca. Removing repair costs from stock caused a discrepancy against Equity (Laba). Now accurately shows internal debt vs internal receivable while maintaining asset valuation.
+- **Diagnostics**: Added a "Trace" panel in Neraca to identify specific internal transactions with mismatched balances (e.g., Workshop invoice with no corresponding Unit debt).
 - **Now**: Verifying financial reporting consistency across modules.
 - **Next**: Monitor unit wallet balances and transaction logs for edge cases in split payments.
 

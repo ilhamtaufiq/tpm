@@ -529,6 +529,37 @@ export default function NeracaScreen() {
                     </View>
                 )}
 
+                {/* Mismatched Transactions Trace */}
+                {crossVal.mismatches && crossVal.mismatches.length > 0 && (
+                    <View className="bg-amber-900/20 rounded-xl p-4 border border-amber-700/30 mb-4 w-full">
+                        <View className="flex-row items-center mb-3">
+                            <AlertTriangle size={14} color="#FBBF24" />
+                            <Typography variant="caption" weight="bold" className="text-amber-400 uppercase tracking-widest text-[9px] ml-2">
+                                TRACE: Transaksi Tidak Sinkron
+                            </Typography>
+                        </View>
+                        <View className="w-full space-y-2">
+                            {crossVal.mismatches.map((item: any, idx: number) => (
+                                <View key={idx} className="bg-black/20 p-3 rounded-lg border border-white/5">
+                                    <View className="flex-row justify-between items-center mb-1">
+                                        <Typography variant="caption" weight="bold" className="text-slate-300">{item.ref}</Typography>
+                                        <Typography variant="caption" weight="bold" className="text-amber-400">
+                                            Gap: {formatCurrency(item.gap)}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Typography variant="caption" className="text-slate-500 text-[9px]">Piutang: {formatCurrency(item.piutang)}</Typography>
+                                        <Typography variant="caption" className="text-slate-500 text-[9px]">Hutang: {formatCurrency(item.hutang)}</Typography>
+                                    </View>
+                                </View>
+                            ))}
+                            <Typography variant="caption" className="text-amber-500/70 text-[8px] mt-2 italic">
+                                Menampilkan 10 transaksi dengan selisih terbesar.
+                            </Typography>
+                        </View>
+                    </View>
+                )}
+
                 <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
                     {isBalanced ? (
                         <>

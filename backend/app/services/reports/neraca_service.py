@@ -233,6 +233,52 @@ class NeracaService(BaseReportService):
         
         # Balance check: compare total aktiva vs total pasiva (bottom-up)
         report_selisih = total_assets - total_pasiva
+        # ═══════════════════════════════════════════════════════════════
+        # 4. INTERNAL TRACING (FIND DISCREPANCIES)
+        # ═══════════════════════════════════════════════════════════════
+        internal_mismatches = []
+        
+        # Get all internal piutang & hutang to find the gaps
+        all_int_piutang = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.tanggal <= as_of_date,
+            PiutangUsaha.status != PiutangStatus.BATAL
+        ).all()
+        
+        all_int_hutang = self.db.query(HutangUsaha).filter(
+            HutangUsaha.is_internal == True,
+            HutangUsaha.tanggal <= as_of_date,
+            HutangUsaha.status != HutangStatus.BATAL
+        ).all()
+        
+        # Map them by reference for comparison
+        piutang_map = {}
+        for p in all_int_piutang:
+            key = (p.nomor_referensi or f"REF-{p.referensi_id}") if p.referensi_id else p.nomor_piutang
+            piutang_map[key] = piutang_map.get(key, 0) + float(p.sisa_piutang)
+            
+        hutang_map = {}
+        for h in all_int_hutang:
+            key = (h.nomor_referensi or f"REF-{h.referensi_id}") if h.referensi_id else h.nomor_hutang
+            hutang_map[key] = hutang_map.get(key, 0) + float(h.sisa_hutang)
+            
+        # Find mismatches
+        all_keys = set(list(piutang_map.keys()) + list(hutang_map.keys()))
+        for key in all_keys:
+            p_val = piutang_map.get(key, 0)
+            h_val = hutang_map.get(key, 0)
+            if abs(p_val - h_val) > 0.1:
+                internal_mismatches.append({
+                    "ref": key,
+                    "piutang": p_val,
+                    "hutang": h_val,
+                    "gap": p_val - h_val
+                })
+        
+        # Sort by largest gap and limit
+        internal_mismatches.sort(key=lambda x: abs(x["gap"]), reverse=True)
+        internal_mismatches = internal_mismatches[:10]
+
         is_balanced = abs(report_selisih) < 100 
 
         return {
@@ -297,6 +343,7 @@ class NeracaService(BaseReportService):
                 "modal_non_kas": modal_non_kas,
                 "piutang_internal": piutang_internal_total,
                 "hutang_internal": hutang_internal,
-                "selisih_internal": piutang_internal_total - hutang_internal
+                "selisih_internal": piutang_internal_total - hutang_internal,
+                "mismatches": internal_mismatches
             }
         }
