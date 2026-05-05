@@ -496,6 +496,39 @@ export default function NeracaScreen() {
                     </View>
                 )}
 
+                {/* DEBUG: Internal Offset Check */}
+                {crossVal.piutang_internal !== undefined && (
+                    <View className="bg-slate-900/40 rounded-xl p-4 border border-slate-700/50 mb-4 w-full">
+                        <Typography variant="caption" weight="bold" className="text-blue-300 uppercase tracking-widest text-[9px] mb-3">
+                            DEBUG: Sinkronisasi Internal (Keseluruhan Transaksi)
+                        </Typography>
+                        <View className="w-full">
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-slate-400 flex-1">Total Piutang Internal</Typography>
+                                <Typography variant="body2" weight="semibold" className="text-blue-200">
+                                    {formatCurrency(crossVal.piutang_internal || 0)}
+                                </Typography>
+                            </View>
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-slate-400 flex-1">Total Hutang Internal</Typography>
+                                <Typography variant="body2" weight="semibold" className="text-rose-200">
+                                    {formatCurrency(crossVal.hutang_internal || 0)}
+                                </Typography>
+                            </View>
+                            <View className="h-[1px] bg-slate-700 w-full my-2" />
+                            <View className="flex-row justify-between items-center py-1">
+                                <Typography variant="caption" className="text-slate-300 font-bold flex-1">GAP Keseluruhan</Typography>
+                                <Typography variant="body2" weight="bold" className={Math.abs(crossVal.selisih_internal || 0) < 100 ? "text-emerald-400" : "text-amber-400"}>
+                                    {formatCurrency(crossVal.selisih_internal || 0)}
+                                </Typography>
+                            </View>
+                            <Typography variant="caption" className="text-slate-500 text-[9px] mt-2 italic">
+                                *Gap ini harus 0 jika semua transaksi antar unit sudah tercatat di kedua sisi secara lengkap.
+                            </Typography>
+                        </View>
+                    </View>
+                )}
+
                 <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
                     {isBalanced ? (
                         <>

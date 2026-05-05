@@ -103,9 +103,11 @@ class NeracaService(BaseReportService):
         hutang_mobil = raw_hutang.get("breakdown", {}).get("mobil", 0)
         hutang_investor = raw_hutang.get("breakdown", {}).get("investor", 0)
         hutang_lainnya = raw_hutang.get("breakdown", {}).get("lainnya", 0)
-        
         # Combine JA hutang (Unit JA + Lainnya assigned to JA)
         hutang_ja = raw_hutang.get("breakdown", {}).get("ja", 0)
+        
+        # Internal payables (Unit debts to Workshop)
+        hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
         
         total_liabilities = raw_hutang.get("total", 0)
 
@@ -292,6 +294,9 @@ class NeracaService(BaseReportService):
                 "equity_from_identity": equity_from_identity,
                 "selisih_equity": selisih_modal,
                 "kas_total": total_cash,
-                "modal_non_kas": modal_non_kas
+                "modal_non_kas": modal_non_kas,
+                "piutang_internal": piutang_internal_total,
+                "hutang_internal": hutang_internal,
+                "selisih_internal": piutang_internal_total - hutang_internal
             }
         }
