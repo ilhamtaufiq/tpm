@@ -349,58 +349,72 @@ class NeracaService(BaseReportService):
         }
     def sync_internal_transactions(self, user_id: Optional[int] = None) -> Dict[str, Any]:
         """Automatically fix internal transaction discrepancies."""
-        # This scans for internal Piutang records that lack a matching Hutang record.
         # Preference is given to the Piutang side (Workshop) as it is the source of the work.
-        
-        all_int_piutang = self.db.query(PiutangUsaha).filter(
-            PiutangUsaha.is_internal == True,
-            PiutangUsaha.status != PiutangStatus.BATAL,
-            PiutangUsaha.nomor_referensi != None
-        ).all()
-        
-        fixed_count = 0
-        created_count = 0
-        
-        for p in all_int_piutang:
-            # Try to find corresponding Hutang by reference number
-            h = self.db.query(HutangUsaha).filter(
-                HutangUsaha.nomor_referensi == p.nomor_referensi,
-                HutangUsaha.is_internal == True,
-                HutangUsaha.status != HutangStatus.BATAL
-            ).first()
+        try:
+            all_int_piutang = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.is_internal == True,
+                PiutangUsaha.status != PiutangStatus.BATAL,
+                PiutangUsaha.nomor_referensi != None
+            ).all()
             
-            if not h:
-                # Create missing Hutang to balance the books
-                ref_num = p.nomor_referensi or "UNK"
-                h = HutangUsaha(
-                    nomor_hutang=f"HTGSYNC{p.id}-{ref_num[:15]}",
-                    tanggal=p.tanggal,
-                    nama_kreditur="BENGKEL TPM",
-                    nominal_hutang=p.nominal_piutang,
-                    sisa_hutang=p.sisa_piutang,
-                    total_dibayar=p.total_dibayar,
-                    status=HutangStatus.BELUM_LUNAS if p.status == PiutangStatus.BELUM_LUNAS else HutangStatus.LUNAS,
-                    sumber=HutangSource.JUAL_BELI_MOBIL,
-                    unit=KasBankSource.JUAL_BELI_MOBIL,
-                    is_internal=True,
-                    referensi_id=p.referensi_id,
-                    nomor_referensi=p.nomor_referensi,
-                    catatan=f"AUTO-SYNC: Hutang Internal dari Piutang {p.nomor_piutang}",
-                    created_by=user_id
-                )
-                self.db.add(h)
-                created_count += 1
-            elif abs(Decimal(str(h.nominal_hutang)) - Decimal(str(p.nominal_piutang))) > Decimal("0.1"):
-                # Update mismatched amount to match the Piutang side
-                h.nominal_hutang = p.nominal_piutang
-                h.sisa_hutang = p.sisa_piutang
-                h.total_dibayar = p.total_dibayar
-                fixed_count += 1
-        
-        self.db.commit()
-        return {
-            "status": "success",
-            "fixed": fixed_count,
-            "created": created_count,
-            "message": f"Berhasil sinkronisasi: {created_count} hutang dibuat, {fixed_count} selisih diperbaiki."
-        }
+            fixed_count = 0
+            created_count = 0
+            
+            for p in all_int_piutang:
+                # Try to find corresponding Hutang by reference number
+                h = self.db.query(HutangUsaha).filter(
+                    HutangUsaha.nomor_referensi == p.nomor_referensi,
+                    HutangUsaha.is_internal == True,
+                    HutangUsaha.status != HutangStatus.BATAL
+                ).first()
+                
+                if not h:
+                    # Double check if the sync nomor_hutang exists to prevent unique constraint error
+                    sync_no = f"SYNC-{p.id}"
+                    exists = self.db.query(HutangUsaha).filter(HutangUsaha.nomor_hutang == sync_no).first()
+                    if exists: continue # Already synced or collision
+                    
+                    # Create missing Hutang
+                    h = HutangUsaha(
+                        nomor_hutang=sync_no,
+                        tanggal=p.tanggal,
+                        nama_kreditur="BENGKEL TPM",
+                        nominal_hutang=p.nominal_piutang or Decimal("0"),
+                        sisa_hutang=p.sisa_piutang or Decimal("0"),
+                        total_dibayar=p.total_dibayar or Decimal("0"),
+                        status=HutangStatus.BELUM_LUNAS if p.status == PiutangStatus.BELUM_LUNAS else HutangStatus.LUNAS,
+                        sumber=HutangSource.JUAL_BELI_MOBIL,
+                        unit=KasBankSource.JUAL_BELI_MOBIL,
+                        is_internal=True,
+                        referensi_id=p.referensi_id,
+                        nomor_referensi=p.nomor_referensi,
+                        catatan=f"AUTO-SYNC: Hutang Internal dari Piutang {p.nomor_piutang}",
+                        created_by=user_id
+                    )
+                    self.db.add(h)
+                    created_count += 1
+                else:
+                    # Use Decimal for safe comparison
+                    p_nominal = Decimal(str(p.nominal_piutang or 0))
+                    h_nominal = Decimal(str(h.nominal_hutang or 0))
+                    
+                    if abs(h_nominal - p_nominal) > Decimal("0.1"):
+                        # Update mismatched amount to match the Piutang side
+                        h.nominal_hutang = p.nominal_piutang
+                        h.sisa_hutang = p.sisa_piutang
+                        h.total_dibayar = p.total_dibayar
+                        fixed_count += 1
+            
+            self.db.commit()
+            return {
+                "status": "success",
+                "fixed": fixed_count,
+                "created": created_count,
+                "message": f"Berhasil sinkronisasi: {created_count} hutang dibuat, {fixed_count} selisih diperbaiki."
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {
+                "status": "error",
+                "message": f"Database error detail: {str(e)}"
+            }
