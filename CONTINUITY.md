@@ -25,8 +25,9 @@ Success criteria:
   - Implemented `calculateSimplifiedTotals` to bridge granular backend data to standard accounting rows.
   - Decoupled asset transformation movements from the equity statement.
   - Updated PDF template for a more executive look.
-  - **New**: Implemented client-side balance validation in `MobilForm.tsx` to prevent purchases that exceed wallet funds.
-  - **New**: Eliminated negative "Piutang Lainnya" artifact in Neraca by refining external receivable breakdown logic and avoiding double-counting of Kasbon.
+  - Implemented client-side balance validation in `MobilForm.tsx`.
+  - Eliminated negative "Piutang Lainnya" artifact in Neraca.
+  - **New**: Fixed missing "Piutang Sparepart Mobil" in Neraca by breaking down internal piutang and ensures it balances with internal liabilities. Moved internal repair costs from Stock to a dedicated receivable row for visibility.
 - **Now**: Verifying financial reporting consistency across modules.
 - **Next**: Monitor unit wallet balances and transaction logs for edge cases in split payments.
 

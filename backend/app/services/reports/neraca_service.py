@@ -70,13 +70,30 @@ class NeracaService(BaseReportService):
         piutang_mobil = raw_piutang.get("breakdown", {}).get("mobil", 0)
         piutang_karyawan = raw_piutang.get("breakdown", {}).get("kasbon", 0)
         piutang_lainnya = raw_piutang.get("breakdown", {}).get("lainnya", 0)
-        total_piutang = raw_piutang.get("total", 0)
+        
+        # Internal Piutang Breakdown (Added for internal repair tracking)
+        piutang_internal_total = raw_piutang.get("breakdown", {}).get("internal", 0)
+        piutang_part_mobil = raw_piutang.get("breakdown", {}).get("internal_mobil", 0)
+        piutang_part_ja = raw_piutang.get("breakdown", {}).get("internal_ja", 0)
+        
+        # Total Piutang now includes internal to balance with internal liabilities
+        total_piutang = raw_piutang.get("total", 0) + piutang_internal_total
+        
+        # Add any leftover internal piutang to lainnya for consistency
+        piutang_lainnya += (piutang_internal_total - (piutang_part_mobil + piutang_part_ja))
         
         # Assets from consolidated breakdown
         raw_stock_mobil = hist["assets"]["persediaan_mobil"]
         total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         total_stock_parts = hist["assets"]["persediaan_part"]
         total_fixed_assets = hist["assets"]["tetap"]
+        
+        # Move internal repairs from Stock to Piutang for reporting visibility (avoid double counting)
+        # Based on user feedback: Stok Mobil should only be (Harga Beli + Biaya Persiapan)
+        # Note: We keep perbaikan_external in stock as it's physical cash outflow capitalized.
+        total_stock_mobil = float(raw_stock_mobil.get("harga_beli", 0) + 
+                                  raw_stock_mobil.get("biaya_persiapan", 0) + 
+                                  raw_stock_mobil.get("perbaikan_external", 0))
         
         # Re-fetch asset list for details
         assets_list = self.db.query(Aset).filter(
@@ -232,7 +249,8 @@ class NeracaService(BaseReportService):
                 "total_kas_bank": total_cash,
                 "piutang_usaha": piutang_bengkel,
                 "piutang_mobil": piutang_mobil,
-                "piutang_jasa_angkut": piutang_ja,
+                "piutang_part_mobil": piutang_part_mobil,
+                "piutang_jasa_angkut": piutang_ja + piutang_part_ja,
                 "piutang_karyawan": piutang_karyawan,
                 "piutang_lainnya": piutang_lainnya,
                 "total_piutang": total_piutang,

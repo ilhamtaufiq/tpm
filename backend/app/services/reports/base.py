@@ -605,12 +605,27 @@ class BaseReportService:
             include_internal=False,
             unit_in=[KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]
         )
-        
+
         # Internal Total for consolidation elimination
         piutang_internal_total = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
             PiutangUsaha.is_internal == True
+        ).scalar() or 0)
+
+        # Internal breakdown for specific reporting lines (e.g. Workshop repairs on Stock)
+        piutang_internal_mobil = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+            PiutangUsaha.unit == KasBankSource.JUAL_BELI_MOBIL,
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL
+        ).scalar() or 0)
+        
+        piutang_internal_ja = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+            PiutangUsaha.unit == KasBankSource.JASA_ANGKUT,
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL
         ).scalar() or 0)
 
         # Fix: Use external-only versions for subtraction to avoid negative 'lainnya'
@@ -806,6 +821,8 @@ class BaseReportService:
                         "mobil": piutang_ext_mobil,
                         "kasbon": piutang_kasbon,
                         "internal": piutang_internal_total,
+                        "internal_mobil": piutang_internal_mobil,
+                        "internal_ja": piutang_internal_ja,
                         "lainnya": piutang_lainnya
                     }
                 },
