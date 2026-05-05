@@ -61,7 +61,7 @@ def sync_neraca_internal(
 ):
     """Automatically fix internal transaction discrepancies in Neraca."""
     service = NeracaService(db)
-    return service.sync_internal_transactions()
+    return service.sync_internal_transactions(user_id=current_user.id)
 
 
 @router.get("/validate")
