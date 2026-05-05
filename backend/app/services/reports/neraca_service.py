@@ -1,6 +1,6 @@
 from datetime import date
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy import func, or_
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, PiutangUsaha, HutangUsaha, Aset
