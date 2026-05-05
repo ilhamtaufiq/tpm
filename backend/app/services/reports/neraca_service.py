@@ -85,12 +85,9 @@ class NeracaService(BaseReportService):
         total_stock_parts = hist["assets"]["persediaan_part"]
         total_fixed_assets = hist["assets"]["tetap"]
         
-        # Move internal repairs from Stock to Piutang for reporting visibility (avoid double counting)
-        # Based on user feedback: Stok Mobil should only be (Harga Beli + Biaya Persiapan)
-        # Note: We keep perbaikan_external in stock as it's physical cash outflow capitalized.
-        total_stock_mobil = float(raw_stock_mobil.get("harga_beli", 0) + 
-                                  raw_stock_mobil.get("biaya_persiapan", 0) + 
-                                  raw_stock_mobil.get("perbaikan_external", 0))
+        # Internal repair costs are kept in Stock value to reflect the asset's true value,
+        # while also appearing in 'Piutang Sparepart Mobil' to balance the 'Hutang Internal'.
+        total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         
         # Re-fetch asset list for details
         assets_list = self.db.query(Aset).filter(
