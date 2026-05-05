@@ -347,3 +347,58 @@ class NeracaService(BaseReportService):
                 "mismatches": internal_mismatches
             }
         }
+    def sync_internal_transactions(self) -> Dict[str, Any]:
+        """Automatically fix internal transaction discrepancies."""
+        # This scans for internal Piutang records that lack a matching Hutang record.
+        # Preference is given to the Piutang side (Workshop) as it is the source of the work.
+        
+        all_int_piutang = self.db.query(PiutangUsaha).filter(
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.status != PiutangStatus.BATAL
+        ).all()
+        
+        fixed_count = 0
+        created_count = 0
+        
+        for p in all_int_piutang:
+            # Try to find corresponding Hutang by reference number
+            h = self.db.query(HutangUsaha).filter(
+                HutangUsaha.nomor_referensi == p.nomor_referensi,
+                HutangUsaha.is_internal == True,
+                HutangUsaha.status != HutangStatus.BATAL
+            ).first()
+            
+            if not h:
+                # Create missing Hutang to balance the books
+                # We use a special prefix to identify synced records
+                h = HutangUsaha(
+                    nomor_hutang=f"HTGSYNC{p.id}-{p.nomor_referensi[:15]}",
+                    tanggal=p.tanggal,
+                    nama_kreditur="BENGKEL TPM",
+                    nominal_hutang=p.nominal_piutang,
+                    sisa_hutang=p.sisa_piutang,
+                    total_dibayar=p.total_dibayar,
+                    status=HutangStatus.BELUM_LUNAS if p.status == PiutangStatus.BELUM_LUNAS else HutangStatus.LUNAS,
+                    sumber=HutangSource.JUAL_BELI_MOBIL,
+                    unit=KasBankSource.JUAL_BELI_MOBIL,
+                    is_internal=True,
+                    referensi_id=p.referensi_id,
+                    nomor_referensi=p.nomor_referensi,
+                    catatan=f"AUTO-SYNC: Hutang Internal dari Piutang {p.nomor_piutang}",
+                )
+                self.db.add(h)
+                created_count += 1
+            elif abs(h.nominal_hutang - p.nominal_piutang) > 0.1:
+                # Update mismatched amount to match the Piutang side
+                h.nominal_hutang = p.nominal_piutang
+                h.sisa_hutang = p.sisa_piutang
+                h.total_dibayar = p.total_dibayar
+                fixed_count += 1
+        
+        self.db.commit()
+        return {
+            "status": "success",
+            "fixed": fixed_count,
+            "created": created_count,
+            "message": f"Berhasil sinkronisasi: {created_count} hutang dibuat, {fixed_count} selisih diperbaiki."
+        }

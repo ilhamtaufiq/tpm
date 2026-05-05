@@ -13,7 +13,7 @@ from app.models.bengkel import (
     SparePart,
 )
 from app.models.customer import Customer
-from app.models.keuangan import PiutangUsaha, KasBank, PembayaranPiutang
+from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPiutang
 from app.models.mobil import MobilPartService
 from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import TransaksiBengkelCreate
@@ -22,6 +22,8 @@ from app.utils.constants import (
     PaymentMethod,
     PiutangStatus,
     PiutangSource,
+    HutangStatus,
+    HutangSource,
     TRANSACTION_PREFIXES,
     WorkshopStatus,
     KasBankType,
@@ -73,6 +75,27 @@ class TransaksiBengkelService:
 
         if last:
             last_num = int(last.nomor_piutang[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
+    def _generate_nomor_hutang(self) -> str:
+        """Generate unique payable number."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["hutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(HutangUsaha)
+            .filter(HutangUsaha.nomor_hutang.like(f"{prefix}{date_str}%"))
+            .order_by(HutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_hutang[-4:])
             new_num = last_num + 1
         else:
             new_num = 1
@@ -333,8 +356,24 @@ class TransaksiBengkelService:
 
                 if is_internal_mobil:
                     # Internal JB Mobil: keep as Piutang (receivable) until car is sold.
-                    # We do NOT mark as LUNAS here anymore.
-                    pass
+                    # ALSO: Create corresponding HutangUsaha for the mobil side to balance the books
+                    new_hutang = HutangUsaha(
+                        nomor_hutang=self._generate_nomor_hutang(),
+                        tanggal=data.tanggal,
+                        nama_kreditur="BENGKEL TPM",
+                        nominal_hutang=grand_total,
+                        sisa_hutang=grand_total,
+                        total_dibayar=Decimal("0"),
+                        status=HutangStatus.BELUM_LUNAS,
+                        sumber=HutangSource.JUAL_BELI_MOBIL,
+                        unit=KasBankSource.JUAL_BELI_MOBIL,
+                        is_internal=True,
+                        referensi_id=transaksi.id,
+                        nomor_referensi=nomor_transaksi,
+                        catatan=f"Hutang Internal Repair Mobil {data.nomor_plat} dari bengkel {nomor_transaksi}",
+                        created_by=user_id
+                    )
+                    self.db.add(new_hutang)
                 elif total_pembayaran > 0:
                     # External customer: process DP payment against piutang
                     from app.services.piutang_service import PiutangService
@@ -557,6 +596,12 @@ class TransaksiBengkelService:
             JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)
 
+        # Delete old internal hutang if exists
+        self.db.query(HutangUsaha).filter(
+            HutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+            HutangUsaha.is_internal == True
+        ).delete(synchronize_session=False)
+
         # 4. Re-calculate with new data
         customer = None
         if data.customer_id:
@@ -696,6 +741,27 @@ class TransaksiBengkelService:
                 created_by=user_id,
             )
             self.db.add(new_piutang)
+            
+            # ALSO: Create corresponding HutangUsaha for internal mobil repair
+            if is_internal_mobil:
+                new_hutang = HutangUsaha(
+                    nomor_hutang=self._generate_nomor_hutang(),
+                    tanggal=data.tanggal,
+                    nama_kreditur="BENGKEL TPM",
+                    nominal_hutang=grand_total,
+                    sisa_hutang=grand_total,
+                    total_dibayar=Decimal("0"),
+                    status=HutangStatus.BELUM_LUNAS,
+                    sumber=HutangSource.JUAL_BELI_MOBIL,
+                    unit=KasBankSource.JUAL_BELI_MOBIL,
+                    is_internal=True,
+                    referensi_id=transaksi.id,
+                    nomor_referensi=transaksi.nomor_transaksi,
+                    catatan=f"Hutang Internal Repair Mobil {data.nomor_plat} dari bengkel {transaksi.nomor_transaksi} (UPDATED)",
+                    created_by=user_id
+                )
+                self.db.add(new_hutang)
+            
             self.db.flush() # Get ID for payment processing
             
             # Process DP if any
@@ -1277,16 +1343,24 @@ class TransaksiBengkelService:
                 ).delete(synchronize_session=False)
 
             
-            # Additional check for payments by nomor_referensi
-            self.db.query(KasBank).filter(
-                KasBank.nomor_referensi == piutang.nomor_piutang
-            ).delete(synchronize_session=False)
-            
             # Set Piutang status to BATAL instead of deleting
             piutang.status = PiutangStatus.BATAL
-            piutang.sisa_piutang = 0
+            piutang.sisa_piutang = Decimal("0")
 
-        # 4. Remove linked costs (Mobil & Jasa Angkut)
+        # 4. Void related Hutang (Internal)
+        hutang = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+                HutangUsaha.is_internal == True,
+            )
+            .first()
+        )
+        if hutang:
+            hutang.status = HutangStatus.BATAL
+            hutang.sisa_hutang = Decimal("0")
+
+        # 5. Remove linked costs (Mobil & Jasa Angkut)
         self.db.query(MobilPartService).filter(
             MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
         ).delete(synchronize_session=False)

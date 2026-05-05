@@ -54,6 +54,15 @@ def get_neraca(
     service = NeracaService(db)
     return service.get_report(as_of_date)
 
+@router.post("/neraca/sync")
+def sync_neraca_internal(
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Automatically fix internal transaction discrepancies in Neraca."""
+    service = NeracaService(db)
+    return service.sync_internal_transactions()
+
 
 @router.get("/validate")
 def validate_reports(

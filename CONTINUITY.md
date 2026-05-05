@@ -30,8 +30,10 @@ Success criteria:
   - **Fixed**: Missing "Piutang Sparepart Mobil" in Neraca. Corrected filters to use `PiutangSource` instead of `unit`.
   - **Balanced**: Restored full "Stok Mobil" value in Neraca. Removing repair costs from stock caused a discrepancy against Equity (Laba). Now accurately shows internal debt vs internal receivable while maintaining asset valuation.
 - **Diagnostics**: Added a "Trace" panel in Neraca to identify specific internal transactions with mismatched balances (e.g., Workshop invoice with no corresponding Unit debt).
-- **Now**: Verifying financial reporting consistency across modules.
-- **Next**: Monitor unit wallet balances and transaction logs for edge cases in split payments.
+- **Auto-Sync**: Implemented a "SINKRONKAN SEKARANG" feature in Neraca to automatically resolve identified internal transaction gaps by creating missing bilateral records.
+- **Root Cause Prevention**: Refactored `transaksi_bengkel_service.py` to ensure every internal repair job automatically creates, updates, or voids both sides of the accounting entry (Workshop Receivable & Unit Payable).
+- **Now**: Finalizing the "Neraca Sinkronisasi" workflow and verifying bilateral accounting entries.
+- **Next**: Monitor transaction logs for any new edge cases in internal cost recording.
 
 ## Open Questions (UNCONFIRMED)
 - None.
