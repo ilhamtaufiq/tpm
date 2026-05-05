@@ -20,6 +20,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
 import { useNeracaReport } from '../../hooks/useKeuangan';
+import api from '../../utils/api';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -79,7 +80,6 @@ export default function NeracaScreen() {
     const handleSync = async () => {
         try {
             setIsSyncing(true);
-            const { api } = require('../../utils/api');
             const res = await api.post('/laporan/neraca/sync');
             Alert.alert('Berhasil', res.data.message || 'Sinkronisasi selesai.');
             refetch();
