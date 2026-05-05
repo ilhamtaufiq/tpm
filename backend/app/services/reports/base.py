@@ -615,14 +615,14 @@ class BaseReportService:
 
         # Internal breakdown for specific reporting lines (e.g. Workshop repairs on Stock)
         piutang_internal_mobil = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-            PiutangUsaha.unit == KasBankSource.JUAL_BELI_MOBIL,
+            PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
             PiutangUsaha.is_internal == True,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL
         ).scalar() or 0)
         
         piutang_internal_ja = float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-            PiutangUsaha.unit == KasBankSource.JASA_ANGKUT,
+            PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT,
             PiutangUsaha.is_internal == True,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL
