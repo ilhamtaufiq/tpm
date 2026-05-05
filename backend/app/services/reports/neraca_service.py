@@ -79,8 +79,7 @@ class NeracaService(BaseReportService):
         # Total Piutang now includes internal to balance with internal liabilities
         total_piutang = raw_piutang.get("total", 0) + piutang_internal_total
         
-        # Add any leftover internal piutang to lainnya for consistency
-        piutang_lainnya += (piutang_internal_total - (piutang_part_mobil + piutang_part_ja))
+        # Note: we no longer add internal leftover to piutang_lainnya as per user request
         
         # Assets from consolidated breakdown
         raw_stock_mobil = hist["assets"]["persediaan_mobil"]
@@ -248,8 +247,8 @@ class NeracaService(BaseReportService):
                 "unit_details": unit_details,
                 "total_kas_bank": total_cash,
                 "piutang_usaha": piutang_bengkel,
-                "piutang_mobil": piutang_mobil,
-                "piutang_part_mobil": piutang_part_mobil,
+                "piutang_mobil": piutang_mobil + piutang_part_mobil,
+                "piutang_part_mobil": 0,
                 "piutang_jasa_angkut": piutang_ja + piutang_part_ja,
                 "piutang_karyawan": piutang_karyawan,
                 "piutang_lainnya": piutang_lainnya,

@@ -27,7 +27,7 @@ Success criteria:
   - Updated PDF template for a more executive look.
   - Implemented client-side balance validation in `MobilForm.tsx`.
   - Eliminated negative "Piutang Lainnya" artifact in Neraca.
-  - **New**: Fixed missing "Piutang Sparepart Mobil" in Neraca by breaking down internal piutang and ensures it balances with internal liabilities. Moved internal repair costs from Stock to a dedicated receivable row for visibility.
+  - **New**: Fixed missing "Piutang Sparepart Mobil" (Internal Repairs) in Neraca. Grouped internal repair costs into the "Piutang Unit Mobil" row as per user preference, and ensured they are excluded from Stock inventory to avoid double-counting.
 - **Now**: Verifying financial reporting consistency across modules.
 - **Next**: Monitor unit wallet balances and transaction logs for edge cases in split payments.
 
