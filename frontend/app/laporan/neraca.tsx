@@ -6,7 +6,7 @@ import {
     ChevronLeft, ChevronRight, Calendar, Wallet, Building2,
     Car, CreditCard, Landmark, TrendingUp, ArrowUpRight,
     ArrowDownLeft, DollarSign, Scale, CheckCircle, AlertTriangle, Banknote, Package, Box,
-    Printer, Download, Eye, Share2, X, RefreshCw
+    Printer, Download, Eye, Share2, X
 } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
@@ -20,7 +20,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { Card } from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
 import { useNeracaReport } from '../../hooks/useKeuangan';
-import api from '../../utils/api';
+
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -33,7 +33,7 @@ export default function NeracaScreen() {
     const [isExporting, setIsExporting] = useState(false);
     const [showPdfPreview, setShowPdfPreview] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
-    const [isSyncing, setIsSyncing] = useState(false);
+
     const { themeColors } = useUIStore();
 
     // Date Navigation
@@ -77,20 +77,7 @@ export default function NeracaScreen() {
 
     const { data: report, isLoading, refetch } = useNeracaReport(getDateParams());
 
-    const handleSync = async () => {
-        try {
-            setIsSyncing(true);
-            const res = await api.post('/laporan/neraca/sync');
-            Alert.alert('Berhasil', res.data.message || 'Sinkronisasi selesai.');
-            refetch();
-        } catch (error: any) {
-            console.error('Sync error:', error);
-            const errorMsg = error.response?.data?.detail || error.message || 'Gagal sinkronisasi.';
-            Alert.alert('Gagal', errorMsg);
-        } finally {
-            setIsSyncing(false);
-        }
-    };
+
 
     const handleBack = () => {
         if (navigation.canGoBack()) {
@@ -540,22 +527,6 @@ export default function NeracaScreen() {
                                 </Typography>
                             </View>
                             
-                            {Math.abs(crossVal.selisih_internal || 0) >= 100 && (
-                                <Pressable 
-                                    onPress={handleSync}
-                                    disabled={isSyncing}
-                                    className={`mt-4 py-2.5 rounded-lg flex-row items-center justify-center ${isSyncing ? 'bg-slate-700' : 'bg-blue-600'}`}
-                                >
-                                    {isSyncing ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <>
-                                            <RefreshCw size={14} color="white" style={{ marginRight: 8 }} />
-                                            <Typography variant="caption" weight="bold" className="text-white">SINKRONKAN SEKARANG</Typography>
-                                        </>
-                                    )}
-                                </Pressable>
-                            )}
 
                             <Typography variant="caption" className="text-slate-500 text-[9px] mt-2 italic">
                                 *Gap ini harus 0 jika semua transaksi antar unit sudah tercatat di kedua sisi secara lengkap.

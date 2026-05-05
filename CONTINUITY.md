@@ -1,44 +1,30 @@
-# Continuity Ledger - Perubahan Modal Reconciliation
+# CONTINUITY LEDGER
 
 ## Goal
-Simplify the "Perubahan Modal" report to align with standard accounting principles (Statement of Changes in Equity) while maintaining "VERIFIED BALANCE" status.
-
-Success criteria:
-- UI presents a clear Beginning Balance + Profit + Contributions - Drawings = Ending Balance.
-- Asset-only movements (Cash -> Inventory) are moved to analytical breakdowns to avoid confusion in the equity statement.
-- PDF export reflects the clean, professional accounting structure.
-- Status remains "VERIFIED BALANCE".
+Fix the Rp.200.000 Neraca (Balance Sheet) discrepancy caused by 2 internal piutang records (PTG2605050001, PTG2605050002) without matching internal hutang records.
 
 ## Constraints/Assumptions
-- The backend `ModalService` provides granular data which the frontend now simplifies for presentation.
-- Any discrepancy between theoretical equity and actual net assets is shown as "Penyesuaian Saldo".
+- TPM is an Expo React Native + FastAPI backend multi-unit business app
+- Neraca follows A = L + E identity
+- Internal piutang/hutang must be bilateral (both sides recorded)
+- Sync button creates missing hutang from piutang records
 
-## Key Decisions
-- **Simplification**: Reduced `perubahan-modal.tsx` from ~1100 to ~500 lines.
-- **Data Grouping**: Combined setoran tunai, non-kas, and funding into "Setoran Modal". Used `info.laba_bersih` as the primary profit figure.
-- **Separation of Concerns**: Moved detailed Asset Snapshots and Unit Profitability to separate cards below the main equity table.
-- **Workshop Settlement**: Automated internal workshop debt clearance upon car sale. Payments now follow the sale's method (Transfer -> Bank Utama, Cash -> Unit Wallet), allowing the unit wallet to go negative temporarily to carry repair costs.
+## Key decisions
+- Fixed `sync_internal_transactions()` to handle ALL internal piutang (not just those with nomor_referensi)
+- Added multi-strategy hutang matching (nomor_referensi → referensi_id fallback)
+- Derived hutang sumber/unit from piutang source instead of hardcoding JUAL_BELI_MOBIL
+- Added sisa_piutang comparison alongside nominal for better sync accuracy
+- Added status synchronization between piutang and hutang
 
 ## State
-- **Done**: 
-  - Comprehensive refactoring of `perubahan-modal.tsx` UI and PDF export.
-  - Implemented `calculateSimplifiedTotals` to bridge granular backend data to standard accounting rows.
-  - Decoupled asset transformation movements from the equity statement.
-  - Updated PDF template for a more executive look.
-  - Implemented client-side balance validation in `MobilForm.tsx`.
-  - Eliminated negative "Piutang Lainnya" artifact in Neraca.
-  - **Fixed**: Missing "Piutang Sparepart Mobil" in Neraca. Corrected filters to use `PiutangSource` instead of `unit`.
-  - **Balanced**: Restored full "Stok Mobil" value in Neraca. Removing repair costs from stock caused a discrepancy against Equity (Laba). Now accurately shows internal debt vs internal receivable while maintaining asset valuation.
-- **Diagnostics**: Added a "Trace" panel in Neraca to identify specific internal transactions with mismatched balances (e.g., Workshop invoice with no corresponding Unit debt).
-- **Auto-Sync**: Implemented a "SINKRONKAN SEKARANG" feature in Neraca to automatically resolve identified internal transaction gaps by creating missing bilateral records.
-- **Root Cause Prevention**: Refactored `transaksi_bengkel_service.py` to ensure every internal repair job automatically creates, updates, or voids both sides of the accounting entry (Workshop Receivable & Unit Payable).
-- **Now**: Finalizing the "Neraca Sinkronisasi" workflow and verifying bilateral accounting entries.
-- **Next**: Monitor transaction logs for any new edge cases in internal cost recording.
+- Done: Fixed sync_internal_transactions in neraca_service.py
+- Now: User needs to click "SINKRONKAN SEKARANG" button to auto-create the 2 missing hutang records
+- Next: Verify neraca is balanced after sync
 
-## Open Questions (UNCONFIRMED)
-- None.
+## Open questions
+- CONFIRMED: The 2 PTG records are internal piutang with sisa > 0 and no matching hutang
 
-## Working Set
-- backend/app/services/reports/base.py
-- backend/app/services/reports/modal_service.py
-- frontend/app/laporan/perubahan-modal.tsx
+## Working set
+- `backend/app/services/reports/neraca_service.py` (sync function fixed)
+- `backend/app/services/reports/base.py` (read-only, balance logic)
+- `frontend/app/laporan/neraca.tsx` (UI, no changes needed)

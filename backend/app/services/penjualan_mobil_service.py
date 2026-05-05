@@ -427,14 +427,16 @@ class PenjualanMobilService:
         # 5. Settle Associated Financial Obligations (Workshop Piutangs & Unit Hutangs)
         # Process this AFTER adding funds to JUAL_BELI_MOBIL to avoid unnecessary wallet deficit.
         # It uses the sale's payment method to decide between Cash (Wallet) or Transfer (Bank) settlement.
-        self._settle_unit_financial_obligations(
-            mobil, 
-            data.tanggal, 
-            nomor_transaksi, 
-            data.metode_bayar, 
-            data.payments, 
-            user_id
-        )
+        # Only settle if the car is fully paid (LUNAS), otherwise keep internal debts active.
+        if status_bayar == PaymentStatus.LUNAS:
+            self._settle_unit_financial_obligations(
+                mobil, 
+                data.tanggal, 
+                nomor_transaksi, 
+                data.metode_bayar, 
+                getattr(data, 'payments', []), 
+                user_id
+            )
 
         # FINAL SINGLE COMMIT
         self.db.commit()

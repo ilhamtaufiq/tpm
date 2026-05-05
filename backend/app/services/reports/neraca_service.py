@@ -25,6 +25,9 @@ class NeracaService(BaseReportService):
         from app.models.bengkel import SparePart
         from app.utils.constants import InvestorDisbursementStatus, OwnershipType
         
+        # Auto-sync: fix orphaned internal piutang/hutang before computing
+        self.sync_internal_transactions()
+        
         # 1. ASSETS
         
         # We use BaseReportService for consistent consolidated financial logic
@@ -87,7 +90,11 @@ class NeracaService(BaseReportService):
         
         # Internal repair costs are kept in Stock value to reflect the asset's true value,
         # while also appearing in 'Piutang Sparepart Mobil' to balance the 'Hutang Internal'.
+        # However, because 'internal_elimination' removes the unrealized revenue from Laba Ditahan,
+        # we must also subtract it from the Asset value to maintain the Balance Sheet identity.
         total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
+        internal_elimination = float(hist.get("internal_elimination", 0))
+        total_stock_mobil -= internal_elimination
         
         # Re-fetch asset list for details
         assets_list = self.db.query(Aset).filter(
@@ -136,8 +143,9 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Non-cash capital tied in assets (shown for transparency in the equity breakdown)
+        # Use raw_stock_mobil for modal calculation so that internal eliminations don't artificially lower Setoran Modal
         modal_persediaan = total_stock_parts
-        modal_stok_mobil = total_stock_mobil
+        modal_stok_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         modal_aset_tetap = total_fixed_assets
         
         # ═══════════════════════════════════════════════════════════════
@@ -348,34 +356,104 @@ class NeracaService(BaseReportService):
             }
         }
     def sync_internal_transactions(self, user_id: Optional[int] = None) -> Dict[str, Any]:
-        """Automatically fix internal transaction discrepancies."""
-        # Preference is given to the Piutang side (Workshop) as it is the source of the work.
+        """Automatically fix internal transaction discrepancies (bidirectional).
+        
+        Piutang (Workshop/Bengkel) is the SOURCE OF TRUTH.
+        Phase 0: Fix piutang with sumber=JUAL_BELI_MOBIL that should be is_internal=True
+        Phase 1: Build lookup maps
+        Phase 2: Orphaned Piutang (no matching Hutang) → create Hutang
+        Phase 3: Orphaned Hutang (no matching Piutang) → try fix piutang flag, else void Hutang
+        Phase 4: Mismatched amounts → align Hutang to Piutang
+        """
         try:
-            all_int_piutang = self.db.query(PiutangUsaha).filter(
-                PiutangUsaha.is_internal == True,
-                PiutangUsaha.status != PiutangStatus.BATAL,
-                PiutangUsaha.nomor_referensi != None
-            ).all()
-            
             fixed_count = 0
             created_count = 0
+            voided_count = 0
+            reflagged_count = 0
+
+            # ── PHASE 0: Fix mis-flagged piutang ──
+            # Piutang from bengkel repair on mobil (sumber=JUAL_BELI_MOBIL) should always be is_internal=True
+            from app.utils.constants import PiutangSource as PS
+            from app.models.bengkel import TransaksiPenjualanBengkel
             
+            mismarked = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.sumber == PS.JUAL_BELI_MOBIL,
+                PiutangUsaha.is_internal == False,
+                PiutangUsaha.status != PiutangStatus.BATAL
+            ).all()
+            
+            for p in mismarked:
+                # Verify it's from a bengkel transaction with kategori=jual_beli_mobil
+                if p.nomor_referensi:
+                    trx = self.db.query(TransaksiPenjualanBengkel).filter(
+                        TransaksiPenjualanBengkel.nomor_transaksi == p.nomor_referensi,
+                        TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil'
+                    ).first()
+                    if trx:
+                        p.is_internal = True
+                        reflagged_count += 1
+
+            # ── PHASE 1: Find all active internal records ──
+            # Re-query after Phase 0 fixes
+            self.db.flush()
+            
+            all_int_piutang = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.is_internal == True,
+                PiutangUsaha.status != PiutangStatus.BATAL
+            ).all()
+            
+            all_int_hutang = self.db.query(HutangUsaha).filter(
+                HutangUsaha.is_internal == True,
+                HutangUsaha.status != HutangStatus.BATAL
+            ).all()
+
+            # Build lookup maps
+            hutang_by_ref = {}
+            hutang_by_txid = {}
+            for h in all_int_hutang:
+                if h.nomor_referensi:
+                    hutang_by_ref[h.nomor_referensi] = h
+                if h.referensi_id:
+                    hutang_by_txid[h.referensi_id] = h
+
+            piutang_by_ref = {}
+            piutang_by_txid = {}
             for p in all_int_piutang:
-                # Try to find corresponding Hutang by reference number
-                h = self.db.query(HutangUsaha).filter(
-                    HutangUsaha.nomor_referensi == p.nomor_referensi,
-                    HutangUsaha.is_internal == True,
-                    HutangUsaha.status != HutangStatus.BATAL
-                ).first()
-                
+                if p.nomor_referensi:
+                    piutang_by_ref[p.nomor_referensi] = p
+                if p.referensi_id:
+                    piutang_by_txid[p.referensi_id] = p
+
+            # ── PHASE 2: Orphaned Piutang → create missing Hutang ──
+            for p in all_int_piutang:
+                h = None
+                if p.nomor_referensi:
+                    h = hutang_by_ref.get(p.nomor_referensi)
+                if not h and p.referensi_id:
+                    h = hutang_by_txid.get(p.referensi_id)
+
                 if not h:
-                    # Double check if the sync nomor_hutang exists to prevent unique constraint error
-                    sync_no = f"SYNC-{p.id}"
+                    # Skip creation if piutang is already settled and hutang doesn't exist.
+                    # No need to create a 0-balance hutang.
+                    if float(p.sisa_piutang or 0) < 0.1:
+                        continue
+                        
+                    sync_no = f"SYNC-P{p.id}"
                     exists = self.db.query(HutangUsaha).filter(HutangUsaha.nomor_hutang == sync_no).first()
-                    if exists: continue # Already synced or collision
-                    
-                    # Create missing Hutang
-                    h = HutangUsaha(
+                    if exists:
+                        continue
+
+                    if p.sumber == PS.JUAL_BELI_MOBIL:
+                        hutang_sumber = HutangSource.JUAL_BELI_MOBIL
+                        hutang_unit = KasBankSource.JUAL_BELI_MOBIL
+                    elif p.sumber == PS.JASA_ANGKUT:
+                        hutang_sumber = HutangSource.LAINNYA
+                        hutang_unit = KasBankSource.JASA_ANGKUT
+                    else:
+                        hutang_sumber = HutangSource.JUAL_BELI_MOBIL
+                        hutang_unit = KasBankSource.JUAL_BELI_MOBIL
+
+                    new_h = HutangUsaha(
                         nomor_hutang=sync_no,
                         tanggal=p.tanggal,
                         nama_kreditur="BENGKEL TPM",
@@ -383,34 +461,79 @@ class NeracaService(BaseReportService):
                         sisa_hutang=p.sisa_piutang or Decimal("0"),
                         total_dibayar=p.total_dibayar or Decimal("0"),
                         status=HutangStatus.BELUM_LUNAS if p.status == PiutangStatus.BELUM_LUNAS else HutangStatus.LUNAS,
-                        sumber=HutangSource.JUAL_BELI_MOBIL,
-                        unit=KasBankSource.JUAL_BELI_MOBIL,
+                        sumber=hutang_sumber,
+                        unit=hutang_unit,
                         is_internal=True,
                         referensi_id=p.referensi_id,
-                        nomor_referensi=p.nomor_referensi,
+                        nomor_referensi=p.nomor_referensi or p.nomor_piutang,
                         catatan=f"AUTO-SYNC: Hutang Internal dari Piutang {p.nomor_piutang}",
                         created_by=user_id
                     )
-                    self.db.add(h)
+                    self.db.add(new_h)
                     created_count += 1
                 else:
-                    # Use Decimal for safe comparison
+                    # Amount mismatch → align hutang to piutang
                     p_nominal = Decimal(str(p.nominal_piutang or 0))
                     h_nominal = Decimal(str(h.nominal_hutang or 0))
-                    
-                    if abs(h_nominal - p_nominal) > Decimal("0.1"):
-                        # Update mismatched amount to match the Piutang side
+                    p_sisa = Decimal(str(p.sisa_piutang or 0))
+                    h_sisa = Decimal(str(h.sisa_hutang or 0))
+
+                    if abs(h_nominal - p_nominal) > Decimal("0.1") or abs(h_sisa - p_sisa) > Decimal("0.1"):
                         h.nominal_hutang = p.nominal_piutang
                         h.sisa_hutang = p.sisa_piutang
                         h.total_dibayar = p.total_dibayar
+                        if p.status == PiutangStatus.LUNAS:
+                            h.status = HutangStatus.LUNAS
+                        elif p.status == PiutangStatus.BELUM_LUNAS:
+                            h.status = HutangStatus.BELUM_LUNAS
                         fixed_count += 1
-            
+
+            # ── PHASE 3: Orphaned Hutang → try fix piutang flag, else void ──
+            for h in all_int_hutang:
+                if h.status == HutangStatus.BATAL:
+                    continue
+
+                # Check if already matched by piutang lookup
+                p = None
+                if h.nomor_referensi:
+                    p = piutang_by_ref.get(h.nomor_referensi)
+                if not p and h.referensi_id:
+                    p = piutang_by_txid.get(h.referensi_id)
+
+                if not p:
+                    # Last resort: check if piutang exists with is_internal=False
+                    rescue_p = None
+                    if h.nomor_referensi:
+                        rescue_p = self.db.query(PiutangUsaha).filter(
+                            PiutangUsaha.nomor_referensi == h.nomor_referensi,
+                            PiutangUsaha.is_internal == False,
+                            PiutangUsaha.status != PiutangStatus.BATAL
+                        ).first()
+                    if not rescue_p and h.referensi_id:
+                        rescue_p = self.db.query(PiutangUsaha).filter(
+                            PiutangUsaha.referensi_id == h.referensi_id,
+                            PiutangUsaha.is_internal == False,
+                            PiutangUsaha.status != PiutangStatus.BATAL
+                        ).first()
+
+                    if rescue_p:
+                        # Fix: mark piutang as internal
+                        rescue_p.is_internal = True
+                        reflagged_count += 1
+                    else:
+                        # Truly orphaned → void hutang
+                        h.status = HutangStatus.BATAL
+                        h.catatan = (h.catatan or "") + " | AUTO-VOIDED: No matching piutang"
+                        voided_count += 1
+
             self.db.commit()
             return {
                 "status": "success",
                 "fixed": fixed_count,
                 "created": created_count,
-                "message": f"Berhasil sinkronisasi: {created_count} hutang dibuat, {fixed_count} selisih diperbaiki."
+                "voided": voided_count,
+                "reflagged": reflagged_count,
+                "message": f"Sync: {reflagged_count} piutang di-reflag, {created_count} hutang dibuat, {fixed_count} diperbaiki, {voided_count} hutang orphan di-void."
             }
         except Exception as e:
             self.db.rollback()
@@ -418,3 +541,4 @@ class NeracaService(BaseReportService):
                 "status": "error",
                 "message": f"Database error detail: {str(e)}"
             }
+
