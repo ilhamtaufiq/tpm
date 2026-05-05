@@ -196,6 +196,7 @@ class NeracaService(BaseReportService):
             KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
             ~KasBank.keterangan.ilike("Transfer %"),
             ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            ~KasBank.keterangan.ilike("%Pencairan Investor%"),
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         # Hutang yang terbentuk untuk pembelian aset (Mobil)
