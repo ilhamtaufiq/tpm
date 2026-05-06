@@ -175,6 +175,20 @@ class NeracaService(BaseReportService):
             Mobil.tanggal_terjual <= as_of_date,
             PengeluaranBengkel.tanggal <= as_of_date
         ).scalar() or 0)
+        
+        # Internal workshop bills for sold cars (TransaksiPenjualanBengkel, NOT PengeluaranBengkel).
+        # When unsold, these are captured in car_stock via snapshot_unsold_repairs_int (base.py).
+        # When sold, they disappear from car_stock but still represent real HPP that was part of the car's value.
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        akumulasi_hpp_mobil_internal = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).join(
+            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
+        ).filter(
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            Mobil.status == CarStatus.TERJUAL,
+            Mobil.tanggal_terjual <= as_of_date,
+            TransaksiPenjualanBengkel.tanggal <= as_of_date
+        ).scalar() or 0)
 
         # Total pengeluaran kas untuk pembelian aset (part purchases + asset purchases)
         from app.models.bengkel import PembelianSparePart
@@ -213,7 +227,7 @@ class NeracaService(BaseReportService):
         # Note: We include non-revenue piutang (Lainnya & Kasbon) in discovery to account for injected receivables.
         # We EXCLUDE unit-specific piutang (Bengkel, JA, Mobil) as they are typically from revenue and already in Laba Ditahan.
         piutang_discovery = piutang_karyawan + piutang_lainnya
-        total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
+        total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep + akumulasi_hpp_mobil_internal) + modal_aset_tetap + piutang_discovery
         total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
         
