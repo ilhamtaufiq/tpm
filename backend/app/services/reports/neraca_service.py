@@ -223,12 +223,24 @@ class NeracaService(BaseReportService):
             HutangUsaha.tanggal <= as_of_date
         ).scalar() or 0)
         
+        # Pelunasan internal repair cash-out (offset for akumulasi_hpp_mobil_internal).
+        # When a sold car's internal workshop bill is settled, a KasBank KELUAR entry is created
+        # with keterangan "Pelunasan Biaya Repair Internal". This cash-out is excluded from
+        # pembelian_mobil_kas to avoid double-counting, but must be captured here to offset
+        # the akumulasi_hpp_mobil_internal we added to total_non_kas_assets_historis.
+        pelunasan_repair_internal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+            KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            KasBank.tanggal <= as_of_date
+        ).scalar() or 0)
+        
         # Non-cash capital = (current assets + sold assets) - recorded cash purchases - recorded hutang purchases
         # Note: We include non-revenue piutang (Lainnya & Kasbon) in discovery to account for injected receivables.
         # We EXCLUDE unit-specific piutang (Bengkel, JA, Mobil) as they are typically from revenue and already in Laba Ditahan.
         piutang_discovery = piutang_karyawan + piutang_lainnya
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep + akumulasi_hpp_mobil_internal) + modal_aset_tetap + piutang_discovery
-        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
+        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal + pelunasan_repair_internal_kas
         modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
         
         # Combined setoran modal = kas setoran + non-kas (auto-balanced)
