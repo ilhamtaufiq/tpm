@@ -1,24 +1,23 @@
 import sys
 import os
-from datetime import datetime, date
-import json
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-sys.path.insert(0, r"C:\laragon\www\tpm\backend")
-
+import asyncio
+from datetime import date
 from app.database.connection import SessionLocal
-from app.models.mobil import Mobil, TransaksiPenjualanMobil
+from app.services.reports.neraca_service import NeracaService
 
-def run():
+def test():
     db = SessionLocal()
     try:
-        tanggal_dari = date(2024, 1, 1)
-        tanggal_sampai = date(2026, 12, 31)
-        result = get_neraca(db, tanggal_dari, tanggal_sampai)
-        print(f"LABA BENGKEL: {result['modal']['detail_laba']['bengkel']}")
-        print(f"LABA MOBIL: {result['modal']['detail_laba']['mobil']}")
-        print(f"LABA JASA ANGKUT: {result['modal']['detail_laba']['jasa_angkut']}")
+        res = NeracaService(db).get_report(date(2026, 5, 5))
+        print(f"Aktiva: {res['total_aktiva']:,.2f}")
+        print(f"Pasiva: {res['total_pasiva']:,.2f}")
+        print(f"Selisih: {res['selisih']:,.2f}")
+        print("Mismatches:", res["cross_validation"]["mismatches"])
+        print("Modal Non-Kas:", res["modal"]["modal_non_kas"])
     finally:
         db.close()
 
 if __name__ == "__main__":
-    run()
+    test()

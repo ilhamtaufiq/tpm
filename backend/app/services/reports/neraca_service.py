@@ -142,10 +142,9 @@ class NeracaService(BaseReportService):
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         
-        # Non-cash capital tied in assets (shown for transparency in the equity breakdown)
-        # Use raw_stock_mobil for modal calculation so that internal eliminations don't artificially lower Setoran Modal
+        # Use eliminated stock_mobil for modal calculation so internal transactions don't artificially inflate Setoran Modal
         modal_persediaan = total_stock_parts
-        modal_stok_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
+        modal_stok_mobil = total_stock_mobil
         modal_aset_tetap = total_fixed_assets
         
         # ═══════════════════════════════════════════════════════════════

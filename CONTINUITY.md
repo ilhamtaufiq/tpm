@@ -1,30 +1,26 @@
 # CONTINUITY LEDGER
 
-## Goal
-Fix the Rp.200.000 Neraca (Balance Sheet) discrepancy caused by 2 internal piutang records (PTG2605050001, PTG2605050002) without matching internal hutang records.
-
-## Constraints/Assumptions
-- TPM is an Expo React Native + FastAPI backend multi-unit business app
-- Neraca follows A = L + E identity
-- Internal piutang/hutang must be bilateral (both sides recorded)
-- Sync button creates missing hutang from piutang records
-
-## Key decisions
-- Fixed `sync_internal_transactions()` to handle ALL internal piutang (not just those with nomor_referensi)
-- Added multi-strategy hutang matching (nomor_referensi → referensi_id fallback)
-- Derived hutang sumber/unit from piutang source instead of hardcoding JUAL_BELI_MOBIL
-- Added sisa_piutang comparison alongside nominal for better sync accuracy
-- Added status synchronization between piutang and hutang
-
-## State
-- Done: Fixed sync_internal_transactions in neraca_service.py
-- Now: User needs to click "SINKRONKAN SEKARANG" button to auto-create the 2 missing hutang records
-- Next: Verify neraca is balanced after sync
-
-## Open questions
-- CONFIRMED: The 2 PTG records are internal piutang with sisa > 0 and no matching hutang
-
-## Working set
-- `backend/app/services/reports/neraca_service.py` (sync function fixed)
-- `backend/app/services/reports/base.py` (read-only, balance logic)
-- `frontend/app/laporan/neraca.tsx` (UI, no changes needed)
+- **Goal:** Reconcile the Rp 100.000,00 discrepancy in the Balance Sheet to achieve full financial integrity.
+- **Constraints/Assumptions:**
+  - Production server uses VPS environment with `update-app.sh`.
+  - Local environment uses Laragon with `tpm_db`.
+  - Internal transactions must be bilaterally synced, and unrealized internal revenues must be eliminated to prevent double-counting.
+- **Key decisions:**
+  - `NeracaService` calculating `modal_stok_mobil` was using the un-eliminated `raw_stock_mobil` value, which inflated Equity by the internal repair amount (Rp. 100.000) that was already correctly removed from the Assets side (`total_stock_mobil -= internal_elimination`).
+  - Fixed this by setting `modal_stok_mobil = total_stock_mobil` in `neraca_service.py` to ensure Non-Kas Capital reflects the true eliminated stock value.
+- **State:**
+  - **Done:**
+    - Verified server migration sync (20260505_224700).
+    - Identified the root cause of the Rp.100.000 gap: mismatch between Asset valuation (eliminated) and Equity component valuation (raw).
+    - Updated `neraca_service.py` to use `total_stock_mobil` instead of `raw_stock_mobil` for `modal_stok_mobil`.
+    - Tested locally and confirmed balance (Selisih: 0).
+  - **Now:** 
+    - Reporting completion to user.
+  - **Next:**
+    - Push changes to production and run `update-app.sh` on the server if needed (handled by user or another skill).
+- **Open questions:** None.
+- **Working set (files/ids/commands):**
+  - `backend/app/services/reports/neraca_service.py`
+  - `backend/app/services/reports/base.py`
+  - `backend/alembic/versions/20260505_224700_add_jual_beli_mobil_to_hutang_sumber_enum.py`
+  - `update-app.sh`
