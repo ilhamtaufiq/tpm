@@ -1,26 +1,27 @@
 # CONTINUITY LEDGER
 
-- **Goal:** Reconcile the Rp 100.000,00 discrepancy in the Balance Sheet to achieve full financial integrity.
+- **Goal:** Reconcile all Balance Sheet discrepancies (internal repair + booking scenarios) to achieve full financial integrity.
 - **Constraints/Assumptions:**
   - Production server uses VPS environment with `update-app.sh`.
   - Local environment uses Laragon with `tpm_db`.
   - Internal transactions must be bilaterally synced, and unrealized internal revenues must be eliminated to prevent double-counting.
 - **Key decisions:**
-  - `NeracaService` calculating `modal_stok_mobil` was using the un-eliminated `raw_stock_mobil` value, which inflated Equity by the internal repair amount (Rp. 100.000) that was already correctly removed from the Assets side (`total_stock_mobil -= internal_elimination`).
-  - Fixed this by setting `modal_stok_mobil = total_stock_mobil` in `neraca_service.py` to ensure Non-Kas Capital reflects the true eliminated stock value.
+  - **Root Cause 1 (neraca_service.py):** `modal_stok_mobil` was using the eliminated stock value for Equity calculation, double-deducting internal repair costs. Fixed by using RAW stock value and offsetting `hutang_internal` in `total_purchase_recorded`.
+  - **Root Cause 2 (base.py):** `unrealized_profit` was computed using stale DB columns (`TransaksiPenjualanMobil.laba_kotor`) that don't include post-booking workshop repairs. But `PenjualanMobilService.get_summary()` uses dynamic `Mobil.total_modal` (which includes repairs). This mismatch caused `laba_mobil_tpm = 900k - 1000k = -100k` instead of 0. Fixed by iterating in Python using `Mobil.total_modal` property.
 - **State:**
   - **Done:**
     - Verified server migration sync (20260505_224700).
-    - Identified the root cause of the Rp.100.000 gap: mismatch between Asset valuation (eliminated) and Equity component valuation (raw).
-    - Updated `neraca_service.py` to use `total_stock_mobil` instead of `raw_stock_mobil` for `modal_stok_mobil`.
-    - Tested locally and confirmed balance (Selisih: 0).
+    - Fixed missing "Pelunasan" button on MobilDetail for BOOKING units.
+    - Fixed neraca_service.py: modal_stok_mobil uses RAW value + hutang_internal offset.
+    - Fixed base.py: unrealized profit uses dynamic Mobil.total_modal instead of stale DB laba_kotor.
+    - Locally tested: Selisih = 0 for both scenarios (no booking + with booking + internal repair).
+    - Pushed to GitHub.
   - **Now:** 
-    - Reporting completion to user.
+    - Waiting for user to deploy to the VPS server and verify.
   - **Next:**
-    - Push changes to production and run `update-app.sh` on the server if needed (handled by user or another skill).
+    - Deploy via `./update-app.sh` and verify Neraca on prod.
 - **Open questions:** None.
 - **Working set (files/ids/commands):**
   - `backend/app/services/reports/neraca_service.py`
   - `backend/app/services/reports/base.py`
-  - `backend/alembic/versions/20260505_224700_add_jual_beli_mobil_to_hutang_sumber_enum.py`
   - `update-app.sh`
