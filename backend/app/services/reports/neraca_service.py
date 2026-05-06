@@ -142,9 +142,10 @@ class NeracaService(BaseReportService):
             KasBank.tanggal <= as_of_date
         ).scalar() or 0)
         
-        # Use eliminated stock_mobil for modal calculation so internal transactions don't artificially inflate Setoran Modal
+        # Use RAW stock_mobil for modal calculation because internal repairs physically increase asset value.
+        # We will offset this increase by adding hutang_internal to total_purchase_recorded so it doesn't inflate Setoran Modal.
         modal_persediaan = total_stock_parts
-        modal_stok_mobil = total_stock_mobil
+        modal_stok_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         modal_aset_tetap = total_fixed_assets
         
         # ═══════════════════════════════════════════════════════════════
@@ -213,7 +214,7 @@ class NeracaService(BaseReportService):
         # We EXCLUDE unit-specific piutang (Bengkel, JA, Mobil) as they are typically from revenue and already in Laba Ditahan.
         piutang_discovery = piutang_karyawan + piutang_lainnya
         total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
-        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang
+        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
         
         # Combined setoran modal = kas setoran + non-kas (auto-balanced)
