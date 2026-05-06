@@ -867,6 +867,49 @@ class PenjualanMobilService:
             piutang.sisa_piutang = Decimal("0")
             piutang.catatan = f"Booking dibatalkan. {catatan_batal}"
 
+        # 4. Cancel related workshop (bengkel) transactions for this car
+        # When booking is cancelled, internal repair transactions become void.
+        bengkel_txs = self.db.query(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.mobil_id == mobil.id,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+        ).all()
+
+        for bgl in bengkel_txs:
+            bgl.status_bayar = PaymentStatus.BATAL
+            bgl.catatan = (bgl.catatan or "") + f" | Dibatalkan otomatis saat booking {transaksi.nomor_transaksi} dibatalkan"
+
+            # Cancel linked Piutang internal (bengkel's receivable)
+            self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.nomor_referensi == bgl.nomor_transaksi,
+                PiutangUsaha.status != PiutangStatus.BATAL,
+            ).update({
+                "status": PiutangStatus.BATAL,
+                "sisa_piutang": 0,
+                "catatan": f"Dibatalkan: booking {transaksi.nomor_transaksi} batal"
+            }, synchronize_session='fetch')
+
+            # Cancel linked Hutang internal (mobil's payable)
+            from app.models.keuangan import HutangUsaha
+            from app.utils.constants import HutangStatus, HutangSource
+            self.db.query(HutangUsaha).filter(
+                HutangUsaha.nomor_referensi == bgl.nomor_transaksi,
+                HutangUsaha.status != HutangStatus.BATAL,
+            ).update({
+                "status": HutangStatus.BATAL,
+                "nominal_terbayar": 0,
+                "sisa_hutang": 0,
+                "catatan": f"Dibatalkan: booking {transaksi.nomor_transaksi} batal"
+            }, synchronize_session='fetch')
+
+            # Reverse internal KasBank entries created for this bengkel transaction
+            # (MASUK to bengkel unit and KELUAR from mobil unit)
+            self.db.query(KasBank).filter(
+                KasBank.nomor_referensi == bgl.nomor_transaksi,
+            ).update({
+                "keterangan": KasBank.keterangan + f" [VOID - booking batal]",
+                "nominal": 0,
+            }, synchronize_session='fetch')
+
         self.db.flush()
 
         # 4. Note: We DO NOT record a new MASUK for the penalty because it is
