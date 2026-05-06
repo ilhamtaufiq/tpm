@@ -13,8 +13,8 @@ from app.config import settings
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService, TransaksiPenjualanMobil
 from app.models.bengkel import SparePart, PengeluaranBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
-from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory
-from app.models.keuangan import HutangUsaha, HutangStatus
+from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory, PiutangSource
+from app.models.keuangan import HutangUsaha, HutangStatus, PiutangUsaha
 from app.services.kas_bank_integration import create_kas_entry
 
 
@@ -283,6 +283,20 @@ class MobilService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Mobil tidak ditemukan",
             )
+            
+        if mobil.penjualan:
+            piutang = (
+                self.db.query(PiutangUsaha.id, PiutangUsaha.sisa_piutang)
+                .filter(
+                    PiutangUsaha.nomor_referensi == mobil.penjualan.nomor_transaksi,
+                    PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
+                )
+                .first()
+            )
+            if piutang:
+                mobil.penjualan.piutang_id = piutang.id
+                mobil.penjualan.sisa_bayar = piutang.sisa_piutang
+
         return mobil
 
     def get_by_kode(self, kode: str) -> Optional[Mobil]:
@@ -408,6 +422,23 @@ class MobilService:
 
         # Pagination
         mobils = query.offset(skip).limit(limit).all()
+
+        # Batch attach piutang info for sales
+        penjualan_refs = [m.penjualan.nomor_transaksi for m in mobils if m.penjualan]
+        if penjualan_refs:
+            piutang_info = self.db.query(
+                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.sisa_piutang
+            ).filter(
+                PiutangUsaha.nomor_referensi.in_(penjualan_refs),
+                PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL
+            ).all()
+            
+            piutang_map = {p.nomor_referensi: (p.id, p.sisa_piutang) for p in piutang_info}
+            for m in mobils:
+                if m.penjualan:
+                    info = piutang_map.get(m.penjualan.nomor_transaksi)
+                    if info:
+                        m.penjualan.piutang_id, m.penjualan.sisa_bayar = info
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1
