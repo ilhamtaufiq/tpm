@@ -649,19 +649,24 @@ class BaseReportService:
         ).scalar() or 0)
 
         # Calculate unrealized profit from BOOKING/INDEN units to avoid double counting with stock value
-        unrealized_profit_q = self.db.query(
-            func.sum(TransaksiPenjualanMobil.laba_tpm).label("laba_tpm"),
-            func.sum(TransaksiPenjualanMobil.laba_kotor).label("laba_kotor")
-        ).join(Mobil).filter(
+        # IMPORTANT: We iterate in Python because Mobil.total_modal is a @property (not a DB column)
+        # that dynamically includes post-booking workshop bills. Using the stale DB columns
+        # (TransaksiPenjualanMobil.laba_kotor) would miss workshop repairs added after booking,
+        # causing a mismatch with PenjualanMobilService.get_summary() which uses the dynamic value.
+        unrealized_bookings = self.db.query(TransaksiPenjualanMobil, Mobil).join(Mobil).filter(
             TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
             or_(
                 Mobil.status != CarStatus.TERJUAL,
                 Mobil.tanggal_terjual > tanggal_sampai
             )
-        ).first()
+        ).all()
 
-        unrealized_tpm = float(unrealized_profit_q.laba_tpm or 0)
-        unrealized_gross = float(unrealized_profit_q.laba_kotor or 0)
+        unrealized_tpm = 0.0
+        unrealized_gross = 0.0
+        for tx, mobil in unrealized_bookings:
+            dynamic_laba = float(tx.harga_jual) - float(mobil.total_modal)
+            unrealized_gross += dynamic_laba
+            unrealized_tpm += dynamic_laba - float(tx.laba_investor or 0)
 
         # Summary of profits for Section A (TPM portion only to match reconciliation)
         # We subtract unrealized portions because those units are still counted in 'car_stock'
