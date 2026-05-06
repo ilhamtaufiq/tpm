@@ -469,11 +469,20 @@ class PenjualanMobilService:
         }, synchronize_session='fetch')
 
         # 2. Update linked Piutang records
-        workshop_nos = [t.nomor_transaksi for t in mobil.bengkel_perbaikan]
+        # Fetch nomor_transaksi from workshop transactions linked to this car
+        workshop_nos = [t.nomor_transaksi for t in (mobil.bengkel_perbaikan or [])]
+        
+        # Fallback: also query directly by mobil_id in case relationship is empty
+        if not workshop_nos:
+            workshop_nos = [
+                t.nomor_transaksi for t in self.db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
+                    TransaksiPenjualanBengkel.mobil_id == mobil.id
+                ).all()
+            ]
         
         internal_pi_q = self.db.query(PiutangUsaha).filter(
             or_(
-                PiutangUsaha.nomor_referensi.in_(workshop_nos),
+                PiutangUsaha.nomor_referensi.in_(workshop_nos) if workshop_nos else False,
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
             ),
@@ -744,7 +753,9 @@ class PenjualanMobilService:
 
         # Update car status: BOOKING → TERJUAL when fully paid
         if transaksi.status_bayar == PaymentStatus.LUNAS:
-            mobil = self.db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
+            mobil = self.db.query(Mobil).options(
+                joinedload(Mobil.bengkel_perbaikan)
+            ).filter(Mobil.id == transaksi.mobil_id).first()
             if mobil:
                 # Ensure internal obligations are settled if they weren't already
                 self._settle_unit_financial_obligations(
