@@ -1,7 +1,9 @@
 from typing import List, Any
-from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse
 import os
+import shutil
+from datetime import datetime
 from app.api.deps import CurrentUser, DBSession
 from app.services.backup_service import backup_service
 from app.utils.constants import UserRole
@@ -121,3 +123,38 @@ def restore_backup(
             raise HTTPException(status_code=404, detail="File backup tidak ditemukan")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal melakukan restore: {str(e)}")
+
+@router.post("/upload", response_model=BackupResponse)
+def upload_backup(
+    current_user: CurrentUser,
+    file: UploadFile = File(...)
+):
+    """Upload a backup ZIP file to the server."""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Hanya Administrator yang dapat mengunggah backup"
+        )
+    
+    if not file.filename.endswith(".zip"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Hanya file .zip yang diizinkan"
+        )
+    
+    file_path = os.path.join(backup_service.backup_dir, file.filename)
+    
+    # Save the file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal menyimpan file: {str(e)}")
+    
+    # Return info about the uploaded file
+    stats = os.stat(file_path)
+    return {
+        "filename": file.filename,
+        "size": stats.st_size,
+        "created_at": datetime.fromtimestamp(stats.st_ctime).isoformat()
+    }

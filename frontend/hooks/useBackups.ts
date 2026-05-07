@@ -28,6 +28,16 @@ export const useDeleteBackup = () => {
     });
 };
 
+export const useUploadBackup = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (file: any) => backupService.uploadBackup(file),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['backups'] });
+        },
+    });
+};
+
 export const useRestoreBackup = () => {
     return useMutation({
         mutationFn: ({ filename, password }: { filename: string; password: string }) => 

@@ -27,6 +27,20 @@ export const backupService = {
         return response.data;
     },
 
+    uploadBackup: async (file: any): Promise<BackupFile> => {
+        const formData = new FormData();
+        // On web, file is a File object. On mobile, we might need a different approach 
+        // but for now we focus on the web/generic FormData approach.
+        formData.append('file', file);
+        const response = await api.post('/backup/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            timeout: 300000
+        });
+        return response.data;
+    },
+
     restoreBackup: async (filename: string, password: string): Promise<{ message: string }> => {
         const response = await api.post(`/backup/restore/${filename}`, { password }, {
             timeout: 300000 // 5 minutes for extracting/restoring

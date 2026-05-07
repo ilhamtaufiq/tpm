@@ -17,10 +17,12 @@ import {
     Lock,
     X,
     HardDrive,
-    Shield
+    Shield,
+    Upload
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useBackupList, useCreateBackup, useDeleteBackup, useRestoreBackup } from '../../hooks/useBackups';
+import * as DocumentPicker from 'expo-document-picker';
+import { useBackupList, useCreateBackup, useDeleteBackup, useRestoreBackup, useUploadBackup } from '../../hooks/useBackups';
 import { backupService, BackupFile } from '../../services/backup';
 import { Header } from '../../components/ui/Header';
 import { useUIStore } from '../../store/useUIStore';
@@ -41,6 +43,7 @@ export default function BackupScreen() {
     const createMutation = useCreateBackup();
     const deleteMutation = useDeleteBackup();
     const restoreMutation = useRestoreBackup();
+    const uploadMutation = useUploadBackup();
 
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
@@ -77,6 +80,46 @@ export default function BackupScreen() {
                 visible: true,
                 title: 'Error',
                 message: getErrorMessage(error, 'Gagal membuat backup'),
+                variant: 'error'
+            });
+        }
+    };
+
+    const handleUploadBackup = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/zip',
+                copyToCacheDirectory: true
+            });
+
+            if (result.canceled) return;
+
+            const file = result.assets[0];
+            
+            let fileToUpload;
+            if (Platform.OS === 'web') {
+                fileToUpload = (file as any).file;
+            } else {
+                fileToUpload = {
+                    uri: file.uri,
+                    name: file.name,
+                    type: 'application/zip'
+                } as any;
+            }
+
+            await uploadMutation.mutateAsync(fileToUpload);
+            
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'File backup berhasil diunggah ke server.',
+                variant: 'success'
+            });
+        } catch (error) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal mengunggah backup'),
                 variant: 'error'
             });
         }
@@ -230,20 +273,33 @@ export default function BackupScreen() {
                         <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">System Backup</Typography>
                         <Typography variant="caption" className="text-textGray">Amankan data transaksi & file</Typography>
                     </View>
-                    <Pressable 
-                        onPress={handleCreateBackup}
-                        disabled={createMutation.isPending}
-                        className={`px-6 py-4 rounded-2xl shadow-lg shadow-primary/30 flex-row items-center ${createMutation.isPending ? 'bg-primary/50' : 'bg-primary'}`}
-                    >
-                        {createMutation.isPending ? (
-                            <ActivityIndicator size="small" color="white" />
-                        ) : (
-                            <>
-                                <Database size={16} color="white" className="mr-2" />
-                                <Typography weight="bold" className="text-white text-xs ml-2">BACKUP</Typography>
-                            </>
-                        )}
-                    </Pressable>
+                    <View className="flex-row items-center space-x-2">
+                        <Pressable 
+                            onPress={handleUploadBackup}
+                            disabled={uploadMutation.isPending}
+                            className={`w-12 h-14 rounded-2xl items-center justify-center border border-slate-100 ${uploadMutation.isPending ? 'bg-slate-50' : 'bg-white active:bg-slate-50'}`}
+                        >
+                            {uploadMutation.isPending ? (
+                                <ActivityIndicator size="small" color={themeColors.primary} />
+                            ) : (
+                                <Upload size={20} color={themeColors.primary} />
+                            )}
+                        </Pressable>
+                        <Pressable 
+                            onPress={handleCreateBackup}
+                            disabled={createMutation.isPending}
+                            className={`px-6 py-4 rounded-2xl shadow-lg shadow-primary/30 flex-row items-center ${createMutation.isPending ? 'bg-primary/50' : 'bg-primary'}`}
+                        >
+                            {createMutation.isPending ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <>
+                                    <Database size={16} color="white" className="mr-2" />
+                                    <Typography weight="bold" className="text-white text-xs ml-2">BACKUP</Typography>
+                                </>
+                            )}
+                        </Pressable>
+                    </View>
                 </View>
             </View>
 
