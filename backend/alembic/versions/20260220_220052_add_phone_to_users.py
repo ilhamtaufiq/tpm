@@ -43,7 +43,6 @@ def upgrade() -> None:
 
     # 3. Add missing columns to muatan_jasa_angkut
     op.add_column('muatan_jasa_angkut', sa.Column('armada_id', sa.Integer(), nullable=True))
-    op.add_column('muatan_jasa_angkut', sa.Column('nopol', sa.String(length=20), nullable=True))
     op.add_column('muatan_jasa_angkut', sa.Column('info_kendaraan', sa.String(length=255), nullable=True))
     op.create_foreign_key('fk_muatan_armada', 'muatan_jasa_angkut', 'armada_jasa_angkut', ['armada_id'], ['id'])
 
@@ -65,7 +64,6 @@ def downgrade() -> None:
                existing_nullable=True)
     op.drop_constraint('fk_muatan_armada', 'muatan_jasa_angkut', type_='foreignkey')
     op.drop_column('muatan_jasa_angkut', 'info_kendaraan')
-    op.drop_column('muatan_jasa_angkut', 'nopol')
     op.drop_column('muatan_jasa_angkut', 'armada_id')
     op.drop_constraint('fk_supir_armada_default', 'supir', type_='foreignkey')
     op.drop_column('supir', 'info_kendaraan')
