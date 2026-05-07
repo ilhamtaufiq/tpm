@@ -17,16 +17,20 @@
     - Locally tested: Selisih = 0 for both scenarios (no booking + with booking + internal repair).
     - Pushed to GitHub.
   - **Now:** 
-    - Resolving environment blockers on the NEW VPS.
-    - Blocker 1: Virtual environment (`venv`) not yet created in `backend/`.
-    - Blocker 2: `node` and `npx` not installed for user `ubuntu`.
-  - **Next:**
-    - Install system dependencies (python3-venv, nodejs).
-    - Create `backend/venv` and install requirements.
-    - Successfully run `./update-app.sh`.
-    - Verify Neraca on prod.
-- **Open questions:** None.
-- **Working set (files/ids/commands):**
-  - `backend/app/services/reports/neraca_service.py`
+    - Goal: Deploy TPM App to VPS.
+- Constraints: Clean Ubuntu VPS, MySQL, Apache.
+- Key decisions:
+  - Rewrote migration `df64ee66aab1` to handle missing table `armada_jasa_angkut` atomicity.
+  - Updated `deploy-vps.sh` and `update-app.sh` with robust migration handling and Git credential store.
+  - Fixed `backend/app/models/__init__.py` to include `ArmadaJasaAngkut`.
+- State:
+  - Done: Environment setup, dependency installation, migration history fix.
+  - Now: Waiting for user to run the updated `deploy-vps.sh`.
+  - Next: Verify web application accessibility and final server configuration.
+- Open questions: None.
+- Working set (files/ids/commands):
+  - `deploy-vps.sh`
+  - `update-app.sh`
+  - `backend/alembic/versions/20260220_220052_add_phone_to_users.py`
   - `backend/app/services/reports/base.py`
   - `update-app.sh`

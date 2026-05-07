@@ -19,6 +19,7 @@ from app.models.mobil import (
 )
 from app.models.jasa_angkut import (
     Supir,
+    ArmadaJasaAngkut,
     MuatanJasaAngkut,
     JasaAngkutBiayaLainnya,
     JasaAngkutPartService,
@@ -56,6 +57,7 @@ __all__ = [
     "MobilPartService",
     "TransaksiPenjualanMobil",
     "Supir",
+    "ArmadaJasaAngkut",
     "MuatanJasaAngkut",
     "JasaAngkutBiayaLainnya",
     "JasaAngkutPartService",

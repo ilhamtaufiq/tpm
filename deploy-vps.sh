@@ -42,6 +42,10 @@ log "Memulai deployment untuk $APP_NAME..."
 log "User sistem: $REAL_USER"
 log "Root Project: $PROJECT_ROOT"
 
+# 1.5 Setup Git Credential Store (Agar tidak minta password terus)
+log "Konfigurasi Git credential helper..."
+sudo -u $REAL_USER git config --global credential.helper store
+
 # ==========================================
 # PARALLEL EXECUTION: BACKEND & FRONTEND
 # ==========================================
@@ -99,8 +103,16 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
 
     # Migrasi DB
     echo -e "${GREEN}$prefix${NC} Menjalankan migrasi database..."
-    export PYTHONPATH=$BACKEND_DIR
-    sudo -u $REAL_USER "$VENV_ALEMBIC" upgrade head >/dev/null || { echo -e "${RED}$prefix ERROR${NC} Migrasi DB gagal"; exit 1; }
+    export PYTHONPATH=$PROJECT_ROOT:$BACKEND_DIR
+    
+    # Jalankan alembic upgrade head
+    if sudo -u $REAL_USER bash -c "export PYTHONPATH=$PROJECT_ROOT:$BACKEND_DIR; cd $BACKEND_DIR && ./venv/bin/alembic upgrade head"; then
+        echo -e "${GREEN}$prefix${NC} Migrasi DB Sukses!"
+    else
+        echo -e "${RED}$prefix ERROR${NC} Migrasi DB gagal."
+        echo -e "${YELLOW}TIPS:${NC} Jika error table exists, silakan drop tabel manual via mysql lalu run ulang script ini."
+        exit 1
+    fi
 
     # Setup Systemd
     echo -e "${GREEN}$prefix${NC} Membuat service systemd..."
