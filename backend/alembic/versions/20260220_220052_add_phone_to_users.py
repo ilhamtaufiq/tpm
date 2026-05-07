@@ -60,8 +60,63 @@ def upgrade() -> None:
     # 6. Add phone column to users
     op.add_column('users', sa.Column('phone', sa.String(length=20), nullable=True))
 
+    # 7. Create missing hutang_usaha table
+    op.create_table('hutang_usaha',
+        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column('nomor_hutang', sa.String(length=30), nullable=False),
+        sa.Column('tanggal', sa.Date(), nullable=False),
+        sa.Column('sumber', sa.Enum('PEMBELIAN_PART', 'PEMBELIAN_MOBIL', 'LAINNYA', name='hutangsource'), nullable=False),
+        sa.Column('referensi_id', sa.Integer(), nullable=True),
+        sa.Column('nomor_referensi', sa.String(length=30), nullable=True),
+        sa.Column('supplier_id', sa.Integer(), nullable=True),
+        sa.Column('nama_kreditur', sa.String(length=100), nullable=False),
+        sa.Column('telepon_kreditur', sa.String(length=20), nullable=True),
+        sa.Column('alamat_kreditur', sa.Text(), nullable=True),
+        sa.Column('nominal_hutang', sa.Numeric(precision=15, scale=2), nullable=False),
+        sa.Column('total_dibayar', sa.Numeric(precision=15, scale=2), nullable=False, server_default=sa.text("'0.00'")),
+        sa.Column('sisa_hutang', sa.Numeric(precision=15, scale=2), nullable=False),
+        sa.Column('tanggal_jatuh_tempo', sa.Date(), nullable=True),
+        sa.Column('tanggal_lunas', sa.Date(), nullable=True),
+        sa.Column('status', sa.Enum('BELUM_LUNAS', 'LUNAS', 'SEBAGIAN', 'BATAL', name='hutangstatus'), nullable=False, server_default=sa.text("'BELUM_LUNAS'")),
+        sa.Column('catatan', sa.Text(), nullable=True),
+        sa.Column('created_by', sa.Integer(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
+        sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['supplier_id'], ['suppliers.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_hutang_usaha_nomor_hutang'), 'hutang_usaha', ['nomor_hutang'], unique=True)
+    op.create_index(op.f('ix_hutang_usaha_tanggal'), 'hutang_usaha', ['tanggal'], unique=False)
+    op.create_index(op.f('ix_hutang_usaha_supplier_id'), 'hutang_usaha', ['supplier_id'], unique=False)
+
+    # 8. Create missing pembayaran_hutang table
+    op.create_table('pembayaran_hutang',
+        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+        sa.Column('hutang_id', sa.Integer(), nullable=False),
+        sa.Column('tanggal', sa.Date(), nullable=False),
+        sa.Column('nominal', sa.Numeric(precision=15, scale=2), nullable=False),
+        sa.Column('metode_bayar', sa.Enum('TUNAI', 'TRANSFER', 'KREDIT', 'DEBIT', 'SPLIT', name='paymentmethod'), nullable=False, server_default=sa.text("'TUNAI'")),
+        sa.Column('catatan', sa.Text(), nullable=True),
+        sa.Column('created_by', sa.Integer(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
+        sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['hutang_id'], ['hutang_usaha.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_pembayaran_hutang_hutang_id'), 'pembayaran_hutang', ['hutang_id'], unique=False)
+    op.create_index(op.f('ix_pembayaran_hutang_tanggal'), 'pembayaran_hutang', ['tanggal'], unique=False)
+
 
 def downgrade() -> None:
+    op.drop_index(op.f('ix_pembayaran_hutang_tanggal'), table_name='pembayaran_hutang')
+    op.drop_index(op.f('ix_pembayaran_hutang_hutang_id'), table_name='pembayaran_hutang')
+    op.drop_table('pembayaran_hutang')
+    op.drop_index(op.f('ix_hutang_usaha_supplier_id'), table_name='hutang_usaha')
+    op.drop_index(op.f('ix_hutang_usaha_tanggal'), table_name='hutang_usaha')
+    op.drop_index(op.f('ix_hutang_usaha_nomor_hutang'), table_name='hutang_usaha')
+    op.drop_table('hutang_usaha')
     op.drop_column('users', 'phone')
     op.drop_column('mobil', 'dp_beli')
     op.drop_column('mobil', 'metode_bayar_beli')

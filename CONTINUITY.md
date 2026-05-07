@@ -1,36 +1,34 @@
-# CONTINUITY LEDGER
+# Continuity Ledger
 
-- **Goal:** Reconcile all Balance Sheet discrepancies (internal repair + booking scenarios) to achieve full financial integrity.
-- **Constraints/Assumptions:**
-  - Production server uses VPS environment with `update-app.sh`.
-  - Local environment uses Laragon with `tpm_db`.
-  - Internal transactions must be bilaterally synced, and unrealized internal revenues must be eliminated to prevent double-counting.
-- **Key decisions:**
-  - **Root Cause 1 (neraca_service.py):** `modal_stok_mobil` was using the eliminated stock value for Equity calculation, double-deducting internal repair costs. Fixed by using RAW stock value and offsetting `hutang_internal` in `total_purchase_recorded`.
-  - **Root Cause 2 (base.py):** `unrealized_profit` was computed using stale DB columns (`TransaksiPenjualanMobil.laba_kotor`) that don't include post-booking workshop repairs. But `PenjualanMobilService.get_summary()` uses dynamic `Mobil.total_modal` (which includes repairs). This mismatch caused `laba_mobil_tpm = 900k - 1000k = -100k` instead of 0. Fixed by iterating in Python using `Mobil.total_modal` property.
-- **State:**
-  - **Done:**
-    - Verified server migration sync (20260505_224700).
-    - Fixed missing "Pelunasan" button on MobilDetail for BOOKING units.
-    - Fixed neraca_service.py: modal_stok_mobil uses RAW value + hutang_internal offset.
-    - Fixed base.py: unrealized profit uses dynamic Mobil.total_modal instead of stale DB laba_kotor.
-    - Locally tested: Selisih = 0 for both scenarios (no booking + with booking + internal repair).
-    - Pushed to GitHub.
-  - **Now:** 
-    - Goal: Deploy TPM App to VPS.
-- Constraints: Clean Ubuntu VPS, MySQL, Apache.
-- Key decisions:
-  - Rewrote migration `df64ee66aab1` to handle missing table `armada_jasa_angkut` atomicity.
-  - Updated `deploy-vps.sh` and `update-app.sh` with robust migration handling and Git credential store.
-  - Fixed `backend/app/models/__init__.py` to include `ArmadaJasaAngkut`.
-- State:
-  - Done: Environment setup, dependency installation, migration history fix.
-  - Now: Waiting for user to run the updated `deploy-vps.sh`.
-  - Next: Verify web application accessibility and final server configuration.
-- Open questions: None.
-- Working set (files/ids/commands):
-  - `deploy-vps.sh`
-  - `update-app.sh`
-  - `backend/alembic/versions/20260220_220052_add_phone_to_users.py`
-  - `backend/app/services/reports/base.py`
-  - `update-app.sh`
+## Goal
+Deploy the TPM Super App to a production Ubuntu VPS environment and resolve database schema discrepancies.
+
+## Constraints/Assumptions
+- Target OS: Ubuntu (VPS)
+- DB: MySQL (TPM)
+- User: ubuntu
+- Framework: FastAPI + SQLAlchemy + Alembic
+
+## Key decisions
+- **Credential Storage:** Configured Git credential helper on VPS for non-interactive pulls.
+- **Catch-all Migration:** Enhanced `20260220_220052_add_phone_to_users.py` (df64ee66aab1) to create `hutang_usaha` and `pembayaran_hutang` tables, as they were missing from the initial schema and all subsequent migrations.
+- **User Seeding:** Integrated `seed_users.py` into the deployment script to automate admin creation.
+
+## State
+- **Done:** 
+  - Audit of 47 migration files.
+  - Identification of missing table definitions (`hutang_usaha`, `pembayaran_hutang`).
+  - Patching of the catch-all migration.
+- **Now:** 
+  - Finalizing deployment instructions for the user.
+- **Next:** 
+  - User runs `sudo ./deploy-vps.sh` (after dropping the DB) to verify the fix.
+
+## Open questions
+- None at this moment.
+
+## Working set
+- `backend/alembic/versions/20260220_220052_add_phone_to_users.py`
+- `deploy-vps.sh`
+- `update-app.sh`
+- `backend/app/models/keuangan.py`
