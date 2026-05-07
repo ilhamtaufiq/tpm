@@ -12,9 +12,9 @@ const getBaseUrl = () => {
         const hostname = window.location.hostname;
         const protocol = window.location.protocol;
 
-        // In production or Docker environment
-        if (hostname === 'tpm.cianjur.space') {
-            return 'https://tpm.cianjur.space';
+        // Auto-detect for .cianjur.space domains (tpm.cianjur.space, tpmv1.cianjur.space, etc)
+        if (hostname.includes('cianjur.space')) {
+            return `${protocol}//${hostname}`;
         }
 
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
@@ -27,13 +27,8 @@ const getBaseUrl = () => {
         }
     }
 
-    // Default for production build (standalone)
-    if (!debuggerHost) {
-        return 'https://tpm.cianjur.space';
-    }
-
-    // Development mode (Expo Go)
-    return `http://${debuggerHost}:8000`;
+    // Default fallback (Standalone/Mobile)
+    return 'https://tpm.cianjur.space';
 };
 
 export const FILE_URL = getBaseUrl();
