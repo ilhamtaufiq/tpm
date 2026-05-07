@@ -59,6 +59,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     });
     const [statusBayar, setStatusBayar] = useState(initialData?.status_bayar_beli || 'LUNAS');
     const [dp, setDp] = useState(formatNumber(String(initialData?.dp_beli || '0')));
+    const [investorKasJenis, setInvestorKasJenis] = useState(initialData?.investor_kas_jenis || 'BANK_UTAMA');
 
     const [payments, setPayments] = useState<{ id: number; metode: string; sumber: string; jumlah: string }[]>([
         { id: Date.now(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }
@@ -77,7 +78,8 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     });
 
     const checkBalance = (sumber: string, amount: number) => {
-        if (!onlineManager.isOnline()) return true; // Skip check if offline
+        // VERSI 5.0 - THE TRUTH
+        if (!onlineManager.isOnline()) return true; 
         if (!walletBalances) return true;
 
         let kasJenis = '';
@@ -87,12 +89,39 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
         if (!kasJenis) return true;
 
-        const balance = walletBalances[kasJenis]?.saldo || 0;
-        if (amount > balance) {
+        const baseBalance = Number(walletBalances[kasJenis]?.saldo || 0);
+        const investorFund = Number(parseNumber(nominalInvestor));
+        
+        // Matching murni berdasarkan akun
+        const isAccountMatch = (
+            (kasJenis === 'kas_utama' && investorKasJenis === 'KAS_UTAMA') ||
+            (kasJenis === 'bank_utama' && investorKasJenis === 'BANK_UTAMA') ||
+            (kasJenis === 'kas_unit_mobil' && investorKasJenis === 'KAS_UNIT_MOBIL')
+        );
+
+        let totalAvailable = baseBalance;
+        if (isAccountMatch && investorFund > 0 && !!namaInvestor) {
+            totalAvailable = baseBalance + investorFund;
+        }
+
+        if (Number(amount) > totalAvailable) {
+            const diff = Number(amount) - totalAvailable;
+            const hasInv = investorFund > 0 && !!namaInvestor;
+            
             setDialogConfig({
                 visible: true,
                 title: 'Saldo Tidak Cukup',
-                message: `Saldo ${kasJenis.replace(/_/g, ' ').toUpperCase()} tidak mencukupi.\n\nSaldo saat ini: Rp ${formatNumber(String(balance))}\nKebutuhan: Rp ${formatNumber(String(amount))}`,
+                message: `Saldo ${kasJenis.replace(/_/g, ' ').toUpperCase()} tidak mencukupi.\n\n` +
+                         `Saldo Kas: Rp ${formatNumber(String(baseBalance))}\n` +
+                         (totalAvailable > baseBalance ? `Dana Investor: Rp ${formatNumber(String(investorFund))}\n` : '') +
+                         `Total Tersedia: Rp ${formatNumber(String(totalAvailable))}\n` +
+                         `Kebutuhan: Rp ${formatNumber(String(amount))}\n\n` +
+                         `Kurang: Rp ${formatNumber(String(diff))}` +
+                         (!isAccountMatch && hasInv ? 
+                            `\n\n*Catatan: Akun beda (Pilih: ${kasJenis.replace(/_/g, ' ')})` : 
+                            (!hasInv && investorFund > 0 ? '\n\n*Catatan: Nama Investor wajib diisi.' : '')
+                         ) + 
+                         `\nDEBUG: acct=[${kasJenis}] target=[${investorKasJenis}] invName=[${namaInvestor}] invFund=[${investorFund}]`,
                 variant: 'error'
             });
             return false;
@@ -162,6 +191,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
             nama_investor: namaInvestor || null,
             nominal_investor: parseNumber(nominalInvestor) || 0,
             persentase_investor: parseFloat(persentaseInvestor) || 0,
+            investor_kas_jenis: (namaInvestor && parseNumber(nominalInvestor) > 0) ? investorKasJenis : null,
         };
 
         if (!isEdit) {
@@ -529,6 +559,28 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
                                 </View>
                             </View>
                         </View>
+
+                        {parseNumber(nominalInvestor) > 0 && (
+                            <View className="mt-4">
+                                <Typography variant="caption" weight="bold" className="text-primary mb-2 uppercase">TUJUAN DANA MASUK INVESTOR</Typography>
+                                <View className="flex-row bg-white border border-primary/10 rounded-2xl p-1.5 space-x-1.5">
+                                    {[
+                                        { label: 'Bank Utama', value: 'BANK_UTAMA' },
+                                        { label: 'Cash Utama', value: 'KAS_UTAMA' }
+                                    ].map((opt) => (
+                                        <Pressable
+                                            key={opt.value}
+                                            onPress={() => setInvestorKasJenis(opt.value)}
+                                            className={`flex-1 py-2.5 rounded-xl items-center justify-center ${investorKasJenis === opt.value ? 'bg-primary shadow-sm' : 'bg-gray-50'}`}
+                                        >
+                                            <Typography weight="bold" className={`text-[11px] ${investorKasJenis === opt.value ? 'text-white' : 'text-gray-400'}`}>
+                                                {opt.label.toUpperCase()}
+                                            </Typography>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
 
                         <Typography variant="caption" className="text-primary mt-3 italic bg-primary/10 p-3 rounded-2xl border border-primary/20">
                             *Untuk unit investor, Nominal Investasi dan Persentase Bagi Hasil (%) wajib diisi secara manual sebagai acuan perhitungan profit sharing.

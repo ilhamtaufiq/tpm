@@ -220,6 +220,17 @@ class MobilService:
         # Record incoming investor funds to balance the purchase outflow
         if data.tipe_kepemilikan == OwnershipType.INVESTOR and data.nominal_investor > 0:
             # We record this as KasBankSource.HUTANG so it doesn't inflate Setoran Modal
+            # Priority for kas_jenis: 
+            # 1. investor_kas_jenis (newly added field)
+            # 2. kas_jenis (single payment account)
+            # 3. first payment's kas_jenis (if split)
+            target_kas = data.investor_kas_jenis or data.kas_jenis
+            if not target_kas and data.payments:
+                target_kas = data.payments[0].kas_jenis
+            
+            if not target_kas:
+                target_kas = KasBankJenis.KAS_UNIT_MOBIL
+
             create_kas_entry(
                 db=self.db,
                 tanggal=data.tanggal_masuk,
@@ -231,7 +242,7 @@ class MobilService:
                 nomor_referensi=mobil.kode,
                 keterangan=f"Penerimaan Dana Investor ({data.nama_investor}) untuk Unit: {mobil.nomor_plat}",
                 user_id=user_id,
-                kas_jenis=data.kas_jenis if not data.payments else data.payments[0].kas_jenis,
+                kas_jenis=target_kas,
                 allow_negative=True,
             )
 
