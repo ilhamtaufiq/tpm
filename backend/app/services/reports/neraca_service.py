@@ -380,8 +380,12 @@ class NeracaService(BaseReportService):
                 "hutang_internal": hutang_internal,
                 "selisih_internal": piutang_internal_total - hutang_internal,
                 "mismatches": internal_mismatches
+            },
+            "info": {
+                "units": hist.get("units")
             }
         }
+
     def sync_internal_transactions(self, user_id: Optional[int] = None) -> Dict[str, Any]:
         """Automatically fix internal transaction discrepancies (bidirectional).
         

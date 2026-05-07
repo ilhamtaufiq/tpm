@@ -23,7 +23,7 @@ from app.models.bengkel import (
     DetailTransaksiSpareParts
 )
 from app.models.mobil import Mobil, TransaksiPenjualanMobil, InvestorDisbursementDetail
-from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutPartService, ArmadaJasaAngkut
+from app.models.jasa_angkut import MuatanJasaAngkut, JasaAngkutPartService, ArmadaJasaAngkut, JasaAngkutBiayaLainnya
 from app.models.keuangan import KasBank, Aset, PiutangUsaha, HutangUsaha, PembayaranPiutang
 
 from app.utils.constants import (
@@ -708,6 +708,96 @@ class BaseReportService:
         # Internal Elimination:
         # We must eliminate the internal revenue to show consolidated profit.
         
+        # ═══════════════════════════════════════════════════════════════
+        # UNIT PERFORMANCE BREAKDOWN (Individual Cars & Armada)
+        # ═══════════════════════════════════════════════════════════════
+        
+        # 1. Mobil Performance (Sold cars in period)
+        mobil_details = []
+        for mid in sold_mobil_ids:
+            m_obj = self.db.query(Mobil).get(mid)
+            if m_obj:
+                # Find the transaction
+                tx = self.db.query(TransaksiPenjualanMobil).filter(
+                    TransaksiPenjualanMobil.mobil_id == mid,
+                    TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+                ).first()
+                
+                if tx:
+                    laba_kotor = float(tx.harga_jual) - float(m_obj.total_modal)
+                    laba_tpm = laba_kotor - float(tx.laba_investor or 0)
+                    
+                    mobil_details.append({
+                        "id": mid,
+                        "label": f"{m_obj.model} ({m_obj.nomor_plat})",
+                        "laba": laba_tpm,
+                        "laba_kotor": laba_kotor,
+                        "harga_jual": float(tx.harga_jual),
+                        "total_modal": float(m_obj.total_modal)
+                    })
+        
+        # 2. Jasa Angkut Performance (Per Armada)
+        ja_details_breakdown = []
+        # Get all armada that had muatan in period
+        active_armada = self.db.query(ArmadaJasaAngkut).filter(
+            ArmadaJasaAngkut.id.in_(
+                self.db.query(MuatanJasaAngkut.armada_id).filter(
+                    MuatanJasaAngkut.tanggal >= tanggal_dari,
+                    MuatanJasaAngkut.tanggal <= tanggal_sampai,
+                    MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+                )
+            )
+        ).all()
+        
+        for arm in active_armada:
+            # Revenue & Trip Costs
+            arm_q = self.db.query(
+                func.sum(MuatanJasaAngkut.pendapatan_kotor - MuatanJasaAngkut.laba_supir).label("rev"),
+                func.sum(
+                    MuatanJasaAngkut.biaya_bbm + 
+                    MuatanJasaAngkut.biaya_tol + 
+                    MuatanJasaAngkut.biaya_parkir + 
+                    MuatanJasaAngkut.biaya_makan +
+                    MuatanJasaAngkut.biaya_lainnya
+                ).label("trip")
+            ).filter(
+                MuatanJasaAngkut.armada_id == arm.id,
+                MuatanJasaAngkut.tanggal >= tanggal_dari,
+                MuatanJasaAngkut.tanggal <= tanggal_sampai,
+                MuatanJasaAngkut.status_bayar != PaymentStatus.BATAL
+            ).first()
+            
+            rev = float(arm_q.rev or 0)
+            trip = float(arm_q.trip or 0)
+            
+            # Manual Muatan-Linked Ops
+            manual_ops = float(self.db.query(func.sum(JasaAngkutBiayaLainnya.jumlah)).filter(
+                JasaAngkutBiayaLainnya.armada_id == arm.id,
+                JasaAngkutBiayaLainnya.kategori == "Operasional",
+                JasaAngkutBiayaLainnya.tanggal >= tanggal_dari,
+                JasaAngkutBiayaLainnya.tanggal <= tanggal_sampai
+            ).scalar() or 0)
+            
+            # Repairs (Internal + External tagged to armada)
+            repairs_int = muatan_summary.get("details", {}).get("bengkel_per_armada", {}).get(arm.nama, 0)
+            repairs_manual = muatan_summary.get("details", {}).get("operasional_manual_per_armada", {}).get(arm.nama, 0)
+            
+            # Armada-specific ledger expenses (tagged in wallet)
+            ledger_ops = 0
+            for cats in pengeluaran_summary.get("jasa_angkut_armada", {}).get(arm.nama, {}).values():
+                ledger_ops += float(cats)
+            
+            total_cost = trip + manual_ops + repairs_int + repairs_manual + ledger_ops
+            laba_armada = rev - total_cost
+            
+            ja_details_breakdown.append({
+                "id": arm.id,
+                "label": arm.nama,
+                "laba": laba_armada,
+                "pendapatan": rev,
+                "biaya": total_cost
+            })
+        
         retained_earnings = (
             total_laba_gross 
             - internal_elimination
@@ -754,10 +844,12 @@ class BaseReportService:
                     "prep_total": prep_total_period,
                     "overhead": general_mobil_overhead,
                     "total_outflow_wallet": raw_mobil_outflow,
-                    "prive": float(mobil_prive_unit)
+                    "prive": float(mobil_prive_unit),
+                    "details": mobil_details
                 },
                 "jasa_angkut": {
                     "revenue_tpm": laba_ja_tpm,
+                    "total_laba_tpm": laba_ja_tpm,
                     "repairs": ja_expenses_bengkel,
                     "armada_ops": float(ja_details.get("armada_period_ops", 0)),
                     "armada_ops_ledger": ja_tagged_from_wallet,
@@ -765,10 +857,12 @@ class BaseReportService:
                     "overhead": general_ja_overhead,
                     "double_exp_adjustment": ja_double_exp,
                     "total_outflow_wallet": raw_ja_outflow,
-                    "prive": float(ja_prive_unit)
+                    "prive": float(ja_prive_unit),
+                    "details": ja_details_breakdown
                 },
                 "bengkel": {
                     "laba_kotor": laba_bengkel_kotor,
+                    "total_laba_tpm": laba_bengkel_kotor - bengkel_ops_total,
                     "total_hpp": float(bengkel_summary["total_hpp"]),
                     "common_expenses": bengkel_common,
                     "total_expenses": bengkel_ops_total,
@@ -805,6 +899,22 @@ class BaseReportService:
                 "mobil": mobil_summary,
                 "muatan": muatan_summary,
                 "gaji": gaji_summary,
+                "piutang": {
+                    "total": float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
+                        PiutangUsaha.tanggal <= tanggal_sampai,
+                        PiutangUsaha.status != PiutangStatus.BATAL
+                    ).scalar() or 0),
+                    "breakdown": {
+                        "bengkel": get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
+                        "ja": get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
+                        "mobil": get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
+                        "kasbon": piutang_kasbon,
+                        "internal": piutang_internal_total,
+                        "internal_mobil": piutang_internal_mobil,
+                        "internal_ja": piutang_internal_ja,
+                        "lainnya": piutang_lainnya
+                    }
+                },
                 "hutang": {
                     "total": hutang_total,
                     "breakdown": {

@@ -311,9 +311,35 @@ export default function LaporanPerubahanModalScreen() {
                         <View className="space-y-4">
                             <Card className="p-5 bg-white rounded-[24px] border border-slate-100 shadow-sm">
                                 <Typography variant="caption" weight="bold" className="text-slate-400 mb-4 uppercase tracking-widest">Performansi Laba Per Unit</Typography>
-                                <FinancialRow label="Bengkel & Sparepart" value={report.info?.laba_bengkel || 0} small />
-                                <FinancialRow label="Jual Beli Mobil" value={report.info?.laba_mobil || 0} small />
-                                <FinancialRow label="Jasa Angkut (JA)" value={report.info?.laba_jasa_angkut || 0} small />
+                                
+                                {/* Bengkel Unit */}
+                                <FinancialRow label="Bengkel & Sparepart" value={report.info?.laba_bengkel || 0} small bold={!!report.info?.units?.bengkel?.details?.length} />
+                                {report.info?.units?.bengkel?.details?.map((d, i) => (
+                                    <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                                        <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                                    </View>
+                                ))}
+
+                                {/* Mobil Unit */}
+                                <View className="mt-2">
+                                    <FinancialRow label="Jual Beli Mobil" value={report.info?.laba_mobil || 0} small bold={!!report.info?.units?.mobil?.details?.length} />
+                                    {report.info?.units?.mobil?.details?.map((d, i) => (
+                                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                                        </View>
+                                    ))}
+                                </View>
+
+                                {/* Jasa Angkut Unit */}
+                                <View className="mt-2">
+                                    <FinancialRow label="Jasa Angkut (JA)" value={report.info?.laba_jasa_angkut || 0} small bold={!!report.info?.units?.jasa_angkut?.details?.length} />
+                                    {report.info?.units?.jasa_angkut?.details?.map((d, i) => (
+                                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                                        </View>
+                                    ))}
+                                </View>
+
                                 <View className="my-2 border-t border-slate-50" />
                                 <FinancialRow label="Total Laba Bersih" value={report.info?.laba_bersih || 0} bold color="text-emerald-700" />
                             </Card>

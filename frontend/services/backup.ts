@@ -54,7 +54,8 @@ export const backupService = {
         if (Platform.OS === 'web') {
             // Standard web download
             const response = await api.get(`/backup/download/${filename}`, {
-                responseType: 'blob'
+                responseType: 'blob',
+                timeout: 600000 // 10 minutes for large downloads
             });
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');

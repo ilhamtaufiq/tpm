@@ -46,6 +46,22 @@ export interface NeracaHutang {
     total_hutang: number;
 }
 
+export interface UnitPerformanceDetail {
+    id: number;
+    label: string;
+    laba: number;
+    pendapatan?: number;
+    biaya?: number;
+    harga_jual?: number;
+    total_modal?: number;
+}
+
+export interface UnitBreakdown {
+    total_laba_kotor?: number;
+    total_laba_tpm: number;
+    details?: UnitPerformanceDetail[];
+}
+
 export interface NeracaReport {
     aktiva_lancar: NeracaAset;
     aktiva_tetap: NeracaAsetTetap;
@@ -70,6 +86,13 @@ export interface NeracaReport {
             piutang: number;
             hutang: number;
         }>;
+    };
+    info?: {
+        units: {
+            bengkel: UnitBreakdown;
+            jasa_angkut: UnitBreakdown;
+            mobil: UnitBreakdown;
+        };
     };
 }
 
@@ -129,6 +152,11 @@ export interface CapitalReport {
         laba_bengkel?: number;
         laba_mobil?: number;
         laba_jasa_angkut?: number;
+        units?: {
+            bengkel: UnitBreakdown;
+            jasa_angkut: UnitBreakdown;
+            mobil: UnitBreakdown;
+        };
         aset?: {
             kas_bank: number;
             stok_mobil: { total: number };
@@ -141,3 +169,4 @@ export interface CapitalReport {
         };
     };
 }
+

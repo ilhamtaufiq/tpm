@@ -626,6 +626,7 @@ class ModalService(BaseReportService):
                 "gaji": gaji,
                 "lembur": lembur,
                 "laba_bersih": period_profit_sot,
+                "units": data.get("units"),
                 "eliminasi_internal": workshop_bills,
                 "debug": {
                     "kas": end_total_cash,

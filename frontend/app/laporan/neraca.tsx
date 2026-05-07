@@ -347,6 +347,60 @@ export default function NeracaScreen() {
         );
     };
 
+    const renderAnalysisSection = () => {
+        if (!report?.info?.units) return null;
+        const units = report.info.units;
+
+        return (
+            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
+                <View className="bg-amber-50/70 px-5 py-4 flex-row justify-between items-center border-b border-amber-100/50 w-full">
+                    <View className="flex-row items-center">
+                        <View className="w-10 h-10 rounded-full bg-amber-100/80 items-center justify-center mr-3">
+                            <Scale size={20} className="text-amber-600" />
+                        </View>
+                        <View>
+                            <Typography variant="h4" weight="bold" className="text-amber-900 tracking-tight">Performansi Laba Per Unit</Typography>
+                            <Typography variant="caption" className="text-amber-700/60 uppercase text-[10px] tracking-wider mt-0.5">Unit Profitability Analysis</Typography>
+                        </View>
+                    </View>
+                </View>
+
+                <View className="p-5 w-full">
+                    {/* Bengkel Unit */}
+                    <FinancialRow label="Bengkel & Sparepart" value={units.bengkel?.total_laba_tpm || 0} small bold={!!units.bengkel?.details?.length} />
+                    {units.bengkel?.details?.map((d, i) => (
+                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                        </View>
+                    ))}
+
+                    {/* Mobil Unit */}
+                    <View className="mt-2">
+                        <FinancialRow label="Jual Beli Mobil" value={units.mobil?.total_laba_tpm || 0} small bold={!!units.mobil?.details?.length} />
+                        {units.mobil?.details?.map((d, i) => (
+                            <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                                <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                            </View>
+                        ))}
+                    </View>
+
+                    {/* Jasa Angkut Unit */}
+                    <View className="mt-2">
+                        <FinancialRow label="Jasa Angkut (JA)" value={units.jasa_angkut?.total_laba_tpm || 0} small bold={!!units.jasa_angkut?.details?.length} />
+                        {units.jasa_angkut?.details?.map((d, i) => (
+                            <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
+                                <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
+                            </View>
+                        ))}
+                    </View>
+
+                    <View className="my-2 border-t border-slate-100" />
+                    <FinancialRow label="Total Laba Ditahan (Hingga Saat Ini)" value={report.modal?.laba_ditahan || 0} bold color="text-emerald-700" />
+                </View>
+            </Card>
+        );
+    };
+
     const renderBalanceCheck = () => {
         if (!report) return null;
         const isBalanced = report.is_balanced;
@@ -569,6 +623,7 @@ export default function NeracaScreen() {
                         </View>
                         {renderModalSection()}
                         {renderHutangSection()}
+                        {renderAnalysisSection()}
                         {renderBalanceCheck()}
                     </>
                 )}
