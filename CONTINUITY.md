@@ -17,9 +17,14 @@
     - Locally tested: Selisih = 0 for both scenarios (no booking + with booking + internal repair).
     - Pushed to GitHub.
   - **Now:** 
-    - Waiting for user to deploy to the VPS server and verify.
+    - Resolving environment blockers on the NEW VPS.
+    - Blocker 1: Virtual environment (`venv`) not yet created in `backend/`.
+    - Blocker 2: `node` and `npx` not installed for user `ubuntu`.
   - **Next:**
-    - Deploy via `./update-app.sh` and verify Neraca on prod.
+    - Install system dependencies (python3-venv, nodejs).
+    - Create `backend/venv` and install requirements.
+    - Successfully run `./update-app.sh`.
+    - Verify Neraca on prod.
 - **Open questions:** None.
 - **Working set (files/ids/commands):**
   - `backend/app/services/reports/neraca_service.py`

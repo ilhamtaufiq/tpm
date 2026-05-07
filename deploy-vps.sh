@@ -85,11 +85,11 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
     VENV_PIP="$BACKEND_DIR/venv/bin/pip"
     VENV_ALEMBIC="$BACKEND_DIR/venv/bin/alembic"
     
-    # Install pip packages (COMMENTED OUT AS REQUESTED)
-    echo -e "${GREEN}$prefix${NC} Installing pip packages... (SKIPPED)"
-    # sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip >/dev/null
-    # sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null
-    # sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn >/dev/null
+    # Install pip packages
+    echo -e "${GREEN}$prefix${NC} Installing pip packages..."
+    sudo -u $REAL_USER "$VENV_PIP" install --upgrade pip >/dev/null
+    sudo -u $REAL_USER "$VENV_PIP" install -r "$BACKEND_DIR/requirements.txt" >/dev/null
+    sudo -u $REAL_USER "$VENV_PIP" install gunicorn uvicorn >/dev/null
 
     # Setup .env
     if [ ! -f "$BACKEND_DIR/.env" ] && [ -f "$BACKEND_DIR/.env.example" ]; then
@@ -146,8 +146,8 @@ PID_BACKEND=$!
          echo -e "${RED}$prefix ERROR${NC} NPM tidak ditemukan"; exit 1;
     fi
 
-    echo -e "${GREEN}$prefix${NC} npm install... (SKIPPED)"
-    # sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} npm install failed"; exit 1; }
+    echo -e "${GREEN}$prefix${NC} npm install..."
+    sudo -u $REAL_USER "$NPM_PATH" install >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} npm install failed"; exit 1; }
 
     echo -e "${GREEN}$prefix${NC} Building Expo Web..."
     sudo -u $REAL_USER "$NPX_PATH" expo export -p web >/dev/null 2>&1 || { echo -e "${RED}$prefix ERROR${NC} Build failed"; exit 1; }
