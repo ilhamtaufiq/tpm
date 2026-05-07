@@ -52,12 +52,20 @@ def upgrade() -> None:
                type_=sa.Text(),
                existing_nullable=True)
 
-    # 5. Add phone column to users
+    # 5. Add missing columns to mobil (purchase tracking)
+    op.add_column('mobil', sa.Column('status_bayar_beli', sa.Enum('LUNAS', 'BELUM_LUNAS', 'CICILAN', name='paymentstatus'), nullable=False, server_default=sa.text("'LUNAS'")))
+    op.add_column('mobil', sa.Column('metode_bayar_beli', sa.Enum('TUNAI', 'TRANSFER', 'KREDIT', 'DEBIT', 'SPLIT', 'INTERNAL', 'OTHER', name='paymentmethod'), nullable=False, server_default=sa.text("'TUNAI'")))
+    op.add_column('mobil', sa.Column('dp_beli', sa.Numeric(precision=15, scale=2), nullable=False, server_default=sa.text("'0.00'")))
+
+    # 6. Add phone column to users
     op.add_column('users', sa.Column('phone', sa.String(length=20), nullable=True))
 
 
 def downgrade() -> None:
     op.drop_column('users', 'phone')
+    op.drop_column('mobil', 'dp_beli')
+    op.drop_column('mobil', 'metode_bayar_beli')
+    op.drop_column('mobil', 'status_bayar_beli')
     op.alter_column('muatan_jasa_angkut', 'jenis_muatan',
                existing_type=sa.Text(),
                type_=sa.String(length=100),

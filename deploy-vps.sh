@@ -108,6 +108,10 @@ log "Memulai proses instalasi Backend & Frontend secara paralel..."
     # Jalankan alembic upgrade head
     if sudo -u $REAL_USER bash -c "export PYTHONPATH=$PROJECT_ROOT:$BACKEND_DIR; cd $BACKEND_DIR && ./venv/bin/alembic upgrade head"; then
         echo -e "${GREEN}$prefix${NC} Migrasi DB Sukses!"
+        
+        # Jalankan Seeding User
+        echo -e "${GREEN}$prefix${NC} Menjalankan seeding user default..."
+        sudo -u $REAL_USER bash -c "export PYTHONPATH=$PROJECT_ROOT:$BACKEND_DIR; cd $BACKEND_DIR && ./venv/bin/python seed_users.py"
     else
         echo -e "${RED}$prefix ERROR${NC} Migrasi DB gagal."
         echo -e "${YELLOW}TIPS:${NC} Jika error table exists, silakan drop tabel manual via mysql lalu run ulang script ini."
