@@ -60,6 +60,12 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr><td>Kas Tunai (Utama)</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_tunai)}</td></tr>
                 <tr><td>Kas Bank</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_bank)}</td></tr>
                 <tr><td>Piutang Usaha (All Units)</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_piutang)}</td></tr>
+                ${data.cross_validation?.mismatches?.filter(m => m.piutang > 0).map(m => `
+                <tr class="sub-item">
+                    <td>Tagihan Perbaikan ke ${m.ref}</td>
+                    <td class="amount">${formatCurrency(m.piutang)}</td>
+                </tr>
+                `).join('')}
                 <tr><td>Persediaan Sparepart</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart)}</td></tr>
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
                 <tr class="total-row"><td>TOTAL AKTIVA LANCAR</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_aktiva_lancar)}</td></tr>
@@ -79,6 +85,9 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr><td>Hutang Pembelian Part</td><td class="amount">${formatCurrency(data.hutang.hutang_part)}</td></tr>
                 <tr><td>Hutang Investor</td><td class="amount">${formatCurrency(data.hutang.hutang_investor)}</td></tr>
                 <tr><td>Hutang Lainnya</td><td class="amount">${formatCurrency(data.hutang.hutang_lainnya)}</td></tr>
+                ${data.cross_validation?.mismatches?.filter(m => m.hutang > 0).map((m, idx) => `
+                <tr><td>Hutang Perbaikan ke ${m.ref}</td><td class="amount">${formatCurrency(m.hutang)}</td></tr>
+                `).join('')}
                 <tr class="total-row"><td>TOTAL KEWAJIBAN</td><td class="amount">${formatCurrency(data.hutang.total_hutang)}</td></tr>
 
                 <tr class="section-title"><td colspan="2">II. EKUITAS (MODAL)</td></tr>

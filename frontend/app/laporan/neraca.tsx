@@ -154,6 +154,22 @@ export default function NeracaScreen() {
                             <FinancialRow label="Piutang Unit Jasa Angkut" value={al.piutang_jasa_angkut} small />
                             <FinancialRow label="Piutang Karyawan (Kasbon)" value={al.piutang_karyawan} small />
                             <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha} small />
+                            
+                            {/* Direct Unit-Specific Internal Receivable Rows */}
+                            {report?.cross_validation?.mismatches && report.cross_validation.mismatches
+                                .filter(m => m.piutang > 0)
+                                .map((m, idx) => (
+                                    <FinancialRow 
+                                        key={`int-piutang-${idx}`} 
+                                        label={`Tagihan Perbaikan ke ${m.ref}`} 
+                                        value={m.piutang} 
+                                        small 
+                                        bold 
+                                        color="text-blue-600"
+                                    />
+                                ))
+                            }
+
                             <View className="h-[1px] bg-slate-100 w-full my-2" />
                             <FinancialRow label="Total Piutang" value={al.total_piutang} bold color="text-blue-700" />
                         </View>
@@ -296,6 +312,32 @@ export default function NeracaScreen() {
                     <FinancialRow label="2. Hutang Pembelian Mobil" value={h.hutang_mobil} small large />
                     <FinancialRow label="3. Hutang Investor" value={h.hutang_investor} small large />
                     <FinancialRow label="4. Hutang Lainnya" value={h.hutang_lainnya} small large />
+                    
+                    {/* Fallback: Show internal debt if total doesn't match the categories */}
+                    {((h.total_hutang || 0) - ((h.hutang_part || 0) + (h.hutang_mobil || 0) + (h.hutang_investor || 0) + (h.hutang_lainnya || 0))) > 0 && (
+                        <FinancialRow 
+                            label="5. Hutang Perbaikan Stok Mobil (Internal)" 
+                            value={(h.total_hutang || 0) - ((h.hutang_part || 0) + (h.hutang_mobil || 0) + (h.hutang_investor || 0) + (h.hutang_lainnya || 0))} 
+                            small 
+                            large 
+                            color="text-rose-600"
+                        />
+                    )}
+
+                    {/* Direct Unit-Specific Internal Debt Rows from cross-validation */}
+                    {report?.cross_validation?.mismatches && report.cross_validation.mismatches
+                        .filter(m => m.hutang > 0)
+                        .map((m, idx) => (
+                            <FinancialRow 
+                                key={`int-debt-${idx}`} 
+                                label={`Detail: Hutang Perbaikan ke ${m.ref}`} 
+                                value={m.hutang} 
+                                small 
+                                indent 
+                            />
+                        ))
+                    }
+
                     <View className="h-[1px] bg-slate-100 w-full my-3" />
                     <View className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100/50">
                         <FinancialRow label="Total Hutang" value={h.total_hutang} bold large color="text-rose-800" />

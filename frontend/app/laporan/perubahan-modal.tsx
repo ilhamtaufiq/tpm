@@ -323,8 +323,22 @@ export default function LaporanPerubahanModalScreen() {
                                 <FinancialRow label="Total Kas & Saldo Bank" value={report.info?.aset?.kas_bank || 0} small />
                                 <FinancialRow label="Persediaan Unit Mobil" value={report.info?.aset?.stok_mobil?.total || 0} small />
                                 <FinancialRow label="Persediaan Sparepart" value={report.info?.aset?.stok_part || 0} small />
-                                <FinancialRow label="Total Piutang Aktif" value={report.info?.aset?.piutang?.total || 0} small />
-                                <FinancialRow label="Total Kewajiban (Hutang)" value={report.info?.aset?.hutang?.total || 0} small isNegative />
+                                
+                                {/* Fix: Include internal piutang in the analysis total */}
+                                <FinancialRow 
+                                    label="Total Tagihan & Piutang" 
+                                    value={(report.info?.aset?.piutang?.total || 0)} 
+                                    small 
+                                    color="text-blue-600"
+                                />
+                                
+                                <FinancialRow 
+                                    label="Total Kewajiban (Hutang)" 
+                                    value={report.info?.aset?.hutang?.total || 0} 
+                                    small 
+                                    isNegative 
+                                />
+                                
                                 <View className="my-2 border-t border-slate-50" />
                                 <FinancialRow label="Total Ekuitas (Net Asset)" value={report.modal_akhir} bold color="text-indigo-700" />
                             </Card>
