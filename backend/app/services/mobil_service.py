@@ -257,10 +257,10 @@ class MobilService:
                 sumber=HutangSource.PEMBELIAN_MOBIL,
                 referensi_id=mobil.id,
                 nomor_referensi=mobil.kode,
-                nominal_hutang=data.harga_beli,
-                total_dibayar=total_pembayaran,
+                nominal_hutang=sisa_hutang,
+                total_dibayar=Decimal("0"),
                 sisa_hutang=sisa_hutang,
-                status=HutangStatus.BELUM_LUNAS if total_pembayaran == 0 else HutangStatus.SEBAGIAN,
+                status=HutangStatus.BELUM_LUNAS,
                 catatan=f"Hutang pembelian mobil {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
                 created_by=user_id,
             )
