@@ -182,7 +182,19 @@ export default function NeracaScreen() {
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
-                            <FinancialRow label="Stok Mobil (Inventory)" value={al.stok_mobil} small />
+                            <FinancialRow label="Stok Mobil (Inventory)" value={al.stok_mobil} small bold={!!al.stok_mobil_detail?.length} />
+                            {al.stok_mobil_detail?.map((m: any, idx: number) => (
+                                <View key={idx} className="ml-4 border-l border-amber-100 pl-3 my-1">
+                                    <FinancialRow label={m.nama} value={m.total} small color="text-slate-500" />
+                                    {(m.biaya_persiapan > 0 || m.perbaikan_external > 0 || m.perbaikan_internal > 0) && (
+                                        <Typography variant="caption" className="text-slate-400 text-[9px] -mt-1 mb-1">
+                                            Beli: {formatCurrency(m.harga_beli)} 
+                                            {m.biaya_persiapan > 0 && ` | Prep: ${formatCurrency(m.biaya_persiapan)}`}
+                                            {(m.perbaikan_external > 0 || m.perbaikan_internal > 0) && ` | Repair: ${formatCurrency(m.perbaikan_external + m.perbaikan_internal)}`}
+                                        </Typography>
+                                    )}
+                                </View>
+                            ))}
                         </View>
                     </View>
                 </View>

@@ -428,6 +428,45 @@ class BaseReportService:
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
+        # Detailed per-car stock values for the report footnotes/details
+        prep_per_car = dict(self.db.query(PengeluaranBengkel.mobil_id, func.sum(PengeluaranBengkel.jumlah)).filter(
+            PengeluaranBengkel.mobil_id.in_(unsold_car_ids),
+            PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_LAINNYA,
+            PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+            PengeluaranBengkel.tanggal <= tanggal_sampai
+        ).group_by(PengeluaranBengkel.mobil_id).all())
+        
+        rep_ext_per_car = dict(self.db.query(PengeluaranBengkel.mobil_id, func.sum(PengeluaranBengkel.jumlah)).filter(
+            PengeluaranBengkel.mobil_id.in_(unsold_car_ids),
+            PengeluaranBengkel.kategori == ExpenseCategory.BIAYA_OPERASIONAL,
+            PengeluaranBengkel.metode_bayar != PaymentMethod.INTERNAL,
+            PengeluaranBengkel.tanggal <= tanggal_sampai
+        ).group_by(PengeluaranBengkel.mobil_id).all())
+        
+        rep_int_per_car = dict(self.db.query(TransaksiPenjualanBengkel.mobil_id, func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.mobil_id.in_(unsold_car_ids),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
+        ).group_by(TransaksiPenjualanBengkel.mobil_id).all())
+
+        car_stock_details = []
+        unsold_cars_objs = self.db.query(Mobil).filter(Mobil.id.in_(unsold_car_ids)).all()
+        for m in unsold_cars_objs:
+            m_prep = float(prep_per_car.get(m.id, 0))
+            m_rep_ext = float(rep_ext_per_car.get(m.id, 0))
+            m_rep_int = float(rep_int_per_car.get(m.id, 0))
+            total_val = float(m.harga_beli) + m_prep + m_rep_ext + m_rep_int
+            
+            car_stock_details.append({
+                "id": m.id,
+                "nama": f"{m.merk} {m.model} ({m.plat_nomor})",
+                "harga_beli": float(m.harga_beli),
+                "biaya_persiapan": m_prep,
+                "perbaikan_external": m_rep_ext,
+                "perbaikan_internal": m_rep_int,
+                "total": total_val
+            })
+
         # Consolidated Inventory: Include all repairs in the stock value for transparency,
         # neutralization happens at the equity calculation level.
         car_stock += (snapshot_unsold_prep + snapshot_unsold_repairs_ext + snapshot_unsold_repairs_int)
@@ -888,7 +927,8 @@ class BaseReportService:
                     "harga_beli": car_stock - (snapshot_unsold_prep + snapshot_unsold_repairs_ext + snapshot_unsold_repairs_int),
                     "biaya_persiapan": snapshot_unsold_prep,
                     "perbaikan_external": snapshot_unsold_repairs_ext,
-                    "perbaikan_internal": snapshot_unsold_repairs_int
+                    "perbaikan_internal": snapshot_unsold_repairs_int,
+                    "details": sorted(car_stock_details, key=lambda x: x["total"], reverse=True)
                 },
                 "persediaan_mobil_internal_component": snapshot_unsold_repairs_int
             },

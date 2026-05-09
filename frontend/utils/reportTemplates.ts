@@ -68,6 +68,15 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 `).join('')}
                 <tr><td>Persediaan Sparepart</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart)}</td></tr>
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
+                ${data.aktiva_lancar.stok_mobil_detail?.map(m => `
+                <tr class="sub-item">
+                    <td style="padding-left: 20px; font-size: 9pt; color: #666;">
+                        ${m.nama} 
+                        <br/><span style="font-size: 8pt; color: #999;">Beli: ${formatCurrency(m.harga_beli)} | Prep: ${formatCurrency(m.biaya_persiapan)} | Repair: ${formatCurrency(m.perbaikan_external + m.perbaikan_internal)}</span>
+                    </td>
+                    <td class="amount" style="font-size: 9pt; color: #666;">${formatCurrency(m.total)}</td>
+                </tr>
+                `).join('')}
                 <tr class="total-row"><td>TOTAL AKTIVA LANCAR</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_aktiva_lancar)}</td></tr>
 
                 <tr class="section-title"><td colspan="2">II. AKTIVA TETAP</td></tr>

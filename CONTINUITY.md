@@ -1,28 +1,39 @@
-# Continuity Ledger - TPM Equity Report Integration
+# Continuity Ledger
 
 ## Goal
-Finalize the "Perubahan Modal" report integration by resolving the discrepancy in the "Laba Usaha" calculation, specifically addressing the -500k issue reported for the Mobil unit.
+Achieve complete accounting accuracy and transparency by finalizing the integration of unit-level profits into financial reports and providing granular breakdown of car inventory valuation.
 
 ## Constraints/Assumptions
-- "Biaya Persiapan" (Prep costs) are currently being treated as period expenses in the Laba Rugi report (per user request in Conversation edb9841c).
-- In the Balance Sheet/Capital perspective, these costs should ideally be capitalized as part of Inventory.
-- The -500k reported likely stems from a prep cost (Pajak/STNK) recorded for a car that is not yet sold or is in "Booked" status.
+- Accrual accounting: Prep costs for unsold units are capitalized in inventory.
+- Realized prep costs (prep_hpp) are used for profit reports.
+- UI transparency for all business units (Bengkel, Mobil, JA).
 
-## Key Decisions
-- [Decided] Replace monolithic "Laba Bersih" with "Laba Usaha (Unit)" and "Beban Operasional & Gaji Pusat".
-- [Decided] Follow strict accounting (Option B): Capitalize prep costs for unsold cars into "Stok Mobil" and only show realized profit in "Laba Usaha".
+## Key decisions
+- Use `prep_hpp` instead of total prep expenses for periodic profit reports.
+- Add `stok_mobil_detail` to Neraca to show exactly which cars make up the inventory value.
+- Synchronize PDF templates with UI changes for professional output.
 
 ## State
-- **Done**: Backend `ModalService` updated to expose `laba_usaha`. Frontend `perubahan-modal.tsx` updated to show the new breakdown.
-- **Now**: Implementing strict accounting logic to resolve the -500k "Unit Mobil" loss (capitalizing prep costs instead of expensing them in the Equity statement).
-- **Next**: Update `ModalService.py` to ensure `laba_usaha` only includes realized profits.
+### Done
+- Reconciled "Laba Usaha" in `perubahan-modal.tsx`.
+- Refactored `LabaRugiService` to use accrual-based prep costs.
+- Added car-level stock breakdown to `NeracaService` and `base.py`.
+- Implemented car inventory detail UI in `neraca.tsx`.
+- Updated `NeracaReport` TypeScript types.
+- Updated `buildNeracaExportHtml` in `reportTemplates.ts`.
 
-## Open Questions
-- Does the user want the -500k prep cost to be shown as a loss in the equity report (matching Laba Rugi) or capitalized (matching Balance Sheet)?
-- Is the -500k appearing because it's being subtracted from "Laba Usaha" but not neutralized by stock value in that specific view?
+### Now
+- Completed the requested car stock detail expansion in Neraca.
 
-## Working Set
-- `backend/app/services/reports/modal_service.py`
-- `backend/app/services/reports/base.py`
-- `frontend/app/laporan/perubahan-modal.tsx`
-- `backend/app/services/reports/laba_rugi_service.py`
+### Next
+- User verification of the new inventory transparency.
+
+## Open questions
+- None at this moment.
+
+## Working set
+- backend/app/services/reports/base.py
+- backend/app/services/reports/neraca_service.py
+- frontend/app/laporan/neraca.tsx
+- frontend/utils/reportTemplates.ts
+- frontend/types/reports.ts

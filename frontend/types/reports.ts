@@ -13,6 +13,15 @@ export interface NeracaAset {
     total_piutang: number;
     persediaan_sparepart: number;
     stok_mobil: number;
+    stok_mobil_detail?: Array<{
+        id: number;
+        nama: string;
+        harga_beli: number;
+        biaya_persiapan: number;
+        perbaikan_external: number;
+        perbaikan_internal: number;
+        total: number;
+    }>;
     total_aktiva_lancar: number;
 }
 

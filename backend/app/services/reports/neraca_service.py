@@ -333,6 +333,7 @@ class NeracaService(BaseReportService):
                 "total_piutang": total_piutang,
                 "persediaan_sparepart": total_stock_parts,
                 "stok_mobil": total_stock_mobil,
+                "stok_mobil_detail": raw_stock_mobil.get("details", []),
                 "total_aktiva_lancar": total_assets - total_fixed_assets
             },
             "aktiva_tetap": {
