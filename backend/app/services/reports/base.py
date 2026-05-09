@@ -459,7 +459,7 @@ class BaseReportService:
             
             car_stock_details.append({
                 "id": m.id,
-                "nama": f"{m.merk} {m.model} ({m.plat_nomor})",
+                "nama": f"{m.merek} {m.model} ({m.nomor_plat})",
                 "harga_beli": float(m.harga_beli),
                 "biaya_persiapan": m_prep,
                 "perbaikan_external": m_rep_ext,
