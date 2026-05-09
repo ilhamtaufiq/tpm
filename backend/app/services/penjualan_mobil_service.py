@@ -553,8 +553,20 @@ class PenjualanMobilService:
             )
 
         # --- B. HUTANG (PAYABLES) SETTLEMENT ---
-        # REMOVED: Automatic settlement disabled per user request.
-        # External debts must be settled manually to ensure accurate cash tracking.
+        # Settle INTERNAL payables (debts to Workshop) automatically
+        internal_hu_q = self.db.query(HutangUsaha).filter(
+            HutangUsaha.nomor_referensi.in_(workshop_nos) if workshop_nos else False,
+            HutangUsaha.is_internal == True,
+            HutangUsaha.status != HutangStatus.LUNAS
+        )
+        
+        for h in internal_hu_q.all():
+            h.status = HutangStatus.LUNAS
+            h.total_dibayar = h.nominal_hutang
+            h.sisa_hutang = Decimal("0")
+            h.catatan = (h.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
+
+        # External debts still must be settled manually per user request.
         pass
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
@@ -1043,22 +1055,39 @@ class PenjualanMobilService:
             ).first()
         )
         
-        # Total Bengkel (All workshop transactions tied to jual_beli_mobil, plus Perawatan Bengkel)
-        bengkel_parts_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+        # Sold IDs in period
+        sold_q_base = self.db.query(TransaksiPenjualanMobil.mobil_id).filter(
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+        )
+        if tanggal_dari: sold_q_base = sold_q_base.filter(TransaksiPenjualanMobil.tanggal >= tanggal_dari)
+        if tanggal_sampai: sold_q_base = sold_q_base.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
+        
+        sold_mobil_ids = [r[0] for r in sold_q_base.all()]
+
+        # Total Bengkel for SOLD units only (Accrual)
+        bengkel_parts_sold_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.mobil_id.in_(sold_mobil_ids) if sold_mobil_ids else False
+        )
+        
+        # Any manual operational costs keyed as Perawatan Bengkel for SOLD units
+        bengkel_tambahan_sold_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).filter(
+            MobilBiayaLainnya.kategori == "Perawatan Bengkel",
+            MobilBiayaLainnya.mobil_id.in_(sold_mobil_ids) if sold_mobil_ids else False
+        )
+        
+        total_biaya_bengkel_sold = float((bengkel_parts_sold_q.scalar() or 0) + (bengkel_tambahan_sold_q.scalar() or 0))
+
+        # Total Bengkel (All workshop transactions in period for overall summary)
+        bengkel_parts_all_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
-        if tanggal_dari: bengkel_parts_q = bengkel_parts_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
-        if tanggal_sampai: bengkel_parts_q = bengkel_parts_q.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        if tanggal_dari: bengkel_parts_all_q = bengkel_parts_all_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
+        if tanggal_sampai: bengkel_parts_all_q = bengkel_parts_all_q.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
         
-        # Any manual operational costs keyed as Perawatan Bengkel
-        bengkel_tambahan_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).filter(
-            MobilBiayaLainnya.kategori == "Perawatan Bengkel"
-        )
-        if tanggal_dari: bengkel_tambahan_q = bengkel_tambahan_q.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
-        if tanggal_sampai: bengkel_tambahan_q = bengkel_tambahan_q.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
-        
-        total_biaya_bengkel = float((bengkel_parts_q.scalar() or 0) + (bengkel_tambahan_q.scalar() or 0))
+        total_biaya_bengkel_all = float(bengkel_parts_all_q.scalar() or 0)
 
         # Unpaid values (Sisa Bayar)
         unpaid_value = (
@@ -1110,6 +1139,14 @@ class PenjualanMobilService:
         if tanggal_dari: total_pembelian_period_q = total_pembelian_period_q.filter(Mobil.tanggal_masuk >= tanggal_dari)
         if tanggal_sampai: total_pembelian_period_q = total_pembelian_period_q.filter(Mobil.tanggal_masuk <= tanggal_sampai)
         total_pembelian_period = float(total_pembelian_period_q.scalar() or 0)
+
+        # Preparation Costs (Operational Expenses for Car Unit) - All in period (User requirement)
+        prep_q = self.db.query(func.sum(MobilBiayaLainnya.jumlah)).filter(
+            MobilBiayaLainnya.kategori != "Perawatan Bengkel"
+        )
+        if tanggal_dari: prep_q = prep_q.filter(MobilBiayaLainnya.tanggal >= tanggal_dari)
+        if tanggal_sampai: prep_q = prep_q.filter(MobilBiayaLainnya.tanggal <= tanggal_sampai)
+        total_prep = float(prep_q.scalar() or 0)
         # Breakdown of bengkel per mobil
         
         bengkel_mobil_query = self.db.query(
@@ -1181,11 +1218,8 @@ class PenjualanMobilService:
         
         # This is the TRUE external gross profit (Sales - (Buy + Prep + PartsCost))
         # But for unit net, we use full modal (including internal profit transfer)
+        # Use full modal for accurate profit split on sold cars
         dynamic_laba_unit = Decimal(aggregates.total_penjualan or 0) - total_full_modal
-        
-        # Calculate preparation costs (HPP - Price)
-        total_prep = float(total_external_modal - (aggregates.total_harga_beli or 0))
-        
         total_laba_kotor_val = float(dynamic_laba_unit)
         total_laba_tpm_val = float(dynamic_laba_unit - (aggregates.total_laba_investor or 0))
 
@@ -1204,9 +1238,10 @@ class PenjualanMobilService:
             "laba_investor": float(aggregates.total_laba_investor or 0),
             "laba_tpm": total_laba_tpm_val,
             "total_dp": float(aggregates.total_dp or 0),
-            "total_biaya_bengkel": total_biaya_bengkel,
+            "total_biaya_bengkel": total_biaya_bengkel_sold,
+            "total_biaya_bengkel_all": total_biaya_bengkel_all,
             "total_biaya_bengkel_unsold": total_biaya_bengkel_unsold,
-            "biaya_bengkel": total_biaya_bengkel, # keep fallback
+            "biaya_bengkel": total_biaya_bengkel_sold, # keep fallback
             "bengkel_per_mobil": bengkel_per_mobil,
             "piutang_nilai": float(unpaid_value),
             "saldo_bop": float(KasBank.get_current_balance(self.db, KasBankJenis.KAS_UNIT_MOBIL)),

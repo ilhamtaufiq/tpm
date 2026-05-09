@@ -612,6 +612,7 @@ class ModalService(BaseReportService):
                 "laba_mobil": laba_mobil_tpm_gross,
                 "laba_investor": laba_investor_periode,
                 "laba_jasa_angkut": laba_ja_tpm_gross,
+                "laba_usaha": laba_bengkel_tpm_gross + laba_mobil_tpm_gross + laba_ja_tpm_gross,
                 "overhead_gaji": total_overhead_gaji,
                 "ops_bengkel": ops_bengkel,
                 "ops_mobil": ops_mobil,

@@ -141,18 +141,45 @@ export interface CapitalReport {
             total: number;
             details?: any[];
         };
+        laba_kotor?: {
+            total: number;
+            mobil: number;
+            ja: number;
+            bengkel: number;
+            investor: number;
+        };
         investor_funding?: number;
     };
     pengurangan?: {
         prive: number;
-        pengembalian_modal?: number;
+        pengembalian_modal: number;
+        pembayaran_investor: number;
+        beban_operasional?: {
+            total: number;
+            umum: number;
+            bengkel: number;
+            mobil: number;
+            ja: {
+                total: number;
+                unit: number;
+                armada: number;
+                trip: number;
+                repairs: number;
+            };
+            gaji_lembur: number;
+        };
+        total: number;
     };
+    modal_akhir: number;
     info?: {
+        laba_bengkel: number;
+        laba_mobil: number;
+        laba_investor: number;
+        laba_jasa_angkut: number;
+        laba_usaha?: number;
+        overhead_gaji: number;
         laba_bersih: number;
-        laba_bengkel?: number;
-        laba_mobil?: number;
-        laba_jasa_angkut?: number;
-        units?: {
+        units: {
             bengkel: UnitBreakdown;
             jasa_angkut: UnitBreakdown;
             mobil: UnitBreakdown;

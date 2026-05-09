@@ -206,6 +206,8 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     
     // Theoretical calculation logic from original file
     const laba_bersih = data.info?.laba_bersih || 0;
+    const laba_usaha = data.info?.laba_usaha || data.penambahan?.laba_kotor?.total || 0;
+    const beban_ops = data.pengurangan?.beban_operasional?.total || data.info?.overhead_gaji || 0;
     const setoran = (data.penambahan?.setoran_modal || 0) + 
                     (data.penambahan?.modal_non_kas?.total || 0) + 
                     (data.penambahan?.investor_funding || 0);
@@ -235,11 +237,31 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 </tr>
 
                 <tr class="section-title"><td colspan="2">B. PENAMBAHAN MODAL</td></tr>
-                ${laba_bersih > 0 ? `
+                ${laba_usaha > 0 ? `
+                <tr class="bold">
+                    <td>Laba Usaha (Unit Bisnis)</td>
+                    <td class="amount positive">${formatCurrency(laba_usaha)}</td>
+                </tr>
+                ${data.info?.laba_bengkel > 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
+                    <td class="amount">${formatCurrency(data.info.laba_bengkel)}</td>
+                </tr>` : ''}
+                ${data.info?.laba_mobil > 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
+                    <td class="amount">${formatCurrency(data.info.laba_mobil)}</td>
+                </tr>` : ''}
+                ${data.info?.laba_jasa_angkut > 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
+                    <td class="amount">${formatCurrency(data.info.laba_jasa_angkut)}</td>
+                </tr>` : ''}
+                ` : (laba_bersih > 0 ? `
                 <tr>
                     <td>Laba Bersih Konsolidasi</td>
                     <td class="amount positive">${formatCurrency(laba_bersih)}</td>
-                </tr>` : ''}
+                </tr>` : '')}
                 ${data.penambahan?.setoran_modal ? `
                 <tr>
                     <td>Setoran Modal Pemilik (Tunai)</td>
@@ -262,10 +284,35 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 </tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">C. PENGURANGAN MODAL</td></tr>
-                ${laba_bersih < 0 ? `
+                ${laba_usaha < 0 ? `
+                <tr class="bold">
+                    <td>Rugi Usaha (Unit Bisnis)</td>
+                    <td class="amount negative">(${formatCurrency(Math.abs(laba_usaha))})</td>
+                </tr>
+                ${data.info?.laba_bengkel < 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
+                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_bengkel))})</td>
+                </tr>` : ''}
+                ${data.info?.laba_mobil < 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
+                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_mobil))})</td>
+                </tr>` : ''}
+                ${data.info?.laba_jasa_angkut < 0 ? `
+                <tr class="sub-item">
+                    <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
+                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_jasa_angkut))})</td>
+                </tr>` : ''}
+                ` : (laba_bersih < 0 ? `
                 <tr>
                     <td>Rugi Bersih Konsolidasi</td>
                     <td class="amount negative">(${formatCurrency(Math.abs(laba_bersih))})</td>
+                </tr>` : '')}
+                ${beban_ops > 0 ? `
+                <tr>
+                    <td>Beban Operasional & Gaji Pusat</td>
+                    <td class="amount negative">(${formatCurrency(beban_ops)})</td>
                 </tr>` : ''}
                 ${prive > 0 ? `
                 <tr>

@@ -91,17 +91,21 @@ export default function LaporanPerubahanModalScreen() {
     }, [navigation, router]);
 
     const simple = useMemo(() => {
-        if (!report) return { laba_bersih: 0, setoran: 0, prive: 0, adjustment: 0 };
+        if (!report) return { laba_bersih: 0, laba_usaha: 0, setoran: 0, prive: 0, adjustment: 0, beban_ops: 0 };
         const r = report;
         const laba_bersih = r.info?.laba_bersih || 0;
-        const setoran = (r.penambahan?.setoran_modal || 0) +
-            (r.penambahan?.modal_non_kas?.total || 0) +
-            (r.penambahan?.investor_funding || 0);
+        const laba_usaha = r.info?.laba_usaha || r.penambahan?.laba_kotor?.total || 0;
+        const beban_ops = r.pengurangan?.beban_operasional?.total || r.info?.overhead_gaji || 0;
+        const setoran = (r.penambahan?.setoran_modal || 0) + 
+                        (r.penambahan?.modal_non_kas?.total || 0) + 
+                        (r.penambahan?.investor_funding || 0);
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
+        
+        // Adjustment handles anything that balances theoretical to snapshot
         const theoretical = r.modal_awal + laba_bersih + setoran - prive;
         const adjustment = r.modal_akhir - theoretical;
 
-        return { laba_bersih, setoran, prive, adjustment };
+        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment };
     }, [report]);
 
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
@@ -271,7 +275,21 @@ export default function LaporanPerubahanModalScreen() {
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
-                                {simple.laba_bersih > 0 && (
+                                {simple.laba_usaha > 0 && (
+                                    <>
+                                        <FinancialRow label="Laba Usaha (Unit)" value={simple.laba_usaha} color="text-emerald-700" bold />
+                                        {(report.info?.laba_bengkel ?? 0) > 0 && (
+                                            <FinancialRow label="Unit Bengkel" value={report.info?.laba_bengkel ?? 0} color="text-slate-500" indent small />
+                                        )}
+                                        {(report.info?.laba_mobil ?? 0) > 0 && (
+                                            <FinancialRow label="Unit Mobil" value={report.info?.laba_mobil ?? 0} color="text-slate-500" indent small />
+                                        )}
+                                        {(report.info?.laba_jasa_angkut ?? 0) > 0 && (
+                                            <FinancialRow label="Unit Jasa Angkut" value={report.info?.laba_jasa_angkut ?? 0} color="text-slate-500" indent small />
+                                        )}
+                                    </>
+                                )}
+                                {simple.laba_bersih > 0 && simple.laba_usaha <= 0 && (
                                     <FinancialRow label="Laba Bersih Konsolidasi" value={simple.laba_bersih} color="text-emerald-700" />
                                 )}
                                 {report.penambahan?.setoran_modal ? (
@@ -290,7 +308,24 @@ export default function LaporanPerubahanModalScreen() {
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
-                                {simple.laba_bersih < 0 && (
+                                {simple.laba_usaha < 0 && (
+                                    <>
+                                        <FinancialRow label="Rugi Usaha (Unit)" value={Math.abs(simple.laba_usaha)} isNegative color="text-rose-700" bold />
+                                        {(report.info?.laba_bengkel ?? 0) < 0 && (
+                                            <FinancialRow label="Unit Bengkel" value={Math.abs(report.info?.laba_bengkel ?? 0)} isNegative color="text-slate-500" indent small />
+                                        )}
+                                        {(report.info?.laba_mobil ?? 0) < 0 && (
+                                            <FinancialRow label="Unit Mobil" value={Math.abs(report.info?.laba_mobil ?? 0)} isNegative color="text-slate-500" indent small />
+                                        )}
+                                        {(report.info?.laba_jasa_angkut ?? 0) < 0 && (
+                                            <FinancialRow label="Unit Jasa Angkut" value={Math.abs(report.info?.laba_jasa_angkut ?? 0)} isNegative color="text-slate-500" indent small />
+                                        )}
+                                    </>
+                                )}
+                                {simple.beban_ops > 0 && (
+                                    <FinancialRow label="Beban Operasional & Gaji" value={simple.beban_ops} isNegative />
+                                )}
+                                {simple.laba_bersih < 0 && simple.laba_usaha >= 0 && (
                                     <FinancialRow label="Rugi Bersih Konsolidasi" value={Math.abs(simple.laba_bersih)} isNegative color="text-rose-700" />
                                 )}
                                 {simple.prive > 0 && (

@@ -41,7 +41,7 @@ class LabaRugiService(BaseReportService):
         m_revenue = float(data["raw_summaries"]["mobil"].get("total_penjualan", 0))
         m_hpp_unit = float(data["raw_summaries"]["mobil"].get("total_harga_beli", 0))
         m_maintenance = float(data["raw_summaries"]["mobil"].get("total_biaya_bengkel", 0)) 
-        m_prep = float(data["raw_summaries"]["mobil"].get("total_biaya_persiapan", 0))
+        m_prep = float(data["units"]["mobil"].get("prep_hpp", 0))
         m_overhead = m["overhead"] # Unit general overhead
         m_sharing = m["sharing_investor"] # Investor's share (Accrual from base.py)
 
@@ -55,7 +55,13 @@ class LabaRugiService(BaseReportService):
         # Subtract internal workshop revenue from total profit to avoid double-counting
         # within the company perspective.
         # Total operating profit is the sum of unit net profits
-        total_laba_operasional = b_laba_bersih + ja_laba_bersih + m_laba_bersih - overhead_pusat
+        # Internal Workshop Revenue Elimination (for unsold cars)
+        elimination = float(data.get("internal_elimination", 0))
+        
+        # Total Laba Operasional (Bengkel + Jasa Angkut + Mobil)
+        # Note: Internal elimination is not subtracted here to match user's spreadsheet logic
+        # where workshop revenue is realized immediately even if car is unsold.
+        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
         laba_bersih_akhir = total_laba_operasional - prive
 
         return {
