@@ -11,6 +11,7 @@ Achieve complete accounting accuracy and transparency by finalizing the integrat
 ## Key decisions
 - Use `prep_hpp` instead of total prep expenses for periodic profit reports.
 - Add `stok_mobil_detail` to Neraca to show exactly which cars make up the inventory value.
+- **Structured Breakdown:** Render per-unit costs (Purchase, Prep, Repair) in a table-like format for better visibility.
 - Synchronize PDF templates with UI changes for professional output.
 
 ## State
@@ -18,16 +19,14 @@ Achieve complete accounting accuracy and transparency by finalizing the integrat
 - Reconciled "Laba Usaha" in `perubahan-modal.tsx`.
 - Refactored `LabaRugiService` to use accrual-based prep costs.
 - Added car-level stock breakdown to `NeracaService` and `base.py`.
-- Implemented car inventory detail UI in `neraca.tsx`.
+- **Refined UI:** Implemented structured car inventory detail in `neraca.tsx` and `reportTemplates.ts`.
 - Updated `NeracaReport` TypeScript types.
-- Updated `buildNeracaExportHtml` in `reportTemplates.ts`.
-- **Fixed AttributeError: Changed `m.merk` to `m.merek` and `m.plat_nomor` to `m.nomor_plat` in `base.py`.**
 
 ### Now
-- Resolved the backend crash reported in the logs.
+- Delivered a highly granular breakdown for car stock valuation as requested.
 
 ### Next
-- User verification.
+- User verification of the improved layout.
 
 ## Open questions
 - None at this moment.

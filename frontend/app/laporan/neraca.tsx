@@ -183,18 +183,39 @@ export default function NeracaScreen() {
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
                             <FinancialRow label="Stok Mobil (Inventory)" value={al.stok_mobil} small bold={!!al.stok_mobil_detail?.length} />
-                            {al.stok_mobil_detail?.map((m: any, idx: number) => (
-                                <View key={idx} className="ml-4 border-l border-amber-100 pl-3 my-1">
-                                    <FinancialRow label={m.nama} value={m.total} small color="text-slate-500" />
-                                    {(m.biaya_persiapan > 0 || m.perbaikan_external > 0 || m.perbaikan_internal > 0) && (
-                                        <Typography variant="caption" className="text-slate-400 text-[9px] -mt-1 mb-1">
-                                            Beli: {formatCurrency(m.harga_beli)} 
-                                            {m.biaya_persiapan > 0 && ` | Prep: ${formatCurrency(m.biaya_persiapan)}`}
-                                            {(m.perbaikan_external > 0 || m.perbaikan_internal > 0) && ` | Repair: ${formatCurrency(m.perbaikan_external + m.perbaikan_internal)}`}
-                                        </Typography>
-                                    )}
-                                </View>
-                            ))}
+                            
+                            {/* Detailed Car Stock Breakdown */}
+                            <View className="mt-1 mb-2">
+                                {al.stok_mobil_detail?.map((m: any, idx: number) => (
+                                    <View key={idx} className="ml-4 border-l-2 border-indigo-100 pl-4 py-2.5 my-1.5 bg-indigo-50/20 rounded-r-xl">
+                                        <View className="flex-row justify-between items-center mb-1.5">
+                                            <Typography variant="body2" className="font-bold text-slate-800 flex-1 pr-2" numberOfLines={1}>{m.nama}</Typography>
+                                            <Typography variant="body2" className="font-bold text-indigo-700">{formatCurrency(m.total)}</Typography>
+                                        </View>
+                                        
+                                        <View className="space-y-1">
+                                            <View className="flex-row justify-between items-center">
+                                                <Typography variant="caption" className="text-slate-500">Harga Beli Unit</Typography>
+                                                <Typography variant="caption" className="text-slate-700 font-semibold">{formatCurrency(m.harga_beli)}</Typography>
+                                            </View>
+                                            
+                                            {m.biaya_persiapan > 0 && (
+                                                <View className="flex-row justify-between items-center">
+                                                    <Typography variant="caption" className="text-slate-500">Biaya Persiapan (HPP)</Typography>
+                                                    <Typography variant="caption" className="text-amber-700 font-semibold">{formatCurrency(m.biaya_persiapan)}</Typography>
+                                                </View>
+                                            )}
+                                            
+                                            {(m.perbaikan_external + m.perbaikan_internal) > 0 && (
+                                                <View className="flex-row justify-between items-center">
+                                                    <Typography variant="caption" className="text-slate-500">Biaya Perbaikan</Typography>
+                                                    <Typography variant="caption" className="text-indigo-600 font-semibold">{formatCurrency(m.perbaikan_external + m.perbaikan_internal)}</Typography>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
                     </View>
                 </View>

@@ -70,11 +70,19 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
                 ${data.aktiva_lancar.stok_mobil_detail?.map(m => `
                 <tr class="sub-item">
-                    <td style="padding-left: 20px; font-size: 9pt; color: #666;">
-                        ${m.nama} 
-                        <br/><span style="font-size: 8pt; color: #999;">Beli: ${formatCurrency(m.harga_beli)} | Prep: ${formatCurrency(m.biaya_persiapan)} | Repair: ${formatCurrency(m.perbaikan_external + m.perbaikan_internal)}</span>
+                    <td style="padding-left: 20px; font-size: 9.5pt; color: #334155; font-weight: 600; border-bottom: none; padding-top: 8px;">
+                        ${m.nama}
                     </td>
-                    <td class="amount" style="font-size: 9pt; color: #666;">${formatCurrency(m.total)}</td>
+                    <td class="amount" style="font-size: 9.5pt; color: #4f46e5; border-bottom: none; padding-top: 8px;">${formatCurrency(m.total)}</td>
+                </tr>
+                <tr class="sub-item">
+                    <td colspan="2" style="padding-left: 35px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+                        <table style="width: 100%; border: none; margin: 0; font-size: 8.5pt; color: #64748b;">
+                            <tr><td style="border:none; padding: 1px 0;">Harga Beli Unit</td><td style="border:none; padding: 1px 0; text-align: right;">${formatCurrency(m.harga_beli)}</td></tr>
+                            ${m.biaya_persiapan > 0 ? `<tr><td style="border:none; padding: 1px 0;">Biaya Persiapan (HPP)</td><td style="border:none; padding: 1px 0; text-align: right;">${formatCurrency(m.biaya_persiapan)}</td></tr>` : ''}
+                            ${(m.perbaikan_external + m.perbaikan_internal) > 0 ? `<tr><td style="border:none; padding: 1px 0;">Biaya Perbaikan</td><td style="border:none; padding: 1px 0; text-align: right;">${formatCurrency(m.perbaikan_external + m.perbaikan_internal)}</td></tr>` : ''}
+                        </table>
+                    </td>
                 </tr>
                 `).join('')}
                 <tr class="total-row"><td>TOTAL AKTIVA LANCAR</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_aktiva_lancar)}</td></tr>
