@@ -43,6 +43,7 @@ import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel, useCreatePengeluaran } from '../../hooks/useBengkel';
+import { useMobilList } from '../../hooks/useMobil';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { formatDistanceToNow, format, startOfMonth, isValid, parse } from 'date-fns';
@@ -161,6 +162,19 @@ export default function BengkelScreen() {
     const { data: balances } = useKasBankBalances();
     const unitBalance = balances?.kas_unit_bengkel?.saldo || 0;
 
+    // Logic for internal auto-settlement (Virtual Elimination)
+    const { data: mobilData } = useMobilList({ limit: 1000 });
+    const soldCars = useMemo(() => {
+        const soldSet = new Set<string>();
+        if (mobilData?.data) {
+            mobilData.data.forEach((m: any) => {
+                if (m.status?.toUpperCase() === 'TERJUAL') {
+                    soldSet.add(String(m.id));
+                }
+            });
+        }
+        return soldSet;
+    }, [mobilData]);
 
     const queue = queueData?.data || [];
 
@@ -194,8 +208,19 @@ export default function BengkelScreen() {
                 return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || trno.includes(q);
             });
         }
+
+        // Virtual Elimination for Internal Orders
+        result = result.filter((item: any) => {
+            if (item.kategori === 'jual_beli_mobil' && item.mobil_id) {
+                if (soldCars.has(String(item.mobil_id))) {
+                    return false; // Hide if car is already sold
+                }
+            }
+            return true;
+        });
+
         return result;
-    }, [queue, searchQuery, paymentFilter]);
+    }, [queue, searchQuery, paymentFilter, soldCars]);
 
     // Calculate counters for UI Pills (using values from summary API if available, else local)
     const stats = useMemo(() => {
@@ -212,6 +237,11 @@ export default function BengkelScreen() {
         // Fallback to local calculation if summary not yet loaded
         let lunas = 0, partial = 0, unpaid = 0, batal = 0;
         queue.forEach((item: any) => {
+            // Apply virtual filtering here too for stats consistency
+            if (item.kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
+                return;
+            }
+
             const s = (item.status_bayar || '').toUpperCase();
             const paidNum = Number(item.jumlah_bayar || 0);
             if (s === 'LUNAS') lunas++;
@@ -219,8 +249,8 @@ export default function BengkelScreen() {
             else if (paidNum > 0) partial++;
             else unpaid++;
         });
-        return { total: queue.length, lunas, partial, unpaid, batal };
-    }, [queue, summary]);
+        return { total: lunas + partial + unpaid + batal, lunas, partial, unpaid, batal };
+    }, [queue, summary, soldCars]);
 
     // Load print settings
     React.useEffect(() => {

@@ -24,6 +24,8 @@ import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit, useCreateHutang } from '../../hooks/useKeuangan';
+import { useMobilList } from '../../hooks/useMobil';
+import { useTransaksiBengkelList } from '../../hooks/useBengkel';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -62,6 +64,7 @@ export default function HutangUsahaScreen() {
         status: selectedFilter === 'all' ? undefined : selectedFilter,
         search: search || undefined,
     });
+    const { data: mobilData } = useMobilList();
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary();
     const paymentMutation = useProcessHutangPaymentSplit();
     const createMutation = useCreateHutang();
@@ -119,7 +122,65 @@ export default function HutangUsahaScreen() {
         setAlertState((prev) => ({ ...prev, visible: false }));
     };
 
-    const hutangList = listData?.data || [];
+    const hutangListRaw = listData?.data || [];
+
+    // Fetch bengkel data to map BGL numbers to car IDs
+    const { data: bengkelData } = useTransaksiBengkelList({ limit: 1000 });
+
+    // Virtual Elimination Logic: Otomatis sembunyikan hutang internal (Bengkel)
+    // jika unit mobil referensinya sudah terjual.
+    const { filteredList, localSummary } = useMemo(() => {
+        if (!mobilData?.data) return { filteredList: hutangListRaw, localSummary: summary };
+
+        // 1. Get IDs of sold cars
+        const soldCarIds = new Set(
+            mobilData.data
+                .filter((m: any) => m.status?.toUpperCase() === 'TERJUAL')
+                .map((m: any) => String(m.id))
+        );
+
+        // 2. Map sold cars to their Bengkel invoice numbers (BGL...)
+        const soldBengkelInvoices = new Set<string>();
+        if (bengkelData?.data) {
+            bengkelData.data.forEach((b: any) => {
+                if (b.kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
+                    if (b.nomor_transaksi) soldBengkelInvoices.add(b.nomor_transaksi);
+                }
+            });
+        }
+
+        let totalSisa = 0;
+        let countBelumLunas = 0;
+
+        const filtered = hutangListRaw.filter(item => {
+            const isInternal = item.nama_kreditur?.toUpperCase().includes('BENGKEL');
+
+            // Jika internal dan ada referensi nomor_transaksi bengkel, cek apakah mobilnya sudah terjual
+            if (isInternal && item.nomor_referensi) {
+                if (soldBengkelInvoices.has(item.nomor_referensi)) {
+                    return false; // Sembunyikan otomatis
+                }
+            }
+            
+            // Accumulate summary for visible items
+            if (item.status !== 'LUNAS') {
+                totalSisa += item.sisa_hutang;
+                countBelumLunas++;
+            }
+            
+            return true;
+        });
+
+        return { 
+            filteredList: filtered, 
+            localSummary: {
+                total_sisa: totalSisa,
+                jumlah_belum_lunas: countBelumLunas,
+            }
+        };
+    }, [hutangListRaw, mobilData, bengkelData, summary]);
+
+    const hutangList = filteredList;
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -618,9 +679,9 @@ export default function HutangUsahaScreen() {
                                 <View className="flex-row items-center justify-between">
                                     <View>
                                         <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
-                                            {formatCurrency(summary?.total_sisa || 0)}
+                                            {formatCurrency(localSummary?.total_sisa || 0)}
                                         </Typography>
-                                        <Typography className="text-textGray/40 text-xs mt-1">Total Sisa Kewajiban</Typography>
+                                        <Typography className="text-textGray/40 text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
                                     </View>
                                     <View className="bg-rose-50 p-4 rounded-2xl border border-rose-100">
                                         <CircleDollarSign size={24} color="#E11D48" />

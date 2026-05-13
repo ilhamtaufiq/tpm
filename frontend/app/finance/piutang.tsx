@@ -24,6 +24,8 @@ import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { usePiutangList, usePiutangSummary, useProcessPayment, useProcessPaymentSplit, useCreatePiutang } from '../../hooks/useKeuangan';
+import { useMobilList } from '../../hooks/useMobil';
+import { useTransaksiBengkelList } from '../../hooks/useBengkel';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -66,6 +68,7 @@ export default function PiutangUsahaScreen() {
         overdue_only: selectedFilter === 'overdue',
         search: search || undefined,
     });
+    const { data: mobilData } = useMobilList();
     const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary();
     const paymentMutation = useProcessPaymentSplit();
     const createMutation = useCreatePiutang();
@@ -110,7 +113,66 @@ export default function PiutangUsahaScreen() {
         setAlertState((prev) => ({ ...prev, visible: false }));
     };
 
-    const piutangList = listData?.data || [];
+    const piutangListRaw = listData?.data || [];
+
+    // Fetch bengkel data to map BGL numbers to car IDs
+    const { data: bengkelData } = useTransaksiBengkelList({ limit: 1000 });
+
+    // Virtual Elimination Logic: Otomatis sembunyikan piutang internal (Bengkel)
+    // jika unit mobil referensinya sudah terjual.
+    const { filteredList, localSummary } = useMemo(() => {
+        if (!mobilData?.data) return { filteredList: piutangListRaw, localSummary: summary };
+
+        // 1. Get IDs of sold cars
+        const soldCarIds = new Set(
+            mobilData.data
+                .filter((m: any) => m.status?.toUpperCase() === 'TERJUAL')
+                .map((m: any) => String(m.id))
+        );
+
+        // 2. Map sold cars to their Bengkel invoice numbers (BGL...)
+        const soldBengkelInvoices = new Set<string>();
+        if (bengkelData?.data) {
+            bengkelData.data.forEach((b: any) => {
+                if (b.kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
+                    if (b.nomor_transaksi) soldBengkelInvoices.add(b.nomor_transaksi);
+                }
+            });
+        }
+
+        let totalSisa = 0;
+        let countBelumLunas = 0;
+        let countOverdue = 0;
+
+        const filtered = piutangListRaw.filter(item => {
+            // Note: In Piutang, nama_debitur usually contains 'JB MOBIL', but 'BENGKEL' or 'TPM' is fine too depending on data entry.
+            // Actually, we check if it's an internal transaction by checking if it links to a sold bengkel invoice.
+            // If the item.nomor_referensi matches a BGL order from a sold car, we hide it.
+            if (item.nomor_referensi && soldBengkelInvoices.has(item.nomor_referensi)) {
+                return false; // Sembunyikan otomatis
+            }
+            
+            // Accumulate summary for visible items
+            if (item.status !== 'LUNAS') {
+                totalSisa += item.sisa_piutang;
+                countBelumLunas++;
+                if (item.is_overdue) countOverdue++;
+            }
+            
+            return true;
+        });
+
+        return { 
+            filteredList: filtered, 
+            localSummary: {
+                total_sisa: totalSisa,
+                jumlah_belum_lunas: countBelumLunas,
+                jumlah_overdue: countOverdue
+            }
+        };
+    }, [piutangListRaw, mobilData, bengkelData, summary]);
+
+    const piutangList = filteredList;
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -703,9 +765,9 @@ export default function PiutangUsahaScreen() {
                             <View className="flex-row items-center justify-between">
                                 <View>
                                     <Typography variant="h1" weight="bold" className="text-textMain text-3xl tracking-tighter">
-                                        {formatCurrency(summary?.total_sisa || 0)}
+                                        {formatCurrency(localSummary?.total_sisa || 0)}
                                     </Typography>
-                                    <Typography className="text-textGray/40 text-xs mt-1">Total Dari {summary?.jumlah_belum_lunas || 0} Invoice</Typography>
+                                    <Typography className="text-textGray/40 text-xs mt-1">Total Dari {localSummary?.jumlah_belum_lunas || 0} Invoice</Typography>
                                 </View>
                                 <View className="bg-primary/5 p-4 rounded-2xl border border-primary/10">
                                     <CircleDollarSign size={24} color="#023C69" />
@@ -720,14 +782,14 @@ export default function PiutangUsahaScreen() {
                                         <View className="w-2 h-2 rounded-full bg-amber-500 mr-1.5" />
                                         <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Belum Lunas</Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-textMain text-sm">{summary?.jumlah_belum_lunas || 0} Akun</Typography>
+                                    <Typography weight="bold" className="text-textMain text-sm">{localSummary?.jumlah_belum_lunas || 0} Akun</Typography>
                                 </View>
                                 <View className="flex-1 items-end pl-4 border-l border-gray-50">
                                     <View className="flex-row items-center mb-1">
                                         <AlertTriangle size={10} color="#F43F5E" className="mr-1.5" />
                                         <Typography className="text-textGray/30 text-[9px] uppercase font-bold tracking-widest">Jatuh Tempo</Typography>
                                     </View>
-                                    <Typography weight="bold" className="text-rose-600 text-sm">{summary?.jumlah_overdue || 0} Akun</Typography>
+                                    <Typography weight="bold" className="text-rose-600 text-sm">{localSummary?.jumlah_overdue || 0} Akun</Typography>
                                 </View>
                             </View>
                         </View>

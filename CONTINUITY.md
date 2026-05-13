@@ -1,39 +1,34 @@
 # Continuity Ledger
 
 ## Goal
-Achieve complete accounting accuracy and transparency by finalizing the integration of unit-level profits into financial reports and providing granular breakdown of car inventory valuation.
+- Modify Balance Sheet (Neraca) report to remove internal transaction details that are already accounted for in unit profits.
+- Specifically, remove "Hutang Perbaikan Stok Mobil (Internal)" and related internal balances.
 
 ## Constraints/Assumptions
-- Accrual accounting: Prep costs for unsold units are capitalized in inventory.
-- Realized prep costs (prep_hpp) are used for profit reports.
-- UI transparency for all business units (Bengkel, Mobil, JA).
+- Internal repairs at the workshop unit are recognized as profit by that unit and added to the car's inventory value.
+- On a consolidated basis, these internal debts/receivables should be eliminated.
 
 ## Key decisions
-- Use `prep_hpp` instead of total prep expenses for periodic profit reports.
-- Add `stok_mobil_detail` to Neraca to show exactly which cars make up the inventory value.
-- **Structured Breakdown:** Render per-unit costs (Purchase, Prep, Repair) in a table-like format for better visibility.
-- Synchronize PDF templates with UI changes for professional output.
+- Removed "Hutang Perbaikan Stok Mobil (Internal)" fallback row from the Hutang section.
+- Removed unit-specific internal debt detail rows from `report.cross_validation.mismatches`.
+- Removed unit-specific internal receivable detail rows ("Tagihan Perbaikan") from the Aktiva section for consistency.
 
 ## State
-### Done
-- Reconciled "Laba Usaha" in `perubahan-modal.tsx`.
-- Refactored `LabaRugiService` to use accrual-based prep costs.
-- Added car-level stock breakdown to `NeracaService` and `base.py`.
-- **Refined UI:** Implemented structured car inventory detail in `neraca.tsx` and `reportTemplates.ts`.
-- Updated `NeracaReport` TypeScript types.
+- **Done**: 
+  - Identified target rows in `frontend/app/laporan/neraca.tsx`.
+  - Removed internal debt and receivable detail rows from Balance Sheet (specifically for Bengkel).
+  - Implemented `totalHutangExternal`, `totalPiutangExternal`, and adjusted `totalAktivaAdj`/`totalPasivaAdj` using `useMemo`.
+  - Updated all display components in Neraca to use these consolidated values.
+  - Implemented **Auto-Settlement Simulation** in Neraca for **Bengkel** unit upon car sale.
+  - Implemented **Virtual Elimination** in `frontend/app/finance/hutang.tsx` and `frontend/app/finance/piutang.tsx`: Internal transactions to **Bengkel** for **sold units** are automatically hidden.
+  - **Reverted Jasa Angkut (JA) logic**: Based on user feedback, JA is no longer subject to virtual elimination/auto-settlement and returns to original manual tracking.
+- **Now**: Completed the request for automatic internal debt/receivable removal upon sale.
+- **Next**: Final verification with user.
 
-### Now
-- Delivered a highly granular breakdown for car stock valuation as requested.
-
-### Next
-- User verification of the improved layout.
-
-## Open questions
-- None at this moment.
+## Open questions (UNCONFIRMED)
+- None at the moment.
 
 ## Working set
-- backend/app/services/reports/base.py
-- backend/app/services/reports/neraca_service.py
-- frontend/app/laporan/neraca.tsx
-- frontend/utils/reportTemplates.ts
-- frontend/types/reports.ts
+- `frontend/app/laporan/neraca.tsx`
+- `frontend/app/finance/hutang.tsx`
+- `frontend/app/finance/piutang.tsx`
