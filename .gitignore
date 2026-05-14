@@ -31,7 +31,8 @@ frontend/ios/
 # Project specifics
 uploads/
 backend/uploads/
-**/*BACKUP*
+**/BACKUP_*.sql
+**/TPM_BACKUP_*.sql
 TPM_BACKUP*
 *.sql
 *.sqlite
