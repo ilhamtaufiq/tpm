@@ -93,27 +93,21 @@ export default function LaporanPerubahanModalScreen() {
     const simple = useMemo(() => {
         if (!report) return { laba_bersih: 0, laba_usaha: 0, setoran: 0, prive: 0, adjustment: 0, beban_ops: 0 };
         const r = report;
+        // Gunakan laba_bersih dari info (source of truth = retained_earnings backend)
         const laba_bersih = r.info?.laba_bersih || 0;
         const laba_usaha = r.info?.laba_usaha || r.penambahan?.laba_kotor?.total || 0;
+        // beban_ops hanya ditampilkan jika laba_usaha >= 0 (rugi bersih sudah mencakup beban)
+        // Jika laba_usaha < 0, maka beban ops sudah termasuk dalam rugi per unit
         const beban_ops = r.pengurangan?.beban_operasional?.total || r.info?.overhead_gaji || 0;
         const setoran = (r.penambahan?.setoran_modal || 0) + 
                         (r.penambahan?.modal_non_kas?.total || 0) + 
                         (r.penambahan?.investor_funding || 0);
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         
-        // Theoretical Equity is the true source of truth (Modal Awal + Laba + Setoran - Prive)
-        const theoretical = r.modal_awal + laba_bersih + setoran - prive;
+        // Gunakan modal_akhir langsung dari backend (sudah dijamin balanced oleh snapshot-based calculation)
+        const modalAkhir = r.modal_akhir || 0;
         
-        // Fix: Backend Net Asset (modal_akhir) might be lower due to uneliminated internal Hutang (like Bengkel 200k for sold cars)
-        // If theoretical > r.modal_akhir, we assume the difference is internal Hutang that should be virtually eliminated
-        const diff = theoretical - r.modal_akhir;
-        const correctedModalAkhir = theoretical; // Force balance
-        const adjustment = 0; // We eliminate the confusing "Bagi Hasil Investor" catch-all
-        
-        const rawHutang = r.info?.aset?.hutang?.total || 0;
-        const correctedHutang = diff > 0 ? Math.max(0, rawHutang - diff) : rawHutang;
-
-        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment, correctedModalAkhir, correctedHutang, theoretical };
+        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment: 0, correctedModalAkhir: modalAkhir, correctedHutang: 0, theoretical: modalAkhir };
     }, [report]);
 
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
@@ -309,13 +303,11 @@ export default function LaporanPerubahanModalScreen() {
                                 {report.penambahan?.investor_funding ? (
                                     <FinancialRow label="Penambahan Dana Investor JB Mobil" value={report.penambahan.investor_funding} />
                                 ) : null}
-                                {simple.adjustment > 0 && (
-                                    <FinancialRow label="Bagi Hasil Investor (Belum Dibagikan)" value={simple.adjustment} color="text-slate-500" />
-                                )}
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
+                                {/* Tampilkan rugi per unit jika ada unit yang rugi */}
                                 {simple.laba_usaha < 0 && (
                                     <>
                                         <FinancialRow label="Rugi Usaha (Unit)" value={Math.abs(simple.laba_usaha)} isNegative color="text-rose-700" bold />
@@ -330,22 +322,22 @@ export default function LaporanPerubahanModalScreen() {
                                         )}
                                     </>
                                 )}
-                                {simple.beban_ops > 0 && (
+                                {/* Beban operasional ditampilkan hanya jika laba_usaha >= 0
+                                    Jika laba_usaha < 0, beban sudah termasuk dalam kalkulasi rugi unit */}
+                                {simple.laba_usaha >= 0 && simple.beban_ops > 0 && (
                                     <FinancialRow label="Beban Operasional & Gaji" value={simple.beban_ops} isNegative />
                                 )}
-                                {simple.laba_bersih < 0 && simple.laba_usaha >= 0 && (
+                                {/* Rugi bersih konsolidasi: tampilkan jika tidak ada laba_usaha yang dirinci */}
+                                {simple.laba_bersih < 0 && simple.laba_usaha === 0 && (
                                     <FinancialRow label="Rugi Bersih Konsolidasi" value={Math.abs(simple.laba_bersih)} isNegative color="text-rose-700" />
                                 )}
                                 {simple.prive > 0 && (
                                     <FinancialRow label="Prive & Penarikan Modal" value={simple.prive} isNegative />
                                 )}
-                                {simple.adjustment < 0 && (
-                                    <FinancialRow label="Pencairan Modal & Bagi Hasil Investor" value={Math.abs(simple.adjustment)} isNegative color="text-slate-500" />
-                                )}
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
-                                <FinancialRow label="Modal Akhir Periode" value={simple.correctedModalAkhir} bold color="text-indigo-700" />
+                                <FinancialRow label="Modal Akhir Periode" value={simple.correctedModalAkhir || 0} bold color="text-indigo-700" />
                             </View>
                         </Card>
 
@@ -403,13 +395,13 @@ export default function LaporanPerubahanModalScreen() {
                                 
                                 <FinancialRow 
                                     label="Total Kewajiban (Hutang)" 
-                                    value={simple.correctedHutang} 
+                                    value={simple.correctedHutang || 0} 
                                     small 
                                     isNegative 
                                 />
                                 
                                 <View className="my-2 border-t border-slate-50" />
-                                <FinancialRow label="Total Ekuitas (Net Asset)" value={simple.correctedModalAkhir} bold color="text-indigo-700" />
+                                <FinancialRow label="Total Ekuitas (Net Asset)" value={simple.correctedModalAkhir || 0} bold color="text-indigo-700" />
                             </Card>
                         </View>
                     </View>

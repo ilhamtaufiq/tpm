@@ -143,7 +143,8 @@ export default function HutangUsahaScreen() {
         const soldBengkelInvoices = new Set<string>();
         if (bengkelData?.data) {
             bengkelData.data.forEach((b: any) => {
-                if (b.kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
+                const kategori = String(b.kategori || '').toLowerCase();
+                if (kategori === 'jual_beli_mobil' && b.mobil_id && soldCarIds.has(String(b.mobil_id))) {
                     if (b.nomor_transaksi) soldBengkelInvoices.add(b.nomor_transaksi);
                 }
             });

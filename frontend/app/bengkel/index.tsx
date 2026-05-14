@@ -211,7 +211,8 @@ export default function BengkelScreen() {
 
         // Virtual Elimination for Internal Orders
         result = result.filter((item: any) => {
-            if (item.kategori === 'jual_beli_mobil' && item.mobil_id) {
+            const kategori = String(item.kategori || '').toLowerCase();
+            if (kategori === 'jual_beli_mobil' && item.mobil_id) {
                 if (soldCars.has(String(item.mobil_id))) {
                     return false; // Hide if car is already sold
                 }
@@ -238,7 +239,8 @@ export default function BengkelScreen() {
         let lunas = 0, partial = 0, unpaid = 0, batal = 0;
         queue.forEach((item: any) => {
             // Apply virtual filtering here too for stats consistency
-            if (item.kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
+            const kategori = String(item.kategori || '').toLowerCase();
+            if (kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
                 return;
             }
 

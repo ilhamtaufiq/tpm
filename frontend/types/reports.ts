@@ -45,6 +45,8 @@ export interface NeracaModal {
     prive: number;
     total_modal: number;
     selisih_modal?: number;
+    modal_komponen?: number;
+    equity_identity?: number;
 }
 
 export interface NeracaHutang {

@@ -29,7 +29,14 @@ frontend/android/
 frontend/ios/
 
 # Project specifics
-backend/uploads
+uploads/
+backend/uploads/
+**/*BACKUP*
+TPM_BACKUP*
+*.sql
+*.sqlite
+*.bak
+*.tmp
 backend/__pycache__/
 **/*.pyc
 .pytest_cache/

@@ -88,7 +88,6 @@ export default function NeracaScreen() {
         totalAktivaLancarAdj,
         totalStokAdj,
         totalLabaAdj,
-        transitAdj,
         adjUnitCashDetails,
         isBalancedAdj
     } = useMemo(() => {
@@ -97,31 +96,26 @@ export default function NeracaScreen() {
         const m = report?.modal || {} as any;
         const units = report?.info?.units || {} as any;
 
-        // 1. External/Consolidated Debt & Receivables
-        const hExt = (h.hutang_part || 0) + (h.hutang_mobil || 0) + (h.hutang_investor || 0) + (h.hutang_lainnya || 0);
-        const pExt = (al.piutang_lainnya || 0) + (al.piutang_karyawan || 0) + (al.piutang_usaha || 0);
+        // 1. Gunakan total_hutang langsung dari backend (sudah termasuk semua komponen)
+        const hExt = h.total_hutang || 0;
 
-        // 2. Capitalized Stock (Ensure summary includes internal perbaikan from details)
+        // 2. Piutang eksternal (sudah dihitung backend)
+        const pExt = al.total_piutang || 0;
+
+        // 3. Capitalized Stock (Ensure summary includes internal perbaikan from details)
         const stockFromDetails = al.stok_mobil_detail?.reduce((acc: number, item: any) => acc + (item.total || 0), 0) || 0;
         const sAdj = stockFromDetails || (al.stok_mobil || 0);
 
-        // 3. Consolidated Equity (Include current unit profits in Laba Ditahan)
-        const unitProfits = (units.bengkel?.total_laba_tpm || 0) + (units.mobil?.total_laba_tpm || 0) + (units.jasa_angkut?.total_laba_tpm || 0);
-        const lAdj = Math.max(m.laba_ditahan || 0, unitProfits);
+        // 4. Laba Ditahan: gunakan nilai dari backend cross_validation
+        const lAdj = m.laba_ditahan || 0;
 
-        // 4. Final Balanced Totals
-        const alAdj = (al.kas_tunai || 0) + (al.kas_bank || 0) + (al.unit_cash || 0) + pExt + sAdj + (al.persediaan_sparepart || 0);
-        const aAdj = alAdj + (report?.aktiva_tetap?.total_aktiva_tetap || 0);
+        // 5. Total Aktiva & Pasiva: gunakan langsung dari backend sebagai sumber kebenaran
+        // Backend sudah menghitung dengan benar termasuk semua komponen aktiva
+        const aAdj = report?.total_aktiva || 0;
+        const alAdj = al.total_aktiva_lancar || (aAdj - (report?.aktiva_tetap?.total_aktiva_tetap || 0));
+        const pAdj = report?.total_pasiva || aAdj;
 
-        const pBasic = (m.setoran_modal || 0) + lAdj - (m.prive || 0) + hExt;
-        const tAdj = aAdj - pBasic;
-        const pAdj = aAdj; // Force balance
-
-        // Consolidated Totals (including transit)
-        const hCons = hExt + (tAdj > 0 ? tAdj : 0);
-        const pCons = pExt + (tAdj < 0 ? Math.abs(tAdj) : 0);
-
-        // 5. Unit Cash Simulation (Internal Settlement for sold cars)
+        // 6. Unit Cash Simulation (Internal Settlement for sold cars)
         const currentStockNames = new Set(al.stok_mobil_detail?.map((s: any) => s.nama) || []);
         let bSoldLaba = 0;
 
@@ -135,17 +129,18 @@ export default function NeracaScreen() {
             return u;
         }) || [];
 
+        const isBalanced = Math.abs(aAdj - pAdj) < 100;
+
         return {
-            totalHutangExternal: hCons,
-            totalPiutangExternal: pCons,
+            totalHutangExternal: hExt,
+            totalPiutangExternal: pExt,
             totalStokAdj: sAdj,
             totalLabaAdj: lAdj,
-            transitAdj: tAdj,
             adjUnitCashDetails,
             totalAktivaLancarAdj: alAdj,
             totalAktivaAdj: aAdj,
             totalPasivaAdj: pAdj,
-            isBalancedAdj: true
+            isBalancedAdj: isBalanced
         };
     }, [report]);
 
@@ -218,21 +213,12 @@ export default function NeracaScreen() {
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Piutang Lainnya" value={al.piutang_lainnya} small />
-                            {al.piutang_karyawan > 0 && <FinancialRow label="Piutang Karyawan (Kasbon)" value={al.piutang_karyawan} small />}
-                            <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha} small />
-
-
-
-                            {transitAdj < 0 && (
-                                <FinancialRow
-                                    label="Piutang Transit Unit"
-                                    value={Math.abs(transitAdj)}
-                                    small
-                                    color="text-blue-600"
-                                />
-                            )}
+                            {(al.piutang_karyawan || 0) > 0 && <FinancialRow label="Piutang Karyawan (Kasbon)" value={al.piutang_karyawan} small />}
+                            {(al.piutang_usaha || 0) > 0 && <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha} small />}
+                            {(al.piutang_mobil || 0) > 0 && <FinancialRow label="Piutang Unit Mobil" value={al.piutang_mobil} small />}
+                            {(al.piutang_jasa_angkut || 0) > 0 && <FinancialRow label="Piutang Jasa Angkut" value={al.piutang_jasa_angkut} small />}
                             <View className="h-[1px] bg-slate-100 w-full my-2" />
-                            <FinancialRow label="Total Piutang" value={totalPiutangExternal} bold color="text-blue-700" />
+                            <FinancialRow label="Total Piutang" value={al.total_piutang || 0} bold color="text-blue-700" />
                         </View>
                     </View>
 
@@ -407,15 +393,9 @@ export default function NeracaScreen() {
                     <FinancialRow label="3. Hutang Investor" value={h.hutang_investor} small large />
                     <FinancialRow label="4. Hutang Lainnya" value={h.hutang_lainnya} small large />
 
-                    {transitAdj > 0 && (
-                        <FinancialRow
-                            label="5.DP JB Mobil"
-                            value={transitAdj}
-                            small
-                            large
-                            color="text-rose-600"
-                        />
-                    )}                    <View className="h-[1px] bg-slate-100 w-full my-3" />
+                    
+                        
+                    <View className="h-[1px] bg-slate-100 w-full my-3" />
                     <View className="w-full bg-rose-50 p-4 rounded-xl border border-rose-100/50">
                         <FinancialRow label="Total Hutang" value={totalHutangExternal} bold large color="text-rose-800" />
                     </View>
@@ -475,9 +455,15 @@ export default function NeracaScreen() {
 
     const renderBalanceCheck = () => {
         if (!report) return null;
-        const isBalanced = isBalancedAdj;
-        const selisih = totalAktivaAdj - totalPasivaAdj;
-        const cv = report.cross_validation || {};
+        const cv = report.cross_validation || {} as any;
+        // Gunakan data dari backend sebagai sumber kebenaran utama
+        const selisih = report.selisih || 0;
+        const isBalanced = report.is_balanced ?? (Math.abs(selisih) < 100);
+
+        // Komponen modal dari backend (modal.modal_komponen vs modal.equity_identity)
+        const modalBottomUp = report.modal?.modal_komponen ?? ((report.modal?.setoran_modal || 0) + (report.modal?.laba_ditahan || 0) - (report.modal?.prive || 0));
+        const modalIdentity = report.modal?.equity_identity ?? (totalAktivaAdj - totalHutangExternal);
+        const selisihModal = report.modal?.selisih_modal ?? (modalBottomUp - modalIdentity);
 
         return (
             <View className={`mb-24 rounded-[32px] overflow-hidden p-6 ${isBalanced ? 'bg-primary' : 'bg-amber-600'} shadow-2xl relative w-full`}>
@@ -495,27 +481,32 @@ export default function NeracaScreen() {
                 </View>
 
                 <View className="bg-white/10 rounded-2xl p-5 border border-white/10 mb-4 w-full">
-                    <FinancialRow label="Total Aktiva" value={totalAktivaAdj} isDark small />
-                    <FinancialRow label="Total Pasiva (Hutang + Modal)" value={totalPasivaAdj} isDark small />
+                    <FinancialRow label="Total Aktiva" value={report.total_aktiva || 0} isDark small />
+                    <FinancialRow label="Total Pasiva (Hutang + Modal)" value={report.total_pasiva || 0} isDark small />
                     <View className="h-[1px] bg-white/20 w-full my-3" />
                     <View className="flex-row justify-between items-center w-full">
                         <Typography className="text-white/60 text-xs flex-1">Selisih Neraca</Typography>
-                        <Typography variant="h4" weight="bold" className={Math.abs(totalAktivaAdj - totalPasivaAdj) < 100 ? "text-emerald-300" : "text-amber-300"}>
-                            {formatCurrency(totalAktivaAdj - totalPasivaAdj)}
+                        <Typography variant="h4" weight="bold" className={Math.abs(selisih) < 100 ? "text-emerald-300" : "text-amber-300"}>
+                            {formatCurrency(selisih)}
                         </Typography>
                     </View>
                 </View>
 
-                {/* Validation Sections */}
-                {cv.equity_from_components !== undefined && (
-                    <View className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4 w-full">
-                        <Typography variant="caption" weight="bold" className="text-white/50 uppercase tracking-widest text-[9px] mb-2">Validasi Komponen Modal</Typography>
-                        <FinancialRow label="Modal (Bottom-Up)" value={(report?.modal?.setoran_modal || 0) + totalLabaAdj - (report?.modal?.prive || 0)} isDark small />
-                        <FinancialRow label="Modal (Aktiva-Hutang)" value={totalAktivaAdj - totalHutangExternal} isDark small />
-                        <View className="h-[1px] bg-white/15 w-full my-1.5" />
-                        <FinancialRow label="Selisih Modal" value={((report?.modal?.setoran_modal || 0) + totalLabaAdj - (report?.modal?.prive || 0)) - (totalAktivaAdj - totalHutangExternal)} isDark bold color={Math.abs(((report?.modal?.setoran_modal || 0) + totalLabaAdj - (report?.modal?.prive || 0)) - (totalAktivaAdj - totalHutangExternal)) < 100 ? "text-emerald-300" : "text-amber-300"} />
-                    </View>
-                )}
+                {/* Validasi Komponen Modal dari Backend */}
+                <View className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4 w-full">
+                    <Typography variant="caption" weight="bold" className="text-white/50 uppercase tracking-widest text-[9px] mb-2">Validasi Komponen Modal</Typography>
+                    <FinancialRow label="Modal (Bottom-Up)" value={modalBottomUp} isDark small />
+                    <FinancialRow label="Modal (Aktiva-Hutang)" value={modalIdentity} isDark small />
+                    <View className="h-[1px] bg-white/15 w-full my-1.5" />
+                    <FinancialRow
+                        label="Selisih Modal"
+                        value={Math.abs(selisihModal)}
+                        isDark
+                        bold
+                        isNegative={selisihModal < 0}
+                        color={Math.abs(selisihModal) < 100 ? "text-emerald-300" : "text-amber-300"}
+                    />
+                </View>
 
                 <View className={`flex-row items-center justify-center p-4 rounded-xl w-full border ${isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
                     {isBalanced ? (
@@ -665,12 +656,12 @@ export default function NeracaScreen() {
                             <View className="flex-row justify-between pt-1">
                                 <View className="flex-1">
                                     <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
-                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(totalAktivaAdj)}</Typography>
+                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_aktiva || 0)}</Typography>
                                 </View>
                                 <View className="w-[1px] bg-slate-700/50 mx-4" />
                                 <View className="flex-1 items-end">
                                     <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
-                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(totalPasivaAdj)}</Typography>
+                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_pasiva || 0)}</Typography>
                                 </View>
                             </View>
                         </View>

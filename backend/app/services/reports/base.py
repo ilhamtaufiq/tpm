@@ -638,8 +638,14 @@ class BaseReportService:
         piutang_ext_ja = get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA])
         piutang_ext_mobil = get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA])
 
-        # Kasbon Breakdown: Only specific units go to 'Piutang Kasbon'
+        # Kasbon Breakdown: Semua kasbon karyawan dari semua unit (termasuk KAS_UTAMA)
         piutang_kasbon = get_piutang_balance(
+            source=PiutangSource.KASBON_KARYAWAN, 
+            include_internal=False
+            # Tidak filter unit → mencakup KAS_UTAMA, BENGKEL, JA, MOBIL
+        )
+        # Kasbon dari unit operasional saja (untuk tampilan di neraca per-unit)
+        piutang_kasbon_unit = get_piutang_balance(
             source=PiutangSource.KASBON_KARYAWAN, 
             include_internal=False,
             unit_in=[KasBankSource.BENGKEL, KasBankSource.JASA_ANGKUT, KasBankSource.JUAL_BELI_MOBIL]
@@ -667,8 +673,9 @@ class BaseReportService:
             PiutangUsaha.status != PiutangStatus.BATAL
         ).scalar() or 0)
 
-        # Fix: Use external-only versions for subtraction to avoid negative 'lainnya'
+        # Fix: Gunakan piutang_kasbon (all units) agar piutang_lainnya tidak double-count kasbon KAS_UTAMA
         piutang_lainnya = piutang_usaha - (piutang_ext_bengkel + piutang_ext_ja + piutang_ext_mobil + piutang_kasbon)
+        piutang_lainnya = max(0, piutang_lainnya)  # Pastikan tidak negatif
 
         # Internal Elimination: Workshop revenue from internal car unit repairs
         # We only eliminate revenue for cars that are STILL IN STOCK at the end of the period.
@@ -940,15 +947,18 @@ class BaseReportService:
                 "muatan": muatan_summary,
                 "gaji": gaji_summary,
                 "piutang": {
-                    "total": float(self.db.query(func.sum(PiutangUsaha.sisa_piutang)).filter(
-                        PiutangUsaha.tanggal <= tanggal_sampai,
-                        PiutangUsaha.status != PiutangStatus.BATAL
-                    ).scalar() or 0),
+                    # Gunakan piutang_usaha sebagai total (external only, sudah exclude is_internal)
+                    # kasbon dari KAS_UTAMA sudah termasuk dalam piutang_lainnya
+                    "total": piutang_usaha,
                     "breakdown": {
-                        "bengkel": get_piutang_balance(unit=KasBankSource.BENGKEL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
-                        "ja": get_piutang_balance(unit_in=[KasBankSource.JASA_ANGKUT], include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
-                        "mobil": get_piutang_balance(unit=KasBankSource.JUAL_BELI_MOBIL, include_internal=False, exclude_sources=[PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]),
-                        "kasbon": piutang_kasbon,
+                        "bengkel": piutang_ext_bengkel,
+                        "ja": piutang_ext_ja,
+                        "mobil": piutang_ext_mobil,
+                        # kasbon: semua kasbon karyawan termasuk dari KAS_UTAMA
+                        "kasbon": get_piutang_balance(
+                            source=PiutangSource.KASBON_KARYAWAN,
+                            include_internal=False
+                        ),
                         "internal": piutang_internal_total,
                         "internal_mobil": piutang_internal_mobil,
                         "internal_ja": piutang_internal_ja,

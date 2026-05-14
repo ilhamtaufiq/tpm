@@ -613,21 +613,6 @@ class KasbonService:
                 kasbon.status = PaymentStatus.LUNAS
                 kasbon.tanggal_lunas = today
 
-            # Record to kas/bank as incoming payment via salary deduction
-            # This ensures the deduction is tracked in the company's financial history
-            create_kas_entry(
-                db=self.db,
-                tanggal=today,
-                tipe=KasBankType.MASUK,
-                nominal=pay_amount,
-                sumber=kasbon.unit,
-                metode_bayar=PaymentMethod.POTONG_GAJI,
-                referensi_id=piutang.id,
-                nomor_referensi=nomor_slip,
-                keterangan=f"Pelunasan Kasbon via Potong Gaji (Slip {nomor_slip}): {kasbon.karyawan.nama}",
-                user_id=user_id,
-            )
-
             remaining_amount -= pay_amount
             
         self.db.commit()
@@ -673,14 +658,6 @@ class KasbonService:
                 if kasbon:
                     kasbon.status = PaymentStatus.BELUM_LUNAS
                     kasbon.tanggal_lunas = None
-
-            # Delete matching KasBank entries
-            from app.models.keuangan import KasBank
-            self.db.query(KasBank).filter(
-                KasBank.nomor_referensi == nomor_slip,
-                KasBank.metode_bayar == PaymentMethod.POTONG_GAJI,
-                KasBank.sumber == KasBankSource.KASBON,
-            ).delete()
 
             # Delete the payment record
             self.db.delete(p)
