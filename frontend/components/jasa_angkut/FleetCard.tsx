@@ -13,7 +13,12 @@ interface FleetCardProps {
 
 export const FleetCard = ({ armada, onPress }: FleetCardProps) => {
     return (
-        <Pressable onPress={onPress} activeOpacity={0.7}>
+        <Pressable 
+            onPress={onPress} 
+            style={({ pressed }) => ({
+                opacity: pressed ? 0.7 : 1
+            })}
+        >
             <Card className="mb-3">
                 <View className="flex-row justify-between items-start">
                     <View className="flex-1">

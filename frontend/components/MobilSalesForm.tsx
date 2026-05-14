@@ -108,7 +108,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     // Split Payment Helpers
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), metode: '', jumlah: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -126,7 +126,7 @@ export const MobilSalesForm = ({ unit, onSuccess }: MobilSalesFormProps) => {
 
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
-            setPayments([{ id: Date.now(), metode: metodeBayar || '', jumlah: dp }]);
+            setPayments([{ id: Date.now() + Math.random(), metode: metodeBayar || '', jumlah: dp }]);
         } else {
             setDp(formatNumber(totalSplitAmount.toString()));
         }

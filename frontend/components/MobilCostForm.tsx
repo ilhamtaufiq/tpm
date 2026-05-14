@@ -75,7 +75,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: '', nominal: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -94,7 +94,7 @@ export const MobilCostForm = ({ unit, onSuccess }: MobilCostFormProps) => {
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
             // Turning ON: Move current amount to first payment row
-            setPayments([{ id: Date.now(), metode: newLainnya.metode_bayar || '', nominal: newLainnya.jumlah }]);
+            setPayments([{ id: Date.now() + Math.random(), metode: newLainnya.metode_bayar || '', nominal: newLainnya.jumlah }]);
         } else {
             // Turning OFF: Move sum back to main amount
             setNewLainnya({ ...newLainnya, jumlah: formatNumber(totalSplitAmount.toString()) });

@@ -1,35 +1,26 @@
-# Continuity Ledger
+# Continuity Ledger - Kasbon & Frontend Stability
 
 ## Goal
-- Resolve financial reporting discrepancies (specifically a 200k imbalance in the Balance Sheet).
-- Ensure backend and frontend data are synchronized and using correct accounting principles.
+1. Standardize identifier generation to prevent UI state collisions (collision-resistant unique IDs).
+2. Stabilize Kasbon reporting to maintain a balanced Neraca (Balance Sheet).
 
 ## Constraints/Assumptions
-- The backend is the single source of truth for all financial totals.
-- Non-cash transactions (like salary deductions for kasbon) should not generate entries in the cashbook (KasBank).
+- Frontend-only IDs (`Date.now()`) were causing duplicate key collisions during rapid user input.
+- Backend defaults Kasbon to 'BENGKEL' unit but funds come from Corporate (`KAS_UTAMA`).
 
-## Key decisions
-- **Backend Fix**: Modified `KasbonService` in `backend/app/services/kasbon_service.py` to stop creating `KasBank` MASUK entries for `POTONG_GAJI` (salary deductions). These are non-cash movements.
-- **Database Cleanup**: Manually deleted incorrect `POTONG_GAJI` entries from the `kas_bank` table to restore the correct cash balance.
-- **Frontend Fix**: Completely removed `transitAdj` (artificial balancing logic) from `neraca.tsx` and ensured the UI uses backend-provided `total_aktiva` and `total_pasiva`.
-- **Identity Fix**: The Balance Sheet now correctly uses `Total Assets = Total Equity + Total Debt`.
+## Key Decisions
+- **ID Hardening**: Standardized `Date.now() + Math.random()` across all dynamic list rendering logic.
+- **Audit Tool**: Created `analyze_duplicates.py` to systematically verify codebase compliance.
+- **Kasbon Routing**: Decoupled fund source (`KAS_UTAMA`) from reporting unit (`BENGKEL`) using the `payments` array to ensure accurate asset classification.
 
-## State
-- **Done**: 
-  - Identified the cause of the 200k discrepancy: A salary slip with 400k gross salary and 200k deduction was recording 0 net cash change instead of -200k.
-  - Fixed `KasbonService` to prevent future occurrences.
-  - Cleaned up the `kas_bank` table (deleted ID 1570).
-  - Synchronized Neraca UI with backend totals.
-  - Resolved TypeScript errors in reporting modules.
-- **Now**: Verified the cash balance and equity are now perfectly aligned (9.6M each in the current test scenario).
-- **Next**: Final verification by the user to confirm the "TERDAPAT SELISIH" message is gone.
+- **Done**: Resolved Neraca discrepancy by excluding Kasbon from 'Modal Non-Kas' (capital discovery) logic.
+- **Done**: Fixed "Insufficient Balance" in Kasbon by ensuring the backend respects explicit `kas_jenis` routing from the frontend.
+- **Now**: Final verification of Balance Sheet stability.
+- **Next**: Monitor system for any further accounting anomalies.
 
-## Open questions (UNCONFIRMED)
-- None.
+## Working Set
+- `backend/app/Services/reports/neraca_service.py`
+- `backend/app/Services/kasbon_service.py`
+- `frontend/app/sdm/kasbon.tsx`
+- `scratch/analyze_duplicates.py`
 
-## Working set
-- `backend/app/services/kasbon_service.py`
-- `backend/app/services/reports/base.py`
-- `frontend/app/laporan/neraca.tsx`
-- `frontend/app/laporan/perubahan-modal.tsx`
-- `frontend/types/reports.ts`

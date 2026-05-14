@@ -1,14 +1,6 @@
 import { View, Pressable as RNPressable, Platform, ScrollView } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
-import { cssInterop } from 'nativewind';
-import { TouchableOpacity as GHPressable } from 'react-native-gesture-handler';
-
-// Use same pressable logic as Button for consistency
-cssInterop(GHPressable, {
-    className: 'style',
-});
-const WrappedPressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<any>;
 
 interface TabItem {
     label: string;
@@ -58,12 +50,18 @@ export const Tabs = ({
                 const Icon = item.icon;
 
                 return (
-                    <WrappedPressable
+                    <RNPressable
                         key={item.value}
                         onPress={() => onChange(item.value)}
-                        activeOpacity={0.7}
+                        style={({ pressed }) => ({
+                            opacity: pressed ? 0.7 : 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 20,
+                        })}
                         className={cn(
-                            "flex-row items-center justify-center py-2.5 rounded-[20px]",
+                            "py-2.5",
                             variant === 'segmented' ? "flex-1 px-2" : "px-5",
                             isActive && variant === 'segmented' ? "bg-white shadow-sm border border-gray-100" : "",
                             isActive && variant === 'pill' ? "bg-primary border border-primary" : "",
@@ -90,7 +88,7 @@ export const Tabs = ({
                         >
                             {item.label}
                         </Typography>
-                    </WrappedPressable>
+                    </RNPressable>
                 );
             })}
         </Container>

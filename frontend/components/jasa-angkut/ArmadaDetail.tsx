@@ -54,7 +54,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     const totalSplitAmount = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), sumber: 'UNIT_TUNAI', nominal: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), sumber: 'UNIT_TUNAI', nominal: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -72,7 +72,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
 
     const toggleSplitPayment = () => {
         if (!isSplitPayment) {
-            setPayments([{ id: Date.now(), sumber: expenseForm.metode_bayar, nominal: expenseForm.jumlah }]);
+            setPayments([{ id: Date.now() + Math.random(), sumber: expenseForm.metode_bayar, nominal: expenseForm.jumlah }]);
         } else {
             setExpenseForm(prev => ({ ...prev, jumlah: formatNumber(totalSplitAmount.toString()) }));
         }

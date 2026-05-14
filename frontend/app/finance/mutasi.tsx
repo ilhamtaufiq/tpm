@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -510,9 +510,18 @@ export default function MutasiKasScreen() {
                 renderItem={({ item }) => {
                     const isIncome = item.tipe === 'MASUK';
                     return (
-                        <TouchableOpacity
-                            activeOpacity={0.9}
-                            className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center"
+                        <Pressable
+                            style={({ pressed }) => ({
+                                backgroundColor: 'white',
+                                padding: 20,
+                                borderRadius: 32,
+                                marginBottom: 24,
+                                borderWidth: 1,
+                                borderColor: '#F9FAFB',
+                                opacity: pressed ? 0.9 : 1,
+                                flexDirection: 'row',
+                                alignItems: 'center'
+                            })}
                         >
                             {/* Visual Indicator Slot */}
                             <View className={`w-14 h-14 rounded-[20px] items-center justify-center mr-4 border ${isIncome ? 'bg-emerald-50 border-emerald-100/50' : 'bg-rose-50 border-rose-100/50'}`}>
@@ -554,7 +563,7 @@ export default function MutasiKasScreen() {
                                     </Typography>
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     );
                 }}
                 contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
@@ -630,13 +639,30 @@ export default function MutasiKasScreen() {
             />
 
             {/* Premium FAB */}
-            <TouchableOpacity
+            <Pressable
                 onPress={() => handleOpenSheet('transfer')}
-                activeOpacity={0.8}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary border-4 border-white/20"
+                style={({ pressed }) => ({
+                    position: 'absolute',
+                    bottom: 40,
+                    right: 24,
+                    width: 64,
+                    height: 64,
+                    backgroundColor: '#023C69',
+                    borderRadius: 32,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#023C69',
+                    shadowOffset: { width: 0, height: 10 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 20,
+                    elevation: 10,
+                    borderWidth: 4,
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    opacity: pressed ? 0.8 : 1
+                })}
             >
                 <Plus size={32} color="white" strokeWidth={3} />
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Entry UI - Platform Specific */}
             {Platform.OS === 'web' ? (

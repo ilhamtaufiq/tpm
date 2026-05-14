@@ -7,7 +7,6 @@ import {
     StatusBar,
     Alert,
     RefreshControl as RNRefreshControl,
-    TouchableOpacity,
     ActivityIndicator,
     FlatList,
     Image,
@@ -755,9 +754,8 @@ export default function InventoryScreen() {
                                 { id: 'stok', label: 'Jumlah Stok', icon: AlertTriangle },
                                 { id: 'harga_jual', label: 'Harga Jual', icon: Edit3 },
                             ].map((option) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={option.id}
-                                    activeOpacity={0.7}
                                     onPress={() => {
                                         setSortBy(option.id);
                                         if (option.id === 'penjualan' || option.id === 'stok') {
@@ -766,7 +764,17 @@ export default function InventoryScreen() {
                                             setSortOrder('asc');
                                         }
                                     }}
-                                    className={`flex-row items-center p-4 rounded-3xl border-2 ${sortBy === option.id ? 'bg-primary/5 border-primary/20' : 'bg-white border-gray-50 shadow-sm shadow-gray-200'}`}
+                                    style={({ pressed }) => ({
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        padding: 16,
+                                        borderRadius: 24,
+                                        borderWidth: 2,
+                                        backgroundColor: sortBy === option.id ? 'rgba(2, 60, 105, 0.05)' : 'white',
+                                        borderColor: sortBy === option.id ? 'rgba(2, 60, 105, 0.2)' : 'rgba(249, 250, 251, 1)',
+                                        opacity: pressed ? 0.7 : 1
+                                    })}
+                                    className="shadow-sm shadow-gray-200"
                                 >
                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${sortBy === option.id ? 'bg-primary/10' : 'bg-gray-50'}`}>
                                         <View>
@@ -786,7 +794,7 @@ export default function InventoryScreen() {
                                             <CheckCircle2 size={16} color="white" />
                                         </View>
                                     )}
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
                     </View>

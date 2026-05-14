@@ -200,7 +200,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     };
 
     const addPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), metode: '', jumlah: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), metode: '', jumlah: '' }]);
     };
 
     const removePaymentRow = (id: number) => {
@@ -222,7 +222,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         if (!isSplitPayment) {
             // Auto-fill with TPM Share for convenience
             const targetAmount = calculations.tpmShare > 0 ? formatNumber(calculations.tpmShare.toString()) : '';
-            setPayments([{ id: Date.now(), metode: formData.metode_bayar || '', jumlah: targetAmount }]);
+            setPayments([{ id: Date.now() + Math.random(), metode: formData.metode_bayar || '', jumlah: targetAmount }]);
         } else {
             setPayments([]);
         }

@@ -50,13 +50,12 @@ export default function KasbonScreen() {
         karyawan_nama: '',
         jumlah: '',
         metode_bayar: 'tunai',
-        unit: 'BENGKEL',
         keterangan: '',
     });
     const [showKaryawanPicker, setShowKaryawanPicker] = useState(false);
     const [isSplitDisbursement, setIsSplitDisbursement] = useState(false);
     const [disbursements, setDisbursements] = useState<{ id: number; metode: string; nominal: string }[]>([
-        { id: Date.now(), metode: 'tunai', nominal: '' }
+        { id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }
     ]);
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [selectedKasbon, setSelectedKasbon] = useState<Kasbon | null>(null);
@@ -130,10 +129,9 @@ export default function KasbonScreen() {
             karyawan_nama: '', 
             jumlah: '', 
             metode_bayar: 'tunai', 
-            unit: 'BENGKEL',
             keterangan: '' 
         });
-        setDisbursements([{ id: Date.now(), metode: 'tunai', nominal: '' }]);
+        setDisbursements([{ id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }]);
         setIsSplitDisbursement(false);
         if (Platform.OS === 'web') {
             setActiveSheet('create');
@@ -172,18 +170,24 @@ export default function KasbonScreen() {
 
         try {
             const nominalTotal = parseNumber(formData.jumlah);
-            const payoutData = isSplitDisbursement
-                ? disbursements.map(d => ({ metode: d.metode.toUpperCase(), nominal: parseNumber(d.nominal) }))
-                : undefined;
-
             await sdmService.createKasbon({
                 karyawan_id: formData.karyawan_id,
                 tanggal: new Date().toISOString().split('T')[0],
                 nominal: nominalTotal,
                 metode_bayar: formData.metode_bayar as any,
-                unit: formData.unit,
+                unit: 'LAINNYA',
                 keterangan: formData.keterangan || undefined,
-                payments: payoutData
+                payments: isSplitDisbursement 
+                    ? disbursements.map(d => ({ 
+                        metode: d.metode.toUpperCase(), 
+                        nominal: parseNumber(d.nominal),
+                        kas_jenis: d.metode === 'transfer' ? 'BANK_UTAMA' : 'KAS_UTAMA'
+                      }))
+                    : [{
+                        metode: formData.metode_bayar.toUpperCase(),
+                        nominal: nominalTotal,
+                        kas_jenis: formData.metode_bayar === 'transfer' ? 'BANK_UTAMA' : 'KAS_UTAMA'
+                      }]
             });
             closeSheets();
             setTimeout(() => {
@@ -350,29 +354,6 @@ export default function KasbonScreen() {
                     )}
                 </View>
 
-                <View className="mb-6">
-                    <Typography className="mb-3 text-textGray font-bold text-[10px] uppercase tracking-widest ml-1">Unit Bisnis Penanggung *</Typography>
-                    <View className="flex-row gap-3">
-                        {[
-                            { key: 'BENGKEL', label: 'Bengkel' },
-                            { key: 'JASA_ANGKUT', label: 'Jasa Angkut' },
-                            { key: 'JUAL_BELI_MOBIL', label: 'Mobil' }
-                        ].map((u) => (
-                            <Pressable
-                                key={u.key}
-                                onPress={() => setFormData({ ...formData, unit: u.key })}
-                                className={`flex-1 py-4 items-center rounded-2xl border ${formData.unit === u.key ? 'border-primary bg-primary shadow-lg shadow-primary/20' : 'border-gray-200 bg-white'}`}
-                            >
-                                <Typography
-                                    className={`text-[10px] font-bold tracking-tight ${formData.unit === u.key ? 'text-white' : 'text-textGray'}`}
-                                >
-                                    {u.label}
-                                </Typography>
-                            </Pressable>
-                        ))}
-                    </View>
-                </View>
-
                 <Input
                     label="Nominal Pinjaman *"
                     keyboardType="numeric"
@@ -388,7 +369,7 @@ export default function KasbonScreen() {
                         <Pressable
                             onPress={() => {
                                 if (!isSplitDisbursement) {
-                                    setDisbursements([{ id: Date.now(), metode: 'tunai', nominal: formData.jumlah }]);
+                                    setDisbursements([{ id: Date.now() + Math.random(), metode: 'tunai', nominal: formData.jumlah }]);
                                 }
                                 setIsSplitDisbursement(!isSplitDisbursement);
                             }}
@@ -464,7 +445,7 @@ export default function KasbonScreen() {
                                 </View>
                             ))}
                             <Pressable
-                                onPress={() => setDisbursements([...disbursements, { id: Date.now(), metode: 'tunai', nominal: '' }])}
+                                onPress={() => setDisbursements([...disbursements, { id: Date.now() + Math.random(), metode: 'tunai', nominal: '' }])}
                                 className="flex-row items-center justify-center py-6 border border-dashed border-gray-300 rounded-[32px] bg-gray-50/30"
                             >
                                 <Plus size={18} color="#9CA3AF" />
@@ -769,8 +750,9 @@ export default function KasbonScreen() {
                         loadData();
                     }}
                     id={selectedKasbon.piutang_id}
-                    initialAmount={Number(selectedKasbon.nominal)}
-                    unit={selectedKasbon.unit}
+                    initialAmount={Number(selectedKasbon.nominal) - Number(selectedKasbon.jumlah_bayar || 0)}
+                    unit={selectedKasbon.unit || 'LAINNYA'}
+                    type="piutang"
                     title={`Pelunasan Kasbon: ${selectedKasbon.karyawan_nama}`}
                 />
             )}

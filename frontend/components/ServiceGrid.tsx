@@ -102,13 +102,13 @@ export const ServiceGrid = () => {
     const filteredMenus = MENUS.filter(menu => {
         const role = user?.role;
         const isAdmin = role === 'ADMIN' || role === 'MANAGER';
-        
+
         // Admin and Manager see everything
         if (isAdmin) return true;
-        
+
         // Non-admins cannot see 'Semua Menu'
         if (menu.id === 'menus') return false;
-        
+
         // Unit-specific roles
         if (role === 'BENGKEL') {
             return menu.id === 'bengkel';
@@ -119,7 +119,7 @@ export const ServiceGrid = () => {
         if (role === 'MOBIL') {
             return menu.id === 'mobil';
         }
-        
+
         // Default: allow (or restrict further if needed)
         return true;
     });

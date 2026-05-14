@@ -62,7 +62,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
     const [investorKasJenis, setInvestorKasJenis] = useState(initialData?.investor_kas_jenis || 'BANK_UTAMA');
 
     const [payments, setPayments] = useState<{ id: number; metode: string; sumber: string; jumlah: string }[]>([
-        { id: Date.now(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }
+        { id: Date.now() + Math.random(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }
     ]);
 
     const [dialogConfig, setDialogConfig] = useState<{
@@ -511,7 +511,7 @@ export const MobilForm = ({ initialData, onSuccess }: MobilFormProps) => {
 
                                     {/* Add Button */}
                                     <Pressable
-                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }])}
+                                        onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: 'TUNAI', sumber: 'UNIT_TUNAI', jumlah: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />

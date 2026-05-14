@@ -411,8 +411,9 @@ export const sdmService = {
         nominal: number; 
         metode_bayar: string; 
         unit?: string;
+        kas_jenis?: string;
         keterangan?: string; 
-        payments?: Array<{ metode: string; nominal: number; catatan?: string }> 
+        payments?: Array<{ metode: string; nominal: number; catatan?: string; kas_jenis?: string }> 
     }): Promise<Kasbon> => {
         const response = await api.post('/kasbon', data);
         return response.data;

@@ -56,12 +56,12 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
     const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
 
-    const [services, setServices] = useState<{ id: number; service_id: number; nama_jasa: string; harga: string | number; qty: number }[]>([{ id: Date.now(), service_id: 0, nama_jasa: '', harga: 0, qty: 1 }]);
-    const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
+    const [services, setServices] = useState<{ id: number; service_id: number; nama_jasa: string; harga: string | number; qty: number }[]>([{ id: Date.now() + Math.random(), service_id: 0, nama_jasa: '', harga: 0, qty: 1 }]);
+    const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
     const [total, setTotal] = useState(0); // Subtotal
     const [diskon, setDiskon] = useState('0');
     const [isSplitPayment, setIsSplitPayment] = useState(false);
-    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+    const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
     const [grandTotal, setGrandTotal] = useState(0);
     const [catatan, setCatatan] = useState('');
     const [activeTab, setActiveTab] = useState<'sparepart' | 'service'>('sparepart');
@@ -164,7 +164,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         // Auto-sync payment for Jasa Angkut
         if (kategori === 'jasa_angkut' && !isSplitPayment) {
             setPayments([{
-                id: payments[0]?.id || Date.now(),
+                id: payments[0]?.id || (Date.now() + Math.random()),
                 metode: 'Transfer',
                 nominal: formatNumber(calculatedGrandTotal.toString()),
                 catatan: payments[0]?.catatan || ''
@@ -204,7 +204,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 } else {
                     setIsSplitPayment(false);
                     setPayments([{
-                        id: Date.now(),
+                        id: Date.now() + Math.random(),
                         metode: initialData.metode_bayar === 'SPLIT' ? 'Tunai' : (initialData.metode_bayar?.charAt(0).toUpperCase() + initialData.metode_bayar?.slice(1).toLowerCase() || ''),
                         nominal: formatNumber(initialData.jumlah_bayar.toString()),
                         catatan: initialData.catatan_pembayaran || ''
@@ -212,7 +212,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 }
             } else {
                 // If no payment data, reset to default empty state
-                setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
                 setIsSplitPayment(false);
             }
 
@@ -226,7 +226,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     qty: s.qty || 1,
                 })));
             } else {
-                setServices([{ id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
+                setServices([{ id: Date.now() + Math.random(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
             }
 
             // Restore parts
@@ -241,7 +241,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     kode: p.spare_part?.kode || (p as any).kode || '',
                 })));
             } else {
-                setParts([{ id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
+                setParts([{ id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
             }
 
             // Note: Customer, Muatan, Mobil selection restoration would require full object match / re-fetch
@@ -249,8 +249,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         }
     }, [initialData]);
 
-    const addService = () => setServices([...services, { id: Date.now(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
-    const addPart = () => setParts([...parts, { id: Date.now(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
+    const addService = () => setServices([...services, { id: Date.now() + Math.random(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
+    const addPart = () => setParts([...parts, { id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
 
     const handleScanSparePart = (scannedData: string) => {
         const cleanData = scannedData.trim();
@@ -285,7 +285,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 if (lastPart && lastPart.spare_part_id === 0 && lastPart.nama === '') {
                     const newParts = [...parts];
                     newParts[parts.length - 1] = {
-                        id: Date.now(),
+                        id: Date.now() + Math.random(),
                         spare_part_id: part.id,
                         nama: part.nama,
                         harga: formatNumber(Math.floor(Number(part.harga_jual)).toString()),
@@ -296,7 +296,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     setParts(newParts);
                 } else {
                     setParts([...parts, {
-                        id: Date.now(),
+                        id: Date.now() + Math.random(),
                         spare_part_id: part.id,
                         nama: part.nama,
                         harga: formatNumber(Math.floor(Number(part.harga_jual)).toString()),
@@ -560,7 +560,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     setIsSplitPayment(false);
                                     // Auto-set to Transfer and full amount for Jasa Angkut
                                     setPayments([{
-                                        id: Date.now(),
+                                        id: Date.now() + Math.random(),
                                         metode: 'Transfer',
                                         nominal: formatNumber(grandTotal.toString()),
                                         catatan: ''
@@ -826,10 +826,16 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             <View className="mb-6 flex-row bg-gray-100 p-1.5 rounded-[22px]">
 
                 <View className={`flex-1 rounded-[18px] ${activeTab === 'sparepart' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setActiveTab('sparepart')}
-                        activeOpacity={0.7}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
+                        style={({ pressed }) => ({
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            opacity: pressed ? 0.7 : 1
+                        })}
                     >
                         <Package size={16} color={activeTab === 'sparepart' ? '#2563EB' : '#9CA3AF'} />
                         <Typography
@@ -846,13 +852,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 </Typography>
                             </View>
                         )}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
                 <View className={`flex-1 rounded-[18px] ${activeTab === 'service' ? 'bg-white shadow-sm' : 'bg-transparent'}`}>
-                    <TouchableOpacity
+                    <Pressable
                         onPress={() => setActiveTab('service')}
-                        activeOpacity={0.7}
-                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16 }}
+                        style={({ pressed }) => ({
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            paddingVertical: 12,
+                            paddingHorizontal: 16,
+                            opacity: pressed ? 0.7 : 1
+                        })}
                     >
                         <Wrench size={16} color={activeTab === 'service' ? '#023C69' : '#9CA3AF'} />
                         <Typography
@@ -869,7 +881,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                 </Typography>
                             </View>
                         )}
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
 
             </View>
@@ -900,18 +912,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    activeOpacity={0.6}
-                                    style={{
+                                    style={({ pressed }) => ({
                                         flexDirection: 'row',
                                         alignItems: 'center',
-                                    }}
+                                        opacity: pressed ? 0.6 : 1
+                                    })}
                                 >
                                     <QrCode size={16} color="#2563EB" />
                                     <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Scan</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                             <View
                                 style={{
@@ -925,18 +937,18 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                     borderColor: '#DBEAFE',
                                 }}
                             >
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={addPart}
                                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    activeOpacity={0.6}
-                                    style={{
+                                    style={({ pressed }) => ({
                                         flexDirection: 'row',
                                         alignItems: 'center',
-                                    }}
+                                        opacity: pressed ? 0.6 : 1
+                                    })}
                                 >
                                     <Plus size={16} color="#2563EB" />
                                     <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Tambah</Typography>
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         </View>
                     </View>
@@ -1130,7 +1142,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                             setIsSplitPayment(!isSplitPayment);
                                             // Reset payments to a single empty entry if switching from split to single
                                             if (isSplitPayment) {
-                                                setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+                                                setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
                                             }
                                         }}
                                         className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
@@ -1156,7 +1168,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                     key={m.value}
                                                     onPress={() => {
                                                         const newP = [...payments];
-                                                        if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
                                                         newP[0].metode = newP[0].metode === m.value ? '' : m.value;
                                                         setPayments(newP);
                                                     }}
@@ -1179,7 +1191,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 <Pressable
                                                     onPress={() => {
                                                         const newP = [...payments];
-                                                        if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
                                                         newP[0].nominal = formatNumber(grandTotal.toString());
                                                         setPayments(newP);
                                                     }}
@@ -1196,7 +1208,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 value={payments[0]?.nominal || ''}
                                                 onChangeText={(val) => {
                                                     const newP = [...payments];
-                                                    if (newP.length === 0) newP.push({ id: Date.now(), metode: '', nominal: '', catatan: '' });
+                                                    if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
                                                     newP[0].nominal = formatNumber(val);
                                                     setPayments(newP);
                                                 }}
@@ -1267,7 +1279,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                         setPayments(payments.filter(pay => pay.id !== p.id));
                                                     } else {
                                                         setIsSplitPayment(false);
-                                                        setPayments([{ id: Date.now(), metode: '', nominal: '', catatan: '' }]); // Reset to single empty payment
+                                                        setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]); // Reset to single empty payment
                                                     }
                                                 }}
                                                 className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
@@ -1277,7 +1289,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         </View>
                                     ))}
                                     <Pressable
-                                        onPress={() => setPayments([...payments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
+                                        onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                                         className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
                                     >
                                         <Plus size={14} color="#023C69" />

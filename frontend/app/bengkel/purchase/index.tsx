@@ -38,7 +38,7 @@ export default function PurchaseScreen() {
     const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; sumber: string; nominal: string }[]>([
-        { id: Date.now(), sumber: 'BENGKEL_TUNAI', nominal: '' }
+        { id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }
     ]);
 
     const getPaymentDetails = (sumber: string) => {
@@ -82,7 +82,7 @@ export default function PurchaseScreen() {
     const handleAddItem = () => {
         setItems([
             ...items,
-            { id: Date.now(), spare_part_id: 0, name: '', qty: '', price: '' }
+            { id: Date.now() + Math.random(), spare_part_id: 0, name: '', qty: '', price: '' }
         ]);
     };
 
@@ -101,7 +101,7 @@ export default function PurchaseScreen() {
     };
 
     const handleAddPaymentRow = () => {
-        setPayments([...payments, { id: Date.now(), sumber: 'BENGKEL_TUNAI', nominal: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }]);
     };
 
     const handleRemovePaymentRow = (id: number) => {
@@ -160,7 +160,7 @@ export default function PurchaseScreen() {
                 setItems(newItems);
             } else {
                 setItems([...items, {
-                    id: Date.now(),
+                    id: Date.now() + Math.random(),
                     spare_part_id: part.id,
                     name: part.nama,
                     qty: '1',

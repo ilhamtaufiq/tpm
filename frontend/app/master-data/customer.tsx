@@ -499,14 +499,14 @@ export default function CustomerScreen() {
                     <View className="pt-4 border-t border-gray-100">
                         <View className="flex-row justify-between items-center mb-4">
                             <Typography weight="bold" className="text-base">Daftar Kendaraan</Typography>
-                                <Pressable
-                                    onPress={addVehicle}
-                                    style={{ backgroundColor: `${themeColors.primary}15` }}
-                                    className="flex-row items-center px-3 py-2 rounded-xl"
-                                >
-                                    <Plus size={16} color={themeColors.primary} />
-                                    <Typography style={{ color: themeColors.primary }} className="font-bold text-xs ml-1">Tambah</Typography>
-                                </Pressable>
+                            <Pressable
+                                onPress={addVehicle}
+                                style={{ backgroundColor: `${themeColors.primary}15` }}
+                                className="flex-row items-center px-3 py-2 rounded-xl"
+                            >
+                                <Plus size={16} color={themeColors.primary} />
+                                <Typography style={{ color: themeColors.primary }} className="font-bold text-xs ml-1">Tambah</Typography>
+                            </Pressable>
                         </View>
 
                         {formData.vehicles.map((vehicle, index) => (
@@ -696,8 +696,10 @@ export default function CustomerScreen() {
             {/* FAB */}
             <Pressable
                 onPress={openAddForm}
+                style={({ pressed }) => ({
+                    opacity: pressed ? 0.8 : 1
+                })}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-                activeOpacity={0.8}
             >
                 <Plus size={32} color="white" />
             </Pressable>
@@ -714,7 +716,6 @@ export default function CustomerScreen() {
                         <Pressable
                             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                             onPress={handleCloseSheet}
-                            activeOpacity={1}
                         />
                         <View
                             className="bg-white rounded-t-[32px] shadow-2xl h-[90%]"

@@ -28,7 +28,7 @@ export const StatsSlider = () => {
             id: 'mobil',
             title: 'Jual Beli Mobil',
             subtitle: `${carInventory?.total_units || carInventory?.total_mobil || 0} unit tersedia`,
-            value: `${carSales?.total_units_sold || carSales?.total_transaksi || 0} Terjual`,
+            value: `${carSales?.total_transaksi || 0} Terjual`,
             icon: CarFront,
             color: '#F59E0B', // Amber/Orange
             path: '/laporan/mobil',
@@ -91,8 +91,12 @@ export const StatsSlider = () => {
                     return (
                         <Pressable
                             key={slide.id}
-                            activeOpacity={0.9}
-                            style={{ width: SLIDE_WIDTH, height: 160, backgroundColor: slide.color }}
+                            style={({ pressed }) => ({
+                                width: SLIDE_WIDTH,
+                                height: 160,
+                                backgroundColor: slide.color,
+                                opacity: pressed ? 0.9 : 1
+                            })}
                             className="mr-4 rounded-3xl overflow-hidden justify-between p-6 border border-white/10"
                         >
                             <View className="flex-row justify-between items-start">

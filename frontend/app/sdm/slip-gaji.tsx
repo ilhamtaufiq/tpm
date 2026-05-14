@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, TextInput, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
@@ -608,32 +608,51 @@ export default function SlipGajiScreen() {
                         <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4 text-center">Periode Laporan & Slip</Typography>
                         
                         <View className="flex-row items-center justify-between pb-4 border-b border-gray-50">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => { setDatePickingMode('start'); setShowDatePicker(true); }}
-                                className="flex-1 items-center"
+                                style={({ pressed }) => ({
+                                    flex: 1,
+                                    alignItems: 'center',
+                                    opacity: pressed ? 0.7 : 1
+                                })}
                                 hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                             >
                                 <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Dari Tanggal</Typography>
                                 <Typography className="text-textMain font-bold text-base">{startDate}</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                             
                             <View className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                                 <ArrowRight size={16} color="#023C69" />
                             </View>
 
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => { setDatePickingMode('end'); setShowDatePicker(true); }}
-                                className="flex-1 items-center"
+                                style={({ pressed }) => ({
+                                    flex: 1,
+                                    alignItems: 'center',
+                                    opacity: pressed ? 0.7 : 1
+                                })}
                                 hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                             >
                                 <Typography className="text-textGray/40 text-[8px] font-black uppercase tracking-widest mb-1">Sampai Tanggal</Typography>
                                 <Typography className="text-textMain font-bold text-base">{endDate}</Typography>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
-                        <TouchableOpacity
+                        <Pressable
                             onPress={() => { setDatePickingMode('slip'); setShowDatePicker(true); }}
-                            className="mt-4 bg-primary/5 rounded-2xl p-4 flex-row items-center justify-between border border-primary/10"
+                            style={({ pressed }) => ({
+                                marginTop: 16,
+                                backgroundColor: 'rgba(2, 60, 105, 0.05)',
+                                borderRadius: 16,
+                                padding: 16,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderWidth: 1,
+                                borderColor: 'rgba(2, 60, 105, 0.1)',
+                                opacity: pressed ? 0.8 : 1
+                            })}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
                             <View className="flex-row items-center">
@@ -648,7 +667,7 @@ export default function SlipGajiScreen() {
                             <View className="bg-primary/20 px-3 py-1.5 rounded-full">
                                 <Typography className="text-primary text-[8px] font-black uppercase">Ubah</Typography>
                             </View>
-                        </TouchableOpacity>
+                        </Pressable>
                     </Card>
                 </View>
 
@@ -928,7 +947,7 @@ export default function SlipGajiScreen() {
                             <Pressable
                                 onPress={() => {
                                     if (!isSplitPayment) {
-                                        setPayments([{ id: Date.now(), metode: payMetode.toUpperCase(), nominal: selectedSlip.gaji_bersih.toString() }]);
+                                        setPayments([{ id: Date.now() + Math.random(), metode: payMetode.toUpperCase(), nominal: selectedSlip.gaji_bersih.toString() }]);
                                     }
                                     setIsSplitPayment(!isSplitPayment);
                                 }}
@@ -979,7 +998,7 @@ export default function SlipGajiScreen() {
                                 ))}
 
                                 <Pressable
-                                    onPress={() => setPayments([...payments, { id: Date.now(), metode: 'TUNAI', nominal: '0' }])}
+                                    onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: 'TUNAI', nominal: '0' }])}
                                     className="flex-row items-center justify-center py-4 rounded-3xl border border-dashed border-gray-300"
                                 >
                                     <Typography weight="bold" className="text-gray-400 text-xs uppercase">+ TAMBAH METODE</Typography>

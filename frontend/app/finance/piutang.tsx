@@ -195,7 +195,7 @@ export default function PiutangUsahaScreen() {
     const [createNote, setCreateNote] = useState('');
     const [isCreateSplitPayment, setIsCreateSplitPayment] = useState(false);
     const [createPayments, setCreatePayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: '', nominal: '', catatan: '' }
+        { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }
     ]);
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
     const [createUnit, setCreateUnit] = useState<string>('BENGKEL');
@@ -453,7 +453,7 @@ export default function PiutangUsahaScreen() {
                             </Card>
                         ))}
                         <Pressable
-                            onPress={() => setCreatePayments([...createPayments, { id: Date.now(), metode: '', nominal: '', catatan: '' }])}
+                            onPress={() => setCreatePayments([...createPayments, { id: Date.now() + Math.random() + Math.random(), metode: '', nominal: '', catatan: '' }])}
                             className="flex-row items-center justify-center p-4 border border-dashed border-gray-300 rounded-[24px] bg-white"
                         >
                             <Plus size={18} color="#64748B" className="mr-2" />

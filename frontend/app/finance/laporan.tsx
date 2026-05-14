@@ -100,21 +100,20 @@ export default function LaporanKeuanganScreen() {
         setIsLoading(true);
         try {
             if (reportType === 'LABA_RUGI') {
-                const data = await keuanganService.getProfitSummary({
+                const data = await keuanganService.getLabaRugiReport({
                     tanggal_dari: dateRange.dari,
                     tanggal_sampai: dateRange.sampai
                 });
                 setProfitData(data);
             } else if (reportType === 'MODAL') {
-                const data = await keuanganService.getCapitalReport({
+                const data = await keuanganService.getModalReport({
                     tanggal_dari: dateRange.dari,
                     tanggal_sampai: dateRange.sampai
                 });
                 setCapitalData(data);
             } else if (reportType === 'NERACA') {
                 const data = await keuanganService.getNeracaReport({
-                    tanggal_dari: dateRange.dari,
-                    tanggal_sampai: dateRange.sampai
+                    as_of_date: dateRange.sampai
                 });
                 setNeracaData(data);
             }
@@ -195,7 +194,7 @@ export default function LaporanKeuanganScreen() {
     const handleApplyDate = () => {
         const dariValid = isValid(parse(tempDateRange.dari, 'yyyy-MM-dd', new Date()));
         const sampaiValid = isValid(parse(tempDateRange.sampai, 'yyyy-MM-dd', new Date()));
-        
+
         if (!dariValid || !sampaiValid) {
             Alert.alert('Kesalahan', 'Format tanggal tidak valid (Gunakan YYYY-MM-DD)');
             return;
@@ -314,40 +313,7 @@ export default function LaporanKeuanganScreen() {
         </View>
     );
 
-            <Header
-                title="Laporan Keuangan"
-                subtitle="Analisis & Ringkasan Performa"
-                showBackButton
-                onBackButtonPress={() => router.back()}
-                rightElement={
-                    <Pressable
-                        onPress={() => setIsSetupModalVisible(true)}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        <Settings size={20} color="white" />
-                    </Pressable>
-                }
-            />
 
-            {/* Report Selector Tab - Moved from Header to Page */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-2 rounded-[32px] shadow-xl border border-gray-50 flex-row">
-                    {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
-                        <Pressable
-                            key={type}
-                            onPress={() => setReportType(type)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl ${reportType === type ? 'bg-primary shadow-sm' : ''}`}
-                        >
-                            <Typography
-                                weight="bold"
-                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-white' : 'text-textGray/50'}`}
-                            >
-                                {type.replace('_', ' ')}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
-            </View>
 
     const renderProfitLoss = () => {
         if (!profitData) return null;
@@ -595,6 +561,41 @@ export default function LaporanKeuanganScreen() {
 
     return (
         <View className="flex-1 bg-surface">
+            <Header
+                title="Laporan Keuangan"
+                subtitle="Analisis & Ringkasan Performa"
+                showBackButton
+                onBackButtonPress={() => router.back()}
+                rightElement={
+                    <Pressable
+                        onPress={() => setIsSetupModalVisible(true)}
+                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                    >
+                        <Settings size={20} color="white" />
+                    </Pressable>
+                }
+            />
+
+            {/* Report Selector Tab */}
+            <View className="px-6 -mt-8 z-10">
+                <View className="bg-white p-2 rounded-[32px] shadow-xl border border-gray-50 flex-row">
+                    {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
+                        <Pressable
+                            key={type}
+                            onPress={() => setReportType(type)}
+                            className={`flex-1 py-3.5 items-center rounded-2xl ${reportType === type ? 'bg-primary shadow-sm' : ''}`}
+                        >
+                            <Typography
+                                weight="bold"
+                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-white' : 'text-textGray/50'}`}
+                            >
+                                {type.replace('_', ' ')}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
+
             {/* Global Header Integration */}
 
             <ScrollView

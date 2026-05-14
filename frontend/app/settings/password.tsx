@@ -218,8 +218,16 @@ export default function ChangePasswordScreen() {
                 <Pressable
                     onPress={handleSave}
                     disabled={isSaving}
-                    activeOpacity={0.8}
-                    className={`h-16 rounded-3xl flex-row items-center justify-center shadow-xl ${isSaving ? 'bg-primary/60' : 'bg-primary'}`}
+                    style={({ pressed }) => ({
+                        height: 64,
+                        borderRadius: 24,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isSaving ? 'rgba(2, 60, 105, 0.6)' : '#023C69',
+                        opacity: pressed ? 0.8 : 1
+                    })}
+                    className="shadow-xl"
                 >
                     <Save size={20} color="white" />
                     <Typography weight="bold" className="text-white text-lg ml-3">

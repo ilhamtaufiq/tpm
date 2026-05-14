@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { AlertCircle, Repeat } from 'lucide-react-native';
 
 interface ErrorBoundaryState {
@@ -89,10 +89,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
                     {/* Action Buttons */}
                     <View style={{ width: '100%', gap: 12 }}>
-                        <TouchableOpacity
+                        <Pressable
                             onPress={this.handleReset}
-                            activeOpacity={0.8}
-                            style={{
+                            style={({ pressed }) => ({
                                 backgroundColor: '#023C69', // primary color
                                 paddingVertical: 18,
                                 paddingHorizontal: 32,
@@ -105,7 +104,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                 shadowOpacity: 0.3,
                                 shadowRadius: 10,
                                 elevation: 8,
-                            }}
+                                opacity: pressed ? 0.8 : 1
+                            })}
                         >
                             <Repeat size={20} color="white" />
                             <Text style={{
@@ -116,24 +116,25 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                             }}>
                                 COBA LAGI SEKARANG
                             </Text>
-                        </TouchableOpacity>
+                        </Pressable>
 
                         {__DEV__ && (
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => {
                                     console.clear();
                                     this.handleReset();
                                 }}
-                                style={{
+                                style={({ pressed }) => ({
                                     backgroundColor: '#F3F4F6',
                                     paddingVertical: 16,
                                     borderRadius: 16,
                                     alignItems: 'center',
-                                    marginTop: 12
-                                }}
+                                    marginTop: 12,
+                                    opacity: pressed ? 0.7 : 1
+                                })}
                             >
                                 <Text style={{ color: '#4B5563', fontWeight: '600' }}>Bersihkan Log & Reset</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         )}
                     </View>
 

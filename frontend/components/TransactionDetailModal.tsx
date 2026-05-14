@@ -501,8 +501,10 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                         <SafeAreaView className="absolute bottom-10 left-8 right-8">
                             <Pressable
                                 onPress={onClose}
+                                style={({ pressed }) => ({
+                                    opacity: pressed ? 0.9 : 1
+                                })}
                                 className="bg-primary h-16 rounded-[24px] flex-row items-center justify-center shadow-2xl"
-                                activeOpacity={0.9}
                             >
                                 <Typography weight="bold" className="text-white text-base">Tutup Detail</Typography>
                             </Pressable>

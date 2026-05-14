@@ -391,8 +391,10 @@ export default function JasaServisScreen() {
             {/* FAB */}
             <Pressable
                 onPress={() => handleOpenSheet()}
+                style={({ pressed }) => ({
+                    opacity: pressed ? 0.8 : 1
+                })}
                 className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-                activeOpacity={0.8}
             >
                 <Plus size={32} color="white" />
             </Pressable>
@@ -409,7 +411,6 @@ export default function JasaServisScreen() {
                         <Pressable
                             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                             onPress={handleCloseSheet}
-                            activeOpacity={1}
                         />
                         <View
                             className="bg-white rounded-t-[32px] shadow-2xl h-[70%]"

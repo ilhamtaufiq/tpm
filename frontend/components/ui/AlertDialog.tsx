@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, TouchableOpacity, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { View, Text, useWindowDimensions, StyleSheet, Pressable, Animated, Platform } from 'react-native';
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react-native';
 
 interface AlertDialogProps {
@@ -97,31 +97,36 @@ export const AlertDialog = ({
                 <View style={styles.actionsBox}>
                     {isConfirm && (
                         <View style={styles.btnWrapper}>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
+                            <Pressable
                                 onPress={onClose}
-                                style={[styles.btnBase, styles.cancelBtn]}
+                                style={({ pressed }) => [
+                                    styles.btnBase,
+                                    styles.cancelBtn,
+                                    { opacity: pressed ? 0.7 : 1 }
+                                ]}
                                 disabled={loading}
                             >
                                 <Text style={styles.cancelText}>{cancelText}</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
                     
                     <View style={styles.btnWrapper}>
-                        <TouchableOpacity
-                            activeOpacity={0.8}
+                        <Pressable
                             onPress={() => {
                                 if (onConfirm) onConfirm();
                                 else onClose();
                             }}
                             disabled={loading}
-                            style={[styles.btnBase, { backgroundColor: ui.color }]}
+                            style={({ pressed }) => [
+                                styles.btnBase,
+                                { backgroundColor: ui.color, opacity: pressed ? 0.8 : 1 }
+                            ]}
                         >
                             <Text style={styles.confirmText}>
                                 {loading ? '...' : confirmText}
                             </Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </View>
             </Animated.View>

@@ -39,7 +39,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now(), metode: '', nominal: formatNumber(initialAmount.toString()), catatan: '' }
+        { id: Date.now() + Math.random(), metode: '', nominal: formatNumber(initialAmount.toString()), catatan: '' }
     ]);
     const [paymentNote, setPaymentNote] = useState('');
     const [loading, setLoading] = useState(false);
@@ -53,21 +53,30 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     }, [visible]);
 
-    const unitBankBalance = useMemo(() => {
-        if (!allBalances || !unit) return null;
+    const balancesInfo = useMemo(() => {
+        if (!allBalances) return { cash: 0, bank: 0 };
         
-        // Map unit key to sub_balance key
-        const mapping: Record<string, string> = {
-            'BENGKEL': 'bengkel',
-            'JASA_ANGKUT': 'jasa_angkut',
-            'JUAL_BELI_MOBIL': 'mobil'
+        // Map unit key to account keys
+        const unitMapping: Record<string, { cash: string; bank: string }> = {
+            'BENGKEL': { cash: 'kas_unit_bengkel', bank: 'bengkel' },
+            'JASA_ANGKUT': { cash: 'kas_unit_jasa_angkut', bank: 'jasa_angkut' },
+            'JUAL_BELI_MOBIL': { cash: 'kas_unit_mobil', bank: 'mobil' },
+            'KAS_UTAMA': { cash: 'kas_utama', bank: 'utama' },
+            'BANK_UTAMA': { cash: 'kas_utama', bank: 'utama' }
         };
         
-        const subKey = mapping[unit];
-        if (subKey && allBalances.bank_utama?.sub_balances) {
-            return allBalances.bank_utama.sub_balances[subKey] || 0;
+        const mapping = unit ? unitMapping[unit] : { cash: 'kas_utama', bank: 'utama' };
+        
+        const cashBalance = allBalances[mapping.cash]?.saldo || 0;
+        
+        let bankBalance = 0;
+        if (allBalances.bank_utama?.sub_balances && mapping.bank) {
+            bankBalance = allBalances.bank_utama.sub_balances[mapping.bank] || 0;
+        } else if (allBalances.bank_utama) {
+            bankBalance = allBalances.bank_utama.saldo || 0;
         }
-        return null;
+        
+        return { cash: cashBalance, bank: bankBalance };
     }, [allBalances, unit]);
 
     const sheetRef = useRef<BottomSheet>(null);
@@ -85,7 +94,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const sisaSetelahBayar = initialAmount - totalBayar;
 
     const addPayment = () => {
-        setPayments([...payments, { id: Date.now(), metode: '', nominal: '', catatan: '' }]);
+        setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
         setIsSplitPayment(true);
     };
 
@@ -105,7 +114,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 metode: p.metode as any,
                 nominal: parseNumber(p.nominal),
                 catatan: p.catatan || undefined,
-                kas_jenis: p.metode === 'TUNAI' ? kas_jenis : undefined
+                kas_jenis: p.metode === 'TUNAI' ? (kas_jenis || 'KAS_UTAMA') : (p.metode === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
             }))
             .filter(p => p.nominal > 0);
 
@@ -244,11 +253,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             ))}
                         </View>
 
-                        {p.metode === 'TRANSFER' && unitBankBalance !== null && (
+                        {p.metode === 'TRANSFER' && (
                             <View className="flex-row items-center mb-5 bg-blue-50/50 p-3 rounded-xl border border-blue-100/30">
                                 <Wallet size={12} color="#023C69" />
                                 <Typography variant="caption" className="text-primary/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
-                                    Saldo Unit: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(unitBankBalance)}</Typography>
+                                    Saldo Bank: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(balancesInfo.bank)}</Typography>
+                                </Typography>
+                            </View>
+                        )}
+
+                        {p.metode === 'TUNAI' && (
+                            <View className="flex-row items-center mb-5 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/30">
+                                <Wallet size={12} color="#059669" />
+                                <Typography variant="caption" className="text-emerald-700/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
+                                    Saldo Kas: <Typography variant="caption" weight="bold" className="text-emerald-700">{formatCurrency(balancesInfo.cash)}</Typography>
                                 </Typography>
                             </View>
                         )}

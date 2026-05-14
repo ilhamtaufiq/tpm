@@ -112,8 +112,10 @@ export const TransactionList = () => {
                     return (
                         <Pressable
                             key={item.id}
+                            style={({ pressed }) => ({
+                                opacity: pressed ? 0.8 : 1
+                            })}
                             className="flex-row items-center bg-white p-4 rounded-3xl mb-3 border border-gray-100 shadow-sm"
-                            activeOpacity={0.8}
                             onPress={() => handleItemPress(item)}
                         >
                             <View

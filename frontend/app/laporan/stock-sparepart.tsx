@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl as RNRefreshControl, ActivityIndicator, TextInput, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -163,13 +163,19 @@ export default function StockSparepartReportScreen() {
                 </View>
 
                 <View className="flex-row justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handlePrev}
-                        className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                        activeOpacity={0.7}
+                        style={({ pressed }) => ({
+                            padding: 4,
+                            backgroundColor: 'white',
+                            borderRadius: 20,
+                            borderWidth: 1,
+                            borderColor: '#F3F4F6',
+                            opacity: pressed ? 0.7 : 1
+                        })}
                     >
                         <ChevronLeft size={20} color="#374151" />
-                    </TouchableOpacity>
+                    </Pressable>
 
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#4B5563" className="mr-2" />
@@ -178,13 +184,19 @@ export default function StockSparepartReportScreen() {
                         </Typography>
                     </View>
 
-                    <TouchableOpacity
+                    <Pressable
                         onPress={handleNext}
-                        className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                        activeOpacity={0.7}
+                        style={({ pressed }) => ({
+                            padding: 4,
+                            backgroundColor: 'white',
+                            borderRadius: 20,
+                            borderWidth: 1,
+                            borderColor: '#F3F4F6',
+                            opacity: pressed ? 0.7 : 1
+                        })}
                     >
                         <ChevronRight size={20} color="#374151" />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
 
@@ -284,9 +296,8 @@ export default function StockSparepartReportScreen() {
                 animationType="fade"
                 onRequestClose={() => setShowExportMenu(false)}
             >
-                <TouchableOpacity
+                <Pressable
                     className="flex-1 bg-black/50 justify-end"
-                    activeOpacity={1}
                     onPress={() => setShowExportMenu(false)}
                 >
                     <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
@@ -438,7 +449,7 @@ export default function StockSparepartReportScreen() {
                             </Pressable>
                         </View>
                     </View>
-                </TouchableOpacity>
+                </Pressable>
             </Modal>
         </SafeAreaView>
     );

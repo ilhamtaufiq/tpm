@@ -112,7 +112,7 @@ class KasbonService:
             keterangan=data.keterangan,
             status=PaymentStatus.BELUM_LUNAS,
             catatan=data.catatan,
-            unit=data.unit or KasBankSource.BENGKEL,
+            unit=data.unit or KasBankSource.LAINNYA,
             created_by=user_id,
         )
 
@@ -143,6 +143,8 @@ class KasbonService:
                 if p_nominal <= 0:
                     continue
                 p_metode = p.get("metode") or data.metode_bayar or PaymentMethod.TUNAI
+                p_kas_jenis = p.get("kas_jenis")
+                
                 create_kas_entry(
                     db=self.db,
                     tanggal=data.tanggal,
@@ -150,6 +152,7 @@ class KasbonService:
                     nominal=p_nominal,
                     sumber=kasbon.unit,
                     metode_bayar=p_metode,
+                    kas_jenis=p_kas_jenis, # Pass the explicit cash account type (e.g. KAS_UTAMA)
                     referensi_id=kasbon.id,
                     nomor_referensi=kasbon.nomor_kasbon,
                     keterangan=f"Kasbon karyawan {karyawan.nama} ({kasbon.nomor_kasbon}) - {str(p_metode).upper()}",

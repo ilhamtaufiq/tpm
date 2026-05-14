@@ -535,14 +535,20 @@ export default function AssetScreen() {
                 }
             />
 
-            <Pressable onPress={openAddForm} className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl border-4 border-white/20">
+            <Pressable
+                onPress={openAddForm}
+                style={({ pressed }) => ({
+                    opacity: pressed ? 0.8 : 1
+                })}
+                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl border-4 border-white/20"
+            >
                 <Plus size={32} color="white" />
             </Pressable>
 
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetVisible} transparent={true} animationType="fade" onRequestClose={handleCloseSheet}>
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} activeOpacity={1} />
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleCloseSheet} />
                         <View className="bg-white rounded-t-[32px] shadow-2xl h-[90%] max-w-[640px] self-center w-full">
                             <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-4" />
                             <ScrollView className="flex-1">{renderSheetContent()}</ScrollView>

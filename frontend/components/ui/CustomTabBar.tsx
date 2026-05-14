@@ -67,11 +67,17 @@ export const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarPro
                         accessibilityLabel={options.tabBarAccessibilityLabel}
                         onPress={onPress}
                         onLongPress={onLongPress}
+                        style={({ pressed }) => ({
+                            opacity: pressed ? 0.7 : 1,
+                            flex: 1,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 20,
+                        })}
                         className={cn(
-                            "flex-1 items-center justify-center py-1 rounded-[20px]",
+                            "py-1",
                             isFocused ? "bg-primary/5" : ""
                         )}
-                        activeOpacity={0.7}
                     >
                         <View className={cn("mb-1", isFocused ? "scale-110" : "scale-100 opacity-40")}>
                             {renderIcon(isFocused ? '#023C69' : '#6B7280')}

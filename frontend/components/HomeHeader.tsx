@@ -42,13 +42,13 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
         <View className="bg-primary pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
             {/* Background Image (User Custom) */}
             {user?.home_background && (
-                <Image 
-                    source={{ uri: getFileUrl(user.home_background) as string }} 
-                    className="absolute inset-0 w-full h-full opacity-30" 
+                <Image
+                    source={{ uri: getFileUrl(user.home_background) as string }}
+                    className="absolute inset-0 w-full h-full opacity-30"
                     resizeMode="cover"
                 />
             )}
-            
+
             {/* Decorative Ambient Glass */}
             <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
             <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
@@ -80,7 +80,9 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                 {/* Search Bar - Takes available space */}
                 <Pressable
                     onPress={() => setIsSearchOpen(true)}
-                    activeOpacity={0.9}
+                    style={({ pressed }) => ({
+                        opacity: pressed ? 0.9 : 1
+                    })}
                     className="flex-1 bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md"
                 >
                     <Search size={18} color="white" opacity={0.6} />
@@ -92,7 +94,9 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                     {/* Notification Icon */}
                     {/* <Pressable
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        activeOpacity={0.7}
+                        style={({ pressed }) => ({
+                            opacity: pressed ? 0.7 : 1
+                        })}
                     >
                         <Bell size={20} color="white" />
                         <View className="absolute top-2.5 right-2.5 w-2 h-2 bg-secondary rounded-full border border-primary" />
@@ -150,8 +154,10 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
                                         <Pressable
                                             key={route.id}
                                             onPress={() => handleNavigate(route.path)}
+                                            style={({ pressed }) => ({
+                                                opacity: pressed ? 0.7 : 1
+                                            })}
                                             className="flex-row items-center py-5 bg-surface mb-4 rounded-[28px] px-5 border border-gray-50 shadow-sm"
-                                            activeOpacity={0.7}
                                         >
                                             <View className="bg-primary/5 w-14 h-14 rounded-2xl items-center justify-center mr-4">
                                                 <Icon size={24} color={themeColors.primary} />
