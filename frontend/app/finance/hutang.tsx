@@ -750,6 +750,8 @@ export default function HutangUsahaScreen() {
                     id={selectedHutang.id}
                     initialAmount={selectedHutang.sisa_hutang}
                     type="hutang"
+                    unit={selectedHutang.unit}
+                    kas_jenis={selectedHutang.unit ? `KAS_UNIT_${selectedHutang.unit}` : undefined}
                 />
             )}
 

@@ -114,7 +114,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 metode: p.metode as any,
                 nominal: parseNumber(p.nominal),
                 catatan: p.catatan || undefined,
-                kas_jenis: p.metode === 'TUNAI' ? (kas_jenis || 'KAS_UTAMA') : (p.metode === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
+                kas_jenis: p.metode === 'TRANSFER' ? 'BANK_UTAMA' : (kas_jenis || undefined)
             }))
             .filter(p => p.nominal > 0);
 

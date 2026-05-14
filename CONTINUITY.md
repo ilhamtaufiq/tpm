@@ -11,6 +11,7 @@
 ## Key Decisions
 - **ID Hardening**: Standardized `Date.now() + Math.random()` across all dynamic list rendering logic.
 - **Audit Tool**: Created `analyze_duplicates.py` to systematically verify codebase compliance.
+- **Persistent Context**: Established `.agent/` folder with detailed documentation (`CONTEXT.md`, `ACCOUNTING_RULES.md`, etc.) to stabilize AI reasoning across sessions.
 - **Kasbon Routing**: Decoupled fund source (`KAS_UTAMA`) from reporting unit (`BENGKEL`) using the `payments` array to ensure accurate asset classification.
 
 - **Done**: Resolved Neraca discrepancy by excluding Kasbon from 'Modal Non-Kas' (capital discovery) logic.

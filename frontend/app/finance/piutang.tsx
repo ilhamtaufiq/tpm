@@ -899,6 +899,8 @@ export default function PiutangUsahaScreen() {
                     id={selectedPiutang.id}
                     initialAmount={selectedPiutang.sisa_piutang}
                     type="piutang"
+                    unit={selectedPiutang.unit}
+                    kas_jenis={selectedPiutang.unit ? `KAS_UNIT_${selectedPiutang.unit}` : undefined}
                 />
             )}
 

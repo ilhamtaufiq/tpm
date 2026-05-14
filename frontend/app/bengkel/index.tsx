@@ -1791,6 +1791,8 @@ export default function BengkelScreen() {
                     id={selectedItem.piutang_id}
                     initialAmount={Number(selectedItem.grand_total) - Number(selectedItem.jumlah_bayar || 0)}
                     type="piutang"
+                    unit="BENGKEL"
+                    kas_jenis="KAS_UNIT_BENGKEL"
                 />
             )}
             {/* Wallet Modal (Unit Level) - Hybrid: Modal on web, BottomSheet on mobile */}

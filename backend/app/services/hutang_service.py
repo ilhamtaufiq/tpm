@@ -324,6 +324,7 @@ class HutangService:
                 nomor_referensi=hutang.nomor_hutang,
                 keterangan=f"Pembayaran hutang {hutang.nomor_hutang} - {hutang.nama_kreditur} ({p_detail.metode.upper()})",
                 user_id=user_id,
+                kas_jenis=p_detail.kas_jenis,
             )
 
         # Update source transaction status

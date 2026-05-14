@@ -998,6 +998,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     id={activeTx.piutang_id}
                     initialAmount={Number(activeTx.sisa_bayar)}
                     title="Pelunasan Unit Mobil"
+                    unit="JUAL_BELI_MOBIL"
+                    kas_jenis="KAS_UNIT_MOBIL"
                 />
             )}
 
@@ -1014,6 +1016,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     initialAmount={Number(activeHutang.sisa_hutang)}
                     title="Pelunasan Hutang Unit"
                     type="hutang"
+                    unit="JUAL_BELI_MOBIL"
+                    kas_jenis="KAS_UNIT_MOBIL"
                 />
             )}
         </View>

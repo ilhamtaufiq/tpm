@@ -37,6 +37,8 @@ import { formatCurrency } from '../utils/format';
 import { keuanganService, ActivityItem } from '../services/keuangan';
 import { bengkelService } from '../services/bengkel';
 import { jasaAngkutService } from '../services/jasaAngkut';
+import { sdmService } from '../services/sdm';
+import { mobilService } from '../services/mobil';
 import { FILE_URL } from '../utils/api';
 import { AlertDialog } from './ui/AlertDialog';
 import * as Linking from 'expo-linking';
@@ -76,6 +78,7 @@ const BentoSection = ({ title, children }: { title: string, children: React.Reac
 export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDetailModalProps) => {
     const [loading, setLoading] = useState(false);
     const [details, setDetails] = useState<any>(null);
+    const [subDetails, setSubDetails] = useState<any>(null);
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
     const [printing, setPrinting] = useState(false);
     const user = useAuthStore(state => state.user);
@@ -106,19 +109,78 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
     }, []);
 
     useEffect(() => {
+        if (!visible) {
+            setDetails(null);
+            setSubDetails(null);
+            return;
+        }
+
         const fetchDetails = async () => {
             if (visible && item) {
                 setLoading(true);
+                setDetails(null);
+                setSubDetails(null);
                 try {
                     let data;
                     const id = item.original_id;
+                    const subtitle = (item.subtitle || '').toUpperCase();
 
-                    if (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') {
+                    // 1. Route by transaction prefix first (most reliable)
+                    if (subtitle.startsWith('PTG')) {
+                        data = await keuanganService.getPiutang(id);
+                    } else if (subtitle.startsWith('HTG')) {
+                        data = await keuanganService.getHutang(id);
+                    } 
+                    // 2. Route by type and source
+                    else if (item.type === 'financial') {
+                        data = await keuanganService.getKasBankTransaction(id);
+                        
+                        // Fetch Sub-Details if reference exists
+                        if (data.referensi_id) {
+                            try {
+                                const source = data.sumber;
+                                const refId = data.referensi_id;
+                                
+                                if (source === 'KASBON') {
+                                    const kasbon = await sdmService.getKasbon(refId);
+                                    setSubDetails({ type: 'kasbon', ...kasbon });
+                                } else if (source === 'GAJI') {
+                                    const slip = await sdmService.getSlipGaji(refId);
+                                    setSubDetails({ type: 'slip_gaji', ...slip });
+                                } else if (source === 'PIUTANG') {
+                                    const piutang = await keuanganService.getPiutang(refId);
+                                    setSubDetails({ type: 'piutang', ...piutang });
+                                } else if (source === 'HUTANG') {
+                                    const hutang = await keuanganService.getHutang(refId);
+                                    setSubDetails({ type: 'hutang', ...hutang });
+                                } else if (source === 'JUAL_BELI_MOBIL' || source === 'PEMBELIAN_MOBIL') {
+                                    if (data.nomor_referensi?.startsWith('PJL') || data.nomor_referensi?.startsWith('MBL')) {
+                                        const penjualan = await mobilService.getPenjualanMobil(refId);
+                                        setSubDetails({ type: 'penjualan_mobil', ...penjualan });
+                                    } else {
+                                        const mobil = await mobilService.getMobil(refId);
+                                        setSubDetails({ type: 'pembelian_mobil', ...mobil });
+                                    }
+                                } else if (source === 'BENGKEL' || source === 'PEMBELIAN_PART') {
+                                    const bengkel = await bengkelService.getDetailTransaksi(refId);
+                                    setSubDetails({ type: 'workshop', ...bengkel });
+                                } else if (source === 'JASA_ANGKUT') {
+                                    const muatan = await jasaAngkutService.getMuatan(refId);
+                                    setSubDetails({ type: 'logistics', ...muatan });
+                                }
+                            } catch (subErr) {
+                                console.log('Error fetching sub-details:', subErr);
+                            }
+                        }
+                    } else if (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') {
                         data = await jasaAngkutService.getMuatan(id);
+                        setDetails(data);
                     } else if (item.type === 'workshop' || item.source === 'BENGKEL' || item.source === 'bengkel') {
                         data = await bengkelService.getDetailTransaksi(id);
+                        setDetails(data);
                     } else {
                         data = await keuanganService.getKasBankTransaction(id);
+                        setDetails(data);
                     }
                     setDetails(data);
                 } catch (error) {
@@ -282,33 +344,139 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
 
     if (!item) return null;
 
-    const renderFinancialDetail = () => (
-        <>
-            <BentoSection title="Aliran Kas">
-                <DetailRow label="Akun" value={details?.jenis?.replace('BANK_', '') || '-'} icon={Wallet} color="#3B82F6" />
-                <DetailRow label="Tipe" value={details?.tipe === 'MASUK' ? 'Kas Masuk' : 'Kas Keluar'} icon={details?.tipe === 'MASUK' ? ArrowUpRight : ArrowDownRight} color={details?.tipe === 'MASUK' ? '#10B981' : '#EF4444'} />
-                <DetailRow label="Sumber" value={details?.sumber || '-'} icon={Info} color="#6366F1" />
-                {details?.nomor_referensi && (
-                    <DetailRow label="No. Ref" value={details.nomor_referensi} icon={Hash} color="#F59E0B" />
-                )}
-            </BentoSection>
+    const renderFinancialDetail = () => {
+        const renderFinancialSubDetails = () => {
+            if (!subDetails) return null;
 
-            {(details?.keterangan || details?.catatan) && (
-                <BentoSection title="Keterangan">
-                    <Typography variant="body2" className="text-textGray leading-6">
-                        {details?.keterangan || details?.catatan || '-'}
-                    </Typography>
+            switch (subDetails.type) {
+                case 'kasbon':
+                    return (
+                        <BentoSection title="Detail Kasbon">
+                            <DetailRow label="Karyawan" value={subDetails.karyawan_nama || '-'} icon={User} color="#8B5CF6" />
+                            <DetailRow label="Status" value={subDetails.status} color={subDetails.status === 'LUNAS' ? '#10B981' : '#F59E0B'} />
+                        </BentoSection>
+                    );
+                case 'slip_gaji':
+                    return (
+                        <BentoSection title="Detail Gaji">
+                            <DetailRow label="Karyawan" value={subDetails.karyawan_nama || '-'} icon={User} color="#8B5CF6" />
+                            <DetailRow label="Periode" value={`M-${subDetails.periode_minggu} / ${subDetails.periode_tahun}`} icon={Calendar} color="#3B82F6" />
+                            <DetailRow label="Gaji Bersih" value={formatCurrency(subDetails.gaji_bersih)} color="#10B981" />
+                        </BentoSection>
+                    );
+                case 'piutang':
+                case 'hutang':
+                    const isPiutang = subDetails.type === 'piutang';
+                    return (
+                        <BentoSection title={isPiutang ? "Detail Pelunasan Piutang" : "Detail Pelunasan Hutang"}>
+                            <DetailRow label={isPiutang ? "Debitur" : "Kreditur"} value={subDetails.nama_debitur || subDetails.nama_kreditur || '-'} icon={User} color="#8B5CF6" />
+                            <DetailRow label="Total" value={formatCurrency(subDetails.nominal_piutang || subDetails.nominal_hutang)} color="#3B82F6" />
+                            <DetailRow label="Sisa" value={formatCurrency(subDetails.sisa_piutang || subDetails.sisa_hutang)} color="#EF4444" />
+                        </BentoSection>
+                    );
+                case 'penjualan_mobil':
+                    return (
+                        <BentoSection title="Detail Penjualan Mobil">
+                            <DetailRow label="Unit" value={subDetails.mobil_nama || subDetails.mobil?.nama || subDetails.mobil_info || '-'} icon={Car} color="#3B82F6" />
+                            <DetailRow label="Customer" value={subDetails.customer_nama || subDetails.nama_pembeli || '-'} icon={User} color="#F59E0B" />
+                            <DetailRow label="Harga Jual" value={formatCurrency(subDetails.harga_jual)} color="#10B981" />
+                            <DetailRow label="Sisa Bayar" value={formatCurrency(subDetails.sisa_bayar)} color="#EF4444" />
+                            <DetailRow label="Status" value={subDetails.status_bayar} color="#6366F1" />
+                        </BentoSection>
+                    );
+                case 'pembelian_mobil':
+                    return (
+                        <BentoSection title="Detail Pembelian Mobil">
+                            <DetailRow label="Unit" value={`${subDetails.merek || subDetails.merk} ${subDetails.model} (${subDetails.tahun})`} icon={Car} color="#3B82F6" />
+                            <DetailRow label="Plat" value={subDetails.nomor_plat || '-'} icon={Hash} color="#6366F1" />
+                            <DetailRow label="Warna" value={subDetails.warna || '-'} color="#8B5CF6" />
+                            <DetailRow label="Mesin" value={subDetails.nomor_mesin || '-'} icon={Hash} color="#6B7280" />
+                            <DetailRow label="Rangka" value={subDetails.nomor_rangka || '-'} icon={Hash} color="#6B7280" />
+                            <DetailRow label="Harga Beli" value={formatCurrency(subDetails.harga_beli)} color="#EF4444" />
+                        </BentoSection>
+                    );
+                case 'workshop':
+                    return (
+                        <BentoSection title="Detail Bengkel">
+                            <DetailRow label="Unit" value={`${subDetails.plat_nomor} - ${subDetails.tipe_motor || ''}`} icon={Car} color="#3B82F6" />
+                            <DetailRow label="Customer" value={subDetails.nama_customer || '-'} icon={User} color="#F59E0B" />
+                            <DetailRow label="Mekanik" value={subDetails.mekanik_nama || '-'} icon={User} color="#8B5CF6" />
+                            <DetailRow label="Kilometer" value={subDetails.kilometer ? `${subDetails.kilometer} KM` : '-'} icon={Hash} color="#6366F1" />
+                            <DetailRow label="Status" value={subDetails.status_pengerjaan} color="#6366F1" />
+                        </BentoSection>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        const isPiutang = item.subtitle?.startsWith('PTG') || !!details?.nomor_piutang;
+        const isHutang = item.subtitle?.startsWith('HTG') || !!details?.nomor_hutang;
+
+        // Determine Account display name
+        let accountName = '-';
+        if (details?.jenis) {
+            accountName = details.jenis.replace('BANK_', '').replace('KAS_', '').replace('_', ' ');
+        } else if (details?.unit) {
+            accountName = details.unit.replace('_', ' ');
+        } else if (item.status && item.type === 'financial') {
+            accountName = item.status.replace('BANK_', '').replace('KAS_', '').replace('_', ' ');
+        }
+
+        // Determine Type display name
+        let typeName = '-';
+        if (isPiutang) {
+            typeName = 'Pemberian Piutang';
+        } else if (isHutang) {
+            typeName = 'Penerimaan Hutang';
+        } else if (details?.tipe) {
+            typeName = details.tipe === 'MASUK' ? 'Kas Masuk' : 'Kas Keluar';
+        } else {
+            typeName = item.is_incoming ? 'Kas Masuk' : 'Kas Keluar';
+        }
+
+        return (
+            <>
+                <BentoSection title="Aliran Kas">
+                    <DetailRow label="Akun" value={accountName} icon={Wallet} color="#3B82F6" />
+                    <DetailRow 
+                        label="Tipe" 
+                        value={typeName} 
+                        icon={isPiutang || isHutang || details?.tipe === 'MASUK' || item.is_incoming ? ArrowUpRight : ArrowDownRight} 
+                        color={isPiutang || isHutang || details?.tipe === 'MASUK' || item.is_incoming ? '#10B981' : '#EF4444'} 
+                    />
+                    <DetailRow label="Sumber" value={details?.sumber || item.source || '-'} icon={Info} color="#6366F1" />
+                    {(details?.nomor_referensi || details?.nama_debitur || details?.nama_kreditur) && (
+                        <DetailRow 
+                            label={isPiutang ? "Debitur" : isHutang ? "Kreditur" : "No. Ref"} 
+                            value={details?.nama_debitur || details?.nama_kreditur || details?.nomor_referensi} 
+                            icon={isPiutang || isHutang ? User : Hash} 
+                            color="#F59E0B" 
+                        />
+                    )}
                 </BentoSection>
-            )}
-        </>
-    );
+
+                {renderFinancialSubDetails()}
+
+                {(details?.keterangan || details?.catatan) && (
+                    <BentoSection title="Keterangan">
+                        <Typography variant="body2" className="text-textGray leading-6">
+                            {details?.keterangan || details?.catatan || '-'}
+                        </Typography>
+                    </BentoSection>
+                )}
+            </>
+        );
+    };
 
     const renderWorkshopDetail = () => (
         <>
             <BentoSection title="Data Kendaraan">
-                <DetailRow label="Plat Nomor" value={details?.nomor_plat || '-'} icon={Hash} color="#3B82F6" />
-                <DetailRow label="Tipe Unit" value={details?.jenis_kendaraan || '-'} icon={Car} color="#6366F1" />
-                <DetailRow label="Customer" value={details?.nama_customer || '-'} icon={User} color="#F59E0B" />
+                <DetailRow label="Plat Nomor" value={details?.nomor_plat || details?.plat_nomor || '-'} icon={Hash} color="#3B82F6" />
+                <DetailRow label="Tipe Unit" value={details?.jenis_kendaraan || details?.tipe_motor || '-'} icon={Car} color="#6366F1" />
+                <DetailRow label="Customer" value={details?.nama_customer || details?.customer_nama || '-'} icon={User} color="#F59E0B" />
+                <DetailRow label="Mekanik" value={details?.mekanik_nama || '-'} icon={User} color="#8B5CF6" />
+                <DetailRow label="Kilometer" value={details?.kilometer ? `${details.kilometer} KM` : '-'} icon={Hash} color="#6366F1" />
             </BentoSection>
 
             {(details?.detail_parts?.length > 0 || details?.detail_services?.length > 0) && (
@@ -366,6 +534,15 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                 </View>
                 <DetailRow label="Driver" value={details?.supir_nama || details?.supir_nama_manual || '-'} icon={User} color="#8B5CF6" />
                 <DetailRow label="Armada" value={details?.info_kendaraan || '-'} icon={Truck} color="#10B981" />
+                <DetailRow label="Muatan" value={`${details?.jenis_muatan || '-'} (${details?.berat_muatan || '-'})`} icon={Info} color="#6366F1" />
+                <DetailRow label="Ritase" value={`${details?.ritase || 1} Rit`} icon={Hash} color="#F59E0B" />
+            </BentoSection>
+
+            <BentoSection title="Rincian Biaya Operasional">
+                <DetailRow label="BBM" value={formatCurrency(details?.biaya_bbm)} color="#EF4444" />
+                <DetailRow label="Tol" value={formatCurrency(details?.biaya_tol)} color="#EF4444" />
+                <DetailRow label="Uang Makan" value={formatCurrency(details?.biaya_makan)} color="#EF4444" />
+                <DetailRow label="Lainnya" value={formatCurrency((details?.biaya_parkir || 0) + (details?.biaya_lainnya || 0))} color="#EF4444" />
             </BentoSection>
 
             <BentoSection title="Rincian Margin">
@@ -465,9 +642,10 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                                 </View>
 
                                 {/* Dynamic Content */}
-                                {item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' ? renderLogisticsDetail() :
-                                    (item.type === 'workshop' || item.source === 'BENGKEL' || item.source === 'bengkel') ? renderWorkshopDetail() :
-                                        renderFinancialDetail()}
+                                {((item.type === 'financial' || item.subtitle?.startsWith('PTG') || item.subtitle?.startsWith('HTG'))) ? renderFinancialDetail() :
+                                    (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') ? renderLogisticsDetail() :
+                                        (item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL') ? renderWorkshopDetail() :
+                                            renderFinancialDetail()}
 
                                 {((item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' || item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL')) && (
                                     <View className="flex-row gap-4 mt-4">

@@ -54,6 +54,7 @@ export interface Piutang {
     referensi_id?: number;
     nomor_referensi?: string;
     customer_id?: number;
+    unit?: KasBankSource;
     nama_debitur: string;
     telepon_debitur?: string;
     alamat_debitur?: string;
@@ -111,6 +112,7 @@ export interface Hutang {
     sumber: HutangSource;
     referensi_id?: number;
     nomor_referensi?: string;
+    unit?: KasBankSource;
     supplier_id?: number;
     nama_kreditur: string;
     telepon_kreditur?: string;
