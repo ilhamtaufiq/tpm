@@ -64,8 +64,8 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     fi
 
     echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
-    sudo -u $REAL_USER ./venv/bin/pip install --upgrade pip
-    sudo -u $REAL_USER ./venv/bin/pip install -r "requirements.txt" || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
+    sudo -u $REAL_USER ./venv/bin/pip install --upgrade pip --break-system-packages
+    sudo -u $REAL_USER ./venv/bin/pip install -r "requirements.txt" --break-system-packages || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
 
     # Jalankan Migrasi DB
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
