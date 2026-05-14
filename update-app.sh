@@ -46,8 +46,22 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
     cd "$BACKEND_DIR"
     
     # Update Python dependencies
+    echo -e "${YELLOW}$prefix${NC} Checking virtual environment..."
+    
+    # Recreate venv if it's invalid (e.g. was copied from Windows with 'Scripts' instead of 'bin')
+    if [ -d "venv" ] && [ ! -f "venv/bin/pip" ]; then
+        echo -e "${YELLOW}$prefix${NC} Found invalid venv (possibly from Windows). Recreating..."
+        rm -rf venv
+    fi
+
+    if [ ! -d "venv" ]; then
+        echo -e "${YELLOW}$prefix${NC} Creating new virtual environment..."
+        sudo -u $REAL_USER python3 -m venv venv || error "Gagal membuat venv. Pastikan python3-venv terinstall."
+    fi
+
     echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
-    sudo -u $REAL_USER "$BACKEND_DIR/venv/bin/pip" install -r "requirements.txt" || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
+    sudo -u $REAL_USER ./venv/bin/pip install --upgrade pip
+    sudo -u $REAL_USER ./venv/bin/pip install -r "requirements.txt" || { echo -e "${RED}$prefix ERROR${NC} Pip install failed"; exit 1; }
 
     # Jalankan Migrasi DB
     echo -e "${YELLOW}$prefix${NC} Menjalankan migrasi database..."
