@@ -5,6 +5,7 @@ import { Typography } from '../../components/ui/Typography';
 import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wallet, TrendingUp, ArrowUpRight, Scale } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface ReportItem {
     title: string;
@@ -25,6 +26,7 @@ export default function ReportsScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const { themeColors } = useUIStore();
+    const { user } = useAuthStore();
 
     // Categories for Bento Layout
     const GROUPS: ReportGroup[] = [
@@ -116,7 +118,21 @@ export default function ReportsScreen() {
                 className="flex-1 px-6 pt-10"
                 showsVerticalScrollIndicator={false}
             >
-                {GROUPS.map((group, gIdx) => (
+                {GROUPS.filter(group => {
+                    const role = user?.role;
+                    if (role === 'ADMIN' || role === 'MANAGER') return true;
+
+                    if (role === 'BENGKEL') {
+                        return group.name === "Persediaan" || group.name === "Operasional & Jasa";
+                    }
+                    if (role === 'JASA_ANGKUT') {
+                        return group.name === "Operasional & Jasa";
+                    }
+                    if (role === 'MOBIL') {
+                        return group.name === "Unit Mobil";
+                    }
+                    return false;
+                }).map((group, gIdx) => (
                     <View key={gIdx} className="mb-10">
                         {/* Section Header */}
                         <View className="flex-row items-center mb-6 px-1">
@@ -125,7 +141,21 @@ export default function ReportsScreen() {
                         </View>
 
                         <View className="flex-row flex-wrap justify-between">
-                            {group.reports.map((report, rIdx) => {
+                            {group.reports.filter(report => {
+                                const role = user?.role;
+                                if (role === 'ADMIN' || role === 'MANAGER') return true;
+                                if (role === 'BENGKEL') {
+                                    return report.title.toLowerCase().includes('bengkel') || report.title.toLowerCase().includes('sparepart');
+                                }
+                                if (role === 'JASA_ANGKUT') {
+                                    return report.title.toLowerCase().includes('jasa angkut');
+                                }
+                                if (role === 'MOBIL') {
+                                    return report.title.toLowerCase().includes('mobil');
+                                }
+                                return false;
+                            }).map((report, rIdx) => {
+
                                 const isFull = report.size === 'full';
                                 return (
                                     <Pressable

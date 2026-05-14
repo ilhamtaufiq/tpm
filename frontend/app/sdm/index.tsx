@@ -10,6 +10,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Header } from '../../components/ui/Header';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const QUICK_ACTIONS = [
     { id: 'karyawan', label: 'Karyawan', icon: Users, color: '#3B82F6', route: '/sdm/karyawan' },
@@ -20,6 +21,7 @@ const QUICK_ACTIONS = [
 
 export default function SDMScreen() {
     const router = useRouter();
+    const { user } = useAuthStore();
     const [refreshing, setRefreshing] = useState(false);
 
     const handleGoBack = () => {
@@ -61,7 +63,12 @@ export default function SDMScreen() {
                 {/* Premium Circular Quick Actions */}
                 <Typography variant="h3" weight="bold" className="text-textMain mb-6 tracking-tight">Navigasi Cepat</Typography>
                 <View className="flex-row flex-wrap justify-between mb-10">
-                    {QUICK_ACTIONS.map((action) => (
+                    {QUICK_ACTIONS.filter(action => {
+                        const role = user?.role;
+                        if (role === 'ADMIN' || role === 'MANAGER') return true;
+                        // Unit managers need Absensi and maybe Kasbon for their subordinates
+                        return ['absensi', 'kasbon'].includes(action.id);
+                    }).map((action) => (
                         <Pressable
                             key={action.id}
                             onPress={() => router.push(action.route as any)}
@@ -100,21 +107,23 @@ export default function SDMScreen() {
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>
 
-                    <Pressable
-                        onPress={() => router.push('/sdm/karyawan')}
-                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
-                    >
-                        <View className="flex-row items-center">
-                            <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4 border border-blue-100">
-                                <Users size={24} color="#3B82F6" />
+                    {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                        <Pressable
+                            onPress={() => router.push('/sdm/karyawan')}
+                            className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                        >
+                            <View className="flex-row items-center">
+                                <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4 border border-blue-100">
+                                    <Users size={24} color="#3B82F6" />
+                                </View>
+                                <View>
+                                    <Typography variant="h4" weight="bold" className="text-textMain">Database Personalia</Typography>
+                                    <Typography className="text-textGray/60 text-xs">Informasi Data Karyawan</Typography>
+                                </View>
                             </View>
-                            <View>
-                                <Typography variant="h4" weight="bold" className="text-textMain">Database Personalia</Typography>
-                                <Typography className="text-textGray/60 text-xs">Informasi Data Karyawan</Typography>
-                            </View>
-                        </View>
-                        <ChevronRight size={18} color="#D1D5DB" />
-                    </Pressable>
+                            <ChevronRight size={18} color="#D1D5DB" />
+                        </Pressable>
+                    )}
 
                     <Pressable
                         onPress={() => router.push('/sdm/kasbon')}
@@ -132,21 +141,23 @@ export default function SDMScreen() {
                         <ChevronRight size={18} color="#D1D5DB" />
                     </Pressable>
 
-                    <Pressable
-                        onPress={() => router.push('/sdm/slip-gaji')}
-                        className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
-                    >
-                        <View className="flex-row items-center">
-                            <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4 border border-purple-100">
-                                <FileText size={24} color="#8B5CF6" />
+                    {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                        <Pressable
+                            onPress={() => router.push('/sdm/slip-gaji')}
+                            className="bg-white p-6 rounded-[32px] border border-gray-50 shadow-sm flex-row items-center justify-between"
+                        >
+                            <View className="flex-row items-center">
+                                <View className="w-12 h-12 bg-purple-50 rounded-2xl items-center justify-center mr-4 border border-purple-100">
+                                    <FileText size={24} color="#8B5CF6" />
+                                </View>
+                                <View>
+                                    <Typography variant="h4" weight="bold" className="text-textMain">Payroll & Slip Gaji</Typography>
+                                    <Typography className="text-textGray/60 text-xs">Generate & Download Slip</Typography>
+                                </View>
                             </View>
-                            <View>
-                                <Typography variant="h4" weight="bold" className="text-textMain">Payroll & Slip Gaji</Typography>
-                                <Typography className="text-textGray/60 text-xs">Generate & Download Slip</Typography>
-                            </View>
-                        </View>
-                        <ChevronRight size={18} color="#D1D5DB" />
-                    </Pressable>
+                            <ChevronRight size={18} color="#D1D5DB" />
+                        </Pressable>
+                    )}
                 </View>
             </ScrollView>
         </View>

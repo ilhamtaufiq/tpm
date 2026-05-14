@@ -19,9 +19,11 @@ import { useRouter } from 'expo-router';
 import { masterDataService } from '../../services/masterData';
 import { bengkelService } from '../../services/bengkel';
 import { jasaServisService } from '../../services/jasaServis';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function MasterDataScreen() {
     const router = useRouter();
+    const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({ customers: 0, suppliers: 0, spareparts: 0, jasa: 0, assets: 0 });
@@ -221,27 +223,29 @@ export default function MasterDataScreen() {
                         </View>
                     </Pressable>
 
-                    <Pressable onPress={() => router.push('/master-data/asset')}>
-                        <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
-                            <View className="w-16 h-16 bg-rose-50 rounded-[20px] items-center justify-center mr-4 border border-rose-100/50">
-                                <Box size={32} color="#E11D48" />
-                            </View>
-                            <View className="flex-1">
-                                <View className="flex-row items-center justify-between mb-1">
-                                    <Typography variant="body1" weight="bold" className="text-textMain text-lg">Aset Perusahaan</Typography>
-                                    <View className="bg-rose-50 px-2 py-1 rounded-lg">
-                                        <Typography className="text-rose-600 text-[10px] font-bold">Aktiva Tetap</Typography>
-                                    </View>
+                    {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+                        <Pressable onPress={() => router.push('/master-data/asset')}>
+                            <View className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center">
+                                <View className="w-16 h-16 bg-rose-50 rounded-[20px] items-center justify-center mr-4 border border-rose-100/50">
+                                    <Box size={32} color="#E11D48" />
                                 </View>
-                                <Typography className="text-textGray text-xs leading-relaxed">
-                                    Kelola aset fisik, inventori kantor, dan properti perusahaan.
-                                </Typography>
+                                <View className="flex-1">
+                                    <View className="flex-row items-center justify-between mb-1">
+                                        <Typography variant="body1" weight="bold" className="text-textMain text-lg">Aset Perusahaan</Typography>
+                                        <View className="bg-rose-50 px-2 py-1 rounded-lg">
+                                            <Typography className="text-rose-600 text-[10px] font-bold">Aktiva Tetap</Typography>
+                                        </View>
+                                    </View>
+                                    <Typography className="text-textGray text-xs leading-relaxed">
+                                        Kelola aset fisik, inventori kantor, dan properti perusahaan.
+                                    </Typography>
+                                </View>
+                                <View className="ml-2 w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
+                                    <ChevronRight size={16} color="#9CA3AF" />
+                                </View>
                             </View>
-                            <View className="ml-2 w-8 h-8 rounded-full bg-gray-50 items-center justify-center">
-                                <ChevronRight size={16} color="#9CA3AF" />
-                            </View>
-                        </View>
-                    </Pressable>
+                        </Pressable>
+                    )}
                 </View>
             </ScrollView>
         </View>

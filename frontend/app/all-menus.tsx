@@ -128,9 +128,10 @@ export default function AllMenusScreen() {
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
 
-    if (!isAdmin) {
-        return <Redirect href="/(tabs)/home" />;
-    }
+    // if (!isAdmin) {
+    //     return <Redirect href="/(tabs)/home" />;
+    // }
+
 
     const ALL_MENUS = [
         {
@@ -230,14 +231,15 @@ export default function AllMenusScreen() {
         
         // Unit-specific roles
         if (role === 'BENGKEL') {
-            return ['bengkel', 'settings'].includes(menu.id);
+            return ['bengkel', 'master', 'sdm', 'laporan', 'history', 'settings'].includes(menu.id);
         }
         if (role === 'JASA_ANGKUT') {
-            return ['logistik', 'settings'].includes(menu.id);
+            return ['logistik', 'master', 'sdm', 'laporan', 'history', 'settings'].includes(menu.id);
         }
         if (role === 'MOBIL') {
-            return ['mobil', 'settings'].includes(menu.id);
+            return ['mobil', 'master', 'sdm', 'laporan', 'history', 'settings'].includes(menu.id);
         }
+
 
         // Other roles (Staff, Kasir, Mekanik, Viewer)
         // For now, let them see everything or limit if needed

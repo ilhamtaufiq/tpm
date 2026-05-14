@@ -7,10 +7,12 @@ export default function LaporanLayout() {
     // Role-based access control (RBAC) at layout level
     const role = user?.role;
     const isAdmin = role === 'ADMIN' || role === 'MANAGER';
+    const isAllowed = isAdmin || ['BENGKEL', 'JASA_ANGKUT', 'MOBIL'].includes(role || '');
 
-    if (!isAdmin) {
+    if (!isAllowed) {
         return <Redirect href="/(tabs)/home" />;
     }
+
 
     return (
         <Stack

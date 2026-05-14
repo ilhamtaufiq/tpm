@@ -90,9 +90,11 @@ export default function HistoryTab() {
     const [search, setSearch] = useState('');
     const { user } = useAuthStore();
     
-    if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
-        return <Redirect href="/(tabs)/home" />;
-    }
+    // Removed strict admin guard to allow unit roles to see their filtered history
+    // if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
+    //     return <Redirect href="/(tabs)/home" />;
+    // }
+
     const [refreshing, setRefreshing] = useState(false);
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -111,12 +113,22 @@ export default function HistoryTab() {
         else router.replace('/(tabs)/home');
     };
 
-    const filteredList = transactions?.filter((item: ActivityItem) =>
-        item.title.toLowerCase().includes(search.toLowerCase()) ||
-        item.subtitle.toLowerCase().includes(search.toLowerCase()) ||
-        item.source.toLowerCase().includes(search.toLowerCase()) ||
-        (item.ref_number && item.ref_number.toLowerCase().includes(search.toLowerCase()))
-    ) || [];
+    const filteredList = transactions?.filter((item: ActivityItem) => {
+        // First filter by role for data isolation
+        const role = user?.role;
+        if (role !== 'ADMIN' && role !== 'MANAGER') {
+            const source = item.source?.toLowerCase();
+            if (role === 'BENGKEL' && source !== 'bengkel' && source !== 'pembelian_part') return false;
+            if (role === 'JASA_ANGKUT' && source !== 'jasa_angkut') return false;
+            if (role === 'MOBIL' && source !== 'jual_beli_mobil' && source !== 'pembelian_mobil') return false;
+        }
+
+        // Then apply search filter
+        return item.title.toLowerCase().includes(search.toLowerCase()) ||
+               item.subtitle.toLowerCase().includes(search.toLowerCase()) ||
+               item.source.toLowerCase().includes(search.toLowerCase()) ||
+               (item.ref_number && item.ref_number.toLowerCase().includes(search.toLowerCase()))
+    }) || [];
 
     return (
         <View className="flex-1 bg-background overflow-hidden">

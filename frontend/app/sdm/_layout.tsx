@@ -8,7 +8,9 @@ export default function SdmLayout() {
     const role = user?.role;
     const isAdmin = role === 'ADMIN' || role === 'MANAGER';
 
-    if (!isAdmin) {
+    const isAllowed = isAdmin || ['BENGKEL', 'JASA_ANGKUT', 'MOBIL'].includes(role || '');
+    if (!isAllowed) {
+
         return <Redirect href="/(tabs)/home" />;
     }
 
