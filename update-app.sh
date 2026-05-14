@@ -56,7 +56,11 @@ sudo -u $REAL_USER git pull origin main || error "Gagal git pull"
 
     if [ ! -d "venv" ]; then
         echo -e "${YELLOW}$prefix${NC} Creating new virtual environment..."
-        sudo -u $REAL_USER python3 -m venv venv || error "Gagal membuat venv. Pastikan python3-venv terinstall."
+        sudo -u $REAL_USER python3 -m venv venv || {
+            echo -e "${RED}$prefix ERROR${NC} Gagal membuat venv."
+            echo -e "${YELLOW}Solusi:${NC} Jalankan 'sudo apt update && sudo apt install -y python3-venv' di server."
+            exit 1
+        }
     fi
 
     echo -e "${YELLOW}$prefix${NC} Updating Python dependencies..."
@@ -159,8 +163,15 @@ PID_BACKEND=$!
 ) &
 PID_FRONTEND=$!
 
-# Tunggu kedua proses selesai
+# Tunggu kedua proses selesai dan cek exit code
 wait $PID_BACKEND
+STATUS_BACKEND=$?
 wait $PID_FRONTEND
+STATUS_FRONTEND=$?
+
+if [ $STATUS_BACKEND -ne 0 ] || [ $STATUS_FRONTEND -ne 0 ]; then
+    echo -e "${RED}---------------------------------------${NC}"
+    error "Update GAGAL. Periksa log di atas untuk detail kesalahan."
+fi
 
 log "Update Selesai!"
