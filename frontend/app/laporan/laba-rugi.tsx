@@ -102,6 +102,7 @@ export default function LabaRugiScreen() {
             hpp: unit.hpp || 0,
             biayaOps: unit.beban_operasional || 0,
             biayaGaji: unit.beban_gaji || 0,
+            biayaLembur: unit.beban_lembur || 0,
             laba_kotor: unit.laba_kotor || 0,
             laba_bersih: unit.laba_bersih || 0
         };
@@ -187,6 +188,7 @@ export default function LabaRugiScreen() {
                 <View className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 w-full mb-4">
                     <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Operasional Unit</Typography>
                     <FinancialRow label="Beban Gaji Karyawan" value={bengkelData.biayaGaji} isNegative />
+                    <FinancialRow label="Beban Lembur Karyawan" value={bengkelData.biayaLembur} isNegative />
                     <FinancialRow label="Beban Operasional Unit" value={bengkelData.biayaOps} isNegative />
                 </View>
 

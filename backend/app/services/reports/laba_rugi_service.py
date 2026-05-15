@@ -16,9 +16,10 @@ class LabaRugiService(BaseReportService):
         b_hpp = data["raw_summaries"]["bengkel"]["total_hpp"]
         b_laba_kotor = data["raw_summaries"]["bengkel"]["total_laba_kotor"]
         b_gaji = b["gaji"]
+        b_lembur = b.get("lembur", 0)
         b_ops = b["total_expenses"] # Wallet-based
         # Unit specific pure profit
-        b_laba_bersih = b_laba_kotor - b_gaji - b_ops
+        b_laba_bersih = b_laba_kotor - b_gaji - b_lembur - b_ops
 
         # 2. JASA ANGKUT
         # revenue_tpm = TPM's 50% share of pendapatan_kotor (BEFORE trip costs)
@@ -76,6 +77,7 @@ class LabaRugiService(BaseReportService):
                     "laba_kotor": b_laba_kotor,
                     "beban_operasional": b_ops, 
                     "beban_gaji": b_gaji,
+                    "beban_lembur": b_lembur,
                     "laba_bersih": b_laba_bersih
                 },
                 "jasa_angkut": {

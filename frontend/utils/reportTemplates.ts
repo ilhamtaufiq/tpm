@@ -154,7 +154,8 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="total-row"><td>LABA KOTOR BENGKEL</td><td class="amount">${formatCurrency(data.units.bengkel.laba_kotor)}</td></tr>
 
                 <tr class="section-title"><td colspan="2">III. BEBAN OPERASIONAL UNIT</td></tr>
-                <tr><td>Beban Gaji & Lembur</td><td class="amount negative">(${formatCurrency(data.units.bengkel.beban_gaji || 0)})</td></tr>
+                <tr><td>Beban Gaji Karyawan</td><td class="amount negative">(${formatCurrency(data.units.bengkel.beban_gaji || 0)})</td></tr>
+                <tr><td>Beban Lembur Karyawan</td><td class="amount negative">(${formatCurrency(data.units.bengkel.beban_lembur || 0)})</td></tr>
                 <tr><td>Beban Operasional Bengkel</td><td class="amount negative">(${formatCurrency(data.units.bengkel.beban_operasional)})</td></tr>
                 <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH BENGKEL</td><td class="amount positive">${formatCurrency(data.units.bengkel.laba_bersih)}</td></tr>
 
