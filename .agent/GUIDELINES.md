@@ -1,17 +1,65 @@
 # Agent Guidelines & Best Practices
 
-## 1. Accounting Integrity
-- **Never force balance**: If Aktiva and Pasiva don't match, find the missing transaction in the `Modal Non-Kas` discovery logic or the `Internal Sync` logic. Do not add hardcoded "adjustments".
-- **Cross-Wallet Funding**: Always check if a transaction needs to be funded from `KAS_UTAMA` if the specific unit wallet is insufficient.
+Dokumen ini berisi aturan kerja agar perubahan tetap konsisten dengan desain sistem TPM.
 
-## 2. API & Data Flow
-- **Pydantic Validation**: Ensure backend schemas match frontend expectations exactly.
-- **Enums**: Always use enums from `app.utils.constants` instead of hardcoded strings.
+## 1. Prinsip Umum
+- Pahami alur bisnis sebelum mengubah kode.
+- Jangan menyelesaikan gejala dengan merusak akuntansi dasar.
+- Jika satu perubahan menyentuh transaksi, pikirkan efeknya ke:
+  1. ledger,
+  2. piutang/hutang,
+  3. stok/aset,
+  4. laporan.
 
-## 3. Frontend UI
-- **Currency**: Always use `formatCurrency` for financial values.
-- **Feedback**: Provide clear alerts (`showAlert`) for validation errors or successful actions.
+## 2. Accounting Integrity
+- **Never force balance**: jangan menambah adjustment hardcoded hanya agar Aktiva = Pasiva.
+- Jika neraca tidak seimbang, telusuri dulu:
+  - `Modal Non-Kas`,
+  - internal transaction sync,
+  - saldo kas/bank,
+  - hutang/piutang yang hilang.
+- Jangan campuradukkan kasbon dengan modal.
+- Untuk transaksi lintas wallet, pastikan akun sumber/tujuan eksplisit dan masuk akal.
 
-## 4. Troubleshooting
-- If a report is wrong, check `backend/app/services/reports/base.py` first. This is where the unified financial data is prepared.
-- If a balance sheet is unbalanced, check `backend/app/services/reports/neraca_service.py`.
+## 3. Backend Rules
+- Gunakan enum dari `app.utils.constants`; hindari string literal bebas.
+- Jaga keselarasan antara:
+  - model SQLAlchemy,
+  - schema Pydantic,
+  - service,
+  - endpoint API.
+- Untuk logika lintas modul, lebih aman mengubah service domain daripada menaruh patch ad hoc di endpoint.
+- Saat menambah transaksi baru, tentukan apakah perlu:
+  - `KasBank`,
+  - `PiutangUsaha`,
+  - `HutangUsaha`,
+  - atau hanya perubahan non-kas.
+
+## 4. Frontend Rules
+- Gunakan service domain yang sudah ada di `frontend/services/`.
+- Gunakan `formatCurrency` untuk uang.
+- Beri feedback yang jelas untuk sukses, gagal, dan validasi.
+- Untuk modul terproteksi, cek keterkaitan dengan `useSecurityStore` dan route mapping.
+- Jangan merusak flow offline/persistence saat mengubah fetching.
+
+## 5. Reporting Rules
+- `reports/base.py` adalah pusat preparasi data konsolidasi; mulai dari sana bila laporan tidak konsisten.
+- `neraca_service.py` adalah pusat rekonsiliasi neraca dan modal non-kas.
+- Jangan mengubah satu laporan tanpa memeriksa dampaknya ke dua laporan lain.
+- Gunakan rentang tanggal yang sama saat membandingkan Laba Rugi, Perubahan Modal, dan snapshot Neraca.
+
+## 6. Internal Transaction Rules
+- Internal mobil harus menjaga pasangan piutang/hutang.
+- Jangan menghapus `internal_elimination` tanpa desain pengganti yang menjaga konsolidasi.
+- Jika mengubah alur penjualan mobil, cek settlement dan reversal internal.
+
+## 7. Troubleshooting Order
+1. Reproduksi dengan data dan tanggal yang jelas.
+2. Cek transaksi sumber.
+3. Cek ledger/piutang/hutang terkait.
+4. Cek agregasi di service report.
+5. Baru ubah UI jika data backend sudah benar.
+
+## 8. Dokumentasi
+- Jika mengubah alur inti, perbarui `.agent` pada turn yang sama.
+- Dokumentasi harus menjelaskan implementasi aktual, bukan desain lama yang sudah tidak dipakai.

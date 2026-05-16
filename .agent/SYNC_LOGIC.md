@@ -1,33 +1,90 @@
 # Financial Synchronization Logic (Sinkronisasi Laporan)
 
-Dokumen ini menjelaskan hubungan antara tiga laporan utama: **Laba Rugi**, **Perubahan Modal**, dan **Neraca**. Sinkronisasi ini krusial agar laporan seimbang (Balanced).
+Dokumen ini menjelaskan hubungan antara **Laba Rugi**, **Perubahan Modal**, dan **Neraca** agar semua laporan tetap konsisten.
 
-## 1. Hubungan Antar Laporan (The Golden Equation)
-Agar ketiga laporan sinkron, persamaan berikut harus terpenuhi:
+## 1. Tiga Laporan, Tiga Sudut Pandang
+- **Laba Rugi**: performa periode.
+- **Perubahan Modal**: bagaimana laba, setoran modal, dan prive mengubah ekuitas.
+- **Neraca**: posisi aset, liabilitas, dan ekuitas pada satu tanggal snapshot.
+
+## 2. Golden Relationship
+Secara konsep:
+```text
+Laba Bersih periode
+  -> menambah Perubahan Modal periode
+  -> terkumpul menjadi Laba Ditahan di Neraca
 ```
-Laba Bersih (Laba Rugi) = (Laba Periode - Total Beban & Prive) (Perubahan Modal)
-                        = (Retained Earnings - Prive) (Neraca)
+
+Karena itu, jika periode dan tanggal dibandingkan dengan benar:
+```text
+Laba Bersih (Laba Rugi)
+≈ perubahan laba pada laporan Perubahan Modal
+≈ perubahan retained earnings yang tercermin di Neraca
 ```
 
-## 2. Parameter Penting (Mismatch Prevention)
-- **Laba Rugi & Perubahan Modal**: Menggunakan range tanggal (`tanggal_dari` s/d `tanggal_sampai`).
-- **Neraca**: Menggunakan snapshot (`as_of_date`).
-- **Aturan**: Saat membandingkan ketiganya, `as_of_date` pada Neraca harus sama dengan `tanggal_sampai` pada Laba Rugi/Perubahan Modal.
+## 3. Aturan Tanggal
+- Laba Rugi dan Perubahan Modal memakai rentang:
+  - `tanggal_dari`
+  - `tanggal_sampai`
+- Neraca memakai snapshot:
+  - `as_of_date`
+- Saat membandingkan, `as_of_date` harus sama dengan `tanggal_sampai`.
+- Jika tidak, laporan bisa sama-sama benar tetapi tampak tidak sinkron.
 
-## 3. Komponen Laba Ditahan (Retained Earnings)
-Laba Ditahan di Neraca dihitung secara akumulatif sejak awal sistem berjalan hingga `as_of_date`. 
-Komponen pengurang Laba (Beban) yang sering terlewat:
-- **Gaji Karyawan**: Harus dikurangi dari Laba Kotor unit atau dimasukkan ke beban operasional pusat.
-- **Sharing Investor**: Bagian laba untuk investor mobil harus dikeluarkan dari ekuitas perusahaan.
-- **Eliminasi Internal**: Pendapatan bengkel dari repair mobil internal harus dieliminasi jika mobil belum terjual.
+## 4. Retained Earnings
+Laba ditahan dihitung kumulatif dari awal histori sampai `as_of_date`.
 
-## 4. Mekanisme "Bottom-Up Equity"
-Neraca di sistem ini tidak lagi menggunakan rumus `Equity = Assets - Liabilities` secara buta. Sebaliknya, Equity dihitung dari:
-1. **Setoran Modal (Cash + Non-Kas)**
-2. **(+) Laba Ditahan (Retained Earnings)**
-3. **(-) Prive (Pengambilan Pemilik)**
+Komponen yang perlu ikut diperhitungkan:
+- laba unit Bengkel,
+- laba unit Mobil,
+- laba unit Jasa Angkut,
+- beban operasional,
+- gaji/lembur,
+- bagian laba investor,
+- eliminasi internal,
+- prive.
 
-Jika hasil perhitungan ini berbeda dengan `Assets - Liabilities`, maka muncul nilai **Selisih** di Neraca yang menunjukkan adanya kesalahan input data atau bug logika.
+## 5. Bottom-Up Equity
+Neraca membangun equity dari komponen:
+1. setoran modal kas,
+2. setoran modal non-kas,
+3. laba ditahan,
+4. dikurangi prive.
 
-## 5. Sinkronisasi Kas
-Total saldo Kas di Neraca (**Kas Tunai + Kas Bank + Kas Unit**) harus sama dengan saldo akhir yang ditampilkan di laporan mutasi kas/bank untuk periode yang sama.
+Ini sengaja berbeda dari sekadar `Assets - Liabilities`, karena pendekatan bottom-up membuat selisih terlihat sebagai sinyal bug/data issue, bukan disembunyikan.
+
+## 6. Modal Non-Kas
+Modal non-kas muncul dari aset/stok yang ada tetapi tidak memiliki jejak pembelian kas/hutang yang cukup.
+
+Yang **tidak boleh** dianggap modal non-kas:
+- kasbon karyawan,
+- piutang lainnya,
+- piutang operasional unit,
+- piutang internal.
+
+## 7. Internal Elimination
+Saat Bengkel memperbaiki mobil stok sendiri:
+- unit Bengkel dapat melihat pendapatan,
+- unit Mobil menerima kapitalisasi biaya,
+- tetapi perusahaan belum menghasilkan laba eksternal.
+
+Karena itu, `internal_elimination` harus:
+- mengurangi laba konsolidasi selama mobil belum terjual,
+- ikut memengaruhi modal dan neraca,
+- dilepas saat mobil sudah terjual.
+
+## 8. Sinkronisasi Kas
+Total saldo kas/bank di Neraca harus cocok dengan saldo akhir laporan mutasi kas/bank untuk tanggal yang sama.
+
+Jika tidak cocok, cek:
+- akun `KasBankJenis`,
+- transaksi manual vs otomatis,
+- transaksi yang dibatalkan tetapi belum direversal,
+- penggunaan `kas_jenis` eksplisit.
+
+## 9. Urutan Debugging Saat Laporan Tidak Sinkron
+1. Samakan dulu parameternya: periode dan snapshot date.
+2. Bandingkan saldo kas akhir dengan mutasi kas/bank.
+3. Cek `reports/base.py` untuk agregasi sumber.
+4. Cek gaji, investor sharing, dan internal elimination.
+5. Cek `neraca_service.py` untuk modal non-kas dan selisih.
