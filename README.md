@@ -15,7 +15,7 @@ TPM Super App is designed to streamline business operations across three primary
 
 ### Backend
 - **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python)
-- **Database:** SQLite/PostgreSQL with [SQLAlchemy](https://www.sqlalchemy.org/) ORM
+- **Database:** MySQL with [SQLAlchemy](https://www.sqlalchemy.org/) ORM
 - **Migrations:** [Alembic](https://alembic.sqlalchemy.org/)
 - **Validation:** [Pydantic v2](https://docs.pydantic.dev/latest/)
 - **Authentication:** JWT (JSON Web Tokens)
@@ -63,24 +63,164 @@ TPM Super App is designed to streamline business operations across three primary
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Local Development Setup
 
-### Backend Setup
-1.  Navigate to the backend directory: `cd backend`
-2.  Create a virtual environment: `python -m venv venv`
-3.  Activate the environment:
-    - Windows: `.\venv\Scripts\activate`
-    - Mac/Linux: `source venv/bin/activate`
-4.  Install dependencies: `pip install -r requirements.txt`
-5.  Set up environment variables: Copy `.env.example` to `.env` and configure accordingly.
-6.  Run database migrations: `alembic upgrade head`
-7.  Start the server: `python main.py` or use the provided scripts.
+The recommended development setup for this repository is **native local development without Docker**:
 
-### Frontend Setup
-1.  Navigate to the frontend directory: `cd frontend`
-2.  Install dependencies: `npm install`
-3.  Start the Expo development server: `npx expo start`
-4.  Download the **Expo Go** app on your mobile device or use an emulator to view the app.
+- Backend runs in a Python virtual environment.
+- Backend development uses **Python 3.11** for compatibility with the pinned dependency set.
+- Database runs as a local MySQL service.
+- Frontend runs with Expo / npm.
+
+The instructions below are written for **Lubuntu / Ubuntu-based Linux**.
+
+If you prefer an automated setup, run the repository helper script from the project root:
+
+```bash
+chmod +x setup-local-lubuntu.sh
+./setup-local-lubuntu.sh
+```
+
+You can override the default local database password when running it:
+
+```bash
+DB_PASSWORD='your-local-password' ./setup-local-lubuntu.sh
+```
+
+After the first setup, you can start backend and frontend together with:
+
+```bash
+chmod +x start-local.sh
+./start-local.sh
+```
+
+`start-local.sh` starts the backend plus the frontend **web** development server.
+
+### 1. Install system prerequisites
+
+```bash
+sudo apt update
+sudo apt install -y \
+  git curl build-essential pkg-config \
+  python3 python3-pip \
+  default-libmysqlclient-dev \
+  mysql-server
+```
+
+You also need **Node.js + npm** for the frontend. Using `nvm` is recommended so the Node version is easy to manage:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+```
+
+The setup script also installs `uv`, which manages the project's Python 3.11 runtime even if the operating system default Python is newer.
+
+Verify the main tools:
+
+```bash
+python3 --version
+node --version
+npm --version
+mysql --version
+```
+
+### 2. Prepare local MySQL
+
+Start MySQL and create the development database:
+
+```bash
+sudo systemctl enable --now mysql
+sudo mysql
+```
+
+Then run this inside the MySQL shell:
+
+```sql
+CREATE DATABASE tpm_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'tpm_dev'@'localhost' IDENTIFIED BY 'change-me-local';
+GRANT ALL PRIVILEGES ON tpm_db.* TO 'tpm_dev'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+For local development on Lubuntu / Ubuntu, using a dedicated MySQL user is preferred over using `root`. Configure `backend/.env` like this:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=tpm_db
+DB_USER=tpm_dev
+DB_PASSWORD=change-me-local
+UPLOAD_DIR=local_uploads
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8081,http://127.0.0.1:3000,http://127.0.0.1:8081
+```
+
+You may choose a different local password; just keep `backend/.env` in sync.
+
+### 3. Set up the backend
+
+```bash
+cd backend
+uv python install 3.11
+uv venv --python 3.11 venv
+source venv/bin/activate
+uv pip install --python venv/bin/python -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+python seed_users.py
+uvicorn app.main:app --reload
+```
+
+Backend URLs:
+
+- API base: `http://localhost:8000/api/v1`
+- API docs: `http://localhost:8000/docs`
+
+Seed users created by `seed_users.py`:
+
+| Username | Password |
+| --- | --- |
+| `admin` | `password123` |
+| `manager` | `password123` |
+| `staff` | `password123` |
+
+### 4. Set up the frontend
+
+Open a second terminal from the repository root:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Useful frontend commands:
+
+```bash
+npm run web      # run in browser
+npm run android  # run Android native build if Android tooling is installed
+```
+
+When opened from `localhost` in the browser, the frontend automatically targets the local backend at `http://localhost:8000`.
+
+### 5. Optional tools
+
+These are only needed for specific workflows:
+
+- **Expo Go** on a phone, for quick mobile testing.
+- **Android Studio / Android SDK**, if you want emulator or native Android builds.
+- **Electron desktop tooling**, only if you are working on the Windows desktop packaging flow in `desktop-template/`.
+
+### Notes
+
+- Do **not** use Docker for the standard local development workflow described above.
+- Do not create the backend virtual environment with the system default Python if it is newer than 3.11; on Ubuntu 26.04, Python 3.14 can fail with the currently pinned backend dependencies.
+- Local development should use `UPLOAD_DIR=local_uploads`; the tracked `backend/uploads` path is a deployment symlink that points to `/var/www/...`.
+- The repository still contains deployment-oriented Docker files, but they are not required for daily development on a local machine.
+- If you test the app from a physical phone, review `frontend/utils/api.ts`: mobile fallback behavior may need adjustment so the device points to your computer's LAN IP instead of the production domain.
 
 ---
 

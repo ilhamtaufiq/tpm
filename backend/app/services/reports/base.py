@@ -677,18 +677,26 @@ class BaseReportService:
         piutang_lainnya = piutang_usaha - (piutang_ext_bengkel + piutang_ext_ja + piutang_ext_mobil + piutang_kasbon)
         piutang_lainnya = max(0, piutang_lainnya)  # Pastikan tidak negatif
 
-        # Internal Elimination: Workshop revenue from internal car unit repairs
-        # We only eliminate revenue for cars that are STILL IN STOCK at the end of the period.
-        # If the car is sold, the internal revenue has been realized as consolidated cash.
+        # Internal Elimination: unrealized workshop revenue from internal repairs
+        # on JB Mobil stock only.
+        #
+        # Important:
+        # - JB Mobil repairs on cars still in stock are capitalized into inventory,
+        #   so the Bengkel revenue is not yet realized at consolidated-company level.
+        # - Jasa Angkut internal repairs are already recorded as JA expenses in the
+        #   same period. Eliminating those again would double-subtract the same
+        #   internal cost from consolidated profit.
+        #
+        # Therefore we intentionally exclude `jasa_angkut` here and require an
+        # actual Mobil relation that is still unsold at period end.
         internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).join(
-            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id, isouter=True
+            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil', 'jasa_angkut']),
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
             or_(
-                Mobil.id.is_(None), # Jasa Angkut or General internal
                 Mobil.status != CarStatus.TERJUAL,
                 Mobil.tanggal_terjual > tanggal_sampai
             )

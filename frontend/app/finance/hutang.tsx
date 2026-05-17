@@ -50,6 +50,14 @@ const SUMBER_LABEL: Record<string, string> = {
     LAINNYA: 'Lainnya',
 };
 
+const formatUnitLabel = (unit?: string) => {
+    if (!unit) return undefined;
+    return unit
+        .split('_')
+        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
 export default function HutangUsahaScreen() {
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [search, setSearch] = useState('');
@@ -516,14 +524,87 @@ export default function HutangUsahaScreen() {
                     </View>
                 </Card>
 
-                {/* Info Sumber */}
-                <View className="mb-4">
-                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-1">SUMBER</Typography>
-                    <Typography variant="body2">{SUMBER_LABEL[selectedHutang.sumber] || selectedHutang.sumber}</Typography>
-                    {selectedHutang.nomor_referensi && (
-                        <Typography variant="caption" className="text-gray-400">Ref: {selectedHutang.nomor_referensi}</Typography>
-                    )}
-                </View>
+                {/* Informasi hutang untuk verifikasi sebelum pembayaran */}
+                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
+                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-3">
+                        INFORMASI HUTANG
+                    </Typography>
+
+                    <View className="gap-3">
+                        <View className="flex-row justify-between gap-4">
+                            <Typography variant="caption" className="text-gray-500">Tanggal Hutang</Typography>
+                            <Typography variant="body2" weight="medium" className="text-right">
+                                {formatDate(selectedHutang.tanggal)}
+                            </Typography>
+                        </View>
+
+                        <View className="flex-row justify-between gap-4">
+                            <Typography variant="caption" className="text-gray-500">Sumber</Typography>
+                            <Typography variant="body2" weight="medium" className="text-right">
+                                {SUMBER_LABEL[selectedHutang.sumber] || selectedHutang.sumber}
+                            </Typography>
+                        </View>
+
+                        {selectedHutang.unit && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Unit</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {formatUnitLabel(selectedHutang.unit)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.nomor_referensi && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Referensi</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {selectedHutang.nomor_referensi}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.tanggal_jatuh_tempo && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Jatuh Tempo</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {formatDate(selectedHutang.tanggal_jatuh_tempo)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.tanggal_lunas && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Tanggal Lunas</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right text-green-600">
+                                    {formatDate(selectedHutang.tanggal_lunas)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.telepon_kreditur && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Telepon</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {selectedHutang.telepon_kreditur}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.alamat_kreditur && (
+                            <View>
+                                <Typography variant="caption" className="text-gray-500 mb-1">Alamat</Typography>
+                                <Typography variant="body2">{selectedHutang.alamat_kreditur}</Typography>
+                            </View>
+                        )}
+
+                        {selectedHutang.catatan && (
+                            <View>
+                                <Typography variant="caption" className="text-gray-500 mb-1">Keterangan</Typography>
+                                <Typography variant="body2">{selectedHutang.catatan}</Typography>
+                            </View>
+                        )}
+                    </View>
+                </Card>
 
                 {/* History */}
                 {selectedHutang.pembayaran && selectedHutang.pembayaran.length > 0 && (

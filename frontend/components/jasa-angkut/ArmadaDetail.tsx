@@ -40,6 +40,9 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
     const [activeTab, setActiveTab] = useState<'trips' | 'repairs' | 'expenses'>('trips');
     const [refreshing, setRefreshing] = useState(false);
     const [showExpenseModal, setShowExpenseModal] = useState(false);
+    const [selectedTrip, setSelectedTrip] = useState<any | null>(null);
+    const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
+    const [selectedRepair, setSelectedRepair] = useState<any | null>(null);
     const [submittingExpense, setSubmittingExpense] = useState(false);
     const [expenseForm, setExpenseForm] = useState({
         tanggal: new Date().toISOString().split('T')[0],
@@ -303,7 +306,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </View>
                                     ) : (
                                         muatan_history.map((trip: any) => (
-                                            <View key={trip.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
+                                            <Pressable
+                                                key={trip.id}
+                                                onPress={() => setSelectedTrip(trip)}
+                                                className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center"
+                                                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+                                            >
                                                 <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center mr-4">
                                                     <MapPin size={22} color="#3B82F6" />
                                                 </View>
@@ -328,7 +336,8 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                         </Typography>
                                                     </View>
                                                 </View>
-                                            </View>
+                                                <ChevronRight size={18} color="#CBD5E1" className="ml-2" />
+                                            </Pressable>
                                         ))
                                     )}
                                 </View>
@@ -342,7 +351,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                         </View>
                                     ) : (
                                         perbaikan_history.map((item: any) => (
-                                            <View key={item.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm">
+                                            <Pressable
+                                                key={item.id}
+                                                onPress={() => setSelectedRepair(item)}
+                                                className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm"
+                                                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+                                            >
                                                 <View className="flex-row justify-between mb-3">
                                                     <View className="flex-row items-center">
                                                         <View className="w-8 h-8 bg-red-50 rounded-lg items-center justify-center mr-2">
@@ -381,7 +395,7 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                         <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Dibebankan ke: {item.muatan_nomor}</Typography>
                                                     </View>
                                                 )}
-                                            </View>
+                                            </Pressable>
                                         ))
                                     )}
                                 </View>
@@ -417,24 +431,25 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             display_sub: ge.kategori
                                         }));
 
-                                        // 3. Costs from each trip (muatan) that contribute to stats.total_biaya_operasional
-                                        const tripItems = muatan_history.map((m: any) => {
-                                            // Deduction logic to match backend's stats.total_biaya_operasional
-                                            const maintenance_in_muatan = (m.part_services || []).reduce((acc: number, ps: any) => acc + Number(ps.total || 0), 0);
-                                            const bengkel_cat_costs = (m.biaya_tambahan || []).reduce((acc: number, b: any) => b.kategori === 'Perawatan Bengkel' ? acc + Number(b.jumlah || 0) : acc, 0);
-                                            const ops_cost = Number(m.total_biaya || 0) - (maintenance_in_muatan + bengkel_cat_costs);
-
-                                            if (ops_cost <= 0) return null;
-
-                                            return {
-                                                id: `muatan-${m.id}`,
-                                                tanggal: m.tanggal,
-                                                jumlah: ops_cost,
-                                                type: 'TRIP',
-                                                display_deskripsi: `Biaya Ops Trip: ${m.tujuan}`,
-                                                display_sub: m.nomor_transaksi
-                                            };
-                                        }).filter(Boolean);
+                                        // 3. Operational costs entered directly in MuatanForm.
+                                        // These are stored as biaya_tambahan with kategori="Operasional".
+                                        // Render each item individually so users can verify exactly what
+                                        // they entered on the trip form, instead of only seeing one merged total.
+                                        const tripItems = muatan_history.flatMap((m: any) =>
+                                            (m.biaya_tambahan || [])
+                                                .filter((b: any) => String(b.kategori || '').toLowerCase() !== 'perawatan bengkel')
+                                                .map((b: any) => ({
+                                                    ...b,
+                                                    id: `muatan-${m.id}-biaya-${b.id}`,
+                                                    tanggal: b.tanggal || m.tanggal,
+                                                    jumlah: Number(b.jumlah || 0),
+                                                    type: 'TRIP',
+                                                    muatan_nomor: m.nomor_transaksi,
+                                                    muatan_tujuan: m.tujuan,
+                                                    display_deskripsi: b.deskripsi || `Biaya Ops Trip: ${m.tujuan}`,
+                                                    display_sub: m.nomor_transaksi
+                                                }))
+                                        );
 
                                         const allExpenses = [...workshopItems, ...generalItems, ...tripItems].sort((a, b) =>
                                             new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
@@ -467,7 +482,12 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                             }
 
                                             return (
-                                                <View key={expense.id} className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center">
+                                                <Pressable
+                                                    key={expense.id}
+                                                    onPress={() => setSelectedExpense(expense)}
+                                                    className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center"
+                                                    style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+                                                >
                                                     <View className={`w-10 h-10 ${bgColor} rounded-xl items-center justify-center mr-4`}>
                                                         <IconComp size={20} color={iconColor} />
                                                     </View>
@@ -487,7 +507,8 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                                                             {formatDate(expense.tanggal)}
                                                         </Typography>
                                                     </View>
-                                                </View>
+                                                    <ChevronRight size={18} color="#CBD5E1" className="ml-2" />
+                                                </Pressable>
                                             );
                                         });
                                     })()}
@@ -498,6 +519,377 @@ export const ArmadaDetail = ({ id, onClose }: ArmadaDetailProps) => {
                     }
                 })()}
             </View>
+
+            {/* Modal Detail Trip */}
+            <Modal
+                visible={!!selectedTrip}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setSelectedTrip(null)}
+            >
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                        {selectedTrip && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="flex-row justify-between items-start mb-6">
+                                    <View className="flex-1 pr-4">
+                                        <Typography variant="h3" weight="bold" className="text-textMain">
+                                            Detail Trip
+                                        </Typography>
+                                        <Typography variant="caption" className="text-textGray mt-1">
+                                            #{selectedTrip.nomor_transaksi}
+                                        </Typography>
+                                    </View>
+                                    <Pressable
+                                        onPress={() => setSelectedTrip(null)}
+                                        className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                    >
+                                        <CloseIcon size={20} color="#475569" />
+                                    </Pressable>
+                                </View>
+
+                                <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                    <Typography variant="caption" weight="bold" className="text-primary mb-4 uppercase tracking-widest">
+                                        Informasi Rute
+                                    </Typography>
+
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Asal</Typography>
+                                        <Typography variant="body2" weight="bold" className="text-right flex-1 ml-4">
+                                            {selectedTrip.asal}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Tujuan</Typography>
+                                        <Typography variant="body2" weight="bold" className="text-right flex-1 ml-4">
+                                            {selectedTrip.tujuan}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Tanggal</Typography>
+                                        <Typography variant="body2" weight="medium">
+                                            {formatDate(selectedTrip.tanggal)}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Supir</Typography>
+                                        <Typography variant="body2" weight="medium">
+                                            {selectedTrip.supir_nama || selectedTrip.supir?.nama || selectedTrip.supir_nama_manual || '-'}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Jenis Muatan</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-right flex-1 ml-4">
+                                            {selectedTrip.jenis_muatan || 'Muatan Umum'}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between">
+                                        <Typography variant="caption" className="text-textGray">Ritase</Typography>
+                                        <Typography variant="body2" weight="medium">
+                                            {selectedTrip.ritase || 0} Rit
+                                        </Typography>
+                                    </View>
+                                </Card>
+
+                                <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                    <Typography variant="caption" weight="bold" className="text-slate-500 mb-4 uppercase tracking-widest">
+                                        Ringkasan Keuangan
+                                    </Typography>
+
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Pendapatan Kotor</Typography>
+                                        <Typography variant="body2" weight="bold">
+                                            {formatCurrency(selectedTrip.pendapatan_kotor || 0)}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Hak Supir</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-orange-600">
+                                            {formatCurrency(selectedTrip.laba_supir || 0)}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Total Biaya</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-red-600">
+                                            {formatCurrency(selectedTrip.total_biaya || 0)}
+                                        </Typography>
+                                    </View>
+                                    <View className="h-[1px] bg-gray-100 my-2" />
+                                    <View className="flex-row justify-between">
+                                        <Typography variant="body2" weight="bold" className="text-primary">Laba TPM</Typography>
+                                        <Typography variant="body1" weight="bold" className="text-primary">
+                                            {formatCurrency(selectedTrip.laba_tpm || 0)}
+                                        </Typography>
+                                    </View>
+                                </Card>
+
+                                <Card variant="outlined" className="p-5 border-gray-100 rounded-[24px]">
+                                    <Typography variant="caption" weight="bold" className="text-slate-500 mb-4 uppercase tracking-widest">
+                                        Status
+                                    </Typography>
+                                    <View className="flex-row gap-2 mb-3">
+                                        <Badge
+                                            label={(selectedTrip.status || '-').toUpperCase()}
+                                            variant={selectedTrip.status === 'SELESAI' ? 'success' : 'info'}
+                                        />
+                                        <Badge
+                                            label={(selectedTrip.status_bayar || '-').toUpperCase()}
+                                            variant={selectedTrip.status_bayar === 'LUNAS' ? 'success' : 'warning'}
+                                        />
+                                    </View>
+                                    {selectedTrip.catatan ? (
+                                        <View>
+                                            <Typography variant="caption" className="text-textGray mb-1">Catatan</Typography>
+                                            <Typography variant="body2">{selectedTrip.catatan}</Typography>
+                                        </View>
+                                    ) : null}
+                                </Card>
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal Detail Perbaikan */}
+            <Modal
+                visible={!!selectedRepair}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setSelectedRepair(null)}
+            >
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                        {selectedRepair && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="flex-row justify-between items-start mb-6">
+                                    <View className="flex-1 pr-4">
+                                        <Typography variant="h3" weight="bold" className="text-textMain">
+                                            Detail Perbaikan
+                                        </Typography>
+                                        <Typography variant="caption" className="text-textGray mt-1">
+                                            #{selectedRepair.nomor_transaksi}
+                                        </Typography>
+                                    </View>
+                                    <Pressable
+                                        onPress={() => setSelectedRepair(null)}
+                                        className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                    >
+                                        <CloseIcon size={20} color="#475569" />
+                                    </Pressable>
+                                </View>
+
+                                <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                    <Typography variant="caption" weight="bold" className="text-red-500 mb-4 uppercase tracking-widest">
+                                        Informasi Perbaikan
+                                    </Typography>
+
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Tanggal</Typography>
+                                        <Typography variant="body2" weight="medium">
+                                            {formatDate(selectedRepair.tanggal)}
+                                        </Typography>
+                                    </View>
+
+                                    {selectedRepair.muatan_nomor && (
+                                        <View className="flex-row justify-between mb-3">
+                                            <Typography variant="caption" className="text-textGray">Dibebankan ke</Typography>
+                                            <Typography variant="body2" weight="medium" className="text-blue-600">
+                                                {selectedRepair.muatan_nomor}
+                                            </Typography>
+                                        </View>
+                                    )}
+
+                                    <View className="h-[1px] bg-gray-100 my-2" />
+                                    <View className="flex-row justify-between">
+                                        <Typography variant="body2" weight="bold" className="text-primary">Total Biaya</Typography>
+                                        <Typography variant="body1" weight="bold" className="text-red-600">
+                                            {formatCurrency(selectedRepair.grand_total || 0)}
+                                        </Typography>
+                                    </View>
+                                </Card>
+
+                                {selectedRepair.detail_services?.length > 0 && (
+                                    <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-4 uppercase tracking-widest">
+                                            Jasa
+                                        </Typography>
+                                        {selectedRepair.detail_services.map((service: any, idx: number) => (
+                                            <View key={`service-${idx}`} className="flex-row justify-between py-2 border-b border-gray-50 last:border-b-0">
+                                                <Typography variant="body2" className="flex-1 mr-4">
+                                                    {service.nama_jasa}
+                                                </Typography>
+                                                <Typography variant="body2" weight="medium">
+                                                    {formatCurrency(service.subtotal || 0)}
+                                                </Typography>
+                                            </View>
+                                        ))}
+                                    </Card>
+                                )}
+
+                                {selectedRepair.detail_parts?.length > 0 && (
+                                    <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-4 uppercase tracking-widest">
+                                            Sparepart
+                                        </Typography>
+                                        {selectedRepair.detail_parts.map((part: any, idx: number) => (
+                                            <View key={`part-${idx}`} className="flex-row justify-between py-2 border-b border-gray-50 last:border-b-0">
+                                                <View className="flex-1 mr-4">
+                                                    <Typography variant="body2">{part.spare_part_nama}</Typography>
+                                                    <Typography variant="caption" className="text-textGray">
+                                                        {part.qty || 0} x {formatCurrency(part.harga_satuan || 0)}
+                                                    </Typography>
+                                                </View>
+                                                <Typography variant="body2" weight="medium">
+                                                    {formatCurrency(part.subtotal || 0)}
+                                                </Typography>
+                                            </View>
+                                        ))}
+                                    </Card>
+                                )}
+
+                                {selectedRepair.catatan ? (
+                                    <Card variant="outlined" className="p-5 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-slate-500 mb-3 uppercase tracking-widest">
+                                            Catatan
+                                        </Typography>
+                                        <Typography variant="body2">{selectedRepair.catatan}</Typography>
+                                    </Card>
+                                ) : null}
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal Detail Biaya Operasional */}
+            <Modal
+                visible={!!selectedExpense}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setSelectedExpense(null)}
+            >
+                <View className="flex-1 justify-end bg-black/50">
+                    <View className="bg-white rounded-t-[32px] p-6 pb-10 max-h-[85%]">
+                        {selectedExpense && (
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="flex-row justify-between items-start mb-6">
+                                    <View className="flex-1 pr-4">
+                                        <Typography variant="h3" weight="bold" className="text-textMain">
+                                            Detail Biaya Operasional
+                                        </Typography>
+                                        <Typography variant="caption" className="text-textGray mt-1">
+                                            {selectedExpense.type === 'WORKSHOP'
+                                                ? 'Biaya Bengkel'
+                                                : selectedExpense.type === 'TRIP'
+                                                    ? 'Biaya dari Trip'
+                                                    : 'Biaya Umum Armada'}
+                                        </Typography>
+                                    </View>
+                                    <Pressable
+                                        onPress={() => setSelectedExpense(null)}
+                                        className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                    >
+                                        <CloseIcon size={20} color="#475569" />
+                                    </Pressable>
+                                </View>
+
+                                <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                    <Typography variant="caption" weight="bold" className="text-slate-500 mb-4 uppercase tracking-widest">
+                                        Informasi Biaya
+                                    </Typography>
+
+                                    <View className="mb-4">
+                                        <Typography variant="caption" className="text-textGray mb-1">Deskripsi</Typography>
+                                        <Typography variant="body1" weight="bold">
+                                            {selectedExpense.display_deskripsi}
+                                        </Typography>
+                                    </View>
+
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Tanggal</Typography>
+                                        <Typography variant="body2" weight="medium">
+                                            {formatDate(selectedExpense.tanggal)}
+                                        </Typography>
+                                    </View>
+
+                                    <View className="flex-row justify-between mb-3">
+                                        <Typography variant="caption" className="text-textGray">Kategori</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-right">
+                                            {selectedExpense.display_sub || selectedExpense.kategori || '-'}
+                                        </Typography>
+                                    </View>
+
+                                    <View className="h-[1px] bg-gray-100 my-2" />
+                                    <View className="flex-row justify-between">
+                                        <Typography variant="body2" weight="bold" className="text-primary">Nominal</Typography>
+                                        <Typography variant="body1" weight="bold" className="text-primary">
+                                            {formatCurrency(selectedExpense.jumlah || 0)}
+                                        </Typography>
+                                    </View>
+                                </Card>
+
+                                {selectedExpense.type === 'WORKSHOP' && (
+                                    <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-red-500 mb-4 uppercase tracking-widest">
+                                            Sumber Bengkel
+                                        </Typography>
+                                        <View className="flex-row justify-between mb-3">
+                                            <Typography variant="caption" className="text-textGray">No. Transaksi</Typography>
+                                            <Typography variant="body2" weight="medium">
+                                                {selectedExpense.nomor_transaksi || '-'}
+                                            </Typography>
+                                        </View>
+                                        {selectedExpense.deskripsi && (
+                                            <View>
+                                                <Typography variant="caption" className="text-textGray mb-1">Keterangan</Typography>
+                                                <Typography variant="body2">{selectedExpense.deskripsi}</Typography>
+                                            </View>
+                                        )}
+                                    </Card>
+                                )}
+
+                                {selectedExpense.type === 'TRIP' && (
+                                    <Card variant="outlined" className="p-5 mb-4 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-blue-500 mb-4 uppercase tracking-widest">
+                                            Sumber Trip
+                                        </Typography>
+                                        <View className="flex-row justify-between mb-3">
+                                            <Typography variant="caption" className="text-textGray">No. Muatan</Typography>
+                                            <Typography variant="body2" weight="medium">
+                                                {selectedExpense.display_sub || '-'}
+                                            </Typography>
+                                        </View>
+                                        {selectedExpense.muatan_tujuan && (
+                                            <View className="flex-row justify-between mb-3">
+                                                <Typography variant="caption" className="text-textGray">Tujuan</Typography>
+                                                <Typography variant="body2" weight="medium">
+                                                    {selectedExpense.muatan_tujuan}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                        <Typography variant="caption" className="text-textGray">
+                                            Biaya ini dicatat langsung dari form muatan sebagai biaya operasional trip.
+                                        </Typography>
+                                    </Card>
+                                )}
+
+                                {selectedExpense.type === 'GENERAL' && (
+                                    <Card variant="outlined" className="p-5 border-gray-100 rounded-[24px]">
+                                        <Typography variant="caption" weight="bold" className="text-orange-500 mb-4 uppercase tracking-widest">
+                                            Catatan
+                                        </Typography>
+                                        {selectedExpense.catatan ? (
+                                            <Typography variant="body2">{selectedExpense.catatan}</Typography>
+                                        ) : (
+                                            <Typography variant="caption" className="text-textGray italic">Tidak ada catatan tambahan.</Typography>
+                                        )}
+                                    </Card>
+                                )}
+                            </ScrollView>
+                        )}
+                    </View>
+                </View>
+            </Modal>
 
             {/* Modal Tambah Biaya */}
             <Modal

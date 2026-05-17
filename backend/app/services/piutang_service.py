@@ -67,20 +67,24 @@ class PiutangService:
         nomor_piutang = self._generate_nomor_piutang()
 
         # Map unit
+        # Manual entries created through this public create flow are central-finance
+        # receivables by default. A business unit is only attached when the caller
+        # explicitly sends one.
         unit_source = data.unit
-        if not unit_source:
-             if data.sumber == PiutangSource.BENGKEL:
-                 unit_source = KasBankSource.BENGKEL
-             elif data.sumber == PiutangSource.JASA_ANGKUT:
-                 unit_source = KasBankSource.JASA_ANGKUT
-             elif data.sumber == PiutangSource.JUAL_BELI_MOBIL:
-                 unit_source = KasBankSource.JUAL_BELI_MOBIL
 
         # Standardize source: Force manual unit-based entries to LAINNYA 
         # unless it is explicitly KASBON_KARYAWAN.
         # This ensures they appear in "Piutang Lainnya" in reports.
         # Automated services bypass this by creating PiutangUsaha directly.
         final_sumber = data.sumber
+        if not unit_source and data.sumber in [
+            PiutangSource.BENGKEL,
+            PiutangSource.JASA_ANGKUT,
+            PiutangSource.JUAL_BELI_MOBIL,
+        ]:
+            # Central/manual create flow without an explicit unit should not be
+            # classified as a unit receivable.
+            final_sumber = PiutangSource.LAINNYA
         if unit_source and data.sumber not in [PiutangSource.KASBON_KARYAWAN, PiutangSource.LAINNYA]:
             # If a manual entry is linked to a unit but used a unit-specific source
             # (which should be reserved for automated entries), we re-categorize it as LAINNYA

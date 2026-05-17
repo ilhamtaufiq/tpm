@@ -53,6 +53,14 @@ const SUMBER_LABEL: Record<string, string> = {
     LAINNYA: 'Lainnya',
 };
 
+const formatUnitLabel = (unit?: string) => {
+    if (!unit) return undefined;
+    return unit
+        .split('_')
+        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+        .join(' ');
+};
+
 export default function PiutangUsahaScreen() {
     const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
@@ -188,7 +196,7 @@ export default function PiutangUsahaScreen() {
     const [paymentVisible, setPaymentVisible] = useState(false);
 
     // Create form state
-    const [createSource, setCreateSource] = useState('LAINNYA');
+    const [createSource] = useState('LAINNYA');
     const [createName, setCreateName] = useState('');
     const [createAmount, setCreateAmount] = useState('');
     const [createDate, setCreateDate] = useState(new Date().toISOString().split('T')[0]);
@@ -198,7 +206,6 @@ export default function PiutangUsahaScreen() {
         { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }
     ]);
     const [createMethod, setCreateMethod] = useState<'TUNAI' | 'TRANSFER' | undefined>(undefined);
-    const [createUnit, setCreateUnit] = useState<string>('BENGKEL');
 
     const handleOpenDetail = (piutang: Piutang) => {
         setSelectedPiutang(piutang);
@@ -226,7 +233,6 @@ export default function PiutangUsahaScreen() {
 
     const handleOpenCreate = () => {
         console.log('Opening Create Sheet');
-        setCreateSource('LAINNYA');
         setCreateName('');
         setCreateAmount('');
         setCreateNote('');
@@ -267,7 +273,6 @@ export default function PiutangUsahaScreen() {
                 nama_debitur: createName,
                 nominal_piutang: parseNumber(createAmount),
                 catatan: createNote,
-                unit: createUnit || undefined,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
@@ -331,50 +336,13 @@ export default function PiutangUsahaScreen() {
                 onChangeText={(t) => setCreateAmount(formatNumber(t))}
             />
 
-            <View className="mb-6">
-                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Sumber Piutang</Typography>
-                <View className="flex-row flex-wrap gap-2">
-                    {Object.entries(SUMBER_LABEL).map(([key, label]) => (
-                        <Pressable
-                            key={key}
-                            onPress={() => setCreateSource(key)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createSource === key ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
-                        >
-                            <Typography
-                                className={createSource === key ? 'text-primary' : 'text-gray-400'}
-                                weight={createSource === key ? 'bold' : 'medium'}
-                                variant="caption"
-                            >
-                                {label}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
-            </View>
-
-            <View className="mb-6">
-                <Typography className="mb-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">Unit Bisnis Penanggung</Typography>
-                <View className="flex-row flex-wrap gap-2">
-                    {[
-                        { label: 'Bengkel', value: 'BENGKEL' },
-                        { label: 'Jasa Angkut', value: 'JASA_ANGKUT' },
-                        { label: 'Mobil', value: 'JUAL_BELI_MOBIL' }
-                    ].map((u) => (
-                        <Pressable
-                            key={u.value}
-                            onPress={() => setCreateUnit(u.value)}
-                            className={`px-4 py-2.5 rounded-2xl border ${createUnit === u.value ? 'border-primary bg-primary/5' : 'border-gray-100 bg-gray-50/50'}`}
-                        >
-                            <Typography
-                                className={createUnit === u.value ? 'text-primary' : 'text-gray-400'}
-                                weight={createUnit === u.value ? 'bold' : 'medium'}
-                                variant="caption"
-                            >
-                                {u.label}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
+            <View className="mb-6 bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
+                <Typography variant="caption" weight="bold" className="text-blue-700 uppercase tracking-widest mb-1">
+                    Pencairan dari Bisnis Utama
+                </Typography>
+                <Typography variant="caption" className="text-blue-600">
+                    Piutang manual dari menu Finance dicatat sebagai Piutang Lainnya dan dicairkan melalui Kas Utama untuk tunai atau Bank Utama untuk transfer.
+                </Typography>
             </View>
 
             <View className="mb-6">
@@ -533,6 +501,92 @@ export default function PiutangUsahaScreen() {
                     <View className="flex-row justify-between">
                         <Typography variant="caption" weight="bold" className="text-gray-600">Sisa Piutang</Typography>
                         <Typography variant="body1" weight="bold" className="text-red-600">{formatCurrency(selectedPiutang.sisa_piutang)}</Typography>
+                    </View>
+                </Card>
+
+                {/* Informasi piutang untuk verifikasi sebelum pelunasan */}
+                <Card variant="outlined" className="p-4 mb-4 border-gray-100">
+                    <Typography variant="caption" weight="bold" className="text-gray-500 mb-3">
+                        INFORMASI PIUTANG
+                    </Typography>
+
+                    <View className="gap-3">
+                        <View className="flex-row justify-between gap-4">
+                            <Typography variant="caption" className="text-gray-500">Tanggal Piutang</Typography>
+                            <Typography variant="body2" weight="medium" className="text-right">
+                                {formatDate(selectedPiutang.tanggal)}
+                            </Typography>
+                        </View>
+
+                        <View className="flex-row justify-between gap-4">
+                            <Typography variant="caption" className="text-gray-500">Sumber</Typography>
+                            <Typography variant="body2" weight="medium" className="text-right">
+                                {SUMBER_LABEL[selectedPiutang.sumber] || selectedPiutang.sumber}
+                            </Typography>
+                        </View>
+
+                        {selectedPiutang.unit && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Unit</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {formatUnitLabel(selectedPiutang.unit)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.nomor_referensi && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Referensi</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {selectedPiutang.nomor_referensi}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.tanggal_jatuh_tempo && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Jatuh Tempo</Typography>
+                                <Typography
+                                    variant="body2"
+                                    weight="medium"
+                                    className={`text-right ${selectedPiutang.is_overdue ? 'text-red-600' : ''}`}
+                                >
+                                    {formatDate(selectedPiutang.tanggal_jatuh_tempo)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.tanggal_lunas && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Tanggal Lunas</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right text-green-600">
+                                    {formatDate(selectedPiutang.tanggal_lunas)}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.telepon_debitur && (
+                            <View className="flex-row justify-between gap-4">
+                                <Typography variant="caption" className="text-gray-500">Telepon</Typography>
+                                <Typography variant="body2" weight="medium" className="text-right">
+                                    {selectedPiutang.telepon_debitur}
+                                </Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.alamat_debitur && (
+                            <View>
+                                <Typography variant="caption" className="text-gray-500 mb-1">Alamat</Typography>
+                                <Typography variant="body2">{selectedPiutang.alamat_debitur}</Typography>
+                            </View>
+                        )}
+
+                        {selectedPiutang.catatan && (
+                            <View>
+                                <Typography variant="caption" className="text-gray-500 mb-1">Keterangan</Typography>
+                                <Typography variant="body2">{selectedPiutang.catatan}</Typography>
+                            </View>
+                        )}
                     </View>
                 </Card>
 
