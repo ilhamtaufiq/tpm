@@ -32,6 +32,9 @@ frontend/ios/
 uploads/
 backend/uploads/
 backend/local_uploads/
+uploads*
+**/uploads*
+**/local_uploads/
 **/BACKUP_*.sql
 **/TPM_BACKUP_*.sql
 TPM_BACKUP*
