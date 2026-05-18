@@ -113,6 +113,7 @@ export interface LabaRugiUnit {
     laba_kotor: number;
     beban_operasional: number;
     beban_gaji?: number;
+    beban_lembur?: number;
     beban_umum?: number;
     maintenance?: number;
     sharing_investor?: number;
@@ -145,7 +146,6 @@ export interface LabaRugiReport {
 
 export interface CapitalReport {
     modal_awal: number;
-    modal_akhir: number;
     penambahan?: {
         setoran_modal: number;
         modal_non_kas?: {

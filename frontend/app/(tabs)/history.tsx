@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
@@ -19,11 +19,11 @@ import {
     Calendar,
     User
 } from 'lucide-react-native';
-import { useRouter, router, Redirect } from 'expo-router';
-import { useRecentActivity } from '../../hooks/useKeuangan';
+import { useRouter, router, Redirect, useLocalSearchParams } from 'expo-router';
+import { useKasBankList, useRecentActivity } from '../../hooks/useKeuangan';
 import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
-import { ActivityItem } from '../../services/keuangan';
+import { ActivityItem, KasBankTransaction } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
 import { TransactionDetailModal } from '../../components/TransactionDetailModal';
 
@@ -89,6 +89,25 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 export default function HistoryTab() {
     const [search, setSearch] = useState('');
     const { user } = useAuthStore();
+    const { unit } = useLocalSearchParams<{ unit?: string }>();
+    const unitKey = Array.isArray(unit) ? unit[0] : unit;
+
+    const walletFilters = {
+        bengkel: {
+            label: 'Bengkel',
+            jenis: 'KAS_UNIT_BENGKEL',
+        },
+        mobil: {
+            label: 'Jual Beli Mobil',
+            jenis: 'KAS_UNIT_MOBIL',
+        },
+        jasa_angkut: {
+            label: 'Jasa Angkut',
+            jenis: 'KAS_UNIT_JASA_ANGKUT',
+        },
+    } as const;
+
+    const walletFilter = walletFilters[unitKey as keyof typeof walletFilters];
     
     // Removed strict admin guard to allow unit roles to see their filtered history
     // if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
@@ -99,8 +118,56 @@ export default function HistoryTab() {
     const [selectedItem, setSelectedItem] = useState<ActivityItem | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    // Fetch more items for the history page (limit 100)
-    const { data: transactions, isLoading, refetch } = useRecentActivity(100);
+    // Fetch either the generic activity feed or the exact wallet ledger requested by a unit screen.
+    const {
+        data: recentTransactions,
+        isLoading: isRecentLoading,
+        refetch: refetchRecent,
+    } = useRecentActivity(100, {
+        enabled: !walletFilter,
+        refetchInterval: 5000,
+    });
+
+    const {
+        data: walletHistoryData,
+        isLoading: isWalletLoading,
+        refetch: refetchWallet,
+    } = useKasBankList(
+        walletFilter
+            ? {
+                jenis: walletFilter.jenis,
+                limit: 100,
+                sort_by: 'tanggal',
+                sort_order: 'desc',
+            }
+            : undefined,
+        {
+            enabled: !!walletFilter,
+            refetchInterval: 5000,
+        }
+    );
+
+    const walletTransactions = useMemo<ActivityItem[]>(() => {
+        if (!walletHistoryData?.data) return [];
+
+        return walletHistoryData.data.map((item: KasBankTransaction) => ({
+            type: 'financial',
+            id: `kas_${item.id}`,
+            original_id: item.id,
+            title: item.keterangan || item.sumber,
+            subtitle: item.nomor_transaksi,
+            amount: Number(item.nominal),
+            is_incoming: item.tipe === 'MASUK',
+            status: item.jenis,
+            timestamp: item.created_at,
+            source: item.sumber,
+            ref_number: item.nomor_referensi,
+        }));
+    }, [walletHistoryData]);
+
+    const transactions = walletFilter ? walletTransactions : recentTransactions;
+    const isLoading = walletFilter ? isWalletLoading : isRecentLoading;
+    const refetch = walletFilter ? refetchWallet : refetchRecent;
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -114,9 +181,10 @@ export default function HistoryTab() {
     };
 
     const filteredList = transactions?.filter((item: ActivityItem) => {
-        // First filter by role for data isolation
+        // Generic history still respects role isolation. Wallet mode is already scoped
+        // to a specific unit ledger so transfer/setoran rows with source "LAINNYA" remain visible.
         const role = user?.role;
-        if (role !== 'ADMIN' && role !== 'MANAGER') {
+        if (!walletFilter && role !== 'ADMIN' && role !== 'MANAGER') {
             const source = item.source?.toLowerCase();
             if (role === 'BENGKEL' && source !== 'bengkel' && source !== 'pembelian_part') return false;
             if (role === 'JASA_ANGKUT' && source !== 'jasa_angkut') return false;
@@ -143,8 +211,8 @@ export default function HistoryTab() {
                 />
             )}
             <Header
-                title="Aktivitas Bisnis"
-                subtitle="Log Transaksi"
+                title={walletFilter ? `Aktivitas ${walletFilter.label}` : 'Aktivitas Bisnis'}
+                subtitle={walletFilter ? 'Kas & Setoran' : 'Log Transaksi'}
                 showBackButton
                 onBackButtonPress={handleBack}
                 rightElement={

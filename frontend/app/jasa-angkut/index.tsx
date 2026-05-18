@@ -133,6 +133,8 @@ export default function JasaAngkutScreen() {
         sort_order: 'desc',
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
+    }, {
+        refetchInterval: 5000
     });
 
     const createPiutangMutation = useCreatePiutang();
@@ -610,7 +612,12 @@ export default function JasaAngkutScreen() {
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
                             <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
-                            <Pressable onPress={() => setShowHistoryModal(true)}>
+                            <Pressable
+                                onPress={() => {
+                                    handleCloseWallet();
+                                    router.push({ pathname: '/(tabs)/history', params: { unit: 'jasa_angkut' } });
+                                }}
+                            >
                                 <Typography className="text-primary text-[10px] font-bold underline">Lihat Semua</Typography>
                             </Pressable>
                         </View>

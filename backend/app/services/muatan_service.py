@@ -229,6 +229,7 @@ class MuatanService:
             persentase_tpm=data.persentase_tpm,
             laba_tpm=Decimal("0"),
             laba_supir=Decimal("0"),
+            status=data.status or MuatanStatus.PROSES,
             status_bayar=data.status_bayar or PaymentStatus.BELUM_LUNAS,
             catatan=data.catatan,
             created_by=user_id,

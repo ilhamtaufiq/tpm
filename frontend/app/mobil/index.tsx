@@ -147,9 +147,9 @@ export default function MobilInventoryScreen() {
         jenis: 'KAS_UNIT_MOBIL',
         limit: 20,
         sort_by: 'tanggal',
-        sort_order: 'desc',
-        tanggal_dari: dateRange.dari,
-        tanggal_sampai: dateRange.sampai
+        sort_order: 'desc'
+    }, {
+        refetchInterval: 5000
     });
 
     const createPiutangMutation = useCreatePiutang();
@@ -462,12 +462,22 @@ export default function MobilInventoryScreen() {
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
                             <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
-                            <Pressable onPress={() => setShowHistoryModal(true)}>
+                            <Pressable
+                                onPress={() => {
+                                    handleCloseWallet();
+                                    router.push({ pathname: '/(tabs)/history', params: { unit: 'mobil' } });
+                                }}
+                            >
                                 <Typography className="text-primary text-[10px] font-bold underline">Lihat Semua</Typography>
                             </Pressable>
                         </View>
 
-                        {historyData?.data?.length === 0 ? (
+                        {isHistoryLoading ? (
+                            <View className="bg-gray-50/50 p-8 rounded-[32px] border border-gray-100 items-center justify-center">
+                                <ActivityIndicator color="#023C69" />
+                                <Typography className="text-gray-400 text-xs italic mt-3">Memuat aktivitas kas...</Typography>
+                            </View>
+                        ) : historyData?.data?.length === 0 ? (
                             <View className="bg-gray-50/50 p-8 rounded-[32px] border border-dashed border-gray-200 items-center justify-center">
                                 <Typography className="text-gray-400 text-xs italic">Belum ada aktivitas kas</Typography>
                             </View>
@@ -1229,7 +1239,13 @@ export default function MobilInventoryScreen() {
                                         </Pressable>
                                     </View>
                                     <ScrollView className="flex-1 p-6">
-                                        {historyData?.data?.map((item: any) => (
+                                        {isHistoryLoading && (
+                                            <View className="py-20 items-center">
+                                                <ActivityIndicator color="#023C69" />
+                                                <Typography className="text-gray-400 mt-4 italic">Memuat riwayat aktivitas</Typography>
+                                            </View>
+                                        )}
+                                        {!isHistoryLoading && historyData?.data?.map((item: any) => (
                                             <View key={item.id} className="bg-gray-50/50 p-4 rounded-3xl border border-gray-100 flex-row items-center mb-4">
                                                 <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                                     {item.tipe === 'MASUK' ? <TrendingUp size={20} color="#10B981" /> : <TrendingDown size={20} color="#E11D48" />}
@@ -1245,7 +1261,7 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                             </View>
                                         ))}
-                                        {(!historyData?.data || historyData.data.length === 0) && (
+                                        {!isHistoryLoading && (!historyData?.data || historyData.data.length === 0) && (
                                             <View className="py-20 items-center">
                                                 <CircleDollarSign size={48} color="#CBD5E1" />
                                                 <Typography className="text-gray-400 mt-4 italic">Belum ada riwayat aktivitas</Typography>
@@ -1375,14 +1391,20 @@ export default function MobilInventoryScreen() {
                                     <View className="p-8 border-b border-gray-100 flex-row justify-between items-center">
                                         <View>
                                             <Typography variant="h2" weight="bold">Riwayat Aktivitas Kas</Typography>
-                                            <Typography variant="caption" className="text-textGray">Unit Mobil • {dateRange.dari} s/d {dateRange.sampai}</Typography>
+                                            <Typography variant="caption" className="text-textGray">20 transaksi dompet terbaru</Typography>
                                         </View>
                                         <Pressable onPress={() => setShowHistoryModal(false)} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center">
                                             <X size={20} color="#64748B" />
                                         </Pressable>
                                     </View>
                                     <ScrollView className="flex-1 p-8">
-                                        {historyData?.data?.map((item: any) => (
+                                        {isHistoryLoading && (
+                                            <View className="py-20 items-center">
+                                                <ActivityIndicator color="#023C69" />
+                                                <Typography className="text-gray-400 mt-4 italic">Memuat riwayat aktivitas</Typography>
+                                            </View>
+                                        )}
+                                        {!isHistoryLoading && historyData?.data?.map((item: any) => (
                                             <View key={item.id} className="bg-gray-50/50 p-5 rounded-[32px] border border-gray-100 flex-row items-center mb-4">
                                                 <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${item.tipe === 'MASUK' ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                                                     {item.tipe === 'MASUK' ? <TrendingUp size={24} color="#10B981" /> : <TrendingDown size={24} color="#E11D48" />}
@@ -1398,7 +1420,7 @@ export default function MobilInventoryScreen() {
                                                 </View>
                                             </View>
                                         ))}
-                                        {(!historyData?.data || historyData.data.length === 0) && (
+                                        {!isHistoryLoading && (!historyData?.data || historyData.data.length === 0) && (
                                             <View className="py-20 items-center">
                                                 <CircleDollarSign size={48} color="#CBD5E1" />
                                                 <Typography className="text-gray-400 mt-4 italic">Belum ada riwayat aktivitas</Typography>

@@ -85,8 +85,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const piutangMutation = useProcessPaymentSplit();
     const hutangMutation = useProcessHutangPaymentSplit();
 
-    const currentMutation = type === 'piutang' ? piutangMutation : hutangMutation;
-
     const totalBayar = useMemo(() =>
         payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0)
         , [payments]);
@@ -143,14 +141,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             }
 
             if (!onlineManager.isOnline()) {
-                currentMutation.mutate(payload);
+                if (type === 'piutang') {
+                    piutangMutation.mutate(payload);
+                } else {
+                    hutangMutation.mutate(payload);
+                }
                 Alert.alert('Offline Mode', 'Pembayaran telah disimpan di antrean offline.');
                 onSuccess();
                 onClose();
                 return;
             }
 
-            await currentMutation.mutateAsync(payload);
+            if (type === 'piutang') {
+                await piutangMutation.mutateAsync(payload);
+            } else {
+                await hutangMutation.mutateAsync(payload);
+            }
             onSuccess();
             onClose();
         } catch (error: any) {

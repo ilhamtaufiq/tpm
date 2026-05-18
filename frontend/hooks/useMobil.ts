@@ -15,6 +15,10 @@ export const useCreateMobil = () => {
         mutationFn: mobilService.createMobil,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };
@@ -26,6 +30,10 @@ export const useAddBiaya = () => {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
             queryClient.invalidateQueries({ queryKey: ['mobils', variables.id] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };
@@ -71,6 +79,10 @@ export const useCreatePenjualanMobil = () => {
             // Invalidate sales list and inventory
             queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };
@@ -90,6 +102,10 @@ export const usePayPenjualanMobil = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };
@@ -102,6 +118,10 @@ export const useCancelBookingMobil = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['penjualan_mobil'] });
             queryClient.invalidateQueries({ queryKey: ['mobils'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['recent_activity'] });
         },
     });
 };

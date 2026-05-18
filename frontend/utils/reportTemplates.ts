@@ -225,6 +225,9 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     // Theoretical calculation logic from original file
     const laba_bersih = data.info?.laba_bersih || 0;
     const laba_usaha = data.info?.laba_usaha || data.penambahan?.laba_kotor?.total || 0;
+    const laba_bengkel = data.info?.laba_bengkel ?? 0;
+    const laba_mobil = data.info?.laba_mobil ?? 0;
+    const laba_jasa_angkut = data.info?.laba_jasa_angkut ?? 0;
     const beban_ops = data.pengurangan?.beban_operasional?.total || data.info?.overhead_gaji || 0;
     const setoran = (data.penambahan?.setoran_modal || 0) + 
                     (data.penambahan?.modal_non_kas?.total || 0) + 
@@ -260,20 +263,20 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Laba Usaha (Unit Bisnis)</td>
                     <td class="amount positive">${formatCurrency(laba_usaha)}</td>
                 </tr>
-                ${data.info?.laba_bengkel > 0 ? `
+                ${laba_bengkel > 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
-                    <td class="amount">${formatCurrency(data.info.laba_bengkel)}</td>
+                    <td class="amount">${formatCurrency(laba_bengkel)}</td>
                 </tr>` : ''}
-                ${data.info?.laba_mobil > 0 ? `
+                ${laba_mobil > 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
-                    <td class="amount">${formatCurrency(data.info.laba_mobil)}</td>
+                    <td class="amount">${formatCurrency(laba_mobil)}</td>
                 </tr>` : ''}
-                ${data.info?.laba_jasa_angkut > 0 ? `
+                ${laba_jasa_angkut > 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
-                    <td class="amount">${formatCurrency(data.info.laba_jasa_angkut)}</td>
+                    <td class="amount">${formatCurrency(laba_jasa_angkut)}</td>
                 </tr>` : ''}
                 ` : (laba_bersih > 0 ? `
                 <tr>
@@ -307,20 +310,20 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Rugi Usaha (Unit Bisnis)</td>
                     <td class="amount negative">(${formatCurrency(Math.abs(laba_usaha))})</td>
                 </tr>
-                ${data.info?.laba_bengkel < 0 ? `
+                ${laba_bengkel < 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
-                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_bengkel))})</td>
+                    <td class="amount">(${formatCurrency(Math.abs(laba_bengkel))})</td>
                 </tr>` : ''}
-                ${data.info?.laba_mobil < 0 ? `
+                ${laba_mobil < 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
-                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_mobil))})</td>
+                    <td class="amount">(${formatCurrency(Math.abs(laba_mobil))})</td>
                 </tr>` : ''}
-                ${data.info?.laba_jasa_angkut < 0 ? `
+                ${laba_jasa_angkut < 0 ? `
                 <tr class="sub-item">
                     <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
-                    <td class="amount">(${formatCurrency(Math.abs(data.info.laba_jasa_angkut))})</td>
+                    <td class="amount">(${formatCurrency(Math.abs(laba_jasa_angkut))})</td>
                 </tr>` : ''}
                 ` : (laba_bersih < 0 ? `
                 <tr>

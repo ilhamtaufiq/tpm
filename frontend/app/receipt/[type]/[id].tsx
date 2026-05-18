@@ -209,7 +209,7 @@ export default function PublicReceiptPage() {
         paper: {
             backgroundColor: '#fff',
             padding: 20,
-            width: '100%',
+            width: '100%' as const,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.1,
@@ -353,7 +353,7 @@ export default function PublicReceiptPage() {
  
                         <View className="flex-row justify-between mt-4">
                             <Typography style={[{ fontSize: 11 }, receiptStyles.mono]}>Metode Bayar:</Typography>
-                            <Typography style={[{ fontSize: 11, fontWeight: 'bold' }, receiptStyles.mono]}>{str(receipt.paymentMethod || '-').toUpperCase()}</Typography>
+                            <Typography style={[{ fontSize: 11, fontWeight: 'bold' }, receiptStyles.mono]}>{String(receipt.paymentMethod || '-').toUpperCase()}</Typography>
                         </View>
                     </View>
  

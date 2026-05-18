@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { keuanganService } from '../services/keuangan';
+import { ActivityItem, KasBankListResponse, keuanganService } from '../services/keuangan';
 
 // =============================================
 // KAS & BANK
@@ -14,10 +14,14 @@ export const useKasBankBalances = (options?: { refetchInterval?: number }) => {
     });
 };
 
-export const useKasBankList = (params?: any) => {
-    return useQuery({
+export const useKasBankList = (
+    params?: any,
+    options?: { enabled?: boolean; refetchInterval?: number }
+) => {
+    return useQuery<KasBankListResponse>({
         queryKey: ['kas_bank_list', params],
         queryFn: () => keuanganService.getKasBankList(params),
+        ...options,
     });
 };
 
@@ -182,8 +186,11 @@ export const useDashboardSummary = (params?: any, options?: { refetchInterval?: 
     });
 };
 
-export const useRecentActivity = (limit: number = 10, options?: { refetchInterval?: number }) => {
-    return useQuery({
+export const useRecentActivity = (
+    limit: number = 10,
+    options?: { refetchInterval?: number; enabled?: boolean }
+) => {
+    return useQuery<ActivityItem[]>({
         queryKey: ['recent_activity', limit],
         queryFn: () => keuanganService.getRecentActivity(limit),
         ...options

@@ -107,6 +107,8 @@ export default function BengkelScreen() {
         sort_order: 'desc',
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
+    }, {
+        refetchInterval: 5000
     });
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
@@ -918,7 +920,12 @@ export default function BengkelScreen() {
                     <View className="mb-8">
                         <View className="flex-row justify-between items-center mb-4 px-1">
                             <Typography variant="caption" weight="bold" className="text-textGray/40 uppercase tracking-[2px]">History Aktivitas Kas & Setoran</Typography>
-                            <Pressable onPress={() => setShowHistoryModal(true)}>
+                            <Pressable
+                                onPress={() => {
+                                    handleCloseWallet();
+                                    router.push({ pathname: '/(tabs)/history', params: { unit: 'bengkel' } });
+                                }}
+                            >
                                 <Typography className="text-primary text-[10px] font-bold underline">Lihat Semua</Typography>
                             </Pressable>
                         </View>

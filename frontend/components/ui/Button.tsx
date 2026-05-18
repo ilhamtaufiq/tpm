@@ -13,7 +13,7 @@ cssInterop(GHPressable, {
 const WrappedPressable = (Platform.OS === 'web' ? RNPressable : GHPressable) as React.ComponentType<PressableProps>;
 
 export interface ButtonProps extends Omit<PressableProps, 'className'> {
-    title: string;
+    title?: string;
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'outline-danger' | 'outline-neutral';
     size?: 'sm' | 'md' | 'lg';
     loading?: boolean;
@@ -70,20 +70,22 @@ export const Button = ({
                 } />
             ) : (
                 <>
-                    {icon && <View className="mr-2">{icon}</View>}
-                    <Text
-                        className={cn(
-                            'font-semibold text-center',
-                            ['primary', 'secondary', 'danger'].includes(variant) ? 'text-white' :
-                                variant === 'outline-danger' ? 'text-secondary' :
-                                    variant === 'outline-neutral' ? 'text-gray-600' : 'text-primary',
-                            size === 'sm' && 'text-xs',
-                            size === 'md' && 'text-base',
-                            size === 'lg' && 'text-lg'
-                        )}
-                    >
-                        {title}
-                    </Text>
+                    {icon && <View className={title ? 'mr-2' : undefined}>{icon}</View>}
+                    {title ? (
+                        <Text
+                            className={cn(
+                                'font-semibold text-center',
+                                ['primary', 'secondary', 'danger'].includes(variant) ? 'text-white' :
+                                    variant === 'outline-danger' ? 'text-secondary' :
+                                        variant === 'outline-neutral' ? 'text-gray-600' : 'text-primary',
+                                size === 'sm' && 'text-xs',
+                                size === 'md' && 'text-base',
+                                size === 'lg' && 'text-lg'
+                            )}
+                        >
+                            {title}
+                        </Text>
+                    ) : null}
                 </>
             )}
         </Wrapper>
