@@ -54,6 +54,9 @@ export interface NeracaHutang {
     hutang_mobil: number;
     hutang_investor: number;
     hutang_lainnya: number;
+    hutang_jasa_angkut?: number;
+    uang_muka_penjualan?: number;
+    piutang_booking?: number;
     total_hutang: number;
 }
 
@@ -142,6 +145,14 @@ export interface LabaRugiReport {
         total_diskon: number;
         total_subtotal: number;
     };
+    mobil_details?: {
+        total_biaya_bengkel?: number;
+        total_biaya_bengkel_all?: number;
+        total_biaya_bengkel_unsold?: number;
+        total_biaya_persiapan?: number;
+        biaya_bengkel?: number;
+        bengkel_per_mobil?: Record<string, number>;
+    };
 }
 
 export interface CapitalReport {
@@ -150,6 +161,9 @@ export interface CapitalReport {
         setoran_modal: number;
         modal_non_kas?: {
             total: number;
+            aset_tetap?: number;
+            stok_part?: number;
+            stok_mobil?: number;
             details?: any[];
         };
         laba_kotor?: {
@@ -159,7 +173,15 @@ export interface CapitalReport {
             bengkel: number;
             investor: number;
         };
+        stok_mobil_baru?: {
+            total: number;
+            harga_beli: number;
+            prep: number;
+            workshop: number;
+        };
         investor_funding?: number;
+        eliminasi_internal?: number;
+        penyesuaian?: number;
     };
     pengurangan?: {
         prive: number;
@@ -179,6 +201,15 @@ export interface CapitalReport {
             };
             gaji_lembur: number;
         };
+        alokasi_stok?: {
+            total: number;
+            harga_beli: number;
+            sparepart: number;
+            prep: number;
+            workshop: number;
+        };
+        eliminasi_internal?: number;
+        penyesuaian?: number;
         total: number;
     };
     modal_akhir: number;
@@ -197,13 +228,20 @@ export interface CapitalReport {
         };
         aset?: {
             kas_bank: number;
-            stok_mobil: { total: number };
+            stok_mobil: {
+                total: number;
+                unit_hanya?: number;
+                biaya_persiapan?: number;
+                perbaikan_external?: number;
+                perbaikan_internal?: number;
+            };
             stok_part: number;
-            piutang: { total: number };
-            hutang: { total: number };
+            piutang: { total: number; breakdown?: Record<string, number> };
+            hutang: { total: number; breakdown?: Record<string, number> };
         };
         validasi?: {
             status: string;
+            penyesuaian?: number;
         };
     };
 }

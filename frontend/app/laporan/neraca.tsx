@@ -102,9 +102,10 @@ export default function NeracaScreen() {
         // 2. Piutang eksternal (sudah dihitung backend)
         const pExt = al.total_piutang || 0;
 
-        // 3. Capitalized Stock (Ensure summary includes internal perbaikan from details)
-        const stockFromDetails = al.stok_mobil_detail?.reduce((acc: number, item: any) => acc + (item.total || 0), 0) || 0;
-        const sAdj = stockFromDetails || (al.stok_mobil || 0);
+        // 3. Capitalized Stock detail, including workshop repairs linked to JB Mobil.
+        const stockDetails = al.stok_mobil_detail || [];
+        const stockFromDetails = stockDetails.reduce((acc: number, item: any) => acc + (item.total || 0), 0);
+        const sAdj = al.stok_mobil || stockFromDetails || 0;
 
         // 4. Laba Ditahan: gunakan nilai dari backend cross_validation
         const lAdj = m.laba_ditahan || 0;
@@ -229,40 +230,7 @@ export default function NeracaScreen() {
                         </View>
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
-                            <FinancialRow label="Stok Mobil (Inventory)" value={totalStokAdj} small bold={!!al.stok_mobil_detail?.length} />
-
-                            {/* Detailed Car Stock Breakdown */}
-                            <View className="mt-1 mb-2">
-                                {al.stok_mobil_detail?.map((m: any, idx: number) => (
-                                    <View key={idx} className="ml-4 border-l-2 border-indigo-100 pl-4 py-2.5 my-1.5 bg-indigo-50/20 rounded-r-xl">
-                                        <View className="flex-row justify-between items-center mb-1.5">
-                                            <Typography variant="body2" className="font-bold text-slate-800 flex-1 pr-2" numberOfLines={1}>{m.nama}</Typography>
-                                            <Typography variant="body2" className="font-bold text-indigo-700">{formatCurrency(m.total)}</Typography>
-                                        </View>
-
-                                        <View className="space-y-1">
-                                            <View className="flex-row justify-between items-center">
-                                                <Typography variant="caption" className="text-slate-500">Harga Beli Unit</Typography>
-                                                <Typography variant="caption" className="text-slate-700 font-semibold">{formatCurrency(m.harga_beli)}</Typography>
-                                            </View>
-
-                                            {m.biaya_persiapan > 0 && (
-                                                <View className="flex-row justify-between items-center">
-                                                    <Typography variant="caption" className="text-slate-500">Biaya Persiapan (HPP)</Typography>
-                                                    <Typography variant="caption" className="text-amber-700 font-semibold">{formatCurrency(m.biaya_persiapan)}</Typography>
-                                                </View>
-                                            )}
-
-                                            {(m.perbaikan_external + m.perbaikan_internal) > 0 && (
-                                                <View className="flex-row justify-between items-center">
-                                                    <Typography variant="caption" className="text-slate-500">Biaya Perbaikan</Typography>
-                                                    <Typography variant="caption" className="text-indigo-600 font-semibold">{formatCurrency(m.perbaikan_external + m.perbaikan_internal)}</Typography>
-                                                </View>
-                                            )}
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
+                            <FinancialRow label="Stok Mobil (Inventory)" value={totalStokAdj} small />
                         </View>
                     </View>
                 </View>
@@ -392,6 +360,15 @@ export default function NeracaScreen() {
                     <FinancialRow label="2. Hutang Pembelian Mobil" value={h.hutang_mobil} small large />
                     <FinancialRow label="3. Hutang Investor" value={h.hutang_investor} small large />
                     <FinancialRow label="4. Hutang Lainnya" value={h.hutang_lainnya} small large />
+                    {(h.hutang_jasa_angkut || 0) > 0 && (
+                        <FinancialRow label="5. Hutang Jasa Angkut" value={h.hutang_jasa_angkut} small large />
+                    )}
+                    {(h.uang_muka_penjualan || 0) > 0 && (
+                        <FinancialRow label="Uang Muka Penjualan" value={h.uang_muka_penjualan} small large />
+                    )}
+                    {(h.piutang_booking || 0) > 0 && (
+                        <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking} small large />
+                    )}
 
                     
                         

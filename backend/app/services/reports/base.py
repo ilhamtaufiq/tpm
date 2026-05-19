@@ -600,9 +600,10 @@ class BaseReportService:
             HutangUsaha.status != HutangStatus.BATAL
         ).scalar() or 0)
         
-        # hutang_total for balance sheet identity: Cash + Assets = Equity + Debt
-        # Must include EVERYTHING that is a liability.
-        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang + hutang_internal
+        # Consolidated hutang excludes internal unit payables. Internal balances
+        # are kept in the breakdown for unit tracing, but the company does not
+        # owe itself in the consolidated balance sheet.
+        hutang_total = hutang_part + hutang_mobil + hutang_ja + hutang_investor + hutang_lainnya + customer_dp + net_booking_piutang
 
         # Piutang Breakdown
         def get_piutang_balance(unit: Optional[KasBankSource] = None, source: Optional[PiutangSource] = None, include_internal: bool = False, unit_in: Optional[List[KasBankSource]] = None, exclude_sources: Optional[List[PiutangSource]] = None) -> float:
@@ -854,7 +855,6 @@ class BaseReportService:
         
         retained_earnings = (
             total_laba_gross 
-            - internal_elimination
             - total_operasional 
             - gaji_pokok
             - gaji_lembur

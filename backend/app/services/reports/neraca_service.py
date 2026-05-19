@@ -74,13 +74,14 @@ class NeracaService(BaseReportService):
         piutang_karyawan = raw_piutang.get("breakdown", {}).get("kasbon", 0)
         piutang_lainnya = raw_piutang.get("breakdown", {}).get("lainnya", 0)
         
-        # Internal Piutang Breakdown (Added for internal repair tracking)
+        # Internal Piutang Breakdown (kept for tracing only; not consolidated)
         piutang_internal_total = raw_piutang.get("breakdown", {}).get("internal", 0)
         piutang_part_mobil = raw_piutang.get("breakdown", {}).get("internal_mobil", 0)
         piutang_part_ja = raw_piutang.get("breakdown", {}).get("internal_ja", 0)
         
-        # Total Piutang now includes internal to balance with internal liabilities
-        total_piutang = raw_piutang.get("total", 0) + piutang_internal_total
+        # Consolidated neraca excludes all internal receivables. Internal repair
+        # value for JB Mobil is already capitalized into Stok Mobil.
+        total_piutang = raw_piutang.get("total", 0)
         
         # Assets from consolidated breakdown
         raw_stock_mobil = hist["assets"]["persediaan_mobil"]
@@ -88,13 +89,11 @@ class NeracaService(BaseReportService):
         total_stock_parts = hist["assets"]["persediaan_part"]
         total_fixed_assets = hist["assets"]["tetap"]
         
-        # Internal repair costs are kept in Stock value to reflect the asset's true value,
-        # while also appearing in 'Piutang Sparepart Mobil' to balance the 'Hutang Internal'.
-        # However, because 'internal_elimination' removes the unrealized revenue from Laba Ditahan,
-        # we must also subtract it from the Asset value to maintain the Balance Sheet identity.
+        # Stok Mobil must reflect the physical capitalized value:
+        # harga beli + biaya persiapan + perbaikan bengkel.
+        # Internal JB Mobil piutang is excluded from total_piutang above to avoid
+        # double-counting the same workshop bill as both Stock and Receivable.
         total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
-        internal_elimination = float(hist.get("internal_elimination", 0))
-        total_stock_mobil -= internal_elimination
         
         # Re-fetch asset list for details
         assets_list = self.db.query(Aset).filter(
@@ -112,11 +111,23 @@ class NeracaService(BaseReportService):
         hutang_lainnya = raw_hutang.get("breakdown", {}).get("lainnya", 0)
         # Combine JA hutang (Unit JA + Lainnya assigned to JA)
         hutang_ja = raw_hutang.get("breakdown", {}).get("ja", 0)
+        uang_muka_penjualan = raw_hutang.get("breakdown", {}).get("uang_muka_penjualan", 0)
+        piutang_booking = raw_hutang.get("breakdown", {}).get("piutang_booking", 0)
         
-        # Internal payables (Unit debts to Workshop)
+        # Internal payables are kept for tracing only. They are excluded from
+        # total_liabilities because consolidated neraca must not show debts to
+        # the company's own units.
         hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
         
-        total_liabilities = raw_hutang.get("total", 0)
+        total_liabilities = (
+            hutang_part
+            + hutang_mobil
+            + hutang_investor
+            + hutang_lainnya
+            + hutang_ja
+            + uang_muka_penjualan
+            + piutang_booking
+        )
 
         # 3. EQUITY & PROFIT — Bottom-Up Component Approach
         # ═══════════════════════════════════════════════════════════════
@@ -143,7 +154,9 @@ class NeracaService(BaseReportService):
         ).scalar() or 0)
         
         # Use RAW stock_mobil for modal calculation because internal repairs physically increase asset value.
-        # We will offset this increase by adding hutang_internal to total_purchase_recorded so it doesn't inflate Setoran Modal.
+        # Internal repair is already recorded as Bengkel profit, so offset it
+        # in non-cash capital discovery. Otherwise the same repair is counted
+        # again as Setoran Modal Non-Kas.
         modal_persediaan = total_stock_parts
         modal_stok_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
         modal_aset_tetap = total_fixed_assets
@@ -326,8 +339,8 @@ class NeracaService(BaseReportService):
                 "total_kas_bank": total_cash,
                 "piutang_usaha": piutang_bengkel,
                 "piutang_mobil": piutang_mobil,
-                "piutang_part_mobil": piutang_part_mobil,
-                "piutang_jasa_angkut": piutang_ja + piutang_part_ja,
+                "piutang_part_mobil": 0,
+                "piutang_jasa_angkut": piutang_ja,
                 "piutang_karyawan": piutang_karyawan,
                 "piutang_lainnya": piutang_lainnya,
                 "total_piutang": total_piutang,
@@ -349,6 +362,9 @@ class NeracaService(BaseReportService):
                 "hutang_mobil": hutang_mobil,
                 "hutang_investor": hutang_investor,
                 "hutang_lainnya": hutang_lainnya,
+                "hutang_jasa_angkut": hutang_ja,
+                "uang_muka_penjualan": uang_muka_penjualan,
+                "piutang_booking": piutang_booking,
                 "total_hutang": total_liabilities
             },
             "modal": {
@@ -573,4 +589,3 @@ class NeracaService(BaseReportService):
                 "status": "error",
                 "message": f"Database error detail: {str(e)}"
             }
-

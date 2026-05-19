@@ -500,7 +500,10 @@ class ModalService(BaseReportService):
         # (which miss edge cases), we compute the ACTUAL net equity from
         # the balance sheet snapshot. Any gap becomes "penyesuaian".
         # ══════════════════════════════════════════════════════════════
-        piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0)) - float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
+        # raw_summaries.piutang.total is already consolidated/external-only.
+        # Internal JB Mobil receivables are capitalized into Stok Mobil, so
+        # subtracting them here would understate modal by the repair value.
+        piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0))
         hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
         hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
 
@@ -509,8 +512,10 @@ class ModalService(BaseReportService):
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
         
-        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities
-        modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external) - (kewajiban_usaha - hutang_internal)
+        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities.
+        # Internal hutang is not a consolidated liability, so it must not be
+        # added back here. It is kept only for tracing.
+        modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external) - kewajiban_usaha
         
         # Use the ACTUAL snapshot as the authoritative modal_akhir
         modal_akhir = modal_aktual
@@ -783,4 +788,3 @@ class ModalService(BaseReportService):
             summary[name]["ops"] += float(amount)
 
         return summary
-

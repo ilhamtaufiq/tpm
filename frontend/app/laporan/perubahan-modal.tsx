@@ -106,9 +106,19 @@ export default function LaporanPerubahanModalScreen() {
         
         // Gunakan modal_akhir langsung dari backend (sudah dijamin balanced oleh snapshot-based calculation)
         const modalAkhir = r.modal_akhir || 0;
+        const hutang = r.info?.aset?.hutang?.total || 0;
+        const theoretical = (r.modal_awal || 0) + laba_bersih + setoran - prive;
+        const adjustment = r.pengurangan?.penyesuaian || Math.max(0, theoretical - modalAkhir);
         
-        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment: 0, correctedModalAkhir: modalAkhir, correctedHutang: 0, theoretical: modalAkhir };
+        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment, correctedModalAkhir: modalAkhir, correctedHutang: hutang, theoretical };
     }, [report]);
+
+    const mobilStock = report?.info?.aset?.stok_mobil;
+    const totalPerbaikanMobil = mobilStock?.perbaikan_internal || 0;
+    const biayaPersiapanMasukStok = report?.penambahan?.stok_mobil_baru?.prep || 0;
+    const alokasiBiayaPersiapanStok = report?.pengurangan?.alokasi_stok?.prep || 0;
+    const adjustmentIsPerbaikanMobil = simple.adjustment > 0 && totalPerbaikanMobil > 0 && Math.abs(simple.adjustment - totalPerbaikanMobil) < 100;
+    const adjustmentLabel = adjustmentIsPerbaikanMobil ? 'Perbaikan Unit Bengkel Masuk Stok Mobil' : 'Penyesuaian Snapshot Modal';
 
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!report) return;
@@ -303,6 +313,9 @@ export default function LaporanPerubahanModalScreen() {
                                 {report.penambahan?.investor_funding ? (
                                     <FinancialRow label="Penambahan Dana Investor JB Mobil" value={report.penambahan.investor_funding} />
                                 ) : null}
+                                {biayaPersiapanMasukStok > 0 ? (
+                                    <FinancialRow label="Penambahan Nilai Stok - Biaya Persiapan" value={biayaPersiapanMasukStok} />
+                                ) : null}
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
@@ -333,6 +346,12 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                                 {simple.prive > 0 && (
                                     <FinancialRow label="Prive & Penarikan Modal" value={simple.prive} isNegative />
+                                )}
+                                {alokasiBiayaPersiapanStok > 0 && (
+                                    <FinancialRow label="Alokasi Kas ke Biaya Persiapan Stok" value={alokasiBiayaPersiapanStok} isNegative />
+                                )}
+                                {simple.adjustment > 0 && (
+                                    <FinancialRow label={adjustmentLabel} value={simple.adjustment} isNegative color="text-rose-700" />
                                 )}
                             </View>
 
@@ -383,6 +402,18 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" weight="bold" className="text-slate-400 mb-4 uppercase tracking-widest">Posisi Aset Bersih Terakhir</Typography>
                                 <FinancialRow label="Total Kas & Saldo Bank" value={report.info?.aset?.kas_bank || 0} small />
                                 <FinancialRow label="Persediaan Unit Mobil" value={report.info?.aset?.stok_mobil?.total || 0} small />
+                                {(report.info?.aset?.stok_mobil?.unit_hanya || 0) > 0 && (
+                                    <FinancialRow label="Harga Beli Unit Mobil" value={report.info?.aset?.stok_mobil?.unit_hanya || 0} small indent color="text-slate-500" />
+                                )}
+                                {(report.info?.aset?.stok_mobil?.biaya_persiapan || 0) > 0 && (
+                                    <FinancialRow label="Biaya Persiapan Mobil" value={report.info?.aset?.stok_mobil?.biaya_persiapan || 0} small indent color="text-slate-500" />
+                                )}
+                                {totalPerbaikanMobil > 0 && (
+                                    <View className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 my-2">
+                                        <Typography variant="caption" weight="bold" className="text-amber-700 uppercase tracking-widest text-[10px] mb-2">Perbaikan Jual Beli Mobil</Typography>
+                                        <FinancialRow label="Perbaikan Unit Bengkel Masuk Stok" value={totalPerbaikanMobil} small bold color="text-amber-800" />
+                                    </View>
+                                )}
                                 <FinancialRow label="Persediaan Sparepart" value={report.info?.aset?.stok_part || 0} small />
                                 
                                 {/* Fix: Include internal piutang in the analysis total */}

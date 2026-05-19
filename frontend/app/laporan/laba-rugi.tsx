@@ -108,6 +108,26 @@ export default function LabaRugiScreen() {
         };
     }, [reportData]);
 
+    const mobilRepairData = useMemo(() => {
+        const unit = reportData?.units?.mobil || {} as any;
+        const details = reportData?.mobil_details || {} as any;
+        const sold = unit.maintenance || details.total_biaya_bengkel || details.biaya_bengkel || 0;
+        const all = details.total_biaya_bengkel_all ?? sold;
+        const unsold = details.total_biaya_bengkel_unsold ?? Math.max(0, all - sold);
+
+        return { sold, unsold, all };
+    }, [reportData]);
+
+    const mobilPrepData = useMemo(() => {
+        const unit = reportData?.units?.mobil || {} as any;
+        const details = reportData?.mobil_details || {} as any;
+        const sold = unit.beban_operasional || 0;
+        const all = details.total_biaya_persiapan ?? sold;
+        const unsold = Math.max(0, all - sold);
+
+        return { sold, unsold, all };
+    }, [reportData]);
+
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!reportData) return;
         setIsExporting(true);
@@ -273,8 +293,14 @@ export default function LabaRugiScreen() {
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                         <FinancialRow label="Harga Beli Unit" value={unit.hpp} isNegative color="text-rose-600" />
-                        <FinancialRow label="Biaya Persiapan (Pajak, BBN, dll)" value={unit.beban_operasional} isNegative color="text-rose-600" />
-                        <FinancialRow label="Biaya Perbaikan (Workshop)" value={unit.maintenance} isNegative color="text-rose-600" />
+                        <FinancialRow label="Biaya Persiapan - Mobil Terjual" value={mobilPrepData.sold} isNegative color="text-rose-600" />
+                        {mobilPrepData.unsold > 0 && (
+                            <FinancialRow label="Biaya Persiapan - Masuk Stok Mobil" value={mobilPrepData.unsold} small indent color="text-amber-700" />
+                        )}
+                        <FinancialRow label="Biaya Perbaikan Bengkel - Mobil Terjual" value={mobilRepairData.sold} isNegative color="text-rose-600" />
+                        {mobilRepairData.unsold > 0 && (
+                            <FinancialRow label="Perbaikan Bengkel - Masuk Stok Mobil" value={mobilRepairData.unsold} small indent color="text-amber-700" />
+                        )}
                     </View>
 
                     <View className="p-1 px-3 mb-4">
