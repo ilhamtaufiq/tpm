@@ -109,6 +109,29 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
     )
 
     @property
+    def _repair_keywords(self) -> list[str]:
+        return [
+            "perawatan",
+            "perbaikan",
+            "bengkel",
+            "service",
+            "servis",
+            "sparepart",
+            "spare part",
+            "part",
+            "repair",
+        ]
+
+    def _is_repair_cost(self, biaya: "MobilBiayaLainnya") -> bool:
+        kategori = (biaya.kategori or "").lower()
+        deskripsi = (biaya.deskripsi or "").lower()
+        text = f"{kategori} {deskripsi}"
+
+        return kategori == "perawatan bengkel" or any(
+            keyword in text for keyword in self._repair_keywords
+        )
+
+    @property
     def status_bayar(self) -> Optional[str]:
         """Expose sales payment status for convenience."""
         return self.penjualan.status_bayar.value if self.penjualan and self.penjualan.status_bayar else None
@@ -120,18 +143,13 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
 
     @property
     def total_biaya(self) -> Decimal:
-        """Calculate total additional expenses (BBN, pajak, etc.).
+        """Calculate total additional expenses (prep/admin/etc.).
         This contributes to HPP (Harga Pokok Penjualan).
-        Excludes 'Perawatan Bengkel' as those are categorized under part_service.
+        Excludes repair/workshop costs as those are categorized under part_service.
         """
-        # Primary source: biaya_lainnya (which mirrors PengeluaranBengkel if added via MobilService)
-        # We exclude 'Perawatan Bengkel' keywords to keep it to HPP/Prep costs.
-        hpp_keywords = ["Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
-        
         biaya_total = sum(
-            b.jumlah for b in self.biaya_lainnya 
-            if b.kategori != "Perawatan Bengkel" 
-            and any(k.lower() in (b.deskripsi or "").lower() or k.lower() in (b.kategori or "").lower() for k in hpp_keywords)
+            b.jumlah for b in self.biaya_lainnya
+            if not self._is_repair_cost(b)
         ) if self.biaya_lainnya else Decimal(0)
         
         return biaya_total
@@ -151,11 +169,9 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
         ) if self.bengkel_perbaikan else Decimal(0)
 
         # 2. Repair/Ops costs recorded via Mobil Unit expenses
-        # Filter for everything NOT captured in total_biaya (HPP)
-        hpp_keywords = ["Pajak", "BBN", "Mutasi", "STNK", "BPKB", "Administrasi", "ADM", "Fee", "Beli", "Komisi", "Ongkir", "Pengiriman"]
         biaya_ops_total = sum(
-            b.jumlah for b in self.biaya_lainnya 
-            if b.kategori == "Perawatan Bengkel" or not any(k.lower() in (b.deskripsi or "").lower() or k.lower() in (b.kategori or "").lower() for k in hpp_keywords)
+            b.jumlah for b in self.biaya_lainnya
+            if self._is_repair_cost(b)
         ) if self.biaya_lainnya else Decimal(0)
 
         # 3. Manual entries in MobilPartService (Old system)
