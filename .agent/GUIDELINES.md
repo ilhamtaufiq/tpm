@@ -5,6 +5,8 @@ Dokumen ini berisi aturan kerja agar perubahan tetap konsisten dengan desain sis
 ## 1. Prinsip Umum
 - Pahami alur bisnis sebelum mengubah kode.
 - Jangan menyelesaikan gejala dengan merusak akuntansi dasar.
+- Gunakan mode komunikasi Caveman secara default: singkat, langsung, hemat token, tetapi istilah teknis tetap presisi.
+- Untuk command shell, kombinasikan Caveman dengan RTK: pakai prefix `rtk` jika memungkinkan.
 - Jika satu perubahan menyentuh transaksi, pikirkan efeknya ke:
   1. ledger,
   2. piutang/hutang,

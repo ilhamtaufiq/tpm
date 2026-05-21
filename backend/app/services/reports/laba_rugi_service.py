@@ -39,9 +39,9 @@ class LabaRugiService(BaseReportService):
 
         # 3. MOBIL (Accrual-based to match Modal Report)
         # We only count performance of units SOLD within the period
-        m_revenue = float(data["raw_summaries"]["mobil"].get("total_penjualan", 0))
-        m_hpp_unit = float(data["raw_summaries"]["mobil"].get("total_harga_beli", 0))
-        m_maintenance = float(data["raw_summaries"]["mobil"].get("total_biaya_bengkel", 0)) 
+        m_revenue = float(m.get("sales_revenue", 0))
+        m_hpp_unit = float(m.get("purchase_hpp", 0))
+        m_maintenance = float(m.get("repairs", 0))
         m_prep = float(data["units"]["mobil"].get("prep_hpp", 0))
         m_overhead = m["overhead"] # Unit general overhead
         m_sharing = m["sharing_investor"] # Investor's share (Accrual from base.py)
@@ -104,5 +104,3 @@ class LabaRugiService(BaseReportService):
                 "laba_bersih": laba_bersih_akhir
             }
         }
-
-

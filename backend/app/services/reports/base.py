@@ -101,11 +101,24 @@ class BaseReportService:
         raw_bengkel_outflow = float(get_wallet_outflow(KasBankJenis.KAS_UNIT_BENGKEL))
 
         # MOBIL Logic
-        sold_mobil_ids = [m.id for m in self.db.query(Mobil.id).filter(
+        sold_mobil_objs = self.db.query(Mobil).filter(
             Mobil.status == CarStatus.TERJUAL,
             Mobil.tanggal_terjual >= tanggal_dari,
             Mobil.tanggal_terjual <= tanggal_sampai
-        ).all()]
+        ).all()
+        sold_mobil_ids = [m.id for m in sold_mobil_objs]
+
+        sold_financials = self.db.query(
+            func.sum(TransaksiPenjualanMobil.harga_jual).label("revenue"),
+            func.sum(Mobil.harga_beli).label("purchase_hpp"),
+            func.sum(TransaksiPenjualanMobil.laba_investor).label("laba_investor"),
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
+            TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
+            Mobil.status == CarStatus.TERJUAL,
+            Mobil.tanggal_terjual >= tanggal_dari,
+            Mobil.tanggal_terjual <= tanggal_sampai,
+        ).first()
 
         # All expenses tagged to any mobil_id (from any wallet)
         mobil_unit_ledger = self.db.query(
@@ -119,8 +132,10 @@ class BaseReportService:
             PengeluaranBengkel.tanggal <= tanggal_sampai
         ).group_by(PengeluaranBengkel.mobil_id, PengeluaranBengkel.kategori).all()
 
-        hpp_sold_price = float(mobil_summary.get("total_harga_beli", 0))
-        hpp_sold_prep = max(0, float(mobil_summary.get("total_modal", 0)) - hpp_sold_price)
+        sold_revenue = float(sold_financials.revenue or 0)
+        hpp_sold_price = float(sold_financials.purchase_hpp or 0)
+        sold_laba_investor = float(sold_financials.laba_investor or 0)
+        hpp_sold_prep = float(sum((m.total_biaya for m in sold_mobil_objs), Decimal("0")))
         
         new_purchase_ids = {m.id for m in self.db.query(Mobil.id).filter(
             Mobil.tanggal_masuk >= tanggal_dari,
@@ -536,9 +551,13 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
-        # 2. Capital + Profit from cars sold within/before period
+        # 2. Capital + Profit from cars sold within/before period.
+        # Active bookings are not sold yet: their investor capital remains in
+        # unsold_investor_capital, and investor profit is not a final debt.
         investor_debt = float(self.db.query(func.sum(Mobil.nominal_investor + TransaksiPenjualanMobil.laba_investor)).select_from(TransaksiPenjualanMobil).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
-            TransaksiPenjualanMobil.tanggal <= tanggal_sampai
+            TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+            Mobil.status == CarStatus.TERJUAL,
+            Mobil.tanggal_terjual <= tanggal_sampai
         ).scalar() or 0)
         investor_paid = float(self.db.query(func.sum(InvestorDisbursementDetail.nominal)).join(TransaksiPenjualanMobil).filter(
             InvestorDisbursementDetail.tanggal <= tanggal_sampai
@@ -703,30 +722,10 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
-        # Calculate unrealized profit from BOOKING/INDEN units to avoid double counting with stock value
-        # IMPORTANT: We iterate in Python because Mobil.total_modal is a @property (not a DB column)
-        # that dynamically includes post-booking workshop bills. Using the stale DB columns
-        # (TransaksiPenjualanMobil.laba_kotor) would miss workshop repairs added after booking,
-        # causing a mismatch with PenjualanMobilService.get_summary() which uses the dynamic value.
-        unrealized_bookings = self.db.query(TransaksiPenjualanMobil, Mobil).join(Mobil).filter(
-            TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
-            or_(
-                Mobil.status != CarStatus.TERJUAL,
-                Mobil.tanggal_terjual > tanggal_sampai
-            )
-        ).all()
-
-        unrealized_tpm = 0.0
-        unrealized_gross = 0.0
-        for tx, mobil in unrealized_bookings:
-            dynamic_laba = float(tx.harga_jual) - float(mobil.total_modal)
-            unrealized_gross += dynamic_laba
-            unrealized_tpm += dynamic_laba - float(tx.laba_investor or 0)
-
-        # Summary of profits for Section A (TPM portion only to match reconciliation)
-        # We subtract unrealized portions because those units are still counted in 'car_stock'
-        laba_mobil_gross = float(mobil_summary.get("total_laba_kotor", 0)) - unrealized_gross
-        laba_mobil_tpm = float(mobil_summary.get("laba_tpm", 0)) - unrealized_tpm
+        # Mobil profit is recognized only after the car is fully sold. Active
+        # bookings remain stock + customer DP/piutang neutralizers.
+        laba_mobil_gross = sold_revenue - hpp_sold_price - hpp_sold_prep - mobil_total_repairs_sold
+        laba_mobil_tpm = laba_mobil_gross - sold_laba_investor
         laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
         laba_ja_tpm = float(ja_revenue_tpm)
 
@@ -881,6 +880,7 @@ class BaseReportService:
             },
             "units": {
                 "mobil": {
+                    "sales_revenue": sold_revenue,
                     "total_laba_kotor": laba_mobil_gross, 
                     "total_laba_tpm": laba_mobil_tpm,
                     "sharing_investor": laba_mobil_gross - laba_mobil_tpm,
