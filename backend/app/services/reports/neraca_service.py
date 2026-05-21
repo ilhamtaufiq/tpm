@@ -113,6 +113,15 @@ class NeracaService(BaseReportService):
         hutang_ja = raw_hutang.get("breakdown", {}).get("ja", 0)
         uang_muka_penjualan = raw_hutang.get("breakdown", {}).get("uang_muka_penjualan", 0)
         piutang_booking = raw_hutang.get("breakdown", {}).get("piutang_booking", 0)
+        booking_receivable = piutang_booking
+
+        # Booking receivables are only used as an internal neutralizer before a
+        # car is actually sold. Do not show them as Mobil receivable or as a
+        # separate booking liability in the balance sheet.
+        total_piutang = max(0, total_piutang - booking_receivable)
+        piutang_mobil = max(0, piutang_mobil - booking_receivable)
+        piutang_booking = 0
+        total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
         
         # Internal payables are kept for tracing only. They are excluded from
         # total_liabilities because consolidated neraca must not show debts to
@@ -126,7 +135,6 @@ class NeracaService(BaseReportService):
             + hutang_lainnya
             + hutang_ja
             + uang_muka_penjualan
-            + piutang_booking
         )
 
         # 3. EQUITY & PROFIT — Bottom-Up Component Approach

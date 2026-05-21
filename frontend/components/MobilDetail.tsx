@@ -410,6 +410,9 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     <Card variant="outlined" className="p-0 border-gray-100 rounded-[32px] overflow-hidden bg-gray-50/30 mb-8">
                         <DetailRow icon={FileText} label="Kepemilikan" value={activeUnit.tipe_kepemilikan} />
                         <DetailRow icon={Palette} label="Nama Investor" value={activeUnit.nama_investor || 'TPM'} />
+                        {Number(activeUnit.nominal_investor || 0) > 0 && (
+                            <DetailRow icon={Wallet} label="Nominal Modal Investor" value={formatCurrency(activeUnit.nominal_investor)} />
+                        )}
                         <DetailRow icon={Settings} label="Nomor Rangka" value={activeUnit.nomor_rangka} />
                         <DetailRow icon={Settings} label="Nomor Mesin" value={activeUnit.nomor_mesin} last />
                     </Card>
@@ -426,6 +429,18 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <CircleDollarSign size={20} color="#10B981" />
                             </View>
                         </View>
+
+                        {Number(activeUnit.nominal_investor || 0) > 0 && (
+                            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
+                                <View>
+                                    <Typography variant="caption" className="text-textGray mb-1">Nominal Modal Investor</Typography>
+                                    <Typography variant="h3" weight="bold" className="text-indigo-600">{formatCurrency(activeUnit.nominal_investor)}</Typography>
+                                </View>
+                                <View className="w-12 h-12 bg-indigo-50 rounded-2xl items-center justify-center">
+                                    <Wallet size={20} color="#4F46E5" />
+                                </View>
+                            </View>
+                        )}
 
                         <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-gray-50">
                             <View>

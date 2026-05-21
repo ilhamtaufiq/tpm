@@ -114,6 +114,7 @@ export default function LaporanPerubahanModalScreen() {
     }, [report]);
 
     const mobilStock = report?.info?.aset?.stok_mobil;
+    const nominalModalInvestor = report?.info?.aset?.hutang?.breakdown?.investor || report?.penambahan?.investor_funding || 0;
     const totalPerbaikanMobil = mobilStock?.perbaikan_internal || 0;
     const biayaPersiapanMasukStok = report?.penambahan?.stok_mobil_baru?.prep || 0;
     const alokasiBiayaPersiapanStok = report?.pengurangan?.alokasi_stok?.prep || 0;
@@ -404,6 +405,9 @@ export default function LaporanPerubahanModalScreen() {
                                 <FinancialRow label="Persediaan Unit Mobil" value={report.info?.aset?.stok_mobil?.total || 0} small />
                                 {(report.info?.aset?.stok_mobil?.unit_hanya || 0) > 0 && (
                                     <FinancialRow label="Harga Beli Unit Mobil" value={report.info?.aset?.stok_mobil?.unit_hanya || 0} small indent color="text-slate-500" />
+                                )}
+                                {nominalModalInvestor > 0 && (
+                                    <FinancialRow label="Nominal Modal Investor" value={nominalModalInvestor} small indent color="text-slate-500" />
                                 )}
                                 {(report.info?.aset?.stok_mobil?.biaya_persiapan || 0) > 0 && (
                                     <FinancialRow label="Biaya Persiapan Mobil" value={report.info?.aset?.stok_mobil?.biaya_persiapan || 0} small indent color="text-slate-500" />
