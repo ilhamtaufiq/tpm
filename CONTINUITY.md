@@ -28,11 +28,15 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 - **Done**: Redesigned bottom navigation as a premium floating modern card and fixed FAB clipping.
 - **Done**: Formulated and executed an architecture plan (`implementation_plan.md`) to migrate the bottom navigation to the Root Stack layout so it appears on all pages. Redesigned the FAB to be a standout, borderless floating icon.
 - **Done**: Fixed pre-existing TypeScript error in `sparepart.tsx`.
-- **Now**: Waiting for the next user request.
-- **Next**: Address any bugs found by the user or build new features.
+- **Done**: Generated `app_design_documentation.md` mapping all app features.
+- **Done**: Executed the architecture plan (`implementation_plan.md`) to completely redesign the Home screen based on the provided mockup (Header, Wallet Card, Service Grid, Recent Activity).
+- **Done**: Updated bottom navigation design to match the user's latest HTML code snippet: restored the center FAB (Floating Action Button) with a white border (`border-4`), set default slots to Home, Bengkel, FAB, Logistik, and Mobil, and updated the active tab UI to use a square rounded box (`w-12 h-12 rounded-xl bg-primary/10`) wrapping both icon and text.
+- **Done**: Redesigned the "Jual Beli Mobil" screen layout (Header search, Filter chips, Horizontal Cards), integrating the "Dompet" button correctly into the header and removing obsolete Bento grid items.
+- **Now**: Awaiting review on the Mobil page layout redesign.
+- **Next**: Implementasi master desain navigasi ke halaman Bengkel.
 
 ## Open Questions
-- Awaiting user approval on making the tab bar globally sticky across all detail screens.
+- Awaiting feedback on the completed Mobil page redesign.
 
 ## Working Set
 - `frontend/store/useNavigationStore.ts`

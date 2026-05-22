@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut } from 'lucide-react-native';
+import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut, Briefcase } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,12 +96,16 @@ export const Header = ({
 
     return (
         <View 
-            className="bg-primary pb-8 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden"
-            style={{ paddingTop: Math.max(insets.top, 16) + 16 }}
+            className={`${variant === 'home' ? 'bg-white pb-4 border-b border-gray-100' : 'bg-primary pb-8 rounded-b-[40px] shadow-2xl'} px-6 relative overflow-hidden`}
+            style={{ paddingTop: Math.max(insets.top, 16) + (variant === 'home' ? 8 : 16) }}
         >
             {/* Decorative Ambient Glass */}
-            <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
-            <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
+            {variant !== 'home' && (
+                <>
+                    <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
+                    <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
+                </>
+            )}
 
             {/* Header Content */}
             <View className="z-10">
@@ -123,14 +127,14 @@ export const Header = ({
                         )}
                         <View className="flex-1">
                             {variant === 'home' ? (
-                                <>
-                                    <Typography className="text-white/60 text-[10px] uppercase tracking-[3px] font-bold mb-1">
-                                        Selamat Datang 👋
+                                <View className="flex-row items-center gap-3">
+                                    <View className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
+                                        <Briefcase size={20} color={themeColors.primary} />
+                                    </View>
+                                    <Typography variant="h2" weight="bold" className="text-textMain tracking-tighter">
+                                        TPM
                                     </Typography>
-                                    <Typography variant="h3" weight="bold" className="text-white leading-tight">
-                                        {user?.full_name || user?.name || 'Admin TPM'}
-                                    </Typography>
-                                </>
+                                </View>
                             ) : (
                                 <>
                                     {subtitle && (
@@ -175,7 +179,13 @@ export const Header = ({
                             </Pressable>
                         )}
                         {rightElement}
-                        {showProfile && (
+                        {variant === 'home' && (
+                            <Pressable className="w-11 h-11 bg-gray-50 rounded-full items-center justify-center border border-gray-100 relative">
+                                <Bell size={20} color="#6B7280" />
+                                <View className="absolute top-2.5 right-3 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                            </Pressable>
+                        )}
+                        {showProfile && variant !== 'home' && (
                             <View className="flex-row items-center gap-2">
                                 <Pressable
                                     onPress={() => router.push('/(tabs)/profile')}

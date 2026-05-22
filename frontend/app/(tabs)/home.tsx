@@ -60,16 +60,15 @@ export default function HomeScreen() {
             )}
 
             <SafeAreaView className="flex-1" edges={['top']}>
-                <Header variant="home" showSearch showProfile />
+                <Header variant="home" showSearch={false} showProfile={false} />
                 <ScrollView
                     className="flex-1"
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >
-                    {/* <WalletSection /> */}
+                    <WalletSection />
                     <ServiceGrid />
-                    {/* <StatsSlider /> */}
-                    {/* <TransactionList /> */}
+                    <TransactionList />
                 </ScrollView>
             </SafeAreaView>
         </View>

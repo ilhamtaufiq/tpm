@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Pressable } from 'react-native';
-import { Wrench, CarFront, Truck, Users, BarChart3, Database, Receipt, History, LayoutGrid } from 'lucide-react-native';
+import { Wrench, CarFront, Truck, Users, BarChart3, Database, History, Wallet, Shield, Settings } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { useUIStore } from '../store/useUIStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,7 +14,7 @@ import Animated, {
     Extrapolate
 } from 'react-native-reanimated';
 
-const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, themeColors: any }) => {
+const ServiceCard = ({ menu, index }: { menu: any, index: number }) => {
     const scale = useSharedValue(1);
     const rotateX = useSharedValue(0);
     const rotateY = useSharedValue(0);
@@ -36,19 +36,19 @@ const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, t
 
     const innerStyle = useAnimatedStyle(() => {
         return {
-            shadowOpacity: interpolate(scale.value, [0.95, 1], [0.1, 0.3], Extrapolate.CLAMP),
-            shadowRadius: interpolate(scale.value, [0.95, 1], [4, 15], Extrapolate.CLAMP),
+            shadowOpacity: interpolate(scale.value, [0.95, 1], [0.05, 0.1]),
+            shadowRadius: interpolate(scale.value, [0.95, 1], [2, 8]),
         };
     });
 
     useEffect(() => {
-        opacity.value = withDelay(index * 50, withSpring(1));
-        translateY.value = withDelay(index * 50, withSpring(0));
+        opacity.value = withDelay(index * 40, withSpring(1));
+        translateY.value = withDelay(index * 40, withSpring(0));
     }, []);
 
     const onPressIn = () => {
         scale.value = withSpring(0.92);
-        rotateX.value = withSpring(-10);
+        rotateX.value = withSpring(-5);
     };
 
     const onPressOut = () => {
@@ -58,7 +58,7 @@ const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, t
     };
 
     return (
-        <Animated.View style={[animatedStyle, { width: '25%' }]} className="items-center mb-6 px-1">
+        <Animated.View style={[animatedStyle, { width: '25%' }]} className="items-center mb-5 px-1">
             <Pressable
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
@@ -66,20 +66,21 @@ const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, t
                 className="items-center w-full"
             >
                 <Animated.View
-                    style={[innerStyle, { backgroundColor: 'var(--color-surface)', borderRadius: 24 }]}
-                    className="w-16 h-16 items-center justify-center mb-2 shadow-xl border border-gray-50"
+                    style={[innerStyle, { backgroundColor: 'white', borderRadius: 20 }]}
+                    className="w-14 h-14 items-center justify-center mb-1.5 border border-gray-100 shadow-sm"
                 >
                     <View
                         style={{ backgroundColor: `${menu.color}15` }}
-                        className="w-12 h-12 rounded-2xl items-center justify-center"
+                        className="w-10 h-10 rounded-xl items-center justify-center"
                     >
-                        <menu.icon size={26} color={menu.color} strokeWidth={2.5} />
+                        <menu.icon size={22} color={menu.color} strokeWidth={2} />
                     </View>
                 </Animated.View>
                 <Typography
                     variant="caption"
                     weight="bold"
-                    className="text-text/70 text-[10px] uppercase tracking-tighter"
+                    className="text-gray-600 text-[9px] uppercase tracking-tighter text-center"
+                    numberOfLines={2}
                 >
                     {menu.label}
                 </Typography>
@@ -89,14 +90,19 @@ const ServiceCard = ({ menu, index, themeColors }: { menu: any, index: number, t
 };
 
 export const ServiceGrid = () => {
-    const { themeColors } = useUIStore();
     const { user } = useAuthStore();
 
     const MENUS = [
-        { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: themeColors.primary, path: '/bengkel' },
-        { id: 'logistik', label: 'Logistik', icon: Truck, color: themeColors.primary, path: '/jasa-angkut' },
-        { id: 'mobil', label: 'Jual Beli Mobil', icon: CarFront, color: themeColors.primary, path: '/mobil' },
-        { id: 'menus', label: 'Semua Menu', icon: LayoutGrid, color: themeColors.primary, path: '/all-menus' },
+        { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: '#3b82f6', path: '/bengkel' }, // Blue
+        { id: 'logistik', label: 'Logistik', icon: Truck, color: '#f97316', path: '/jasa-angkut' }, // Orange
+        { id: 'mobil', label: 'Jual Beli', icon: CarFront, color: '#10b981', path: '/mobil' }, // Emerald
+        { id: 'keuangan', label: 'Keuangan', icon: Wallet, color: '#ef4444', path: '/finance' }, // Red
+        { id: 'master', label: 'Master', icon: Database, color: '#8b5cf6', path: '/master-data' }, // Purple
+        { id: 'sdm', label: 'SDM', icon: Users, color: '#ec4899', path: '/sdm' }, // Pink
+        { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#14b8a6', path: '/laporan' }, // Teal
+        { id: 'riwayat', label: 'Riwayat', icon: History, color: '#6366f1', path: '/history' }, // Indigo
+        { id: 'profil', label: 'Profil', icon: Settings, color: '#4b5563', path: '/(tabs)/profile' }, // Gray
+        { id: 'admin', label: 'Admin', icon: Shield, color: '#1f2937', path: '/all-menus' }, // Dark
     ];
 
     const filteredMenus = MENUS.filter(menu => {
@@ -106,29 +112,28 @@ export const ServiceGrid = () => {
         // Admin and Manager see everything
         if (isAdmin) return true;
 
-        // Non-admins cannot see 'Semua Menu'
-        if (menu.id === 'menus') return false;
+        // Non-admins cannot see 'admin', 'keuangan', 'master', 'sdm', 'laporan' by default
+        if (['admin', 'keuangan', 'master', 'sdm', 'laporan'].includes(menu.id)) return false;
 
         // Unit-specific roles
         if (role === 'BENGKEL') {
-            return menu.id === 'bengkel';
+            return ['bengkel', 'riwayat', 'profil'].includes(menu.id);
         }
         if (role === 'JASA_ANGKUT') {
-            return menu.id === 'logistik';
+            return ['logistik', 'riwayat', 'profil'].includes(menu.id);
         }
         if (role === 'MOBIL') {
-            return menu.id === 'mobil';
+            return ['mobil', 'riwayat', 'profil'].includes(menu.id);
         }
 
-        // Default: allow (or restrict further if needed)
         return true;
     });
 
     return (
-        <View className="px-5 mt-8">
+        <View className="px-5 mt-6">
             <View className="flex-row flex-wrap">
                 {filteredMenus.map((menu, index) => (
-                    <ServiceCard key={menu.id} menu={menu} index={index} themeColors={themeColors} />
+                    <ServiceCard key={menu.id} menu={menu} index={index} />
                 ))}
             </View>
         </View>

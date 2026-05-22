@@ -91,23 +91,22 @@ export const TransactionList = () => {
     const list = Array.isArray(transactions) ? transactions : [];
 
     return (
-        <View className="px-6 mt-8 pb-32">
-            <View className="flex-row justify-between items-center mb-6">
-                <Typography variant="h3" weight="bold">Aktivitas Terkini</Typography>
+        <View className="px-6 mt-2 pb-32">
+            <View className="flex-row justify-between items-center mb-4">
+                <Typography variant="h3" weight="bold" className="text-gray-800 tracking-tight">Aktivitas Terkini</Typography>
                 <Pressable onPress={() => router.push('/history')}>
-                    <Typography variant="caption" weight="bold" className="text-primary">Lihat Riwayat</Typography>
+                    <Typography variant="caption" weight="bold" className="text-indigo-500">Lihat Riwayat</Typography>
                 </Pressable>
             </View>
 
             {list.length === 0 ? (
-                <View className="items-center py-12 bg-gray-50 rounded-3xl border border-gray-100 border-dashed">
+                <View className="items-center py-10 bg-white rounded-3xl border border-gray-100 border-dashed">
                     <Typography className="text-gray-400 font-medium">Belum ada aktivitas</Typography>
                 </View>
             ) : (
                 list.map((item: ActivityItem) => {
                     const config = getSourceConfig(item.source, item.title);
                     const Icon = config.icon;
-                    const badge = getStatusBadge(item.status);
 
                     return (
                         <Pressable
@@ -115,41 +114,32 @@ export const TransactionList = () => {
                             style={({ pressed }) => ({
                                 opacity: pressed ? 0.8 : 1
                             })}
-                            className="flex-row items-center bg-white p-4 rounded-3xl mb-3 border border-gray-100 shadow-sm"
+                            className="flex-row items-center bg-white p-4 rounded-[24px] mb-3 shadow-sm shadow-gray-100 border border-gray-50"
                             onPress={() => handleItemPress(item)}
                         >
                             <View
-                                style={{ backgroundColor: `${config.color}10` }}
-                                className="w-12 h-12 rounded-2xl items-center justify-center mr-4"
+                                style={{ backgroundColor: `${config.color}15` }}
+                                className="w-12 h-12 rounded-full items-center justify-center mr-4"
                             >
-                                <Icon size={22} color={config.color} strokeWidth={2.5} />
+                                <Icon size={20} color={config.color} strokeWidth={2.5} />
                             </View>
 
-                            <View className="flex-1">
-                                <Typography variant="body2" weight="bold" className="text-text mb-0.5" numberOfLines={1}>
+                            <View className="flex-1 mr-2">
+                                <Typography variant="body2" weight="bold" className="text-gray-800 mb-0.5 tracking-tight" numberOfLines={1}>
                                     {item.title}
                                 </Typography>
                                 <View className="flex-row items-center">
-                                    {item.subtitle ? (
-                                        <Typography variant="caption" className="text-primary/70 text-[10px] font-bold mr-2">
-                                            {item.subtitle}
-                                        </Typography>
-                                    ) : null}
-                                    <Typography variant="caption" className="text-textGray text-[10px]">
+                                    <Typography variant="caption" className="text-gray-400 text-[10px]" numberOfLines={1}>
+                                        {item.subtitle ? `${item.subtitle} • ` : ''}
                                         {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: localeID })}
                                     </Typography>
                                 </View>
                             </View>
 
-                            <View className="items-end ml-2">
-                                <Typography weight="bold" className={item.is_incoming ? "text-emerald-600" : "text-rose-500"}>
+                            <View className="items-end">
+                                <Typography weight="bold" className={item.is_incoming ? "text-emerald-500" : "text-rose-500"}>
                                     {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
                                 </Typography>
-                                <Badge
-                                    label={badge.label}
-                                    variant={badge.variant as any}
-                                    className="mt-1 transform scale-75 origin-right"
-                                />
                             </View>
                         </Pressable>
                     );

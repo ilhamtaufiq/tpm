@@ -266,8 +266,8 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         setDeleteDialog({ visible: true, mediaId: item.id });
                     }}
                     hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                    className="absolute bottom-10 left-6 bg-red-500/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg z-50"
-                    style={{ elevation: 5 }}
+                    className="absolute left-6 bg-red-500/80 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-lg z-50"
+                    style={{ bottom: 64, elevation: 5 }}
                 >
                     <Trash2 size={18} color="white" />
                 </Pressable>
@@ -336,7 +336,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                     {/* Pagination Dots */}
                     {activeUnit.media && activeUnit.media.length > 1 && (
-                        <View className="absolute bottom-12 flex-row self-center space-x-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
+                        <View className="absolute flex-row self-center space-x-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5" style={{ bottom: 64 }}>
                             {activeUnit.media.map((_: any, i: number) => (
                                 <View
                                     key={i}
@@ -347,7 +347,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                     )}
 
                     {/* Media Quick Actions */}
-                    <View className="absolute bottom-6 right-6 flex-row gap-2">
+                    <View className="absolute right-6 flex-row gap-2" style={{ bottom: 64 }}>
                         {activeUnit.media && activeUnit.media.length > 0 && (
                             <Pressable
                                 onPress={handleShareGallery}

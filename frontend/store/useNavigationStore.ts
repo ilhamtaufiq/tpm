@@ -8,7 +8,7 @@ export interface NavigationState {
     resetSlots: () => void;
 }
 
-export const defaultSlots = ['home', 'sdm-absensi', 'fab-plus', 'bengkel', 'profile'];
+export const defaultSlots = ['home', 'bengkel', 'fab-plus', 'angkut', 'mobil'];
 
 export const useNavigationStore = create<NavigationState>()(
     persist(

@@ -14,51 +14,48 @@ export const WalletSection = () => {
     return (
         <View className="px-6 mt-4">
             <View
-                style={{ backgroundColor: themeColors.primary }}
-                className="rounded-[32px] p-2 flex-row items-center shadow-lg shadow-black/10"
+                className="bg-[#6366f1] rounded-[32px] p-5 flex-row items-center justify-between shadow-lg shadow-indigo-500/30"
             >
-                {/* Saldo Pill */}
-                <View className="flex-1 bg-white rounded-3xl p-3 flex-row items-center">
-                    <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center mr-3 border border-gray-100">
-                        <Wallet size={20} color="#64748b" />
+                {/* Left Side: Saldo */}
+                <View className="flex-row items-center flex-1 mr-2">
+                    <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-3">
+                        <Wallet size={20} color="white" />
                     </View>
                     <View className="flex-1">
-                        <Typography className="text-gray-400 text-[8px] font-bold uppercase tracking-wider">
-                            TOTAL SALDO
-                        </Typography>
+                        <View className="flex-row items-center mb-1">
+                            <Typography className="text-white/80 text-[10px] font-bold uppercase tracking-wider mr-2">
+                                TOTAL SALDO
+                            </Typography>
+                            <View className="bg-white/20 px-2 py-0.5 rounded-full">
+                                <Typography className="text-white text-[8px] font-bold">TRX</Typography>
+                            </View>
+                        </View>
                         {isLoading || isRefetching ? (
-                            <ActivityIndicator size="small" color="#023C69" />
+                            <ActivityIndicator size="small" color="white" className="mt-1 self-start" />
                         ) : (
-                            <Typography weight="bold" className="text-primary text-base">
+                            <Typography weight="bold" className="text-white text-lg tracking-tight">
                                 {formatCurrency(balances?.total_saldo || 0)}
                             </Typography>
                         )}
                     </View>
-                    <View className="bg-gray-100 px-2 py-0.5 rounded-lg">
-                        <Typography className="text-gray-400 text-[8px] font-bold">TRX</Typography>
-                    </View>
                 </View>
 
-                {/* Actions */}
-                <View className="flex-row px-3 space-x-4">
+                {/* Right Side: Actions */}
+                <View className="flex-row space-x-2">
                     <Pressable
                         onPress={() => router.push({ pathname: '/finance/mutasi', params: { action: 'modal' } })}
-                        className="items-center"
+                        className="w-[60px] h-[60px] bg-white/20 border border-white/20 rounded-2xl items-center justify-center"
                     >
-                        <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center mb-1">
-                            <Plus size={20} color="white" strokeWidth={3} />
-                        </View>
-                        <Typography className="text-white text-[8px] font-bold">Masuk</Typography>
+                        <Plus size={18} color="white" strokeWidth={2.5} className="mb-1" />
+                        <Typography className="text-white text-[10px] font-bold">Masuk</Typography>
                     </Pressable>
 
                     <Pressable
                         onPress={() => router.push('/finance/expenses')}
-                        className="items-center"
+                        className="w-[60px] h-[60px] bg-white/20 border border-white/20 rounded-2xl items-center justify-center ml-2"
                     >
-                        <View className="bg-white/20 w-10 h-10 rounded-2xl items-center justify-center mb-1">
-                            <ArrowUp size={20} color="white" strokeWidth={3} />
-                        </View>
-                        <Typography className="text-white text-[8px] font-bold">Keluar</Typography>
+                        <ArrowUp size={18} color="white" strokeWidth={2.5} className="mb-1" />
+                        <Typography className="text-white text-[10px] font-bold">Keluar</Typography>
                     </Pressable>
                 </View>
             </View>

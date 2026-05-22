@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Pressable, Platform, Modal, Animated } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
-import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History } from 'lucide-react-native';
+import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
@@ -73,7 +73,22 @@ export const CustomTabBar = () => {
                 icon: Plus,
             };
         }
-        return APP_ROUTES.find((r) => r.id === id);
+        const route = APP_ROUTES.find((r) => r.id === id);
+        if (route) {
+            let label = route.label;
+            let icon = route.icon;
+            
+            if (id === 'angkut') {
+                label = 'Logistik';
+                icon = Package;
+            }
+            if (id === 'bengkel') label = 'Bengkel';
+            if (id === 'mobil') label = 'Mobil';
+            if (id === 'profile') label = 'Profile';
+            
+            return { ...route, label, icon };
+        }
+        return undefined;
     };
 
     // Quick Actions Options
@@ -93,17 +108,17 @@ export const CustomTabBar = () => {
 
     return (
         <View
-            className="absolute left-4 right-4 flex-row items-center justify-between px-2 rounded-[24px]"
+            className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-gray-200 bg-white"
             style={{
-                bottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 12) : 12,
-                height: 66,
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                bottom: 0,
+                height: 80 + (Platform.OS === 'ios' ? insets.bottom : 0),
+                paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.1,
-                shadowRadius: 20,
-                elevation: 15,
-                overflow: 'visible',
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.05,
+                shadowRadius: 16,
+                elevation: 10,
+                zIndex: 50,
             }}
         >
             {activeSlots.map((slotId, index) => {
@@ -133,38 +148,24 @@ export const CustomTabBar = () => {
                 };
 
                 const IconComponent = routeInfo.icon;
-                const strokeWidth = isFocused ? 2.5 : 2;
 
                 if (isFab) {
                     return (
-                        <View key={index} className="flex-1 items-center justify-center relative" style={{ height: '100%', overflow: 'visible' }}>
+                        <View key={index} className="flex flex-col items-center justify-center flex-1 h-full -mt-12 group relative" style={{ overflow: 'visible', zIndex: 60 }}>
                             <Pressable
                                 onPress={handlePress}
-                                className="absolute -top-7 justify-center items-center active:scale-90"
+                                className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
                                 style={{
+                                    backgroundColor: themeColors.primary,
                                     shadowColor: themeColors.primary,
                                     shadowOffset: { width: 0, height: 8 },
-                                    shadowOpacity: 0.4,
-                                    shadowRadius: 15,
-                                    elevation: 20,
-                                    backgroundColor: 'transparent',
+                                    shadowOpacity: 0.3,
+                                    shadowRadius: 20,
+                                    elevation: 10,
                                 }}
                             >
-                                {/* Standout FAB without solid border, pure floating icon */}
-                                <View
-                                    className="w-14 h-14 rounded-full items-center justify-center"
-                                    style={{ backgroundColor: themeColors.primary }}
-                                >
-                                    <Plus size={30} color="white" strokeWidth={3} />
-                                </View>
+                                <Plus size={24} color="white" strokeWidth={2.5} />
                             </Pressable>
-                            <Typography
-                                variant="caption"
-                                weight="medium"
-                                className="text-[9px] uppercase tracking-tighter text-gray-400 mt-8"
-                            >
-                                {routeInfo.label}
-                            </Typography>
                         </View>
                     );
                 }
@@ -173,38 +174,48 @@ export const CustomTabBar = () => {
                     <Pressable
                         key={index}
                         onPress={handlePress}
-                        className={cn(
-                            "flex-1 items-center justify-center py-1 rounded-2xl active:opacity-70",
-                            isFocused ? "bg-primary/5" : ""
-                        )}
+                        className="flex-1 flex flex-col items-center justify-center h-full active:opacity-70"
                     >
-                        <View className={cn("mb-1", isFocused ? "scale-110" : "scale-100 opacity-40")}>
-                            {IconComponent && (
-                                <IconComponent
-                                    size={20}
-                                    color={isFocused ? themeColors.primary : '#6B7280'}
-                                    strokeWidth={strokeWidth}
-                                />
-                            )}
-                        </View>
-                        <Typography
-                            variant="caption"
-                            weight={isFocused ? "bold" : "medium"}
-                            className={cn(
-                                "text-[9px] uppercase tracking-tighter",
-                                isFocused ? "text-primary" : "text-gray-400"
-                            )}
-                            numberOfLines={1}
-                        >
-                            {routeInfo.label}
-                        </Typography>
-
-                        {/* Focused Dot indicator */}
-                        {isFocused && (
-                            <View 
-                                className="absolute bottom-1 w-1.5 h-1.5 rounded-full" 
-                                style={{ backgroundColor: themeColors.primary }}
-                            />
+                        {isFocused ? (
+                            <View className="w-12 h-12 flex flex-col items-center justify-center rounded-xl bg-[#EEF2FF] mb-1">
+                                {IconComponent && (
+                                    <View className="mb-0.5">
+                                        <IconComponent
+                                            size={18}
+                                            color={themeColors.primary}
+                                            strokeWidth={2.5}
+                                        />
+                                    </View>
+                                )}
+                                <Typography
+                                    variant="caption"
+                                    weight="semibold"
+                                    className="text-[10px] text-primary"
+                                    numberOfLines={1}
+                                >
+                                    {routeInfo.label}
+                                </Typography>
+                            </View>
+                        ) : (
+                            <>
+                                {IconComponent && (
+                                    <View className="mb-1">
+                                        <IconComponent
+                                            size={20}
+                                            color="#9CA3AF"
+                                            strokeWidth={2}
+                                        />
+                                    </View>
+                                )}
+                                <Typography
+                                    variant="caption"
+                                    weight="medium"
+                                    className="text-[10px] text-gray-400"
+                                    numberOfLines={1}
+                                >
+                                    {routeInfo.label}
+                                </Typography>
+                            </>
                         )}
                     </Pressable>
                 );
