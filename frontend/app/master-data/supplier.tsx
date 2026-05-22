@@ -46,10 +46,10 @@ export default function SupplierScreen() {
 
     // Stats Calculation
     const stats = useMemo(() => {
-        const total = supplierList.length;
+        const total = listData?.total || 0;
         const uniqueCities = new Set(supplierList.map((s: Supplier) => s.kota).filter(Boolean)).size;
         return { total, uniqueCities };
-    }, [supplierList]);
+    }, [supplierList, listData?.total]);
 
     // Form state
     const [formData, setFormData] = useState({

@@ -1,9 +1,9 @@
 from typing import Optional, List
 from datetime import date
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser, get_unit_scope_for_role
 from app.schemas.keuangan import (
     HutangCreate,
     HutangResponse,
@@ -14,7 +14,7 @@ from app.schemas.keuangan import (
     PembayaranHutangSplit,
 )
 from app.services.hutang_service import HutangService
-from app.utils.constants import HutangStatus, HutangSource
+from app.utils.constants import HutangStatus, HutangSource, KasBankSource
 
 
 router = APIRouter(prefix="/hutang", tags=["Keuangan - Hutang Usaha"])
@@ -32,11 +32,13 @@ def list_hutang(
     status: Optional[HutangStatus] = None,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    unit: Optional[KasBankSource] = None,
     sort_by: str = "tanggal",
     sort_order: str = "desc",
 ):
     """Get list of payables with pagination and filters."""
     service = HutangService(db)
+    role_unit_scope = get_unit_scope_for_role(current_user.role)
     return service.get_list(
         skip=skip,
         limit=limit,
@@ -48,19 +50,22 @@ def list_hutang(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        unit=role_unit_scope or unit,
     )
 
 
 @router.get("/summary", response_model=HutangSummary)
 def get_hutang_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    unit: Optional[KasBankSource] = None,
 ):
     """Get payables summary statistics."""
     service = HutangService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    role_unit_scope = get_unit_scope_for_role(current_user.role)
+    return service.get_summary(tanggal_dari, tanggal_sampai, unit=role_unit_scope or unit)
 
 
 @router.get("/{hutang_id}", response_model=HutangResponse)
@@ -78,10 +83,13 @@ def get_hutang(
 def create_pembayaran(
     data: PembayaranHutangCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Process payment for a payable."""
     service = HutangService(db)
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope and service.get_by_id(data.hutang_id).unit != unit_scope:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses hutang unit ditolak")
     return service.process_payment(data, current_user.id)
 
 
@@ -89,10 +97,13 @@ def create_pembayaran(
 def create_pembayaran_split(
     data: PembayaranHutangSplit,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Process multiple payments for a payable at once."""
     service = HutangService(db)
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope and service.get_by_id(data.hutang_id).unit != unit_scope:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses hutang unit ditolak")
     return service.process_payment_split(data, current_user.id)
 
 

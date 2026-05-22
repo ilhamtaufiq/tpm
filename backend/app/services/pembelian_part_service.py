@@ -22,7 +22,7 @@ from app.utils.constants import (
     HutangSource,
     HutangStatus,
 )
-from app.models.keuangan import HutangUsaha
+from app.models.keuangan import HutangUsaha, KasBank
 from app.services.kas_bank_integration import create_kas_entry
 
 
@@ -117,29 +117,57 @@ class PembelianPartService:
 
         return {sp.id: sp for sp in spare_parts}
 
-    def create(
+    def _attach_payment_info(self, pembelian: PembelianSparePart) -> PembelianSparePart:
+        kas_entries = (
+            self.db.query(KasBank)
+            .filter(
+                KasBank.referensi_id == pembelian.id,
+                KasBank.sumber == KasBankSource.PEMBELIAN_PART,
+                KasBank.tipe == KasBankType.KELUAR,
+            )
+            .order_by(KasBank.id.asc())
+            .all()
+        )
+        hutang = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
+                HutangUsaha.referensi_id == pembelian.id,
+            )
+            .first()
+        )
+
+        pembelian.payments = [
+            {
+                "metode": entry.metode_bayar,
+                "jumlah": entry.nominal,
+                "kas_jenis": entry.jenis,
+                "catatan": entry.catatan,
+            }
+            for entry in kas_entries
+        ]
+        pembelian.jumlah_bayar = sum((entry.nominal for entry in kas_entries), Decimal("0"))
+
+        if hutang:
+            pembelian.jumlah_bayar += hutang.total_dibayar
+        elif pembelian.status_bayar == PaymentStatus.LUNAS and pembelian.jumlah_bayar == 0:
+            pembelian.jumlah_bayar = pembelian.grand_total
+
+        return pembelian
+
+    def _apply_purchase_mutations(
         self,
+        pembelian: PembelianSparePart,
         data: PembelianSparePartCreate,
+        spare_parts_map: Dict[int, SparePart],
         user_id: Optional[int] = None,
-    ) -> PembelianSparePart:
-        """Create a new spare part purchase transaction."""
-        # Validate supplier
-        self._validate_supplier(data.supplier_id)
-
-        # Validate spare parts
-        spare_parts_map = self._validate_spare_parts(data.detail)
-
-        # Generate transaction number
-        nomor_transaksi = self._generate_nomor_transaksi()
-
-        # Calculate totals
+    ) -> None:
         total = Decimal("0")
         detail_records = []
 
         for item in data.detail:
             subtotal = item.harga_satuan * item.qty
             total += subtotal
-
             detail_records.append(
                 DetailPembelianSparePart(
                     spare_part_id=item.spare_part_id,
@@ -150,61 +178,44 @@ class PembelianPartService:
             )
 
         grand_total = total - data.diskon
-
-        # Determine if it's an immediate payment
         pay_now_methods = [
-            PaymentMethod.TUNAI, 
-            PaymentMethod.TRANSFER, 
-            PaymentMethod.DEBIT, 
+            PaymentMethod.TUNAI,
+            PaymentMethod.TRANSFER,
+            PaymentMethod.DEBIT,
             PaymentMethod.SPLIT,
-            PaymentMethod.OTHER
+            PaymentMethod.OTHER,
         ]
         is_pay_now = data.metode_bayar in pay_now_methods
 
-        # Record payment logic
         total_paid = Decimal("0")
         if is_pay_now:
-            if data.payments:
-                total_paid = sum(pm.jumlah for pm in data.payments)
-            else:
-                total_paid = grand_total
+            total_paid = sum((pm.jumlah for pm in data.payments), Decimal("0")) if data.payments else grand_total
 
-        # Determine payment status
         if is_pay_now and total_paid >= grand_total:
             status_bayar = PaymentStatus.LUNAS
         else:
             status_bayar = PaymentStatus.BELUM_LUNAS
-        
-        tanggal_bayar = data.tanggal if status_bayar == PaymentStatus.LUNAS else None
 
-        # Create purchase record
-        pembelian = PembelianSparePart(
-            nomor_transaksi=nomor_transaksi,
-            tanggal=data.tanggal,
-            supplier_id=data.supplier_id,
-            nomor_faktur=data.nomor_faktur,
-            total=total,
-            diskon=data.diskon,
-            grand_total=grand_total,
-            status_bayar=status_bayar,
-            metode_bayar=data.metode_bayar,
-            tanggal_bayar=tanggal_bayar,
-            catatan=data.catatan,
-            created_by=user_id,
-            detail=detail_records,
-        )
+        pembelian.tanggal = data.tanggal
+        pembelian.supplier_id = data.supplier_id
+        pembelian.nomor_faktur = data.nomor_faktur
+        pembelian.total = total
+        pembelian.diskon = data.diskon
+        pembelian.grand_total = grand_total
+        pembelian.status_bayar = status_bayar
+        pembelian.metode_bayar = data.metode_bayar
+        pembelian.tanggal_bayar = data.tanggal if status_bayar == PaymentStatus.LUNAS else None
+        pembelian.catatan = data.catatan
+        pembelian.detail = detail_records
 
-        self.db.add(pembelian)
-        self.db.flush()  # Get ID for kas entry
+        self.db.flush()
 
-        # Update spare part stock and price
         for item in data.detail:
             spare_part = spare_parts_map[item.spare_part_id]
             if spare_part.stok != 999:
                 spare_part.stok += item.qty
-            spare_part.harga_beli = item.harga_satuan  # Update latest purchase price
+            spare_part.harga_beli = item.harga_satuan
 
-        # Record purchase payment to kas/bank if paid immediately (including partial)
         if total_paid > 0:
             if data.payments:
                 for pm in data.payments:
@@ -238,7 +249,6 @@ class PembelianPartService:
                     allow_negative=True,
                 )
 
-        # Record Hutang for the remainder
         if total_paid < grand_total:
             sisa_hutang = grand_total - total_paid
             supplier = self.db.query(Supplier).get(data.supplier_id)
@@ -261,10 +271,28 @@ class PembelianPartService:
             )
             self.db.add(hutang)
 
+    def create(
+        self,
+        data: PembelianSparePartCreate,
+        user_id: Optional[int] = None,
+    ) -> PembelianSparePart:
+        """Create a new spare part purchase transaction."""
+        self._validate_supplier(data.supplier_id)
+        spare_parts_map = self._validate_spare_parts(data.detail)
+
+        pembelian = PembelianSparePart(
+            nomor_transaksi=self._generate_nomor_transaksi(),
+            created_by=user_id,
+        )
+
+        self.db.add(pembelian)
+
+        self._apply_purchase_mutations(pembelian, data, spare_parts_map, user_id)
+
         self.db.commit()
         self.db.refresh(pembelian)
 
-        return pembelian
+        return self._attach_payment_info(pembelian)
 
     def get_by_id(self, pembelian_id: int) -> PembelianSparePart:
         """Get purchase by ID with details."""
@@ -284,7 +312,7 @@ class PembelianPartService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Transaksi pembelian tidak ditemukan",
             )
-        return pembelian
+        return self._attach_payment_info(pembelian)
 
     def get_by_nomor(self, nomor_transaksi: str) -> Optional[PembelianSparePart]:
         """Get purchase by transaction number."""
@@ -297,6 +325,60 @@ class PembelianPartService:
             .filter(PembelianSparePart.nomor_transaksi == nomor_transaksi)
             .first()
         )
+
+    def update(
+        self,
+        pembelian_id: int,
+        data: PembelianSparePartCreate,
+        user_id: Optional[int] = None,
+    ) -> PembelianSparePart:
+        pembelian = self.get_by_id(pembelian_id)
+        self._validate_supplier(data.supplier_id)
+        spare_parts_map = self._validate_spare_parts(data.detail)
+
+        hutang = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.sumber == HutangSource.PEMBELIAN_PART,
+                HutangUsaha.referensi_id == pembelian.id,
+            )
+            .first()
+        )
+        if hutang and (hutang.total_dibayar > 0 or hutang.pembayaran):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi sudah memiliki pembayaran hutang; edit belum diizinkan",
+            )
+
+        for detail in pembelian.detail:
+            spare_part = self.db.query(SparePart).filter(SparePart.id == detail.spare_part_id).first()
+            if spare_part and spare_part.stok != 999:
+                spare_part.stok -= detail.qty
+                if spare_part.stok < 0:
+                    spare_part.stok = 0
+
+        self.db.query(KasBank).filter(
+            KasBank.referensi_id == pembelian.id,
+            KasBank.sumber == KasBankSource.PEMBELIAN_PART,
+        ).delete(synchronize_session=False)
+
+        if hutang:
+            self.db.query(KasBank).filter(
+                KasBank.nomor_referensi == hutang.nomor_hutang,
+                KasBank.sumber == KasBankSource.HUTANG,
+            ).delete(synchronize_session=False)
+            self.db.delete(hutang)
+
+        for detail in list(pembelian.detail):
+            self.db.delete(detail)
+        self.db.flush()
+
+        self._apply_purchase_mutations(pembelian, data, spare_parts_map, user_id)
+
+        self.db.commit()
+        self.db.refresh(pembelian)
+
+        return self._attach_payment_info(pembelian)
 
     def get_list(
         self,

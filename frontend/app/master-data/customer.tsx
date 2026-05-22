@@ -59,11 +59,11 @@ export default function CustomerScreen() {
 
     // Stats Calculation
     const stats = useMemo(() => {
-        const total = customerList.length;
+        const total = listData?.total || 0;
         const perorangan = customerList.filter((c: Customer) => c.tipe === 'perorangan').length;
         const perusahaan = customerList.filter((c: Customer) => c.tipe === 'perusahaan').length;
         return { total, perorangan, perusahaan };
-    }, [customerList]);
+    }, [customerList, listData?.total]);
 
     // Form state
     const [formData, setFormData] = useState<{

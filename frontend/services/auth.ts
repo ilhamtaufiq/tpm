@@ -17,6 +17,17 @@ export interface User {
     updated_at: string;
 }
 
+export interface LoginResponse {
+    access_token?: string;
+    token_type?: string;
+    user?: User;
+    otp_required?: boolean;
+    user_id?: number;
+    email?: string;
+    is_impersonation?: boolean;
+    impersonator?: User;
+}
+
 export interface UserCreateData {
     username: string;
     email: string;
@@ -166,6 +177,11 @@ export const authService = {
 
     deleteUser: async (id: number) => {
         const response = await api.delete(`/auth/users/${id}`);
+        return response.data;
+    },
+
+    impersonateUser: async (id: number): Promise<LoginResponse> => {
+        const response = await api.post(`/auth/users/${id}/impersonate`);
         return response.data;
     }
 };

@@ -43,17 +43,18 @@ Input pembelian secara hutang belum muncul/terhubung jelas ke menu hutang piutan
 **Output:**
 Admin bengkel bisa input pembelian hutang dan bayar hutang langsung dari menu bengkel.
 
-### 3. Ubah Posisi Kotak Dompet dan Riwayat
+### 3. Rapikan Flow Dompet dan Riwayat
 
 **Masalah:**
-Posisi kotak-kotak dompet dan riwayat ingin ditukar.
+Flow dompet bengkel perlu dirapikan, termasuk posisi section aksi dan riwayat.
 
 **Rencana:**
 - Di halaman dompet/menu bengkel:
-  - Kotak-kotak saldo/dompet dipindah ke bagian bawah.
-  - Riwayat dipindah ke posisi atas.
+  - Kotak saldo/dompet dan quick actions jadi section utama di atas.
+  - Riwayat aktivitas kas dan setoran tampil di bawah.
 - Pastikan tampilan tetap enak di desktop dan mobile.
 - Kotak dompet tetap berisi ringkasan saldo, masuk, keluar, hutang, atau kategori lain yang dibutuhkan.
+- Desain flow dompet ini jadi acuan bersama, lalu diimplementasikan juga ke unit bisnis Jual Beli Mobil dan Jasa Angkut setelah versi bengkel stabil.
 
 ### 4. Tombol Kembali per Halaman
 
@@ -144,19 +145,41 @@ Admin bengkel tidak bisa setor uang dari dompet bengkel.
 ## Urutan Implementasi Disarankan
 
 1. Perbaiki permission admin bengkel.
-2. Tambah fitur edit pembelian part dan service.
-3. Hubungkan pembelian hutang ke hutang piutang.
-4. Tambah bayar hutang dari menu bengkel.
-5. Rapikan dompet dan posisi riwayat.
-6. Perbaiki tombol kembali.
+2. Rapikan flow dompet dan tombol kembali.
+3. Tambah edit pembelian part.
+4. Tambah edit pembelian service.
+5. Hubungkan pembelian hutang bengkel ke hutang piutang.
+6. Tambah bayar hutang dari menu bengkel.
 7. Sinkronkan angka master data dengan pusat.
 8. Ubah absensi jadi kalender.
+9. Replikasi flow dompet ke unit Jual Beli Mobil.
+10. Replikasi flow dompet ke unit Jasa Angkut.
 
 ## Backlog Pekerjaan
 
+## Progress Eksekusi
+
+### Sudah dieksekusi
+- [x] `BGK-001` - Perbaiki akses admin bengkel untuk kasbon/pinjaman
+- [x] `BGK-002` - Perbaiki akses admin bengkel untuk setor uang dompet
+- [x] `BGK-003` - Rapikan flow dompet bengkel
+- [x] `BGK-004` - Perbaiki tombol kembali agar mundur satu halaman
+- [x] `BGK-005` - Tambah edit pembelian part *(sudah dieksekusi, perlu testing)*
+- [x] `BGK-007` - Hubungkan pembelian hutang bengkel ke hutang piutang *(sudah berjalan untuk pembelian part; scope service belum ada modulnya)*
+- [x] `BGK-008` - Tambah akses bayar hutang/piutang bengkel via CTA ke halaman finance terfilter unit *(perlu testing end-to-end)*
+
+### Belum dieksekusi
+- [ ] `BGK-006` - Tambah edit pembelian service *(pending klarifikasi; entitas pembelian service terpisah belum ada di codebase)*
+- [x] `BGK-009` - Sinkronkan angka master data dengan pusat *(sudah dieksekusi, perlu testing)*
+- [x] `BGK-010` - Ubah absensi jadi tampilan kalender *(sudah dieksekusi, perlu testing)*
+- [ ] `BGK-011` - Adaptasi flow dompet ke unit Jual Beli Mobil
+- [ ] `BGK-012` - Adaptasi flow dompet ke unit Jasa Angkut
+
 ### Sprint 1: Quick Fix dan Akses Admin Bengkel
 
-#### BGK-001 - Perbaiki akses admin bengkel untuk kasbon/pinjaman
+#### BGK-001 - Perbaiki akses admin bengkel untuk kasbon/pinjaman ✅
+
+**Status:** Selesai dieksekusi
 
 **Prioritas:** Tinggi
 
@@ -177,7 +200,9 @@ Admin bengkel harus bisa input kasbon/pinjaman dari menu bengkel.
 - Data masuk ke riwayat kasbon/pinjaman bengkel.
 - Admin bengkel tidak bisa akses data cabang lain.
 
-#### BGK-002 - Perbaiki akses admin bengkel untuk setor uang dompet
+#### BGK-002 - Perbaiki akses admin bengkel untuk setor uang dompet ✅
+
+**Status:** Selesai dieksekusi
 
 **Prioritas:** Tinggi
 
@@ -199,27 +224,33 @@ Admin bengkel harus bisa setor uang dari dompet bengkel.
 - Saldo dompet bengkel berubah sesuai nominal.
 - Riwayat dompet mencatat transaksi setor.
 
-#### BGK-003 - Tukar posisi riwayat dan kotak dompet
+#### BGK-003 - Rapikan flow dompet bengkel ✅
+
+**Status:** Selesai dieksekusi
 
 **Prioritas:** Sedang
 
 **Tipe:** UI layout
 
 **Deskripsi:**
-Di halaman dompet/menu bengkel, riwayat ditaruh di atas dan kotak-kotak ringkasan dompet ditaruh di bawah.
+Di halaman dompet/menu bengkel, flow dompet dirapikan dengan kotak saldo dan quick actions di atas, lalu riwayat aktivitas kas di bawah.
 
 **Task teknis:**
 - Cari komponen halaman dompet bengkel.
-- Pindahkan section riwayat ke atas.
-- Pindahkan kotak ringkasan ke bawah.
+- Pastikan section saldo/dompet tampil sebagai section utama di atas.
+- Pastikan quick actions dompet tampil sebelum riwayat.
+- Pindahkan riwayat aktivitas kas ke bawah.
 - Tes tampilan desktop dan mobile.
 
 **Acceptance criteria:**
-- Riwayat tampil sebelum kotak-kotak dompet.
-- Kotak dompet tetap tampil lengkap.
+- Kotak saldo/dompet tampil di atas.
+- Quick actions dompet tampil jelas di area utama.
+- Riwayat tampil di bawah section dompet.
 - Tidak ada layout pecah di mobile.
 
-#### BGK-004 - Perbaiki tombol kembali agar mundur satu halaman
+#### BGK-004 - Perbaiki tombol kembali agar mundur satu halaman ✅
+
+**Status:** Selesai dieksekusi
 
 **Prioritas:** Sedang
 
@@ -242,7 +273,9 @@ Tombol `Kembali` harus balik ke halaman sebelumnya, bukan langsung ke halaman aw
 
 ### Sprint 2: Edit Pembelian dan Hutang Piutang
 
-#### BGK-005 - Tambah edit pembelian part
+#### BGK-005 - Tambah edit pembelian part ✅
+
+**Status:** Sudah dieksekusi, perlu testing end-to-end
 
 **Prioritas:** Tinggi
 
@@ -267,6 +300,8 @@ User bisa edit transaksi pembelian part kalau ada salah input.
 
 #### BGK-006 - Tambah edit pembelian service
 
+**Status:** Pending klarifikasi bisnis
+
 **Prioritas:** Tinggi
 
 **Tipe:** Feature
@@ -274,19 +309,30 @@ User bisa edit transaksi pembelian part kalau ada salah input.
 **Deskripsi:**
 User bisa edit transaksi pembelian service kalau ada salah input.
 
+**Catatan hasil cek codebase:**
+- Saat ini tidak ada entitas `pembelian service` terpisah di backend/frontend.
+- Yang ada hanya:
+  - master `JasaServis`
+  - `detail_services` pada transaksi penjualan bengkel
+  - `PembelianSparePart` untuk pembelian vendor
+- Jadi item ini belum bisa dikerjakan sebagai edit flow existing tanpa definisi modul baru.
+
 **Task teknis:**
-- Cari model/API pembelian service.
-- Tambah endpoint update pembelian service jika belum ada.
-- Tambah tombol `Edit` di riwayat pembelian service.
-- Buat form edit dengan data lama.
-- Hitung ulang dompet/hutang jika nominal atau metode pembayaran berubah.
+- Klarifikasi dulu apakah yang dimaksud:
+  - pembelian jasa/vendor baru, atau
+  - edit jasa pada transaksi penjualan bengkel.
+- Jika memang perlu pembelian jasa/vendor, buat desain model/API/UI baru dulu.
+- Setelah scope jelas, baru tambah endpoint update dan form edit.
 
 **Acceptance criteria:**
-- Transaksi pembelian service bisa diedit.
+- Scope bisnis pembelian service terdefinisi jelas.
+- Jika modul baru dibuat, transaksi pembelian service bisa diedit.
 - Saldo/hutang berubah benar setelah edit.
 - Riwayat tetap rapi dan tidak membuat transaksi dobel.
 
-#### BGK-007 - Hubungkan pembelian hutang bengkel ke hutang piutang
+#### BGK-007 - Hubungkan pembelian hutang bengkel ke hutang piutang ✅
+
+**Status:** Selesai untuk flow pembelian part yang memang ada di sistem
 
 **Prioritas:** Tinggi
 
@@ -297,43 +343,46 @@ Pembelian bengkel dengan metode hutang otomatis muncul di hutang piutang kategor
 
 **Task teknis:**
 - Cek struktur hutang/piutang yang sudah ada.
-- Tambah kategori sumber `bengkel` jika belum ada.
-- Saat pembelian part/service dipilih hutang, buat atau update catatan hutang.
-- Pastikan nominal hutang tidak dobel saat transaksi diedit.
-- Tampilkan hutang bengkel di menu hutang piutang.
+- Pastikan pembelian part dengan sisa hutang membuat catatan hutang unit bengkel.
+- Saat transaksi pembelian part diedit, nominal hutang lama diupdate tanpa dobel.
+- Tampilkan hutang bengkel di menu hutang/piutang via halaman finance terfilter unit.
+- Pastikan role bengkel hanya melihat data hutang/piutang unit bengkel.
 
 **Acceptance criteria:**
 - Pembelian hutang part masuk hutang piutang bengkel.
-- Pembelian hutang service masuk hutang piutang bengkel.
-- Edit transaksi hutang mengubah nominal hutang, bukan membuat dobel.
-- Hutang bisa difilter berdasarkan kategori bengkel.
+- Edit transaksi hutang part mengubah nominal hutang, bukan membuat dobel.
+- Hutang bisa difilter berdasarkan kategori/unit bengkel.
+- Role bengkel tidak bisa melihat hutang unit lain.
 
-#### BGK-008 - Tambah bayar hutang dari menu bengkel
+#### BGK-008 - Tambah bayar hutang dari menu bengkel ✅
+
+**Status:** Sudah dieksekusi via CTA ke halaman finance terfilter unit, perlu testing end-to-end
 
 **Prioritas:** Tinggi
 
 **Tipe:** Feature
 
 **Deskripsi:**
-Admin bengkel bisa bayar hutang bengkel langsung dari menu bengkel.
+Admin bengkel bisa masuk ke daftar hutang/piutang bengkel dari menu bengkel lalu memproses pembayaran pada data unit bengkel saja.
 
 **Task teknis:**
-- Tambah tombol/aksi `Bayar Hutang` di hutang bengkel.
-- Buat form pembayaran hutang.
-- Kurangi saldo dompet bengkel sesuai nominal bayar.
-- Kurangi sisa hutang.
-- Simpan riwayat pembayaran.
+- Tambah CTA `Hutang` dan `Piutang` di flow dompet bengkel.
+- Arahkan ke halaman finance dengan filter `unit=BENGKEL`.
+- Izinkan role bengkel mengakses screen hutang/piutang finance yang sudah dibatasi per unit.
+- Pastikan pembayaran tetap mengurangi saldo wallet unit bengkel.
+- Pastikan data dan aksi tetap scoped ke unit bengkel.
 
 **Acceptance criteria:**
-- Bisa bayar hutang sebagian.
-- Bisa bayar hutang lunas.
-- Saldo dompet bengkel berkurang.
-- Status hutang berubah jika sudah lunas.
-- Riwayat pembayaran tampil.
+- Dari menu bengkel bisa buka daftar hutang bengkel.
+- Dari menu bengkel bisa buka daftar piutang bengkel.
+- Pembayaran hutang/piutang hanya memproses data unit bengkel.
+- Saldo dompet bengkel dan riwayat tetap tercatat benar.
 
 ### Sprint 3: Sinkronisasi Data dan Absensi
 
-#### BGK-009 - Sinkronkan angka master data dengan pusat
+#### BGK-009 - Sinkronkan angka master data dengan pusat ✅
+
+**Status:** Sudah dieksekusi, perlu testing visual dan data sampling
 
 **Prioritas:** Sedang
 
@@ -349,12 +398,18 @@ Angka di master data harus sama dengan angka di pusat.
 - Samakan format rupiah/angka.
 - Cek pengaruh filter tanggal, cabang, dan role.
 
+**Catatan implementasi:**
+- Halaman customer, supplier, jasa servis, dan asset diubah agar memakai `total` dari metadata API, bukan `data.length` hasil pagination terbatas.
+- Halaman sparepart diubah agar angka low stock memakai endpoint low-stock khusus, supaya konsisten dengan inventory pusat.
+
 **Acceptance criteria:**
 - Total di master data sama dengan pusat untuk filter yang sama.
 - Format angka konsisten.
 - Tidak ada angka kosong kalau data tersedia.
 
-#### BGK-010 - Ubah absensi jadi tampilan kalender
+#### BGK-010 - Ubah absensi jadi tampilan kalender ✅
+
+**Status:** Sudah dieksekusi, perlu testing UX dan validasi data status
 
 **Prioritas:** Sedang
 
@@ -371,6 +426,13 @@ Menu absensi tampil seperti kalender dan tanggal hari ini punya tanda visual.
 - Tambah navigasi bulan/tahun.
 - Detail absensi muncul saat tanggal diklik.
 
+**Catatan implementasi:**
+- Kalender bulanan dipakai sebagai tampilan utama absensi.
+- Hari ini diberi highlight border hijau.
+- Status tanggal dibedakan warna: hadir, setengah hari, izin, sakit, cuti, alpha.
+- Ditambah ringkasan bulanan per karyawan dari summary absensi backend.
+- Klik tanggal membuka modal untuk ubah status dan jam masuk/keluar.
+
 **Acceptance criteria:**
 - Absensi tampil kalender.
 - Tanggal hari ini terlihat jelas.
@@ -378,11 +440,59 @@ Menu absensi tampil seperti kalender dan tanggal hari ini punya tanda visual.
 - Bisa pindah bulan/tahun.
 - Klik tanggal menampilkan detail absensi.
 
+### Sprint 4: Replikasi Flow Dompet ke Unit Lain
+
+#### BGK-011 - Adaptasi flow dompet ke unit Jual Beli Mobil
+
+**Prioritas:** Sedang
+
+**Tipe:** UI/flow consistency
+
+**Deskripsi:**
+Flow dompet yang sudah dimatangkan di bengkel diterapkan ke unit bisnis Jual Beli Mobil dengan penyesuaian wallet, history, hutang/piutang, dan permission unit mobil.
+
+**Task teknis:**
+- Inventaris komponen dompet dan riwayat di menu Jual Beli Mobil.
+- Adaptasi layout saldo, quick actions, dan history mengikuti flow bengkel final.
+- Hubungkan CTA hutang/piutang ke halaman finance dengan filter unit mobil.
+- Pastikan transfer/setoran hanya memakai wallet dan tujuan yang valid untuk unit mobil.
+- Cek permission role unit mobil agar tetap scoped ke unit sendiri.
+- Verifikasi dampak ke mutasi kas, saldo wallet, dan laporan.
+
+**Acceptance criteria:**
+- Menu dompet unit mobil mengikuti flow UX yang sama dengan bengkel.
+- Hutang/piutang unit mobil bisa diakses lewat CTA terfilter.
+- Role unit mobil tidak bisa melihat atau memproses data unit lain.
+- Mutasi saldo dan riwayat tetap konsisten.
+
+#### BGK-012 - Adaptasi flow dompet ke unit Jasa Angkut
+
+**Prioritas:** Sedang
+
+**Tipe:** UI/flow consistency
+
+**Deskripsi:**
+Flow dompet yang sudah dimatangkan di bengkel diterapkan ke unit bisnis Jasa Angkut dengan penyesuaian wallet, history, hutang/piutang, dan permission unit jasa angkut.
+
+**Task teknis:**
+- Inventaris komponen dompet dan riwayat di menu Jasa Angkut.
+- Adaptasi layout saldo, quick actions, dan history mengikuti flow bengkel final.
+- Hubungkan CTA hutang/piutang ke halaman finance dengan filter unit jasa angkut.
+- Pastikan transfer/setoran hanya memakai wallet dan tujuan yang valid untuk unit jasa angkut.
+- Cek permission role unit jasa angkut agar tetap scoped ke unit sendiri.
+- Verifikasi dampak ke mutasi kas, saldo wallet, dan laporan.
+
+**Acceptance criteria:**
+- Menu dompet unit jasa angkut mengikuti flow UX yang sama dengan bengkel.
+- Hutang/piutang unit jasa angkut bisa diakses lewat CTA terfilter.
+- Role unit jasa angkut tidak bisa melihat atau memproses data unit lain.
+- Mutasi saldo dan riwayat tetap konsisten.
+
 ## Yang Bisa Dieksekusi Dulu
 
-### Eksekusi 1 - Permission admin bengkel
+### Eksekusi 1 - Permission admin bengkel ✅
 
-Mulai dari `BGK-001` dan `BGK-002`.
+`BGK-001` dan `BGK-002` sudah dieksekusi.
 
 **Alasan:**
 - Dampak langsung ke user.
@@ -394,9 +504,9 @@ Mulai dari `BGK-001` dan `BGK-002`.
 - Admin bengkel bisa input kasbon/pinjaman.
 - Admin bengkel bisa setor uang dompet.
 
-### Eksekusi 2 - UI ringan tanpa ubah data besar
+### Eksekusi 2 - UI ringan tanpa ubah data besar ✅
 
-Lanjut `BGK-003` dan `BGK-004`.
+`BGK-003` dan `BGK-004` sudah dieksekusi.
 
 **Alasan:**
 - Tidak banyak menyentuh logic keuangan.
@@ -407,9 +517,11 @@ Lanjut `BGK-003` dan `BGK-004`.
 - Posisi riwayat dan kotak dompet sudah sesuai.
 - Tombol kembali tidak lompat langsung ke awal.
 
-### Eksekusi 3 - Hutang piutang dan edit transaksi
+### Eksekusi 3 - Edit transaksi dan integrasi hutang
 
-Kerjakan `BGK-005`, `BGK-006`, `BGK-007`, dan `BGK-008` setelah alur data dipetakan.
+`BGK-007` sudah berjalan untuk flow pembelian part.
+
+Kerjakan klarifikasi `BGK-006` bila memang dibutuhkan modul pembelian service baru.
 
 **Alasan:**
 - Ini paling penting, tapi risiko paling besar.
@@ -417,13 +529,12 @@ Kerjakan `BGK-005`, `BGK-006`, `BGK-007`, dan `BGK-008` setelah alur data dipeta
 - Perlu audit sumber data supaya tidak muncul selisih atau dobel transaksi.
 
 **Output awal yang diharapkan:**
-- Pembelian part/service bisa diedit.
-- Pembelian hutang otomatis masuk hutang piutang.
-- Bayar hutang bisa dari menu bengkel.
+- Pembelian hutang part otomatis masuk hutang piutang.
+- Scope `BGK-006` jelas sebelum implementasi lanjutan.
 
-### Eksekusi 4 - Sinkronisasi dan absensi
+### Eksekusi 4 - Sinkronisasi dan absensi ✅
 
-Kerjakan `BGK-009` dan `BGK-010` setelah fitur utama bengkel stabil.
+`BGK-009` dan `BGK-010` sudah dieksekusi.
 
 **Alasan:**
 - Sinkron angka butuh tracing lintas halaman.
@@ -432,6 +543,26 @@ Kerjakan `BGK-009` dan `BGK-010` setelah fitur utama bengkel stabil.
 **Output awal yang diharapkan:**
 - Angka master data sama dengan pusat.
 - Absensi tampil kalender dengan tanda tanggal hari ini.
+
+### Eksekusi 5 - Replikasi flow dompet lintas unit ← next
+
+Kerjakan `BGK-011` dan `BGK-012` setelah `BGK-006`, `BGK-007`, `BGK-009`, `BGK-010`, dan testing flow dompet bengkel stabil.
+
+**Alasan:**
+- Bengkel jadi template awal agar implementasi lintas unit tidak pecah desain.
+- Perlu jaga konsistensi UX tanpa merusak aturan ledger per unit.
+- Replikasi lintas unit lebih aman setelah pola permission, mutasi, dan history di bengkel sudah stabil.
+
+**Output awal yang diharapkan:**
+- Unit Jual Beli Mobil memakai flow dompet yang konsisten dengan bengkel.
+- Unit Jasa Angkut memakai flow dompet yang konsisten dengan bengkel.
+- CTA hutang/piutang dan mutasi wallet tetap scoped per unit.
+
+## Catatan Pengembangan Lanjutan
+
+- Flow dan desain dompet yang sudah dimatangkan di menu bengkel akan direplikasi ke unit bisnis `Jual Beli Mobil` dan `Jasa Angkut`.
+- Replikasi harus tetap mengikuti scope wallet/unit masing-masing agar tidak membuka akses silang antar unit.
+- Implementasi lintas unit sebaiknya reuse pola UI dan aturan ledger yang sama, tapi tetap cek perbedaan alur bisnis tiap unit.
 
 ## Risiko Teknis
 

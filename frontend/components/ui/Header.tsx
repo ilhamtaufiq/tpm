@@ -43,7 +43,7 @@ export const Header = ({
     variant = 'page'
 }: HeaderProps) => {
     const insets = useSafeAreaInsets();
-    const { user, logout } = useAuthStore();
+    const { user, logout, isImpersonating, impersonatorUser, stopImpersonation } = useAuthStore();
     const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -150,6 +150,30 @@ export const Header = ({
                     </View>
 
                     <View className="flex-row items-center gap-2">
+                        {isImpersonating && (
+                            <Pressable
+                                onPress={() => {
+                                    stopImpersonation();
+                                    const restoredUser = useAuthStore.getState().user;
+                                    if (restoredUser?.role === 'ADMIN' || restoredUser?.role === 'MANAGER') {
+                                        router.replace('/all-menus');
+                                    } else if (restoredUser?.role === 'BENGKEL') {
+                                        router.replace('/bengkel');
+                                    } else if (restoredUser?.role === 'JASA_ANGKUT') {
+                                        router.replace('/jasa-angkut');
+                                    } else if (restoredUser?.role === 'MOBIL') {
+                                        router.replace('/mobil');
+                                    } else {
+                                        router.replace('/(tabs)/home');
+                                    }
+                                }}
+                                className="px-3 h-11 bg-amber-500/20 rounded-2xl items-center justify-center border border-amber-500/20"
+                            >
+                                <Typography className="text-amber-200 text-[10px] font-black uppercase tracking-wider">
+                                    Stop
+                                </Typography>
+                            </Pressable>
+                        )}
                         {rightElement}
                         {showProfile && (
                             <View className="flex-row items-center gap-2">
@@ -204,6 +228,20 @@ export const Header = ({
                             {searchPlaceholder}
                         </Typography>
                     </Pressable>
+                )}
+
+                {isImpersonating && (
+                    <View className="mt-2 bg-amber-500/15 border border-amber-400/20 rounded-2xl px-4 py-3">
+                        <Typography className="text-amber-100 text-[10px] font-black uppercase tracking-[2px] mb-1">
+                            Mode Impersonate
+                        </Typography>
+                        <Typography className="text-white text-xs font-bold">
+                            Login sebagai {user?.full_name || user?.username}
+                        </Typography>
+                        <Typography className="text-white/70 text-[10px] mt-1 font-medium">
+                            Admin asal: {impersonatorUser?.full_name || impersonatorUser?.username}
+                        </Typography>
+                    </View>
                 )}
 
                 {children && <View className="mt-4">{children}</View>}

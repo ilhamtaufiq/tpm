@@ -159,11 +159,15 @@ class HutangService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get list of payables with pagination and filters."""
         query = self.db.query(HutangUsaha).options(
             joinedload(HutangUsaha.pembayaran)
         )
+
+        if unit:
+            query = query.filter(HutangUsaha.unit == unit)
 
         # Search filter
         if search:
@@ -341,9 +345,13 @@ class HutangService:
         self,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get payables summary."""
         query = self.db.query(HutangUsaha)
+
+        if unit:
+            query = query.filter(HutangUsaha.unit == unit)
 
         if tanggal_dari:
             query = query.filter(HutangUsaha.tanggal >= tanggal_dari)

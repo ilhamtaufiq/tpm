@@ -49,7 +49,8 @@ import {
     useUploadSparePartImage,
     useBulkDeleteSpareParts,
     useExportSpareParts,
-    useSparePartStockValue
+    useSparePartStockValue,
+    useLowStockParts
 } from '../../hooks';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
@@ -113,20 +114,22 @@ export default function SparePartMasterScreen() {
         sparePartsData?.pages.flatMap((page: any) => page.data) || [],
         [sparePartsData]);
 
+    // Modal Stats
+    const { data: stockValueData, refetch: refetchStockValue } = useSparePartStockValue();
+    const { data: lowStockData, refetch: refetchLowStock } = useLowStockParts();
+
     // Stats Calculation
     const stats = useMemo(() => {
         // total should be from the first page's meta if possible, or total of all pages
         const totalCount = sparePartsData?.pages[0]?.total || 0;
-        const lowStock = sparePartsList.filter((item: any) => item.stok !== 999 && item.stok <= item.stok_minimum).length;
+        const lowStock = lowStockData?.length || 0;
         return { total: totalCount, lowStock };
-    }, [sparePartsData, sparePartsList]);
-
-    // Modal Stats
-    const { data: stockValueData, refetch: refetchStockValue } = useSparePartStockValue();
+    }, [sparePartsData, lowStockData]);
 
     const handleRefresh = async () => {
         refetch();
         refetchStockValue();
+        refetchLowStock();
     };
 
     // Mutations

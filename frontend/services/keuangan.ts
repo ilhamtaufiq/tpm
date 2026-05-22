@@ -268,6 +268,7 @@ export const keuanganService = {
         overdue_only?: boolean;
         tanggal_dari?: string;
         tanggal_sampai?: string;
+        unit?: KasBankSource;
         sort_by?: string;
         sort_order?: 'asc' | 'desc';
     }): Promise<PiutangListResponse> => {
@@ -278,6 +279,7 @@ export const keuanganService = {
     getPiutangSummary: async (params?: {
         tanggal_dari?: string;
         tanggal_sampai?: string;
+        unit?: KasBankSource;
     }): Promise<PiutangSummary> => {
         const response = await api.get('/piutang/summary', { params });
         return response.data;
@@ -364,6 +366,7 @@ export const keuanganService = {
         status?: HutangStatus;
         tanggal_dari?: string;
         tanggal_sampai?: string;
+        unit?: KasBankSource;
         sort_by?: string;
         sort_order?: 'asc' | 'desc';
     }): Promise<HutangListResponse> => {
@@ -374,6 +377,7 @@ export const keuanganService = {
     getHutangSummary: async (params?: {
         tanggal_dari?: string;
         tanggal_sampai?: string;
+        unit?: KasBankSource;
     }): Promise<HutangSummary> => {
         const response = await api.get('/hutang/summary', { params });
         return response.data;

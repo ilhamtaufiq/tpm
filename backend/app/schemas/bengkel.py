@@ -204,11 +204,13 @@ class PembelianSparePartResponse(BaseModel):
     total: Decimal
     diskon: Decimal
     grand_total: Decimal
+    jumlah_bayar: Decimal = Decimal("0")
     status_bayar: PaymentStatus
     metode_bayar: Optional[PaymentMethod] = None
     tanggal_bayar: Optional[date] = None
     catatan: Optional[str] = None
     detail: List[DetailPembelianResponse] = []
+    payments: List[PaymentItem] = []
     created_at: datetime
 
     model_config = {"from_attributes": True}

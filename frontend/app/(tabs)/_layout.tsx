@@ -1,12 +1,11 @@
 import { Tabs } from 'expo-router';
-import { CustomTabBar } from '../../components/ui/CustomTabBar';
 
 export default function TabsLayout() {
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarStyle: { display: 'none' },
+                tabBarStyle: { display: 'none' }
             }}
         >
             <Tabs.Screen

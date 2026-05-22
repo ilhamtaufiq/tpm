@@ -18,7 +18,7 @@ import {
     Plus,
     Trash2,
 } from 'lucide-react-native';
-import { useRouter, router } from 'expo-router';
+import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
@@ -30,6 +30,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const STATUS_FILTERS: { label: string; value: HutangStatus | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -59,6 +60,10 @@ const formatUnitLabel = (unit?: string) => {
 };
 
 export default function HutangUsahaScreen() {
+    const { user } = useAuthStore();
+    const params = useLocalSearchParams<{ unit?: string }>();
+    const unitFilter = params.unit === 'BENGKEL' ? 'BENGKEL' : undefined;
+    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [search, setSearch] = useState('');
     const [selectedHutang, setSelectedHutang] = useState<Hutang | null>(null);
@@ -71,9 +76,10 @@ export default function HutangUsahaScreen() {
         limit: 50,
         status: selectedFilter === 'all' ? undefined : selectedFilter,
         search: search || undefined,
+        unit: unitFilter as any,
     });
     const { data: mobilData } = useMobilList();
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary();
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = useHutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessHutangPaymentSplit();
     const createMutation = useCreateHutang();
 
@@ -195,7 +201,7 @@ export default function HutangUsahaScreen() {
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/finance');
+            router.replace(unitFilter ? '/bengkel' : '/finance');
         }
     };
 
@@ -654,18 +660,18 @@ export default function HutangUsahaScreen() {
     return (
         <View className="flex-1 bg-surface">
             <Header
-                title="Hutang Usaha"
-                subtitle="Monitoring Kewajiban & Pembayaran"
+                title={unitFilter ? 'Hutang Bengkel' : 'Hutang Usaha'}
+                subtitle={unitFilter ? 'Daftar hutang unit bengkel' : 'Monitoring Kewajiban & Pembayaran'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
-                rightElement={
+                rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <Plus size={24} color="white" />
                     </Pressable>
-                }
+                ) : undefined}
             />
 
             {/* Filters & Search */}
@@ -726,7 +732,7 @@ export default function HutangUsahaScreen() {
                                         {item.nama_kreditur}
                                     </Typography>
                                     <Typography variant="caption" className="text-textGray mt-0.5">
-                                        {item.nomor_hutang} • {SUMBER_LABEL[item.sumber] || item.sumber}
+                                        {item.nomor_hutang} • {SUMBER_LABEL[item.sumber] || item.sumber}{!unitFilter && item.unit ? ` • ${formatUnitLabel(item.unit)}` : ''}
                                     </Typography>
                                 </View>
                                 <Badge

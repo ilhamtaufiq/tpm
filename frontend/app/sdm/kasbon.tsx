@@ -27,6 +27,7 @@ import { useAlert } from '../../context/AlertContext';
 import { getErrorMessage } from '../../utils/error';
 import { PaymentModal } from '../../components/PaymentModal';
 import { Header } from '../../components/ui/Header';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const STATUS_FILTERS = [
     { key: 'all', label: 'Semua' },
@@ -36,6 +37,7 @@ const STATUS_FILTERS = [
 
 export default function KasbonScreen() {
     const router = useRouter();
+    const { user } = useAuthStore();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [kasbonList, setKasbonList] = useState<Kasbon[]>([]);
@@ -170,23 +172,31 @@ export default function KasbonScreen() {
 
         try {
             const nominalTotal = parseNumber(formData.jumlah);
+            const isBengkelUser = user?.role === 'BENGKEL';
+            const unit = isBengkelUser ? 'BENGKEL' : 'LAINNYA';
+            const cashAccount = formData.metode_bayar === 'transfer'
+                ? 'BANK_UTAMA'
+                : isBengkelUser
+                    ? 'KAS_UNIT_BENGKEL'
+                    : 'KAS_UTAMA';
+
             await sdmService.createKasbon({
                 karyawan_id: formData.karyawan_id,
                 tanggal: new Date().toISOString().split('T')[0],
                 nominal: nominalTotal,
                 metode_bayar: formData.metode_bayar as any,
-                unit: 'LAINNYA',
+                unit,
                 keterangan: formData.keterangan || undefined,
                 payments: isSplitDisbursement 
                     ? disbursements.map(d => ({ 
                         metode: d.metode.toUpperCase(), 
                         nominal: parseNumber(d.nominal),
-                        kas_jenis: d.metode === 'transfer' ? 'BANK_UTAMA' : 'KAS_UTAMA'
+                        kas_jenis: d.metode === 'transfer' ? 'BANK_UTAMA' : isBengkelUser ? 'KAS_UNIT_BENGKEL' : 'KAS_UTAMA'
                       }))
                     : [{
                         metode: formData.metode_bayar.toUpperCase(),
                         nominal: nominalTotal,
-                        kas_jenis: formData.metode_bayar === 'transfer' ? 'BANK_UTAMA' : 'KAS_UTAMA'
+                        kas_jenis: cashAccount
                       }]
             });
             closeSheets();

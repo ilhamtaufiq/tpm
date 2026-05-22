@@ -3,7 +3,7 @@ from datetime import date
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser, get_unit_scope_for_role
 from app.schemas.karyawan import (
     KasbonCreate,
     KasbonResponse,
@@ -21,9 +21,13 @@ router = APIRouter(prefix="/kasbon", tags=["Kasbon Karyawan"])
 def create_kasbon(
     data: KasbonCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new employee cash advance."""
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope:
+        data = data.model_copy(update={"unit": unit_scope})
+
     service = KasbonService(db)
     return service.create(data, current_user.id)
 
@@ -52,19 +56,24 @@ def list_kasbon(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        unit=get_unit_scope_for_role(current_user.role),
     )
 
 
 @router.get("/summary")
 def get_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
 ):
     """Get kasbon summary statistics."""
     service = KasbonService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    return service.get_summary(
+        tanggal_dari,
+        tanggal_sampai,
+        unit=get_unit_scope_for_role(current_user.role),
+    )
 
 
 @router.get("/top-debtors")

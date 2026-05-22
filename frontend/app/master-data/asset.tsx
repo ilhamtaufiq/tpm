@@ -63,6 +63,7 @@ export default function AssetScreen() {
     const deleteMutation = useDeleteAsset();
 
     const assetList = listData?.data || [];
+    const totalAssets = listData?.total || 0;
     const totalValue = listData?.total_value || 0;
 
     // Form state
@@ -479,7 +480,7 @@ export default function AssetScreen() {
                     <View className="flex-row space-x-3">
                         <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
                             <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Jumlah Aset</Typography>
-                            <Typography className="text-rose-300 font-bold text-lg">{assetList.length} Item</Typography>
+                            <Typography className="text-rose-300 font-bold text-lg">{totalAssets} Item</Typography>
                         </View>
                         <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
                             <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Kategori</Typography>

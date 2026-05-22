@@ -245,4 +245,6 @@ export interface CapitalReport {
             penyesuaian?: number;
         };
     };
+    selisih?: number;
+    is_balanced?: boolean;
 }

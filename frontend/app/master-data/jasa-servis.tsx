@@ -59,12 +59,13 @@ export default function JasaServisScreen() {
 
     // Stats Calculation
     const stats = useMemo(() => {
-        const total = jasaList.length;
-        const avgPrice = total > 0
-            ? jasaList.reduce((acc: number, curr: any) => acc + Number(curr.harga), 0) / total
+        const total = jasaData?.total || 0;
+        const loadedCount = jasaList.length;
+        const avgPrice = loadedCount > 0
+            ? jasaList.reduce((acc: number, curr: any) => acc + Number(curr.harga), 0) / loadedCount
             : 0;
         return { total, avgPrice };
-    }, [jasaList]);
+    }, [jasaList, jasaData?.total]);
 
     // Mutations
     const createMutation = useCreateJasa();

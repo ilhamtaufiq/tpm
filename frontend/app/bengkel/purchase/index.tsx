@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
@@ -17,16 +17,20 @@ import {
     Package,
     X
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { QrCode } from 'lucide-react-native';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { useQueryClient, onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
-import { useCreatePembelianParts, useSparePartsList } from '../../../hooks/useBengkel';
+import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
+import { bengkelService } from '../../../services/bengkel';
 
 export default function PurchaseScreen() {
     const router = useRouter(); const queryClient = useQueryClient();
+    const params = useLocalSearchParams<{ id?: string }>();
+    const editId = params.id ? Number(params.id) : null;
+    const isEditMode = Number.isFinite(editId) && !!editId;
 
     // Form State
     const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
@@ -56,17 +60,74 @@ export default function PurchaseScreen() {
 
     // API Hooks
     const createPembelianMutation = useCreatePembelianParts();
+    const updatePembelianMutation = useUpdatePembelianParts();
+    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const { data: partsData, isLoading: isLoadingParts } = useSparePartsList({ search: partSearchQuery });
     const spareParts = useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data || []) || [],
         [partsData]
     );
 
+    useEffect(() => {
+        if (!isEditMode || !editId) return;
+
+        const loadDetail = async () => {
+            setIsLoadingDetail(true);
+            try {
+                const detail = await bengkelService.getDetailPembelianPart(editId);
+                setSelectedSupplier(detail.supplier || {
+                    id: detail.supplier_id,
+                    nama: detail.supplier_nama,
+                });
+                setNomorFaktur(detail.nomor_faktur && detail.nomor_faktur !== '-' ? detail.nomor_faktur : '');
+                setTanggal(detail.tanggal ? new Date(detail.tanggal) : new Date());
+                setCatatan(detail.catatan || '');
+                setItems((detail.detail || []).map((item: any) => ({
+                    id: item.id || Date.now() + Math.random(),
+                    spare_part_id: item.spare_part_id,
+                    name: item.spare_part?.nama || item.spare_part_nama || '',
+                    qty: String(item.qty || 1),
+                    price: formatNumber(String(item.harga_satuan || 0)),
+                })));
+
+                const hydratedPayments = Array.isArray(detail.payments) && detail.payments.length > 0
+                    ? detail.payments.map((payment: any, index: number) => ({
+                        id: Date.now() + index + Math.random(),
+                        sumber: payment.kas_jenis === 'BANK_UTAMA'
+                            ? 'UTAMA_TRANSFER'
+                            : payment.kas_jenis === 'KAS_UTAMA'
+                                ? 'UTAMA_TUNAI'
+                                : 'BENGKEL_TUNAI',
+                        nominal: formatNumber(String(payment.jumlah || 0)),
+                    }))
+                    : [{ id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }];
+
+                setPayments(hydratedPayments);
+                setIsSplitPayment(hydratedPayments.length > 1 || detail.metode_bayar === 'SPLIT');
+                setStatusBayar(detail.status_bayar || 'BELUM_LUNAS');
+                if (detail.metode_bayar === 'KREDIT' || (detail.status_bayar !== 'LUNAS' && hydratedPayments.every((p: any) => !parseNumber(p.nominal)))) {
+                    setMetodeBayar('KREDIT');
+                } else if (hydratedPayments[0]?.sumber) {
+                    setMetodeBayar(hydratedPayments[0].sumber);
+                }
+            } catch (error: any) {
+                const errorDetail = error.response?.data?.detail;
+                const message = typeof errorDetail === 'string' ? errorDetail : 'Gagal memuat detail pembelian';
+                alert(message);
+                handleBack();
+            } finally {
+                setIsLoadingDetail(false);
+            }
+        };
+
+        loadDetail();
+    }, [editId, isEditMode]);
+
     const handleBack = () => {
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/bengkel');
+            router.replace('/');
         }
     };
 
@@ -228,7 +289,11 @@ export default function PurchaseScreen() {
         }
 
         try {
-            await createPembelianMutation.mutateAsync(payload);
+            if (isEditMode && editId) {
+                await updatePembelianMutation.mutateAsync({ id: editId, data: payload });
+            } else {
+                await createPembelianMutation.mutateAsync(payload);
+            }
             handleBack();
         } catch (error: any) {
             console.error(error);
@@ -247,10 +312,16 @@ export default function PurchaseScreen() {
                 <Pressable onPress={handleBack} className="mr-4">
                     <ChevronLeft size={24} color="#1C1C1C" />
                 </Pressable>
-                <Typography variant="h2" weight="bold">Restock (Pembelian)</Typography>
+                <Typography variant="h2" weight="bold">{isEditMode ? 'Edit Restock' : 'Restock (Pembelian)'}</Typography>
             </View>
 
             <ScrollView className="flex-1 p-6" showsVerticalScrollIndicator={false}>
+                {isLoadingDetail && (
+                    <View className="py-10 items-center justify-center">
+                        <ActivityIndicator color="#023C69" />
+                        <Typography className="text-gray-500 mt-3">Memuat data pembelian...</Typography>
+                    </View>
+                )}
                 {/* Supplier Info */}
                 <Card variant="outlined" className="p-4 mb-6 border-gray-100 bg-gray-50/30">
                     <MasterDataSelector
@@ -559,10 +630,10 @@ export default function PurchaseScreen() {
                 </View>
 
                 <Button
-                    title="Simpan Pembelian"
+                    title={isEditMode ? 'Simpan Perubahan' : 'Simpan Pembelian'}
                     onPress={handleSubmit}
                     className="mb-10 rounded-xl"
-                    loading={createPembelianMutation.isPending}
+                    loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
                 />
             </ScrollView>
 

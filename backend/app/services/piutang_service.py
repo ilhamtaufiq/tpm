@@ -149,6 +149,7 @@ class PiutangService:
                     keterangan=piutang.catatan or f"Kasbon dari {piutang.sumber.value if piutang.sumber else 'Unit'}",
                     status=PaymentStatus.BELUM_LUNAS,
                     created_by=user_id,
+                    unit=piutang.unit or KasBankSource.BENGKEL,
                 )
                 self.db.add(kasbon_rec)
                 self.db.flush() # Ensure ID is generated
@@ -286,11 +287,15 @@ class PiutangService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get list of receivables with pagination and filters."""
         query = self.db.query(PiutangUsaha).options(
             joinedload(PiutangUsaha.pembayaran)
         ).filter(PiutangUsaha.status != PiutangStatus.BATAL)
+
+        if unit:
+            query = query.filter(PiutangUsaha.unit == unit)
 
         # Search filter
         if search:
@@ -584,12 +589,15 @@ class PiutangService:
         self,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get receivables summary (Snapshot at tanggal_sampai)."""
         # Base query for Piutang created up to tanggal_sampai
         # (tanggal_dari is used for reporting 'New Piutang in period', 
         # but for Balance Sheet/Neraca, we usually just need till tanggal_sampai)
         query = self.db.query(PiutangUsaha).filter(PiutangUsaha.status != PiutangStatus.BATAL)
+        if unit:
+            query = query.filter(PiutangUsaha.unit == unit)
         
         # If calculating snapshot, we only care about records created BEFORE or ON tanggal_sampai
         if tanggal_sampai:
@@ -605,6 +613,8 @@ class PiutangService:
         q_payments = self.db.query(func.sum(PembayaranPiutang.nominal)).join(
             PiutangUsaha, PembayaranPiutang.piutang_id == PiutangUsaha.id
         ).filter(PiutangUsaha.tanggal <= (tanggal_sampai or date.max))
+        if unit:
+            q_payments = q_payments.filter(PiutangUsaha.unit == unit)
         
         if tanggal_sampai:
              q_payments = q_payments.filter(PembayaranPiutang.tanggal <= tanggal_sampai)
@@ -628,7 +638,8 @@ class PiutangService:
             src_gross = self.db.query(func.sum(PiutangUsaha.nominal_piutang)).filter(
                 PiutangUsaha.sumber == src,
                 PiutangUsaha.status != PiutangStatus.BATAL,
-                PiutangUsaha.tanggal <= (tanggal_sampai or date.max)
+                PiutangUsaha.tanggal <= (tanggal_sampai or date.max),
+                *( [PiutangUsaha.unit == unit] if unit else [] )
             ).scalar() or 0
             
             # Net for this source
@@ -637,7 +648,8 @@ class PiutangService:
             ).filter(
                 PiutangUsaha.sumber == src,
                 PiutangUsaha.status != PiutangStatus.BATAL,
-                PiutangUsaha.tanggal <= (tanggal_sampai or date.max)
+                PiutangUsaha.tanggal <= (tanggal_sampai or date.max),
+                *( [PiutangUsaha.unit == unit] if unit else [] )
             )
             if tanggal_sampai:
                 src_payments = src_payments.filter(PembayaranPiutang.tanggal <= tanggal_sampai)

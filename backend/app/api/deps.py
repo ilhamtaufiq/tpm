@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import SessionLocal
 from app.models.user import User
 from app.utils.security import verify_token
-from app.utils.constants import UserRole
+from app.utils.constants import UserRole, KasBankSource
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -90,9 +90,38 @@ def require_manager_or_admin(
     return current_user
 
 
+def require_unit_manager_or_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Require admin, manager, or unit admin role."""
+    if current_user.role not in [
+        UserRole.ADMIN,
+        UserRole.MANAGER,
+        UserRole.BENGKEL,
+        UserRole.JASA_ANGKUT,
+        UserRole.MOBIL,
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Unit, Manager, or Admin role required.",
+        )
+    return current_user
+
+
+def get_unit_scope_for_role(role: UserRole) -> KasBankSource | None:
+    if role == UserRole.BENGKEL:
+        return KasBankSource.BENGKEL
+    if role == UserRole.JASA_ANGKUT:
+        return KasBankSource.JASA_ANGKUT
+    if role == UserRole.MOBIL:
+        return KasBankSource.JUAL_BELI_MOBIL
+    return None
+
+
 # Type aliases for cleaner dependency injection
 DBSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 ActiveUser = Annotated[User, Depends(get_current_active_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
 ManagerUser = Annotated[User, Depends(require_manager_or_admin)]
+UnitManagerUser = Annotated[User, Depends(require_unit_manager_or_admin)]

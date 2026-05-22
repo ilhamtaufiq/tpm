@@ -79,6 +79,18 @@ def get_pembelian(
     return service.get_by_id(pembelian_id)
 
 
+@router.put("/{pembelian_id}", response_model=PembelianSparePartResponse)
+def update_pembelian(
+    pembelian_id: int,
+    data: PembelianSparePartCreate,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Update purchase by ID."""
+    service = PembelianPartService(db)
+    return service.update(pembelian_id, data, current_user.id)
+
+
 @router.patch("/{pembelian_id}/payment", response_model=PembelianSparePartResponse)
 def update_payment(
     pembelian_id: int,

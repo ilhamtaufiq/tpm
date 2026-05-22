@@ -6,18 +6,88 @@ interface AuthState {
     user: any | null;
     token: string | null;
     isAuthenticated: boolean;
+    isImpersonating: boolean;
+    impersonatorUser: any | null;
+    originalUser: any | null;
+    originalToken: string | null;
     setAuth: (user: any, token: string) => void;
+    updateUser: (user: any) => void;
+    startImpersonation: (user: any, token: string, impersonatorUser?: any | null) => void;
+    stopImpersonation: () => void;
     logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: null,
             token: null,
             isAuthenticated: false,
-            setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
-            logout: () => set({ user: null, token: null, isAuthenticated: false }),
+            isImpersonating: false,
+            impersonatorUser: null,
+            originalUser: null,
+            originalToken: null,
+            setAuth: (user, token) => set({
+                user,
+                token,
+                isAuthenticated: true,
+                isImpersonating: false,
+                impersonatorUser: null,
+                originalUser: null,
+                originalToken: null,
+            }),
+            updateUser: (user) => set((state) => ({
+                user,
+                impersonatorUser: state.isImpersonating && state.impersonatorUser?.id === user.id
+                    ? user
+                    : state.impersonatorUser,
+                originalUser: state.isImpersonating && state.originalUser?.id === user.id
+                    ? user
+                    : state.originalUser,
+            })),
+            startImpersonation: (user, token, impersonatorUser = null) => set((state) => ({
+                user,
+                token,
+                isAuthenticated: true,
+                isImpersonating: true,
+                impersonatorUser: impersonatorUser || state.user,
+                originalUser: state.originalUser || state.user,
+                originalToken: state.originalToken || state.token,
+            })),
+            stopImpersonation: () => {
+                const state = get();
+                if (!state.originalUser || !state.originalToken) {
+                    set({
+                        user: null,
+                        token: null,
+                        isAuthenticated: false,
+                        isImpersonating: false,
+                        impersonatorUser: null,
+                        originalUser: null,
+                        originalToken: null,
+                    });
+                    return;
+                }
+
+                set({
+                    user: state.originalUser,
+                    token: state.originalToken,
+                    isAuthenticated: true,
+                    isImpersonating: false,
+                    impersonatorUser: null,
+                    originalUser: null,
+                    originalToken: null,
+                });
+            },
+            logout: () => set({
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                isImpersonating: false,
+                impersonatorUser: null,
+                originalUser: null,
+                originalToken: null,
+            }),
         }),
         {
             name: 'auth-storage',

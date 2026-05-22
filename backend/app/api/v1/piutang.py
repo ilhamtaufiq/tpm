@@ -1,9 +1,9 @@
 from typing import Optional
 from datetime import date
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser, get_unit_scope_for_role
 from app.schemas.keuangan import (
     PiutangCreate,
     PiutangUpdate,
@@ -13,7 +13,7 @@ from app.schemas.keuangan import (
     PembayaranPiutangResponse,
 )
 from app.services.piutang_service import PiutangService
-from app.utils.constants import PiutangStatus, PiutangSource
+from app.utils.constants import PiutangStatus, PiutangSource, KasBankSource
 
 
 router = APIRouter(prefix="/piutang", tags=["Piutang (Receivables)"])
@@ -23,9 +23,13 @@ router = APIRouter(prefix="/piutang", tags=["Piutang (Receivables)"])
 def create_piutang(
     data: PiutangCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new receivable record."""
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope:
+        data = data.model_copy(update={"unit": unit_scope})
+
     service = PiutangService(db)
     return service.create(data, current_user.id)
 
@@ -43,11 +47,13 @@ def list_piutang(
     overdue_only: bool = False,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    unit: Optional[KasBankSource] = None,
     sort_by: str = "tanggal",
     sort_order: str = "desc",
 ):
     """Get list of receivables with pagination and filters."""
     service = PiutangService(db)
+    role_unit_scope = get_unit_scope_for_role(current_user.role)
     return service.get_list(
         skip=skip,
         limit=limit,
@@ -60,19 +66,22 @@ def list_piutang(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        unit=role_unit_scope or unit,
     )
 
 
 @router.get("/summary")
 def get_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
+    unit: Optional[KasBankSource] = None,
 ):
     """Get receivables summary."""
     service = PiutangService(db)
-    return service.get_summary(tanggal_dari, tanggal_sampai)
+    role_unit_scope = get_unit_scope_for_role(current_user.role)
+    return service.get_summary(tanggal_dari, tanggal_sampai, unit=role_unit_scope or unit)
 
 
 @router.get("/overdue")
@@ -147,10 +156,13 @@ def update_piutang(
 def process_payment(
     data: PembayaranPiutangCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Process payment for receivable."""
     service = PiutangService(db)
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope and service.get_by_id(data.piutang_id).unit != unit_scope:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses piutang unit ditolak")
     return service.process_payment(data, current_user.id)
 
 
@@ -158,10 +170,13 @@ def process_payment(
 def process_payment_split(
     data: PembayaranPiutangSplit,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Process multiple payments for a receivable."""
     service = PiutangService(db)
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope and service.get_by_id(data.piutang_id).unit != unit_scope:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Akses piutang unit ditolak")
     return service.process_payment_split(data, current_user.id)
 
 

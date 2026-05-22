@@ -29,7 +29,7 @@ import {
     Eye
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { User as UserType, UserCreateData, UserUpdateData } from '../../services/auth';
+import { authService, User as UserType, UserCreateData, UserUpdateData } from '../../services/auth';
 import { useUserList, useCreateUser, useUpdateUser, useDeleteUser } from '../../hooks/useUsers';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -38,6 +38,7 @@ import { getErrorMessage } from '../../utils/error';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
 import { Header } from '../../components/ui/Header';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const ROLE_OPTIONS = [
     { label: 'Admin', value: 'ADMIN', color: '#EF4444', icon: Shield },
@@ -55,6 +56,7 @@ const UsersIcon = ({ size, color }: { size: number, color: string }) => <UserPlu
 
 export default function UserManagementScreen() {
     const router = useRouter();
+    const { user: currentUser, startImpersonation } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'form'>('detail');
@@ -158,6 +160,47 @@ export default function UserManagementScreen() {
         });
         setViewMode('form');
         handleOpenSheet();
+    };
+
+    const handleImpersonate = (targetUser: UserType) => {
+        setDialogConfig({
+            visible: true,
+            title: 'Impersonate User',
+            message: `Masuk sebagai ${targetUser.full_name}? Sesi admin saat ini akan disimpan agar bisa dikembalikan.`,
+            variant: 'warning',
+            type: 'confirm',
+            onConfirm: async () => {
+                try {
+                    const response = await authService.impersonateUser(targetUser.id);
+                    if (!response.user || !response.access_token) {
+                        throw new Error('Response impersonate tidak lengkap');
+                    }
+
+                    startImpersonation(response.user, response.access_token, response.impersonator || currentUser);
+                    handleCloseSheet();
+
+                    if (response.user.role === 'ADMIN' || response.user.role === 'MANAGER') {
+                        router.replace('/all-menus');
+                    } else if (response.user.role === 'BENGKEL') {
+                        router.replace('/bengkel');
+                    } else if (response.user.role === 'JASA_ANGKUT') {
+                        router.replace('/jasa-angkut');
+                    } else if (response.user.role === 'MOBIL') {
+                        router.replace('/mobil');
+                    } else {
+                        router.replace('/(tabs)/home');
+                    }
+                } catch (error) {
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Gagal',
+                        message: getErrorMessage(error, 'Gagal melakukan impersonate user'),
+                        variant: 'error',
+                        type: 'alert'
+                    });
+                }
+            }
+        });
     };
 
     const handleDelete = (user: UserType) => {
@@ -341,6 +384,14 @@ export default function UserManagementScreen() {
                             }}
                         />
                     </View>
+                    {currentUser?.role === 'ADMIN' && selectedUser.id !== currentUser.id && selectedUser.role !== 'ADMIN' && selectedUser.is_active && (
+                        <Button
+                            title="Impersonate"
+                            onPress={() => handleImpersonate(selectedUser)}
+                            variant="secondary"
+                            className="mb-3"
+                        />
+                    )}
                     <Button 
                         title="Hapus User" 
                         onPress={() => handleDelete(selectedUser)}

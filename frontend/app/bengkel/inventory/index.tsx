@@ -217,7 +217,7 @@ export default function InventoryScreen() {
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/bengkel');
+            router.replace('/');
         }
     };
 

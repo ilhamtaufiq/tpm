@@ -115,6 +115,8 @@ class LoginResponse(BaseModel):
     otp_required: bool = False
     user_id: Optional[int] = None
     email: Optional[str] = None
+    is_impersonation: bool = False
+    impersonator: Optional[UserResponse] = None
 
 
 class OTPVerifyRequest(BaseModel):

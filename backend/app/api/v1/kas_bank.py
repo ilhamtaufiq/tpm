@@ -2,9 +2,9 @@ from typing import Optional
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser, get_unit_scope_for_role
 from app.schemas.keuangan import (
     KasBankCreate,
     KasBankResponse,
@@ -15,6 +15,13 @@ from app.utils.constants import KasBankJenis, KasBankType, KasBankSource
 
 
 router = APIRouter(prefix="/kas-bank", tags=["Kas & Bank"])
+
+
+UNIT_WALLET_MAP = {
+    KasBankSource.BENGKEL: KasBankJenis.KAS_UNIT_BENGKEL,
+    KasBankSource.JASA_ANGKUT: KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+    KasBankSource.JUAL_BELI_MOBIL: KasBankJenis.KAS_UNIT_MOBIL,
+}
 
 
 @router.post("", response_model=KasBankResponse, status_code=status.HTTP_201_CREATED)
@@ -44,6 +51,8 @@ def list_transactions(
 ):
     """Get list of transactions with pagination and filters."""
     service = KasBankService(db)
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    allowed_jenis = [UNIT_WALLET_MAP[unit_scope]] if unit_scope else None
     return service.get_list(
         skip=skip,
         limit=limit,
@@ -54,6 +63,7 @@ def list_transactions(
         tanggal_sampai=tanggal_sampai,
         sort_by=sort_by,
         sort_order=sort_order,
+        allowed_jenis=allowed_jenis,
     )
 
 
@@ -64,7 +74,9 @@ def get_all_balances(
 ):
     """Get balances for all kas/bank types."""
     service = KasBankService(db)
-    return service.get_all_balances()
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    allowed_jenis = [UNIT_WALLET_MAP[unit_scope]] if unit_scope else None
+    return service.get_all_balances(allowed_jenis=allowed_jenis)
 
 
 @router.get("/balance/{jenis}")
@@ -120,16 +132,32 @@ def transfer(
     tanggal: date,
     keterangan: str,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     allow_negative: bool = Query(False),
 ):
     """Transfer between kas/bank accounts."""
+    unit_scope = get_unit_scope_for_role(current_user.role)
+    if unit_scope:
+        unit_wallet = UNIT_WALLET_MAP[unit_scope]
+        allowed_pairs = {
+            (KasBankJenis.KAS_UTAMA, unit_wallet),
+            (unit_wallet, KasBankJenis.KAS_UTAMA),
+            (unit_wallet, KasBankJenis.BANK_UTAMA),
+        }
+        if (dari, ke) not in allowed_pairs:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Transfer antar akun ini tidak diizinkan untuk role unit.",
+            )
+
     service = KasBankService(db)
     return service.transfer(
-        dari, ke, nominal, tanggal, keterangan, 
+        dari, ke, nominal, tanggal, keterangan,
         current_user.id,
         allow_negative=allow_negative
     )
+
+
 @router.post("/adjust")
 def adjust_balance(
     jenis: KasBankJenis,

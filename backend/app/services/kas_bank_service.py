@@ -170,9 +170,13 @@ class KasBankService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        allowed_jenis: Optional[List[KasBankJenis]] = None,
     ) -> Dict[str, Any]:
         """Get list of transactions with pagination and filters."""
         query = self.db.query(KasBank)
+
+        if allowed_jenis:
+            query = query.filter(KasBank.jenis.in_(allowed_jenis))
 
         # Jenis filter
         if jenis:
@@ -276,16 +280,20 @@ class KasBankService:
             "total_keluar_bulan_ini": float(keluar),
         }
 
-    def get_all_balances(self, as_of: Optional[date] = None) -> Dict[str, Any]:
+    def get_all_balances(
+        self,
+        as_of: Optional[date] = None,
+        allowed_jenis: Optional[List[KasBankJenis]] = None,
+    ) -> Dict[str, Any]:
         """Get balances for all kas/bank types as of a date."""
         result = {}
         total_saldo = Decimal("0")
+        jenis_list = allowed_jenis or list(KasBankJenis)
 
-        for jenis in KasBankJenis:
+        for jenis in jenis_list:
             key = jenis.value.lower()
             balance_info = self.get_balance(jenis, as_of=as_of)
             
-            # Add virtual sub-balances for Bank Utama (Unit Profits in Bank)
             if jenis == KasBankJenis.BANK_UTAMA:
                 balance_info["sub_balances"] = {
                     "jasa_angkut": float(self._get_virtual_balance(jenis, KasBankSource.JASA_ANGKUT, as_of)),
@@ -295,6 +303,15 @@ class KasBankService:
                 
             result[key] = balance_info
             total_saldo += Decimal(str(balance_info["saldo"]))
+
+        if "cash" not in result:
+            result["cash"] = {
+                "jenis": KasBankJenis.CASH.value,
+                "saldo": 0,
+                "total_masuk_bulan_ini": 0,
+                "total_keluar_bulan_ini": 0,
+                "sub_balances": None,
+            }
 
         result["total_saldo"] = float(total_saldo)
         return result

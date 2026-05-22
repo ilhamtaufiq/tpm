@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -327,6 +327,23 @@ export default function ProfileScreen() {
                                 </View>
                             </Pressable>
                         </View>
+
+                        {/* BOTTOM NAVIGATION SETTINGS - DYNAMIC NAV SLOT */}
+                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Navigasi Utama</Typography>
+
+                        <Pressable
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
+                            onPress={() => router.push('/settings/navigation')}
+                        >
+                            <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
+                                <Sliders size={24} color="#3B82F6" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Bottom Navigasi</Typography>
+                                <Typography variant="caption" className="text-text/40">Kustomisasi 5 slot menu utama aplikasi</Typography>
+                            </View>
+                            <ChevronRight size={20} color={themeColors.textGray} />
+                        </Pressable>
 
                         {/* FEATURE PROTECTION SETTINGS - NEW SECTION */}
                         <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>

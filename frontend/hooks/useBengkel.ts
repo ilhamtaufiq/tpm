@@ -246,6 +246,22 @@ export const useCreatePembelianParts = () => {
     });
 };
 
+export const useUpdatePembelianParts = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => bengkelService.updatePembelianParts(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pembelian_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['spare_parts'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_list'] });
+            queryClient.invalidateQueries({ queryKey: ['hutang_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+        },
+    });
+};
+
 // =============================================
 // PENGELUARAN
 // =============================================

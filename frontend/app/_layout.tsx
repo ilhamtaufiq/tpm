@@ -27,6 +27,7 @@ import '../global.css';
 import { ConnectivityBanner } from '../components/ConnectivityBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertProvider } from '../context/AlertContext';
+import { CustomTabBar } from '../components/ui/CustomTabBar';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -92,7 +93,7 @@ function RootLayoutContent() {
         protectedFeatures, unlockedFeatures
     } = useSecurityStore();
     const { themeColors } = useUIStore();
-    const { setAuth, token } = useAuthStore();
+    const { updateUser } = useAuthStore();
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -170,7 +171,7 @@ function RootLayoutContent() {
                     const freshUser = await authService.getMe();
                     const currentToken = useAuthStore.getState().token;
                     if (currentToken) {
-                        setAuth(freshUser, currentToken);
+                        updateUser(freshUser);
                     }
                 } catch (err) {
                     console.error('LAYOUT: Failed to sync profile:', err);
@@ -310,6 +311,11 @@ function RootLayoutContent() {
                             <Stack.Screen name="monitor" options={{ headerShown: false }} />
                             <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                         </Stack>
+                        
+                        {/* Global Custom Bottom Navigation */}
+                        {isAuthenticated && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
+                            <CustomTabBar />
+                        )}
                     </BottomSheetModalProvider>
                 </ErrorBoundary>
             </GestureHandlerRootView>

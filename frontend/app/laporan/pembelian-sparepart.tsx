@@ -462,7 +462,7 @@ export default function PembelianSparepartReportScreen() {
                             </View>
 
                             {/* Financial Summary */}
-                            <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-8">
+                            <View className="bg-primary/5 p-5 rounded-2xl border border-primary/10 mb-6">
                                 <View className="space-y-2 mb-4">
                                     <View className="flex-row justify-between">
                                         <Typography className="text-gray-500 text-xs">Total Nilai</Typography>
@@ -489,6 +489,17 @@ export default function PembelianSparepartReportScreen() {
                                     </View>
                                 )}
                             </View>
+                            <Pressable
+                                onPress={() => {
+                                    handleCloseModal();
+                                    router.push({ pathname: '/bengkel/purchase', params: { id: String(selectedTransaction.id) } } as any);
+                                }}
+                                className="bg-amber-500 py-4 rounded-2xl items-center justify-center mb-6"
+                            >
+                                <Typography weight="bold" className="text-white uppercase tracking-widest text-xs">
+                                    Edit Pembelian
+                                </Typography>
+                            </Pressable>
                             <View className="h-10" />
                         </BottomSheetScrollView>
                     ) : null}

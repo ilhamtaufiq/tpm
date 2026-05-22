@@ -1,30 +1,34 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, Modal, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
 import {
-    ChevronLeft,
-    Clock,
     Calendar as CalendarIcon,
     User,
-    CheckCircle,
-    X,
     Save,
     Search,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
-import { sdmService, Karyawan } from '../../services/sdm';
-import { useActiveKaryawan, useBulkClockIn } from '../../hooks/useSDM';
+import { sdmService, Karyawan, AttendanceStatus } from '../../services/sdm';
+import { useActiveKaryawan, useBulkClockIn, useAbsensiBulanan } from '../../hooks/useSDM';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { onlineManager } from '@tanstack/react-query';
 import { Header } from '../../components/ui/Header';
+
+const STATUS_META: Record<AttendanceStatus, { label: string; color: string; bg: string; text: string }> = {
+    HADIR: { label: 'Hadir', color: '#023C69', bg: 'bg-blue-50', text: 'text-blue-700' },
+    SETENGAH_HARI: { label: 'Setengah Hari', color: '#F59E0B', bg: 'bg-amber-50', text: 'text-amber-700' },
+    IZIN: { label: 'Izin', color: '#06B6D4', bg: 'bg-cyan-50', text: 'text-cyan-700' },
+    SAKIT: { label: 'Sakit', color: '#8B5CF6', bg: 'bg-violet-50', text: 'text-violet-700' },
+    ALPHA: { label: 'Alpha', color: '#EF4444', bg: 'bg-rose-50', text: 'text-rose-700' },
+    CUTI: { label: 'Cuti', color: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    LIBUR: { label: 'Libur', color: '#6B7280', bg: 'bg-gray-50', text: 'text-gray-700' },
+};
 
 export default function AbsensiScreen() {
     const router = useRouter();
@@ -37,6 +41,7 @@ export default function AbsensiScreen() {
     const [isFetchingAttendance, setIsFetchingAttendance] = useState(false);
     const [timeModalVisible, setTimeModalVisible] = useState(false);
     const [tempDate, setTempDate] = useState('');
+    const [tempStatus, setTempStatus] = useState<AttendanceStatus>('HADIR');
     const [jamMasuk, setJamMasuk] = useState('08:00');
     const [jamKeluar, setJamKeluar] = useState('17:00');
 
@@ -54,6 +59,7 @@ export default function AbsensiScreen() {
 
     const { data: karyawanList, isLoading: isLoadingKaryawan, refetch: refetchKaryawan } = useActiveKaryawan();
     const bulkClockInMutation = useBulkClockIn();
+    const { data: monthlySummary } = useAbsensiBulanan(selectedKaryawan?.id || 0, currentYear, currentMonth);
 
     // Fetch existing attendance when karyawan or month/year changes
     useEffect(() => {
@@ -78,13 +84,23 @@ export default function AbsensiScreen() {
                 if (response && Array.isArray(response.data)) {
                     response.data.forEach((abs: any) => {
                         const dateStr = abs.tanggal.split('T')[0];
-                        const isHalf = abs.status === 'SETENGAH_HARI';
+                        const status = abs.status as AttendanceStatus;
+                        const color = STATUS_META[status]?.color || STATUS_META.HADIR.color;
                         attendanceMap[dateStr] = {
                             selected: true,
                             marked: true,
-                            selectedColor: isHalf ? '#F59E0B' : '#023C69',
-                            textColor: 'white',
-                            status: abs.status,
+                            status,
+                            color,
+                            customStyles: {
+                                container: {
+                                    backgroundColor: color,
+                                    borderRadius: 999,
+                                },
+                                text: {
+                                    color: '#FFFFFF',
+                                    fontWeight: '700',
+                                }
+                            },
                             jam_masuk: abs.jam_masuk?.substring(0, 5) || '08:00',
                             jam_keluar: abs.jam_keluar?.substring(0, 5) || '17:00'
                         };
@@ -116,6 +132,7 @@ export default function AbsensiScreen() {
         const existing = selectedDates[dateString];
 
         setTempDate(dateString);
+        setTempStatus(existing?.status || 'HADIR');
         if (existing) {
             setJamMasuk(existing.jam_masuk || '08:00');
             setJamKeluar(existing.jam_keluar || '17:00');
@@ -126,8 +143,7 @@ export default function AbsensiScreen() {
         setTimeModalVisible(true);
     };
 
-    const calculateStatus = (outTime: string): 'HADIR' | 'SETENGAH_HARI' => {
-        // "kalo keluar antara jam 12 sampai jam 2 siang berarti setengah hari"
+    const calculateStatus = (outTime: string): AttendanceStatus => {
         const [hour, minute] = outTime.split(':').map(Number);
         const timeVal = hour + minute / 60;
 
@@ -138,18 +154,31 @@ export default function AbsensiScreen() {
     };
 
     const handleConfirmTime = () => {
-        const status = calculateStatus(jamKeluar);
+        const resolvedStatus = tempStatus === 'HADIR' || tempStatus === 'SETENGAH_HARI'
+            ? calculateStatus(jamKeluar)
+            : tempStatus;
+        const color = STATUS_META[resolvedStatus].color;
+        const usesTime = resolvedStatus === 'HADIR' || resolvedStatus === 'SETENGAH_HARI';
 
         setSelectedDates(prev => ({
             ...prev,
             [tempDate]: {
                 selected: true,
                 marked: true,
-                selectedColor: status === 'SETENGAH_HARI' ? '#F59E0B' : '#023C69',
-                textColor: 'white',
-                status,
-                jam_masuk: jamMasuk,
-                jam_keluar: jamKeluar
+                status: resolvedStatus,
+                color,
+                customStyles: {
+                    container: {
+                        backgroundColor: color,
+                        borderRadius: 999,
+                    },
+                    text: {
+                        color: '#FFFFFF',
+                        fontWeight: '700',
+                    }
+                },
+                jam_masuk: usesTime ? jamMasuk : undefined,
+                jam_keluar: usesTime ? jamKeluar : undefined
             }
         }));
         setTimeModalVisible(false);
@@ -241,6 +270,31 @@ export default function AbsensiScreen() {
         setRefreshing(false);
     }, [refetchKaryawan]);
 
+    const today = new Date().toISOString().split('T')[0];
+    const markedDates = useMemo(() => {
+        const merged = { ...selectedDates };
+        const todayEntry = merged[today];
+
+        merged[today] = {
+            ...todayEntry,
+            customStyles: {
+                container: {
+                    ...(todayEntry?.customStyles?.container || {}),
+                    borderWidth: 2,
+                    borderColor: '#10B981',
+                    borderRadius: 999,
+                },
+                text: {
+                    ...(todayEntry?.customStyles?.text || {}),
+                    color: todayEntry?.customStyles?.text?.color || '#023C69',
+                    fontWeight: '800',
+                }
+            }
+        };
+
+        return merged;
+    }, [selectedDates, today]);
+
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
@@ -313,8 +367,8 @@ export default function AbsensiScreen() {
                             </View>
 
                             <Calendar
-                                markingType={'multi-dot'}
-                                markedDates={selectedDates}
+                                markingType={'custom'}
+                                markedDates={markedDates}
                                 onDayPress={handleDayPress}
                                 onMonthChange={handleMonthChange}
                                 displayLoadingIndicator={isFetchingAttendance}
@@ -323,11 +377,9 @@ export default function AbsensiScreen() {
                                     textSectionTitleColor: '#b6c1cd',
                                     selectedDayBackgroundColor: '#023C69',
                                     selectedDayTextColor: '#ffffff',
-                                    todayTextColor: '#023C69',
+                                    todayTextColor: '#10B981',
                                     dayTextColor: '#2d4150',
                                     textDisabledColor: '#d9e1e8',
-                                    dotColor: '#023C69',
-                                    selectedDotColor: '#ffffff',
                                     arrowColor: '#023C69',
                                     monthTextColor: '#023C69',
                                     indicatorColor: '#023C69',
@@ -345,10 +397,45 @@ export default function AbsensiScreen() {
                             />
                         </Card>
 
+                        <View className="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm mb-6">
+                            <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-[2px] mb-4">Ringkasan Bulan Ini</Typography>
+                            <View className="flex-row flex-wrap -m-1">
+                                {[
+                                    { label: 'Hadir', value: monthlySummary?.jumlah_hadir || 0, color: 'text-blue-700', bg: 'bg-blue-50' },
+                                    { label: '1/2 Hari', value: monthlySummary?.jumlah_setengah_hari || 0, color: 'text-amber-700', bg: 'bg-amber-50' },
+                                    { label: 'Izin', value: monthlySummary?.jumlah_izin || 0, color: 'text-cyan-700', bg: 'bg-cyan-50' },
+                                    { label: 'Sakit', value: monthlySummary?.jumlah_sakit || 0, color: 'text-violet-700', bg: 'bg-violet-50' },
+                                    { label: 'Alpha', value: monthlySummary?.jumlah_alpha || 0, color: 'text-rose-700', bg: 'bg-rose-50' },
+                                    { label: 'Cuti', value: monthlySummary?.jumlah_cuti || 0, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+                                ].map((item) => (
+                                    <View key={item.label} className="w-1/3 p-1">
+                                        <View className={`${item.bg} rounded-2xl p-3 border border-white`}>
+                                            <Typography className="text-[9px] text-textGray/50 font-black uppercase tracking-wider">{item.label}</Typography>
+                                            <Typography weight="bold" className={`${item.color} text-lg mt-1`}>{item.value}</Typography>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
+                            <View className="mt-4 bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                                <Typography className="text-[10px] text-textGray/50 font-black uppercase tracking-wider">Persentase Kehadiran</Typography>
+                                <Typography weight="bold" className="text-textMain text-xl mt-1">{monthlySummary?.persentase_kehadiran || 0}%</Typography>
+                            </View>
+                        </View>
+
                         <View className="bg-amber-50 p-6 rounded-[32px] border border-amber-100 mb-6">
-                            <Typography className="text-amber-700/60 text-[10px] font-black uppercase tracking-[2px] mb-2">Petunjuk</Typography>
+                            <Typography className="text-amber-700/60 text-[10px] font-black uppercase tracking-[2px] mb-3">Petunjuk Status</Typography>
+                            <View className="flex-row flex-wrap -m-1 mb-4">
+                                {(['HADIR', 'SETENGAH_HARI', 'IZIN', 'SAKIT', 'CUTI', 'ALPHA'] as AttendanceStatus[]).map((status) => (
+                                    <View key={status} className="w-1/2 p-1">
+                                        <View className={`${STATUS_META[status].bg} rounded-2xl p-3 border border-white flex-row items-center`}>
+                                            <View style={{ backgroundColor: STATUS_META[status].color }} className="w-3 h-3 rounded-full mr-2" />
+                                            <Typography className={`${STATUS_META[status].text} text-xs font-bold`}>{STATUS_META[status].label}</Typography>
+                                        </View>
+                                    </View>
+                                ))}
+                            </View>
                             <Typography className="text-amber-900 text-xs leading-relaxed">
-                                Klik pada tanggal di kalender. Sekali untuk HADIR (Biru). Keluar antara 12:00 - 14:00 otomatis Setengah Hari (Oranye).
+                                Hari ini diberi garis hijau. Klik tanggal untuk pilih status kehadiran atau ubah jam masuk dan jam keluar.
                             </Typography>
                         </View>
 
@@ -389,50 +476,78 @@ export default function AbsensiScreen() {
             <BaseModal
                 visible={timeModalVisible}
                 onClose={() => setTimeModalVisible(false)}
-                title={`Input Jam: ${tempDate}`}
+                title={`Atur Absensi: ${tempDate}`}
             >
                 <View className="space-y-4">
-                    <Input
-                        label="Jam Masuk"
-                        value={jamMasuk}
-                        onChangeText={setJamMasuk}
-                        placeholder="08:00"
-                        innerContainerClassName="rounded-full px-6"
-                    />
-                    <Input
-                        label="Jam Keluar"
-                        value={jamKeluar}
-                        onChangeText={setJamKeluar}
-                        placeholder="17:00"
-                        innerContainerClassName="rounded-full px-6"
-                    />
-
-                    <Typography className="text-gray-500 text-xs italic mt-2">
-                        * Keluar antara 12:00 - 14:00 otomatis Setengah Hari
-                    </Typography>
-
-                    <View className="flex-row space-x-2 mt-4">
-                        <Pressable 
-                            onPress={() => {
-                                setJamMasuk('08:00');
-                                setJamKeluar('17:00');
-                            }}
-                            className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '17:00' ? 'bg-primary/10 border-primary' : 'bg-gray-50 border-gray-100'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '17:00' ? 'text-primary' : 'text-textGray'}>Full Day</Typography>
-                            <Typography className="text-[10px] text-gray-400">08:00 - 17:00</Typography>
-                        </Pressable>
-                        <Pressable 
-                            onPress={() => {
-                                setJamMasuk('08:00');
-                                setJamKeluar('12:00');
-                            }}
-                            className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '12:00' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '12:00' ? 'text-amber-700' : 'text-textGray'}>1/2 Day</Typography>
-                            <Typography className="text-[10px] text-gray-400">08:00 - 12:00</Typography>
-                        </Pressable>
+                    <View>
+                        <Typography className="text-textGray/50 text-[10px] font-black uppercase tracking-[2px] mb-3">Status Kehadiran</Typography>
+                        <View className="flex-row flex-wrap -m-1">
+                            {(['HADIR', 'SETENGAH_HARI', 'IZIN', 'SAKIT', 'CUTI', 'ALPHA'] as AttendanceStatus[]).map((status) => {
+                                const active = tempStatus === status;
+                                return (
+                                    <View key={status} className="w-1/2 p-1">
+                                        <Pressable
+                                            onPress={() => setTempStatus(status)}
+                                            className={`rounded-2xl p-3 border ${active ? 'border-transparent' : 'border-gray-100 bg-gray-50'}`}
+                                            style={active ? { backgroundColor: STATUS_META[status].color } : undefined}
+                                        >
+                                            <Typography weight="bold" className={active ? 'text-white text-center' : `${STATUS_META[status].text} text-center`}>
+                                                {STATUS_META[status].label}
+                                            </Typography>
+                                        </Pressable>
+                                    </View>
+                                );
+                            })}
+                        </View>
                     </View>
+
+                    {(tempStatus === 'HADIR' || tempStatus === 'SETENGAH_HARI') && (
+                        <>
+                            <Input
+                                label="Jam Masuk"
+                                value={jamMasuk}
+                                onChangeText={setJamMasuk}
+                                placeholder="08:00"
+                                innerContainerClassName="rounded-full px-6"
+                            />
+                            <Input
+                                label="Jam Keluar"
+                                value={jamKeluar}
+                                onChangeText={setJamKeluar}
+                                placeholder="17:00"
+                                innerContainerClassName="rounded-full px-6"
+                            />
+
+                            <Typography className="text-gray-500 text-xs italic mt-2">
+                                * Keluar antara 12:00 - 14:00 otomatis dihitung Setengah Hari
+                            </Typography>
+
+                            <View className="flex-row space-x-2 mt-4">
+                                <Pressable 
+                                    onPress={() => {
+                                        setTempStatus('HADIR');
+                                        setJamMasuk('08:00');
+                                        setJamKeluar('17:00');
+                                    }}
+                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '17:00' && tempStatus === 'HADIR' ? 'bg-primary/10 border-primary' : 'bg-gray-50 border-gray-100'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '17:00' && tempStatus === 'HADIR' ? 'text-primary' : 'text-textGray'}>Full Day</Typography>
+                                    <Typography className="text-[10px] text-gray-400">08:00 - 17:00</Typography>
+                                </Pressable>
+                                <Pressable 
+                                    onPress={() => {
+                                        setTempStatus('SETENGAH_HARI');
+                                        setJamMasuk('08:00');
+                                        setJamKeluar('12:00');
+                                    }}
+                                    className={`flex-1 py-3 rounded-full border items-center justify-center ${jamMasuk === '08:00' && jamKeluar === '12:00' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}
+                                >
+                                    <Typography variant="caption" weight="bold" className={jamMasuk === '08:00' && jamKeluar === '12:00' ? 'text-amber-700' : 'text-textGray'}>1/2 Day</Typography>
+                                    <Typography className="text-[10px] text-gray-400">08:00 - 12:00</Typography>
+                                </Pressable>
+                            </View>
+                        </>
+                    )}
 
                     <View className="flex-row space-x-3 mt-6">
                         {selectedDates[tempDate] && (

@@ -219,6 +219,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    updatePembelianParts: async (id: number, data: any) => {
+        const response = await api.put(`/pembelian-parts/${id}`, data);
+        return response.data;
+    },
+
     // Pengeluaran Methods
     getPengeluaran: async (params?: any) => {
         const response = await api.get('/pengeluaran', { params });

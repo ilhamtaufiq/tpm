@@ -18,7 +18,7 @@ import {
     Plus,
     Trash2,
 } from 'lucide-react-native';
-import { useRouter, router } from 'expo-router';
+import { useRouter, router, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
@@ -30,6 +30,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PaymentModal } from '../../components/PaymentModal';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const STATUS_FILTERS: { label: string; value: PiutangStatus | 'all' | 'overdue' }[] = [
     { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
@@ -62,6 +63,10 @@ const formatUnitLabel = (unit?: string) => {
 };
 
 export default function PiutangUsahaScreen() {
+    const { user } = useAuthStore();
+    const params = useLocalSearchParams<{ unit?: string }>();
+    const unitFilter = params.unit === 'BENGKEL' ? 'BENGKEL' : undefined;
+    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
@@ -75,9 +80,10 @@ export default function PiutangUsahaScreen() {
         status: selectedFilter === 'all' || selectedFilter === 'overdue' ? undefined : selectedFilter,
         overdue_only: selectedFilter === 'overdue',
         search: search || undefined,
+        unit: unitFilter as any,
     });
     const { data: mobilData } = useMobilList();
-    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary();
+    const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePiutangSummary({ unit: unitFilter as any });
     const paymentMutation = useProcessPaymentSplit();
     const createMutation = useCreatePiutang();
 
@@ -187,7 +193,7 @@ export default function PiutangUsahaScreen() {
         if (router.canGoBack()) {
             router.back();
         } else {
-            router.replace('/finance');
+            router.replace(unitFilter ? '/bengkel' : '/finance');
         }
     };
 
@@ -687,18 +693,18 @@ export default function PiutangUsahaScreen() {
     return (
         <View className="flex-1 bg-surface">
             <Header
-                title="Piutang Usaha"
-                subtitle="Pantau Penagihan & Jatuh Tempo"
+                title={unitFilter ? 'Piutang Bengkel' : 'Piutang Usaha'}
+                subtitle={unitFilter ? 'Daftar piutang unit bengkel' : 'Pantau Penagihan & Jatuh Tempo'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
-                rightElement={
+                rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
                         className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
                     >
                         <Plus size={24} color="white" />
                     </Pressable>
-                }
+                ) : undefined}
             />
 
             {/* Filter & Search Navigator Overlay */}
@@ -755,7 +761,7 @@ export default function PiutangUsahaScreen() {
                                         {item.nama_debitur}
                                     </Typography>
                                     <Typography variant="caption" className="text-textGray mt-0.5">
-                                        {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber} {item.nomor_referensi ? `• ${item.nomor_referensi}` : ''}
+                                        {item.nomor_piutang} • {SUMBER_LABEL[item.sumber as keyof typeof SUMBER_LABEL] || item.sumber}{!unitFilter && item.unit ? ` • ${formatUnitLabel(item.unit)}` : ''} {item.nomor_referensi ? `• ${item.nomor_referensi}` : ''}
                                     </Typography>
                                 </View>
                                 <View className={isOverdue ? "bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100" : item.status === 'LUNAS' ? "bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100" : "bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"}>

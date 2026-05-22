@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserResponse, Token, LoginResponse
+from app.utils.constants import UserRole
 from app.utils.security import (
     hash_password,
     verify_password,
@@ -52,9 +53,31 @@ class AuthService:
 
         return user
 
+    def _build_login_response(
+        self,
+        user: User,
+        *,
+        impersonator: Optional[User] = None,
+    ) -> LoginResponse:
+        access_token = create_access_token(
+            data={
+                "sub": str(user.id),
+                "username": user.username,
+                "role": user.role.value,
+                "is_impersonation": impersonator is not None,
+                "impersonated_by": str(impersonator.id) if impersonator else None,
+            }
+        )
+
+        return LoginResponse(
+            access_token=access_token,
+            user=UserResponse.model_validate(user),
+            is_impersonation=impersonator is not None,
+            impersonator=UserResponse.model_validate(impersonator) if impersonator else None,
+        )
+
     def authenticate(self, username: str, password: str) -> LoginResponse:
         """Authenticate user and return token or OTP requirement."""
-        from app.utils.constants import UserRole
         from app.utils.email import send_email
         import random
         
@@ -116,19 +139,7 @@ class AuthService:
         user.last_login = datetime.now()
         self.db.commit()
 
-        # Create token
-        access_token = create_access_token(
-            data={
-                "sub": str(user.id),
-                "username": user.username,
-                "role": user.role.value,
-            }
-        )
-
-        return LoginResponse(
-            access_token=access_token,
-            user=UserResponse.model_validate(user),
-        )
+        return self._build_login_response(user)
 
     def verify_otp(self, user_id: int, otp_code: str) -> LoginResponse:
         """Verify OTP and return token if valid."""
@@ -157,20 +168,44 @@ class AuthService:
         user.otp_expires = None
         user.last_login = datetime.now()
         self.db.commit()
-        
-        # Create token
-        access_token = create_access_token(
-            data={
-                "sub": str(user.id),
-                "username": user.username,
-                "role": user.role.value,
-            }
-        )
-        
-        return LoginResponse(
-            access_token=access_token,
-            user=UserResponse.model_validate(user),
-        )
+
+        return self._build_login_response(user)
+
+    def impersonate_user(self, admin_user_id: int, target_user_id: int) -> LoginResponse:
+        admin_user = self.get_user_by_id(admin_user_id)
+        target_user = self.get_user_by_id(target_user_id)
+
+        if not admin_user or admin_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Hanya admin yang dapat menggunakan impersonate",
+            )
+
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User target tidak ditemukan",
+            )
+
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat impersonate akun sendiri",
+            )
+
+        if target_user.role == UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Impersonate ke sesama admin tidak diizinkan",
+            )
+
+        if not target_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User target tidak aktif",
+            )
+
+        return self._build_login_response(target_user, impersonator=admin_user)
 
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID."""

@@ -314,6 +314,17 @@ def update_user(
     return service.update_user(user_id, user_data)
 
 
+@router.post("/users/{user_id}/impersonate", response_model=LoginResponse)
+def impersonate_user(
+    user_id: int,
+    db: DBSession,
+    current_user: AdminUser,
+):
+    """Impersonate another active non-admin user."""
+    service = AuthService(db)
+    return service.impersonate_user(current_user.id, user_id)
+
+
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,

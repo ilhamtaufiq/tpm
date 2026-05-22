@@ -1,14 +1,16 @@
-import { Stack, Redirect } from 'expo-router';
+import { Stack, Redirect, useSegments } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function FinanceLayout() {
     const { user } = useAuthStore();
-    
-    // Role-based access control (RBAC) at layout level
+    const segments = useSegments();
+
     const role = user?.role;
     const isAdmin = role === 'ADMIN' || role === 'MANAGER';
+    const currentScreen = segments[segments.length - 1];
+    const isBengkelFinanceScreen = role === 'BENGKEL' && (currentScreen === 'hutang' || currentScreen === 'piutang');
 
-    if (!isAdmin) {
+    if (!isAdmin && !isBengkelFinanceScreen) {
         return <Redirect href="/(tabs)/home" />;
     }
 

@@ -227,6 +227,7 @@ class KasbonService:
         tanggal_sampai: Optional[date] = None,
         sort_by: str = "tanggal",
         sort_order: str = "desc",
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get list of kasbon with pagination and filters."""
         query = self.db.query(KasbonKaryawan).options(
@@ -236,6 +237,9 @@ class KasbonService:
         # Employee filter
         if karyawan_id:
             query = query.filter(KasbonKaryawan.karyawan_id == karyawan_id)
+
+        if unit:
+            query = query.filter(KasbonKaryawan.unit == unit)
 
         # Status filter
         if status:
@@ -473,9 +477,13 @@ class KasbonService:
         self,
         tanggal_dari: Optional[date] = None,
         tanggal_sampai: Optional[date] = None,
+        unit: Optional[KasBankSource] = None,
     ) -> Dict[str, Any]:
         """Get kasbon summary statistics."""
         query = self.db.query(KasbonKaryawan)
+
+        if unit:
+            query = query.filter(KasbonKaryawan.unit == unit)
 
         if tanggal_dari:
             query = query.filter(KasbonKaryawan.tanggal >= tanggal_dari)

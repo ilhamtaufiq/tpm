@@ -110,8 +110,12 @@ api.interceptors.response.use(
         }
         
         if (status === 401) {
-            // Token expired or invalid
-            useAuthStore.getState().logout();
+            const authState = useAuthStore.getState();
+            if (authState.isImpersonating && authState.originalToken) {
+                authState.stopImpersonation();
+            } else {
+                authState.logout();
+            }
         }
         return Promise.reject(error);
     }
