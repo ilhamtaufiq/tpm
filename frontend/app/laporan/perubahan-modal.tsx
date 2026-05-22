@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
     ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Wallet,
-    Download, Eye, X, AlertTriangle, Building, Printer
+    Download, Eye, X, AlertTriangle, Building, Printer, Scale, CheckCircle
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -100,7 +100,9 @@ export default function LaporanPerubahanModalScreen() {
                 prive: 0,
                 modalAkhir: 0,
                 perubahanBersih: 0,
-                penyesuaian: 0,
+                expectedModalAkhir: 0,
+                selisih: 0,
+                isBalanced: true,
                 status: 'UNKNOWN',
             };
         }
@@ -108,14 +110,17 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
-        const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
+        const modalNonKas = (r.penambahan?.modal_non_kas?.total || 0) + (r.penambahan?.modal_non_kas?.stok_mobil || 0);
         const labaBersih = r.info?.laba_bersih || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const modalAkhir = r.modal_akhir || 0;
+        
         const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
         const expectedModalAkhir = modalAwal + perubahanBersih;
-        const penyesuaian = (r.penambahan?.penyesuaian || 0) - (r.pengurangan?.penyesuaian || 0);
-        const effectiveAdjustment = Math.abs(penyesuaian) > 0 ? penyesuaian : modalAkhir - expectedModalAkhir;
+        
+        // Expose true discrepancy (selisih)
+        const selisih = r.selisih !== undefined ? r.selisih : modalAkhir - expectedModalAkhir;
+        const isBalanced = r.is_balanced !== undefined ? r.is_balanced : Math.abs(selisih) < 100;
 
         return {
             modalAwal,
@@ -125,8 +130,10 @@ export default function LaporanPerubahanModalScreen() {
             prive,
             modalAkhir,
             perubahanBersih,
-            penyesuaian: effectiveAdjustment,
-            status: r.info?.validasi?.status || 'UNKNOWN',
+            expectedModalAkhir,
+            selisih,
+            isBalanced,
+            status: isBalanced ? 'BALANCE' : 'UNBALANCED',
         };
     }, [report]);
 
@@ -276,8 +283,14 @@ export default function LaporanPerubahanModalScreen() {
                                 <Typography variant="caption" className="text-indigo-100">
                                     Status: <Typography variant="caption" weight="bold" className="text-white">{equity.status}</Typography>
                                 </Typography>
-                                {equity.status === 'BALANCE' && (
-                                    <View className="bg-emerald-400/90 px-3 py-1 rounded-full"><Typography variant="caption" weight="bold" className="text-white text-[10px]">BALANCE</Typography></View>
+                                {equity.isBalanced ? (
+                                    <View className="bg-emerald-400/90 px-3 py-1 rounded-full">
+                                        <Typography variant="caption" weight="bold" className="text-white text-[10px]">BALANCE</Typography>
+                                    </View>
+                                ) : (
+                                    <View className="bg-amber-500 px-3 py-1 rounded-full">
+                                        <Typography variant="caption" weight="bold" className="text-white text-[10px]">SELISIH</Typography>
+                                    </View>
                                 )}
                             </View>
                         </View>
@@ -315,16 +328,55 @@ export default function LaporanPerubahanModalScreen() {
                                 ) : (
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
                                 )}
-                                {Math.abs(equity.penyesuaian) >= 100 && (
-                                    <FinancialRow label="Penyesuaian Rekonsiliasi" value={Math.abs(equity.penyesuaian)} isNegative={equity.penyesuaian < 0} color="text-amber-700" />
-                                )}
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
-                                <FinancialRow label="Perubahan Bersih Modal" value={equity.perubahanBersih + equity.penyesuaian} bold color="text-slate-700" />
-                                <FinancialRow label="Modal Akhir Periode" value={equity.modalAkhir} bold color="text-indigo-700" />
+                                <FinancialRow label="Perubahan Bersih Modal" value={equity.perubahanBersih} bold color="text-slate-700" />
+                                <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
                             </View>
                         </Card>
+
+                        {/* KESEIMBANGAN MODAL (BALANCE CHECK) */}
+                        <View className={`mt-4 rounded-[28px] overflow-hidden p-6 ${equity.isBalanced ? 'bg-indigo-600' : 'bg-amber-600'} shadow-md relative w-full`}>
+                            <View className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full" />
+                            <View className="absolute -bottom-10 -left-10 w-20 h-20 bg-black/5 rounded-full" />
+
+                            <View className="flex-row items-center mb-5">
+                                <View className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3">
+                                    <Scale size={20} color="white" />
+                                </View>
+                                <View>
+                                    <Typography variant="body1" weight="bold" className="text-white tracking-tight">Keseimbangan Ekuitas</Typography>
+                                    <Typography variant="caption" className="text-white/60 uppercase tracking-widest text-[9px] mt-0.5">Capital Balance Check</Typography>
+                                </View>
+                            </View>
+
+                            <View className="bg-white/10 rounded-2xl p-4 border border-white/10 mb-4 w-full">
+                                <FinancialRow label="Modal Akhir (Aktual - Neraca)" value={equity.modalAkhir} isDark small />
+                                <FinancialRow label="Modal Akhir (Teoritis - Aliran)" value={equity.expectedModalAkhir} isDark small />
+                                <View className="h-[1px] bg-white/20 w-full my-2" />
+                                <View className="flex-row justify-between items-center w-full">
+                                    <Typography className="text-white/60 text-xs flex-1">Selisih Rekonsiliasi</Typography>
+                                    <Typography variant="h4" weight="bold" className={equity.isBalanced ? "text-emerald-300" : "text-amber-300"}>
+                                        {formatCurrency(equity.selisih)}
+                                    </Typography>
+                                </View>
+                            </View>
+
+                            <View className={`flex-row items-center justify-center p-3 rounded-xl w-full border ${equity.isBalanced ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-amber-500/20 border-amber-500/30'}`}>
+                                {equity.isBalanced ? (
+                                    <View className="flex-row items-center">
+                                        <CheckCircle size={16} color="#6EE7B7" />
+                                        <Typography weight="bold" className="text-emerald-300 ml-2 tracking-wide uppercase text-xs">MUTASI & NERACA SEIMBANG</Typography>
+                                    </View>
+                                ) : (
+                                    <View className="flex-row items-center">
+                                        <AlertTriangle size={16} color="#FDE68A" />
+                                        <Typography weight="bold" className="text-amber-200 ml-2 tracking-wide uppercase text-xs">TERDAPAT SELISIH REKONSILIASI</Typography>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
                     </View>
                 )}
             </ScrollView>

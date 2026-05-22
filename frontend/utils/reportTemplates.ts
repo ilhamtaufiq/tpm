@@ -213,13 +213,15 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     
     const modalAwal = data.modal_awal || 0;
     const setoranKas = data.penambahan?.setoran_modal || 0;
-    const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
+    const modalNonKas = (data.penambahan?.modal_non_kas?.total || 0) + (data.penambahan?.modal_non_kas?.stok_mobil || 0);
     const labaBersih = data.info?.laba_bersih || 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
     const modalAkhir = data.modal_akhir || 0;
     const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
-    const penyesuaianReported = (data.penambahan?.penyesuaian || 0) - (data.pengurangan?.penyesuaian || 0);
-    const penyesuaian = Math.abs(penyesuaianReported) > 0 ? penyesuaianReported : modalAkhir - (modalAwal + perubahanBersih);
+    const expectedModalAkhir = modalAwal + perubahanBersih;
+    
+    const selisih = data.selisih !== undefined ? data.selisih : modalAkhir - expectedModalAkhir;
+    const isBalanced = data.is_balanced !== undefined ? data.is_balanced : Math.abs(selisih) < 100;
 
     return `
         <!DOCTYPE html>
@@ -268,20 +270,25 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Prive / Pengambilan Pemilik</td>
                     <td class="amount">${formatCurrency(0)}</td>
                 </tr>`}
-                ${Math.abs(penyesuaian) >= 100 ? `
-                <tr>
-                    <td>Penyesuaian Rekonsiliasi</td>
-                    <td class="amount ${penyesuaian < 0 ? 'negative' : ''}">${penyesuaian < 0 ? `(${formatCurrency(Math.abs(penyesuaian))})` : formatCurrency(penyesuaian)}</td>
-                </tr>` : ''}
 
                 <tr class="total-row">
                     <td>PERUBAHAN BERSIH MODAL</td>
-                    <td class="amount">${formatCurrency(perubahanBersih + penyesuaian)}</td>
+                    <td class="amount">${formatCurrency(perubahanBersih)}</td>
                 </tr>
                 <tr class="grand-total">
-                    <td>MODAL AKHIR PERIODE</td>
-                    <td class="amount">${formatCurrency(modalAkhir)}</td>
+                    <td>MODAL AKHIR PERIODE${!isBalanced ? ' (TEORITIS)' : ''}</td>
+                    <td class="amount">${formatCurrency(expectedModalAkhir)}</td>
                 </tr>
+                ${!isBalanced ? `
+                <tr class="section-title"><td colspan="2">D. REKONSILIASI KESEIMBANGAN</td></tr>
+                <tr>
+                    <td style="color: #b45309; font-weight: bold;">SELISIH REKONSILIASI (NERACA)</td>
+                    <td class="amount negative" style="color: #b45309;">${selisih < 0 ? `(${formatCurrency(Math.abs(selisih))})` : formatCurrency(selisih)}</td>
+                </tr>
+                <tr class="grand-total" style="background-color: #b45309;">
+                    <td>MODAL AKHIR PERIODE (AKTUAL - NERACA)</td>
+                    <td class="amount">${formatCurrency(modalAkhir)}</td>
+                </tr>` : ''}
             </table>
 
             <div class="footer">

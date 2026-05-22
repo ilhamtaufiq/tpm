@@ -520,18 +520,20 @@ class ModalService(BaseReportService):
         # Use the ACTUAL snapshot as the authoritative modal_akhir
         modal_akhir = modal_aktual
         
-        # Penyesuaian: bridge the gap between theoretical flows and actual snapshot
-        raw_theoretical = modal_awal_theoretical + total_penambahan - total_pengurangan
+        # Clean expected theoretical ending modal based on classical accounting formula
+        # Modal Akhir (Teoritis) = Modal Awal + Setoran Kas + Setoran Non-Kas + Laba Bersih - Prive
+        raw_theoretical = (
+            modal_awal_theoretical + 
+            setoran_modal + 
+            (total_non_kas + modal_stok_mobil_delta) + 
+            period_profit_sot - 
+            (prive + pengembalian_modal)
+        )
         penyesuaian = modal_akhir - raw_theoretical
         
-        # Apply penyesuaian to the correct side so A + B - C = modal_akhir exactly
-        if penyesuaian > 0:
-            total_penambahan += penyesuaian
-        elif penyesuaian < 0:
-            total_pengurangan += abs(penyesuaian)
-        
-        # Selisih is always 0 by construction
-        selisih = 0
+        # Do NOT apply penyesuaian to total_penambahan or total_pengurangan.
+        # This keeps the transaction flows pure and exposes the true discrepancy.
+        selisih = penyesuaian
 
         return {
             "periode": data["periode"],
@@ -566,7 +568,7 @@ class ModalService(BaseReportService):
                 },
                 "investor_funding": investor_capital_baru,
                 "eliminasi_internal": internal_elimination,
-                "penyesuaian": max(0, penyesuaian),
+                "penyesuaian": 0,  # Set to 0 to keep API backward compatible without forced balance
                 "total": total_penambahan
             },
             "pengurangan": {
@@ -608,7 +610,7 @@ class ModalService(BaseReportService):
                 "gaji": gaji,
                 "lembur": lembur,
                 "eliminasi_internal": internal_elimination,
-                "penyesuaian": abs(min(0, penyesuaian)),
+                "penyesuaian": 0,  # Set to 0 to keep API backward compatible without forced balance
                 "total": total_pengurangan
             },
             "modal_akhir": modal_akhir,
@@ -663,13 +665,16 @@ class ModalService(BaseReportService):
                     }
                 },
                 "validasi": {
-                    "modal_teoritis": modal_akhir,
+                    "modal_teoritis": raw_theoretical,
                     "modal_aktual": modal_aktual,
                     "selisih": selisih,
                     "penyesuaian": penyesuaian,
-                    "status": "BALANCE"
+                    "status": "BALANCE" if abs(selisih) < 100 else "HAS_DISCREPANCY"
                 }
-            }
+            },
+            "selisih": selisih,
+            "is_balanced": abs(selisih) < 100,
+            "laba_ditahan_periode": period_profit_sot
         }
     def get_kas_bank_balances(self, as_of: date) -> Dict[str, float]:
         """Get snapshot of all cash/bank balances at end of date"""
