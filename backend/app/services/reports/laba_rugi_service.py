@@ -60,8 +60,9 @@ class LabaRugiService(BaseReportService):
         elimination = float(data.get("internal_elimination", 0))
         
         # Total Laba Operasional (Bengkel + Jasa Angkut + Mobil)
-        # Internal JB Mobil repair on unsold stock is unrealized at consolidated level.
-        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat - elimination
+        # `internal_elimination` is exposed as an informational value for
+        # unsold stock repair, but unit profit summary remains the sum of units.
+        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
         laba_bersih_akhir = total_laba_operasional - prive
 
         return {

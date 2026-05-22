@@ -112,7 +112,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
 
 export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
-    const mobilRepairSold = data.units.mobil.maintenance || data.mobil_details?.total_biaya_bengkel || data.mobil_details?.biaya_bengkel || 0;
+    const mobilRepairSold = Math.max(0, data.units.mobil.maintenance ?? data.mobil_details?.total_biaya_bengkel ?? data.mobil_details?.biaya_bengkel ?? 0);
     const mobilPrepSold = data.units.mobil.beban_operasional || 0;
     
     return `
@@ -175,19 +175,19 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="section-title"><td colspan="2">III. BAGI HASIL & UMUM</td></tr>
                 <tr><td>Bagi Hasil Investor (Sharing)</td><td class="amount negative">(${formatCurrency(data.units.mobil.sharing_investor || 0)})</td></tr>
                 <tr><td>Beban Umum Unit Mobil</td><td class="amount negative">(${formatCurrency(data.units.mobil.beban_umum || 0)})</td></tr>
-                <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH MOBIL (TPM)</td><td class="amount positive">${formatCurrency(data.units.mobil.laba_bersih)}</td></tr>
+                <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH UNIT MOBIL</td><td class="amount positive">${formatCurrency(data.units.mobil.laba_bersih)}</td></tr>
             </table>
 
             <div class="recap-box">
                 <div class="recap-title">REKAPITULASI FINANSIAL</div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Laba Operasional Setelah Beban Pusat & Eliminasi</span>
+                    <span>Laba Operasional Setelah Beban Pusat</span>
                     <span class="amount">${formatCurrency(data.summary.laba_operasional)}</span>
                 </div>
                 ${(data.summary.internal_elimination || 0) > 0 ? `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Eliminasi Pendapatan Internal Belum Terealisasi</span>
-                    <span class="amount negative">(${formatCurrency(data.summary.internal_elimination || 0)})</span>
+                    <span>Info Repair Internal Mobil Belum Terjual</span>
+                    <span class="amount">${formatCurrency(data.summary.internal_elimination || 0)}</span>
                 </div>` : ''}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <span>Pengambilan Prive Pemilik</span>

@@ -28,6 +28,8 @@ def test_laba_rugi_uses_sold_only_mobil_contract():
     assert 'm.get("sales_revenue", 0)' in laba_rugi
     assert 'm.get("purchase_hpp", 0)' in laba_rugi
     assert 'm.get("repairs", 0)' in laba_rugi
+    assert "mobil_total_repairs_sold = max(0, workshop_bills + capital_sold_repairs)" in base
+    assert '"maintenance": m_maintenance' in laba_rugi
     assert 'data["raw_summaries"]["mobil"].get("total_penjualan"' not in laba_rugi
     assert 'data["raw_summaries"]["mobil"].get("total_harga_beli"' not in laba_rugi
     assert 'data["raw_summaries"]["mobil"].get("total_biaya_bengkel"' not in laba_rugi
@@ -40,6 +42,8 @@ def test_frontend_finance_pages_render_investor_booking_lines():
 
     assert "Bagi Hasil Investor" in laba_rugi
     assert "unit.sharing_investor" in laba_rugi
+    assert "Laba Bersih Unit" in laba_rugi
+    assert "unit.maintenance ?? details.total_biaya_bengkel" in laba_rugi
 
     assert "investor_funding" not in perubahan_modal
     assert "Setoran Modal Kas" in perubahan_modal
@@ -57,8 +61,9 @@ def test_internal_repair_elimination_contract():
     modal = read("backend/app/services/reports/modal_service.py")
     neraca = read("backend/app/services/reports/neraca_service.py")
 
-    assert "- internal_elimination" in base
-    assert "- overhead_pusat - elimination" in laba_rugi
+    assert '"internal_elimination": internal_elimination' in base
+    assert "- overhead_pusat" in laba_rugi
+    assert "- overhead_pusat - elimination" not in laba_rugi
     assert '"internal_elimination": elimination' in laba_rugi
     assert "laba_kotor +" in modal
     assert '"eliminasi_internal": internal_elimination' in modal

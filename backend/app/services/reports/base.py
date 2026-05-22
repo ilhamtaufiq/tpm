@@ -156,6 +156,7 @@ class BaseReportService:
         
         capital_unsold_prep = 0
         capital_unsold_repairs = 0
+        capital_sold_repairs = 0
         
         # Total value of ALL car stock bought in this period (regardless of sale status)
         total_stock_purchase_period = float(self.db.query(func.sum(Mobil.harga_beli)).filter(
@@ -208,14 +209,16 @@ class BaseReportService:
             if mid not in sold_mobil_ids:
                 capital_unsold_prep += prep_ledger
                 capital_unsold_repairs += repairs_ledger
+            else:
+                capital_sold_repairs += repairs_ledger
 
         # Repairs Total = Workshop Bills + Repairs from Ledger
-        repairs_total_period = workshop_bills + capital_total_repairs_period
+        repairs_total_period = workshop_bills + workshop_bills_unsold + capital_total_repairs_period
         prep_total_period = capital_total_prep_period
 
         # Repairs stock = workshop bills for unsold cars + ledger repairs for unsold cars
         mobil_total_repairs_unsold = workshop_bills_unsold + capital_unsold_repairs
-        mobil_total_repairs_sold = repairs_total_period - mobil_total_repairs_unsold
+        mobil_total_repairs_sold = max(0, workshop_bills + capital_sold_repairs)
         
         # WALLET-BASED OPERATIONAL OUTFLOWS (For Capital Report reconciliation)
         # We need to know where the money physically came from
@@ -854,7 +857,6 @@ class BaseReportService:
         
         retained_earnings = (
             total_laba_gross
-            - internal_elimination
             - total_operasional
             - gaji_pokok
             - gaji_lembur
@@ -944,6 +946,7 @@ class BaseReportService:
                     "biaya_persiapan": snapshot_unsold_prep,
                     "perbaikan_external": snapshot_unsold_repairs_ext,
                     "perbaikan_internal": snapshot_unsold_repairs_int,
+                    "internal_component": snapshot_unsold_repairs_int,
                     "details": sorted(car_stock_details, key=lambda x: x["total"], reverse=True)
                 },
                 "persediaan_mobil_internal_component": snapshot_unsold_repairs_int

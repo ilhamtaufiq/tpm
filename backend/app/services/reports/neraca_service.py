@@ -85,7 +85,8 @@ class NeracaService(BaseReportService):
         
         # Assets from consolidated breakdown
         raw_stock_mobil = hist["assets"]["persediaan_mobil"]
-        total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
+        total_stock_mobil_raw = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
+        total_stock_mobil = total_stock_mobil_raw
         total_stock_parts = hist["assets"]["persediaan_part"]
         total_fixed_assets = hist["assets"]["tetap"]
         
@@ -93,7 +94,7 @@ class NeracaService(BaseReportService):
         # harga beli + biaya persiapan + perbaikan bengkel.
         # Internal JB Mobil piutang is excluded from total_piutang above to avoid
         # double-counting the same workshop bill as both Stock and Receivable.
-        total_stock_mobil = float(raw_stock_mobil.get("total", 0)) if isinstance(raw_stock_mobil, dict) else float(raw_stock_mobil)
+        total_stock_mobil = total_stock_mobil_raw
         
         # Re-fetch asset list for details
         assets_list = self.db.query(Aset).filter(

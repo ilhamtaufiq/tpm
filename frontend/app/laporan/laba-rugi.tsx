@@ -111,7 +111,7 @@ export default function LabaRugiScreen() {
     const mobilRepairData = useMemo(() => {
         const unit = reportData?.units?.mobil || {} as any;
         const details = reportData?.mobil_details || {} as any;
-        const sold = unit.maintenance || details.total_biaya_bengkel || details.biaya_bengkel || 0;
+        const sold = Math.max(0, unit.maintenance ?? details.total_biaya_bengkel ?? details.biaya_bengkel ?? 0);
         const all = details.total_biaya_bengkel_all ?? sold;
         const unsold = details.total_biaya_bengkel_unsold ?? Math.max(0, all - sold);
 
@@ -305,7 +305,7 @@ export default function LabaRugiScreen() {
 
                     <View className={`w-full p-4 rounded-xl border flex-row justify-between items-center ${unit.laba_bersih >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                         <View>
-                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih TPM</Typography>
+                            <Typography variant="body2" weight="bold" className="text-white">IV. Laba Bersih Unit</Typography>
                             <Typography variant="caption" className="text-white/60 uppercase tracking-tighter text-[10px] mt-0.5">Setelah Biaya & Share</Typography>
                         </View>
                         <Typography variant="h3" weight="bold" className="text-white">
@@ -335,9 +335,8 @@ export default function LabaRugiScreen() {
                 <FinancialRow label="Total Beban Umum & Lainnya" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
                 {(reportData?.summary?.internal_elimination || 0) > 0 && (
                     <FinancialRow
-                        label="Eliminasi Pendapatan Internal Belum Terealisasi"
+                        label="Info Repair Internal Mobil Belum Terjual"
                         value={reportData?.summary?.internal_elimination || 0}
-                        isNegative
                         color="text-amber-700"
                     />
                 )}
