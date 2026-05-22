@@ -60,9 +60,8 @@ class LabaRugiService(BaseReportService):
         elimination = float(data.get("internal_elimination", 0))
         
         # Total Laba Operasional (Bengkel + Jasa Angkut + Mobil)
-        # Note: Internal elimination is not subtracted here to match user's spreadsheet logic
-        # where workshop revenue is realized immediately even if car is unsold.
-        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
+        # Internal JB Mobil repair on unsold stock is unrealized at consolidated level.
+        total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat - elimination
         laba_bersih_akhir = total_laba_operasional - prive
 
         return {
@@ -99,6 +98,7 @@ class LabaRugiService(BaseReportService):
             },
             "summary": {
                 "total_beban_umum": overhead_pusat,
+                "internal_elimination": elimination,
                 "prive": prive,
                 "laba_operasional": total_laba_operasional,
                 "laba_bersih": laba_bersih_akhir

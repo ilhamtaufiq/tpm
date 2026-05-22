@@ -82,66 +82,47 @@ export default function NeracaScreen() {
 
     const {
         totalHutangExternal,
-        totalPiutangExternal,
         totalAktivaAdj,
-        totalPasivaAdj,
         totalAktivaLancarAdj,
         totalStokAdj,
         totalLabaAdj,
         adjUnitCashDetails,
-        isBalancedAdj
     } = useMemo(() => {
         const h = report?.hutang || {} as any;
         const al = report?.aktiva_lancar || {} as any;
         const m = report?.modal || {} as any;
-        const units = report?.info?.units || {} as any;
 
         // 1. Gunakan total_hutang langsung dari backend (sudah termasuk semua komponen)
         const hExt = h.total_hutang || 0;
 
-        // 2. Piutang eksternal (sudah dihitung backend)
-        const pExt = al.total_piutang || 0;
-
-        // 3. Capitalized Stock detail, including workshop repairs linked to JB Mobil.
+        // 2. Capitalized Stock detail, including workshop repairs linked to JB Mobil.
         const stockDetails = al.stok_mobil_detail || [];
         const stockFromDetails = stockDetails.reduce((acc: number, item: any) => acc + (item.total || 0), 0);
         const sAdj = al.stok_mobil || stockFromDetails || 0;
 
-        // 4. Laba Ditahan: gunakan nilai dari backend cross_validation
+        // 3. Laba Ditahan: gunakan nilai dari backend cross_validation
         const lAdj = m.laba_ditahan || 0;
 
-        // 5. Total Aktiva & Pasiva: gunakan langsung dari backend sebagai sumber kebenaran
+        // 4. Total Aktiva & Pasiva: gunakan langsung dari backend sebagai sumber kebenaran
         // Backend sudah menghitung dengan benar termasuk semua komponen aktiva
         const aAdj = report?.total_aktiva || 0;
         const alAdj = al.total_aktiva_lancar || (aAdj - (report?.aktiva_tetap?.total_aktiva_tetap || 0));
         const pAdj = report?.total_pasiva || aAdj;
 
-        // 6. Unit Cash Simulation (Internal Settlement for sold cars)
-        const currentStockNames = new Set(al.stok_mobil_detail?.map((s: any) => s.nama) || []);
-        let bSoldLaba = 0;
-
-        units.bengkel?.details?.forEach((d: any) => {
-            if (!currentStockNames.has(d.label)) bSoldLaba += (d.laba || 0);
-        });
-
-        const adjUnitCashDetails = al.unit_cash_details?.map((u: any) => {
-            if (u.unit === 'bengkel') return { ...u, total_cash: (u.total_cash || 0) + bSoldLaba };
-            if (u.unit === 'mobil') return { ...u, total_cash: (u.total_cash || 0) - bSoldLaba };
-            return u;
-        }) || [];
-
-        const isBalanced = Math.abs(aAdj - pAdj) < 100;
+        const adjUnitCashDetails = Array.isArray(al.unit_cash_details)
+            ? al.unit_cash_details
+            : Object.entries(al.unit_details || {}).map(([unit, total_cash]) => ({
+                unit,
+                total_cash: Number(total_cash || 0),
+            }));
 
         return {
             totalHutangExternal: hExt,
-            totalPiutangExternal: pExt,
             totalStokAdj: sAdj,
             totalLabaAdj: lAdj,
             adjUnitCashDetails,
             totalAktivaLancarAdj: alAdj,
             totalAktivaAdj: aAdj,
-            totalPasivaAdj: pAdj,
-            isBalancedAdj: isBalanced
         };
     }, [report]);
 
@@ -381,55 +362,6 @@ export default function NeracaScreen() {
         );
     };
 
-    const renderAnalysisSection = () => {
-        if (!report?.info?.units) return null;
-        const units = report.info.units;
-
-        return (
-            <Card className="mb-4 overflow-hidden border-0 shadow-sm shadow-slate-200/50 bg-white rounded-2xl w-full">
-                <View className="bg-amber-50/70 px-5 py-4 flex-row justify-between items-center border-b border-amber-100/50 w-full">
-                    <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-amber-100/80 items-center justify-center mr-3">
-                            <Scale size={20} className="text-amber-600" />
-                        </View>
-                        <View>
-                            <Typography variant="h4" weight="bold" className="text-amber-900 tracking-tight">Performansi Laba Per Unit</Typography>
-                            <Typography variant="caption" className="text-amber-700/60 uppercase text-[10px] tracking-wider mt-0.5">Unit Profitability Analysis</Typography>
-                        </View>
-                    </View>
-                </View>
-
-                <View className="p-5 w-full">
-                    {/* Bengkel Unit */}
-                    <FinancialRow label="Bengkel & Sparepart" value={units.bengkel?.total_laba_tpm || 0} small bold={!!units.bengkel?.details?.length} />
-                    {units.bengkel?.details?.map((d, i) => (
-                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
-                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
-                        </View>
-                    ))}
-
-                    {/* Mobil Unit */}
-                    <View className="mt-2">
-                        <FinancialRow label="Jual Beli Mobil" value={units.mobil?.total_laba_tpm || 0} small />
-                    </View>
-
-                    {/* Jasa Angkut Unit */}
-                    <View className="mt-2">
-                        <FinancialRow label="Jasa Angkut (JA)" value={units.jasa_angkut?.total_laba_tpm || 0} small bold={!!units.jasa_angkut?.details?.length} />
-                        {units.jasa_angkut?.details?.map((d, i) => (
-                            <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
-                                <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
-                            </View>
-                        ))}
-                    </View>
-
-                    <View className="my-2 border-t border-slate-100" />
-                    <FinancialRow label="Total Laba Ditahan (Hingga Saat Ini)" value={totalLabaAdj} bold color="text-emerald-700" />
-                </View>
-            </Card>
-        );
-    };
-
     const renderBalanceCheck = () => {
         if (!report) return null;
         const cv = report.cross_validation || {} as any;
@@ -662,7 +594,6 @@ export default function NeracaScreen() {
                         </View>
                         {renderModalSection()}
                         {renderHutangSection()}
-                        {renderAnalysisSection()}
                         {renderBalanceCheck()}
                     </>
                 )}

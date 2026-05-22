@@ -41,10 +41,26 @@ def test_frontend_finance_pages_render_investor_booking_lines():
     assert "Bagi Hasil Investor" in laba_rugi
     assert "unit.sharing_investor" in laba_rugi
 
-    assert "Penambahan Dana Investor JB Mobil" in perubahan_modal
-    assert "report.penambahan.investor_funding" in perubahan_modal
+    assert "investor_funding" not in perubahan_modal
+    assert "Setoran Modal Kas" in perubahan_modal
+    assert "Setoran Modal Non-Kas" in perubahan_modal
 
     assert "Hutang Investor" in neraca
     assert "h.hutang_investor" in neraca
     assert "Sisa Kewajiban Booking Mobil" in neraca
     assert "h.piutang_booking" in neraca
+
+
+def test_internal_repair_elimination_contract():
+    base = read("backend/app/services/reports/base.py")
+    laba_rugi = read("backend/app/services/reports/laba_rugi_service.py")
+    modal = read("backend/app/services/reports/modal_service.py")
+    neraca = read("backend/app/services/reports/neraca_service.py")
+
+    assert "- internal_elimination" in base
+    assert "- overhead_pusat - elimination" in laba_rugi
+    assert '"internal_elimination": elimination' in laba_rugi
+    assert "laba_kotor +" in modal
+    assert '"eliminasi_internal": internal_elimination' in modal
+    assert "total_pasiva = total_liabilities + total_modal" in neraca
+    assert "report_selisih = total_assets - total_pasiva" in neraca

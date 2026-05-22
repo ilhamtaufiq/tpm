@@ -113,11 +113,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
 export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
     const mobilRepairSold = data.units.mobil.maintenance || data.mobil_details?.total_biaya_bengkel || data.mobil_details?.biaya_bengkel || 0;
-    const mobilRepairAll = data.mobil_details?.total_biaya_bengkel_all ?? mobilRepairSold;
-    const mobilRepairUnsold = data.mobil_details?.total_biaya_bengkel_unsold ?? Math.max(0, mobilRepairAll - mobilRepairSold);
     const mobilPrepSold = data.units.mobil.beban_operasional || 0;
-    const mobilPrepAll = data.mobil_details?.total_biaya_persiapan ?? mobilPrepSold;
-    const mobilPrepUnsold = Math.max(0, mobilPrepAll - mobilPrepSold);
     
     return `
         <!DOCTYPE html>
@@ -174,9 +170,7 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="section-title"><td colspan="2">II. BEBAN POKOK (HPP)</td></tr>
                 <tr><td>Harga Beli Unit Mobil</td><td class="amount negative">(${formatCurrency(data.units.mobil.hpp)})</td></tr>
                 <tr><td>Biaya Persiapan - Mobil Terjual</td><td class="amount negative">(${formatCurrency(mobilPrepSold)})</td></tr>
-                ${mobilPrepUnsold > 0 ? `<tr class="sub-item"><td>Biaya Persiapan - Masuk Stok Mobil</td><td class="amount">${formatCurrency(mobilPrepUnsold)}</td></tr>` : ''}
                 <tr><td>Biaya Perbaikan Bengkel - Mobil Terjual</td><td class="amount negative">(${formatCurrency(mobilRepairSold)})</td></tr>
-                ${mobilRepairUnsold > 0 ? `<tr class="sub-item"><td>Perbaikan Bengkel - Masuk Stok Mobil</td><td class="amount">${formatCurrency(mobilRepairUnsold)}</td></tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">III. BAGI HASIL & UMUM</td></tr>
                 <tr><td>Bagi Hasil Investor (Sharing)</td><td class="amount negative">(${formatCurrency(data.units.mobil.sharing_investor || 0)})</td></tr>
@@ -187,13 +181,14 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
             <div class="recap-box">
                 <div class="recap-title">REKAPITULASI FINANSIAL</div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Total Laba Operasional Seluruh Unit</span>
+                    <span>Laba Operasional Setelah Beban Pusat & Eliminasi</span>
                     <span class="amount">${formatCurrency(data.summary.laba_operasional)}</span>
                 </div>
+                ${(data.summary.internal_elimination || 0) > 0 ? `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Beban Umum & Operasional Pusat</span>
-                    <span class="amount negative">(${formatCurrency(data.summary.total_beban_umum)})</span>
-                </div>
+                    <span>Eliminasi Pendapatan Internal Belum Terealisasi</span>
+                    <span class="amount negative">(${formatCurrency(data.summary.internal_elimination || 0)})</span>
+                </div>` : ''}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <span>Pengambilan Prive Pemilik</span>
                     <span class="amount negative">(${formatCurrency(data.summary.prive)})</span>
@@ -216,25 +211,15 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
 export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
     
-    // Theoretical calculation logic from original file
-    const laba_bersih = data.info?.laba_bersih || 0;
-    const laba_usaha = data.info?.laba_usaha || data.penambahan?.laba_kotor?.total || 0;
-    const laba_bengkel = data.info?.laba_bengkel ?? 0;
-    const laba_mobil = data.info?.laba_mobil ?? 0;
-    const laba_jasa_angkut = data.info?.laba_jasa_angkut ?? 0;
-    const beban_ops = data.pengurangan?.beban_operasional?.total || data.info?.overhead_gaji || 0;
-    const setoran = (data.penambahan?.setoran_modal || 0) + 
-                    (data.penambahan?.modal_non_kas?.total || 0) + 
-                    (data.penambahan?.investor_funding || 0);
+    const modalAwal = data.modal_awal || 0;
+    const setoranKas = data.penambahan?.setoran_modal || 0;
+    const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
+    const labaBersih = data.info?.laba_bersih || 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
-    const theoretical = data.modal_awal + laba_bersih + setoran - prive;
-    const adjustment = data.modal_akhir - theoretical;
-    const stokMobil = data.info?.aset?.stok_mobil;
-    const totalPerbaikanMobil = stokMobil?.perbaikan_internal || 0;
-    const biayaPersiapanMasukStok = data.penambahan?.stok_mobil_baru?.prep || 0;
-    const alokasiBiayaPersiapanStok = data.pengurangan?.alokasi_stok?.prep || 0;
-    const adjustmentIsPerbaikanMobil = adjustment < 0 && totalPerbaikanMobil > 0 && Math.abs(Math.abs(adjustment) - totalPerbaikanMobil) < 100;
-    const adjustmentLabel = adjustmentIsPerbaikanMobil ? 'Perbaikan Unit Bengkel Masuk Stok Mobil' : 'Penyesuaian Snapshot Modal';
+    const modalAkhir = data.modal_akhir || 0;
+    const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
+    const penyesuaianReported = (data.penambahan?.penyesuaian || 0) - (data.pengurangan?.penyesuaian || 0);
+    const penyesuaian = Math.abs(penyesuaianReported) > 0 ? penyesuaianReported : modalAkhir - (modalAwal + perubahanBersih);
 
     return `
         <!DOCTYPE html>
@@ -254,133 +239,50 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                 <tr class="section-title"><td colspan="2">A. MODAL AWAL</td></tr>
                 <tr>
                     <td>Saldo Modal Awal</td>
-                    <td class="amount">${formatCurrency(data.modal_awal)}</td>
+                    <td class="amount">${formatCurrency(modalAwal)}</td>
                 </tr>
 
-                <tr class="section-title"><td colspan="2">B. PENAMBAHAN MODAL</td></tr>
-                ${laba_usaha > 0 ? `
-                <tr class="bold">
-                    <td>Laba Usaha (Unit Bisnis)</td>
-                    <td class="amount positive">${formatCurrency(laba_usaha)}</td>
+                <tr class="section-title"><td colspan="2">B. PENAMBAHAN EKUITAS</td></tr>
+                ${setoranKas > 0 ? `
+                <tr>
+                    <td>Setoran Modal Kas</td>
+                    <td class="amount">${formatCurrency(setoranKas)}</td>
+                </tr>` : ''}
+                ${modalNonKas > 0 ? `
+                <tr>
+                    <td>Setoran Modal Non-Kas</td>
+                    <td class="amount">${formatCurrency(modalNonKas)}</td>
+                </tr>` : ''}
+                <tr>
+                    <td>${labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'}</td>
+                    <td class="amount ${labaBersih >= 0 ? 'positive' : 'negative'}">${labaBersih >= 0 ? formatCurrency(labaBersih) : `(${formatCurrency(Math.abs(labaBersih))})`}</td>
                 </tr>
-                ${laba_bengkel > 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
-                    <td class="amount">${formatCurrency(laba_bengkel)}</td>
-                </tr>` : ''}
-                ${laba_mobil > 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
-                    <td class="amount">${formatCurrency(laba_mobil)}</td>
-                </tr>` : ''}
-                ${laba_jasa_angkut > 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
-                    <td class="amount">${formatCurrency(laba_jasa_angkut)}</td>
-                </tr>` : ''}
-                ` : (laba_bersih > 0 ? `
-                <tr>
-                    <td>Laba Bersih Konsolidasi</td>
-                    <td class="amount positive">${formatCurrency(laba_bersih)}</td>
-                </tr>` : '')}
-                ${data.penambahan?.setoran_modal ? `
-                <tr>
-                    <td>Setoran Modal Pemilik (Tunai)</td>
-                    <td class="amount">${formatCurrency(data.penambahan.setoran_modal)}</td>
-                </tr>` : ''}
-                ${data.penambahan?.modal_non_kas?.total ? `
-                <tr>
-                    <td>Setoran Modal Non-Kas (Aset)</td>
-                    <td class="amount">${formatCurrency(data.penambahan.modal_non_kas.total)}</td>
-                </tr>` : ''}
-                ${data.penambahan?.investor_funding ? `
-                <tr>
-                    <td>Penambahan Modal Investor (Unit)</td>
-                    <td class="amount">${formatCurrency(data.penambahan.investor_funding)}</td>
-                </tr>` : ''}
-                ${biayaPersiapanMasukStok > 0 ? `
-                <tr>
-                    <td>Penambahan Nilai Stok - Biaya Persiapan</td>
-                    <td class="amount">${formatCurrency(biayaPersiapanMasukStok)}</td>
-                </tr>` : ''}
-                ${adjustment > 0 ? `
-                <tr class="sub-item">
-                    <td>Bagi Hasil Investor (Belum Dibagikan)</td>
-                    <td class="amount">${formatCurrency(adjustment)}</td>
-                </tr>` : ''}
 
-                <tr class="section-title"><td colspan="2">C. PENGURANGAN MODAL</td></tr>
-                ${laba_usaha < 0 ? `
-                <tr class="bold">
-                    <td>Rugi Usaha (Unit Bisnis)</td>
-                    <td class="amount negative">(${formatCurrency(Math.abs(laba_usaha))})</td>
-                </tr>
-                ${laba_bengkel < 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Bengkel</td>
-                    <td class="amount">(${formatCurrency(Math.abs(laba_bengkel))})</td>
-                </tr>` : ''}
-                ${laba_mobil < 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Mobil</td>
-                    <td class="amount">(${formatCurrency(Math.abs(laba_mobil))})</td>
-                </tr>` : ''}
-                ${laba_jasa_angkut < 0 ? `
-                <tr class="sub-item">
-                    <td>&nbsp;&nbsp;&nbsp;• Unit Jasa Angkut</td>
-                    <td class="amount">(${formatCurrency(Math.abs(laba_jasa_angkut))})</td>
-                </tr>` : ''}
-                ` : (laba_bersih < 0 ? `
-                <tr>
-                    <td>Rugi Bersih Konsolidasi</td>
-                    <td class="amount negative">(${formatCurrency(Math.abs(laba_bersih))})</td>
-                </tr>` : '')}
-                ${beban_ops > 0 ? `
-                <tr>
-                    <td>Beban Operasional & Gaji Pusat</td>
-                    <td class="amount negative">(${formatCurrency(beban_ops)})</td>
-                </tr>` : ''}
+                <tr class="section-title"><td colspan="2">C. PENGURANGAN EKUITAS</td></tr>
                 ${prive > 0 ? `
                 <tr>
-                    <td>Prive & Penarikan Modal</td>
+                    <td>Prive / Pengambilan Pemilik</td>
                     <td class="amount negative">(${formatCurrency(prive)})</td>
-                </tr>` : ''}
-                ${alokasiBiayaPersiapanStok > 0 ? `
+                </tr>` : `
                 <tr>
-                    <td>Alokasi Kas ke Biaya Persiapan Stok</td>
-                    <td class="amount negative">(${formatCurrency(alokasiBiayaPersiapanStok)})</td>
-                </tr>` : ''}
-                ${adjustment < 0 ? `
-                <tr class="sub-item">
-                    <td>${adjustmentLabel}</td>
-                    <td class="amount negative">(${formatCurrency(Math.abs(adjustment))})</td>
+                    <td>Prive / Pengambilan Pemilik</td>
+                    <td class="amount">${formatCurrency(0)}</td>
+                </tr>`}
+                ${Math.abs(penyesuaian) >= 100 ? `
+                <tr>
+                    <td>Penyesuaian Rekonsiliasi</td>
+                    <td class="amount ${penyesuaian < 0 ? 'negative' : ''}">${penyesuaian < 0 ? `(${formatCurrency(Math.abs(penyesuaian))})` : formatCurrency(penyesuaian)}</td>
                 </tr>` : ''}
 
+                <tr class="total-row">
+                    <td>PERUBAHAN BERSIH MODAL</td>
+                    <td class="amount">${formatCurrency(perubahanBersih + penyesuaian)}</td>
+                </tr>
                 <tr class="grand-total">
                     <td>MODAL AKHIR PERIODE</td>
-                    <td class="amount">${formatCurrency(data.modal_akhir)}</td>
+                    <td class="amount">${formatCurrency(modalAkhir)}</td>
                 </tr>
             </table>
-
-            <div class="info-grid">
-                <div class="info-card">
-                    <div class="info-card-title">Profitabilitas Unit Usaha</div>
-                    <div class="info-row"><span>Bengkel & Sparepart</span><b>${formatCurrency(data.info?.laba_bengkel || 0)}</b></div>
-                    <div class="info-row"><span>Jual Beli Mobil</span><b>${formatCurrency(data.info?.laba_mobil || 0)}</b></div>
-                    <div class="info-row"><span>Jasa Angkut (JA)</span><b>${formatCurrency(data.info?.laba_jasa_angkut || 0)}</b></div>
-                </div>
-                <div class="info-card">
-                    <div class="info-card-title">Posisi Aset Bersih</div>
-                    <div class="info-row"><span>Kas & Bank Aktif</span><b>${formatCurrency(data.info?.aset?.kas_bank || 0)}</b></div>
-                    <div class="info-row"><span>Persediaan Unit Mobil</span><b>${formatCurrency(data.info?.aset?.stok_mobil?.total || 0)}</b></div>
-                    ${(stokMobil?.unit_hanya || 0) > 0 ? `<div class="info-row sub-item"><span>Harga Beli Unit Mobil</span><b>${formatCurrency(stokMobil?.unit_hanya || 0)}</b></div>` : ''}
-                    ${(stokMobil?.biaya_persiapan || 0) > 0 ? `<div class="info-row sub-item"><span>Biaya Persiapan Mobil</span><b>${formatCurrency(stokMobil?.biaya_persiapan || 0)}</b></div>` : ''}
-                    ${totalPerbaikanMobil > 0 ? `
-                    <div class="info-row"><span>Perbaikan Unit Bengkel Masuk Stok</span><b>${formatCurrency(totalPerbaikanMobil)}</b></div>
-                    ` : ''}
-                    <div class="info-row"><span>Total Kewajiban</span><b class="negative">${formatCurrency(data.info?.aset?.hutang?.total || 0)}</b></div>
-                </div>
-            </div>
 
             <div class="footer">
                 Laporan ini dihasilkan otomatis oleh Sistem Keuangan TPM.<br/>

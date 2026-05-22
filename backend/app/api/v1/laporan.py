@@ -90,25 +90,23 @@ def validate_reports(
     neraca = neraca_service.get_report(tanggal_sampai)  # Neraca uses end date as snapshot
 
     # ═══════════════════════════════════════════════════════════════
-    # CHECK 1: Laba Bersih Consistency
-    # Laba Rugi laba_bersih should match Neraca retained_earnings - prive
+    # CHECK 1: Laba Consistency
+    # Laba Rugi operating profit should match Modal period profit.
     # ═══════════════════════════════════════════════════════════════
     lr_laba_bersih = float(lr["summary"]["laba_bersih"])
     lr_laba_operasional = float(lr["summary"]["laba_operasional"])
+    modal_laba_period = float(modal.get("info", {}).get("laba_bersih", 0))
     neraca_retained = float(neraca["modal"]["laba_ditahan"])
     neraca_prive = float(neraca["modal"]["prive"])
-    
-    # retained_earnings in neraca = laba_operasional in LR (before prive)
-    selisih_laba = lr_laba_operasional - neraca_retained
+
+    selisih_laba = lr_laba_operasional - modal_laba_period
     laba_ok = abs(selisih_laba) < 100
 
     # ═══════════════════════════════════════════════════════════════
     # CHECK 2: Kas/Bank Consistency
-    # Modal Section D cash should match Neraca Aktiva Lancar cash
+    # Modal snapshot cash should match Neraca Aktiva Lancar cash.
     # ═══════════════════════════════════════════════════════════════
-    modal_kas = float(modal["section_d"]["cash"])
-    modal_transfer = float(modal["section_d"]["transfer"])
-    modal_total_kas = modal_kas + modal_transfer
+    modal_total_kas = float(modal.get("info", {}).get("aset", {}).get("kas_bank", 0))
     
     neraca_kas_tunai = float(neraca["aktiva_lancar"]["kas_tunai"])
     neraca_kas_bank = float(neraca["aktiva_lancar"]["kas_bank"])
@@ -120,9 +118,9 @@ def validate_reports(
 
     # ═══════════════════════════════════════════════════════════════
     # CHECK 3: Hutang Consistency
-    # Modal Section E total should match Neraca total hutang
+    # Modal snapshot hutang should match Neraca total hutang.
     # ═══════════════════════════════════════════════════════════════
-    modal_hutang = float(modal["section_e"]["total_e"])
+    modal_hutang = float(modal.get("info", {}).get("aset", {}).get("hutang", {}).get("total", 0))
     neraca_hutang = float(neraca["hutang"]["total_hutang"])
     
     selisih_hutang = modal_hutang - neraca_hutang
@@ -145,19 +143,20 @@ def validate_reports(
                 "status": "OK" if laba_ok else "MISMATCH",
                 "laba_rugi_operasional": lr_laba_operasional,
                 "laba_rugi_bersih": lr_laba_bersih,
+                "modal_laba_period": modal_laba_period,
                 "neraca_retained_earnings": neraca_retained,
                 "neraca_prive": neraca_prive,
                 "selisih": selisih_laba
             },
             "kas_bank": {
                 "status": "OK" if kas_ok else "MISMATCH",
-                "modal_section_d": modal_total_kas,
+                "modal_snapshot": modal_total_kas,
                 "neraca_aktiva_lancar": neraca_total_kas,
                 "selisih": selisih_kas
             },
             "hutang": {
                 "status": "OK" if hutang_ok else "MISMATCH",
-                "modal_section_e": modal_hutang,
+                "modal_snapshot": modal_hutang,
                 "neraca_hutang": neraca_hutang,
                 "selisih": selisih_hutang
             },

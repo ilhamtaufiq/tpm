@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import {
     ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Wallet,
-    Download, Eye, X, AlertTriangle, Building, Truck, Car, Printer
+    Download, Eye, X, AlertTriangle, Building, Printer
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -90,36 +90,45 @@ export default function LaporanPerubahanModalScreen() {
         }
     }, [navigation, router]);
 
-    const simple = useMemo(() => {
-        if (!report) return { laba_bersih: 0, laba_usaha: 0, setoran: 0, prive: 0, adjustment: 0, beban_ops: 0 };
-        const r = report;
-        // Gunakan laba_bersih dari info (source of truth = retained_earnings backend)
-        const laba_bersih = r.info?.laba_bersih || 0;
-        const laba_usaha = r.info?.laba_usaha || r.penambahan?.laba_kotor?.total || 0;
-        // beban_ops hanya ditampilkan jika laba_usaha >= 0 (rugi bersih sudah mencakup beban)
-        // Jika laba_usaha < 0, maka beban ops sudah termasuk dalam rugi per unit
-        const beban_ops = r.pengurangan?.beban_operasional?.total || r.info?.overhead_gaji || 0;
-        const setoran = (r.penambahan?.setoran_modal || 0) + 
-                        (r.penambahan?.modal_non_kas?.total || 0) + 
-                        (r.penambahan?.investor_funding || 0);
-        const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
-        
-        // Gunakan modal_akhir langsung dari backend (sudah dijamin balanced oleh snapshot-based calculation)
-        const modalAkhir = r.modal_akhir || 0;
-        const hutang = r.info?.aset?.hutang?.total || 0;
-        const theoretical = (r.modal_awal || 0) + laba_bersih + setoran - prive;
-        const adjustment = r.pengurangan?.penyesuaian || Math.max(0, theoretical - modalAkhir);
-        
-        return { laba_bersih, laba_usaha, beban_ops, setoran, prive, adjustment, correctedModalAkhir: modalAkhir, correctedHutang: hutang, theoretical };
-    }, [report]);
+    const equity = useMemo(() => {
+        if (!report) {
+            return {
+                modalAwal: 0,
+                setoranKas: 0,
+                modalNonKas: 0,
+                labaBersih: 0,
+                prive: 0,
+                modalAkhir: 0,
+                perubahanBersih: 0,
+                penyesuaian: 0,
+                status: 'UNKNOWN',
+            };
+        }
 
-    const mobilStock = report?.info?.aset?.stok_mobil;
-    const nominalModalInvestor = report?.info?.aset?.hutang?.breakdown?.investor || report?.penambahan?.investor_funding || 0;
-    const totalPerbaikanMobil = mobilStock?.perbaikan_internal || 0;
-    const biayaPersiapanMasukStok = report?.penambahan?.stok_mobil_baru?.prep || 0;
-    const alokasiBiayaPersiapanStok = report?.pengurangan?.alokasi_stok?.prep || 0;
-    const adjustmentIsPerbaikanMobil = simple.adjustment > 0 && totalPerbaikanMobil > 0 && Math.abs(simple.adjustment - totalPerbaikanMobil) < 100;
-    const adjustmentLabel = adjustmentIsPerbaikanMobil ? 'Perbaikan Unit Bengkel Masuk Stok Mobil' : 'Penyesuaian Snapshot Modal';
+        const r = report;
+        const modalAwal = r.modal_awal || 0;
+        const setoranKas = r.penambahan?.setoran_modal || 0;
+        const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
+        const labaBersih = r.info?.laba_bersih || 0;
+        const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
+        const modalAkhir = r.modal_akhir || 0;
+        const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
+        const expectedModalAkhir = modalAwal + perubahanBersih;
+        const penyesuaian = (r.penambahan?.penyesuaian || 0) - (r.pengurangan?.penyesuaian || 0);
+        const effectiveAdjustment = Math.abs(penyesuaian) > 0 ? penyesuaian : modalAkhir - expectedModalAkhir;
+
+        return {
+            modalAwal,
+            setoranKas,
+            modalNonKas,
+            labaBersih,
+            prive,
+            modalAkhir,
+            perubahanBersih,
+            penyesuaian: effectiveAdjustment,
+            status: r.info?.validasi?.status || 'UNKNOWN',
+        };
+    }, [report]);
 
     const handleExportPDF = async (mode: 'preview' | 'download' | 'print' = 'preview') => {
         if (!report) return;
@@ -256,7 +265,7 @@ export default function LaporanPerubahanModalScreen() {
                             <View className="flex-row items-start justify-between mb-6">
                                 <View className="flex-1 pr-4">
                                     <Typography variant="caption" weight="bold" className="text-indigo-100 uppercase tracking-[2.5px]">Modal Akhir Periode</Typography>
-                                    <Typography variant="h1" weight="bold" className="text-white mt-1" style={{ fontSize: 32 }}>{formatCurrency(simple.correctedModalAkhir)}</Typography>
+                                    <Typography variant="h1" weight="bold" className="text-white mt-1" style={{ fontSize: 32 }}>{formatCurrency(equity.modalAkhir)}</Typography>
                                 </View>
                                 <View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center border border-white/30">
                                     <Wallet size={32} color="white" />
@@ -264,181 +273,58 @@ export default function LaporanPerubahanModalScreen() {
                             </View>
 
                             <View className="pt-5 border-t border-white/20 flex-row justify-between items-center">
-                                <Typography variant="caption" className="text-indigo-100">Status: <Typography variant="caption" weight="bold" className="text-white">VERIFIED</Typography></Typography>
-                                {report.info?.validasi?.status === 'BALANCE' && (
+                                <Typography variant="caption" className="text-indigo-100">
+                                    Status: <Typography variant="caption" weight="bold" className="text-white">{equity.status}</Typography>
+                                </Typography>
+                                {equity.status === 'BALANCE' && (
                                     <View className="bg-emerald-400/90 px-3 py-1 rounded-full"><Typography variant="caption" weight="bold" className="text-white text-[10px]">BALANCE</Typography></View>
                                 )}
                             </View>
                         </View>
 
                         <View className="flex-row">
-                            <StatCard label="MODAL AWAL" value={report.modal_awal} icon={Building} bgColor="#334155" subLabel="Saldo Awal" />
-                            <StatCard label="LABA BERSIH" value={simple.laba_bersih} icon={ArrowUpRight} bgColor="#059669" subLabel="Net Income" />
+                            <StatCard label="MODAL AWAL" value={equity.modalAwal} icon={Building} bgColor="#334155" subLabel="Saldo Awal" />
+                            <StatCard label="LABA BERSIH" value={equity.labaBersih} icon={ArrowUpRight} bgColor="#059669" subLabel="Laba Periode" />
                         </View>
 
                         <View className="flex-row -mt-1">
-                            <StatCard label="SETORAN" value={simple.setoran} icon={Wallet} bgColor="#4f46e5" subLabel="Tambahan Modal" />
-                            <StatCard label="PRIVE" value={simple.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Drawings" />
+                            <StatCard label="SETORAN" value={equity.setoranKas + equity.modalNonKas} icon={Wallet} bgColor="#4f46e5" subLabel="Kas + Non-Kas" />
+                            <StatCard label="PRIVE" value={equity.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Pengambilan Modal" />
                         </View>
 
                         <Card className="p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm mt-2">
                             <Typography variant="body1" weight="bold" className="text-slate-900 mb-5">Rincian Perubahan Ekuitas</Typography>
 
-                            <FinancialRow label="Modal Awal" value={report.modal_awal} bold color="text-slate-900" />
+                            <FinancialRow label="Modal Awal" value={equity.modalAwal} bold color="text-slate-900" />
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-emerald-600 mb-2 uppercase tracking-widest">Penambahan</Typography>
-                                {simple.laba_usaha > 0 && (
-                                    <>
-                                        <FinancialRow label="Laba Usaha (Unit)" value={simple.laba_usaha} color="text-emerald-700" bold />
-                                        {(report.info?.laba_bengkel ?? 0) > 0 && (
-                                            <FinancialRow label="Unit Bengkel" value={report.info?.laba_bengkel ?? 0} color="text-slate-500" indent small />
-                                        )}
-                                        {(report.info?.laba_mobil ?? 0) > 0 && (
-                                            <FinancialRow label="Unit Mobil" value={report.info?.laba_mobil ?? 0} color="text-slate-500" indent small />
-                                        )}
-                                        {(report.info?.laba_jasa_angkut ?? 0) > 0 && (
-                                            <FinancialRow label="Unit Jasa Angkut" value={report.info?.laba_jasa_angkut ?? 0} color="text-slate-500" indent small />
-                                        )}
-                                    </>
+                                {equity.setoranKas > 0 && (
+                                    <FinancialRow label="Setoran Modal Kas" value={equity.setoranKas} color="text-emerald-700" />
                                 )}
-                                {simple.laba_bersih > 0 && simple.laba_usaha <= 0 && (
-                                    <FinancialRow label="Laba Bersih Konsolidasi" value={simple.laba_bersih} color="text-emerald-700" />
+                                {equity.modalNonKas > 0 && (
+                                    <FinancialRow label="Setoran Modal Non-Kas" value={equity.modalNonKas} color="text-emerald-700" />
                                 )}
-                                {report.penambahan?.setoran_modal ? (
-                                    <FinancialRow label="Setoran Modal Pemilik (Tunai)" value={report.penambahan.setoran_modal} />
-                                ) : null}
-                                {report.penambahan?.modal_non_kas?.total ? (
-                                    <FinancialRow label="Setoran Modal Non-Kas (Aset)" value={report.penambahan.modal_non_kas.total} />
-                                ) : null}
-                                {report.penambahan?.investor_funding ? (
-                                    <FinancialRow label="Penambahan Dana Investor JB Mobil" value={report.penambahan.investor_funding} />
-                                ) : null}
-                                {biayaPersiapanMasukStok > 0 ? (
-                                    <FinancialRow label="Penambahan Nilai Stok - Biaya Persiapan" value={biayaPersiapanMasukStok} />
-                                ) : null}
+                                <FinancialRow label={equity.labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'} value={Math.abs(equity.labaBersih)} isNegative={equity.labaBersih < 0} color={equity.labaBersih >= 0 ? 'text-emerald-700' : 'text-rose-700'} />
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
                                 <Typography variant="caption" weight="bold" className="text-rose-600 mb-2 uppercase tracking-widest">Pengurangan</Typography>
-                                {/* Tampilkan rugi per unit jika ada unit yang rugi */}
-                                {simple.laba_usaha < 0 && (
-                                    <>
-                                        <FinancialRow label="Rugi Usaha (Unit)" value={Math.abs(simple.laba_usaha)} isNegative color="text-rose-700" bold />
-                                        {(report.info?.laba_bengkel ?? 0) < 0 && (
-                                            <FinancialRow label="Unit Bengkel" value={Math.abs(report.info?.laba_bengkel ?? 0)} isNegative color="text-slate-500" indent small />
-                                        )}
-                                        {(report.info?.laba_mobil ?? 0) < 0 && (
-                                            <FinancialRow label="Unit Mobil" value={Math.abs(report.info?.laba_mobil ?? 0)} isNegative color="text-slate-500" indent small />
-                                        )}
-                                        {(report.info?.laba_jasa_angkut ?? 0) < 0 && (
-                                            <FinancialRow label="Unit Jasa Angkut" value={Math.abs(report.info?.laba_jasa_angkut ?? 0)} isNegative color="text-slate-500" indent small />
-                                        )}
-                                    </>
+                                {equity.prive > 0 ? (
+                                    <FinancialRow label="Prive / Pengambilan Pemilik" value={equity.prive} isNegative />
+                                ) : (
+                                    <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
                                 )}
-                                {/* Beban operasional ditampilkan hanya jika laba_usaha >= 0
-                                    Jika laba_usaha < 0, beban sudah termasuk dalam kalkulasi rugi unit */}
-                                {simple.laba_usaha >= 0 && simple.beban_ops > 0 && (
-                                    <FinancialRow label="Beban Operasional & Gaji" value={simple.beban_ops} isNegative />
-                                )}
-                                {/* Rugi bersih konsolidasi: tampilkan jika tidak ada laba_usaha yang dirinci */}
-                                {simple.laba_bersih < 0 && simple.laba_usaha === 0 && (
-                                    <FinancialRow label="Rugi Bersih Konsolidasi" value={Math.abs(simple.laba_bersih)} isNegative color="text-rose-700" />
-                                )}
-                                {simple.prive > 0 && (
-                                    <FinancialRow label="Prive & Penarikan Modal" value={simple.prive} isNegative />
-                                )}
-                                {alokasiBiayaPersiapanStok > 0 && (
-                                    <FinancialRow label="Alokasi Kas ke Biaya Persiapan Stok" value={alokasiBiayaPersiapanStok} isNegative />
-                                )}
-                                {simple.adjustment > 0 && (
-                                    <FinancialRow label={adjustmentLabel} value={simple.adjustment} isNegative color="text-rose-700" />
+                                {Math.abs(equity.penyesuaian) >= 100 && (
+                                    <FinancialRow label="Penyesuaian Rekonsiliasi" value={Math.abs(equity.penyesuaian)} isNegative={equity.penyesuaian < 0} color="text-amber-700" />
                                 )}
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
-                                <FinancialRow label="Modal Akhir Periode" value={simple.correctedModalAkhir || 0} bold color="text-indigo-700" />
+                                <FinancialRow label="Perubahan Bersih Modal" value={equity.perubahanBersih + equity.penyesuaian} bold color="text-slate-700" />
+                                <FinancialRow label="Modal Akhir Periode" value={equity.modalAkhir} bold color="text-indigo-700" />
                             </View>
                         </Card>
-
-                        <Typography variant="body2" weight="bold" className="text-slate-900 px-1 mt-4">Analisis Operasional & Aset</Typography>
-
-                        <View className="space-y-4">
-                            <Card className="p-5 bg-white rounded-[24px] border border-slate-100 shadow-sm">
-                                <Typography variant="caption" weight="bold" className="text-slate-400 mb-4 uppercase tracking-widest">Performansi Laba Per Unit</Typography>
-                                
-                                {/* Bengkel Unit */}
-                                <FinancialRow label="Bengkel & Sparepart" value={report.info?.laba_bengkel || 0} small bold={!!report.info?.units?.bengkel?.details?.length} />
-                                {report.info?.units?.bengkel?.details?.map((d, i) => (
-                                    <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
-                                        <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
-                                    </View>
-                                ))}
-
-                                {/* Mobil Unit */}
-                                <View className="mt-2">
-                                    <FinancialRow label="Jual Beli Mobil" value={report.info?.laba_mobil || 0} small bold={!!report.info?.units?.mobil?.details?.length} />
-                                    {report.info?.units?.mobil?.details?.map((d, i) => (
-                                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
-                                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
-                                        </View>
-                                    ))}
-                                </View>
-
-                                {/* Jasa Angkut Unit */}
-                                <View className="mt-2">
-                                    <FinancialRow label="Jasa Angkut (JA)" value={report.info?.laba_jasa_angkut || 0} small bold={!!report.info?.units?.jasa_angkut?.details?.length} />
-                                    {report.info?.units?.jasa_angkut?.details?.map((d, i) => (
-                                        <View key={i} className="ml-4 border-l border-slate-100 pl-3 my-1">
-                                            <FinancialRow label={d.label} value={d.laba} small color="text-slate-500" />
-                                        </View>
-                                    ))}
-                                </View>
-
-                                <View className="my-2 border-t border-slate-50" />
-                                <FinancialRow label="Total Laba Bersih" value={report.info?.laba_bersih || 0} bold color="text-emerald-700" />
-                            </Card>
-
-                            <Card className="p-5 bg-white rounded-[24px] border border-slate-100 shadow-sm">
-                                <Typography variant="caption" weight="bold" className="text-slate-400 mb-4 uppercase tracking-widest">Posisi Aset Bersih Terakhir</Typography>
-                                <FinancialRow label="Total Kas & Saldo Bank" value={report.info?.aset?.kas_bank || 0} small />
-                                <FinancialRow label="Persediaan Unit Mobil" value={report.info?.aset?.stok_mobil?.total || 0} small />
-                                {(report.info?.aset?.stok_mobil?.unit_hanya || 0) > 0 && (
-                                    <FinancialRow label="Harga Beli Unit Mobil" value={report.info?.aset?.stok_mobil?.unit_hanya || 0} small indent color="text-slate-500" />
-                                )}
-                                {nominalModalInvestor > 0 && (
-                                    <FinancialRow label="Nominal Modal Investor" value={nominalModalInvestor} small indent color="text-slate-500" />
-                                )}
-                                {(report.info?.aset?.stok_mobil?.biaya_persiapan || 0) > 0 && (
-                                    <FinancialRow label="Biaya Persiapan Mobil" value={report.info?.aset?.stok_mobil?.biaya_persiapan || 0} small indent color="text-slate-500" />
-                                )}
-                                {totalPerbaikanMobil > 0 && (
-                                    <View className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 my-2">
-                                        <Typography variant="caption" weight="bold" className="text-amber-700 uppercase tracking-widest text-[10px] mb-2">Perbaikan Jual Beli Mobil</Typography>
-                                        <FinancialRow label="Perbaikan Unit Bengkel Masuk Stok" value={totalPerbaikanMobil} small bold color="text-amber-800" />
-                                    </View>
-                                )}
-                                <FinancialRow label="Persediaan Sparepart" value={report.info?.aset?.stok_part || 0} small />
-                                
-                                {/* Fix: Include internal piutang in the analysis total */}
-                                <FinancialRow 
-                                    label="Total Tagihan & Piutang" 
-                                    value={(report.info?.aset?.piutang?.total || 0)} 
-                                    small 
-                                    color="text-blue-600"
-                                />
-                                
-                                <FinancialRow 
-                                    label="Total Kewajiban (Hutang)" 
-                                    value={simple.correctedHutang || 0} 
-                                    small 
-                                    isNegative 
-                                />
-                                
-                                <View className="my-2 border-t border-slate-50" />
-                                <FinancialRow label="Total Ekuitas (Net Asset)" value={simple.correctedModalAkhir || 0} bold color="text-indigo-700" />
-                            </Card>
-                        </View>
                     </View>
                 )}
             </ScrollView>

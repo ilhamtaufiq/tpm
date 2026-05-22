@@ -130,6 +130,7 @@ export interface LabaRugiReport {
         total_laba_kotor: number;
         total_beban_operasional: number;
         total_beban_umum: number;
+        internal_elimination?: number;
         laba_operasional: number;
         prive: number;
         laba_bersih: number;
@@ -245,4 +246,3 @@ export interface CapitalReport {
         };
     };
 }
-

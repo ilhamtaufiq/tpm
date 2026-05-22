@@ -853,8 +853,9 @@ class BaseReportService:
             })
         
         retained_earnings = (
-            total_laba_gross 
-            - total_operasional 
+            total_laba_gross
+            - internal_elimination
+            - total_operasional
             - gaji_pokok
             - gaji_lembur
         )

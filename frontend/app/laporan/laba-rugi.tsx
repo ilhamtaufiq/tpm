@@ -3,7 +3,7 @@ import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, Activi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useNavigation, Stack } from 'expo-router';
 import { 
-    ChevronLeft, ChevronRight, Calendar, TrendingUp, TrendingDown, Wallet, 
+    ChevronLeft, ChevronRight, Calendar, TrendingUp,
     BarChart3, ArrowUpRight, ArrowDownLeft, Download, Eye, X, Truck, Printer 
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
@@ -294,13 +294,7 @@ export default function LabaRugiScreen() {
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>
                         <FinancialRow label="Harga Beli Unit" value={unit.hpp} isNegative color="text-rose-600" />
                         <FinancialRow label="Biaya Persiapan - Mobil Terjual" value={mobilPrepData.sold} isNegative color="text-rose-600" />
-                        {mobilPrepData.unsold > 0 && (
-                            <FinancialRow label="Biaya Persiapan - Masuk Stok Mobil" value={mobilPrepData.unsold} small indent color="text-amber-700" />
-                        )}
                         <FinancialRow label="Biaya Perbaikan Bengkel - Mobil Terjual" value={mobilRepairData.sold} isNegative color="text-rose-600" />
-                        {mobilRepairData.unsold > 0 && (
-                            <FinancialRow label="Perbaikan Bengkel - Masuk Stok Mobil" value={mobilRepairData.unsold} small indent color="text-amber-700" />
-                        )}
                     </View>
 
                     <View className="p-1 px-3 mb-4">
@@ -339,6 +333,14 @@ export default function LabaRugiScreen() {
 
             <View className="p-5 w-full">
                 <FinancialRow label="Total Beban Umum & Lainnya" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
+                {(reportData?.summary?.internal_elimination || 0) > 0 && (
+                    <FinancialRow
+                        label="Eliminasi Pendapatan Internal Belum Terealisasi"
+                        value={reportData?.summary?.internal_elimination || 0}
+                        isNegative
+                        color="text-amber-700"
+                    />
+                )}
             </View>
         </Card>
     );

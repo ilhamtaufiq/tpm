@@ -479,7 +479,7 @@ class ModalService(BaseReportService):
         total_penambahan = (
             setoran_modal + 
             modal_aset_tetap_delta + 
-            (laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross) + 
+            laba_kotor +
             penambahan_piutang_period + 
             investor_capital_baru + 
             penambahan_stok_mobil + penambahan_stok_sparepart +
@@ -545,7 +545,7 @@ class ModalService(BaseReportService):
                     "stok_mobil": modal_stok_mobil_delta
                 },
                 "laba_kotor": {
-                    "total": laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross,
+                    "total": laba_kotor,
                     "mobil": laba_mobil_tpm_gross,
                     "ja": laba_ja_tpm_gross,
                     "bengkel": laba_bengkel_tpm_gross,
@@ -565,7 +565,7 @@ class ModalService(BaseReportService):
                     "lainnya": piutang_lain_baru
                 },
                 "investor_funding": investor_capital_baru,
-                "eliminasi_internal": workshop_bills,
+                "eliminasi_internal": internal_elimination,
                 "penyesuaian": max(0, penyesuaian),
                 "total": total_penambahan
             },
@@ -607,7 +607,7 @@ class ModalService(BaseReportService):
                 },
                 "gaji": gaji,
                 "lembur": lembur,
-                "eliminasi_internal": workshop_bills,
+                "eliminasi_internal": internal_elimination,
                 "penyesuaian": abs(min(0, penyesuaian)),
                 "total": total_pengurangan
             },
@@ -617,7 +617,7 @@ class ModalService(BaseReportService):
                 "laba_mobil": laba_mobil_tpm_gross,
                 "laba_investor": laba_investor_periode,
                 "laba_jasa_angkut": laba_ja_tpm_gross,
-                "laba_usaha": laba_bengkel_tpm_gross + laba_mobil_tpm_gross + laba_ja_tpm_gross,
+                "laba_usaha": laba_kotor,
                 "overhead_gaji": total_overhead_gaji,
                 "ops_bengkel": ops_bengkel,
                 "ops_mobil": ops_mobil,
@@ -633,7 +633,7 @@ class ModalService(BaseReportService):
                 "lembur": lembur,
                 "laba_bersih": period_profit_sot,
                 "units": data.get("units"),
-                "eliminasi_internal": workshop_bills,
+                "eliminasi_internal": internal_elimination,
                 "debug": {
                     "kas": end_total_cash,
                     "part": persediaan_part,
