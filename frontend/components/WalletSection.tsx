@@ -12,7 +12,7 @@ export const WalletSection = () => {
     const { themeColors } = useUIStore();
 
     return (
-        <View className="px-4 sm:px-6 mt-4 w-full max-w-[640px] self-center">
+        <View className="px-4 sm:px-6 mt-4 w-full">
             <View
                 className="bg-[#6366f1] rounded-[24px] sm:rounded-[32px] p-4 sm:p-5 flex-row items-center justify-between shadow-lg shadow-indigo-500/30"
             >

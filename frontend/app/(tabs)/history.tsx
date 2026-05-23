@@ -32,6 +32,9 @@ const getSourceConfig = (source: string, title?: string) => {
     const t = title?.toLowerCase() || '';
 
     // Priority 1: Title detection for specific keywords (robust fallback)
+    if (t.includes('transfer') || t.includes('antar dompet') || t.includes('mutasi') || s.includes('mutasi') || s.includes('transfer')) {
+        return { icon: Wallet, color: '#3B82F6', label: 'Transfer' };
+    }
     if (t.includes('spare part') || t.includes('pembelian part') || t.includes('pbl')) {
         return { icon: Receipt, color: '#6366F1', label: 'Inventory' };
     }
