@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.karyawan import (
     KaryawanCreate,
     KaryawanUpdate,
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/karyawan", tags=["Karyawan (Employee)"])
 def create_karyawan(
     data: KaryawanCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new employee."""
     service = KaryawanService(db)
@@ -87,7 +87,7 @@ def get_positions(
 @router.get("/stats")
 def get_employee_stats(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Get overall employee statistics."""
     service = KaryawanService(db)
@@ -121,7 +121,7 @@ def update_karyawan(
     karyawan_id: int,
     data: KaryawanUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update employee information."""
     service = KaryawanService(db)
@@ -133,7 +133,7 @@ def set_status(
     karyawan_id: int,
     status: EmployeeStatus,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Set employee status."""
     service = KaryawanService(db)
@@ -144,7 +144,7 @@ def set_status(
 def delete_karyawan(
     karyawan_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Soft delete employee."""
     service = KaryawanService(db)

@@ -38,13 +38,27 @@ export default function MasterDataScreen() {
 
     const loadData = useCallback(async () => {
         try {
-            const [customersRes, suppliersRes, sparePartsRes, jasaRes, assetsRes] = await Promise.all([
+            const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+            
+            const promises: any[] = [
                 masterDataService.getCustomerList({ limit: 1 }),
                 masterDataService.getSupplierList({ limit: 1 }),
                 bengkelService.getSpareParts({ limit: 1 }),
                 jasaServisService.getJasaList({ limit: 1 }),
-                masterDataService.getAssetList({ size: 1 }),
-            ]);
+            ];
+            
+            if (isAdminOrManager) {
+                promises.push(masterDataService.getAssetList({ size: 1 }));
+            }
+            
+            const results = await Promise.allSettled(promises);
+            
+            const customersRes = results[0].status === 'fulfilled' ? results[0].value : { total: 0 };
+            const suppliersRes = results[1].status === 'fulfilled' ? results[1].value : { total: 0 };
+            const sparePartsRes = results[2].status === 'fulfilled' ? results[2].value : { total: 0 };
+            const jasaRes = results[3].status === 'fulfilled' ? results[3].value : { total: 0 };
+            const assetsRes = isAdminOrManager && results[4]?.status === 'fulfilled' ? results[4].value : { total: 0 };
+
             setStats({
                 customers: customersRes.total || 0,
                 suppliers: suppliersRes.total || 0,
@@ -58,7 +72,7 @@ export default function MasterDataScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [user?.role]);
 
     useEffect(() => {
         loadData();

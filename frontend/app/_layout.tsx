@@ -94,6 +94,8 @@ function RootLayoutContent() {
     } = useSecurityStore();
     const { themeColors } = useUIStore();
     const { updateUser } = useAuthStore();
+    const user = useAuthStore(state => state.user);
+    const isImpersonating = useAuthStore(state => state.isImpersonating);
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -202,12 +204,7 @@ function RootLayoutContent() {
             return;
         }
         if (isAuthenticated && inAuthGroup) {
-            const user = useAuthStore.getState().user;
-            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-                router.replace('/all-menus');
-            } else {
-                router.replace('/(tabs)/home');
-            }
+            router.replace('/(tabs)/home');
             return;
         }
 
@@ -307,13 +304,12 @@ function RootLayoutContent() {
                             <Stack.Screen name="receipt" options={{ headerShown: false }} />
                             <Stack.Screen name="sdm" options={{ headerShown: false }} />
                             <Stack.Screen name="settings" options={{ headerShown: false }} />
-                            <Stack.Screen name="all-menus" options={{ headerShown: false }} />
                             <Stack.Screen name="monitor" options={{ headerShown: false }} />
                             <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                         </Stack>
                         
                         {/* Global Custom Bottom Navigation */}
-                        {isAuthenticated && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
+                        {isAuthenticated && !isImpersonating && user?.role !== 'ADMIN' && user?.role !== 'MANAGER' && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
                             <CustomTabBar />
                         )}
                     </BottomSheetModalProvider>

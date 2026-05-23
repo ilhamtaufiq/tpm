@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.master import (
     CustomerCreate,
     CustomerUpdate,
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/customers", tags=["Customers"])
 def create_customer(
     data: CustomerCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new customer."""
     service = CustomerService(db)
@@ -130,7 +130,7 @@ def update_customer(
     customer_id: int,
     data: CustomerUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update customer."""
     service = CustomerService(db)
@@ -141,7 +141,7 @@ def update_customer(
 def delete_customer(
     customer_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Delete customer (soft delete)."""
     service = CustomerService(db)

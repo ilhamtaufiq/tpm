@@ -101,7 +101,7 @@ export const ServiceGrid = () => {
         { id: 'sdm', label: 'SDM', icon: Users, color: '#ec4899', path: '/sdm' }, // Pink
         { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#14b8a6', path: '/laporan' }, // Teal
         { id: 'riwayat', label: 'Riwayat', icon: History, color: '#6366f1', path: '/history' }, // Indigo
-        { id: 'profil', label: 'Profil', icon: Settings, color: '#4b5563', path: '/(tabs)/profile' }, // Gray
+        { id: 'profil', label: 'Pengaturan', icon: Settings, color: '#4b5563', path: '/(tabs)/profile' }, // Gray
     ];
 
     const filteredMenus = MENUS.filter(menu => {

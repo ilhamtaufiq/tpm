@@ -180,7 +180,7 @@ export default function UserManagementScreen() {
                     handleCloseSheet();
 
                     if (response.user.role === 'ADMIN' || response.user.role === 'MANAGER') {
-                        router.replace('/all-menus');
+                        router.replace('/(tabs)/home');
                     } else if (response.user.role === 'BENGKEL') {
                         router.replace('/bengkel');
                     } else if (response.user.role === 'JASA_ANGKUT') {

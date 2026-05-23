@@ -1741,6 +1741,7 @@ export default function BengkelScreen() {
 
             {/* Bottom Sheet UI */}
             {Platform.OS === 'web' ? (
+                <>
                 <Modal visible={sheetIndex !== -1} transparent animationType="slide" onRequestClose={handleClosePress}>
                     <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={handleClosePress} />
@@ -1750,7 +1751,30 @@ export default function BengkelScreen() {
                         </View>
                     </View>
                 </Modal>
+                
+                <Modal
+                    visible={showWalletModal}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setShowWalletModal(false)}
+                >
+                    <View className="flex-1 justify-end bg-black/60">
+                        <Pressable
+                            className="flex-1"
+                            onPress={() => setShowWalletModal(false)}
+                        />
+                        <View className="bg-white rounded-t-[48px] shadow-2xl relative overflow-hidden" style={{ maxWidth: 640, alignSelf: 'center', width: '100%', maxHeight: '90%' }}>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="pt-16 px-9 pb-12">
+                                    {renderWalletContent()}
+                                </View>
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+                </>
             ) : (
+                <>
                 <BottomSheet
                     ref={bottomSheetRef}
                     index={sheetIndex}
@@ -1764,6 +1788,25 @@ export default function BengkelScreen() {
                 >
                     {renderBottomSheetContent()}
                 </BottomSheet>
+
+                <BottomSheet
+                    ref={walletSheetRef}
+                    index={-1}
+                    snapPoints={walletSnapPoints}
+                    enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    onClose={handleCloseWallet}
+                >
+                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <View className="px-9 py-4 pb-12">
+                            {renderWalletContent()}
+                        </View>
+                    </BottomSheetScrollView>
+                </BottomSheet>
+                </>
             )}
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
@@ -1846,50 +1889,7 @@ export default function BengkelScreen() {
                 />
             )}
 
-            {/* Wallet Modal (Unit Level) - Hybrid: Modal on web, BottomSheet on mobile */}
-            {Platform.OS === 'web' ? (
-                <Modal
-                    visible={showWalletModal}
-                    transparent={true}
-                    animationType="slide"
-                    onRequestClose={() => setShowWalletModal(false)}
-                >
-                    <View className="flex-1 justify-end bg-black/60">
-                        <Pressable
-                            className="flex-1"
-                            onPress={() => setShowWalletModal(false)}
-                        />
-                        <View className="bg-white rounded-t-[48px] pt-16 px-9 pb-12 shadow-2xl relative" style={{ maxWidth: 640, alignSelf: 'center', width: '100%' }}>
-                            {renderWalletContent()}
-                        </View>
-                    </View>
-                </Modal>
-            ) : (
-                <BottomSheet
-                    ref={walletSheetRef}
-                    index={-1}
-                    snapPoints={walletSnapPoints}
-                    enablePanDownToClose
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                    onChange={(idx) => {
-                        if (idx === -1) {
-                            setShowWalletModal(false);
-                            setWalletView('main');
-                            setExpenseAmount('');
-                            setExpenseNote('');
-                        }
-                    }}
-                >
-                    {showWalletModal && (
-                        <BottomSheetScrollView showsVerticalScrollIndicator={false}>
-                            <View className="px-9 py-4 pb-12">
-                                {renderWalletContent()}
-                            </View>
-                        </BottomSheetScrollView>
-                    )}
-                </BottomSheet>
-            )}
+
             {/* Full History Modal */}
             <Modal
                 visible={showHistoryModal}

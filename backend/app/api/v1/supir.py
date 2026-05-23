@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.jasa_angkut import (
     SupirCreate,
     SupirUpdate,
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/supir", tags=["Supir (Driver)"])
 def create_supir(
     data: SupirCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new driver."""
     service = SupirService(db)
@@ -98,7 +98,7 @@ def update_supir(
     supir_id: int,
     data: SupirUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update driver information."""
     service = SupirService(db)
@@ -110,7 +110,7 @@ def set_active_status(
     supir_id: int,
     is_active: bool,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Set driver active status."""
     service = SupirService(db)
@@ -121,7 +121,7 @@ def set_active_status(
 def delete_supir(
     supir_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Soft delete driver."""
     service = SupirService(db)

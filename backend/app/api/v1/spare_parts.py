@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Query, status, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.bengkel import (
     SparePartCreate,
     SparePartUpdate,
@@ -31,7 +31,7 @@ def get_next_kode(
 def create_spare_part(
     data: SparePartCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new spare part."""
     service = SparePartService(db)
@@ -41,7 +41,7 @@ def create_spare_part(
 @router.post("/import", status_code=status.HTTP_200_OK)
 def import_spare_parts(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     file: UploadFile = File(...),
 ):
     """Import spare parts from Excel file."""
@@ -108,7 +108,7 @@ def get_low_stock_items(
 @router.get("/stock-value")
 def get_stock_value(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Get total stock value."""
     service = SparePartService(db)
@@ -179,7 +179,7 @@ def update_spare_part(
     spare_part_id: int,
     data: SparePartUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update spare part."""
     service = SparePartService(db)
@@ -190,7 +190,7 @@ def update_spare_part(
 def upload_image(
     spare_part_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     file: UploadFile = File(...),
 ):
     """Upload spare part image."""
@@ -204,7 +204,7 @@ def update_stock(
     quantity: int = Query(...),
     operation: str = Query(..., regex="^(add|subtract)$"),
     db: DBSession = None,
-    current_user: ManagerUser = None,
+    current_user: UnitManagerUser = None,
 ):
     """Update spare part stock manually."""
     service = SparePartService(db)
@@ -215,7 +215,7 @@ def update_stock(
 def update_price(
     spare_part_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     harga_beli: Optional[Decimal] = None,
     harga_jual: Optional[Decimal] = None,
 ):
@@ -228,7 +228,7 @@ def update_price(
 def delete_spare_part(
     spare_part_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Delete spare part (soft delete)."""
     service = SparePartService(db)
@@ -241,7 +241,7 @@ def delete_spare_part(
 def bulk_delete_spare_parts(
     ids: List[int],
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Delete multiple spare parts."""
     service = SparePartService(db)

@@ -126,7 +126,7 @@ export default function Index() {
 
     if (isAuthenticated) {
         if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-            return <Redirect href="/all-menus" />;
+            return <Redirect href="/(tabs)/home" />;
         }
         if (user?.role === 'BENGKEL') {
             return <Redirect href="/bengkel" />;

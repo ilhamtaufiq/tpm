@@ -153,7 +153,7 @@ export const Header = ({
                                     stopImpersonation();
                                     const restoredUser = useAuthStore.getState().user;
                                     if (restoredUser?.role === 'ADMIN' || restoredUser?.role === 'MANAGER') {
-                                        router.replace('/all-menus');
+                                        router.replace('/(tabs)/home');
                                     } else if (restoredUser?.role === 'BENGKEL') {
                                         router.replace('/bengkel');
                                     } else if (restoredUser?.role === 'JASA_ANGKUT') {

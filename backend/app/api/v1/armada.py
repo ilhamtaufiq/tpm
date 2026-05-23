@@ -2,7 +2,7 @@ from datetime import date
 from typing import Optional, List
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.jasa_angkut import (
     ArmadaCreate,
     ArmadaUpdate,
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/armada", tags=["Armada (Fleet)"])
 def create_armada(
     data: ArmadaCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new armada."""
     service = ArmadaService(db)
@@ -78,7 +78,7 @@ def update_armada(
     armada_id: int,
     data: ArmadaUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update armada information."""
     service = ArmadaService(db)
@@ -88,7 +88,7 @@ def update_armada(
 def delete_armada(
     armada_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Soft delete armada."""
     service = ArmadaService(db)

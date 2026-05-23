@@ -3,7 +3,7 @@ from datetime import date
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.bengkel import (
     PembelianSparePartCreate,
     PembelianSparePartResponse,
@@ -59,7 +59,7 @@ def list_pembelian(
 @router.get("/summary")
 def get_pembelian_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
 ):
@@ -96,7 +96,7 @@ def update_payment(
     pembelian_id: int,
     metode_bayar: PaymentMethod,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_bayar: Optional[date] = None,
 ):
     """Mark purchase as paid."""
@@ -108,7 +108,7 @@ def update_payment(
 def delete_pembelian(
     pembelian_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Delete purchase and revert stock (only unpaid)."""
     service = PembelianPartService(db)

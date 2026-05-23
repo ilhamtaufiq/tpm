@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, UnitManagerUser
 from app.schemas.master import (
     SupplierCreate,
     SupplierUpdate,
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 def create_supplier(
     data: SupplierCreate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Create a new supplier."""
     service = SupplierService(db)
@@ -87,7 +87,7 @@ def update_supplier(
     supplier_id: int,
     data: SupplierUpdate,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update supplier."""
     service = SupplierService(db)
@@ -98,7 +98,7 @@ def update_supplier(
 def delete_supplier(
     supplier_id: int,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Delete supplier (soft delete)."""
     service = SupplierService(db)

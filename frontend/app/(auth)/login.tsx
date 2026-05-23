@@ -22,7 +22,7 @@ export default function LoginScreen() {
         if (isAuthenticated) {
             const user = useAuthStore.getState().user;
             if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-                router.replace('/all-menus');
+                router.replace('/(tabs)/home');
             } else if (user?.role === 'BENGKEL') {
                 router.replace('/bengkel');
             } else if (user?.role === 'JASA_ANGKUT') {
@@ -73,7 +73,7 @@ export default function LoginScreen() {
             
             // Redirect based on role
             if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-                router.replace('/all-menus');
+                router.replace('/(tabs)/home');
             } else if (user?.role === 'BENGKEL') {
                 router.replace('/bengkel');
             } else if (user?.role === 'JASA_ANGKUT') {
