@@ -309,7 +309,7 @@ function RootLayoutContent() {
                         </Stack>
                         
                         {/* Global Custom Bottom Navigation */}
-                        {isAuthenticated && !isImpersonating && user?.role !== 'ADMIN' && user?.role !== 'MANAGER' && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
+                        {isAuthenticated && !isImpersonating && user?.role === 'ADMIN' && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
                             <CustomTabBar />
                         )}
                     </BottomSheetModalProvider>
