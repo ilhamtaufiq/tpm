@@ -277,27 +277,28 @@ export default function UserManagementScreen() {
 
         return (
             <Pressable onPress={() => openDetail(item)}>
-                <View className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm flex-row items-center">
-                    <View className="w-16 h-16 rounded-[20px] bg-gray-50 border border-gray-100 items-center justify-center mr-4">
-                        <RoleIcon size={32} color={roleInfo.color} />
+                <View className="bg-white p-4 rounded-[24px] mb-4 border border-gray-100 shadow-sm flex-row items-center">
+                    <View style={{ backgroundColor: `${roleInfo.color}10` }} className="w-14 h-14 rounded-2xl border border-gray-50 items-center justify-center mr-4">
+                        <RoleIcon size={24} color={roleInfo.color} />
                     </View>
                     <View className="flex-1">
-                        <View className="flex-row items-center justify-between mb-1">
-                            <Typography variant="body1" weight="bold" className="text-textMain text-lg">{item.full_name}</Typography>
-                            <View className={`px-2 py-1 rounded-full bg-gray-50 flex-row items-center border border-gray-100`}>
+                        <View className="flex-row items-center justify-between mb-0.5">
+                            <Typography variant="body1" weight="bold" className="text-textMain text-[16px] tracking-tight">{item.full_name}</Typography>
+                            <View className="px-2 py-0.5 rounded-lg bg-gray-50 flex-row items-center border border-gray-100">
                                 <View style={{ backgroundColor: item.is_active ? '#10B981' : '#EF4444' }} className="w-1.5 h-1.5 rounded-full mr-1.5" />
-                                <Typography className="text-textGray text-[9px] font-black uppercase tracking-widest">
-                                    {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                <Typography className="text-textGray text-[8px] font-black uppercase tracking-wider">
+                                    {item.is_active ? 'Aktif' : 'Mati'}
                                 </Typography>
                             </View>
                         </View>
-                        <Typography className="text-textGray text-xs font-medium">@{item.username}</Typography>
-                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50/50">
-                            <Typography variant="caption" style={{ color: roleInfo.color }} className="font-black tracking-widest uppercase text-[9px]">{roleInfo.label}</Typography>
+                        <Typography className="text-textGray text-[11px] font-medium mb-2">@{item.username} • {item.email}</Typography>
+                        <View className="flex-row items-center">
+                            <View style={{ backgroundColor: roleInfo.color }} className="w-1.5 h-1.5 rounded-full mr-1.5" />
+                            <Typography variant="caption" style={{ color: roleInfo.color }} className="font-bold tracking-wider uppercase text-[9px]">{roleInfo.label}</Typography>
                         </View>
                     </View>
-                    <View className="ml-2 w-10 h-10 rounded-full bg-gray-50/50 items-center justify-center">
-                        <MoreVertical size={16} color="#9CA3AF" />
+                    <View className="ml-2 w-9 h-9 rounded-xl bg-gray-50 items-center justify-center border border-gray-100">
+                        <MoreVertical size={16} color="#4B5563" />
                     </View>
                 </View>
             </Pressable>
@@ -492,30 +493,31 @@ export default function UserManagementScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#F9FAFB]">
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
 
             <Header
-                title="User Base"
-                subtitle="Control Center"
+                title="Daftar Pengguna"
+                subtitle="Manajemen Hak Akses Sistem"
                 showBackButton={true}
                 rightElement={
                     <Pressable 
                         onPress={onRefresh} 
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={24} color="white" />}
+                        {refreshing ? <ActivityIndicator size="small" color="#1F2937" /> : <RefreshCw size={20} color="#1F2937" />}
                     </Pressable>
                 }
             />
 
-            <View className="px-6 -mt-8 z-20">
-                <View className="bg-white p-2.5 rounded-[28px] shadow-xl flex-row items-center border border-gray-100">
-                    <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                        <Search size={20} color="#9CA3AF" />
+            {/* Search Bar */}
+            <View className="px-6 mt-4">
+                <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
+                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
+                        <Search size={18} color="#9CA3AF" />
                         <TextInput
-                            placeholder="Find administrator or staff..."
-                            className="flex-1 ml-3 text-sm font-bold text-textMain"
+                            placeholder="Cari nama, username, atau email..."
+                            className="flex-1 ml-3 text-sm font-semibold text-textMain"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             placeholderTextColor="#9CA3AF"
@@ -524,7 +526,7 @@ export default function UserManagementScreen() {
                     <Pressable 
                         onPress={openAddForm}
                         style={{ backgroundColor: themeColors.primary }}
-                        className="ml-2.5 w-12 h-12 rounded-2xl items-center justify-center shadow-lg shadow-primary/20"
+                        className="ml-2 w-12 h-12 rounded-2xl items-center justify-center active:scale-95 transition-transform"
                     >
                         <Plus size={24} color="white" />
                     </Pressable>
@@ -532,18 +534,18 @@ export default function UserManagementScreen() {
             </View>
 
             {/* Bento Stats Row */}
-            <View className="px-6 mt-6 mb-2 flex-row justify-between">
-                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm mr-3">
-                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Total</Typography>
-                    <Typography className="text-primary text-3xl font-black">{stats.total}</Typography>
+            <View className="px-6 mt-4 mb-2 flex-row justify-between">
+                <View className="flex-1 bg-white p-4 rounded-[20px] border border-gray-100 shadow-sm mr-3">
+                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Total</Typography>
+                    <Typography className="text-primary text-2xl font-black">{stats.total}</Typography>
                 </View>
-                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm mr-3">
-                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Active</Typography>
-                    <Typography className="text-emerald-600 text-3xl font-black">{stats.active}</Typography>
+                <View className="flex-1 bg-white p-4 rounded-[20px] border border-gray-100 shadow-sm mr-3">
+                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Aktif</Typography>
+                    <Typography className="text-emerald-600 text-2xl font-black">{stats.active}</Typography>
                 </View>
-                <View className="flex-1 bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm">
-                    <Typography className="text-gray-400 text-[8px] uppercase font-bold tracking-[2.5px] mb-2">Inactive</Typography>
-                    <Typography className="text-red-500 text-3xl font-black">{stats.inactive}</Typography>
+                <View className="flex-1 bg-white p-4 rounded-[20px] border border-gray-100 shadow-sm">
+                    <Typography className="text-textGray/40 text-[9px] uppercase font-bold tracking-[1.5px] mb-1">Nonaktif</Typography>
+                    <Typography className="text-rose-500 text-2xl font-black">{stats.inactive}</Typography>
                 </View>
             </View>
 

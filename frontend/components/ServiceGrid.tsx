@@ -102,7 +102,6 @@ export const ServiceGrid = () => {
         { id: 'laporan', label: 'Laporan', icon: BarChart3, color: '#14b8a6', path: '/laporan' }, // Teal
         { id: 'riwayat', label: 'Riwayat', icon: History, color: '#6366f1', path: '/history' }, // Indigo
         { id: 'profil', label: 'Profil', icon: Settings, color: '#4b5563', path: '/(tabs)/profile' }, // Gray
-        { id: 'admin', label: 'Admin', icon: Shield, color: '#1f2937', path: '/all-menus' }, // Dark
     ];
 
     const filteredMenus = MENUS.filter(menu => {

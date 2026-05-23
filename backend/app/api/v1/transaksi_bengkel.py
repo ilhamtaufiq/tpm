@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Query, status
 
-from app.api.deps import DBSession, CurrentUser, ManagerUser
+from app.api.deps import DBSession, CurrentUser, ManagerUser, UnitManagerUser
 from app.schemas.bengkel import (
     TransaksiBengkelCreate,
     TransaksiBengkelResponse,
@@ -126,7 +126,7 @@ def update_transaksi(
     transaksi_id: int,
     data: TransaksiBengkelCreate, # Reusing Create schema as it contains all needed fields for edit
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update an existing workshop transaction."""
     service = TransaksiBengkelService(db)

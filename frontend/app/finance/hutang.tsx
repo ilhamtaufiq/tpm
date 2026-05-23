@@ -51,6 +51,8 @@ const SUMBER_LABEL: Record<string, string> = {
     LAINNYA: 'Lainnya',
 };
 
+const FINANCE_UNITS = ['BENGKEL', 'JUAL_BELI_MOBIL', 'JASA_ANGKUT'] as const;
+
 const formatUnitLabel = (unit?: string) => {
     if (!unit) return undefined;
     return unit
@@ -59,10 +61,25 @@ const formatUnitLabel = (unit?: string) => {
         .join(' ');
 };
 
+const getUnitKasJenis = (unit?: string) => {
+    if (unit === 'BENGKEL') return 'KAS_UNIT_BENGKEL';
+    if (unit === 'JUAL_BELI_MOBIL') return 'KAS_UNIT_MOBIL';
+    if (unit === 'JASA_ANGKUT') return 'KAS_UNIT_JASA_ANGKUT';
+    return undefined;
+};
+
 export default function HutangUsahaScreen() {
     const { user } = useAuthStore();
     const params = useLocalSearchParams<{ unit?: string }>();
-    const unitFilter = params.unit === 'BENGKEL' ? 'BENGKEL' : undefined;
+    const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
+        BENGKEL: 'BENGKEL',
+        MOBIL: 'JUAL_BELI_MOBIL',
+        JASA_ANGKUT: 'JASA_ANGKUT',
+    };
+    const requestedUnit = FINANCE_UNITS.includes(params.unit as typeof FINANCE_UNITS[number])
+        ? params.unit as typeof FINANCE_UNITS[number]
+        : undefined;
+    const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
     const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [search, setSearch] = useState('');
@@ -667,28 +684,28 @@ export default function HutangUsahaScreen() {
                 rightElement={canCreate ? (
                     <Pressable
                         onPress={handleOpenCreate}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <Plus size={24} color="white" />
+                        <Plus size={20} color="#1F2937" />
                     </Pressable>
                 ) : undefined}
             />
 
             {/* Filters & Search */}
             {!isSheetOpen && (
-                <View className="px-6 -mt-8 z-10">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2 p-1">
+                <View className="px-6 mt-4">
+                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3 space-x-2 pb-1">
                             {STATUS_FILTERS.map((filter) => (
                                 <Pressable
                                     key={filter.value}
                                     onPress={() => setSelectedFilter(filter.value)}
-                                    className={`px-5 py-2.5 rounded-2xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-white/10 shadow-md shadow-primary/20' : 'bg-gray-50 border border-gray-100'}`}
+                                    className={`px-4 py-2 rounded-xl mr-2 ${selectedFilter === filter.value ? 'bg-primary border border-primary shadow-sm' : 'bg-gray-50 border border-gray-100'}`}
                                 >
                                     <Typography
                                         variant="caption"
                                         weight="bold"
-                                        className={selectedFilter === filter.value ? 'text-white' : 'text-textGray/60'}
+                                        className={`text-[10px] uppercase tracking-wider ${selectedFilter === filter.value ? 'text-white font-bold' : 'text-gray-400'}`}
                                     >
                                         {filter.label}
                                     </Typography>
@@ -696,10 +713,10 @@ export default function HutangUsahaScreen() {
                             ))}
                         </ScrollView>
 
-                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
+                        <View className="flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                            <Search size={16} color="#9CA3AF" />
                             <TextInput
-                                className="flex-1 ml-3 text-sm text-textMain font-medium h-full"
+                                className="flex-1 ml-3 text-xs text-textMain font-semibold h-full"
                                 placeholder="Cari nama kreditur atau nomor hutang..."
                                 value={search}
                                 onChangeText={setSearch}
@@ -838,7 +855,7 @@ export default function HutangUsahaScreen() {
                     initialAmount={selectedHutang.sisa_hutang}
                     type="hutang"
                     unit={selectedHutang.unit}
-                    kas_jenis={selectedHutang.unit ? `KAS_UNIT_${selectedHutang.unit}` : undefined}
+                    kas_jenis={getUnitKasJenis(selectedHutang.unit)}
                 />
             )}
 

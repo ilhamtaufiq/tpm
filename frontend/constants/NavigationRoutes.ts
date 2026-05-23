@@ -1,4 +1,4 @@
-import { Wrench, Truck, CarFront, Users, BarChart3, Database, Receipt, History, Wallet, User, ShieldCheck, Printer, Settings } from 'lucide-react-native';
+import { Wrench, Truck, CarFront, Users, BarChart3, Database, Receipt, History, Wallet, User, ShieldCheck, Printer, Settings, Home } from 'lucide-react-native';
 
 export interface AppRoute {
     id: string;
@@ -12,7 +12,7 @@ export interface AppRoute {
 
 export const APP_ROUTES: AppRoute[] = [
     // --- Utama ---
-    { id: 'home', label: 'Home', description: 'Halaman utama aplikasi', path: '/home', icon: ShieldCheck, category: 'Utama', keywords: ['beranda', 'dashboard', 'depan'] },
+    { id: 'home', label: 'Home', description: 'Halaman utama aplikasi', path: '/home', icon: Home, category: 'Utama', keywords: ['beranda', 'dashboard', 'depan'] },
 
     // --- Bengkel ---
     { id: 'bengkel', label: 'Transaksi Bengkel', description: 'Input servis dan servis motor', path: '/bengkel', icon: Wrench, category: 'Bengkel', keywords: ['servis', 'mekanik', 'sparepart', 'motor'] },

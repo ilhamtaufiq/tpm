@@ -5,7 +5,7 @@ import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
 import { StatsSlider } from '../../components/StatsSlider';
 import { TransactionList } from '../../components/TransactionList';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { useUIStore } from '../../store/useUIStore';
@@ -59,7 +59,7 @@ export default function HomeScreen() {
                 />
             )}
 
-            <SafeAreaView className="flex-1" edges={['top']}>
+            <View className="flex-1">
                 <Header variant="home" showSearch={false} showProfile={false} />
                 <ScrollView
                     className="flex-1"
@@ -70,7 +70,7 @@ export default function HomeScreen() {
                     <ServiceGrid />
                     <TransactionList />
                 </ScrollView>
-            </SafeAreaView>
+            </View>
         </View>
     );
 }

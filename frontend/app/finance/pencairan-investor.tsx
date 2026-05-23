@@ -400,8 +400,8 @@ export default function PencairanInvestorScreen() {
     };
 
     return (
-        <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
 
             {/* Global Header Integration */}
             <Header
@@ -414,52 +414,52 @@ export default function PencairanInvestorScreen() {
                         <Pressable
                             onPress={handleDownloadReport}
                             disabled={printing}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5 mr-2"
+                            className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100 mr-2"
                         >
-                            {printing ? <ActivityIndicator size="small" color="white" /> : <Download size={20} color="white" />}
+                            {printing ? <ActivityIndicator size="small" color="#1F2937" /> : <Download size={20} color="#1F2937" />}
                         </Pressable>
                         <Pressable
                             onPress={onRefresh}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                            className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                         >
-                            <RefreshCw size={20} color="white" />
+                            <RefreshCw size={20} color="#1F2937" />
                         </Pressable>
                     </View>
                 }
-            >
-                {/* Insight Card (Glassmorphism Bento) */}
-                <View className="flex-row justify-between mb-2">
-                    <View className="flex-1 bg-white/10 p-5 rounded-[32px] border border-white/10 mr-2">
-                        <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Total Pending</Typography>
-                        <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
-                            {formatCurrency(summary?.pending_total || 0)}
-                        </Typography>
-                        <Typography className="text-white/30 text-[10px] mt-1">{summary?.pending_count || 0} Unit Mobil</Typography>
-                    </View>
-                    
-                    <View className="flex-1 bg-white/5 p-5 rounded-[32px] border border-white/5 ml-2">
-                        <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Bulan Ini</Typography>
-                        <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
-                            {formatCurrency(summary?.disbursed_total || 0)}
-                        </Typography>
-                        <Typography className="text-white/30 text-[10px] mt-1">{summary?.disbursed_count || 0} Pencairan</Typography>
-                    </View>
+            />
+
+            {/* Insight Card (Bento Light Style) */}
+            <View className="flex-row justify-between mt-4 px-6">
+                <View className="flex-1 bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm mr-2">
+                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Total Pending</Typography>
+                    <Typography variant="h2" weight="bold" className="text-rose-600 text-lg tracking-tighter">
+                        {formatCurrency(summary?.pending_total || 0)}
+                    </Typography>
+                    <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.pending_count || 0} Unit Mobil</Typography>
                 </View>
-            </Header>
+                
+                <View className="flex-1 bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm ml-2">
+                    <Typography className="text-textGray/40 text-[10px] uppercase font-bold tracking-[1px] mb-2">Bulan Ini</Typography>
+                    <Typography variant="h2" weight="bold" className="text-emerald-600 text-lg tracking-tighter">
+                        {formatCurrency(summary?.disbursed_total || 0)}
+                    </Typography>
+                    <Typography className="text-textGray/30 text-[9px] font-bold mt-1 uppercase tracking-wider">{summary?.disbursed_count || 0} Pencairan</Typography>
+                </View>
+            </View>
 
             {/* Tab Navigation */}
-            <View className="px-6 -mt-6 z-10">
-                <View className="bg-white p-2 rounded-[32px] shadow-xl flex-row items-center border border-gray-50">
+            <View className="px-6 mt-4 z-10">
+                <View className="bg-white p-2 rounded-[24px] shadow-sm flex-row items-center border border-gray-100">
                     <Pressable 
                         onPress={() => setActiveTab('PENDING')}
-                        className={`flex-1 flex-row h-14 items-center justify-center rounded-3xl ${activeTab === 'PENDING' ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-transparent'}`}
+                        className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'PENDING' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
                         <CircleDollarSign size={18} color={activeTab === 'PENDING' ? 'white' : '#9CA3AF'} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'PENDING' ? 'text-white' : 'text-gray-400'}`}>Tunggu Bayar</Typography>
                     </Pressable>
                     <Pressable 
                         onPress={() => setActiveTab('HISTORY')}
-                        className={`flex-1 flex-row h-14 items-center justify-center rounded-3xl ${activeTab === 'HISTORY' ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-transparent'}`}
+                        className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'HISTORY' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
                     >
                         <History size={18} color={activeTab === 'HISTORY' ? 'white' : '#9CA3AF'} />
                         <Typography className={`ml-2 text-sm font-bold ${activeTab === 'HISTORY' ? 'text-white' : 'text-gray-400'}`}>Riwayat</Typography>
@@ -468,15 +468,16 @@ export default function PencairanInvestorScreen() {
             </View>
 
             {/* Search Bar Bento Style */}
-            <View className="px-6 mt-6 mb-6">
-                <View className="bg-gray-50/50 p-2 rounded-[32px] flex-row items-center border border-gray-100">
-                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-3xl">
+            <View className="px-6 mt-4">
+                <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
+                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
                         <Search size={18} color="#9CA3AF" />
                         <TextInput 
                             placeholder={`Cari di ${activeTab === 'PENDING' ? 'daftar tunggu' : 'riwayat'}...`} 
-                            className="flex-1 ml-3 text-sm font-medium"
+                            className="flex-1 ml-3 text-sm font-semibold text-textMain"
                             value={search}
                             onChangeText={setSearch}
+                            placeholderTextColor="#9CA3AF"
                         />
                     </View>
                 </View>

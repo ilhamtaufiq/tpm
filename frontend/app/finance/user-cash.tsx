@@ -212,7 +212,7 @@ export default function UserCashManagementScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="dark-content" />
             
             <AlertDialog
@@ -230,33 +230,40 @@ export default function UserCashManagementScreen() {
             />
 
             {/* Tabs */}
-            <View className="flex-row px-6 mb-4">
-                <Pressable 
-                    onPress={() => setActiveTab('list')}
-                    className={`flex-1 py-3 border-b-2 items-center ${activeTab === 'list' ? 'border-gopayBlue' : 'border-transparent'}`}
-                >
-                    <Typography variant="body2" weight={activeTab === 'list' ? 'bold' : 'normal'} className={activeTab === 'list' ? 'text-gopayBlue' : 'text-text-secondary'}>Daftar User</Typography>
-                </Pressable>
-                <Pressable 
-                    onPress={() => setActiveTab('history')}
-                    className={`flex-1 py-3 border-b-2 items-center ${activeTab === 'history' ? 'border-gopayBlue' : 'border-transparent'}`}
-                >
-                    <Typography variant="body2" weight={activeTab === 'history' ? 'bold' : 'normal'} className={activeTab === 'history' ? 'text-gopayBlue' : 'text-text-secondary'}>Riwayat Perubahan</Typography>
-                </Pressable>
+            <View className="px-6 mt-4 z-10">
+                <View className="bg-white p-2 rounded-[24px] shadow-sm flex-row items-center border border-gray-100">
+                    <Pressable 
+                        onPress={() => setActiveTab('list')}
+                        className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'list' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
+                    >
+                        <User size={18} color={activeTab === 'list' ? 'white' : '#9CA3AF'} />
+                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'list' ? 'text-white' : 'text-gray-400'}`}>Daftar User</Typography>
+                    </Pressable>
+                    <Pressable 
+                        onPress={() => setActiveTab('history')}
+                        className={`flex-1 flex-row h-12 items-center justify-center rounded-2xl ${activeTab === 'history' ? 'bg-primary shadow-sm' : 'bg-transparent'}`}
+                    >
+                        <History size={18} color={activeTab === 'history' ? 'white' : '#9CA3AF'} />
+                        <Typography className={`ml-2 text-sm font-bold ${activeTab === 'history' ? 'text-white' : 'text-gray-400'}`}>Riwayat</Typography>
+                    </Pressable>
+                </View>
             </View>
 
             {activeTab === 'list' ? (
                 <>
                     {/* Search Bar */}
-                    <View className="px-6 mb-4">
-                        <View className="flex-row items-center bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
-                            <Search size={20} color="#94a3b8" />
-                            <TextInput
-                                className="flex-1 ml-2 font-Inter-Medium text-text py-1"
-                                placeholder="Cari nama atau username..."
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
+                    <View className="px-6 mt-4">
+                        <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
+                            <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
+                                <Search size={18} color="#9CA3AF" />
+                                <TextInput 
+                                    placeholder="Cari nama atau username..." 
+                                    className="flex-1 ml-3 text-sm font-semibold text-textMain"
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    placeholderTextColor="#9CA3AF"
+                                />
+                            </View>
                         </View>
                     </View>
 
@@ -360,6 +367,6 @@ export default function UserCashManagementScreen() {
                     )}
                 </BottomSheetScrollView>
             </BottomSheet>
-        </SafeAreaView>
+        </View>
     );
 }

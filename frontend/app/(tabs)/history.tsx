@@ -86,8 +86,25 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
     return { variant: 'neutral', label: s.replace('BANK_', '') };
 };
 
+const FILTER_SOURCES = [
+    { label: 'Semua', value: 'all' },
+    { label: 'Bengkel', value: 'bengkel' },
+    { label: 'Logistik', value: 'jasa_angkut' },
+    { label: 'Mobil', value: 'jual_beli_mobil' },
+    { label: 'Biaya Ops', value: 'pengeluaran' },
+    { label: 'SDM', value: 'gaji' },
+] as const;
+
+const FILTER_TYPES = [
+    { label: 'Semua Rans', value: 'all' },
+    { label: 'Uang Masuk', value: 'in' },
+    { label: 'Uang Keluar', value: 'out' },
+] as const;
+
 export default function HistoryTab() {
     const [search, setSearch] = useState('');
+    const [selectedSource, setSelectedSource] = useState<string>('all');
+    const [selectedType, setSelectedType] = useState<'all' | 'in' | 'out'>('all');
     const { user } = useAuthStore();
     const { unit } = useLocalSearchParams<{ unit?: string }>();
     const unitKey = Array.isArray(unit) ? unit[0] : unit;
@@ -191,6 +208,25 @@ export default function HistoryTab() {
             if (role === 'MOBIL' && source !== 'jual_beli_mobil' && source !== 'pembelian_mobil') return false;
         }
 
+        // Apply Source Filter
+        if (selectedSource !== 'all') {
+            const itemSource = item.source?.toLowerCase();
+            if (selectedSource === 'gaji') {
+                if (itemSource !== 'gaji' && itemSource !== 'kasbon') return false;
+            } else if (selectedSource === 'jual_beli_mobil') {
+                if (itemSource !== 'jual_beli_mobil' && itemSource !== 'pembelian_mobil') return false;
+            } else {
+                if (itemSource !== selectedSource) return false;
+            }
+        }
+
+        // Apply Type Filter
+        if (selectedType !== 'all') {
+            const isIncoming = item.is_incoming;
+            if (selectedType === 'in' && !isIncoming) return false;
+            if (selectedType === 'out' && isIncoming) return false;
+        }
+
         // Then apply search filter
         return item.title.toLowerCase().includes(search.toLowerCase()) ||
                item.subtitle.toLowerCase().includes(search.toLowerCase()) ||
@@ -216,31 +252,65 @@ export default function HistoryTab() {
                 showBackButton
                 onBackButtonPress={handleBack}
                 rightElement={
-                    <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10">
-                        <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">ARCHIVE</Typography>
+                    <View className="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                        <Typography className="text-textGray uppercase text-[8px] font-bold tracking-widest">ARCHIVE</Typography>
                     </View>
                 }
-            >
-                {/* Search & Filter (Glassmorphism) */}
-                <View className="bg-white/10 p-2 rounded-3xl border border-white/10 flex-row items-center">
-                    <View className="flex-1 flex-row items-center px-4 bg-white/5 h-12 rounded-2xl border border-white/5">
-                        <Search size={18} color="white" opacity={0.5} />
+            />
+
+            {/* Search */}
+            <View className="px-6 mt-4">
+                <View className="bg-white p-2 rounded-[24px] flex-row items-center border border-gray-100 shadow-sm">
+                    <View className="flex-1 flex-row items-center px-4 h-12 rounded-2xl bg-gray-50">
+                        <Search size={18} color="#9CA3AF" />
                         <TextInput
                             placeholder="Cari transaksi, ref, unit, atau kategori..."
-                            placeholderTextColor="rgba(255,255,255,0.4)"
-                            className="flex-1 ml-3 text-sm font-medium text-white"
+                            placeholderTextColor="#9CA3AF"
+                            className="flex-1 ml-3 text-sm font-semibold text-textMain"
                             value={search}
                             onChangeText={setSearch}
                         />
                     </View>
-                    <Pressable className="ml-2 w-12 h-12 bg-white/10 rounded-2xl items-center justify-center">
-                        <Filter size={20} color="white" />
-                    </Pressable>
                 </View>
-            </Header>
+            </View>
+
+            {/* Type & Source Filters */}
+            <View className="mt-4">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}>
+                    {FILTER_TYPES.map((t) => (
+                        <Pressable
+                            key={t.value}
+                            onPress={() => setSelectedType(t.value)}
+                            className={`px-4 py-2 rounded-xl border ${selectedType === t.value ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                        >
+                            <Typography className={`text-xs font-bold ${selectedType === t.value ? 'text-white' : 'text-gray-500'}`}>
+                                {t.label}
+                            </Typography>
+                        </Pressable>
+                    ))}
+                </ScrollView>
+            </View>
+
+            {!walletFilter && (
+                <View className="mt-3">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}>
+                        {FILTER_SOURCES.map((s) => (
+                            <Pressable
+                                key={s.value}
+                                onPress={() => setSelectedSource(s.value)}
+                                className={`px-4 py-2 rounded-xl border ${selectedSource === s.value ? 'bg-primary border-primary shadow-sm' : 'bg-white border-gray-100 active:bg-gray-50'}`}
+                            >
+                                <Typography className={`text-xs font-bold ${selectedSource === s.value ? 'text-white' : 'text-gray-500'}`}>
+                                    {s.label}
+                                </Typography>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             <ScrollView
-                className="flex-1 px-6 pt-10"
+                className="flex-1 mt-4"
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
@@ -250,7 +320,7 @@ export default function HistoryTab() {
                         <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MENYINGKRONKAN DATA...</Typography>
                     </View>
                 ) : filteredList.length === 0 ? (
-                    <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
+                    <View className="items-center justify-center py-20 bg-white rounded-[24px] border border-dashed border-gray-100 mx-6">
                         <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
                             <Calendar size={40} color="#9CA3AF" />
                         </View>
@@ -266,7 +336,7 @@ export default function HistoryTab() {
                         return (
                             <Pressable
                                 key={item.id}
-                                className="bg-white p-4 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center"
+                                className="bg-white px-6 py-5 border-b border-gray-100 flex-row items-center active:bg-gray-50"
                                 onPress={() => {
                                     setSelectedItem(item);
                                     setModalVisible(true);
@@ -275,7 +345,7 @@ export default function HistoryTab() {
                                 {/* Left: Source Icon */}
                                 <View
                                     style={{ backgroundColor: `${config.color}10` }}
-                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-white flex-shrink-0"
+                                    className="w-12 h-12 rounded-2xl items-center justify-center mr-3 border border-gray-50 flex-shrink-0"
                                 >
                                     <Icon size={20} color={config.color} strokeWidth={2.5} />
                                 </View>

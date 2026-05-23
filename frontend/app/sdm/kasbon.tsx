@@ -514,20 +514,20 @@ export default function KasbonScreen() {
                 showBackButton={true}
                 onBackButtonPress={handleGoBack}
             >
-                {/* Main Insight Card (Glassmorphism) */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
+                {/* Main Insight Card (Primary Background) */}
+                <View className="bg-primary p-6 rounded-[32px] shadow-xl shadow-primary/20">
                     <View className="flex-row justify-between items-center mb-6">
                         <View className="bg-rose-500/20 px-3 py-1.5 rounded-full border border-rose-500/20">
                             <Typography className="text-rose-400 text-[10px] font-bold uppercase tracking-widest">Outstanding</Typography>
                         </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Stats Saat Ini</Typography>
+                        <Typography className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Stats Saat Ini</Typography>
                     </View>
                     <View className="flex-row items-center justify-between">
                         <View>
                             <Typography variant="h1" weight="bold" className="text-white text-3xl tracking-tighter">
                                 {formatCurrency(summary?.total_belum_lunas || 0)}
                             </Typography>
-                            <Typography className="text-white/40 text-xs mt-1">Total Belum Tertagih</Typography>
+                            <Typography className="text-white/60 text-xs mt-1">Total Belum Tertagih</Typography>
                         </View>
                         <View className="bg-white/10 p-4 rounded-2xl border border-white/10">
                             <Wallet size={24} color="white" />
@@ -538,15 +538,15 @@ export default function KasbonScreen() {
                     <View className="h-[1px] bg-white/10 my-6" />
                     <View className="flex-row justify-between">
                         <View className="flex-1">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Record</Typography>
+                            <Typography className="text-white/50 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Record</Typography>
                             <Typography weight="bold" className="text-white text-lg">{summary?.count_total || 0}</Typography>
                         </View>
                         <View className="flex-1 items-center border-x border-white/5">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Tertagih</Typography>
+                            <Typography className="text-white/50 text-[9px] uppercase font-bold mb-1 tracking-widest">Tertagih</Typography>
                             <Typography weight="bold" className="text-emerald-400 text-lg">{formatCurrency(summary?.total_lunas || 0)}</Typography>
                         </View>
                         <View className="flex-1 items-end">
-                            <Typography className="text-white/30 text-[9px] uppercase font-bold mb-1 tracking-widest">Aktif</Typography>
+                            <Typography className="text-white/50 text-[9px] uppercase font-bold mb-1 tracking-widest">Aktif</Typography>
                             <Typography weight="bold" className="text-amber-400 text-lg">{summary?.count_belum_lunas || 0}</Typography>
                         </View>
                     </View>
@@ -659,7 +659,7 @@ export default function KasbonScreen() {
                         );
                     }}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 120 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 200 }}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                     ListEmptyComponent={
                         <View className="items-center py-20">
@@ -675,8 +675,8 @@ export default function KasbonScreen() {
             {/* Redesigned FAB */}
             <Pressable
                 onPress={openAddForm}
-                
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8 border border-white/20"
+                style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
+                className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >
                 <Plus size={32} color="white" strokeWidth={2.5} />
             </Pressable>

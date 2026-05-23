@@ -26,7 +26,9 @@ import {
     Clock,
     Share2,
     RefreshCw,
-    Settings
+    Settings,
+    Banknote,
+    Receipt
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { onlineManager } from '@tanstack/react-query';
@@ -41,7 +43,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { format, startOfMonth, isValid, parse } from 'date-fns';
 import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
-import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer, useCreatePiutang } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { formatCurrency, formatNumber, parseNumber, formatDate } from '../../utils/format';
@@ -152,6 +154,20 @@ export default function MobilInventoryScreen() {
     }, {
         refetchInterval: 5000
     });
+    const { data: hutangData } = useHutangList({
+        limit: 20,
+        status: 'BELUM_LUNAS',
+        unit: 'JUAL_BELI_MOBIL',
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+    });
+    const { data: piutangData } = usePiutangList({
+        limit: 20,
+        status: 'BELUM_LUNAS',
+        unit: 'JUAL_BELI_MOBIL',
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+    });
 
     const createPiutangMutation = useCreatePiutang();
     const createExpenseMutation = useCreatePengeluaran();
@@ -161,6 +177,8 @@ export default function MobilInventoryScreen() {
 
     const deleteMutation = useDeleteMobil();
 
+    const mobilHutangList = useMemo(() => (hutangData?.data || []).filter((item: any) => item.unit === 'JUAL_BELI_MOBIL'), [hutangData]);
+    const mobilPiutangList = useMemo(() => (piutangData?.data || []).filter((item: any) => item.unit === 'JUAL_BELI_MOBIL'), [piutangData]);
     const mobilsData = data?.data || [];
 
     const stats = useMemo(() => {
@@ -512,75 +530,114 @@ export default function MobilInventoryScreen() {
 
                     {/* Quick Actions */}
                     <View>
-                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian & Pengeluaran Kas</Typography>
-                        <View className="flex-row space-x-2 mb-6">
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('KELUAR');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-rose-50 rounded-xl items-center justify-center mb-2">
-                                    <TrendingDown size={16} color="#E11D48" />
+                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang, Piutang</Typography>
+                        <View className="flex-row flex-wrap -mx-1 mb-6">
+                            {[
+                                {
+                                    key: 'KELUAR',
+                                    label: 'Catat Biaya',
+                                    sublabel: 'DANA KELUAR',
+                                    icon: <TrendingDown size={16} color="#E11D48" />,
+                                    iconBg: 'bg-rose-50',
+                                    text: 'text-rose-600',
+                                    onPress: () => {
+                                        setExpenseMode('KELUAR');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'MASUK',
+                                    label: 'Terima Dana',
+                                    sublabel: 'DANA MASUK',
+                                    icon: <TrendingUp size={16} color="#10B981" />,
+                                    iconBg: 'bg-emerald-50',
+                                    text: 'text-emerald-600',
+                                    onPress: () => {
+                                        setExpenseMode('MASUK');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('Terima Dana dari Akun Utama');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'SETORAN',
+                                    label: 'Setoran Unit',
+                                    sublabel: 'SETOR KE PUSAT',
+                                    icon: <ArrowUpCircle size={16} color="#2563EB" />,
+                                    iconBg: 'bg-blue-50',
+                                    text: 'text-blue-700',
+                                    onPress: () => {
+                                        setExpenseMode('SETORAN');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('Setoran Tunai ke Akun Utama');
+                                        setExpensePaymentMethod('KAS_UTAMA');
+                                    }
+                                },
+                                {
+                                    key: 'PIUTANG_CREATE',
+                                    label: 'Kasbon/Piutang',
+                                    sublabel: 'UANG KELUAR',
+                                    icon: <CircleDollarSign size={16} color="#D97706" />,
+                                    iconBg: 'bg-amber-50',
+                                    text: 'text-amber-700',
+                                    onPress: () => {
+                                        setExpenseMode('PIUTANG');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('');
+                                        setDebiturName('');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'HUTANG',
+                                    label: 'Hutang',
+                                    sublabel: `${mobilHutangList.filter((item: any) => item.status !== 'LUNAS').length} AKTIF`,
+                                    icon: <Banknote size={16} color="#7C3AED" />,
+                                    iconBg: 'bg-violet-50',
+                                    text: 'text-violet-700',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push({ pathname: '/finance/hutang', params: { unit: 'JUAL_BELI_MOBIL', from: 'mobil' } });
+                                    }
+                                },
+                                {
+                                    key: 'PIUTANG_LIST',
+                                    label: 'Piutang',
+                                    sublabel: `${mobilPiutangList.filter((item: any) => item.status !== 'LUNAS').length} AKTIF`,
+                                    icon: <Receipt size={16} color="#0891B2" />,
+                                    iconBg: 'bg-cyan-50',
+                                    text: 'text-cyan-700',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push({ pathname: '/finance/piutang', params: { unit: 'JUAL_BELI_MOBIL', from: 'mobil' } });
+                                    }
+                                },
+                            ].map((action) => (
+                                <View key={action.key} className="w-1/3 p-1">
+                                    <Pressable
+                                        onPress={action.onPress}
+                                        className="bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50 min-h-[110px]"
+                                    >
+                                        <View className={`w-8 h-8 ${action.iconBg} rounded-xl items-center justify-center mb-2`}>
+                                            {action.icon}
+                                        </View>
+                                        <Typography weight="bold" className={`${action.text} text-[8px] uppercase tracking-wider text-center`}>{action.label}</Typography>
+                                        <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
+                                    </Pressable>
                                 </View>
-                                <Typography weight="bold" className="text-rose-600 text-[8px] uppercase tracking-wider">Catat Biaya</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA KELUAR</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('MASUK');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('Terima Dana dari Akun Utama');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-emerald-50 rounded-xl items-center justify-center mb-2">
-                                    <TrendingUp size={16} color="#10B981" />
-                                </View>
-                                <Typography weight="bold" className="text-emerald-600 text-[8px] uppercase tracking-wider">Terima Dana</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA MASUK</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('SETORAN');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('Setoran Tunai ke Akun Utama');
-                                    setExpensePaymentMethod('KAS_UTAMA');
-
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-blue-50 rounded-xl items-center justify-center mb-2">
-                                    <ArrowUpCircle size={16} color="#2563EB" />
-                                </View>
-                                <Typography weight="bold" className="text-blue-700 text-[8px] uppercase tracking-wider">Setoran Unit</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">SETOR KE PUSAT</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('PIUTANG');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('');
-                                    setDebiturName('');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-amber-50 rounded-xl items-center justify-center mb-2">
-                                    <CircleDollarSign size={16} color="#D97706" />
-                                </View>
-                                <Typography weight="bold" className="text-amber-700 text-[8px] uppercase tracking-wider">Kasbon/Piutang</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">UANG KELUAR</Typography>
-                            </Pressable>
+                            ))}
                         </View>
 
+                        <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
+                            <View className="flex-1">
+                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat dompet mobil:</Typography>
+                                <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
+                                    Gunakan kartu Hutang dan Piutang untuk melihat transaksi unit mobil tanpa membuka data unit lain.
+                                </Typography>
+                            </View>
+                        </View>
                     </View>
                 </View>
             )}
@@ -842,16 +899,16 @@ export default function MobilInventoryScreen() {
                     showProfile={true}
                 />
 
-                {/* Header Section (Search & Filter) */}
-                <View className="bg-white px-6 pt-6 pb-2 shadow-sm z-10 rounded-b-[32px] border-b border-gray-100">
+                {/* Header Section (Search & Filter Card) */}
+                <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm mt-4 mx-6 flex-col">
                     {/* Search Bar */}
-                    <View className="flex-row items-center space-x-2 mb-4">
+                    <View className="flex-row items-center space-x-2 mb-3">
                         <View className="flex-1 relative">
                             <View className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                                <Search size={20} color="#9CA3AF" />
+                                <Search size={18} color="#9CA3AF" />
                             </View>
                             <TextInput
-                                className="w-full h-12 pl-12 pr-10 bg-gray-50 border border-gray-100 rounded-2xl text-textMain font-medium"
+                                className="w-full h-11 pl-11 pr-10 bg-gray-50 border border-gray-100 rounded-2xl text-textMain font-medium text-xs"
                                 placeholder="Cari mobil impian Anda..."
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
@@ -866,8 +923,8 @@ export default function MobilInventoryScreen() {
                                 </Pressable>
                             )}
                         </View>
-                        <Pressable className="w-12 h-12 bg-primary items-center justify-center rounded-2xl shadow-sm active:scale-95">
-                            <Filter size={20} color="white" />
+                        <Pressable className="w-11 h-11 bg-primary items-center justify-center rounded-2xl shadow-sm active:scale-95">
+                            <Filter size={18} color="white" />
                         </Pressable>
                         <Pressable 
                             onPress={() => {
@@ -876,14 +933,14 @@ export default function MobilInventoryScreen() {
                                     walletSheetRef.current?.present();
                                 }
                             }}
-                            className="w-12 h-12 bg-gray-50 items-center justify-center rounded-2xl border border-gray-100 active:scale-95"
+                            className="w-11 h-11 bg-gray-50 items-center justify-center rounded-2xl border border-gray-100 active:scale-95"
                         >
-                            <Wallet size={20} color="#023C69" />
+                            <Wallet size={18} color="#023C69" />
                         </Pressable>
                     </View>
                     
                     {/* Filter Chips */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-2 space-x-2 pb-2">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row space-x-2 pb-1">
                         {[
                             { id: 'semua', label: 'Semua' },
                             { id: 'tersedia', label: 'Tersedia' },
@@ -893,9 +950,9 @@ export default function MobilInventoryScreen() {
                             <Pressable 
                                 key={chip.id}
                                 onPress={() => setActiveTab(chip.id)}
-                                className={`px-5 py-2.5 rounded-full mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-gray-50'}`}
+                                className={`px-4 py-2 rounded-xl mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-gray-50 border border-gray-100'}`}
                             >
-                                <Typography weight="bold" className={`text-xs ${activeTab === chip.id ? 'text-white' : 'text-gray-500'}`}>
+                                <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${activeTab === chip.id ? 'text-white font-bold' : 'text-gray-400'}`}>
                                     {chip.label}
                                 </Typography>
                             </Pressable>
@@ -904,7 +961,7 @@ export default function MobilInventoryScreen() {
                 </View>
 
                 <ScrollView
-                    className="flex-1 px-6 pt-6"
+                    className="flex-1 mt-4"
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#023C69" />
@@ -920,7 +977,7 @@ export default function MobilInventoryScreen() {
                                     dateSheetRef.current?.present();
                                 }
                             }}
-                            className="flex-row items-center justify-between mb-6 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
+                            className="flex-row items-center justify-between mb-6 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50 mx-6"
                         >
                             <View className="flex-row items-center">
                                 <Calendar size={18} color="#023C69" />
@@ -935,27 +992,29 @@ export default function MobilInventoryScreen() {
 
 
                     {/* Car List */}
-                    <View className="space-y-6 pb-20">
+                    <View className="pb-20">
                         {isLoading && mobils.length === 0 ? (
-                            <View className="space-y-4">
+                            <View className="space-y-4 px-6">
                                 <SkeletonCard />
                                 <SkeletonCard />
                                 <SkeletonCard />
                             </View>
                         ) : mobils.length === 0 ? (
-                            <EmptyState
-                                title="Mobil tidak ditemukan"
-                                description={searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada unit mobil dalam kategori ini."}
-                                icon={Car}
-                            />
+                            <View className="mx-6">
+                                <EmptyState
+                                    title="Mobil tidak ditemukan"
+                                    description={searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada unit mobil dalam kategori ini."}
+                                    icon={Car}
+                                />
+                            </View>
                         ) : (
                             mobils.map((item: any) => (
                                 <Pressable
                                     key={item.id}
                                     onPress={() => handlePresentDetailModal(item)}
-                                    className="mb-6"
+                                    className="border-b border-gray-100 bg-white"
                                 >
-                                    <Card className="overflow-hidden border border-gray-100 shadow-sm bg-white rounded-[24px] p-2.5 flex-row gap-3 items-stretch">
+                                    <View className="overflow-hidden p-4 flex-row gap-3 items-stretch">
                                         {/* Image Section (40%) */}
                                         <View style={{ flex: 0.4 }} className="rounded-2xl overflow-hidden relative bg-gray-100 min-h-[140px]">
                                             {item.media && item.media.length > 0 ? (
@@ -1063,7 +1122,7 @@ export default function MobilInventoryScreen() {
                                                 </Pressable>
                                             </View>
                                         </View>
-                                    </Card>
+                                    </View>
                                 </Pressable>
                             ))
                         )}
@@ -1074,10 +1133,10 @@ export default function MobilInventoryScreen() {
                 {/* FAB matching Home */}
                 <Pressable
                     onPress={handlePresentModalPress}
-                    style={{ bottom: 100, elevation: 5 }}
-                    className="absolute right-6 w-14 h-14 bg-primary rounded-full items-center justify-center shadow-xl border-2 border-white/20 active:scale-95 transition-transform"
+                    style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
+                    className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
                 >
-                    <Plus size={28} color="white" strokeWidth={2.5} />
+                    <Plus size={32} color="white" strokeWidth={2.5} />
                 </Pressable>
 
                 {/* Hybrid UI Logic modals (Web & Native) */}

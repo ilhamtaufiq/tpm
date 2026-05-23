@@ -475,17 +475,17 @@ export default function MutasiKasScreen() {
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <RefreshCw size={20} color="white" />
+                        <RefreshCw size={20} color="#1F2937" />
                     </Pressable>
                 }
             />
 
             {/* Account & Search Navigator Overlay */}
             {!isSheetOpen && (
-                <View className="px-6 -mt-8 z-10">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                <View className="px-6 mt-4">
+                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
                         <Tabs
                             items={ACCOUNT_FILTERS}
                             value={selectedFilter}
@@ -495,9 +495,9 @@ export default function MutasiKasScreen() {
                             className="mb-3"
                         />
 
-                        <View className="flex-row items-center px-4 bg-gray-50 h-14 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <Typography className="ml-3 text-sm text-gray-400 font-medium">Cari riwayat transaksi...</Typography>
+                        <View className="flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                            <Search size={16} color="#9CA3AF" />
+                            <Typography className="ml-3 text-xs text-gray-400 font-semibold">Cari riwayat transaksi...</Typography>
                         </View>
                     </View>
                 </View>

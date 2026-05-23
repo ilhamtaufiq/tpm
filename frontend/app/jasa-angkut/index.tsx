@@ -28,7 +28,9 @@ import {
     ArrowDownCircle,
     TrendingDown,
     TrendingUp,
-    CircleDollarSign
+    CircleDollarSign,
+    Banknote,
+    Receipt
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { onlineManager, useQueryClient } from '@tanstack/react-query';
@@ -53,7 +55,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { RelatedBengkelTransactions } from '../../components/RelatedBengkelTransactions';
 import { PaymentModal } from '../../components/PaymentModal';
-import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang } from '../../hooks/useKeuangan';
+import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 
 import { formatNumber, parseNumber } from '../../utils/format';
 import { FILE_URL } from '../../utils/api';
@@ -136,12 +138,29 @@ export default function JasaAngkutScreen() {
     }, {
         refetchInterval: 5000
     });
+    const { data: hutangData } = useHutangList({
+        limit: 20,
+        status: 'BELUM_LUNAS',
+        unit: 'JASA_ANGKUT',
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+    });
+    const { data: piutangData } = usePiutangList({
+        limit: 20,
+        status: 'BELUM_LUNAS',
+        unit: 'JASA_ANGKUT',
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+    });
 
     const createPiutangMutation = useCreatePiutang();
     const createExpenseMutation = useCreatePengeluaran();
     const createTransactionMutation = useCreateTransaction();
     const transferMutation = useTransfer();
 
+
+    const jasaAngkutHutangList = useMemo(() => (hutangData?.data || []).filter((item: any) => item.unit === 'JASA_ANGKUT'), [hutangData]);
+    const jasaAngkutPiutangList = useMemo(() => (piutangData?.data || []).filter((item: any) => item.unit === 'JASA_ANGKUT'), [piutangData]);
 
     // Payment Filter Logic (Reactive)
     const stats = useMemo(() => {
@@ -656,75 +675,114 @@ export default function JasaAngkutScreen() {
 
                     {/* Quick Actions */}
                     <View>
-                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian & Pengeluaran Kas</Typography>
-                        <View className="flex-row space-x-2 mb-6">
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('KELUAR');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-rose-50 rounded-xl items-center justify-center mb-2">
-                                    <TrendingDown size={16} color="#E11D48" />
+                        <Typography variant="caption" weight="bold" className="text-textGray/30 uppercase tracking-[2px] ml-1 mb-4 text-center">Penyesuaian, Hutang, Piutang</Typography>
+                        <View className="flex-row flex-wrap -mx-1 mb-6">
+                            {[
+                                {
+                                    key: 'KELUAR',
+                                    label: 'Catat Biaya',
+                                    sublabel: 'DANA KELUAR',
+                                    icon: <TrendingDown size={16} color="#E11D48" />,
+                                    iconBg: 'bg-rose-50',
+                                    text: 'text-rose-600',
+                                    onPress: () => {
+                                        setExpenseMode('KELUAR');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'MASUK',
+                                    label: 'Terima Dana',
+                                    sublabel: 'DANA MASUK',
+                                    icon: <TrendingUp size={16} color="#10B981" />,
+                                    iconBg: 'bg-emerald-50',
+                                    text: 'text-emerald-600',
+                                    onPress: () => {
+                                        setExpenseMode('MASUK');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('Terima Dana dari Akun Utama');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'SETORAN',
+                                    label: 'Setoran Unit',
+                                    sublabel: 'SETOR KE PUSAT',
+                                    icon: <ArrowUpCircle size={16} color="#2563EB" />,
+                                    iconBg: 'bg-blue-50',
+                                    text: 'text-blue-700',
+                                    onPress: () => {
+                                        setExpenseMode('SETORAN');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('Setoran Tunai ke Akun Utama');
+                                        setExpensePaymentMethod('KAS_UTAMA');
+                                    }
+                                },
+                                {
+                                    key: 'PIUTANG_CREATE',
+                                    label: 'Kasbon/Piutang',
+                                    sublabel: 'UANG KELUAR',
+                                    icon: <CircleDollarSign size={16} color="#D97706" />,
+                                    iconBg: 'bg-amber-50',
+                                    text: 'text-amber-700',
+                                    onPress: () => {
+                                        setExpenseMode('PIUTANG');
+                                        setIsRecordingExpense(true);
+                                        setExpenseNote('');
+                                        setDebiturName('');
+                                        setExpensePaymentMethod('TUNAI');
+                                    }
+                                },
+                                {
+                                    key: 'HUTANG',
+                                    label: 'Hutang',
+                                    sublabel: `${jasaAngkutHutangList.filter((item: any) => item.status !== 'LUNAS').length} AKTIF`,
+                                    icon: <Banknote size={16} color="#7C3AED" />,
+                                    iconBg: 'bg-violet-50',
+                                    text: 'text-violet-700',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push({ pathname: '/finance/hutang', params: { unit: 'JASA_ANGKUT', from: 'jasa-angkut' } });
+                                    }
+                                },
+                                {
+                                    key: 'PIUTANG_LIST',
+                                    label: 'Piutang',
+                                    sublabel: `${jasaAngkutPiutangList.filter((item: any) => item.status !== 'LUNAS').length} AKTIF`,
+                                    icon: <Receipt size={16} color="#0891B2" />,
+                                    iconBg: 'bg-cyan-50',
+                                    text: 'text-cyan-700',
+                                    onPress: () => {
+                                        handleCloseWallet();
+                                        router.push({ pathname: '/finance/piutang', params: { unit: 'JASA_ANGKUT', from: 'jasa-angkut' } });
+                                    }
+                                },
+                            ].map((action) => (
+                                <View key={action.key} className="w-1/3 p-1">
+                                    <Pressable
+                                        onPress={action.onPress}
+                                        className="bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50 min-h-[110px]"
+                                    >
+                                        <View className={`w-8 h-8 ${action.iconBg} rounded-xl items-center justify-center mb-2`}>
+                                            {action.icon}
+                                        </View>
+                                        <Typography weight="bold" className={`${action.text} text-[8px] uppercase tracking-wider text-center`}>{action.label}</Typography>
+                                        <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5 text-center">{action.sublabel}</Typography>
+                                    </Pressable>
                                 </View>
-                                <Typography weight="bold" className="text-rose-600 text-[8px] uppercase tracking-wider">Catat Biaya</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA KELUAR</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('MASUK');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('Terima Dana dari Akun Utama');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-emerald-50 rounded-xl items-center justify-center mb-2">
-                                    <TrendingUp size={16} color="#10B981" />
-                                </View>
-                                <Typography weight="bold" className="text-emerald-600 text-[8px] uppercase tracking-wider">Terima Dana</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">DANA MASUK</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('SETORAN');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('Setoran Tunai ke Akun Utama');
-                                    setExpensePaymentMethod('KAS_UTAMA');
-
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-blue-50 rounded-xl items-center justify-center mb-2">
-                                    <ArrowUpCircle size={16} color="#2563EB" />
-                                </View>
-                                <Typography weight="bold" className="text-blue-700 text-[8px] uppercase tracking-wider">Setoran Unit</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">SETOR KE PUSAT</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={() => {
-                                    setExpenseMode('PIUTANG');
-                                    setIsRecordingExpense(true);
-                                    setExpenseNote('');
-                                    setDebiturName('');
-                                    setExpensePaymentMethod('TUNAI');
-                                }}
-                                className="flex-1 bg-white p-3 rounded-2xl border border-gray-100 items-center justify-center shadow-sm active:bg-gray-50"
-                            >
-                                <View className="w-8 h-8 bg-amber-50 rounded-xl items-center justify-center mb-2">
-                                    <CircleDollarSign size={16} color="#D97706" />
-                                </View>
-                                <Typography weight="bold" className="text-amber-700 text-[8px] uppercase tracking-wider">Kasbon/Piutang</Typography>
-                                <Typography className="text-textGray/30 text-[6px] font-bold mt-0.5">UANG KELUAR</Typography>
-                            </Pressable>
+                            ))}
                         </View>
 
+                        <View className="flex-row items-center bg-blue-50/50 p-4 rounded-3xl border-dashed border border-blue-100">
+                            <View className="flex-1">
+                                <Typography className="text-blue-700 text-[9px] font-black uppercase tracking-wider mb-1">Akses cepat dompet jasa angkut:</Typography>
+                                <Typography className="text-blue-600/60 text-[8px] font-bold leading-tight">
+                                    Gunakan kartu Hutang dan Piutang untuk melihat transaksi unit jasa angkut tanpa membuka data unit lain.
+                                </Typography>
+                            </View>
+                        </View>
                     </View>
                 </View>
             )}
@@ -1219,13 +1277,13 @@ export default function JasaAngkutScreen() {
 
             {/* Filter Search Overlay */}
             {sheetIndex === -1 && (
-                <View className="px-6 -mt-6 z-1">
-                    <View className="bg-white p-2 rounded-3xl shadow-xl border border-gray-50 flex-col">
+                <View className="px-6 mt-4">
+                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
                         <View className="flex-row items-center">
-                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                                <Search size={18} color="#9CA3AF" />
+                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                                <Search size={16} color="#9CA3AF" />
                                 <TextInput
-                                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                                    className="flex-1 ml-3 text-xs font-semibold text-textMain"
                                     placeholder="Cari Ritase (Rute, Supir)..."
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
@@ -1236,7 +1294,7 @@ export default function JasaAngkutScreen() {
                                 />
                                 {searchQuery.length > 0 && (
                                     <Pressable onPress={() => setSearchQuery('')} className="ml-1">
-                                        <X size={18} color="#9CA3AF" />
+                                        <X size={16} color="#9CA3AF" />
                                     </Pressable>
                                 )}
                             </View>
@@ -1290,14 +1348,14 @@ export default function JasaAngkutScreen() {
             )}
 
             <ScrollView
-                className="flex-1 px-6 pt-10"
+                className="flex-1 pt-6"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
                 {/* Ritase Metrics (Metric Row) */}
-                <View className="flex-row justify-between mb-8">
+                <View className="flex-row justify-between mb-8 mx-6">
                     {[
                         { label: 'RITASE', value: stats.total, color: '#3B82F6', icon: Truck },
                         { label: 'PROFIT', value: formatCurrency(stats.profit), color: '#10B981', icon: TrendingUp },
@@ -1316,7 +1374,7 @@ export default function JasaAngkutScreen() {
                 </View>
 
                 {/* Service Grid Section (Bento Style) */}
-                <View className="flex-row flex-wrap justify-between mb-8">
+                <View className="flex-row flex-wrap justify-between mb-8 mx-6">
                     {/* Item 1: Wallet (Dompet Unit) */}
                     <Pressable
                         key="grid-wallet"
@@ -1388,7 +1446,7 @@ export default function JasaAngkutScreen() {
                 </View>
 
                 {/* Section Header */}
-                <View className="flex-row justify-between items-center mb-6">
+                <View className="flex-row justify-between items-center mb-6 px-6">
                     <View>
                         <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Daftar Ritase Angkutan</Typography>
                         <Typography variant="caption" className="text-textGray">Management pengiriman dan logistik</Typography>
@@ -1396,7 +1454,7 @@ export default function JasaAngkutScreen() {
                 </View>
 
                 {/* Grouping Toggle */}
-                <View className="flex-row bg-gray-100/50 p-1.5 rounded-[24px] mb-8">
+                <View className="flex-row bg-gray-100/50 p-1.5 rounded-[24px] mb-8 mx-6">
                     {[
                         { label: 'Berdasarkan Armada', key: 'armada' },
                         { label: 'Berdasarkan Supir', key: 'supir' },
@@ -1422,7 +1480,7 @@ export default function JasaAngkutScreen() {
                             dateSheetRef.current?.expand();
                         }
                     }}
-                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
+                    className="flex-row items-center justify-between mb-8 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50 mx-6"
                 >
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#023C69" />
@@ -1436,13 +1494,13 @@ export default function JasaAngkutScreen() {
                 {/* Main Content (Trips List) */}
                 <View className="pb-32">
                     {isLoading || isLoadingArmada ? (
-                        <View className="space-y-6">
+                        <View className="space-y-6 px-6">
                             <SkeletonCard className="rounded-[32px] h-32" />
                             <SkeletonCard className="rounded-[32px] h-32" />
                             <SkeletonCard className="rounded-[32px] h-32" />
                         </View>
                     ) : groupedTrips.length === 0 ? (
-                        <View className="mt-10">
+                        <View className="mt-10 px-6">
                             <EmptyState
                                 title="Belum ada data"
                                 description="Mulai catat transaksi muatan pertama Anda hari ini."
@@ -1453,11 +1511,11 @@ export default function JasaAngkutScreen() {
                         groupedTrips.map((group) => {
                             const isCollapsed = !collapsedGroups.has(group.key); // Changed logic to be collapsed by default
                             return (
-                                <View key={group.key} className="mb-6">
+                                <View key={group.key} className="mb-2">
                                     {/* Group Header - Enhanced Card style */}
                                     <Pressable
                                         onPress={() => toggleGroupCollapse(group.key)}
-                                        className={`bg-white p-5 rounded-[32px] border ${!isCollapsed ? 'border-primary shadow-lg shadow-primary/10' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
+                                        className={`bg-white p-5 border-b ${!isCollapsed ? 'border-primary/20 bg-primary/5' : 'border-gray-100 shadow-sm'} flex-row items-center justify-between`}
                                     >
                                         <View className="flex-row items-center flex-1">
                                             <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 border ${groupBy === 'armada' ? (group.trips.length > 0 ? 'bg-primary/10 border-primary/10' : 'bg-gray-50 border-gray-100') : 'bg-orange-100 border-orange-200'}`}>
@@ -1496,11 +1554,11 @@ export default function JasaAngkutScreen() {
                                         </View>
                                     </Pressable>
 
-                                    {/* Group Content (Trips) */}
+                                     {/* Group Content (Trips) */}
                                     {!isCollapsed && (
-                                        <View className="space-y-4 pt-4 px-2">
+                                        <View className="space-y-0 pt-0">
                                             {group.trips.length === 0 ? (
-                                                <View className="py-4 items-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 ml-4">
+                                                <View className="py-4 items-center bg-gray-50/50 border-b border-dashed border-gray-200">
                                                     <Typography variant="caption" className="text-gray-400 italic">Belum ada aktivitas transaksi</Typography>
                                                 </View>
                                             ) : (
@@ -1508,7 +1566,7 @@ export default function JasaAngkutScreen() {
                                                     <Pressable
                                                         key={trip.id}
                                                         onPress={() => handlePresentModal('detail', trip)}
-                                                        className="bg-white p-5 rounded-[24px] border border-gray-100 shadow-sm flex-row items-center ml-4"
+                                                        className="bg-white p-5 border-b border-gray-50 flex-row items-center"
                                                     >
                                                         {/* Visual ID Slot - Smaller for nested items */}
                                                         <View className="w-12 h-12 bg-gray-50 rounded-[16px] items-center justify-center mr-4 border border-gray-100">
@@ -1574,9 +1632,10 @@ export default function JasaAngkutScreen() {
             {/* Floating Action Button */}
             <Pressable
                 onPress={() => handlePresentModal('form')}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary border-4 border-white/20"
+                style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
+                className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >
-                <Plus size={32} color="white" strokeWidth={3} />
+                <Plus size={32} color="white" strokeWidth={2.5} />
             </Pressable>
 
             {/* Bottom Sheet UI */}

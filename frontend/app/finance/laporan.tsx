@@ -569,25 +569,25 @@ export default function LaporanKeuanganScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => setIsSetupModalVisible(true)}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <Settings size={20} color="white" />
+                        <Settings size={20} color="#1F2937" />
                     </Pressable>
                 }
             />
 
             {/* Report Selector Tab */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-2 rounded-[32px] shadow-xl border border-gray-50 flex-row">
+            <View className="px-6 mt-4">
+                <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-row gap-x-2">
                     {(['LABA_RUGI', 'MODAL', 'NERACA'] as ReportType[]).map((type) => (
                         <Pressable
                             key={type}
                             onPress={() => setReportType(type)}
-                            className={`flex-1 py-3.5 items-center rounded-2xl ${reportType === type ? 'bg-primary shadow-sm' : ''}`}
+                            className={`flex-1 py-2.5 items-center rounded-xl ${reportType === type ? 'bg-primary shadow-sm' : 'bg-gray-50 border border-gray-100'}`}
                         >
                             <Typography
                                 weight="bold"
-                                className={`text-[10px] uppercase tracking-tighter ${reportType === type ? 'text-white' : 'text-textGray/50'}`}
+                                className={`text-[10px] uppercase tracking-wider ${reportType === type ? 'text-white font-bold' : 'text-gray-400'}`}
                             >
                                 {type.replace('_', ' ')}
                             </Typography>

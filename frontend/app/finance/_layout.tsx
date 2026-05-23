@@ -8,9 +8,9 @@ export default function FinanceLayout() {
     const role = user?.role;
     const isAdmin = role === 'ADMIN' || role === 'MANAGER';
     const currentScreen = segments[segments.length - 1];
-    const isBengkelFinanceScreen = role === 'BENGKEL' && (currentScreen === 'hutang' || currentScreen === 'piutang');
+    const isUnitFinanceScreen = ['BENGKEL', 'MOBIL', 'JASA_ANGKUT'].includes(role || '') && (currentScreen === 'hutang' || currentScreen === 'piutang');
 
-    if (!isAdmin && !isBengkelFinanceScreen) {
+    if (!isAdmin && !isUnitFinanceScreen) {
         return <Redirect href="/(tabs)/home" />;
     }
 

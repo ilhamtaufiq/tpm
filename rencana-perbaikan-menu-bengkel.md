@@ -169,11 +169,11 @@ Admin bengkel tidak bisa setor uang dari dompet bengkel.
 - [x] `BGK-008` - Tambah akses bayar hutang/piutang bengkel via CTA ke halaman finance terfilter unit *(perlu testing end-to-end)*
 
 ### Belum dieksekusi
-- [ ] `BGK-006` - Tambah edit pembelian service *(pending klarifikasi; entitas pembelian service terpisah belum ada di codebase)*
+- [x] `BGK-006` - Tambah edit jasa pada transaksi bengkel *(scope diklarifikasi; sudah dieksekusi, perlu testing)*
 - [x] `BGK-009` - Sinkronkan angka master data dengan pusat *(sudah dieksekusi, perlu testing)*
 - [x] `BGK-010` - Ubah absensi jadi tampilan kalender *(sudah dieksekusi, perlu testing)*
-- [ ] `BGK-011` - Adaptasi flow dompet ke unit Jual Beli Mobil
-- [ ] `BGK-012` - Adaptasi flow dompet ke unit Jasa Angkut
+- [x] `BGK-011` - Adaptasi flow dompet ke unit Jual Beli Mobil *(sudah dieksekusi, perlu testing)*
+- [x] `BGK-012` - Adaptasi flow dompet ke unit Jasa Angkut *(sudah dieksekusi, perlu testing)*
 
 ### Sprint 1: Quick Fix dan Akses Admin Bengkel
 
@@ -298,35 +298,27 @@ User bisa edit transaksi pembelian part kalau ada salah input.
 - Saldo/hutang berubah benar sesuai metode pembayaran.
 - Edit gagal jika menyebabkan stok/saldo tidak valid.
 
-#### BGK-006 - Tambah edit pembelian service
+#### BGK-006 - Tambah edit jasa pada transaksi bengkel
 
-**Status:** Pending klarifikasi bisnis
+**Status:** Selesai dieksekusi
 
 **Prioritas:** Tinggi
 
 **Tipe:** Feature
 
 **Deskripsi:**
-User bisa edit transaksi pembelian service kalau ada salah input.
+User bisa edit item jasa pada transaksi bengkel kalau ada salah input.
 
-**Catatan hasil cek codebase:**
-- Saat ini tidak ada entitas `pembelian service` terpisah di backend/frontend.
-- Yang ada hanya:
-  - master `JasaServis`
-  - `detail_services` pada transaksi penjualan bengkel
-  - `PembelianSparePart` untuk pembelian vendor
-- Jadi item ini belum bisa dikerjakan sebagai edit flow existing tanpa definisi modul baru.
-
-**Task teknis:**
-- Klarifikasi dulu apakah yang dimaksud:
-  - pembelian jasa/vendor baru, atau
-  - edit jasa pada transaksi penjualan bengkel.
-- Jika memang perlu pembelian jasa/vendor, buat desain model/API/UI baru dulu.
-- Setelah scope jelas, baru tambah endpoint update dan form edit.
+**Implementasi:**
+- Scope diklarifikasi menjadi edit `detail_services` pada transaksi bengkel, bukan modul pembelian jasa/vendor baru.
+- Endpoint update transaksi bengkel dibuka untuk role unit terkait, tidak hanya manager/admin.
+- CTA edit transaksi tetap tersedia selama transaksi belum dibatalkan, termasuk transaksi yang sudah lunas.
+- Flow edit tetap memakai update transaksi bengkel yang sudah menghitung ulang total jasa/part, status bayar, piutang, dan mutasi kas terkait.
 
 **Acceptance criteria:**
-- Scope bisnis pembelian service terdefinisi jelas.
-- Jika modul baru dibuat, transaksi pembelian service bisa diedit.
+- User bengkel bisa membuka form edit transaksi bengkel.
+- Item jasa pada transaksi bengkel bisa diubah lalu disimpan.
+- Total transaksi, status bayar, piutang, dan mutasi kas terhitung ulang sesuai hasil edit.
 - Saldo/hutang berubah benar setelah edit.
 - Riwayat tetap rapi dan tidak membuat transaksi dobel.
 

@@ -25,9 +25,12 @@ const NAV_OPTIONS = [
 
 export default function NavigationSettingsScreen() {
     const { themeColors } = useUIStore();
-    const { activeSlots, updateSlot, resetSlots } = useNavigationStore();
+    const { activeSlots, fabSlots, updateSlot, updateFabSlot, resetSlots } = useNavigationStore();
     const [pickerVisible, setPickerVisible] = useState(false);
     const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
+    const [pickerMode, setPickerMode] = useState<'bar' | 'fab'>('bar');
+
+    const currentFabSlots = fabSlots || ['bengkel', 'fin-mutasi', 'mobil'];
 
     // Resolves details for a slot option
     const getOptionDetails = (id: string) => {
@@ -36,12 +39,17 @@ export default function NavigationSettingsScreen() {
 
     const handleOpenPicker = (slotIndex: number) => {
         setSelectedSlotIndex(slotIndex);
+        setPickerMode('bar');
         setPickerVisible(true);
     };
 
     const handleSelectOption = (optionId: string) => {
         if (selectedSlotIndex !== null) {
-            updateSlot(selectedSlotIndex, optionId);
+            if (pickerMode === 'bar') {
+                updateSlot(selectedSlotIndex, optionId);
+            } else {
+                updateFabSlot(selectedSlotIndex, optionId);
+            }
             setPickerVisible(false);
         }
     };
@@ -190,6 +198,57 @@ export default function NavigationSettingsScreen() {
                         })}
                     </View>
 
+                    {/* FAB ACTIONS CUSTOMIZER */}
+                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Aksi Cepat FAB+ (Radial)</Typography>
+
+                    <View className="gap-y-4">
+                        {currentFabSlots.map((slotId, index) => {
+                            const details = getOptionDetails(slotId);
+                            if (!details) return null;
+                            const SlotIcon = details.icon;
+                            const positionLabels = ['Aksi Kiri (←)', 'Aksi Tengah (↑)', 'Aksi Kanan (→)'];
+
+                            return (
+                                <Pressable
+                                    key={index}
+                                    onPress={() => {
+                                        setSelectedSlotIndex(index);
+                                        setPickerMode('fab');
+                                        setPickerVisible(true);
+                                    }}
+                                    className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm flex-row items-center justify-between active:bg-gray-50/50"
+                                >
+                                    <View className="flex-row items-center flex-1">
+                                        {/* Position Indicator Badge */}
+                                        <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
+                                            <Typography weight="bold" className="text-primary text-sm font-outfit-bold">
+                                                {index === 0 ? '←' : index === 1 ? '↑' : '→'}
+                                            </Typography>
+                                        </View>
+
+                                        {/* Selected Option Meta */}
+                                        <View className="flex-1 mr-4">
+                                            <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[9px]">{positionLabels[index]}</Typography>
+                                            <View className="flex-row items-center mt-0.5">
+                                                <View style={{ backgroundColor: details.bgColor }} className="w-5 h-5 rounded-md items-center justify-center mr-2 border border-black/5">
+                                                    <SlotIcon size={11} color={details.color} strokeWidth={2.5} />
+                                                </View>
+                                                <Typography weight="bold" className="text-text text-[15px] font-outfit-bold leading-tight">
+                                                    {details.label}
+                                                </Typography>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    {/* Action button */}
+                                    <View className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 justify-center items-center shadow-sm">
+                                        <ChevronRight size={14} color="#9CA3AF" />
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+
                     <View className="mt-8 p-5 bg-emerald-50/50 border border-emerald-100/50 rounded-[32px]">
                         <Typography variant="caption" className="text-emerald-700/80 text-center leading-relaxed font-outfit-medium">
                             Semua penyesuaian tersimpan otomatis dan langsung berlaku ke navigasi bawah aplikasi di layar beranda.
@@ -216,10 +275,13 @@ export default function NavigationSettingsScreen() {
                         <View className="px-8 pt-4 pb-4 flex-row justify-between items-center">
                             <View>
                                 <Typography variant="h3" weight="bold" className="text-text text-xl">
-                                    Pilih Menu Utama
+                                    {pickerMode === 'bar' ? 'Pilih Menu Utama' : 'Pilih Aksi Cepat FAB+'}
                                 </Typography>
                                 <Typography variant="caption" className="text-textGray">
-                                    Pilih fungsi untuk Slot {selectedSlotIndex !== null ? selectedSlotIndex + 1 : ''}
+                                    {pickerMode === 'bar'
+                                        ? `Pilih fungsi untuk Slot ${selectedSlotIndex !== null ? selectedSlotIndex + 1 : ''}`
+                                        : `Pilih fungsi untuk Aksi ${selectedSlotIndex === 0 ? 'Kiri (←)' : selectedSlotIndex === 1 ? 'Tengah (↑)' : 'Kanan (→)'}`
+                                    }
                                 </Typography>
                             </View>
                             <Pressable
@@ -233,9 +295,13 @@ export default function NavigationSettingsScreen() {
                         {/* Options List */}
                         <ScrollView className="px-6 pb-8" showsVerticalScrollIndicator={false}>
                             <View className="gap-y-3 pb-8">
-                                {NAV_OPTIONS.map((option) => {
+                                {NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus').map((option) => {
                                     const OptionIcon = option.icon;
-                                    const isSelected = selectedSlotIndex !== null && activeSlots[selectedSlotIndex] === option.id;
+                                    const isSelected = selectedSlotIndex !== null && 
+                                        (pickerMode === 'bar'
+                                            ? activeSlots[selectedSlotIndex] === option.id
+                                            : currentFabSlots[selectedSlotIndex] === option.id
+                                        );
 
                                     return (
                                         <Pressable

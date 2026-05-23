@@ -48,9 +48,7 @@ fi
 log "Starting backend on http://localhost:8000"
 (
   cd "$BACKEND_DIR"
-  # shellcheck disable=SC1091
-  source venv/bin/activate
-  exec uvicorn app.main:app --reload
+  exec venv/bin/python -m uvicorn app.main:app --reload
 ) &
 BACKEND_PID=$!
 

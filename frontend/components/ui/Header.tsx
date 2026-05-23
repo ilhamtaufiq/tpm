@@ -47,6 +47,7 @@ export const Header = ({
     const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
+    const [userMenuVisible, setUserMenuVisible] = useState(false);
 
     const query = searchValue !== undefined ? searchValue : localSearchQuery;
     const setQuery = onSearchChange || setLocalSearchQuery;
@@ -96,17 +97,9 @@ export const Header = ({
 
     return (
         <View 
-            className={`${variant === 'home' ? 'bg-white pb-4 border-b border-gray-100' : 'bg-primary pb-8 rounded-b-[40px] shadow-2xl'} px-6 relative overflow-hidden`}
-            style={{ paddingTop: Math.max(insets.top, 16) + (variant === 'home' ? 8 : 16) }}
+            className="bg-white pb-4 border-b border-gray-100 px-6 relative overflow-hidden"
+            style={{ paddingTop: Math.max(insets.top, 16) + 8 }}
         >
-            {/* Decorative Ambient Glass */}
-            {variant !== 'home' && (
-                <>
-                    <View className="absolute top-[-50] left-[-30] w-[200] h-[200] bg-white/10 rounded-full blur-[80px]" />
-                    <View className="absolute bottom-[-20] right-[-20] w-[150] h-[150] bg-white/10 rounded-full blur-[60px]" />
-                </>
-            )}
-
             {/* Header Content */}
             <View className="z-10">
                 <View className="flex-row items-center justify-between mb-4">
@@ -114,9 +107,9 @@ export const Header = ({
                         {showBackButton && (
                             <Pressable
                                 onPress={handleBack}
-                                className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
+                                className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-100 active:bg-gray-100"
                             >
-                                <ChevronLeft size={24} color="white" />
+                                <ChevronLeft size={24} color="#1F2937" />
                             </Pressable>
                         )}
 
@@ -131,7 +124,7 @@ export const Header = ({
                                     <View className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
                                         <Briefcase size={20} color={themeColors.primary} />
                                     </View>
-                                    <Typography variant="h2" weight="bold" className="text-textMain tracking-tighter">
+                                    <Typography variant="h2" weight="bold" className="text-gray-900 tracking-tighter">
                                         TPM
                                     </Typography>
                                 </View>
@@ -139,13 +132,13 @@ export const Header = ({
                                 <>
                                     {subtitle && (
                                         <View className="flex-row items-center mb-0.5">
-                                            <View className="w-1.5 h-1.5 rounded-full bg-secondary mr-2" />
-                                            <Typography className="text-white/40 text-[9px] uppercase tracking-widest font-bold">
+                                            <View style={{ backgroundColor: themeColors.primary }} className="w-1.5 h-1.5 rounded-full mr-2" />
+                                            <Typography className="text-gray-400 text-[9px] uppercase tracking-widest font-bold">
                                                 {subtitle}
                                             </Typography>
                                         </View>
                                     )}
-                                    <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">
+                                    <Typography variant="h2" weight="bold" className="text-gray-900 text-xl tracking-tighter" numberOfLines={1}>
                                         {title}
                                     </Typography>
                                 </>
@@ -171,25 +164,33 @@ export const Header = ({
                                         router.replace('/(tabs)/home');
                                     }
                                 }}
-                                className="px-3 h-11 bg-amber-500/20 rounded-2xl items-center justify-center border border-amber-500/20"
+                                className="px-3 h-11 bg-amber-100 rounded-2xl items-center justify-center border border-amber-200"
                             >
-                                <Typography className="text-amber-200 text-[10px] font-black uppercase tracking-wider">
+                                <Typography className="text-amber-800 text-[10px] font-black uppercase tracking-wider">
                                     Stop
                                 </Typography>
                             </Pressable>
                         )}
                         {rightElement}
                         {variant === 'home' && (
-                            <Pressable className="w-11 h-11 bg-gray-50 rounded-full items-center justify-center border border-gray-100 relative">
-                                <Bell size={20} color="#6B7280" />
-                                <View className="absolute top-2.5 right-3 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                            <Pressable
+                                onPress={() => setUserMenuVisible(true)}
+                                className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative active:opacity-75"
+                            >
+                                <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                                    {user?.profile_picture ? (
+                                        <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
+                                    ) : (
+                                        <User size={22} color={themeColors.primary} strokeWidth={2.5} />
+                                    )}
+                                </View>
                             </Pressable>
                         )}
                         {showProfile && variant !== 'home' && (
-                            <View className="flex-row items-center gap-2">
+                            <View className="flex-row items-center">
                                 <Pressable
-                                    onPress={() => router.push('/(tabs)/profile')}
-                                    className="w-11 h-11 bg-white/20 rounded-2xl p-0.5 border border-white/10 overflow-hidden ml-2"
+                                    onPress={() => setUserMenuVisible(true)}
+                                    className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden ml-2 active:opacity-75"
                                 >
                                     <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
                                         {user?.profile_picture ? (
@@ -199,30 +200,6 @@ export const Header = ({
                                         )}
                                     </View>
                                 </Pressable>
-
-                                <Pressable
-                                    onPress={() => {
-                                        Alert.alert(
-                                            'Keluar Sesi',
-                                            'Apakah Anda yakin ingin keluar dari aplikasi?',
-                                            [
-                                                { text: 'Batal', style: 'cancel' },
-                                                { 
-                                                    text: 'Keluar', 
-                                                    style: 'destructive', 
-                                                    onPress: () => {
-                                                        logout();
-                                                        // Explicitly redirect to login to ensure state transition
-                                                        router.replace('/(auth)/login' as any);
-                                                    } 
-                                                }
-                                            ]
-                                        );
-                                    }}
-                                    className="w-11 h-11 bg-rose-500/20 rounded-2xl items-center justify-center border border-rose-500/20 ml-1"
-                                >
-                                    <LogOut size={20} color="#FF4B4B" />
-                                </Pressable>
                             </View>
                         )}
                     </View>
@@ -231,24 +208,24 @@ export const Header = ({
                 {showSearch && (
                     <Pressable
                         onPress={() => setIsSearchOpen(true)}
-                        className="bg-white/10 h-11 rounded-2xl flex-row items-center px-4 border border-white/10 backdrop-blur-md mt-2"
+                        className="bg-gray-50 h-11 rounded-2xl flex-row items-center px-4 border border-gray-100 mt-2 active:bg-gray-100"
                     >
-                        <Search size={18} color="white" opacity={0.6} />
-                        <Typography className="text-white/60 ml-3 font-medium text-sm flex-1" numberOfLines={1}>
+                        <Search size={18} color="#9CA3AF" />
+                        <Typography className="text-gray-500 ml-3 font-medium text-sm flex-1" numberOfLines={1}>
                             {searchPlaceholder}
                         </Typography>
                     </Pressable>
                 )}
 
                 {isImpersonating && (
-                    <View className="mt-2 bg-amber-500/15 border border-amber-400/20 rounded-2xl px-4 py-3">
-                        <Typography className="text-amber-100 text-[10px] font-black uppercase tracking-[2px] mb-1">
+                    <View className="mt-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+                        <Typography className="text-amber-800 text-[10px] font-black uppercase tracking-[2px] mb-1">
                             Mode Impersonate
                         </Typography>
-                        <Typography className="text-white text-xs font-bold">
+                        <Typography className="text-gray-900 text-xs font-bold">
                             Login sebagai {user?.full_name || user?.username}
                         </Typography>
-                        <Typography className="text-white/70 text-[10px] mt-1 font-medium">
+                        <Typography className="text-gray-500 text-[10px] mt-1 font-medium">
                             Admin asal: {impersonatorUser?.full_name || impersonatorUser?.username}
                         </Typography>
                     </View>
@@ -336,6 +313,93 @@ export const Header = ({
                             </View>
                         )}
                     </ScrollView>
+                </View>
+            </Modal>
+
+            {/* User Dropdown Menu */}
+            <Modal
+                visible={userMenuVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setUserMenuVisible(false)}
+            >
+                <View className="flex-1" style={{ pointerEvents: 'box-none' }}>
+                    {/* Transparent Backdrop to close the menu */}
+                    <Pressable 
+                        className="absolute inset-0 bg-black/5" 
+                        onPress={() => setUserMenuVisible(false)} 
+                    />
+
+                    {/* Floating Dropdown Menu Card */}
+                    <View
+                        className="bg-white rounded-3xl border border-gray-100 shadow-2xl p-2 absolute w-[180px]"
+                        style={{
+                            top: Math.max(insets.top, 16) + 56, // positions it perfectly right below the header avatar
+                            right: 24,
+                            elevation: 10,
+                        }}
+                    >
+                        {/* Option: Profile */}
+                        <Pressable
+                            onPress={() => {
+                                setUserMenuVisible(false);
+                                router.push('/(tabs)/profile');
+                            }}
+                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
+                        >
+                            <User size={16} color="#374151" strokeWidth={2.5} />
+                            <Typography className="text-gray-700 text-xs font-bold ml-2">
+                                Profil Saya
+                            </Typography>
+                        </Pressable>
+
+                        {/* Option: Settings */}
+                        <Pressable
+                            onPress={() => {
+                                setUserMenuVisible(false);
+                                router.push('/settings/profile');
+                            }}
+                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
+                        >
+                            <User size={16} color="#6B7280" strokeWidth={2.2} />
+                            <Typography className="text-gray-500 text-xs font-medium ml-2">
+                                Ubah Profil
+                            </Typography>
+                        </Pressable>
+
+                        {/* Divider */}
+                        <View className="h-[1px] bg-gray-100 my-1 mx-2" />
+
+                        {/* Option: Logout */}
+                        <Pressable
+                            onPress={() => {
+                                setUserMenuVisible(false);
+                                setTimeout(() => {
+                                    Alert.alert(
+                                        'Keluar Sesi',
+                                        'Apakah Anda yakin ingin keluar dari aplikasi?',
+                                        [
+                                            { text: 'Batal', style: 'cancel' },
+                                            { 
+                                                text: 'Keluar', 
+                                                style: 'destructive', 
+                                                onPress: () => {
+                                                    logout();
+                                                    router.replace('/(auth)/login' as any);
+                                                } 
+                                            }
+                                        ]
+                                    );
+                                }, 100);
+                            }}
+                            className="flex-row items-center p-3 rounded-2xl active:bg-red-50"
+                        >
+                            <LogOut size={16} color="#EF4444" strokeWidth={2.5} />
+                            <Typography className="text-red-500 text-xs font-bold ml-2">
+                                Keluar Sesi
+                            </Typography>
+                        </Pressable>
+                    </View>
                 </View>
             </Modal>
         </View>

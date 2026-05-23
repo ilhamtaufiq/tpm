@@ -104,9 +104,9 @@ export default function FinanceTab() {
                 rightElement={
                     <Pressable
                         onPress={onRefresh}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <RefreshCw size={20} color="white" />
+                        <RefreshCw size={20} color="#1F2937" />
                     </Pressable>
                 }
             />

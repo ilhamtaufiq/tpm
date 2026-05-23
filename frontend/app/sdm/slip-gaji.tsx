@@ -455,21 +455,21 @@ export default function SlipGajiScreen() {
             <Card className="mb-4 p-5 border border-gray-100 shadow-sm overflow-hidden">
                 {/* Header Section: Profile & Attendance */}
                 <View className="flex-row items-center justify-between mb-4">
-                    <View className="flex-row items-center flex-1 mr-4">
-                        <View className="w-10 h-10 bg-amber-50 rounded-2xl items-center justify-center mr-3 border border-amber-100">
+                    <View className="flex-row items-center flex-1 mr-4 min-w-0">
+                        <View className="w-10 h-10 bg-amber-50 rounded-2xl items-center justify-center mr-3 border border-amber-100 flex-shrink-0">
                             <User size={20} color="#F59E0B" />
                         </View>
-                        <View className="flex-1">
+                        <View className="flex-1 min-w-0">
                             <Typography weight="bold" className="text-textMain text-base" numberOfLines={1}>{item.karyawan_nama}</Typography>
-                            <Typography variant="caption" className="text-gray-400 font-bold">{item.karyawan_kode}</Typography>
+                            <Typography variant="caption" className="text-gray-400 font-bold" numberOfLines={1}>{item.karyawan_kode}</Typography>
                         </View>
                     </View>
 
-                    <View className="items-end">
+                    <View className="items-end flex-shrink-0">
                         <Typography className="text-[8px] text-gray-400 font-black uppercase mb-1 tracking-widest text-right">Kehadiran</Typography>
-                        <View className="flex-row items-center bg-gray-50 rounded-xl border border-gray-100 px-3 py-1.5 min-w-[60px] justify-center">
+                        <View className="flex-row items-center bg-gray-50 rounded-xl border border-gray-100 px-3 py-1.5 min-w-[70px] justify-center">
                             <TextInput
-                                className="text-primary font-black p-0 text-base"
+                                className="text-primary font-black p-0 text-base w-8 text-center"
                                 keyboardType="numeric"
                                 value={String(currentAttendance)}
                                 onChangeText={(v) => handleUpdateAttendance(item.karyawan_id, v)}
@@ -499,12 +499,12 @@ export default function SlipGajiScreen() {
                 </View>
 
                 {/* Adjustment Inputs Row */}
-                <View className="flex-row items-center space-x-3 mb-5">
-                    <View className="flex-1">
-                        <Typography className="text-[9px] text-emerald-500 font-black uppercase mb-1.5 tracking-wider ml-1">Uang Lembur (Rp)</Typography>
-                        <View className="flex-row items-center bg-emerald-50/30 rounded-2xl border border-emerald-100/50 px-4 py-3">
+                <View className="flex-row items-center gap-3 mb-5">
+                    <View className="flex-1 min-w-0">
+                        <Typography className="text-[9px] text-emerald-500 font-black uppercase mb-1.5 tracking-wider ml-1" numberOfLines={1}>Uang Lembur (Rp)</Typography>
+                        <View className="flex-row items-center bg-emerald-50/30 rounded-2xl border border-emerald-100/50 px-3 sm:px-4 py-3">
                             <TextInput
-                                className="flex-1 text-emerald-600 font-black p-0 text-base"
+                                className="flex-1 text-emerald-600 font-black p-0 text-base min-w-[50px] outline-none"
                                 keyboardType="numeric"
                                 value={formatNumber(String(currentOvertime))}
                                 onChangeText={(v) => handleUpdateOvertime(item.karyawan_id, parseNumber(v).toString())}
@@ -513,11 +513,11 @@ export default function SlipGajiScreen() {
                             />
                         </View>
                     </View>
-                    <View className="flex-1">
-                        <Typography className="text-[9px] text-rose-500 font-black uppercase mb-1.5 tracking-wider ml-1">Potong Kasbon (Rp)</Typography>
-                        <View className="flex-row items-center bg-rose-50/30 rounded-2xl border border-rose-100/50 px-4 py-3">
+                    <View className="flex-1 min-w-0">
+                        <Typography className="text-[9px] text-rose-500 font-black uppercase mb-1.5 tracking-wider ml-1" numberOfLines={1}>Potong Kasbon (Rp)</Typography>
+                        <View className="flex-row items-center bg-rose-50/30 rounded-2xl border border-rose-100/50 px-3 sm:px-4 py-3">
                             <TextInput
-                                className="flex-1 text-rose-600 font-black p-0 text-base"
+                                className="flex-1 text-rose-600 font-black p-0 text-base min-w-[50px] outline-none"
                                 keyboardType="numeric"
                                 value={formatNumber(String(currentKasbon))}
                                 onChangeText={(v) => handleUpdateKasbon(item.karyawan_id, parseNumber(v).toString())}
@@ -530,15 +530,15 @@ export default function SlipGajiScreen() {
 
                 {/* Footer Section: Total & Process */}
                 <View className="pt-4 border-t border-gray-100 flex-row items-center justify-between">
-                    <View>
-                        <Typography className="text-[8px] text-textGray/40 font-black uppercase tracking-[2px] mb-1">Gaji Bersih Diterima</Typography>
-                        <Typography weight="bold" className="text-2xl text-emerald-600 tracking-tighter">{formatCurrency(currentGajiBersih)}</Typography>
+                    <View className="flex-1 mr-3">
+                        <Typography className="text-[8px] text-textGray/40 font-black uppercase tracking-[2px] mb-1" numberOfLines={1}>Gaji Bersih Diterima</Typography>
+                        <Typography weight="bold" className="text-xl sm:text-2xl text-emerald-600 tracking-tighter" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(currentGajiBersih)}</Typography>
                     </View>
 
                     <Pressable
                         onPress={() => handleGenerateSingle(item)}
                         disabled={isGenerating || !!generatingId}
-                        className={`h-14 px-6 rounded-2xl flex-row items-center justify-center ${isGenerating ? 'bg-gray-100' : 'bg-primary shadow-lg shadow-primary/30'}`}
+                        className={`h-14 px-4 sm:px-6 rounded-2xl flex-row items-center justify-center flex-shrink-0 ${isGenerating ? 'bg-gray-100' : 'bg-primary shadow-lg shadow-primary/30'}`}
                     >
                         {isGenerating ? (
                             <ActivityIndicator size="small" color="#023C69" />
@@ -560,13 +560,13 @@ export default function SlipGajiScreen() {
             <Pressable onPress={() => openDetail(item)} >
                 <Card className="mb-4 p-5 border border-gray-100 shadow-sm">
                     <View className="flex-row items-center justify-between">
-                        <View className="flex-row items-center flex-1">
-                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isLunas ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-                                <FileText size={24} color={isLunas ? '#10B981' : '#F59E0B'} />
+                        <View className="flex-row items-center flex-1 mr-2">
+                            <View className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl items-center justify-center mr-3 sm:mr-4 flex-shrink-0 ${isLunas ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                                <FileText size={20} color={isLunas ? '#10B981' : '#F59E0B'} />
                             </View>
                             <View className="flex-1">
-                                <Typography weight="bold" className="text-textMain">{item.karyawan_nama}</Typography>
-                                <View className="flex-row items-center mt-1">
+                                <Typography weight="bold" className="text-textMain text-sm sm:text-base" numberOfLines={1}>{item.karyawan_nama}</Typography>
+                                <View className="flex-row items-center mt-1 flex-wrap">
                                     <View className="bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 mr-2">
                                         <Typography className="text-primary text-[10px] font-bold">{item.jumlah_hadir} HARI</Typography>
                                     </View>
@@ -673,10 +673,8 @@ export default function SlipGajiScreen() {
 
                 {/* Search & Tabs Area */}
                 <View className="flex-1">
-                    <View className="mx-6 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px]">
-
                     {/* Glassmorphic Search */}
-                    <View className="px-6 pt-6 pb-2">
+                    <View className="px-6 pt-2 pb-2">
                         <View className="bg-gray-50 px-5 py-4 rounded-[24px] border border-gray-100 flex-row items-center shadow-inner">
                             <Search size={20} color="#D1D5DB" strokeWidth={2.5} />
                             <TextInput
@@ -690,7 +688,7 @@ export default function SlipGajiScreen() {
                     </View>
 
                     {/* Modern Tab Switcher */}
-                    <View className="flex-row p-4 space-x-2">
+                    <View className="flex-row px-6 py-4 gap-2">
                         <Pressable
                             onPress={() => setActiveTab('pending')}
                             className={`flex-1 py-4 items-center rounded-3xl flex-row justify-center ${activeTab === 'pending' ? 'bg-primary border border-white/10 shadow-lg shadow-primary/30' : 'bg-gray-50'}`}
@@ -713,13 +711,13 @@ export default function SlipGajiScreen() {
                     </View>
 
                     {/* Dynamic List */}
-                    <View className="flex-1 bg-white">
+                    <View className="flex-1">
                         {activeTab === 'pending' ? (
                             <FlatList
                                 data={filteredPending}
                                 renderItem={renderPendingItem}
                                 keyExtractor={(item) => item.karyawan_id.toString()}
-                                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
+                                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 200, paddingTop: 10 }}
                                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
@@ -743,7 +741,7 @@ export default function SlipGajiScreen() {
                                 data={filteredHistory}
                                 renderItem={renderHistoryItem}
                                 keyExtractor={(item) => item.id.toString()}
-                                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 10 }}
+                                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 200, paddingTop: 10 }}
                                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                                 ListEmptyComponent={
                                     <View className="items-center py-20 px-10">
@@ -767,7 +765,7 @@ export default function SlipGajiScreen() {
 
                     {/* Bulk Generate FAB */}
                     {activeTab === 'pending' && filteredPending.length > 0 && (
-                        <View className="absolute bottom-6 left-6 right-6">
+                        <View className="absolute left-6 right-6" style={{ bottom: 100, elevation: 5, zIndex: 999 }}>
                             <Pressable
                                 onPress={handleGenerateBulk}
                                 disabled={createBulkMutation.isPending}
@@ -782,18 +780,17 @@ export default function SlipGajiScreen() {
                             </Pressable>
                         </View>
                     )}
-                    </View>
                 </View>
             </ScrollView>
 
             {/* Summary Panel for History */}
             {activeTab === 'history' && summary && (
-                <View className="absolute bottom-0 left-0 right-0 bg-white p-6 rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between">
-                    <View>
-                        <Typography className="text-textGray/40 text-[10px] font-black uppercase tracking-wider mb-1">Total Pengeluaran</Typography>
-                        <Typography className="text-textMain text-xl font-black">{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
+                <View className="absolute left-0 right-0 bg-white p-4 sm:p-6 rounded-t-[40px] sm:rounded-t-[48px] shadow-2xl border-t border-gray-100 flex-row items-center justify-between" style={{ bottom: 85, elevation: 10, zIndex: 999 }}>
+                    <View className="flex-1 mr-3">
+                        <Typography className="text-textGray/40 text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-1" numberOfLines={1}>Total Pengeluaran</Typography>
+                        <Typography className="text-textMain text-lg sm:text-xl font-black" numberOfLines={1} adjustsFontSizeToFit>{formatCurrency(summary.total_dibayar + summary.total_belum_dibayar)}</Typography>
                     </View>
-                    <View className="items-end">
+                    <View className="items-end flex-shrink-0">
                         <Typography className="text-amber-500 font-bold text-xs">Belum: {formatCurrency(summary.total_belum_dibayar)}</Typography>
                         <Typography className="text-emerald-600 font-bold text-xs">Sudah: {formatCurrency(summary.total_dibayar)}</Typography>
                     </View>

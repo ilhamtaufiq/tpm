@@ -26,6 +26,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { usePengeluaranList, useCreatePengeluaran, usePengeluaranSummary } from '../../../hooks/useBengkel';
+import { Header } from '../../../components/ui/Header';
 import { onlineManager } from '@tanstack/react-query';
 import { formatNumber, parseNumber, formatCurrency, formatDate } from '../../../utils/format';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
@@ -194,45 +195,38 @@ export default function ExpensesScreen() {
     };
 
     return (
-        <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-background">
+            <StatusBar barStyle="dark-content" />
 
-            {/* Premium Header (TPM Style) */}
-            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[56px] shadow-2xl z-30">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Biaya Operasional</Typography>
-                            <Typography className="text-white/50 text-[10px] font-bold uppercase tracking-[2px]">Workshop Expenses Control</Typography>
-                        </View>
-                    </View>
-
+            {/* Global Header Integration */}
+            <Header
+                title="Biaya Operasional"
+                subtitle="Workshop Expenses Control"
+                showBackButton
+                onBackButtonPress={handleBack}
+                rightElement={
                     <Pressable
                         onPress={() => setShowForm(!showForm)}
-                        className={`w-11 h-11 rounded-2xl items-center justify-center border ${showForm ? 'bg-white border-white' : 'bg-white/10 border-white/5'}`}
+                        className={`w-11 h-11 rounded-2xl items-center justify-center border ${showForm ? 'bg-gray-900 border-gray-900 active:bg-gray-800' : 'bg-gray-50 border-gray-100 active:bg-gray-100'}`}
                     >
-                        {showForm ? <X size={20} color="#023C69" /> : <Plus size={24} color="white" />}
+                        {showForm ? <X size={20} color="white" /> : <Plus size={24} color="#1F2937" />}
                     </Pressable>
-                </View>
+                }
+            />
 
-                {/* Main Summary Stat Overlay Card */}
-                <View className="bg-white p-6 rounded-[32px] shadow-2xl border border-gray-100 flex-row items-center">
-                    <View className="w-14 h-14 bg-primary/5 rounded-[24px] items-center justify-center mr-4 border border-primary/10">
-                        <TrendingDown size={28} color="#023C69" />
+            {/* Main Summary Stat Overlay Card */}
+            <View className="px-6 mt-4 z-10">
+                <View className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 flex-row items-center">
+                    <View className="w-14 h-14 bg-rose-50 rounded-[18px] items-center justify-center mr-4 border border-rose-100">
+                        <TrendingDown size={28} color="#EF4444" />
                     </View>
                     <View className="flex-1">
                         <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest mb-1">Total Pengeluaran Bulan Ini</Typography>
-                        <Typography variant="h2" weight="bold" className="text-textMain font-bold text-2xl tracking-tighter">
+                        <Typography variant="h2" weight="bold" className="text-textMain font-bold text-xl tracking-tighter">
                             {formatCurrency(summaryData?.total_jumlah || 0)}
                         </Typography>
                     </View>
-                    <View className="bg-primary/10 px-3 py-1.5 rounded-full items-center">
+                    <View className="bg-primary/10 px-3 py-1.5 rounded-xl items-center">
                         <Typography className="text-primary text-[10px] font-black">{summaryData?.count || 0}</Typography>
                         <Typography className="text-primary text-[8px] font-bold uppercase">Trans</Typography>
                     </View>
@@ -519,72 +513,68 @@ export default function ExpensesScreen() {
                     </View>
                 )}
 
-                {/* List Section Area */}
-                <View className="mx-6 bg-white rounded-[40px] shadow-2xl border border-gray-50 overflow-hidden min-h-[500px]">
-                    <View className="p-6 border-b border-gray-50 flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h3" weight="bold" className="tracking-tighter">Riwayat Aktivitas</Typography>
-                            <Typography className="text-textGray/40 text-[10px] font-bold uppercase tracking-widest">Transaksi Terbaru</Typography>
-                        </View>
-                        <View className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center">
-                            <Search size={20} color="#D1D5DB" />
-                        </View>
-                    </View>
+                {/* Heading */}
+                <View className="flex-row items-center justify-between mb-4 mt-6 px-6">
+                    <Typography variant="h3" weight="bold" className="tracking-tight text-textMain">Riwayat Aktivitas</Typography>
+                    {expenses && expenses.length > 0 && (
+                        <Typography variant="caption" className="text-primary font-bold">{expenses.length} Transaksi</Typography>
+                    )}
+                </View>
 
-                    <View className="p-4">
-                        {isLoading ? (
-                            <View className="py-20 flex-row justify-center items-center">
-                                <ActivityIndicator size="large" color="#023C69" />
+                {/* List Section Area */}
+                <View className="px-6">
+                    {isLoading ? (
+                        <View className="py-20 flex-row justify-center items-center">
+                            <ActivityIndicator size="large" color="#023C69" />
+                        </View>
+                    ) : expenses.length === 0 ? (
+                        <View className="py-20 items-center bg-white rounded-[32px] border border-gray-50 shadow-sm p-6">
+                            <View className="w-16 h-16 bg-gray-50 rounded-[28px] items-center justify-center mb-6">
+                                <Receipt size={32} color="#D1D5DB" />
                             </View>
-                        ) : expenses.length === 0 ? (
-                            <View className="py-20 items-center">
-                                <View className="w-16 h-16 bg-gray-50 rounded-[28px] items-center justify-center mb-6">
-                                    <Receipt size={32} color="#D1D5DB" />
-                                </View>
-                                <Typography className="text-gray-400 font-bold text-center">Belum ada aktivitas</Typography>
-                                <Typography className="text-gray-300 text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
-                            </View>
-                        ) : (
-                            expenses.map((item: any) => {
-                                const catInfo = CATEGORIES.find(c => c.value === item.kategori) || CATEGORIES[2];
-                                return (
-                                    <Card key={item.id} className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px]">
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center flex-1 mr-4">
-                                                <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-gray-50">
-                                                    <catInfo.icon size={20} color={catInfo.color} />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <Typography weight="bold" className="text-textMain text-sm mb-0.5" numberOfLines={1}>{item.deskripsi || item.nama}</Typography>
-                                                    <View className="flex-row items-center">
-                                                        <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest">{catInfo.label}</Typography>
-                                                        <Typography className="text-textGray/20 text-[9px] mx-1.5">•</Typography>
-                                                        <Typography className="text-textGray/40 text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
-                                                    </View>
-                                                    {item.bisnis_kategori !== 'umum' && (
-                                                        <View className="flex-row items-center mt-1">
-                                                            <View className="w-1.5 h-1.5 rounded-full bg-primary/30 mr-1.5" />
-                                                            <Typography className="text-primary/60 text-[8px] font-black uppercase tracking-[1px]">
-                                                                Linked to {item.bisnis_kategori.replace('_', ' ')}
-                                                            </Typography>
-                                                        </View>
-                                                    )}
-                                                </View>
+                            <Typography className="text-gray-400 font-bold text-center">Belum ada aktivitas</Typography>
+                            <Typography className="text-gray-300 text-xs text-center mt-1">Data pengeluaran akan muncul di sini</Typography>
+                        </View>
+                    ) : (
+                        expenses.map((item: any) => {
+                            const catInfo = CATEGORIES.find(c => c.value === item.kategori) || CATEGORIES[2];
+                            return (
+                                <Card key={item.id} className="mb-4 p-5 border border-gray-50 shadow-sm bg-white rounded-[32px]">
+                                    <View className="flex-row items-center justify-between">
+                                        <View className="flex-row items-center flex-1 mr-4">
+                                            <View className="w-12 h-12 rounded-2xl items-center justify-center mr-3 bg-gray-50">
+                                                <catInfo.icon size={20} color={catInfo.color} />
                                             </View>
-                                            <View className="items-end">
-                                                <Typography weight="bold" className="text-primary text-sm tracking-tight mb-1">-{formatNumber(item.jumlah)}</Typography>
-                                                <Badge
-                                                    label={item.metode_bayar || 'TUNAI'}
-                                                    variant={item.metode_bayar?.toUpperCase() === 'TUNAI' ? 'warning' : 'info'}
-                                                    className="px-2 py-0"
-                                                />
+                                            <View className="flex-1">
+                                                <Typography weight="bold" className="text-textMain text-sm mb-0.5" numberOfLines={1}>{item.deskripsi || item.nama}</Typography>
+                                                <View className="flex-row items-center">
+                                                    <Typography className="text-textGray/40 text-[9px] font-black uppercase tracking-widest">{catInfo.label}</Typography>
+                                                    <Typography className="text-textGray/20 text-[9px] mx-1.5">•</Typography>
+                                                    <Typography className="text-textGray/40 text-[9px] font-bold">{formatDate(item.tanggal)}</Typography>
+                                                </View>
+                                                {item.bisnis_kategori !== 'umum' && (
+                                                    <View className="flex-row items-center mt-1">
+                                                        <View className="w-1.5 h-1.5 rounded-full bg-primary/30 mr-1.5" />
+                                                        <Typography className="text-primary/60 text-[8px] font-black uppercase tracking-[1px]">
+                                                            Linked to {item.bisnis_kategori.replace('_', ' ')}
+                                                        </Typography>
+                                                    </View>
+                                                )}
                                             </View>
                                         </View>
-                                    </Card>
-                                );
-                            })
-                        )}
-                    </View>
+                                        <View className="items-end">
+                                            <Typography weight="bold" className="text-primary text-sm tracking-tight mb-1">-{formatNumber(item.jumlah)}</Typography>
+                                            <Badge
+                                                label={item.metode_bayar || 'TUNAI'}
+                                                variant={item.metode_bayar?.toUpperCase() === 'TUNAI' ? 'warning' : 'info'}
+                                                className="px-2 py-0"
+                                            />
+                                        </View>
+                                    </View>
+                                </Card>
+                            );
+                        })
+                    )}
                 </View>
             </ScrollView>
         </View>

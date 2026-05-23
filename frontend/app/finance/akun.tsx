@@ -488,33 +488,33 @@ export default function AkunKeuanganScreen() {
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/finance/laporan')}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <BarChart3 size={24} color="white" />
+                        <BarChart3 size={20} color="#1F2937" />
                     </Pressable>
                 }
             >
                 {/* Total Balance Bento */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/5">
+                <View className="bg-gray-50 p-6 rounded-[32px] border border-gray-100 mt-4">
                     <View className="flex-row items-center mb-1">
-                        <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-widest">Total Keseluruhan Saldo</Typography>
+                        <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Total Keseluruhan Saldo</Typography>
                         <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-2 animate-pulse" />
                     </View>
                     <View className="flex-row items-baseline">
-                        <Typography className="text-white/60 text-lg mr-1 font-bold">Rp</Typography>
-                        <Typography weight="bold" className="text-white text-4xl">
+                        <Typography className="text-gray-500 text-lg mr-1 font-bold">Rp</Typography>
+                        <Typography weight="bold" className="text-gray-900 text-4xl">
                             {formatCurrency(balances?.total_saldo || 0).replace('Rp', '').trim()}
                         </Typography>
                     </View>
 
-                    <View className="flex-row mt-6 pt-6 border-t border-white/5">
+                    <View className="flex-row mt-6 pt-6 border-t border-gray-100">
                         <View className="flex-1 flex-row items-center">
                             <View className="w-8 h-8 rounded-full bg-emerald-400/20 items-center justify-center mr-3">
-                                <TrendingUp size={14} color="#34D399" />
+                                <TrendingUp size={14} color="#10B981" />
                             </View>
                             <View>
-                                <Typography className="text-white/30 text-[8px] uppercase font-bold">Masuk (Bulan Ini)</Typography>
-                                <Typography className="text-emerald-400 text-xs font-bold">
+                                <Typography className="text-gray-400 text-[8px] uppercase font-bold">Masuk (Bulan Ini)</Typography>
+                                <Typography className="text-emerald-600 text-xs font-bold">
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
                                             if (typeof curr === 'object' && curr !== null && 'total_masuk_bulan_ini' in curr) {
@@ -528,11 +528,11 @@ export default function AkunKeuanganScreen() {
                         </View>
                         <View className="flex-1 flex-row items-center ml-4">
                             <View className="w-8 h-8 rounded-full bg-rose-400/20 items-center justify-center mr-3">
-                                <TrendingDown size={14} color="#F87171" />
+                                <TrendingDown size={14} color="#EF4444" />
                             </View>
                             <View>
-                                <Typography className="text-white/30 text-[8px] uppercase font-bold">Keluar (Bulan Ini)</Typography>
-                                <Typography className="text-rose-400 text-xs font-bold">
+                                <Typography className="text-gray-400 text-[8px] uppercase font-bold">Keluar (Bulan Ini)</Typography>
+                                <Typography className="text-rose-600 text-xs font-bold">
                                     {formatCurrency(
                                         Object.values(balances || {}).reduce((acc: number, curr: any) => {
                                             if (typeof curr === 'object' && curr !== null && 'total_keluar_bulan_ini' in curr) {

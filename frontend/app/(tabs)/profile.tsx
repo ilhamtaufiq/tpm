@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders, UserPlus } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -157,35 +157,34 @@ export default function ProfileScreen() {
             )}
 
             <Header
-                title={user?.full_name || user?.name || 'Admin TPM'}
-                subtitle={`Profil Saya • ${user?.role || 'Manager'}`}
+                title="Pengaturan"
+                subtitle="Konfigurasi & Manajemen Sistem"
                 showProfile={false}
                 leftElement={
-                    <View className="w-14 h-14 bg-white/20 rounded-full p-1 border border-white/10">
-                        <View className="w-full h-full bg-white rounded-full items-center justify-center overflow-hidden">
+                    <View className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative">
+                        <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
                             {user?.profile_picture ? (
                                 <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
                             ) : (
-                                <CircleUser size={28} color={themeColors.primary} />
+                                <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                             )}
                         </View>
-                        <View className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-primary" />
                     </View>
                 }
                 rightElement={
                     <Pressable
                         onPress={() => router.push('/settings/profile')}
-                        className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center border border-white/5 active:bg-white/20"
+                        className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:bg-gray-100"
                     >
-                        <Settings size={20} color="white" />
+                        <Settings size={20} color="#1F2937" />
                     </Pressable>
                 }
             />
 
 
             <ScrollView
-                className="flex-1 -mt-8"
-                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, paddingTop: 60 }}
+                className="flex-1 mt-4"
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
@@ -392,6 +391,24 @@ export default function ProfileScreen() {
                                 disabled={updateSettingsMutation.isPending}
                             />
                         </View>
+
+
+                        {/* USER MANAGEMENT & ACCESS - NEW SECTION */}
+                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengguna & Akses</Typography>
+
+                        <Pressable
+                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
+                            onPress={() => router.push('/settings/users')}
+                        >
+                            <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
+                                <UserPlus size={24} color="#3B82F6" />
+                            </View>
+                            <View className="flex-1">
+                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Manajemen Pengguna</Typography>
+                                <Typography variant="caption" className="text-text/40">Kelola akun, role, dan hak akses staf</Typography>
+                            </View>
+                            <ChevronRight size={20} color={themeColors.textGray} />
+                        </Pressable>
 
 
                         {/* DANGER ZONE & SESSION */}
