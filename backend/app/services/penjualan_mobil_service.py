@@ -1125,14 +1125,21 @@ class PenjualanMobilService:
             KasBank.keterangan.ilike("%Akun Utama%")
         )
 
+        total_dana_keluar_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_MOBIL,
+            KasBank.tipe == KasBankType.KELUAR
+        )
+
         if tanggal_dari:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal >= tanggal_dari)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal >= tanggal_dari)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal >= tanggal_dari)
+            total_dana_keluar_q = total_dana_keluar_q.filter(KasBank.tanggal >= tanggal_dari)
         if tanggal_sampai:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
+            total_dana_keluar_q = total_dana_keluar_q.filter(KasBank.tanggal <= tanggal_sampai)
         
         # 4. Total car purchases in period (Realization)
         total_pembelian_period_q = self.db.query(func.sum(Mobil.harga_beli)).filter(Mobil.deleted_at.is_(None))
@@ -1248,6 +1255,7 @@ class PenjualanMobilService:
             "total_tunai": float(total_tunai_q.scalar() or 0),
             "total_transfer": float(total_transfer_q.scalar() or 0),
             "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
+            "total_dana_keluar": float(total_dana_keluar_q.scalar() or 0),
             "sold_list": sold_ids
         }
 

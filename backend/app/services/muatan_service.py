@@ -1234,14 +1234,21 @@ class MuatanService:
             KasBank.keterangan.ilike("%Akun Utama%")
         )
 
+        total_dana_keluar_q = self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT,
+            KasBank.tipe == KasBankType.KELUAR
+        )
+
         if tanggal_dari:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal >= tanggal_dari)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal >= tanggal_dari)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal >= tanggal_dari)
+            total_dana_keluar_q = total_dana_keluar_q.filter(KasBank.tanggal >= tanggal_dari)
         if tanggal_sampai:
             total_tunai_q = total_tunai_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_transfer_q = total_transfer_q.filter(KasBank.tanggal <= tanggal_sampai)
             total_dana_dari_utama_q = total_dana_dari_utama_q.filter(KasBank.tanggal <= tanggal_sampai)
+            total_dana_keluar_q = total_dana_keluar_q.filter(KasBank.tanggal <= tanggal_sampai)
 
         # --- Aggregate Maintenance Breakdown per Armada (from Invoice & Logs) ---
         bengkel_armada_query = self.db.query(
@@ -1317,6 +1324,7 @@ class MuatanService:
             "total_tunai": float(total_tunai_q.scalar() or 0),
             "total_transfer": float(total_transfer_q.scalar() or 0),
             "total_dana_dari_utama": float(total_dana_dari_utama_q.scalar() or 0),
+            "total_dana_keluar": float(total_dana_keluar_q.scalar() or 0),
             "jasa_angkut_armada": armada_ja_summary,
             "details": {
                 "gross_share_tpm": total_pendapatan,

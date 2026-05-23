@@ -906,7 +906,7 @@ export default function BengkelScreen() {
                                         <Typography variant="caption" className="text-white/50 font-black uppercase tracking-[1px] text-[7px]">Total Keluar (Biaya/Setor)</Typography>
                                         <View className="w-1.5 h-1.5 rounded-full bg-rose-400 ml-2" />
                                     </View>
-                                    <Typography className="text-rose-300 text-sm font-bold">{formatCurrency((summary?.total_dana_dari_utama || 0) + (summary?.total_tunai || 0) - unitBalance)}</Typography>
+                                    <Typography className="text-rose-300 text-sm font-bold">{formatCurrency(-(summary?.total_dana_keluar || 0))}</Typography>
                                 </View>
                             </View>
 
