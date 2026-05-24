@@ -7,7 +7,7 @@ import { Stack, SplashScreen, useSegments, useRouter, router } from 'expo-router
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect, useState } from 'react';
 import * as Updates from 'expo-updates';
-import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, AppState, AppStateStatus, Platform, Pressable } from 'react-native';
 import {
     useFonts,
     Outfit_400Regular,
@@ -84,6 +84,17 @@ function RootLayoutContent() {
     const [isReady, setIsReady] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    
+    // States for Premium Web Mobile Preview Frame
+    const [isMobileMode, setIsMobileMode] = useState(true);
+    const [windowWidth, setWindowWidth] = useState(Platform.OS === 'web' ? window.innerWidth : 360);
+
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // API state fetching
     const { data: securityStatus, isLoading: isLoadingSecurity } = useSecurityStatus();
@@ -283,37 +294,186 @@ function RootLayoutContent() {
         );
     }
 
+    const appContent = (
+        <>
+            <ConnectivityBanner />
+            <ErrorBoundary>
+                <BottomSheetModalProvider>
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="landing" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="(security)" options={{ headerShown: false }} />
+                        <Stack.Screen name="bengkel" options={{ headerShown: false }} />
+                        <Stack.Screen name="finance" options={{ headerShown: false }} />
+                        <Stack.Screen name="jasa-angkut" options={{ headerShown: false }} />
+                        <Stack.Screen name="laporan" options={{ headerShown: false }} />
+                        <Stack.Screen name="master-data" options={{ headerShown: false }} />
+                        <Stack.Screen name="mobil" options={{ headerShown: false }} />
+                        <Stack.Screen name="receipt" options={{ headerShown: false }} />
+                        <Stack.Screen name="sdm" options={{ headerShown: false }} />
+                        <Stack.Screen name="settings" options={{ headerShown: false }} />
+                        <Stack.Screen name="monitor" options={{ headerShown: false }} />
+                        <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
+                    </Stack>
+                    
+                    {/* Global Custom Bottom Navigation */}
+                    {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
+                        <CustomTabBar />
+                    )}
+                </BottomSheetModalProvider>
+            </ErrorBoundary>
+        </>
+    );
+
+    const showMobileFrame = Platform.OS === 'web' && isMobileMode && windowWidth > 640;
+
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
-                <ConnectivityBanner />
-                <ErrorBoundary>
-                    <BottomSheetModalProvider>
-                        <Stack screenOptions={{ headerShown: false }}>
-                            <Stack.Screen name="index" options={{ headerShown: false }} />
-                            <Stack.Screen name="landing" options={{ headerShown: false }} />
-                            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                            <Stack.Screen name="(security)" options={{ headerShown: false }} />
-                            <Stack.Screen name="bengkel" options={{ headerShown: false }} />
-                            <Stack.Screen name="finance" options={{ headerShown: false }} />
-                            <Stack.Screen name="jasa-angkut" options={{ headerShown: false }} />
-                            <Stack.Screen name="laporan" options={{ headerShown: false }} />
-                            <Stack.Screen name="master-data" options={{ headerShown: false }} />
-                            <Stack.Screen name="mobil" options={{ headerShown: false }} />
-                            <Stack.Screen name="receipt" options={{ headerShown: false }} />
-                            <Stack.Screen name="sdm" options={{ headerShown: false }} />
-                            <Stack.Screen name="settings" options={{ headerShown: false }} />
-                            <Stack.Screen name="monitor" options={{ headerShown: false }} />
-                            <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
-                        </Stack>
+                {showMobileFrame ? (
+                    <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center' }}>
+                        {/* Background ambient light */}
+                        <View 
+                            style={{
+                                position: 'absolute',
+                                width: 500,
+                                height: 500,
+                                backgroundColor: themeColors.primary,
+                                opacity: 0.12,
+                                borderRadius: 250,
+                                top: -100,
+                                left: -100,
+                            }}
+                            className="blur-[120px]"
+                        />
+                        <View 
+                            style={{
+                                position: 'absolute',
+                                width: 500,
+                                height: 500,
+                                backgroundColor: '#6366f1',
+                                opacity: 0.12,
+                                borderRadius: 250,
+                                bottom: -100,
+                                right: -100,
+                            }}
+                            className="blur-[120px]"
+                        />
+
+                        {/* Device Mockup */}
+                        <View 
+                            style={{
+                                width: 390,
+                                height: 844,
+                                backgroundColor: '#000000',
+                                borderRadius: 48,
+                                padding: 10,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 24 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 36,
+                                elevation: 20,
+                                borderWidth: 2,
+                                borderColor: '#334155',
+                                position: 'relative'
+                            }}
+                        >
+                            {/* Speaker Notch */}
+                            <View 
+                                style={{
+                                    position: 'absolute',
+                                    top: 14,
+                                    left: '50%',
+                                    marginLeft: -64,
+                                    width: 128,
+                                    height: 24,
+                                    backgroundColor: 'black',
+                                    borderRadius: 12,
+                                    zIndex: 9999,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderWidth: 1,
+                                    borderColor: '#1e293b'
+                                }}
+                            >
+                                <View className="w-3.5 h-3.5 rounded-full bg-slate-900 border border-slate-700/40 mr-1.5 flex items-center justify-center">
+                                    <View className="w-1.5 h-1.5 rounded-full bg-indigo-900/80" />
+                                </View>
+                                <View className="w-12 h-1 bg-slate-800 rounded-full" />
+                            </View>
+
+                            {/* App Screen container */}
+                            <View className="flex-1 bg-white rounded-[38px] overflow-hidden relative">
+                                {appContent}
+                            </View>
+
+                            {/* Android Home Bar Line */}
+                            <View 
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 12,
+                                    left: '50%',
+                                    marginLeft: -72,
+                                    width: 144,
+                                    height: 4,
+                                    backgroundColor: '#475569',
+                                    borderRadius: 2,
+                                    zIndex: 9999
+                                }}
+                            />
+                        </View>
+
+                        {/* Floating Mode Switcher Button (Mobile mode active) */}
+                        <View 
+                            style={{
+                                position: 'absolute',
+                                bottom: 24,
+                                left: 24,
+                                zIndex: 99999,
+                            }}
+                            className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"
+                        >
+                            <Pressable
+                                onPress={() => setIsMobileMode(false)}
+                                className="px-4 py-2 rounded-xl flex-row items-center justify-center bg-primary active:scale-95 shadow-md shadow-primary/20"
+                            >
+                                <Text className="text-xs font-bold text-white">
+                                    💻 Mode Desktop
+                                </Text>
+                            </Pressable>
+                            <Text className="text-[10px] text-slate-500 font-bold px-1">TPM Android Mockup</Text>
+                        </View>
+                    </View>
+                ) : (
+                    <>
+                        {appContent}
                         
-                        {/* Global Custom Bottom Navigation */}
-                        {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
-                            <CustomTabBar />
+                        {/* Floating Mode Switcher Button (Desktop mode active) */}
+                        {Platform.OS === 'web' && windowWidth > 640 && (
+                            <View 
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 24,
+                                    left: 24,
+                                    zIndex: 99999,
+                                }}
+                                className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"
+                            >
+                                <Pressable
+                                    onPress={() => setIsMobileMode(true)}
+                                    className="px-4 py-2 rounded-xl flex-row items-center justify-center bg-slate-100 hover:bg-slate-200 active:scale-95"
+                                >
+                                    <Text className="text-xs font-bold text-slate-700">
+                                        📱 Preview Mobile
+                                    </Text>
+                                </Pressable>
+                            </View>
                         )}
-                    </BottomSheetModalProvider>
-                </ErrorBoundary>
+                    </>
+                )}
             </GestureHandlerRootView>
         </SafeAreaProvider>
     );
