@@ -23,6 +23,7 @@ import {
 import { useRouter } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Calendar as RNCalendar } from 'react-native-calendars';
+import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { usePayrollList, usePayrollSummary, useCreatePayroll, useProcessPayrollPayment, useSlipGajiPreview, useSlipGajiPreviewRange, useVoidSlipGajiPayment, useDeletePayroll } from '../../hooks/useSDM';
@@ -50,6 +51,20 @@ const getStartDateOfWeek = (w: number, y: number) => {
     else
         ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
     return ISOweekStart.toISOString().split('T')[0];
+};
+
+const getDayName = (dateString: string): string => {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const parts = dateString.split(/[-/T]/);
+    if (parts.length >= 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const date = new Date(year, month, day);
+        return days[date.getDay()];
+    }
+    const date = new Date(dateString);
+    return days[date.getDay()];
 };
 
 export default function SlipGajiScreen() {
@@ -125,6 +140,18 @@ export default function SlipGajiScreen() {
         new Date(startDate).getFullYear(),
         getWeekNumber(new Date(startDate))
     );
+
+    // Fetch attendance list for the selected slip details
+    const { data: attendanceData, isLoading: isLoadingAttendance } = useQuery({
+        queryKey: ['absensi_slip', selectedSlip?.karyawan_id, selectedSlip?.tanggal_mulai, selectedSlip?.tanggal_akhir],
+        queryFn: () => sdmService.getAbsensiList({
+            karyawan_id: selectedSlip?.karyawan_id,
+            tanggal_dari: selectedSlip?.tanggal_mulai,
+            tanggal_sampai: selectedSlip?.tanggal_akhir,
+            limit: 100
+        }),
+        enabled: !!selectedSlip?.karyawan_id && !!selectedSlip?.tanggal_mulai && !!selectedSlip?.tanggal_akhir,
+    });
 
     // 3. Pending (Employees without slips) - NOW RANGE BASED
     const { data: previewData, isLoading: isLoadingPreview, refetch: refetchPreview } = useSlipGajiPreviewRange(startDate, endDate, true);
@@ -900,6 +927,11 @@ export default function SlipGajiScreen() {
                     </View>
                     <Typography variant="h2" weight="bold" className="text-2xl text-textMain text-center">{selectedSlip.karyawan_nama}</Typography>
                     <Typography className="text-textGray mt-1 font-medium text-lg">W{selectedSlip.periode_minggu} • {selectedSlip.periode_tahun}</Typography>
+                    {selectedSlip.tanggal_mulai && selectedSlip.tanggal_akhir && (
+                        <Typography className="text-textGray/60 mt-2 font-semibold text-xs bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200/50">
+                            {formatDate(selectedSlip.tanggal_mulai)} – {formatDate(selectedSlip.tanggal_akhir)}
+                        </Typography>
+                    )}
 
                     <View className="mt-6">
                         <Badge
@@ -916,9 +948,52 @@ export default function SlipGajiScreen() {
                         <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Gaji Pokok</Typography>
                         <Typography weight="bold" className="text-textMain text-lg">{formatCurrency(selectedSlip.gaji_pokok)}</Typography>
                     </View>
-                    <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
-                        <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Kehadiran</Typography>
-                        <Typography weight="bold" className="text-textMain text-lg">{selectedSlip.jumlah_hadir} Hari</Typography>
+                    <View className="mb-6 pb-6 border-b border-gray-200/50">
+                        <View className="flex-row justify-between items-center">
+                            <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Kehadiran</Typography>
+                            <Typography weight="bold" className="text-textMain text-lg">{selectedSlip.jumlah_hadir} Hari</Typography>
+                        </View>
+                        
+                        {/* Attendance Dates List */}
+                        <View className="mt-3 bg-white/50 rounded-2xl p-3 border border-gray-100/50">
+                            {isLoadingAttendance ? (
+                                <ActivityIndicator size="small" color="#023C69" className="py-2" />
+                            ) : attendanceData?.data && attendanceData.data.length > 0 ? (
+                                <View className="gap-2">
+                                    {attendanceData.data.map((abs: any) => {
+                                        const dayName = getDayName(abs.tanggal);
+                                        const statusLabel = abs.status || 'HADIR';
+                                        
+                                        return (
+                                            <View key={abs.id} className="flex-row justify-between items-center py-0.5">
+                                                <View className="flex-row items-center">
+                                                    <View className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                                                        statusLabel === 'HADIR' ? 'bg-emerald-500' :
+                                                        statusLabel === 'SETENGAH_HARI' ? 'bg-amber-500' :
+                                                        statusLabel === 'IZIN' || statusLabel === 'SAKIT' ? 'bg-cyan-500' : 'bg-rose-500'
+                                                    }`} />
+                                                    <Typography className="text-textMain text-[11px] font-bold">
+                                                        {dayName}, {formatDate(abs.tanggal)}
+                                                    </Typography>
+                                                </View>
+                                                <Typography className={`text-[9px] font-black uppercase tracking-wider ${
+                                                    statusLabel === 'HADIR' ? 'text-emerald-600' :
+                                                    statusLabel === 'SETENGAH_HARI' ? 'text-amber-600' :
+                                                    statusLabel === 'IZIN' || statusLabel === 'SAKIT' ? 'text-cyan-600' : 'text-rose-600'
+                                                }`}>
+                                                    {statusLabel === 'HADIR' ? 'Hadir' :
+                                                     statusLabel === 'SETENGAH_HARI' ? '1/2 Hari' :
+                                                     statusLabel === 'IZIN' ? 'Izin' :
+                                                     statusLabel === 'SAKIT' ? 'Sakit' : 'Alpha'}
+                                                </Typography>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ) : (
+                                <Typography className="text-gray-400 text-[10px] italic text-center py-1">Tidak ada data absensi</Typography>
+                            )}
+                        </View>
                     </View>
                     <View className="flex-row justify-between items-center mb-6 pb-6 border-b border-gray-200/50">
                         <Typography className="text-textGray/60 text-sm font-bold uppercase tracking-widest">Uang Lembur</Typography>

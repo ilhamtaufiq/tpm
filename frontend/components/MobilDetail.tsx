@@ -36,7 +36,7 @@ import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, 
 import { onlineManager } from '@tanstack/react-query';
 import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
-import { formatCurrency, parseNumber, formatNumber } from '../utils/format';
+import { formatCurrency, parseNumber, formatNumber, formatDate } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
 import { AlertDialog } from './ui/AlertDialog';
@@ -90,15 +90,16 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
     const activeUnit = unit || initialUnit;
     const isBooking = activeUnit?.status?.toUpperCase() === 'BOOKING';
+    const isTerjual = activeUnit?.status?.toUpperCase() === 'TERJUAL';
 
     // Fetch penjualan data as fallback if not pre-joined (e.g. from general list)
     const { data: penjualanData } = usePenjualanMobilList(
-        isBooking && !activeUnit?.penjualan ? { mobil_id: activeUnit?.id } : undefined
+        (isBooking || isTerjual) && !activeUnit?.penjualan ? { mobil_id: activeUnit?.id } : undefined
     );
 
     // The active transaction is pre-joined by backend OR fallback to manual fetch
     const activeTx = activeUnit?.penjualan || penjualanData?.data?.find(
-        (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'LUNAS' && tx.status_bayar !== 'BATAL'
+        (tx: any) => tx.mobil_id === activeUnit?.id && tx.status_bayar !== 'BATAL'
     );
     const cancelMutation = useCancelBookingMobil();
 
@@ -453,15 +454,59 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                         </View>
 
                         {activeUnit.harga_jual > 0 && (
-                            <View className="flex-row justify-between items-center">
-                                <View>
-                                    <Typography variant="caption" className="text-blue-500 font-bold mb-1">Terjual Seharga</Typography>
-                                    <Typography variant="h2" weight="bold" className="text-blue-600">{formatCurrency(activeUnit.harga_jual)}</Typography>
+                            <>
+                                <View className="flex-row justify-between items-center">
+                                    <View>
+                                        <Typography variant="caption" className="text-blue-500 font-bold mb-1">Terjual Seharga</Typography>
+                                        <Typography variant="h2" weight="bold" className="text-blue-600">{formatCurrency(activeUnit.harga_jual)}</Typography>
+                                    </View>
+                                    <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center">
+                                        <TrendingUp size={20} color="#2563EB" />
+                                    </View>
                                 </View>
-                                <View className="w-12 h-12 bg-blue-50 rounded-2xl items-center justify-center">
-                                    <TrendingUp size={20} color="#2563EB" />
-                                </View>
-                            </View>
+                                
+                                {activeTx && (
+                                    <View className="bg-blue-50/30 p-4 rounded-2xl border border-blue-100/50 mt-4">
+                                        <Typography className="text-blue-700 text-[10px] font-black uppercase tracking-wider mb-3">Detail Transaksi Penjualan</Typography>
+                                        
+                                        <View className="space-y-2">
+                                            {activeTx.nomor_transaksi && (
+                                                <View className="flex-row justify-between py-0.5">
+                                                    <Typography className="text-textGray/60 text-xs font-semibold">No. Transaksi</Typography>
+                                                    <Typography className="text-textMain text-xs font-bold">{activeTx.nomor_transaksi}</Typography>
+                                                </View>
+                                            )}
+                                            {(activeTx.tanggal || activeTx.created_at) && (
+                                                <View className="flex-row justify-between py-0.5">
+                                                    <Typography className="text-textGray/60 text-xs font-semibold">Tanggal Terjual</Typography>
+                                                    <Typography className="text-textMain text-xs font-bold">{formatDate(activeTx.tanggal || activeTx.created_at)}</Typography>
+                                                </View>
+                                            )}
+                                            {activeTx.nama_pembeli && (
+                                                <View className="flex-row justify-between py-0.5">
+                                                    <Typography className="text-textGray/60 text-xs font-semibold">Pembeli</Typography>
+                                                    <Typography className="text-textMain text-xs font-bold">{activeTx.nama_pembeli}</Typography>
+                                                </View>
+                                            )}
+                                            {activeTx.metode_bayar && (
+                                                <View className="flex-row justify-between py-0.5">
+                                                    <Typography className="text-textGray/60 text-xs font-semibold">Metode Pembayaran</Typography>
+                                                    <Typography className="text-textMain text-xs font-bold uppercase">{activeTx.metode_bayar}</Typography>
+                                                </View>
+                                            )}
+                                            {activeTx.status_bayar && (
+                                                <View className="flex-row justify-between py-0.5">
+                                                    <Typography className="text-textGray/60 text-xs font-semibold">Status Pembayaran</Typography>
+                                                    <Typography className={`text-xs font-bold uppercase ${
+                                                        activeTx.status_bayar === 'LUNAS' ? 'text-emerald-600' :
+                                                        activeTx.status_bayar === 'PARTIAL' ? 'text-amber-600' : 'text-rose-600'
+                                                    }`}>{activeTx.status_bayar}</Typography>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                )}
+                            </>
                         )}
                     </Card>
 
@@ -525,6 +570,12 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                                 {/* Payment Info */}
                                 <View className="p-6">
+                                    {(activeTx.tanggal || activeTx.created_at) && (
+                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
+                                            <Typography className="text-gray-500">Tanggal Booking</Typography>
+                                            <Typography weight="bold" className="text-textMain">{formatDate(activeTx.tanggal || activeTx.created_at)}</Typography>
+                                        </View>
+                                    )}
                                     <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
                                         <Typography className="text-gray-500">Pembeli</Typography>
                                         <Typography weight="bold" className="text-textMain">{activeTx.nama_pembeli}</Typography>
@@ -537,6 +588,21 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                         <Typography className="text-gray-500">DP Terbayar</Typography>
                                         <Typography weight="bold" className="text-emerald-600">{formatCurrency(activeTx.dp)}</Typography>
                                     </View>
+                                    {activeTx.metode_bayar && (
+                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
+                                            <Typography className="text-gray-500">Metode Bayar DP</Typography>
+                                            <Typography weight="bold" className="text-textMain uppercase">{activeTx.metode_bayar}</Typography>
+                                        </View>
+                                    )}
+                                    {activeTx.status_bayar && (
+                                        <View className="flex-row justify-between items-center mb-4 pb-4 border-b border-amber-100">
+                                            <Typography className="text-gray-500">Status Pembayaran</Typography>
+                                            <Typography weight="bold" className={`uppercase ${
+                                                activeTx.status_bayar === 'LUNAS' ? 'text-emerald-600' :
+                                                activeTx.status_bayar === 'PARTIAL' ? 'text-amber-600' : 'text-rose-600'
+                                            }`}>{activeTx.status_bayar}</Typography>
+                                        </View>
+                                    )}
                                     <View className="flex-row justify-between items-center mb-6">
                                         <Typography className="text-gray-500">Sisa Bayar</Typography>
                                         <Typography variant="h3" weight="bold" className="text-red-500">{formatCurrency(activeTx.sisa_bayar)}</Typography>

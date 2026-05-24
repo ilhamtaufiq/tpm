@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { mobilService, InventorySummary, PenjualanSummary } from '../services/mobil';
 
-export const useMobilList = (params?: any, options?: { refetchInterval?: number }) => {
+export const useMobilList = (params?: any, options?: { refetchInterval?: number; enabled?: boolean }) => {
     return useQuery({
         queryKey: ['mobils', params],
         queryFn: () => mobilService.getMobils(params),

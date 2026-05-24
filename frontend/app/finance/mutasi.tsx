@@ -36,6 +36,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { Tabs } from '../../components/ui/Tabs';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const ACCOUNT_FILTERS: { label: string; value: KasBankJenis | 'all' }[] = [
     { label: 'Semua', value: 'all' },
@@ -64,6 +65,38 @@ export default function MutasiKasScreen() {
         action?: string, 
         jenis?: string,
     }>();
+
+    const user = useAuthStore(state => state.user);
+    const role = user?.role;
+
+    const accountFilters = useMemo(() => {
+        if (role === 'BENGKEL') {
+            return [
+                { label: 'Semua', value: 'all' as const },
+                { label: 'Bengkel', value: 'KAS_UNIT_BENGKEL' as const },
+            ];
+        }
+        if (role === 'JASA_ANGKUT') {
+            return [
+                { label: 'Semua', value: 'all' as const },
+                { label: 'Jasa Angkut', value: 'KAS_UNIT_JASA_ANGKUT' as const },
+            ];
+        }
+        if (role === 'MOBIL') {
+            return [
+                { label: 'Semua', value: 'all' as const },
+                { label: 'Mobil', value: 'KAS_UNIT_MOBIL' as const },
+            ];
+        }
+        return ACCOUNT_FILTERS;
+    }, [role]);
+
+    const allowedAccounts = useMemo(() => {
+        if (role === 'BENGKEL') return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL'] as KasBankJenis[];
+        if (role === 'JASA_ANGKUT') return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_JASA_ANGKUT'] as KasBankJenis[];
+        if (role === 'MOBIL') return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_MOBIL'] as KasBankJenis[];
+        return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[];
+    }, [role]);
     
     const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>((jenis as KasBankJenis) || 'all');
     const [refreshing, setRefreshing] = useState(false);
@@ -121,6 +154,19 @@ export default function MutasiKasScreen() {
         nominal: '',
         keterangan: 'Setoran Modal',
     });
+
+    useEffect(() => {
+        if (role === 'BENGKEL') {
+            setTransferForm(p => ({ ...p, dari: 'KAS_UNIT_BENGKEL', ke: 'BANK_UTAMA' }));
+            setModalForm(p => ({ ...p, jenis: 'KAS_UNIT_BENGKEL' }));
+        } else if (role === 'JASA_ANGKUT') {
+            setTransferForm(p => ({ ...p, dari: 'KAS_UNIT_JASA_ANGKUT', ke: 'BANK_UTAMA' }));
+            setModalForm(p => ({ ...p, jenis: 'KAS_UNIT_JASA_ANGKUT' }));
+        } else if (role === 'MOBIL') {
+            setTransferForm(p => ({ ...p, dari: 'KAS_UNIT_MOBIL', ke: 'BANK_UTAMA' }));
+            setModalForm(p => ({ ...p, jenis: 'KAS_UNIT_MOBIL' }));
+        }
+    }, [role]);
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['65%', '85%'], []);

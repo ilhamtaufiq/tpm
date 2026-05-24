@@ -2,19 +2,28 @@ import React, { useState, useRef } from 'react';
 import { View, Pressable, Platform, Modal, Animated } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
-import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home } from 'lucide-react-native';
+import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home, Database } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router, usePathname } from 'expo-router';
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
-    const { activeSlots, fabSlots } = useNavigationStore();
+    const { activeSlots: storeActiveSlots, fabSlots } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
+
+    const user = useAuthStore(state => state.user);
+    const role = user?.role;
+
+    // Redefine active slots if role is BENGKEL: Dompet, Inventori, FAB+, Master Data, Absensi
+    const activeSlots = role === 'BENGKEL'
+        ? ['bengkel-dompet', 'bengkel-inventory', 'fab-plus', 'bengkel-master', 'bengkel-absensi']
+        : storeActiveSlots;
 
     // Animation progress for Radial FAB menu
     const animationProgress = useRef(new Animated.Value(0)).current;
@@ -45,6 +54,38 @@ export const CustomTabBar = () => {
                 label: 'Tambah',
                 path: '#fab',
                 icon: Plus,
+            };
+        }
+        if (id === 'bengkel-dompet') {
+            return {
+                id: 'bengkel-dompet',
+                label: 'Dompet',
+                path: '/bengkel?action=wallet',
+                icon: Wallet,
+            };
+        }
+        if (id === 'bengkel-inventory') {
+            return {
+                id: 'bengkel-inventory',
+                label: 'Inventori',
+                path: '/bengkel/inventory',
+                icon: Package,
+            };
+        }
+        if (id === 'bengkel-master') {
+            return {
+                id: 'bengkel-master',
+                label: 'Master Data',
+                path: '/master-data',
+                icon: Database,
+            };
+        }
+        if (id === 'bengkel-absensi') {
+            return {
+                id: 'bengkel-absensi',
+                label: 'Absensi',
+                path: '/sdm/absensi',
+                icon: ShieldCheck,
             };
         }
         const route = APP_ROUTES.find((r) => r.id === id);
@@ -153,14 +194,33 @@ export const CustomTabBar = () => {
                 // Match exact pathname or handle root routing
                 const isActiveTab = (path: string) => {
                     if (path === '/home' && (pathname === '/home' || pathname === '/')) return true;
-                    return pathname === path || pathname?.startsWith(path + '/');
+                    const cleanPath = path.split('?')[0];
+                    return pathname === cleanPath || pathname?.startsWith(cleanPath + '/');
                 };
                 
                 const isFocused = !isFab && isActiveTab(routeInfo.path);
 
                 const handlePress = () => {
+                    const cleanPath = pathname.split('?')[0];
                     if (isFab) {
-                        showQuickActions();
+                        if (role === 'BENGKEL') {
+                            if (cleanPath === '/bengkel') {
+                                router.setParams({ action: 'new-order' });
+                            } else {
+                                router.navigate('/bengkel?action=new-order');
+                            }
+                        } else {
+                            showQuickActions();
+                        }
+                        return;
+                    }
+
+                    if (slotId === 'bengkel-dompet') {
+                        if (cleanPath === '/bengkel') {
+                            router.setParams({ action: 'wallet' });
+                        } else {
+                            router.navigate('/bengkel?action=wallet');
+                        }
                         return;
                     }
 

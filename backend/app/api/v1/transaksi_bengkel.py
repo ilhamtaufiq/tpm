@@ -66,7 +66,7 @@ def list_transaksi(
 @router.get("/summary")
 def get_transaksi_summary(
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
     tanggal_dari: Optional[date] = None,
     tanggal_sampai: Optional[date] = None,
     search: Optional[str] = None,
@@ -138,7 +138,7 @@ def update_status(
     transaksi_id: int,
     status: WorkshopStatus,
     db: DBSession,
-    current_user: ManagerUser,
+    current_user: UnitManagerUser,
 ):
     """Update transaction working status."""
     service = TransaksiBengkelService(db)

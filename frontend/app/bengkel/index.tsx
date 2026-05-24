@@ -37,7 +37,7 @@ import {
     TrendingUp,
     CircleDollarSign
 } from 'lucide-react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
@@ -52,6 +52,7 @@ import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/prin
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
+import { useAuthStore } from '../../store/useAuthStore';
 
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -61,6 +62,9 @@ import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 
 export default function BengkelScreen() {
+
+    const { action } = useLocalSearchParams<{ action?: string }>();
+    const user = useAuthStore(state => state.user);
 
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState('');
@@ -505,9 +509,28 @@ export default function BengkelScreen() {
         }
     };
 
+    React.useEffect(() => {
+        if (action === 'new-order' || action === 'form') {
+            const timer = setTimeout(() => {
+                handlePresentModalPress('form');
+            }, 200);
+            return () => clearTimeout(timer);
+        } else if (action === 'wallet' || action === 'dompet') {
+            const timer = setTimeout(() => {
+                if (Platform.OS === 'web') {
+                    setShowWalletModal(true);
+                } else {
+                    walletSheetRef.current?.expand();
+                }
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [action]);
+
     const handleClosePress = useCallback(() => {
         setSheetIndex(-1);
         setSelectedItem(null);
+        router.setParams({ action: undefined } as any);
     }, []);
 
     const updateStatus = async (id: number, newStatus: string) => {
@@ -860,6 +883,7 @@ export default function BengkelScreen() {
         setExpenseAmount('');
         setExpenseNote('');
         setDebiturName('');
+        router.setParams({ action: undefined } as any);
     };
 
 
@@ -1396,14 +1420,17 @@ export default function BengkelScreen() {
                                     </Pressable>
                                 )}
                             </View>
-                            <Pressable
-                                onPress={() => setIsScannerOpen(true)}
-                                className="ml-2 w-11 h-11 bg-blue-500 rounded-2xl items-center justify-center shadow-md active:scale-95"
+
+                            <Pressable 
+                                onPress={() => {
+                                    setShowWalletModal(true);
+                                    if (Platform.OS !== 'web') {
+                                        walletSheetRef.current?.expand();
+                                    }
+                                }}
+                                className="ml-2 w-11 h-11 bg-gray-50 items-center justify-center rounded-2xl border border-gray-100 active:scale-95"
                             >
-                                <QrCode size={18} color="white" />
-                            </Pressable>
-                            <Pressable className="ml-2 w-11 h-11 bg-primary/5 rounded-2xl border border-primary/10 items-center justify-center active:scale-95">
-                                <Filter size={18} color="#023C69" />
+                                <Wallet size={18} color="#023C69" />
                             </Pressable>
                         </View>
                         {/* Status Bayar Chips Filters */}
@@ -1478,95 +1505,7 @@ export default function BengkelScreen() {
                     ))}
                 </View>
 
-                {/* Service Grid Section (Bento Style) */}
-                <View className="flex-row flex-wrap justify-between mb-8 mx-6">
-                    {/* Item 1: Wallet (Dompet Unit) */}
-                    <Pressable
-                        key="grid-wallet"
-                        onPress={() => {
-                            setShowWalletModal(true);
-                            if (Platform.OS !== 'web') {
-                                walletSheetRef.current?.expand();
-                            }
-                        }}
-                        style={{ width: '48.5%' }}
-                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
-                    >
-                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-emerald-500/10 border border-gray-50">
-                            <Wallet size={22} color="#10B981" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Dompet</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KAS UNIT</Typography>
-                        </View>
-                    </Pressable>
 
-                    {/* Item 2: Master Data */}
-                    <Pressable
-                        key="grid-master-data"
-                        onPress={() => {
-                            try {
-                                router.push('/master-data');
-                            } catch (e) {
-                                console.error('Nav error:', e);
-                            }
-                        }}
-                        style={{ width: '48.5%' }}
-                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
-                    >
-                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-blue-500/10 border border-gray-50">
-                            <Database size={22} color="#3B82F6" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Master Data</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>KELOLA DATA</Typography>
-                        </View>
-                    </Pressable>
-
-                    {/* Item 3: Inventory (Stok & Opname) */}
-                    <Pressable
-                        key="grid-inventory"
-                        onPress={() => {
-                            try {
-                                router.push('/bengkel/inventory');
-                            } catch (e) {
-                                console.error('Nav error:', e);
-                            }
-                        }}
-                        style={{ width: '48.5%' }}
-                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
-                    >
-                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-amber-500/10 border border-gray-50">
-                            <Package size={22} color="#F59E0B" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Inventori</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>STOK OPNAME</Typography>
-                        </View>
-                    </Pressable>
-
-                    {/* Item 4: Absensi (Presensi Karyawan) */}
-                    <Pressable
-                        key="grid-absensi"
-                        onPress={() => {
-                            try {
-                                router.push('/sdm/absensi');
-                            } catch (e) {
-                                console.error('Nav error:', e);
-                            }
-                        }}
-                        style={{ width: '48.5%' }}
-                        className="bg-white p-4 rounded-[32px] border border-gray-100 flex-row items-center shadow-sm mb-3 active:bg-gray-50"
-                    >
-                        <View className="w-11 h-11 bg-white rounded-2xl items-center justify-center mr-3 shadow-md shadow-indigo-500/10 border border-gray-50">
-                            <Clock size={22} color="#6366F1" strokeWidth={2.5} />
-                        </View>
-                        <View className="flex-1">
-                            <Typography weight="bold" className="text-textMain text-[11px]" numberOfLines={1}>Absensi</Typography>
-                            <Typography className="text-textGray/40 text-[7px] uppercase font-bold tracking-widest" numberOfLines={1}>PRESENSI SDM</Typography>
-                        </View>
-                    </Pressable>
-                </View>
 
                 {/* Section Header */}
                 <View className="flex-row justify-between items-center mb-6 px-6">
@@ -1810,13 +1749,15 @@ export default function BengkelScreen() {
             )}
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
-            <Pressable
-                onPress={() => handlePresentModalPress('form')}
-                style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
-                className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
-            >
-                <Plus size={32} color="white" strokeWidth={2.5} />
-            </Pressable>
+            {user?.role !== 'BENGKEL' && (
+                <Pressable
+                    onPress={() => handlePresentModalPress('form')}
+                    style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
+                    className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
+                >
+                    <Plus size={32} color="white" strokeWidth={2.5} />
+                </Pressable>
+            )}
 
             {/* Date Selection Modal (Hybrid) */}
             {Platform.OS === 'web' ? (

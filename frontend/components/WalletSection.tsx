@@ -1,15 +1,16 @@
-import { ArrowUp, Plus, Wallet } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ArrowUp, Plus, Wallet, Eye, EyeOff } from 'lucide-react-native';
 import { Typography } from './ui/Typography';
 import { Pressable, ActivityIndicator, View } from 'react-native';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { formatCurrency } from '../utils/format';
 import { router } from 'expo-router';
 import { useUIStore } from '../store/useUIStore';
-import React from 'react';
 
 export const WalletSection = () => {
     const { data: balances, isLoading, isRefetching } = useKasBankBalances();
     const { themeColors } = useUIStore();
+    const [hideBalance, setHideBalance] = useState(false);
 
     return (
         <View className="px-4 sm:px-6 mt-4 w-full">
@@ -23,12 +24,20 @@ export const WalletSection = () => {
                     </View>
                     <View className="flex-1">
                         <View className="flex-row items-center mb-1">
-                            <Typography className="text-white/80 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mr-1 sm:mr-2">
+                            <Typography className="text-white/80 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mr-1.5 sm:mr-2">
                                 TOTAL SALDO
                             </Typography>
-                            <View className="bg-white/20 px-2 py-0.5 rounded-full">
-                                <Typography className="text-white text-[7px] sm:text-[8px] font-bold">TRX</Typography>
-                            </View>
+                            <Pressable 
+                                onPress={() => setHideBalance(!hideBalance)}
+                                className="bg-white/20 p-1 rounded-full items-center justify-center"
+                                hitSlop={12}
+                            >
+                                {hideBalance ? (
+                                    <EyeOff size={10} color="white" className="sm:w-3 sm:h-3" />
+                                ) : (
+                                    <Eye size={10} color="white" className="sm:w-3 sm:h-3" />
+                                )}
+                            </Pressable>
                         </View>
                         {isLoading || isRefetching ? (
                             <ActivityIndicator size="small" color="white" className="mt-1 self-start" />
@@ -39,7 +48,7 @@ export const WalletSection = () => {
                                 numberOfLines={1}
                                 adjustsFontSizeToFit
                             >
-                                {formatCurrency(balances?.total_saldo || 0)}
+                                {hideBalance ? 'Rp. •••••••' : formatCurrency(balances?.total_saldo || 0)}
                             </Typography>
                         )}
                     </View>
