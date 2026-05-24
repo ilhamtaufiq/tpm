@@ -183,6 +183,39 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
         } catch (error: any) {
             if (error?.message !== 'Share dismissed') {
                 console.error('Share error:', error);
+                Alert.alert('Gagal', 'Tidak dapat membagikan galeri');
+            }
+        }
+    };
+
+    const handleShareReceipt = async () => {
+        if (!activeUnit?.id) return;
+        
+        const baseUrl = (FILE_URL || 'https://tpm.cianjur.space').replace(/\/$/, '');
+        const shareUrl = `${baseUrl}/api/v1/public/receipt/view/mobil/${activeUnit.id}`;
+        const shareMessage = `Halo, ini adalah faktur penjualan unit mobil ${activeUnit.merek} ${activeUnit.model} Anda: ${shareUrl}`;
+        
+        try {
+            if (Platform.OS === 'web') {
+                if (navigator && navigator.clipboard) {
+                    await navigator.clipboard.writeText(shareMessage);
+                }
+                // Open in new tab so user can see it
+                window.open(shareUrl, '_blank');
+                return;
+            }
+
+            await Share.share({
+                message: shareMessage,
+                url: shareUrl,
+                title: 'Bagikan Faktur Penjualan'
+            });
+        } catch (error: any) {
+            console.error('Error sharing link:', error);
+            if (Platform.OS === 'web') {
+                window.open(shareUrl, '_blank');
+            } else {
+                Alert.alert('Info', 'Faktur dapat dilihat pada: ' + shareUrl);
             }
         }
     };
@@ -667,13 +700,25 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                 <Typography weight="bold" className="text-white text-lg ml-3">Jual Unit</Typography>
                             </Pressable>
                         )}
-                        <Pressable
-                            onPress={onEdit}
-                            className={`flex-1 bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 ${!(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') ? 'w-full' : ''}`}
-                        >
-                            <Edit size={20} color="white" />
-                            <Typography weight="bold" className="text-white text-lg ml-3">Edit Data</Typography>
-                        </Pressable>
+                        {activeUnit.status?.toUpperCase() !== 'TERJUAL' && (
+                            <Pressable
+                                onPress={onEdit}
+                                className={`flex-1 bg-primary flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-primary/40 ${!(activeUnit.status?.toLowerCase() === 'tersedia' || activeUnit.status?.toLowerCase() === 'booking') ? 'w-full' : ''}`}
+                            >
+                                <Edit size={20} color="white" />
+                                <Typography weight="bold" className="text-white text-lg ml-3">Edit Data</Typography>
+                            </Pressable>
+                        )}
+
+                        {activeUnit.status?.toUpperCase() === 'TERJUAL' && (
+                            <Pressable
+                                onPress={handleShareReceipt}
+                                className="flex-1 bg-blue-600 flex-row items-center justify-center py-5 rounded-[28px] shadow-2xl shadow-blue-900/20 w-full"
+                            >
+                                <Share2 size={20} color="white" />
+                                <Typography weight="bold" className="text-white text-lg ml-3">Bagikan Faktur</Typography>
+                            </Pressable>
+                        )}
                     </View>
 
                     {/* Extra Bottom Padding */}

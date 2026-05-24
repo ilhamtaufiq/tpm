@@ -310,9 +310,7 @@ class MuatanService:
             # If we receive `harga_jual`, we cover the `harga_beli`.
             # I'll use `muatan.harga_jual` for Kas Masuk as it's the real money coming in.
             
-            # TPM portion only for receivable (excluding Driver Share)
-            tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
-            
+            # nominal_piutang should be the full invoice value (harga_jual) so DP comparisons work as the user expects
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
@@ -324,9 +322,9 @@ class MuatanService:
                 nama_debitur=debtor_name,
                 telepon_debitur=supir.telepon if supir else None,
                 alamat_debitur=supir.alamat if supir else None,
-                nominal_piutang=tpm_gross_portion,
+                nominal_piutang=muatan.harga_jual,
                 total_dibayar=Decimal("0"),
-                sisa_piutang=tpm_gross_portion,
+                sisa_piutang=muatan.harga_jual,
                 status=PiutangStatus.BELUM_LUNAS,
                 catatan=f"Piutang Jasa Angkut {muatan.nomor_transaksi} (Bagian TPM)",
                 created_by=user_id,
@@ -765,8 +763,7 @@ class MuatanService:
             
             if piutang:
                 # Re-sync nominal_piutang in case revenue changed
-                tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
-                piutang.nominal_piutang = tpm_gross_portion
+                piutang.nominal_piutang = muatan.harga_jual
                 
                 # Check if partial payments were provided in update
                 if data.payments and len(data.payments) > 0:

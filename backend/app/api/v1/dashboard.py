@@ -253,6 +253,14 @@ def get_recent_activity(
     # 4. Normalize and Merge
     activities = []
 
+    # Collect KasBank ref numbers that are linked to jasa_angkut
+    # so we can skip the corresponding muatan record (avoid duplicate display)
+    kas_ja_refs = set()
+    for item in kas_data:
+        if str(item.sumber.value).upper() in ("JASA_ANGKUT", "PIUTANG"):
+            if item.nomor_referensi:
+                kas_ja_refs.add(item.nomor_referensi)
+
     for item in kas_data:
         activities.append({
             "type": "financial",
@@ -284,10 +292,25 @@ def get_recent_activity(
         })
 
     for item in muatan_data:
+        # Skip muatan that already have a KasBank entry (avoid duplicate in history)
+        # Check if any kas entry references this muatan's nomor_transaksi or its piutang
+        has_kas_entry = item.nomor_transaksi in kas_ja_refs
+        if not has_kas_entry and hasattr(item, 'piutang_id') and item.piutang_id:
+            # Also check by piutang nomor (AR...)
+            from app.models.keuangan import PiutangUsaha
+            piutang = db.query(PiutangUsaha.nomor_piutang).filter(
+                PiutangUsaha.id == item.piutang_id
+            ).first()
+            if piutang and piutang.nomor_piutang in kas_ja_refs:
+                has_kas_entry = True
+        
+        if has_kas_entry:
+            continue
+            
         # Include driver name in subtitle and route in title
         driver_name = item.supir_nama or item.supir_nama_manual or "Driver"
         activities.append({
-            "type": "workshop", # Using workshop type for UI consistency if needed, or better, source below
+            "type": "transport",
             "id": f"muatan_{item.id}",
             "original_id": item.id,
             "title": f"{item.asal} → {item.tujuan}",

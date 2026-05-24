@@ -383,21 +383,22 @@ export default function HistoryTab() {
                                 <View className="items-end ml-2 pl-3 border-l border-gray-50 flex-shrink-0 min-w-[100px]">
                                     <Typography
                                         weight="bold"
-                                        className={`text-[13px] mb-1 ${item.is_incoming ? "text-emerald-600" : "text-rose-500"}`}
+                                        className={`text-[13px] mb-1 ${item.type === 'financial' ? (item.is_incoming ? "text-emerald-600" : "text-rose-500") : "text-textMain"}`}
                                         numberOfLines={1}
                                     >
-                                        {item.is_incoming ? '+' : '-'} {formatCurrency(item.amount)}
+                                        {item.type === 'financial' ? (item.is_incoming ? '+' : '-') : ''} {formatCurrency(item.amount)}
                                     </Typography>
 
                                     <View className="flex-row items-center">
-                                        <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.is_incoming ? "bg-emerald-50" : "bg-rose-50"}`}>
-                                            <Typography weight="bold" className={item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]"}>
-                                                {item.is_incoming ? 'IN' : 'OUT'}
+                                        <View className={`px-1.5 py-0.5 rounded-md mr-1.5 ${item.type === 'financial' ? (item.is_incoming ? "bg-emerald-50" : "bg-rose-50") : "bg-blue-50"}`}>
+                                            <Typography weight="bold" className={item.type === 'financial' ? (item.is_incoming ? "text-emerald-600 text-[8px]" : "text-rose-600 text-[8px]") : "text-blue-600 text-[8px]"}>
+                                                {item.type === 'financial' ? (item.is_incoming ? 'IN' : 'OUT') : 'TRX'}
                                             </Typography>
                                         </View>
                                         <Typography className="text-[8px] text-textGray/40 uppercase font-black tracking-tighter">
                                             {config.label}
                                         </Typography>
+
                                     </View>
                                 </View>
                             </Pressable>

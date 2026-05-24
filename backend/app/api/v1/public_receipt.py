@@ -18,6 +18,7 @@ import base64
 from app.database.connection import get_db
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
+from app.models.mobil import Mobil
 from app.models.system_setting import SystemSetting
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
@@ -31,19 +32,21 @@ async def get_receipt(
 ) -> Dict[str, Any]:
     """
     Get receipt data by transaction ID
-    Supports: bengkel, jasa_angkut
+    Supports: bengkel, jasa_angkut, mobil
     
     Example: GET /public/receipt/bengkel/123
     """
     
-    if receipt_type not in ["bengkel", "jasa_angkut"]:
+    if receipt_type not in ["bengkel", "jasa_angkut", "mobil"]:
         raise HTTPException(status_code=400, detail="Invalid receipt type")
     
     try:
         if receipt_type == "bengkel":
             return get_bengkel_receipt(db, transaction_id)
-        else:
+        elif receipt_type == "jasa_angkut":
             return get_jasa_angkut_receipt(db, transaction_id)
+        else:
+            return get_mobil_receipt(db, transaction_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -152,6 +155,8 @@ def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
 
 def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     """Get Jasa Angkut receipt"""
+    from app.models.keuangan import PiutangUsaha
+    from app.utils.constants import PiutangSource
     
     # Get muatan
     muatan = db.query(MuatanJasaAngkut).filter(
@@ -160,6 +165,14 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     
     if not muatan:
         raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    piutang = db.query(PiutangUsaha).filter(
+        PiutangUsaha.referensi_id == muatan.id,
+        PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+    ).first()
+    
+    paid_amount = float(piutang.total_dibayar) if piutang else (float(muatan.harga_jual) if muatan.status_bayar == 'LUNAS' else 0)
+    remaining_amount = float(piutang.sisa_piutang) if piutang else (0 if muatan.status_bayar == 'LUNAS' else float(muatan.harga_jual))
     
     # Build items
     items = [{
@@ -169,20 +182,30 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "subtotal": float(muatan.harga_jual or 0)
     }]
     
+    # Details for extra info
+    plat_nomor = muatan.nopol or (muatan.armada.nopol if muatan.armada else "-")
+    details = [
+        f"PLAT NOMOR: {plat_nomor}",
+        f"SUPIR: {muatan.supir_nama or '-'}",
+        f"MUATAN: {muatan.jenis_muatan or '-'}",
+        f"SHARE TPM: Rp {float(muatan.laba_tpm or 0):,.0f}",
+        f"HAK SUPIR: Rp {float(muatan.laba_supir or 0):,.0f}"
+    ]
+    
     # Build receipt
     receipt = {
         "transactionNumber": str(muatan.nomor_transaksi),
         "date": muatan.created_at.isoformat() if muatan.created_at else datetime.now().isoformat(),
         "customerName": muatan.supir_nama or "Umum",
-        "origin": muatan.asal,
-        "destination": muatan.tujuan,
-        "driverName": muatan.supir_nama,
+        "vehiclePlate": plat_nomor,
+        "details": details,
         "items": items,
         "subtotal": float(muatan.harga_jual or 0),
         "tax": 0,
         "discount": 0,
         "total": float(muatan.harga_jual or 0),
-        "paid": float(muatan.harga_jual or 0) if muatan.status_bayar == 'LUNAS' else 0,
+        "paid": paid_amount,
+        "remaining": remaining_amount,
         "paymentMethod": format_payment_method("TUNAI"),
         "notes": muatan.catatan,
         "companyName": "Tiga Putra Motor",
@@ -192,6 +215,44 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     
     return apply_branding(db, receipt)
 
+
+def get_mobil_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
+    """Get Mobil receipt"""
+    
+    mobil = db.query(Mobil).filter(
+        Mobil.id == int(transaction_id)
+    ).first()
+    
+    if not mobil or mobil.status.upper() != 'TERJUAL':
+        raise HTTPException(status_code=404, detail="Sold car not found")
+    
+    # Build items
+    items = [{
+        "description": f"Mobil {mobil.merek} {mobil.model} {mobil.tahun} ({mobil.nomor_plat})",
+        "quantity": 1,
+        "unitPrice": float(mobil.harga_jual or 0),
+        "subtotal": float(mobil.harga_jual or 0)
+    }]
+    
+    # Build receipt
+    receipt = {
+        "transactionNumber": mobil.penjualan.nomor_transaksi if mobil.penjualan else f"TRX-MOBIL-{mobil.id}",
+        "date": mobil.penjualan.tanggal.isoformat() if mobil.penjualan else (mobil.tanggal_terjual.isoformat() if mobil.tanggal_terjual else datetime.now().isoformat()),
+        "customerName": mobil.penjualan.nama_pembeli if mobil.penjualan else "Umum",
+        "items": items,
+        "subtotal": float(mobil.harga_jual or 0),
+        "tax": 0,
+        "discount": 0,
+        "total": float(mobil.harga_jual or 0),
+        "paid": float((mobil.harga_jual or 0) - (mobil.penjualan.sisa_bayar or 0)) if mobil.penjualan else float(mobil.harga_jual or 0),
+        "paymentMethod": format_payment_method(mobil.penjualan.metode_bayar.value if mobil.penjualan and mobil.penjualan.metode_bayar else "TUNAI"),
+        "notes": mobil.penjualan.catatan if mobil.penjualan and mobil.penjualan.catatan else (mobil.catatan or "-"),
+        "companyName": "Tiga Putra Motor",
+        "companyAddress": "Cianjur, Jawa Barat",
+        "companyPhone": "+62 856 5999 4407"
+    }
+    
+    return apply_branding(db, receipt)
 
 
 def get_font_path(bold=False):
@@ -370,6 +431,8 @@ async def get_receipt_image(
             data = get_bengkel_receipt(db, transaction_id)
         elif receipt_type == "jasa_angkut":
             data = get_jasa_angkut_receipt(db, transaction_id)
+        elif receipt_type == "mobil":
+            data = get_mobil_receipt(db, transaction_id)
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
             
@@ -395,6 +458,8 @@ async def view_receipt(
             data = get_bengkel_receipt(db, transaction_id)
         elif receipt_type == "jasa_angkut":
             data = get_jasa_angkut_receipt(db, transaction_id)
+        elif receipt_type == "mobil":
+            data = get_mobil_receipt(db, transaction_id)
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
             
@@ -432,6 +497,13 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
     desc += f" senilai Rp {data['total']:,.0f}"
 
     items_html = ""
+    for detail in data.get("details", []):
+        items_html += f"""
+        <div class="item-row" style="margin-bottom: 4px;">
+            <div class="item-desc" style="color: #666;">{detail}</div>
+        </div>
+        """
+        
     for item in data.get("items", []):
         items_html += f"""
         <div class="item-row">

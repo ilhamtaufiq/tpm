@@ -29,7 +29,7 @@ export const ArmadaSelector = ({
     const { data: searchResults, isLoading } = useQuery({
         queryKey: ['search_armada', searchQuery],
         queryFn: async () => {
-            const res = await jasaAngkutService.getArmadaList({ search: searchQuery, limit: 20 });
+            const res = await jasaAngkutService.getArmadaList({ search: searchQuery, limit: 20, is_active: true });
             return res.data;
         },
         enabled: isOpen,
