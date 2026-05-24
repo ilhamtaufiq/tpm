@@ -44,6 +44,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         status_bayar: 'BELUM_LUNAS',
         status: 'PROSES',
         metode_bayar: 'TUNAI',
+        jumlah_bayar: '',
         catatan: '',
         biaya_operasional: [] as { deskripsi: string, jumlah: string }[]
     });
@@ -134,6 +135,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 status_bayar: initialData.status_bayar === 'LUNAS' ? 'LUNAS' : 'BELUM_LUNAS',
                 status: initialData.status || 'PROSES',
                 metode_bayar: initialData.metode_bayar?.toUpperCase() || 'TUNAI',
+                jumlah_bayar: '',
                 catatan: initialData.catatan || '',
                 biaya_operasional: (initialData.biaya_tambahan || []).map((b: any) => ({
                     deskripsi: b.deskripsi,
@@ -174,7 +176,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
     }, [formData.jenis_muatan_list]);
 
     const updateField = (key: string, value: string) => {
-        if (['harga_beli', 'harga_jual'].includes(key)) {
+        if (['harga_beli', 'harga_jual', 'jumlah_bayar'].includes(key)) {
             setFormData(prev => ({ ...prev, [key]: formatNumber(value) }));
         } else if (key === 'supir_id') {
             const selectedSupir = (activeDrivers as Supir[]).find((d: Supir) => d.id.toString() === value);
@@ -334,7 +336,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
             return;
         }
 
-        if (formData.status_bayar === 'LUNAS') {
+        if (formData.status_bayar === 'LUNAS' || (formData.status_bayar === 'BELUM_LUNAS' && (parseNumber(formData.jumlah_bayar || '0') > 0 || isSplitPayment))) {
             if (!isSplitPayment && !formData.metode_bayar) {
                 setDialogConfig({ visible: true, title: 'Validasi', message: 'Silakan pilih metode pembayaran', variant: 'warning' });
                 return;
@@ -365,7 +367,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                 catatan: formData.catatan,
                 status: formData.status,
                 status_bayar: formData.status_bayar?.toUpperCase(),
-                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.status_bayar === 'BELUM_LUNAS' ? 'KREDIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI')),
+                metode_bayar: isSplitPayment ? 'SPLIT' : (formData.status_bayar === 'BELUM_LUNAS' && parseNumber(formData.jumlah_bayar || '0') === 0 ? 'KREDIT' : (formData.metode_bayar?.toUpperCase() || 'TUNAI')),
                 asal: formData.jenis_muatan_list[0]?.asal || '',
                 tujuan: formData.jenis_muatan_list[0]?.tujuan || '',
                 jenis_muatan: formData.jenis_muatan_list
@@ -396,7 +398,13 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     kas_jenis: formData.metode_bayar.toUpperCase() === 'TUNAI' 
                         ? 'KAS_UNIT_JASA_ANGKUT' 
                         : (formData.metode_bayar.toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
-                }] : []),
+                }] : (parseNumber(formData.jumlah_bayar || '0') > 0 ? [{
+                    metode: formData.metode_bayar.toUpperCase(),
+                    nominal: parseNumber(formData.jumlah_bayar),
+                    kas_jenis: formData.metode_bayar.toUpperCase() === 'TUNAI'
+                        ? 'KAS_UNIT_JASA_ANGKUT'
+                        : (formData.metode_bayar.toUpperCase() === 'TRANSFER' ? 'BANK_UTAMA' : undefined)
+                }] : [])),
                 persentase_tpm: 50
             };
 
@@ -1003,12 +1011,11 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     </View>
                 </View>
 
-                {formData.status_bayar === 'LUNAS' && (
-                    <View>
-                        {isSplitPayment ? (
-                            <View className="mb-2">
-                                <View className="flex-row justify-between items-center mb-3">
-                                    <Typography variant="caption" weight="bold" className="text-gray-400 font-bold">ALOKASI PEMBAYARAN</Typography>
+                <View>
+                    {isSplitPayment ? (
+                        <View className="mb-2">
+                            <View className="flex-row justify-between items-center mb-3">
+                                <Typography variant="caption" weight="bold" className="text-gray-400 font-bold">ALOKASI PEMBAYARAN</Typography>
                                     <Pressable onPress={addPaymentRow} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
                                         <PlusCircle size={14} color="#023C69" />
                                         <Typography className="text-primary text-[10px] ml-1.5 font-bold uppercase">Tambah</Typography>
@@ -1055,7 +1062,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                     <View className="items-end">
                                         <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
                                         {totalSplitAmount !== calculations.tpmShare && (
-                                            <Typography variant="caption" className="text-red-500 font-bold" style={{ fontSize: 9 }}>
+                                            <Typography variant="caption" className={formData.status_bayar === 'LUNAS' ? "text-red-500 font-bold" : "text-gray-500 font-bold"} style={{ fontSize: 9 }}>
                                                 {totalSplitAmount < calculations.tpmShare ? `Kurang: ${formatCurrency(calculations.tpmShare - totalSplitAmount)}` : `Lebih: ${formatCurrency(totalSplitAmount - calculations.tpmShare)}`}
                                             </Typography>
                                         )}
@@ -1064,6 +1071,20 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                             </View>
                         ) : (
                             <View>
+                                {formData.status_bayar === 'BELUM_LUNAS' && (
+                                    <View className="mb-3">
+                                        <Input
+                                            label="Jumlah Bayar (Sebagian)"
+                                            placeholder="0"
+                                            keyboardType="numeric"
+                                            value={formData.jumlah_bayar}
+                                            onChangeText={(t) => updateField('jumlah_bayar', t)}
+                                            containerClassName="mb-0"
+                                            className="h-11 bg-white border border-gray-200"
+                                            startIcon={<Typography className="text-gray-400 text-[10px] font-bold">Rp</Typography>}
+                                        />
+                                    </View>
+                                )}
                                 <Typography variant="caption" className="mb-2 text-gray-500">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2">
                                     {['TUNAI', 'TRANSFER'].map((m) => (
@@ -1084,8 +1105,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 </View>
                             </View>
                         )}
-                    </View>
-                )}
+                </View>
             </View>
 
             <View className="h-[1px] bg-gray-200 my-6" />

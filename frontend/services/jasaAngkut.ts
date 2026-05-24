@@ -82,6 +82,7 @@ export interface Muatan {
     part_services?: PartService[];
     piutang_id?: number;
     jumlah_bayar?: number;
+    payment_history?: any[];
     catatan?: string;
     created_at: string;
 }

@@ -1177,7 +1177,7 @@ export default function JasaAngkutScreen() {
 
                     {trip && <RelatedBengkelTransactions muatan_id={trip.id} />}
 
-                    <Card variant="outlined" className="p-6 border-gray-100 mb-8 rounded-[32px]">
+                    <Card variant="outlined" className="p-6 border-gray-100 mb-6 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Analisa Laba Rugi</Typography>
                         <View className="flex-row justify-between mb-3">
                             <Typography variant="body2" className="text-textGray">Pendapatan TPM (Gross)</Typography>
@@ -1194,6 +1194,39 @@ export default function JasaAngkutScreen() {
                             <Typography variant="caption" className="text-textGray/60">Hak Driver (Tidak Dicatat Kas)</Typography>
                             <Typography variant="caption" weight="bold" className="text-textGray/40">{formatCurrency(trip.laba_supir)}</Typography>
                         </View>
+                    </Card>
+
+                    <Card variant="outlined" className="p-6 border-gray-100 mb-8 rounded-[32px]">
+                        <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Informasi Pembayaran</Typography>
+                        <View className="flex-row justify-between mb-3">
+                            <Typography variant="body2" className="text-textGray">Total Tagihan (Net TPM)</Typography>
+                            <Typography weight="bold" className="text-textMain">{formatCurrency(trip.laba_tpm)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between mb-3">
+                            <Typography variant="body2" className="text-emerald-600">Telah Dibayar</Typography>
+                            <Typography weight="bold" className="text-emerald-700">{formatCurrency(trip.jumlah_bayar || 0)}</Typography>
+                        </View>
+                        {trip.status_bayar === 'BELUM_LUNAS' && (
+                            <View className="flex-row justify-between pt-3 border-t border-gray-100 mt-2">
+                                <Typography variant="body2" weight="bold" className="text-rose-600">Sisa Tagihan (Piutang)</Typography>
+                                <Typography weight="bold" className="text-rose-700">{formatCurrency(Number(trip.laba_tpm) - Number(trip.jumlah_bayar || 0))}</Typography>
+                            </View>
+                        )}
+
+                        {trip.payment_history && trip.payment_history.length > 0 && (
+                            <View className="mt-4 pt-4 border-t border-gray-100">
+                                <Typography variant="caption" weight="bold" className="mb-3 text-textGray/60 uppercase tracking-widest">Riwayat Pembayaran</Typography>
+                                {trip.payment_history.map((payment: any, index: number) => (
+                                    <View key={index} className="flex-row justify-between items-center mb-2">
+                                        <View>
+                                            <Typography variant="caption" weight="bold" className="text-textMain">{formatDate(payment.tanggal)}</Typography>
+                                            <Typography variant="caption" className="text-textGray/60 text-[10px]">{payment.metode_bayar}</Typography>
+                                        </View>
+                                        <Typography variant="caption" weight="bold" className="text-emerald-600">+{formatCurrency(payment.nominal)}</Typography>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
                     </Card>
 
                     <View className="mb-4">
@@ -1612,9 +1645,16 @@ export default function JasaAngkutScreen() {
                                                                         {formatDate(trip.tanggal)}
                                                                     </Typography>
                                                                 </View>
-                                                                <Typography weight="bold" className="text-primary text-xs">
-                                                                    {formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}
-                                                                </Typography>
+                                                                <View className="items-end">
+                                                                    <Typography weight="bold" className="text-primary text-xs">
+                                                                        {formatCurrency(trip.laba_tpm)}
+                                                                    </Typography>
+                                                                    {trip.status_bayar === 'LUNAS' ? (
+                                                                        <Typography variant="caption" className="text-emerald-600 text-[9px] font-bold mt-0.5">LUNAS</Typography>
+                                                                    ) : (
+                                                                        <Typography variant="caption" className="text-rose-600 text-[9px] font-bold mt-0.5">Sisa: {formatCurrency(Number(trip.laba_tpm) - Number(trip.jumlah_bayar || 0))}</Typography>
+                                                                    )}
+                                                                </View>
                                                             </View>
                                                         </View>
                                                     </Pressable>

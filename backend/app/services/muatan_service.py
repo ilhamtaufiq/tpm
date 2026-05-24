@@ -332,6 +332,38 @@ class MuatanService:
                 created_by=user_id,
             )
             self.db.add(piutang)
+            self.db.flush()
+
+            # Handle partial payments for BELUM_LUNAS
+            if data.payments and len(data.payments) > 0:
+                for p in data.payments:
+                    if p.nominal > 0:
+                        payment = PembayaranPiutang(
+                            piutang_id=piutang.id,
+                            tanggal=data.tanggal,
+                            nominal=p.nominal,
+                            metode_bayar=p.metode,
+                            catatan=f"Pembayaran Sebagian Jasa Angkut {muatan.nomor_transaksi}",
+                            created_by=user_id,
+                        )
+                        self.db.add(payment)
+                        self.db.flush()
+                        
+                        piutang.process_payment(p.nominal)
+                        
+                        create_kas_entry(
+                            db=self.db,
+                            tanggal=data.tanggal,
+                            tipe=KasBankType.MASUK,
+                            nominal=p.nominal,
+                            sumber=KasBankSource.JASA_ANGKUT,
+                            metode_bayar=p.metode,
+                            referensi_id=payment.id,
+                            nomor_referensi=piutang.nomor_piutang,
+                            keterangan=f"Pemasukan Sebagian Jasa Angkut {muatan.nomor_transaksi} via {piutang.nomor_piutang}",
+                            user_id=user_id,
+                            kas_jenis=p.kas_jenis,
+                        )
         
         elif muatan.status_bayar == PaymentStatus.LUNAS:
              # Record Income to Kas/Bank
@@ -404,7 +436,8 @@ class MuatanService:
         
         # Add piutang info to the response
         piutang = (
-            self.db.query(PiutangUsaha.id, PiutangUsaha.total_dibayar)
+            self.db.query(PiutangUsaha)
+            .options(selectinload(PiutangUsaha.pembayaran))
             .filter(
                 PiutangUsaha.nomor_referensi == muatan.nomor_transaksi,
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
@@ -414,8 +447,10 @@ class MuatanService:
         if piutang:
             muatan.piutang_id = piutang.id
             muatan.jumlah_bayar = piutang.total_dibayar
+            muatan.payment_history = piutang.pembayaran
         else:
             muatan.jumlah_bayar = muatan.pendapatan_kotor - muatan.laba_supir if muatan.status_bayar == PaymentStatus.LUNAS else 0
+            muatan.payment_history = []
 
         return muatan
 
@@ -494,21 +529,24 @@ class MuatanService:
         # Batch fetch piutang info
         if muatans:
             nomor_refs = [m.nomor_transaksi for m in muatans]
-            piutang_info = self.db.query(
-                PiutangUsaha.id, PiutangUsaha.nomor_referensi, PiutangUsaha.total_dibayar
+            piutang_info = self.db.query(PiutangUsaha).options(
+                selectinload(PiutangUsaha.pembayaran)
             ).filter(
                 PiutangUsaha.nomor_referensi.in_(nomor_refs),
                 PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
             ).all()
             
-            piutang_map = {p.nomor_referensi: (p.id, p.total_dibayar) for p in piutang_info}
+            piutang_map = {p.nomor_referensi: p for p in piutang_info}
             
             for m in muatans:
-                info = piutang_map.get(m.nomor_transaksi)
-                if info:
-                    m.piutang_id, m.jumlah_bayar = info
+                p_obj = piutang_map.get(m.nomor_transaksi)
+                if p_obj:
+                    m.piutang_id = p_obj.id
+                    m.jumlah_bayar = p_obj.total_dibayar
+                    m.payment_history = p_obj.pembayaran
                 else:
                     m.jumlah_bayar = m.pendapatan_kotor - m.laba_supir if m.status_bayar == PaymentStatus.LUNAS else 0
+                    m.payment_history = []
 
         # Calculate pages
         pages = (total + limit - 1) // limit if limit > 0 else 1
@@ -642,10 +680,10 @@ class MuatanService:
         self.db.refresh(muatan)
 
         # Handle Payment and Piutang transition
+        from app.models.keuangan import KasBank, PiutangUsaha, PembayaranPiutang
+        from app.utils.constants import KasBankSource, KasBankType, PaymentMethod, PiutangSource, PiutangStatus
+        
         if muatan.status_bayar == PaymentStatus.LUNAS:
-            from app.models.keuangan import KasBank, PiutangUsaha
-            from app.utils.constants import KasBankSource, KasBankType, PaymentMethod, PiutangSource, PiutangStatus
-            
             # 1. Reconcile Piutang if it exists
             piutang = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.referensi_id == muatan.id,
@@ -718,6 +756,72 @@ class MuatanService:
                     existing_kas.jenis = get_kas_jenis(existing_kas.metode_bayar, KasBankSource.JASA_ANGKUT)
                     
             self.db.commit()
+            
+        elif muatan.status_bayar == PaymentStatus.BELUM_LUNAS:
+            piutang = self.db.query(PiutangUsaha).filter(
+                PiutangUsaha.referensi_id == muatan.id,
+                PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT
+            ).first()
+            
+            if piutang:
+                # Re-sync nominal_piutang in case revenue changed
+                tpm_gross_portion = muatan.pendapatan_kotor - muatan.laba_supir
+                piutang.nominal_piutang = tpm_gross_portion
+                
+                # Check if partial payments were provided in update
+                if data.payments and len(data.payments) > 0:
+                    # Clear existing partial payments for this Piutang
+                    existing_payments = self.db.query(PembayaranPiutang).filter(
+                        PembayaranPiutang.piutang_id == piutang.id
+                    ).all()
+                    
+                    for ep in existing_payments:
+                        # Remove associated KasBank entry
+                        self.db.query(KasBank).filter(
+                            KasBank.referensi_id == ep.id,
+                            KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                            KasBank.tipe == KasBankType.MASUK
+                        ).delete(synchronize_session=False)
+                        self.db.delete(ep)
+                    
+                    self.db.flush()
+                    piutang.total_dibayar = Decimal("0")
+                    piutang.sisa_piutang = piutang.nominal_piutang
+                    
+                    # Apply new partial payments
+                    for p in data.payments:
+                        if p.nominal > 0:
+                            payment = PembayaranPiutang(
+                                piutang_id=piutang.id,
+                                tanggal=data.tanggal or muatan.tanggal,
+                                nominal=p.nominal,
+                                metode_bayar=p.metode,
+                                catatan=f"Pembayaran Sebagian Jasa Angkut {muatan.nomor_transaksi}",
+                                created_by=None,
+                            )
+                            self.db.add(payment)
+                            self.db.flush()
+                            
+                            piutang.process_payment(p.nominal)
+                            
+                            create_kas_entry(
+                                db=self.db,
+                                tanggal=data.tanggal or muatan.tanggal,
+                                tipe=KasBankType.MASUK,
+                                nominal=p.nominal,
+                                sumber=KasBankSource.JASA_ANGKUT,
+                                metode_bayar=p.metode,
+                                referensi_id=payment.id,
+                                nomor_referensi=piutang.nomor_piutang,
+                                keterangan=f"Pemasukan Sebagian Jasa Angkut {muatan.nomor_transaksi} via {piutang.nomor_piutang}",
+                                user_id=None,
+                                kas_jenis=p.kas_jenis,
+                            )
+                else:
+                    # Just recalc sisa if nominal_piutang changed
+                    piutang.sisa_piutang = piutang.nominal_piutang - piutang.total_dibayar
+                    
+                self.db.commit()
 
         return muatan
 

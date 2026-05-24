@@ -5,7 +5,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 from app.utils.constants import PaymentStatus, PaymentMethod, MuatanStatus, KasBankJenis
-from app.schemas.keuangan import PaymentDetail
+from app.schemas.keuangan import PaymentDetail, PembayaranPiutangResponse
 from app.schemas.bengkel import PengeluaranBengkelResponse
 
 
@@ -302,6 +302,7 @@ class MuatanResponse(BaseModel):
     part_services: List[PartServiceResponse] = []
     piutang_id: Optional[int] = None
     jumlah_bayar: Decimal = Decimal("0")
+    payment_history: List[PembayaranPiutangResponse] = []
     catatan: Optional[str] = None
     created_at: datetime
 
