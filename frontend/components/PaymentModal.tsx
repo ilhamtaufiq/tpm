@@ -5,7 +5,7 @@ import { Typography } from './ui/Typography';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { Plus, Trash2, X, Banknote, CreditCard, Wallet, CircleDollarSign } from 'lucide-react-native';
+import { Plus, Trash2, X, Banknote, CreditCard, Wallet, CircleDollarSign, Building2, Store, ArrowUpRight } from 'lucide-react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
@@ -53,30 +53,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     }, [visible]);
 
+    // Unit label mapping for display
+    const unitLabel = useMemo(() => {
+        const labels: Record<string, string> = {
+            'BENGKEL': 'Bengkel',
+            'JASA_ANGKUT': 'Jasa Angkut',
+            'JUAL_BELI_MOBIL': 'Jual Beli Mobil',
+        };
+        return unit ? (labels[unit] || unit) : 'Unit';
+    }, [unit]);
+
     const balancesInfo = useMemo(() => {
-        if (!allBalances) return { cash: 0, bank: 0 };
+        if (!allBalances) return { cashPusat: 0, cashUnit: 0, bank: 0 };
         
         // Map unit key to account keys
-        const unitMapping: Record<string, { cash: string; bank: string }> = {
-            'BENGKEL': { cash: 'kas_unit_bengkel', bank: 'bengkel' },
-            'JASA_ANGKUT': { cash: 'kas_unit_jasa_angkut', bank: 'jasa_angkut' },
-            'JUAL_BELI_MOBIL': { cash: 'kas_unit_mobil', bank: 'mobil' },
-            'KAS_UTAMA': { cash: 'kas_utama', bank: 'utama' },
-            'BANK_UTAMA': { cash: 'kas_utama', bank: 'utama' }
+        const unitCashMapping: Record<string, string> = {
+            'BENGKEL': 'kas_unit_bengkel',
+            'JASA_ANGKUT': 'kas_unit_jasa_angkut',
+            'JUAL_BELI_MOBIL': 'kas_unit_mobil',
         };
         
-        const mapping = unit ? unitMapping[unit] : { cash: 'kas_utama', bank: 'utama' };
-        
-        const cashBalance = allBalances[mapping.cash]?.saldo || 0;
+        const cashPusat = allBalances.kas_utama?.saldo || 0;
+        const cashUnit = unit && unitCashMapping[unit] ? (allBalances[unitCashMapping[unit]]?.saldo || 0) : 0;
         
         let bankBalance = 0;
-        if (allBalances.bank_utama?.sub_balances && mapping.bank) {
-            bankBalance = allBalances.bank_utama.sub_balances[mapping.bank] || 0;
-        } else if (allBalances.bank_utama) {
+        if (allBalances.bank_utama) {
             bankBalance = allBalances.bank_utama.saldo || 0;
         }
         
-        return { cash: cashBalance, bank: bankBalance };
+        return { cashPusat, cashUnit, bank: bankBalance };
     }, [allBalances, unit]);
 
     const sheetRef = useRef<BottomSheet>(null);
@@ -108,12 +113,30 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     const handleSubmit = async () => {
         const validatedPayments = payments
-            .map(p => ({
-                metode: p.metode as any,
-                nominal: parseNumber(p.nominal),
-                catatan: p.catatan || undefined,
-                kas_jenis: p.metode === 'TRANSFER' ? 'BANK_UTAMA' : (kas_jenis || undefined)
-            }))
+            .map(p => {
+                // Map UI method to backend metode + kas_jenis
+                let backendMetode = p.metode;
+                let targetKas = kas_jenis || undefined;
+
+                if (p.metode === 'TUNAI_PUSAT') {
+                    backendMetode = 'TUNAI';
+                    targetKas = 'KAS_UTAMA';
+                } else if (p.metode === 'TUNAI_UNIT') {
+                    backendMetode = 'TUNAI';
+                    // Keep the kas_jenis from parent (e.g. KAS_UNIT_BENGKEL)
+                    targetKas = kas_jenis || undefined;
+                } else if (p.metode === 'TRANSFER') {
+                    backendMetode = 'TRANSFER';
+                    targetKas = 'BANK_UTAMA';
+                }
+
+                return {
+                    metode: backendMetode as any,
+                    nominal: parseNumber(p.nominal),
+                    catatan: p.catatan || undefined,
+                    kas_jenis: targetKas
+                };
+            })
             .filter(p => p.nominal > 0);
 
         const hasEmptyMethod = payments.some(p => !p.metode && parseNumber(p.nominal) > 0);
@@ -241,29 +264,102 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             )}
                         </View>
 
-                        <View className="flex-row space-x-2 gap-2 mb-5">
-                            {(allowedMethods || ['TUNAI', 'TRANSFER', 'DEBIT', 'KREDIT']).map((m) => (
-                                <Pressable
-                                    key={m}
-                                    onPress={() => updatePayment(p.id, 'metode', m)}
-                                    className={`flex-1 py-3.5 items-center rounded-2xl border ${p.metode === m ? 'border-primary bg-primary shadow-md shadow-primary/20' : 'border-gray-50 bg-gray-50'}`}
-                                >
-                                    <Typography 
-                                        variant="caption" 
-                                        weight="bold" 
-                                        className={p.metode === m ? 'text-white' : 'text-gray-400'}
+                        <View className="space-y-2 mb-5">
+                            {(allowedMethods || ['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER']).map((m) => {
+                                const methodConfig: Record<string, { label: string; sublabel: string; icon: React.ReactNode; activeBg: string; activeBorder: string }> = {
+                                    'TUNAI_PUSAT': {
+                                        label: 'Tunai ke Pusat',
+                                        sublabel: 'Cash masuk ke Kas Utama',
+                                        icon: <Building2 size={16} color={p.metode === m ? '#FFFFFF' : '#023C69'} />,
+                                        activeBg: 'bg-primary',
+                                        activeBorder: 'border-primary'
+                                    },
+                                    'TUNAI_UNIT': {
+                                        label: `Tunai ke ${unitLabel}`,
+                                        sublabel: `Cash masuk ke Kas Unit ${unitLabel}`,
+                                        icon: <Store size={16} color={p.metode === m ? '#FFFFFF' : '#059669'} />,
+                                        activeBg: 'bg-emerald-600',
+                                        activeBorder: 'border-emerald-600'
+                                    },
+                                    'TRANSFER': {
+                                        label: 'Transfer',
+                                        sublabel: 'Transfer ke Bank Pusat',
+                                        icon: <ArrowUpRight size={16} color={p.metode === m ? '#FFFFFF' : '#2563EB'} />,
+                                        activeBg: 'bg-blue-600',
+                                        activeBorder: 'border-blue-600'
+                                    },
+                                    // Fallback for legacy methods
+                                    'TUNAI': {
+                                        label: 'Tunai',
+                                        sublabel: 'Pembayaran tunai',
+                                        icon: <Banknote size={16} color={p.metode === m ? '#FFFFFF' : '#059669'} />,
+                                        activeBg: 'bg-emerald-600',
+                                        activeBorder: 'border-emerald-600'
+                                    },
+                                };
+                                const cfg = methodConfig[m] || { label: m, sublabel: '', icon: <Banknote size={16} color="#9CA3AF" />, activeBg: 'bg-primary', activeBorder: 'border-primary' };
+                                const isActive = p.metode === m;
+
+                                return (
+                                    <Pressable
+                                        key={m}
+                                        onPress={() => updatePayment(p.id, 'metode', m)}
+                                        className={`flex-row items-center py-3.5 px-4 rounded-2xl border ${
+                                            isActive ? `${cfg.activeBg} ${cfg.activeBorder} shadow-md` : 'border-gray-100 bg-gray-50'
+                                        }`}
                                     >
-                                        {m}
-                                    </Typography>
-                                </Pressable>
-                            ))}
+                                        <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${
+                                            isActive ? 'bg-white/20' : 'bg-white'
+                                        }`}>
+                                            {cfg.icon}
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography
+                                                variant="caption"
+                                                weight="bold"
+                                                className={isActive ? 'text-white text-xs' : 'text-gray-700 text-xs'}
+                                            >
+                                                {cfg.label}
+                                            </Typography>
+                                            <Typography
+                                                className={`text-[9px] font-medium ${isActive ? 'text-white/70' : 'text-gray-400'}`}
+                                            >
+                                                {cfg.sublabel}
+                                            </Typography>
+                                        </View>
+                                        {isActive && (
+                                            <View className="w-5 h-5 bg-white/30 rounded-full items-center justify-center">
+                                                <View className="w-2.5 h-2.5 bg-white rounded-full" />
+                                            </View>
+                                        )}
+                                    </Pressable>
+                                );
+                            })}
                         </View>
 
                         {p.metode === 'TRANSFER' && (
                             <View className="flex-row items-center mb-5 bg-blue-50/50 p-3 rounded-xl border border-blue-100/30">
+                                <Wallet size={12} color="#2563EB" />
+                                <Typography variant="caption" className="text-blue-700/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
+                                    Saldo Bank Pusat: <Typography variant="caption" weight="bold" className="text-blue-700">{formatCurrency(balancesInfo.bank)}</Typography>
+                                </Typography>
+                            </View>
+                        )}
+
+                        {p.metode === 'TUNAI_PUSAT' && (
+                            <View className="flex-row items-center mb-5 bg-primary/5 p-3 rounded-xl border border-primary/10">
                                 <Wallet size={12} color="#023C69" />
                                 <Typography variant="caption" className="text-primary/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
-                                    Saldo Bank: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(balancesInfo.bank)}</Typography>
+                                    Saldo Kas Pusat: <Typography variant="caption" weight="bold" className="text-primary">{formatCurrency(balancesInfo.cashPusat)}</Typography>
+                                </Typography>
+                            </View>
+                        )}
+
+                        {p.metode === 'TUNAI_UNIT' && (
+                            <View className="flex-row items-center mb-5 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/30">
+                                <Wallet size={12} color="#059669" />
+                                <Typography variant="caption" className="text-emerald-700/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
+                                    Saldo Kas {unitLabel}: <Typography variant="caption" weight="bold" className="text-emerald-700">{formatCurrency(balancesInfo.cashUnit)}</Typography>
                                 </Typography>
                             </View>
                         )}
@@ -272,7 +368,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             <View className="flex-row items-center mb-5 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/30">
                                 <Wallet size={12} color="#059669" />
                                 <Typography variant="caption" className="text-emerald-700/70 ml-2 text-[10px] uppercase font-bold tracking-widest">
-                                    Saldo Kas: <Typography variant="caption" weight="bold" className="text-emerald-700">{formatCurrency(balancesInfo.cash)}</Typography>
+                                    Saldo Kas: <Typography variant="caption" weight="bold" className="text-emerald-700">{formatCurrency(balancesInfo.cashUnit || balancesInfo.cashPusat)}</Typography>
                                 </Typography>
                             </View>
                         )}

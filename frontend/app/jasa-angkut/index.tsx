@@ -1900,7 +1900,7 @@ export default function JasaAngkutScreen() {
                     id={selectedTrip.piutang_id}
                     initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
                     title="Pelunasan Jasa Angkut"
-                    allowedMethods={['TUNAI', 'TRANSFER']}
+                    allowedMethods={['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER']}
                     unit="JASA_ANGKUT"
                     kas_jenis="KAS_UNIT_JASA_ANGKUT"
                 />
