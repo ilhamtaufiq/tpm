@@ -724,12 +724,26 @@ class BaseReportService:
                 Mobil.tanggal_terjual > tanggal_sampai
             )
         ).scalar() or 0)
+        internal_jbm_unrealized_profit = float(self.db.query(func.sum(TransaksiPenjualanBengkel.laba_kotor)).join(
+            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
+        ).filter(
+            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
+        ).scalar() or 0)
+        internal_jbm_unrealized_revenue = internal_elimination
 
         # Mobil profit is recognized only after the car is fully sold. Active
         # bookings remain stock + customer DP/piutang neutralizers.
         laba_mobil_gross = sold_revenue - hpp_sold_price - hpp_sold_prep - mobil_total_repairs_sold
         laba_mobil_tpm = laba_mobil_gross - sold_laba_investor
-        laba_bengkel_kotor = float(bengkel_summary.get("total_laba_kotor", 0))
+        laba_bengkel_kotor_gross = float(bengkel_summary.get("total_laba_kotor", 0))
+        laba_bengkel_kotor = laba_bengkel_kotor_gross - internal_jbm_unrealized_profit
         laba_ja_tpm = float(ja_revenue_tpm)
 
         total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm
@@ -873,6 +887,8 @@ class BaseReportService:
             "laba_tpm": retained_earnings, # Legacy support
             "total_operasional": total_operasional,
             "internal_elimination": internal_elimination,
+            "internal_jbm_unrealized_profit": internal_jbm_unrealized_profit,
+            "internal_jbm_unrealized_revenue": internal_jbm_unrealized_revenue,
             "ja_double_exp_adjustment": ja_double_exp,
             "opening_balance": saldo_awal,
             "revenue": {
@@ -919,6 +935,9 @@ class BaseReportService:
                 },
                 "bengkel": {
                     "laba_kotor": laba_bengkel_kotor,
+                    "laba_kotor_gross": laba_bengkel_kotor_gross,
+                    "internal_jbm_unrealized_profit": internal_jbm_unrealized_profit,
+                    "internal_jbm_unrealized_revenue": internal_jbm_unrealized_revenue,
                     "total_laba_tpm": laba_bengkel_kotor - bengkel_ops_total,
                     "total_hpp": float(bengkel_summary["total_hpp"]),
                     "common_expenses": bengkel_common,
