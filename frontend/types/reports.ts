@@ -160,6 +160,7 @@ export interface CapitalReport {
     modal_awal: number;
     penambahan?: {
         setoran_modal: number;
+        investor_funding?: number;
         modal_non_kas?: {
             total: number;
             aset_tetap?: number;
@@ -180,7 +181,6 @@ export interface CapitalReport {
             prep: number;
             workshop: number;
         };
-        investor_funding?: number;
         eliminasi_internal?: number;
         penyesuaian?: number;
     };

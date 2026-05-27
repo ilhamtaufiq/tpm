@@ -1055,12 +1055,16 @@ class PenjualanMobilService:
             ).first()
         )
         
-        # Sold IDs in period
-        sold_q_base = self.db.query(TransaksiPenjualanMobil.mobil_id).filter(
-            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+        # Sold IDs in period. Booking/DP transactions are not realized sales yet,
+        # so their repair costs stay capitalized in stock and do not hit P&L.
+        sold_q_base = self.db.query(TransaksiPenjualanMobil.mobil_id).join(
+            Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id
+        ).filter(
+            TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+            Mobil.status == CarStatus.TERJUAL,
         )
-        if tanggal_dari: sold_q_base = sold_q_base.filter(TransaksiPenjualanMobil.tanggal >= tanggal_dari)
-        if tanggal_sampai: sold_q_base = sold_q_base.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
+        if tanggal_dari: sold_q_base = sold_q_base.filter(Mobil.tanggal_terjual >= tanggal_dari)
+        if tanggal_sampai: sold_q_base = sold_q_base.filter(Mobil.tanggal_terjual <= tanggal_sampai)
         
         sold_mobil_ids = [r[0] for r in sold_q_base.all()]
 
@@ -1199,10 +1203,11 @@ class PenjualanMobilService:
         sold_q = self.db.query(TransaksiPenjualanMobil.mobil_id, Mobil.model, Mobil.nomor_plat).join(
             Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL
+            TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+            Mobil.status == CarStatus.TERJUAL,
         )
-        if tanggal_dari: sold_q = sold_q.filter(TransaksiPenjualanMobil.tanggal >= tanggal_dari)
-        if tanggal_sampai: sold_q = sold_q.filter(TransaksiPenjualanMobil.tanggal <= tanggal_sampai)
+        if tanggal_dari: sold_q = sold_q.filter(Mobil.tanggal_terjual >= tanggal_dari)
+        if tanggal_sampai: sold_q = sold_q.filter(Mobil.tanggal_terjual <= tanggal_sampai)
         
         sold_results = sold_q.all()
         sold_ids = [{"mobil_id": r[0]} for r in sold_results]

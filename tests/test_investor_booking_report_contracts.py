@@ -22,6 +22,7 @@ def test_investor_booking_debt_requires_completed_sale():
 def test_laba_rugi_uses_sold_only_mobil_contract():
     base = read("backend/app/services/reports/base.py")
     laba_rugi = read("backend/app/services/reports/laba_rugi_service.py")
+    penjualan_mobil = read("backend/app/services/penjualan_mobil_service.py")
 
     assert '"sales_revenue": sold_revenue' in base
     assert '"purchase_hpp": hpp_sold_price' in base
@@ -29,6 +30,9 @@ def test_laba_rugi_uses_sold_only_mobil_contract():
     assert 'm.get("purchase_hpp", 0)' in laba_rugi
     assert 'm.get("repairs", 0)' in laba_rugi
     assert "mobil_total_repairs_sold = max(0, workshop_bills + capital_sold_repairs)" in base
+    assert "Booking/DP transactions are not realized sales yet" in penjualan_mobil
+    assert "TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS" in penjualan_mobil
+    assert "Mobil.tanggal_terjual >= tanggal_dari" in penjualan_mobil
     assert '"maintenance": m_maintenance' in laba_rugi
     assert 'data["raw_summaries"]["mobil"].get("total_penjualan"' not in laba_rugi
     assert 'data["raw_summaries"]["mobil"].get("total_harga_beli"' not in laba_rugi
@@ -45,7 +49,9 @@ def test_frontend_finance_pages_render_investor_booking_lines():
     assert "Laba Bersih Unit" in laba_rugi
     assert "unit.maintenance ?? details.total_biaya_bengkel" in laba_rugi
 
-    assert "investor_funding" not in perubahan_modal
+    assert "investor_funding" in perubahan_modal
+    assert "Dana Investor Mobil" in perubahan_modal
+    assert "Pembayaran Investor Mobil" in perubahan_modal
     assert "Setoran Modal Kas" in perubahan_modal
     assert "Setoran Modal Non-Kas" in perubahan_modal
 
@@ -66,6 +72,8 @@ def test_internal_repair_elimination_contract():
     assert "- overhead_pusat - elimination" not in laba_rugi
     assert '"internal_elimination": elimination' in laba_rugi
     assert "laba_kotor +" in modal
+    assert "investor_capital_baru +" in modal
+    assert "pembayaran_investor" in modal
     assert '"eliminasi_internal": internal_elimination' in modal
     assert "total_pasiva = total_liabilities + total_modal" in neraca
     assert "report_selisih = total_assets - total_pasiva" in neraca

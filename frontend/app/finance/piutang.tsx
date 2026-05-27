@@ -64,6 +64,13 @@ const formatUnitLabel = (unit?: string) => {
         .join(' ');
 };
 
+const getUnitDisplayLabel = (unit?: string) => {
+    if (unit === 'BENGKEL') return 'Bengkel';
+    if (unit === 'JUAL_BELI_MOBIL') return 'Jual Beli Mobil';
+    if (unit === 'JASA_ANGKUT') return 'Jasa Angkut';
+    return formatUnitLabel(unit);
+};
+
 const getUnitKasJenis = (unit?: string) => {
     if (unit === 'BENGKEL') return 'KAS_UNIT_BENGKEL';
     if (unit === 'JUAL_BELI_MOBIL') return 'KAS_UNIT_MOBIL';
@@ -83,6 +90,7 @@ export default function PiutangUsahaScreen() {
         ? params.unit as typeof FINANCE_UNITS[number]
         : undefined;
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
+    const unitLabel = getUnitDisplayLabel(unitFilter);
     const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
@@ -710,8 +718,8 @@ export default function PiutangUsahaScreen() {
     return (
         <View className="flex-1 bg-surface">
             <Header
-                title={unitFilter ? 'Piutang Bengkel' : 'Piutang Usaha'}
-                subtitle={unitFilter ? 'Daftar piutang unit bengkel' : 'Pantau Penagihan & Jatuh Tempo'}
+                title={unitLabel ? `Piutang ${unitLabel}` : 'Piutang Usaha'}
+                subtitle={unitLabel ? `Daftar piutang unit ${unitLabel}` : 'Pantau Penagihan & Jatuh Tempo'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
                 rightElement={canCreate ? (

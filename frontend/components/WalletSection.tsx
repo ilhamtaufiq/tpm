@@ -10,7 +10,7 @@ import { useUIStore } from '../store/useUIStore';
 export const WalletSection = () => {
     const { data: balances, isLoading, isRefetching } = useKasBankBalances();
     const { themeColors } = useUIStore();
-    const [hideBalance, setHideBalance] = useState(false);
+    const [hideBalance, setHideBalance] = useState(true);
 
     return (
         <View className="px-4 sm:px-6 mt-4 w-full">

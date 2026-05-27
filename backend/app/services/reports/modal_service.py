@@ -525,9 +525,10 @@ class ModalService(BaseReportService):
         raw_theoretical = (
             modal_awal_theoretical + 
             setoran_modal + 
+            investor_capital_baru +
             (total_non_kas + modal_stok_mobil_delta) + 
             period_profit_sot - 
-            (prive + pengembalian_modal)
+            (prive + pengembalian_modal + pembayaran_investor)
         )
         penyesuaian = modal_akhir - raw_theoretical
         

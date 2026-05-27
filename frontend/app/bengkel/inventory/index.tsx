@@ -34,10 +34,16 @@ import {
     CheckCircle2,
     Check,
     Circle,
-    Download
+    Download,
+    Wrench,
+    User,
+    Car,
+    Wallet
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts } from '../../../hooks/useBengkel';
+import { useCreateTransaksiBengkel, useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts } from '../../../hooks/useBengkel';
+import { useJasaList } from '../../../hooks/useJasaServis';
+import { useMobilList } from '../../../hooks/useMobil';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { SkeletonCard, SkeletonListItem } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
@@ -45,8 +51,13 @@ import { formatCurrency } from '../../../utils/format';
 import { BaseModal } from '../../../components/ui/BaseModal';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
+import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
+import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import * as Print from 'expo-print';
 import { FILE_URL } from '../../../utils/api';
+
+type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
+type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG';
 
 export default function InventoryScreen() {
     const [search, setSearch] = useState('');
@@ -58,6 +69,8 @@ export default function InventoryScreen() {
 
     // Quick Stock States
     const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [scannerMode, setScannerMode] = useState<'stock' | 'transaction'>('stock');
+    const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
     const [isQuickStockVisible, setIsQuickStockVisible] = useState(false);
     const [scannedPart, setScannedPart] = useState<any>(null);
     const [stockChange, setStockChange] = useState('0');
@@ -105,6 +118,28 @@ export default function InventoryScreen() {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isExportModalVisible, setIsExportModalVisible] = useState(false);
 
+    // Workshop transaction wizard
+    const [isTransactionModalVisible, setIsTransactionModalVisible] = useState(false);
+    const [transactionStep, setTransactionStep] = useState<1 | 2 | 3>(1);
+    const [selectedTransactionParts, setSelectedTransactionParts] = useState<Record<number, { item: any; qty: number }>>({});
+    const [selectedTransactionServices, setSelectedTransactionServices] = useState<Record<number, { item: any; qty: number }>>({});
+    const [transactionKategori, setTransactionKategori] = useState<BengkelKategori>('umum');
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+    const [guestName, setGuestName] = useState('');
+    const [selectedArmada, setSelectedArmada] = useState<any>(null);
+    const [selectedMobil, setSelectedMobil] = useState<any>(null);
+    const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
+    const [transactionNote, setTransactionNote] = useState('');
+    const [transactionPartSearch, setTransactionPartSearch] = useState('');
+    const [transactionServiceSearch, setTransactionServiceSearch] = useState('');
+
+    const createTransactionMutation = useCreateTransaksiBengkel();
+    const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 100 });
+    const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
+
+    const jasaList = jasaData?.data || [];
+    const mobilList = Array.isArray(mobilData) ? mobilData : (mobilData?.data || []);
+
     const toggleSelectAll = () => {
         if (selectedIds.length === parts.length && parts.length > 0) {
             setSelectedIds([]);
@@ -117,6 +152,218 @@ export default function InventoryScreen() {
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
+    };
+
+    const selectedPartList = useMemo(() => Object.values(selectedTransactionParts), [selectedTransactionParts]);
+    const selectedServiceList = useMemo(() => Object.values(selectedTransactionServices), [selectedTransactionServices]);
+    const filteredTransactionParts = useMemo(() => {
+        const q = transactionPartSearch.trim().toLowerCase();
+        const list = q ? parts.filter((part: any) =>
+            (part.nama || '').toLowerCase().includes(q) ||
+            (part.kode || '').toLowerCase().includes(q) ||
+            (part.kode_part || '').toLowerCase().includes(q) ||
+            (part.kategori || '').toLowerCase().includes(q)
+        ) : parts;
+
+        return [...list].sort((a: any, b: any) => {
+            const rank = (part: any) => {
+                if (part.stok === 999) return 0;
+                if (Number(part.stok || 0) > 0) return 1;
+                return 2;
+            };
+            const rankDiff = rank(a) - rank(b);
+            if (rankDiff !== 0) return rankDiff;
+            return String(a.nama || '').localeCompare(String(b.nama || ''), 'id');
+        });
+    }, [parts, transactionPartSearch]);
+    const filteredTransactionServices = useMemo(() => {
+        const q = transactionServiceSearch.trim().toLowerCase();
+        if (!q) return jasaList;
+        return jasaList.filter((service: any) =>
+            (service.nama || '').toLowerCase().includes(q) ||
+            (service.kategori || '').toLowerCase().includes(q) ||
+            (service.deskripsi || '').toLowerCase().includes(q)
+        );
+    }, [jasaList, transactionServiceSearch]);
+    const transactionSubtotal = useMemo(() => {
+        const partTotal = selectedPartList.reduce((sum, row) => sum + (Number(row.item.harga_jual || 0) * row.qty), 0);
+        const serviceTotal = selectedServiceList.reduce((sum, row) => sum + (Number(row.item.harga || 0) * row.qty), 0);
+        return partTotal + serviceTotal;
+    }, [selectedPartList, selectedServiceList]);
+    const hasTransactionItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
+
+    const resetTransactionWizard = () => {
+        setTransactionStep(1);
+        setSelectedTransactionParts({});
+        setSelectedTransactionServices({});
+        setTransactionKategori('umum');
+        setSelectedCustomer(null);
+        setGuestName('');
+        setSelectedArmada(null);
+        setSelectedMobil(null);
+        setPaymentMode('TUNAI');
+        setTransactionNote('');
+        setTransactionPartSearch('');
+        setTransactionServiceSearch('');
+    };
+
+    const openTransactionWizard = () => {
+        resetTransactionWizard();
+        setIsTransactionModalVisible(true);
+    };
+
+    const closeTransactionWizard = () => {
+        setIsTransactionModalVisible(false);
+        resetTransactionWizard();
+        router.setParams({ action: undefined } as any);
+    };
+
+    const toggleTransactionPart = (part: any) => {
+        if (part.stok !== 999 && Number(part.stok || 0) <= 0) return;
+        setSelectedTransactionParts(prev => {
+            const next = { ...prev };
+            if (next[part.id]) {
+                delete next[part.id];
+            } else {
+                next[part.id] = { item: part, qty: 1 };
+            }
+            return next;
+        });
+    };
+
+    const setTransactionPartQty = (partId: number, qty: number) => {
+        setSelectedTransactionParts(prev => {
+            if (!prev[partId]) return prev;
+            return { ...prev, [partId]: { ...prev[partId], qty: Math.max(1, qty) } };
+        });
+    };
+
+    const addScannedTransactionPart = (part: any) => {
+        if (part.stok !== 999 && Number(part.stok || 0) <= 0) {
+            Alert.alert('Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
+            return;
+        }
+        setSelectedTransactionParts(prev => {
+            const existing = prev[part.id];
+            return {
+                ...prev,
+                [part.id]: {
+                    item: part,
+                    qty: existing ? existing.qty + 1 : 1,
+                },
+            };
+        });
+        setScanLog(prev => [{
+            id: Math.random().toString(),
+            title: part.nama,
+            subtitle: `Kode: ${part.kode || part.kode_part || '-'} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
+            timestamp: Date.now(),
+        }, ...prev]);
+    };
+
+    const toggleTransactionService = (service: any) => {
+        setSelectedTransactionServices(prev => {
+            const next = { ...prev };
+            if (next[service.id]) {
+                delete next[service.id];
+            } else {
+                next[service.id] = { item: service, qty: 1 };
+            }
+            return next;
+        });
+    };
+
+    const setTransactionServiceQty = (serviceId: number, qty: number) => {
+        setSelectedTransactionServices(prev => {
+            if (!prev[serviceId]) return prev;
+            return { ...prev, [serviceId]: { ...prev[serviceId], qty: Math.max(1, qty) } };
+        });
+    };
+
+    const goToNextTransactionStep = () => {
+        if (transactionStep === 1 && !hasTransactionItems) {
+            Alert.alert('Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
+            return;
+        }
+        if (transactionStep === 2) {
+            if (transactionKategori === 'umum' && !(selectedCustomer || guestName.trim())) {
+                Alert.alert('Validasi', 'Pilih customer atau isi nama guest untuk kategori umum.');
+                return;
+            }
+            if (transactionKategori === 'jasa_angkut' && !selectedArmada) {
+                Alert.alert('Validasi', 'Pilih armada untuk kategori Jasa Angkut.');
+                return;
+            }
+            if (transactionKategori === 'jual_beli_mobil' && !selectedMobil) {
+                Alert.alert('Validasi', 'Pilih mobil untuk kategori Jual Beli Mobil.');
+                return;
+            }
+        }
+        setTransactionStep(prev => Math.min(3, prev + 1) as 1 | 2 | 3);
+    };
+
+    const submitTransaction = async () => {
+        if (!hasTransactionItems) {
+            Alert.alert('Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
+            return;
+        }
+
+        const isJasaAngkut = transactionKategori === 'jasa_angkut';
+        const isJualBeliMobil = transactionKategori === 'jual_beli_mobil';
+        const customerName = isJasaAngkut
+            ? `Armada ${selectedArmada?.nama || selectedArmada?.nopol || ''}`.trim()
+            : isJualBeliMobil
+                ? 'TPM (Internal)'
+                : (selectedCustomer?.nama || guestName.trim());
+        const nomorPlat = isJasaAngkut
+            ? (selectedArmada?.nopol || '-')
+            : isJualBeliMobil
+                ? (selectedMobil?.nomor_plat || '-')
+                : (selectedCustomer?.vehicles?.[0]?.plat_nomor || '-');
+        const jenisKendaraan = isJasaAngkut
+            ? 'Armada Jasa Angkut'
+            : isJualBeliMobil
+                ? `${selectedMobil?.merek || ''} ${selectedMobil?.model || ''}`.trim() || 'Mobil'
+                : (selectedCustomer?.vehicles?.[0]?.jenis_unit || 'Umum');
+
+        const payload = {
+            tanggal: new Date().toISOString().split('T')[0],
+            customer_id: transactionKategori === 'umum' ? selectedCustomer?.id || null : null,
+            nama_customer: customerName,
+            nomor_plat: String(nomorPlat).substring(0, 15),
+            jenis_kendaraan: String(jenisKendaraan).substring(0, 50),
+            kategori: transactionKategori,
+            armada_id: isJasaAngkut ? selectedArmada?.id : null,
+            mobil_id: isJualBeliMobil ? selectedMobil?.id : null,
+            detail_parts: selectedPartList.map(row => ({
+                spare_part_id: row.item.id,
+                qty: row.qty,
+                harga_jual: Number(row.item.harga_jual || 0),
+            })),
+            detail_services: selectedServiceList.map(row => ({
+                nama_jasa: row.item.nama,
+                harga: Number(row.item.harga || 0),
+                qty: row.qty,
+            })),
+            diskon: 0,
+            metode_bayar: isJasaAngkut ? 'INTERNAL' : (isJualBeliMobil ? 'KREDIT' : paymentMode),
+            jumlah_bayar: isJasaAngkut ? transactionSubtotal : (isJualBeliMobil || paymentMode === 'PIUTANG' ? 0 : transactionSubtotal),
+            payments: isJasaAngkut
+                ? [{ metode: 'INTERNAL', jumlah: transactionSubtotal }]
+                : isJualBeliMobil || paymentMode === 'PIUTANG'
+                    ? []
+                    : [{ metode: paymentMode, jumlah: transactionSubtotal, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }],
+            catatan: transactionNote,
+        };
+
+        try {
+            await createTransactionMutation.mutateAsync(payload);
+            Alert.alert('Sukses', 'Transaksi bengkel berhasil dibuat.');
+            closeTransactionWizard();
+            refetch();
+        } catch (error) {
+            Alert.alert('Error', 'Gagal membuat transaksi bengkel.');
+        }
     };
 
     const handleBulkExport = async (ids?: number[]) => {
@@ -196,6 +443,33 @@ export default function InventoryScreen() {
         }
     };
 
+    const handleScanForTransaction = (scannedData: string) => {
+        const cleanData = scannedData.trim();
+        let part = parts.find((p: any) =>
+            p.kode === cleanData ||
+            (p.kode_part && p.kode_part === cleanData)
+        );
+
+        if (!part) {
+            const strippedData = cleanData.replace(/^0+/, '');
+            part = parts.find((p: any) =>
+                (p.kode || '').replace(/^0+/, '') === strippedData ||
+                (p.kode_part || '').replace(/^0+/, '') === strippedData
+            );
+        }
+
+        if (part) {
+            addScannedTransactionPart(part);
+        } else {
+            setScanLog(prev => [{
+                id: Math.random().toString(),
+                title: 'Tidak ditemukan',
+                subtitle: `Kode: ${scannedData}`,
+                timestamp: Date.now(),
+            }, ...prev]);
+        }
+    };
+
     const handleQuickStockUpdate = async () => {
         if (!scannedPart || !stockChange) return;
 
@@ -261,7 +535,17 @@ export default function InventoryScreen() {
                 </View>
                 <View className="flex-row items-center">
                     <Pressable
-                        onPress={() => setIsScannerOpen(true)}
+                        onPress={() => router.push('/bengkel/transaksi')}
+                        className="bg-emerald-50 px-3 py-1.5 rounded-full flex-row items-center mr-2 border border-emerald-100"
+                    >
+                        <Wallet size={16} color="#059669" />
+                        <Typography className="text-emerald-700 text-xs font-bold ml-1">Transaksi</Typography>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => {
+                            setScannerMode('stock');
+                            setIsScannerOpen(true);
+                        }}
                         className="bg-primary/5 p-2 rounded-full mr-2"
                     >
                         <BarcodeIcon size={22} color="#023C69" />
@@ -617,8 +901,15 @@ export default function InventoryScreen() {
 
             <BarcodeScannerModal
                 visible={isScannerOpen}
-                onClose={() => setIsScannerOpen(false)}
-                onScan={handleScanForStockUpdate}
+                onClose={() => {
+                    setIsScannerOpen(false);
+                    if (scannerMode === 'transaction') {
+                        setTransactionStep(1);
+                    }
+                }}
+                onScan={scannerMode === 'transaction' ? handleScanForTransaction : handleScanForStockUpdate}
+                scanLog={scannerMode === 'transaction' ? scanLog : undefined}
+                continuous={scannerMode === 'transaction'}
             />
 
             {/* Export Selection Modal */}
@@ -688,6 +979,344 @@ export default function InventoryScreen() {
                     </View>
                 </View>
             </BaseModal>
+
+            <Modal
+                visible={isTransactionModalVisible}
+                animationType="slide"
+                onRequestClose={closeTransactionWizard}
+            >
+                <SafeAreaView className="flex-1 bg-white">
+                    <View className="px-5 py-4 border-b border-gray-100 flex-row items-center justify-between">
+                        <View>
+                            <Typography variant="h3" weight="bold">Transaksi Bengkel</Typography>
+                            <Typography className="text-gray-400 text-xs mt-0.5">Step {transactionStep} dari 3</Typography>
+                        </View>
+                        <Pressable onPress={closeTransactionWizard} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                            <X size={20} color="#475569" />
+                        </Pressable>
+                    </View>
+
+                    <View className="px-5 py-3 flex-row bg-gray-50">
+                        {[
+                            { id: 1, label: 'Item' },
+                            { id: 2, label: 'Kategori' },
+                            { id: 3, label: 'Bayar' },
+                        ].map((step) => (
+                            <View key={step.id} className="flex-1 flex-row items-center">
+                                <View className={`w-8 h-8 rounded-full items-center justify-center ${transactionStep >= step.id ? 'bg-primary' : 'bg-gray-200'}`}>
+                                    <Typography className={`text-xs font-bold ${transactionStep >= step.id ? 'text-white' : 'text-gray-500'}`}>{step.id}</Typography>
+                                </View>
+                                <Typography className={`ml-2 text-xs font-bold ${transactionStep === step.id ? 'text-primary' : 'text-gray-400'}`}>{step.label}</Typography>
+                            </View>
+                        ))}
+                    </View>
+
+                    <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+                        {transactionStep === 1 && (
+                            <View>
+                                <View className="flex-row space-x-4">
+                                    <View className="flex-1">
+                                        <View className="mb-4">
+                                            <Typography variant="body1" weight="bold" className="text-textMain mb-1">Sparepart</Typography>
+                                            <Typography className="text-gray-400 text-xs">Stok kosong tidak bisa dipilih.</Typography>
+                                        </View>
+                                        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
+                                            <Search size={16} color="#94A3B8" />
+                                            <TextInput
+                                                placeholder="Cari sparepart..."
+                                                placeholderTextColor="#94A3B8"
+                                                className="flex-1 ml-2 text-sm text-textMain"
+                                                value={transactionPartSearch}
+                                                onChangeText={setTransactionPartSearch}
+                                            />
+                                            {transactionPartSearch.length > 0 && (
+                                                <Pressable onPress={() => setTransactionPartSearch('')}>
+                                                    <X size={16} color="#94A3B8" />
+                                                </Pressable>
+                                            )}
+                                        </View>
+                                        <Pressable
+                                            onPress={() => {
+                                                setScannerMode('transaction');
+                                                setScanLog([]);
+                                                setIsScannerOpen(true);
+                                            }}
+                                            className="mb-3 bg-blue-50 border border-blue-100 rounded-2xl p-3 flex-row items-center justify-center"
+                                        >
+                                            <BarcodeIcon size={18} color="#2563EB" />
+                                            <Typography className="text-blue-700 text-xs font-bold ml-2">Scan Sparepart Continuous</Typography>
+                                        </Pressable>
+
+                                        {filteredTransactionParts.slice(0, 60).map((part: any) => {
+                                            const selected = selectedTransactionParts[part.id];
+                                            const outOfStock = part.stok !== 999 && Number(part.stok || 0) <= 0;
+                                            return (
+                                                <Pressable
+                                                    key={`trx-part-${part.id}`}
+                                                    disabled={outOfStock}
+                                                    onPress={() => toggleTransactionPart(part)}
+                                                    className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
+                                                >
+                                                    <View className="flex-row items-start">
+                                                        <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-gray-100 border-gray-200' : 'border-gray-300'}`}>
+                                                            {selected && <Check size={16} color="white" />}
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <View className="flex-row items-center">
+                                                                <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
+                                                                <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-gray-400' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
+                                                            </View>
+                                                            <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}</Typography>
+                                                            {outOfStock && (
+                                                                <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>
+                                                            )}
+                                                            <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
+                                                        </View>
+                                                    </View>
+                                                    {selected && (
+                                                        <View className="flex-row items-center self-end mt-3 bg-white rounded-xl border border-blue-100 overflow-hidden">
+                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionPartQty(part.id, selected.qty - 1); }} className="px-3 py-1.5">
+                                                                <Typography className="font-bold text-blue-600">-</Typography>
+                                                            </Pressable>
+                                                            <Typography className="px-2 text-xs font-bold">{selected.qty}</Typography>
+                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionPartQty(part.id, selected.qty + 1); }} className="px-3 py-1.5">
+                                                                <Typography className="font-bold text-blue-600">+</Typography>
+                                                            </Pressable>
+                                                        </View>
+                                                    )}
+                                                </Pressable>
+                                            );
+                                        })}
+                                        {filteredTransactionParts.length === 0 && (
+                                            <Typography className="text-gray-400 text-center text-xs py-8">Sparepart tidak ditemukan</Typography>
+                                        )}
+                                    </View>
+
+                                    <View className="flex-1">
+                                        <View className="mb-4">
+                                            <Typography variant="body1" weight="bold" className="text-textMain mb-1">Service</Typography>
+                                            <Typography className="text-gray-400 text-xs">Data dari Master Data Jasa Servis.</Typography>
+                                        </View>
+                                        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
+                                            <Search size={16} color="#94A3B8" />
+                                            <TextInput
+                                                placeholder="Cari service..."
+                                                placeholderTextColor="#94A3B8"
+                                                className="flex-1 ml-2 text-sm text-textMain"
+                                                value={transactionServiceSearch}
+                                                onChangeText={setTransactionServiceSearch}
+                                            />
+                                            {transactionServiceSearch.length > 0 && (
+                                                <Pressable onPress={() => setTransactionServiceSearch('')}>
+                                                    <X size={16} color="#94A3B8" />
+                                                </Pressable>
+                                            )}
+                                        </View>
+
+                                        {isJasaLoading ? (
+                                            <ActivityIndicator color="#023C69" />
+                                        ) : filteredTransactionServices.map((service: any) => {
+                                            const selected = selectedTransactionServices[service.id];
+                                            return (
+                                                <Pressable key={`trx-service-${service.id}`} onPress={() => toggleTransactionService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
+                                                    <View className="flex-row items-start">
+                                                        <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-gray-300'}`}>
+                                                            {selected && <Check size={16} color="white" />}
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <View className="flex-row items-center">
+                                                                <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
+                                                                <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
+                                                            </View>
+                                                            <Typography className="text-gray-400 text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
+                                                            <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                                                        </View>
+                                                    </View>
+                                                    {selected && (
+                                                        <View className="flex-row items-center self-end mt-3 bg-white rounded-xl border border-emerald-100 overflow-hidden">
+                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionServiceQty(service.id, selected.qty - 1); }} className="px-3 py-1.5">
+                                                                <Typography className="font-bold text-emerald-600">-</Typography>
+                                                            </Pressable>
+                                                            <Typography className="px-2 text-xs font-bold">{selected.qty}</Typography>
+                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionServiceQty(service.id, selected.qty + 1); }} className="px-3 py-1.5">
+                                                                <Typography className="font-bold text-emerald-600">+</Typography>
+                                                            </Pressable>
+                                                        </View>
+                                                    )}
+                                                </Pressable>
+                                            );
+                                        })}
+                                        {!isJasaLoading && filteredTransactionServices.length === 0 && (
+                                            <Typography className="text-gray-400 text-center text-xs py-8">Service tidak ditemukan</Typography>
+                                        )}
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        {transactionStep === 2 && (
+                            <View>
+                                <Typography variant="body1" weight="bold" className="text-textMain mb-4">Kategori Bengkel</Typography>
+                                <View className="space-y-3 mb-6">
+                                    {[
+                                        { id: 'umum', label: 'Umum', icon: User, desc: 'Transaksi customer bengkel biasa' },
+                                        { id: 'jasa_angkut', label: 'Jasa Angkut', icon: Wrench, desc: 'Biaya internal armada jasa angkut' },
+                                        { id: 'jual_beli_mobil', label: 'Jual Beli Mobil', icon: Car, desc: 'Biaya internal stok mobil' },
+                                    ].map((cat) => {
+                                        const Icon = cat.icon;
+                                        const active = transactionKategori === cat.id;
+                                        return (
+                                            <Pressable
+                                                key={cat.id}
+                                                onPress={() => {
+                                                    setTransactionKategori(cat.id as BengkelKategori);
+                                                    setSelectedCustomer(null);
+                                                    setGuestName('');
+                                                    setSelectedArmada(null);
+                                                    setSelectedMobil(null);
+                                                }}
+                                                className={`p-4 rounded-2xl border flex-row items-center ${active ? 'bg-primary/5 border-primary/30' : 'bg-white border-gray-100'}`}
+                                            >
+                                                <View className={`w-11 h-11 rounded-xl items-center justify-center mr-3 ${active ? 'bg-primary' : 'bg-gray-100'}`}>
+                                                    <Icon size={20} color={active ? 'white' : '#64748B'} />
+                                                </View>
+                                                <View className="flex-1">
+                                                    <Typography weight="bold" className={active ? 'text-primary' : 'text-textMain'}>{cat.label}</Typography>
+                                                    <Typography className="text-gray-400 text-xs mt-0.5">{cat.desc}</Typography>
+                                                </View>
+                                                {active && <CheckCircle2 size={20} color="#023C69" />}
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+
+                                {transactionKategori === 'umum' && (
+                                    <View>
+                                        <Typography variant="body2" weight="bold" className="text-primary mb-2">Customer</Typography>
+                                        <MasterDataSelector
+                                            type="customer"
+                                            value={selectedCustomer}
+                                            onSelect={setSelectedCustomer}
+                                            allowGuest
+                                            placeholder="Pilih Customer atau Ketik Nama"
+                                            onGuestNameChange={(name) => {
+                                                setGuestName(name);
+                                                setSelectedCustomer(null);
+                                            }}
+                                        />
+                                    </View>
+                                )}
+
+                                {transactionKategori === 'jasa_angkut' && (
+                                    <View>
+                                        <Typography variant="body2" weight="bold" className="text-primary mb-2">Armada</Typography>
+                                        <ArmadaSelector value={selectedArmada} onSelect={setSelectedArmada} placeholder="Pilih armada jasa angkut" />
+                                    </View>
+                                )}
+
+                                {transactionKategori === 'jual_beli_mobil' && (
+                                    <View>
+                                        <Typography variant="body2" weight="bold" className="text-primary mb-3">Mobil Stok</Typography>
+                                        {mobilList.map((mobil: any) => {
+                                            const active = selectedMobil?.id === mobil.id;
+                                            return (
+                                                <Pressable key={`trx-mobil-${mobil.id}`} onPress={() => setSelectedMobil(mobil)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
+                                                    <Car size={22} color={active ? '#D97706' : '#94A3B8'} />
+                                                    <View className="flex-1 ml-3">
+                                                        <Typography weight="bold" className="text-textMain">{mobil.nomor_plat || '-'}</Typography>
+                                                        <Typography className="text-gray-400 text-xs">{mobil.merek} {mobil.model} {mobil.tahun || ''}</Typography>
+                                                    </View>
+                                                    {active && <CheckCircle2 size={20} color="#D97706" />}
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                )}
+                            </View>
+                        )}
+
+                        {transactionStep === 3 && (
+                            <View>
+                                <Typography variant="body1" weight="bold" className="text-textMain mb-4">Pembayaran</Typography>
+
+                                <View className="bg-slate-50 p-5 rounded-3xl border border-slate-100 mb-5">
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography className="text-gray-500">Sparepart</Typography>
+                                        <Typography weight="bold">{selectedPartList.length} item</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography className="text-gray-500">Service</Typography>
+                                        <Typography weight="bold">{selectedServiceList.length} item</Typography>
+                                    </View>
+                                    <View className="h-[1px] bg-slate-200 my-3" />
+                                    <View className="flex-row justify-between items-center">
+                                        <Typography weight="bold" className="text-textMain">Total</Typography>
+                                        <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(transactionSubtotal)}</Typography>
+                                    </View>
+                                </View>
+
+                                {transactionKategori === 'umum' ? (
+                                    <View className="mb-5">
+                                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase">Metode Pembayaran</Typography>
+                                        <View className="flex-row space-x-2">
+                                            {[
+                                                { id: 'TUNAI', label: 'Tunai' },
+                                                { id: 'TRANSFER', label: 'Transfer' },
+                                                { id: 'PIUTANG', label: 'Piutang' },
+                                            ].map((mode) => (
+                                                <Pressable
+                                                    key={mode.id}
+                                                    onPress={() => setPaymentMode(mode.id as PaymentMode)}
+                                                    className={`flex-1 py-4 rounded-2xl border items-center ${paymentMode === mode.id ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
+                                                >
+                                                    <Typography weight="bold" className={paymentMode === mode.id ? 'text-white' : 'text-gray-500'}>{mode.label}</Typography>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    </View>
+                                ) : (
+                                    <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-5">
+                                        <Typography weight="bold" className="text-amber-800">
+                                            {transactionKategori === 'jasa_angkut' ? 'Internal Jasa Angkut' : 'Internal Jual Beli Mobil'}
+                                        </Typography>
+                                        <Typography className="text-amber-700 text-xs mt-1">
+                                            {transactionKategori === 'jasa_angkut'
+                                                ? 'Transaksi dicatat sebagai biaya internal armada.'
+                                                : 'Transaksi dicatat sebagai piutang internal dan menambah HPP mobil.'}
+                                        </Typography>
+                                    </View>
+                                )}
+
+                                <Input
+                                    label="Catatan"
+                                    placeholder="Catatan transaksi..."
+                                    value={transactionNote}
+                                    onChangeText={setTransactionNote}
+                                    multiline
+                                />
+                            </View>
+                        )}
+                    </ScrollView>
+
+                    <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-4">
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Typography className="text-gray-400 text-xs font-bold uppercase">Total Transaksi</Typography>
+                            <Typography weight="bold" className="text-primary text-lg">{formatCurrency(transactionSubtotal)}</Typography>
+                        </View>
+                        <View className="flex-row space-x-3">
+                            {transactionStep > 1 && (
+                                <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setTransactionStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />
+                            )}
+                            <Button
+                                title={transactionStep === 3 ? 'Simpan Transaksi' : 'Lanjut'}
+                                className="flex-1"
+                                onPress={transactionStep === 3 ? submitTransaction : goToNextTransactionStep}
+                                loading={createTransactionMutation.isPending}
+                            />
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </Modal>
 
             {/* Sort UI - Hybrid (BottomSheet on Mobile, Modal on Web) */}
             {Platform.OS === 'web' ? (

@@ -75,7 +75,16 @@ export interface MonthlyAttendanceSummary {
     izin: number;
     sakit: number;
     alpha: number;
+    cuti?: number;
+    setengah_hari?: number;
+    jumlah_hadir: number;
+    jumlah_setengah_hari: number;
+    jumlah_izin: number;
+    jumlah_sakit: number;
+    jumlah_alpha: number;
+    jumlah_cuti: number;
     total_hari_kerja: number;
+    persentase_kehadiran: number;
 }
 
 // --- Kasbon Interfaces ---

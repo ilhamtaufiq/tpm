@@ -28,6 +28,7 @@ export interface PenjualanSummary {
     total_tunai?: number;
     total_transfer?: number;
     total_dana_dari_utama?: number;
+    total_dana_keluar?: number;
 }
 
 

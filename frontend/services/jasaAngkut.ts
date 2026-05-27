@@ -99,6 +99,7 @@ export interface MuatanSummary {
     total_tunai?: number;
     total_transfer?: number;
     total_dana_dari_utama?: number;
+    total_dana_keluar?: number;
     details?: {
         gross_share_tpm: number;
         biaya_lainnya: number;

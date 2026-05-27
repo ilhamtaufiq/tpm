@@ -61,6 +61,13 @@ const formatUnitLabel = (unit?: string) => {
         .join(' ');
 };
 
+const getUnitDisplayLabel = (unit?: string) => {
+    if (unit === 'BENGKEL') return 'Bengkel';
+    if (unit === 'JUAL_BELI_MOBIL') return 'Jual Beli Mobil';
+    if (unit === 'JASA_ANGKUT') return 'Jasa Angkut';
+    return formatUnitLabel(unit);
+};
+
 const getUnitKasJenis = (unit?: string) => {
     if (unit === 'BENGKEL') return 'KAS_UNIT_BENGKEL';
     if (unit === 'JUAL_BELI_MOBIL') return 'KAS_UNIT_MOBIL';
@@ -80,6 +87,7 @@ export default function HutangUsahaScreen() {
         ? params.unit as typeof FINANCE_UNITS[number]
         : undefined;
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
+    const unitLabel = getUnitDisplayLabel(unitFilter);
     const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [search, setSearch] = useState('');
@@ -677,8 +685,8 @@ export default function HutangUsahaScreen() {
     return (
         <View className="flex-1 bg-surface">
             <Header
-                title={unitFilter ? 'Hutang Bengkel' : 'Hutang Usaha'}
-                subtitle={unitFilter ? 'Daftar hutang unit bengkel' : 'Monitoring Kewajiban & Pembayaran'}
+                title={unitLabel ? `Hutang ${unitLabel}` : 'Hutang Usaha'}
+                subtitle={unitLabel ? `Daftar hutang unit ${unitLabel}` : 'Monitoring Kewajiban & Pembayaran'}
                 showBackButton
                 onBackButtonPress={handleGoBack}
                 rightElement={canCreate ? (

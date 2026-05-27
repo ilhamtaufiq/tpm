@@ -96,8 +96,10 @@ export default function LaporanPerubahanModalScreen() {
                 modalAwal: 0,
                 setoranKas: 0,
                 modalNonKas: 0,
+                investorFunding: 0,
                 labaBersih: 0,
                 prive: 0,
+                pembayaranInvestor: 0,
                 modalAkhir: 0,
                 perubahanBersih: 0,
                 expectedModalAkhir: 0,
@@ -111,11 +113,13 @@ export default function LaporanPerubahanModalScreen() {
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
         const modalNonKas = (r.penambahan?.modal_non_kas?.total || 0) + (r.penambahan?.modal_non_kas?.stok_mobil || 0);
+        const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
+        const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
         const modalAkhir = r.modal_akhir || 0;
         
-        const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
+        const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
         const expectedModalAkhir = modalAwal + perubahanBersih;
         
         // Expose true discrepancy (selisih)
@@ -126,8 +130,10 @@ export default function LaporanPerubahanModalScreen() {
             modalAwal,
             setoranKas,
             modalNonKas,
+            investorFunding,
             labaBersih,
             prive,
+            pembayaranInvestor,
             modalAkhir,
             perubahanBersih,
             expectedModalAkhir,
@@ -301,8 +307,8 @@ export default function LaporanPerubahanModalScreen() {
                         </View>
 
                         <View className="flex-row -mt-1">
-                            <StatCard label="SETORAN" value={equity.setoranKas + equity.modalNonKas} icon={Wallet} bgColor="#4f46e5" subLabel="Kas + Non-Kas" />
-                            <StatCard label="PRIVE" value={equity.prive} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Pengambilan Modal" />
+                            <StatCard label="SETORAN" value={equity.setoranKas + equity.modalNonKas + equity.investorFunding} icon={Wallet} bgColor="#4f46e5" subLabel="Kas + Non-Kas + Investor" />
+                            <StatCard label="PRIVE" value={equity.prive + equity.pembayaranInvestor} icon={ArrowDownLeft} bgColor="#e11d48" subLabel="Pengambilan Modal" />
                         </View>
 
                         <Card className="p-6 bg-white rounded-[24px] border border-slate-100 shadow-sm mt-2">
@@ -318,6 +324,9 @@ export default function LaporanPerubahanModalScreen() {
                                 {equity.modalNonKas > 0 && (
                                     <FinancialRow label="Setoran Modal Non-Kas" value={equity.modalNonKas} color="text-emerald-700" />
                                 )}
+                                {equity.investorFunding > 0 && (
+                                    <FinancialRow label="Dana Investor Mobil" value={equity.investorFunding} color="text-emerald-700" />
+                                )}
                                 <FinancialRow label={equity.labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'} value={Math.abs(equity.labaBersih)} isNegative={equity.labaBersih < 0} color={equity.labaBersih >= 0 ? 'text-emerald-700' : 'text-rose-700'} />
                             </View>
 
@@ -327,6 +336,9 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={equity.prive} isNegative />
                                 ) : (
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
+                                )}
+                                {equity.pembayaranInvestor > 0 && (
+                                    <FinancialRow label="Pembayaran Investor Mobil" value={equity.pembayaranInvestor} isNegative />
                                 )}
                             </View>
 

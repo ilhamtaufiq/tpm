@@ -1422,6 +1422,13 @@ export default function BengkelScreen() {
                             </View>
 
                             <Pressable 
+                                onPress={() => router.push('/bengkel/transaksi')}
+                                className="ml-2 w-11 h-11 bg-emerald-50 items-center justify-center rounded-2xl border border-emerald-100 active:scale-95"
+                            >
+                                <ShoppingCart size={18} color="#059669" />
+                            </Pressable>
+
+                            <Pressable 
                                 onPress={() => {
                                     setShowWalletModal(true);
                                     if (Platform.OS !== 'web') {
