@@ -30,6 +30,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const ACCOUNT_ICONS: Record<string, any> = {
     CASH: Wallet,
@@ -115,6 +116,21 @@ const LEGACY_ACCOUNTS: KasBankJenis[] = [
 
 export default function AkunKeuanganScreen() {
     const router = useRouter();
+    const user = useAuthStore(state => state.user);
+    const role = user?.role;
+    const roleAccount = useMemo(() => {
+        if (role === 'BENGKEL') return 'KAS_UNIT_BENGKEL' as KasBankJenis;
+        if (role === 'JASA_ANGKUT') return 'KAS_UNIT_JASA_ANGKUT' as KasBankJenis;
+        if (role === 'MOBIL') return 'KAS_UNIT_MOBIL' as KasBankJenis;
+        return undefined;
+    }, [role]);
+    const roleUnit = useMemo(() => {
+        if (role === 'BENGKEL') return 'BENGKEL';
+        if (role === 'JASA_ANGKUT') return 'JASA_ANGKUT';
+        if (role === 'MOBIL') return 'JUAL_BELI_MOBIL';
+        return undefined;
+    }, [role]);
+    const visibleActiveAccounts = useMemo(() => roleAccount ? [roleAccount] : ACTIVE_ACCOUNTS, [roleAccount]);
     const [balances, setBalances] = useState<KasBankAllBalances | null>(null);
     const [piutangSummary, setPiutangSummary] = useState<any>(null);
     const [hutangSummary, setHutangSummary] = useState<any>(null);
@@ -164,8 +180,8 @@ export default function AkunKeuanganScreen() {
         try {
             const [balanceData, piutangData, hutangData] = await Promise.all([
                 keuanganService.getKasBankBalances(),
-                keuanganService.getPiutangSummary(),
-                keuanganService.getHutangSummary()
+                keuanganService.getPiutangSummary(roleUnit ? { unit: roleUnit as any } : undefined),
+                keuanganService.getHutangSummary(roleUnit ? { unit: roleUnit as any } : undefined)
             ]);
             setBalances(balanceData);
             setPiutangSummary(piutangData);
@@ -177,7 +193,7 @@ export default function AkunKeuanganScreen() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, []);
+    }, [roleUnit]);
 
     useEffect(() => {
         fetchData();
@@ -239,7 +255,7 @@ export default function AkunKeuanganScreen() {
         const currentBalance = accountData?.saldo || 0;
 
         // Visibility Logic: Always show active ones. Legacy only if saldo > 0 or showAll is true.
-        const isActive = ACTIVE_ACCOUNTS.includes(jenis);
+        const isActive = visibleActiveAccounts.includes(jenis);
         const shouldHide = !isActive && currentBalance === 0 && !showAllAccounts;
 
         if (shouldHide) return null;
@@ -589,18 +605,20 @@ export default function AkunKeuanganScreen() {
                         <View className="mb-4">
                             <View className="flex-row items-center justify-between mb-4 px-1">
                                 <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Kas & Rekening Bank</Typography>
-                                <Pressable
-                                    onPress={() => setShowAllAccounts(!showAllAccounts)}
-                                    className="bg-primary/5 px-2 py-1 rounded-lg"
-                                >
-                                    <Typography className="text-primary text-[10px] font-bold">
-                                        {showAllAccounts ? 'Sembunyikan Saldo 0' : 'Tampilkan Semua'}
-                                    </Typography>
-                                </Pressable>
+                                {!roleAccount && (
+                                    <Pressable
+                                        onPress={() => setShowAllAccounts(!showAllAccounts)}
+                                        className="bg-primary/5 px-2 py-1 rounded-lg"
+                                    >
+                                        <Typography className="text-primary text-[10px] font-bold">
+                                            {showAllAccounts ? 'Sembunyikan Saldo 0' : 'Tampilkan Semua'}
+                                        </Typography>
+                                    </Pressable>
+                                )}
                             </View>
-                            {ACTIVE_ACCOUNTS.map(renderAccountItem)}
+                            {visibleActiveAccounts.map(renderAccountItem)}
                             
-                            {showAllAccounts && (
+                            {!roleAccount && showAllAccounts && (
                                 <View className="mt-4 pt-4 border-t border-gray-100">
                                     <View className="flex-row items-center mb-4 px-1">
                                         <History size={14} color="#9CA3AF" />

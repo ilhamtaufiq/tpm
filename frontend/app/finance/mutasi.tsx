@@ -68,6 +68,12 @@ export default function MutasiKasScreen() {
 
     const user = useAuthStore(state => state.user);
     const role = user?.role;
+    const roleAccount = useMemo(() => {
+        if (role === 'BENGKEL') return 'KAS_UNIT_BENGKEL' as KasBankJenis;
+        if (role === 'JASA_ANGKUT') return 'KAS_UNIT_JASA_ANGKUT' as KasBankJenis;
+        if (role === 'MOBIL') return 'KAS_UNIT_MOBIL' as KasBankJenis;
+        return undefined;
+    }, [role]);
 
     const accountFilters = useMemo(() => {
         if (role === 'BENGKEL') {
@@ -98,15 +104,16 @@ export default function MutasiKasScreen() {
         return ['KAS_UTAMA', 'BANK_UTAMA', 'KAS_UNIT_BENGKEL', 'KAS_UNIT_JASA_ANGKUT', 'KAS_UNIT_MOBIL'] as KasBankJenis[];
     }, [role]);
     
-    const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>((jenis as KasBankJenis) || 'all');
+    const [selectedFilter, setSelectedFilter] = useState<KasBankJenis | 'all'>((jenis as KasBankJenis) || roleAccount || 'all');
     const [refreshing, setRefreshing] = useState(false);
     const [mode, setMode] = useState<'transfer' | 'modal'>('transfer');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     // API Hooks
+    const effectiveFilter = selectedFilter === 'all' && roleAccount ? roleAccount : selectedFilter;
     const { data: txData, isLoading: isLoadingTx, refetch: refetchTx } = useKasBankList({
         limit: 50,
-        jenis: selectedFilter === 'all' ? undefined : selectedFilter,
+        jenis: effectiveFilter === 'all' ? undefined : effectiveFilter,
     });
     const { data: balances, isLoading: isLoadingBalances, refetch: refetchBalances } = useKasBankBalances();
     const transferMutation = useTransfer();
@@ -532,14 +539,16 @@ export default function MutasiKasScreen() {
             {!isSheetOpen && (
                 <View className="px-6 mt-4">
                     <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
-                        <Tabs
-                            items={ACCOUNT_FILTERS}
-                            value={selectedFilter}
-                            onChange={(v) => setSelectedFilter(v as KasBankJenis | 'all')}
-                            variant="pill"
-                            scrollable={true}
-                            className="mb-3"
-                        />
+                        {!roleAccount && (
+                            <Tabs
+                                items={accountFilters}
+                                value={selectedFilter}
+                                onChange={(v) => setSelectedFilter(v as KasBankJenis | 'all')}
+                                variant="pill"
+                                scrollable={true}
+                                className="mb-3"
+                            />
+                        )}
 
                         <View className="flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
                             <Search size={16} color="#9CA3AF" />

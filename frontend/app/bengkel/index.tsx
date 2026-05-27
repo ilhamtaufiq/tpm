@@ -1756,15 +1756,13 @@ export default function BengkelScreen() {
             )}
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
-            {user?.role !== 'BENGKEL' && (
-                <Pressable
-                    onPress={() => handlePresentModalPress('form')}
-                    style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
-                    className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
-                >
-                    <Plus size={32} color="white" strokeWidth={2.5} />
-                </Pressable>
-            )}
+            <Pressable
+                onPress={() => handlePresentModalPress('form')}
+                style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
+                className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
+            >
+                <Plus size={32} color="white" strokeWidth={2.5} />
+            </Pressable>
 
             {/* Date Selection Modal (Hybrid) */}
             {Platform.OS === 'web' ? (

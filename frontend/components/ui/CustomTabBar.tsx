@@ -20,9 +20,9 @@ export const CustomTabBar = () => {
     const user = useAuthStore(state => state.user);
     const role = user?.role;
 
-    // Redefine active slots if role is BENGKEL: Dompet, Inventori, FAB+, Master Data, Absensi
+    // Redefine active slots if role is BENGKEL: Home, Inventori, FAB+, Master Data, Absensi
     const activeSlots = role === 'BENGKEL'
-        ? ['bengkel-dompet', 'bengkel-inventory', 'fab-plus', 'bengkel-master', 'bengkel-absensi']
+        ? ['bengkel-home', 'bengkel-inventory', 'fab-plus', 'bengkel-master', 'bengkel-absensi']
         : storeActiveSlots;
 
     // Animation progress for Radial FAB menu
@@ -56,12 +56,12 @@ export const CustomTabBar = () => {
                 icon: Plus,
             };
         }
-        if (id === 'bengkel-dompet') {
+        if (id === 'bengkel-home') {
             return {
-                id: 'bengkel-dompet',
-                label: 'Dompet',
-                path: '/bengkel?action=wallet',
-                icon: Wallet,
+                id: 'bengkel-home',
+                label: 'Home',
+                path: '/bengkel',
+                icon: Home,
             };
         }
         if (id === 'bengkel-inventory') {
@@ -121,6 +121,10 @@ export const CustomTabBar = () => {
                 return { path: '/laporan/laba-rugi', icon: BarChart3, color: '#EC4899' };
             case 'fin-mutasi':
                 return { path: '/finance/mutasi', icon: Receipt, color: '#10B981' };
+            case 'fin-akun':
+                return { path: '/finance/akun', icon: Wallet, color: '#2563EB' };
+            case 'history':
+                return { path: '/history', icon: History, color: '#64748B' };
             case 'sdm-gaji':
                 return { path: '/sdm/slip-gaji', icon: Receipt, color: '#06B6D4' };
             case 'profile':
@@ -130,10 +134,23 @@ export const CustomTabBar = () => {
         }
     };
 
-    const currentFabSlots = fabSlots || ['bengkel', 'fin-mutasi', 'mobil'];
-    const subFab1 = getOptionDetails(currentFabSlots[0] || 'bengkel');
-    const subFab2 = getOptionDetails(currentFabSlots[1] || 'fin-mutasi');
-    const subFab3 = getOptionDetails(currentFabSlots[2] || 'mobil');
+    const isUnitRole = role === 'BENGKEL' || role === 'JASA_ANGKUT' || role === 'MOBIL';
+    const roleUnitConfig = {
+        BENGKEL: { kas: 'KAS_UNIT_BENGKEL', history: 'bengkel' },
+        JASA_ANGKUT: { kas: 'KAS_UNIT_JASA_ANGKUT', history: 'jasa_angkut' },
+        MOBIL: { kas: 'KAS_UNIT_MOBIL', history: 'mobil' },
+    } as const;
+    const unitConfig = roleUnitConfig[role as keyof typeof roleUnitConfig];
+    const currentFabSlots = isUnitRole ? ['fin-mutasi', 'fin-akun', 'history'] : (fabSlots || ['bengkel', 'fin-mutasi', 'mobil']);
+    const withUnitScope = (option: ReturnType<typeof getOptionDetails>, id: string) => {
+        if (!unitConfig) return option;
+        if (id === 'fin-mutasi') return { ...option, path: `/finance/mutasi?jenis=${unitConfig.kas}` };
+        if (id === 'history') return { ...option, path: `/history?unit=${unitConfig.history}` };
+        return option;
+    };
+    const subFab1 = withUnitScope(getOptionDetails(currentFabSlots[0] || 'bengkel'), currentFabSlots[0] || 'bengkel');
+    const subFab2 = withUnitScope(getOptionDetails(currentFabSlots[1] || 'fin-mutasi'), currentFabSlots[1] || 'fin-mutasi');
+    const subFab3 = withUnitScope(getOptionDetails(currentFabSlots[2] || 'mobil'), currentFabSlots[2] || 'mobil');
 
     const backdropOpacity = animationProgress.interpolate({
         inputRange: [0, 1],
@@ -195,6 +212,7 @@ export const CustomTabBar = () => {
                 const isActiveTab = (path: string) => {
                     if (path === '/home' && (pathname === '/home' || pathname === '/')) return true;
                     const cleanPath = path.split('?')[0];
+                    if (cleanPath === '/bengkel') return pathname === '/bengkel';
                     return pathname === cleanPath || pathname?.startsWith(cleanPath + '/');
                 };
                 
@@ -203,24 +221,7 @@ export const CustomTabBar = () => {
                 const handlePress = () => {
                     const cleanPath = pathname.split('?')[0];
                     if (isFab) {
-                        if (role === 'BENGKEL') {
-                            if (cleanPath === '/bengkel') {
-                                router.setParams({ action: 'new-order' });
-                            } else {
-                                router.navigate('/bengkel?action=new-order');
-                            }
-                        } else {
-                            showQuickActions();
-                        }
-                        return;
-                    }
-
-                    if (slotId === 'bengkel-dompet') {
-                        if (cleanPath === '/bengkel') {
-                            router.setParams({ action: 'wallet' });
-                        } else {
-                            router.navigate('/bengkel?action=wallet');
-                        }
+                        showQuickActions();
                         return;
                     }
 
