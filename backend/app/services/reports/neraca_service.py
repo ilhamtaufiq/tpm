@@ -124,11 +124,12 @@ class NeracaService(BaseReportService):
         piutang_booking = 0
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
         
-        # Internal payables are kept for tracing only. They are excluded from
-        # total_liabilities because consolidated neraca must not show debts to
-        # the company's own units.
+        # Internal payables are part of the stock capitalization trace.
+        # If the repair/service has already been capitalized into persediaan_mobil
+        # and not yet settled, it must stay in total_liabilities so the balance
+        # sheet remains tied out.
         hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
-        
+
         total_liabilities = (
             hutang_part
             + hutang_mobil
@@ -136,6 +137,7 @@ class NeracaService(BaseReportService):
             + hutang_lainnya
             + hutang_ja
             + uang_muka_penjualan
+            + hutang_internal
         )
 
         # 3. EQUITY & PROFIT — Bottom-Up Component Approach
@@ -373,6 +375,7 @@ class NeracaService(BaseReportService):
                 "hutang_lainnya": hutang_lainnya,
                 "hutang_jasa_angkut": hutang_ja,
                 "uang_muka_penjualan": uang_muka_penjualan,
+                "hutang_internal": hutang_internal,
                 "piutang_booking": piutang_booking,
                 "total_hutang": total_liabilities
             },
