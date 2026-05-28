@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Barcode as BarcodeIcon, Car, Check, CheckCircle2, ChevronLeft, Package, Search, User, Wallet, Wrench, X } from 'lucide-react-native';
 
@@ -19,6 +19,7 @@ type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG';
 
 export default function BengkelTransaksiScreen() {
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [partSearch, setPartSearch] = useState('');
     const [serviceSearch, setServiceSearch] = useState('');
@@ -38,6 +39,7 @@ export default function BengkelTransaksiScreen() {
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
     const createMutation = useCreateTransaksiBengkel();
+    const tabBarHeight = 80 + (Platform.OS === 'ios' ? insets.bottom : 0);
 
     const parts = useMemo(() => partsData?.pages.flatMap((page: any) => page.data || []) || [], [partsData]);
     const services = jasaData?.data || [];
@@ -82,6 +84,8 @@ export default function BengkelTransaksiScreen() {
             (service.deskripsi || '').toLowerCase().includes(q)
         );
     }, [services, serviceSearch]);
+    const visibleParts = partSearch.trim() ? filteredParts : filteredParts.slice(0, 10);
+    const visibleServices = serviceSearch.trim() ? filteredServices : filteredServices.slice(0, 10);
 
     const togglePart = (part: any) => {
         if (part.stok !== 999 && Number(part.stok || 0) <= 0) return;
@@ -228,7 +232,7 @@ export default function BengkelTransaksiScreen() {
                 ))}
             </View>
 
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}>
                 {step === 1 && (
                     <View className="flex-row space-x-4">
                         <View className="flex-1">
@@ -240,7 +244,7 @@ export default function BengkelTransaksiScreen() {
                                 <Typography className="text-blue-700 text-xs font-bold ml-2">Scan Sparepart Continuous</Typography>
                             </Pressable>
 
-                            {isPartsLoading ? <ActivityIndicator color="#023C69" /> : filteredParts.slice(0, 80).map((part: any) => {
+                            {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
                                 const outOfStock = part.stok !== 999 && Number(part.stok || 0) <= 0;
                                 return (
@@ -269,7 +273,7 @@ export default function BengkelTransaksiScreen() {
                             <Typography variant="body1" weight="bold" className="text-textMain mb-1">Service</Typography>
                             <Typography className="text-gray-400 text-xs mb-3">Data dari Master Data Jasa Servis.</Typography>
                             <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
-                            {isJasaLoading ? <ActivityIndicator color="#023C69" /> : filteredServices.map((service: any) => {
+                            {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[service.id];
                                 return (
                                     <Pressable key={service.id} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
@@ -387,7 +391,7 @@ export default function BengkelTransaksiScreen() {
                 )}
             </ScrollView>
 
-            <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-4">
+            <View className="absolute left-0 right-0 bg-white border-t border-gray-100 px-5 py-4" style={{ bottom: tabBarHeight }}>
                 <View className="flex-row items-center justify-between mb-3">
                     <Typography className="text-gray-400 text-xs font-bold uppercase">Total Transaksi</Typography>
                     <Typography weight="bold" className="text-primary text-lg">{formatCurrency(subtotal)}</Typography>
