@@ -1025,6 +1025,7 @@ class TransaksiBengkelService:
         customer_id: Optional[int] = None,
         mobil_id: Optional[int] = None,
         muatan_id: Optional[int] = None,
+        exclude_sold_internal_jbm: bool = False,
     ) -> Dict[str, Any]:
         """Get sales summary statistics with the same filters as get_list."""
         # Base query
@@ -1051,19 +1052,22 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
-        # Keep summary consistent with the Bengkel queue UI: internal workshop
-        # orders for jual-beli mobil are hidden once the car has been sold.
-        query = query.outerjoin(
-            Mobil,
-            TransaksiPenjualanBengkel.mobil_id == Mobil.id,
-        ).filter(
-            or_(
-                TransaksiPenjualanBengkel.kategori != "jual_beli_mobil",
-                TransaksiPenjualanBengkel.mobil_id.is_(None),
-                Mobil.status != CarStatus.TERJUAL,
-                Mobil.status.is_(None),
+        if exclude_sold_internal_jbm:
+            # Keep the Bengkel queue UI summary consistent with its hidden list:
+            # internal workshop orders for jual-beli mobil disappear once the
+            # car has been sold. Financial reports keep them to consolidate
+            # internal revenue/cost correctly.
+            query = query.outerjoin(
+                Mobil,
+                TransaksiPenjualanBengkel.mobil_id == Mobil.id,
+            ).filter(
+                or_(
+                    TransaksiPenjualanBengkel.kategori != "jual_beli_mobil",
+                    TransaksiPenjualanBengkel.mobil_id.is_(None),
+                    Mobil.status != CarStatus.TERJUAL,
+                    Mobil.status.is_(None),
+                )
             )
-        )
 
         total_count = query.count()
         
