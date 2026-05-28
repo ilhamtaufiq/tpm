@@ -34,7 +34,8 @@ export interface PenjualanSummary {
 
 export const mobilService = {
     getMobils: async (params?: any) => {
-        const response = await api.get('/mobil', { params });
+        const safeParams = params?.limit && Number(params.limit) > 100 ? { ...params, limit: 100 } : params;
+        const response = await api.get('/mobil', { params: safeParams });
         return response.data;
     },
     getAvailableCars: async (params?: any) => {

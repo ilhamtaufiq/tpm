@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Barcode as BarcodeIcon, Car, Check, CheckCircle2, ChevronLeft, Package, Search, User, Wallet, Wrench, X } from 'lucide-react-native';
+import { AlertCircle, Barcode as BarcodeIcon, Car, Check, CheckCircle2, ChevronLeft, Info, Package, Search, User, Wallet, Wrench, X } from 'lucide-react-native';
 
 import { Typography } from '../../../components/ui/Typography';
 import { Button } from '../../../components/ui/Button';
@@ -17,6 +17,7 @@ import { formatCurrency } from '../../../utils/format';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG';
+type NoticeType = 'error' | 'success' | 'info';
 
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
@@ -34,6 +35,7 @@ export default function BengkelTransaksiScreen() {
     const [note, setNote] = useState('');
     const [scannerOpen, setScannerOpen] = useState(false);
     const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
+    const [notice, setNotice] = useState<{ type: NoticeType; title: string; message: string } | null>(null);
 
     const { data: partsData, isLoading: isPartsLoading } = useSparePartsList({ limit: 200, sort_by: 'nama', sort_order: 'asc' });
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
@@ -87,6 +89,15 @@ export default function BengkelTransaksiScreen() {
     const visibleParts = partSearch.trim() ? filteredParts : filteredParts.slice(0, 10);
     const visibleServices = serviceSearch.trim() ? filteredServices : filteredServices.slice(0, 10);
 
+    const showNotice = (type: NoticeType, title: string, message: string) => {
+        setNotice({ type, title, message });
+    };
+
+    const closeAfterSubmit = () => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/bengkel');
+    };
+
     const togglePart = (part: any) => {
         if (part.stok !== 999 && Number(part.stok || 0) <= 0) return;
         setSelectedParts(prev => {
@@ -116,7 +127,7 @@ export default function BengkelTransaksiScreen() {
 
     const addScannedPart = (part: any) => {
         if (part.stok !== 999 && Number(part.stok || 0) <= 0) {
-            Alert.alert('Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
+            showNotice('error', 'Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
             return;
         }
         setSelectedParts(prev => {
@@ -142,28 +153,32 @@ export default function BengkelTransaksiScreen() {
             );
         }
         if (part) addScannedPart(part);
-        else setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
+        else {
+            showNotice('error', 'Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di data sparepart.`);
+            setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
+        }
     };
 
     const next = () => {
         if (step === 1 && !hasItems) {
-            Alert.alert('Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
+            showNotice('error', 'Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
             return;
         }
         if (step === 2) {
             if (kategori === 'umum' && !(selectedCustomer || guestName.trim())) {
-                Alert.alert('Validasi', 'Pilih customer atau isi nama guest.');
+                showNotice('error', 'Validasi', 'Pilih customer atau isi nama guest.');
                 return;
             }
             if (kategori === 'jasa_angkut' && !selectedArmada) {
-                Alert.alert('Validasi', 'Pilih armada jasa angkut.');
+                showNotice('error', 'Validasi', 'Pilih armada jasa angkut.');
                 return;
             }
             if (kategori === 'jual_beli_mobil' && !selectedMobil) {
-                Alert.alert('Validasi', 'Pilih mobil stok.');
+                showNotice('error', 'Validasi', 'Pilih mobil stok.');
                 return;
             }
         }
+        setNotice(null);
         setStep(prev => Math.min(3, prev + 1) as 1 | 2 | 3);
     };
 
@@ -200,9 +215,10 @@ export default function BengkelTransaksiScreen() {
                         : [{ metode: paymentMode, jumlah: subtotal, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }],
                 catatan: note,
             });
-            Alert.alert('Sukses', 'Transaksi bengkel berhasil dibuat.', [{ text: 'OK', onPress: () => router.replace('/bengkel') }]);
+            showNotice('success', 'Sukses', 'Transaksi bengkel berhasil dibuat.');
+            closeAfterSubmit();
         } catch {
-            Alert.alert('Error', 'Gagal membuat transaksi bengkel.');
+            showNotice('error', 'Error', 'Gagal membuat transaksi bengkel.');
         }
     };
 
@@ -231,6 +247,8 @@ export default function BengkelTransaksiScreen() {
                     </View>
                 ))}
             </View>
+
+            {notice && <NoticeBanner type={notice.type} title={notice.title} message={notice.message} onClose={() => setNotice(null)} />}
 
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}>
                 {step === 1 && (
@@ -417,6 +435,33 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
                     <X size={16} color="#94A3B8" />
                 </Pressable>
             )}
+        </View>
+    );
+}
+
+function NoticeBanner({ type, title, message, onClose }: { type: NoticeType; title: string; message: string; onClose: () => void }) {
+    const isSuccess = type === 'success';
+    const isInfo = type === 'info';
+    const Icon = isSuccess ? CheckCircle2 : isInfo ? Info : AlertCircle;
+    const container = isSuccess
+        ? 'bg-emerald-50 border-emerald-100'
+        : isInfo
+            ? 'bg-blue-50 border-blue-100'
+            : 'bg-rose-50 border-rose-100';
+    const iconColor = isSuccess ? '#059669' : isInfo ? '#2563EB' : '#E11D48';
+    const titleColor = isSuccess ? 'text-emerald-800' : isInfo ? 'text-blue-800' : 'text-rose-800';
+    const messageColor = isSuccess ? 'text-emerald-700' : isInfo ? 'text-blue-700' : 'text-rose-700';
+
+    return (
+        <View className={`mx-5 mt-3 p-3 rounded-2xl border flex-row items-start ${container}`}>
+            <Icon size={18} color={iconColor} />
+            <View className="flex-1 ml-2">
+                <Typography weight="bold" className={`text-sm ${titleColor}`}>{title}</Typography>
+                <Typography className={`text-xs mt-0.5 ${messageColor}`}>{message}</Typography>
+            </View>
+            <Pressable onPress={onClose} className="w-7 h-7 items-center justify-center">
+                <X size={16} color={iconColor} />
+            </Pressable>
         </View>
     );
 }

@@ -183,7 +183,7 @@ export default function BengkelScreen() {
     const bengkelPiutangList = useMemo(() => (piutangData?.data || []).filter((item: any) => item.unit === 'BENGKEL'), [piutangData]);
 
     // Logic for internal auto-settlement (Virtual Elimination)
-    const { data: mobilData } = useMobilList({ limit: 1000 });
+    const { data: mobilData } = useMobilList({ limit: 100 });
     const soldCars = useMemo(() => {
         const soldSet = new Set<string>();
         if (mobilData?.data) {
