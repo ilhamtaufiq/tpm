@@ -403,7 +403,14 @@ class PiutangService:
         results = self.process_payment_split(split_data, user_id)
         return results[0]
 
-    def _update_source_transaction(self, piutang: PiutangUsaha, total_nominal: Decimal, tanggal: date):
+    def _update_source_transaction(
+        self,
+        piutang: PiutangUsaha,
+        total_nominal: Decimal,
+        tanggal: date,
+        payment_details: Optional[List[Any]] = None,
+        user_id: Optional[int] = None,
+    ):
         """Update source transaction status and payment info."""
         if not piutang.referensi_id:
             return
@@ -445,10 +452,26 @@ class PiutangService:
                     # Also update car status: BOOKING → TERJUAL
                     from app.models.mobil import Mobil
                     from app.utils.constants import CarStatus
-                    mobil = self.db.query(Mobil).filter(Mobil.id == mobil_trx.mobil_id).first()
+                    from sqlalchemy.orm import joinedload
+                    mobil = self.db.query(Mobil).options(
+                        joinedload(Mobil.bengkel_perbaikan)
+                    ).filter(Mobil.id == mobil_trx.mobil_id).first()
                     if mobil and mobil.status == CarStatus.BOOKING:
                         mobil.status = CarStatus.TERJUAL
                         mobil.tanggal_terjual = tanggal
+                    if mobil:
+                        from app.services.penjualan_mobil_service import PenjualanMobilService
+                        settlement_method = PaymentMethod.SPLIT if len(payment_details or []) > 1 else (
+                            payment_details[0].metode if payment_details else mobil_trx.metode_bayar
+                        )
+                        PenjualanMobilService(self.db)._settle_unit_financial_obligations(
+                            mobil,
+                            tanggal,
+                            mobil_trx.nomor_transaksi,
+                            settlement_method,
+                            payment_details or [],
+                            user_id,
+                        )
                 else:
                     mobil_trx.status_bayar = PaymentStatus.CICILAN
 
@@ -557,7 +580,7 @@ class PiutangService:
 
 
         # Update source transaction status
-        self._update_source_transaction(piutang, total_payment_nominal, data.tanggal)
+        self._update_source_transaction(piutang, total_payment_nominal, data.tanggal, data.payments, user_id)
 
         self.db.commit()
         

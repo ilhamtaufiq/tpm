@@ -14,7 +14,7 @@ from app.models.bengkel import (
 )
 from app.models.customer import Customer
 from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPiutang
-from app.models.mobil import MobilPartService
+from app.models.mobil import MobilPartService, Mobil
 from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import TransaksiBengkelCreate
 from app.utils.constants import (
@@ -29,6 +29,7 @@ from app.utils.constants import (
     KasBankType,
     KasBankSource,
     KasBankJenis,
+    CarStatus,
 )
 from app.services.kas_bank_integration import create_kas_entry
 
@@ -1050,6 +1051,20 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
 
+        # Keep summary consistent with the Bengkel queue UI: internal workshop
+        # orders for jual-beli mobil are hidden once the car has been sold.
+        query = query.outerjoin(
+            Mobil,
+            TransaksiPenjualanBengkel.mobil_id == Mobil.id,
+        ).filter(
+            or_(
+                TransaksiPenjualanBengkel.kategori != "jual_beli_mobil",
+                TransaksiPenjualanBengkel.mobil_id.is_(None),
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.status.is_(None),
+            )
+        )
+
         total_count = query.count()
         
         # Payment status counts
@@ -1099,7 +1114,7 @@ class TransaksiBengkelService:
 
         # Status counts (Operational)
         status_counts = (
-            self.db.query(
+            query.with_entities(
                 TransaksiPenjualanBengkel.status_pengerjaan,
                 func.count(TransaksiPenjualanBengkel.id)
             )

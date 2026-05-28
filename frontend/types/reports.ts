@@ -247,4 +247,5 @@ export interface CapitalReport {
     };
     selisih?: number;
     is_balanced?: boolean;
+    laba_ditahan_periode?: number;
 }

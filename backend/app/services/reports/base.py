@@ -583,6 +583,8 @@ class BaseReportService:
         # These are received cash for cars that are not yet officially sold (status != TERJUAL)
         customer_dp = float(self.db.query(func.sum(TransaksiPenjualanMobil.dp)).join(Mobil).filter(
             TransaksiPenjualanMobil.tanggal <= tanggal_sampai,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
             or_(
                 Mobil.status != CarStatus.TERJUAL,
                 Mobil.tanggal_terjual > tanggal_sampai
@@ -597,6 +599,8 @@ class BaseReportService:
         ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
             or_(
                 Mobil.status != CarStatus.TERJUAL,
                 Mobil.tanggal_terjual > tanggal_sampai
@@ -608,6 +612,8 @@ class BaseReportService:
             TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
         ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
             PembayaranPiutang.tanggal <= tanggal_sampai,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
             or_(
                 Mobil.status != CarStatus.TERJUAL,
                 Mobil.tanggal_terjual > tanggal_sampai
@@ -903,6 +909,7 @@ class BaseReportService:
                     "total_laba_kotor": laba_mobil_gross, 
                     "total_laba_tpm": laba_mobil_tpm,
                     "sharing_investor": laba_mobil_gross - laba_mobil_tpm,
+                    "laba_investor": laba_mobil_gross - laba_mobil_tpm,
                     "purchase_hpp": hpp_sold_price,
                     "prep_hpp": hpp_sold_prep,
                     "stock_purchase_period": total_stock_purchase_period,

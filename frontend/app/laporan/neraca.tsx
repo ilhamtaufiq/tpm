@@ -101,7 +101,7 @@ export default function NeracaScreen() {
         const sAdj = al.stok_mobil || stockFromDetails || 0;
 
         // 3. Laba Ditahan: gunakan nilai dari backend cross_validation
-        const lAdj = m.laba_ditahan || 0;
+        const lAdj = m.laba_ditahan ?? report?.cross_validation?.retained_earnings ?? report?.cross_validation?.laba_bersih_from_base ?? 0;
 
         // 4. Total Aktiva & Pasiva: gunakan langsung dari backend sebagai sumber kebenaran
         // Backend sudah menghitung dengan benar termasuk semua komponen aktiva

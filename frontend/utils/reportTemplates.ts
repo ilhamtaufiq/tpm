@@ -214,10 +214,12 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     const modalAwal = data.modal_awal || 0;
     const setoranKas = data.penambahan?.setoran_modal || 0;
     const modalNonKas = (data.penambahan?.modal_non_kas?.total || 0) + (data.penambahan?.modal_non_kas?.stok_mobil || 0);
-    const labaBersih = data.info?.laba_bersih || 0;
+    const investorFunding = data.penambahan?.investor_funding || 0;
+    const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
+    const pembayaranInvestor = data.pengurangan?.pembayaran_investor || 0;
     const modalAkhir = data.modal_akhir || 0;
-    const perubahanBersih = setoranKas + modalNonKas + labaBersih - prive;
+    const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
     const expectedModalAkhir = modalAwal + perubahanBersih;
     
     const selisih = data.selisih !== undefined ? data.selisih : modalAkhir - expectedModalAkhir;
@@ -255,6 +257,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Setoran Modal Non-Kas</td>
                     <td class="amount">${formatCurrency(modalNonKas)}</td>
                 </tr>` : ''}
+                ${investorFunding > 0 ? `
+                <tr>
+                    <td>Dana Investor Mobil</td>
+                    <td class="amount">${formatCurrency(investorFunding)}</td>
+                </tr>` : ''}
                 <tr>
                     <td>${labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'}</td>
                     <td class="amount ${labaBersih >= 0 ? 'positive' : 'negative'}">${labaBersih >= 0 ? formatCurrency(labaBersih) : `(${formatCurrency(Math.abs(labaBersih))})`}</td>
@@ -270,6 +277,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Prive / Pengambilan Pemilik</td>
                     <td class="amount">${formatCurrency(0)}</td>
                 </tr>`}
+                ${pembayaranInvestor > 0 ? `
+                <tr>
+                    <td>Pembayaran Investor Mobil</td>
+                    <td class="amount negative">(${formatCurrency(pembayaranInvestor)})</td>
+                </tr>` : ''}
 
                 <tr class="total-row">
                     <td>PERUBAHAN BERSIH MODAL</td>

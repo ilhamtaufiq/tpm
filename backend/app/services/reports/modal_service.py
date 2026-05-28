@@ -326,7 +326,9 @@ class ModalService(BaseReportService):
 
         # Laba Kotor (Gross Profit) per unit
         laba_mobil_total_kotor = float(data["units"]["mobil"].get("total_laba_kotor", 0))
-        laba_investor_periode = float(data["units"]["mobil"].get("laba_investor", 0))
+        laba_investor_periode = float(
+            data["units"]["mobil"].get("laba_investor", data["units"]["mobil"].get("sharing_investor", 0))
+        )
         laba_mobil_tpm_gross = laba_mobil_total_kotor - laba_investor_periode
         
         laba_ja_tpm_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))

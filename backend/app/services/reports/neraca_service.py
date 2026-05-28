@@ -124,10 +124,8 @@ class NeracaService(BaseReportService):
         piutang_booking = 0
         total_assets = total_cash + total_piutang + total_stock_mobil + total_stock_parts + total_fixed_assets
         
-        # Internal payables are part of the stock capitalization trace.
-        # If the repair/service has already been capitalized into persediaan_mobil
-        # and not yet settled, it must stay in total_liabilities so the balance
-        # sheet remains tied out.
+        # Internal payables are only kept for trace/debug. Consolidated neraca
+        # must not count company-to-company unit payables as external liabilities.
         hutang_internal = raw_hutang.get("breakdown", {}).get("internal", 0)
 
         total_liabilities = (
@@ -137,7 +135,6 @@ class NeracaService(BaseReportService):
             + hutang_lainnya
             + hutang_ja
             + uang_muka_penjualan
-            + hutang_internal
         )
 
         # 3. EQUITY & PROFIT — Bottom-Up Component Approach
@@ -200,19 +197,9 @@ class NeracaService(BaseReportService):
             PengeluaranBengkel.tanggal <= as_of_date
         ).scalar() or 0)
         
-        # Internal workshop bills for sold cars (TransaksiPenjualanBengkel, NOT PengeluaranBengkel).
-        # When unsold, these are captured in car_stock via snapshot_unsold_repairs_int (base.py).
-        # When sold, they disappear from car_stock but still represent real HPP that was part of the car's value.
-        from app.models.bengkel import TransaksiPenjualanBengkel
-        akumulasi_hpp_mobil_internal = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).join(
-            Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
-        ).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
-            Mobil.status == CarStatus.TERJUAL,
-            Mobil.tanggal_terjual <= as_of_date,
-            TransaksiPenjualanBengkel.tanggal <= as_of_date
-        ).scalar() or 0)
+        # Internal workshop bills for sold cars are already reflected through
+        # consolidated profit/HPP. They must not be treated as non-cash capital,
+        # otherwise equity is overstated by the internal repair amount.
 
         # Total pengeluaran kas untuk pembelian aset (part purchases + asset purchases)
         from app.models.bengkel import PembelianSparePart
@@ -247,24 +234,12 @@ class NeracaService(BaseReportService):
             HutangUsaha.tanggal <= as_of_date
         ).scalar() or 0)
         
-        # Pelunasan internal repair cash-out (offset for akumulasi_hpp_mobil_internal).
-        # When a sold car's internal workshop bill is settled, a KasBank KELUAR entry is created
-        # with keterangan "Pelunasan Biaya Repair Internal". This cash-out is excluded from
-        # pembelian_mobil_kas to avoid double-counting, but must be captured here to offset
-        # the akumulasi_hpp_mobil_internal we added to total_non_kas_assets_historis.
-        pelunasan_repair_internal_kas = float(self.db.query(func.sum(KasBank.nominal)).filter(
-            KasBank.tipe == KasBankType.KELUAR,
-            KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
-            KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
-            KasBank.tanggal <= as_of_date
-        ).scalar() or 0)
-        
         # Non-cash capital = (current assets + sold assets) - recorded cash purchases - recorded hutang purchases
         # Note: We EXCLUDE Kasbon and Piutang Lainnya from discovery because they are typically funded from company cash or revenue, not injected capital.
         # We also EXCLUDE unit-specific piutang (Bengkel, JA, Mobil) as they are from operational revenue.
         piutang_discovery = 0
-        total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep + akumulasi_hpp_mobil_internal) + modal_aset_tetap + piutang_discovery
-        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal + pelunasan_repair_internal_kas
+        total_non_kas_assets_historis = (modal_persediaan + akumulasi_hpp_parts) + (modal_stok_mobil + akumulasi_hpp_mobil + akumulasi_hpp_mobil_prep) + modal_aset_tetap + piutang_discovery
+        total_purchase_recorded = pembelian_part_kas + pembelian_aset_kas + pembelian_mobil_kas + pembelian_hutang + hutang_internal
         modal_non_kas = max(0, total_non_kas_assets_historis - total_purchase_recorded)
         
         # Combined setoran modal = kas setoran + non-kas (auto-balanced)
@@ -435,6 +410,7 @@ class NeracaService(BaseReportService):
             # Piutang from bengkel repair on mobil (sumber=JUAL_BELI_MOBIL) should always be is_internal=True
             from app.utils.constants import PiutangSource as PS
             from app.models.bengkel import TransaksiPenjualanBengkel
+            from app.models.mobil import Mobil
             
             mismarked = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.sumber == PS.JUAL_BELI_MOBIL,
@@ -454,6 +430,30 @@ class NeracaService(BaseReportService):
                         reflagged_count += 1
 
             # ── PHASE 1: Find all active internal records ──
+            sold_internal_piutang = self.db.query(PiutangUsaha).join(
+                TransaksiPenjualanBengkel,
+                PiutangUsaha.nomor_referensi == TransaksiPenjualanBengkel.nomor_transaksi
+            ).join(
+                Mobil,
+                TransaksiPenjualanBengkel.mobil_id == Mobil.id
+            ).filter(
+                PiutangUsaha.is_internal == True,
+                PiutangUsaha.sumber == PS.JUAL_BELI_MOBIL,
+                PiutangUsaha.status != PiutangStatus.BATAL,
+                PiutangUsaha.status != PiutangStatus.LUNAS,
+                TransaksiPenjualanBengkel.kategori == 'jual_beli_mobil',
+                Mobil.status == CarStatus.TERJUAL,
+            ).all()
+
+            for p in sold_internal_piutang:
+                p.status = PiutangStatus.LUNAS
+                p.total_dibayar = p.nominal_piutang
+                p.sisa_piutang = Decimal("0")
+                if not p.tanggal_lunas:
+                    p.tanggal_lunas = p.tanggal
+                p.catatan = (p.catatan or "") + " | AUTO-SYNC: Dilunaskan karena unit mobil sudah terjual"
+                fixed_count += 1
+
             # Re-query after Phase 0 fixes
             self.db.flush()
             

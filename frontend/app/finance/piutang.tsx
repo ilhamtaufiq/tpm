@@ -295,7 +295,8 @@ export default function PiutangUsahaScreen() {
                 .map(p => ({
                     metode: p.metode as any,
                     nominal: parseNumber(p.nominal),
-                    catatan: p.catatan || undefined
+                    catatan: p.catatan || undefined,
+                    kas_jenis: getUnitKasJenis(unitFilter)
                 }));
 
             const payload: any = {
@@ -304,6 +305,7 @@ export default function PiutangUsahaScreen() {
                 nama_debitur: createName,
                 nominal_piutang: parseNumber(createAmount),
                 catatan: createNote,
+                unit: unitFilter,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {

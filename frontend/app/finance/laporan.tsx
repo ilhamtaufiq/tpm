@@ -318,19 +318,35 @@ export default function LaporanKeuanganScreen() {
     const renderProfitLoss = () => {
         if (!profitData) return null;
 
-        const { pendapatan, laba_kotor, pengeluaran, laba_bersih, pengeluaran_details } = profitData;
+        const units = profitData.units || {};
+        const summary = profitData.summary || {};
+        const bengkel = units.bengkel || {};
+        const jasaAngkut = units.jasa_angkut || {};
+        const mobil = units.mobil || {};
+        const totalRevenue = (bengkel.revenue || 0) + (jasaAngkut.revenue || 0) + (mobil.revenue || 0);
+        const labaKotor = (bengkel.laba_kotor || 0) + ((mobil.revenue || 0) - (mobil.hpp || 0) - (mobil.beban_operasional || 0) - (mobil.maintenance || 0)) + (jasaAngkut.revenue || 0);
+        const totalBeban = (summary.total_beban_umum || 0)
+            + (bengkel.beban_operasional || 0)
+            + (bengkel.beban_gaji || 0)
+            + (bengkel.beban_lembur || 0)
+            + (jasaAngkut.beban_operasional || 0)
+            + (jasaAngkut.maintenance || 0)
+            + (jasaAngkut.beban_umum || 0)
+            + (mobil.beban_umum || 0)
+            + (mobil.sharing_investor || 0);
+        const labaBersih = summary.laba_bersih ?? 0;
 
         return (
             <View className="space-y-6">
                 {/* Net Profit Card */}
                 <View className="bg-emerald-600 p-6 rounded-[32px] shadow-lg border border-emerald-400">
                     <Typography className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Total Laba Bersih</Typography>
-                    <Typography weight="bold" className="text-white text-3xl">{formatCurrency(laba_bersih)}</Typography>
+                    <Typography weight="bold" className="text-white text-3xl">{formatCurrency(labaBersih)}</Typography>
                     <View className="mt-4 pt-4 border-t border-white/10 flex-row justify-between">
                         <View>
                             <Typography className="text-white/40 text-[8px] font-bold uppercase">Margin Profit</Typography>
                             <Typography weight="bold" className="text-white text-sm">
-                                {pendapatan.total > 0 ? ((laba_bersih / pendapatan.total) * 100).toFixed(1) : 0}%
+                                {totalRevenue > 0 ? ((labaBersih / totalRevenue) * 100).toFixed(1) : 0}%
                             </Typography>
                         </View>
                         <View className="bg-white/20 px-3 py-1.5 rounded-full self-center">
@@ -343,14 +359,18 @@ export default function LaporanKeuanganScreen() {
                 <View>
                     <Typography variant="h3" weight="bold" className="text-gray-800 mb-4 px-1">Pendapatan Operasional</Typography>
                     <View className="bg-white rounded-[32px] p-2 shadow-sm border border-gray-100">
-                        {Object.entries(pendapatan).filter(([k]) => k !== 'total').map(([key, value]: [string, any]) => (
+                        {([
+                            ['Bengkel', bengkel.revenue || 0],
+                            ['Jasa Angkut', jasaAngkut.revenue || 0],
+                            ['Jual Beli Mobil', mobil.revenue || 0],
+                        ] as Array<[string, number]>).map(([key, value]) => (
                             <View key={key} className="flex-row items-center p-4 border-b border-gray-50 last:border-b-0">
                                 <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3">
                                     <ArrowUpRight size={18} color="#059669" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography weight="bold" className="text-gray-800 capitalize">{key.replace('_', ' ')}</Typography>
-                                    <Typography className="text-gray-400 text-xs">Penerimaan kas bruto</Typography>
+                                    <Typography weight="bold" className="text-gray-800">{key}</Typography>
+                                    <Typography className="text-gray-400 text-xs">Pendapatan terakui periode ini</Typography>
                                 </View>
                                 <Typography weight="bold" className="text-emerald-600">{formatCurrency(value)}</Typography>
                             </View>
@@ -366,7 +386,7 @@ export default function LaporanKeuanganScreen() {
                             <TrendingUp size={18} color="#059669" />
                             <Typography weight="bold" className="text-emerald-800 ml-2">Total Laba Kotor</Typography>
                         </View>
-                        <Typography weight="bold" className="text-emerald-600 text-lg">{formatCurrency(laba_kotor)}</Typography>
+                        <Typography weight="bold" className="text-emerald-600 text-lg">{formatCurrency(labaKotor)}</Typography>
                     </View>
                 </View>
 
@@ -374,25 +394,29 @@ export default function LaporanKeuanganScreen() {
                 <View>
                     <Typography variant="h3" weight="bold" className="text-gray-800 mb-4 px-1">Beban & Pengeluaran</Typography>
                     <View className="bg-white rounded-[32px] p-2 shadow-sm border border-gray-100">
-                        {Object.entries(pengeluaran_details).map(([key, value]: [string, any]) => (
+                        {([
+                            ['Bengkel', (bengkel.beban_operasional || 0) + (bengkel.beban_gaji || 0) + (bengkel.beban_lembur || 0)],
+                            ['Jasa Angkut', (jasaAngkut.beban_operasional || 0) + (jasaAngkut.maintenance || 0) + (jasaAngkut.beban_umum || 0)],
+                            ['Jual Beli Mobil', (mobil.beban_umum || 0) + (mobil.sharing_investor || 0)],
+                            ['Pusat / Umum', summary.total_beban_umum || 0],
+                            ['Prive', summary.prive || 0],
+                        ] as Array<[string, number]>).map(([key, value]) => (
                             <View key={key} className="flex-row items-center p-4 border-b border-gray-50">
                                 <View className="w-10 h-10 bg-rose-50 rounded-xl items-center justify-center mr-3">
                                     <ArrowDownRight size={18} color="#E11D48" />
                                 </View>
                                 <View className="flex-1">
-                                    <Typography weight="bold" className="text-gray-800 capitalize">{key.replace('_', ' ')}</Typography>
+                                    <Typography weight="bold" className="text-gray-800">{key}</Typography>
                                     <View className="flex-row items-center">
-                                        <Typography className="text-gray-400 text-xs">{value.count || 0} Transaksi</Typography>
-                                        <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
-                                        <Typography className="text-gray-400 text-xs">Biaya tetap & ops</Typography>
+                                        <Typography className="text-gray-400 text-xs">Beban laporan laba rugi</Typography>
                                     </View>
                                 </View>
-                                <Typography weight="bold" className="text-rose-600">({formatCurrency(value.total)})</Typography>
+                                <Typography weight="bold" className="text-rose-600">({formatCurrency(value)})</Typography>
                             </View>
                         ))}
                         <View className="p-4 bg-gray-50/50 rounded-b-[24px] flex-row justify-between items-center">
                             <Typography weight="bold" className="text-gray-500 text-xs uppercase">TOTAL BEBAN</Typography>
-                            <Typography weight="bold" className="text-rose-600 text-lg">{formatCurrency(pengeluaran)}</Typography>
+                            <Typography weight="bold" className="text-rose-600 text-lg">{formatCurrency(totalBeban + (summary.prive || 0))}</Typography>
                         </View>
                     </View>
                 </View>
@@ -403,15 +427,22 @@ export default function LaporanKeuanganScreen() {
     const renderCapitalReport = () => {
         if (!capitalData) return null;
 
-        const { section_a, section_b, section_c, section_d, section_e } = capitalData;
+        const penambahan = capitalData.penambahan || {};
+        const pengurangan = capitalData.pengurangan || {};
+        const modalNonKas = (penambahan.modal_non_kas?.total || 0) + (penambahan.modal_non_kas?.stok_mobil || 0);
+        const investorFunding = penambahan.investor_funding || 0;
+        const labaBersih = capitalData.info?.laba_bersih ?? capitalData.laba_ditahan_periode ?? 0;
+        const prive = (pengurangan.prive || 0) + (pengurangan.pengembalian_modal || 0);
+        const pembayaranInvestor = pengurangan.pembayaran_investor || 0;
+        const perubahanBersih = (penambahan.setoran_modal || 0) + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
 
         return (
             <View className="space-y-6">
                 {/* Capital Overview */}
                 <View className="bg-primary p-6 rounded-[32px] shadow-lg border border-primary-light">
                     <Typography className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Modal Akhir Estimasi</Typography>
-                    <Typography weight="bold" className="text-white text-3xl">{formatCurrency(section_d.total_d)}</Typography>
-                    <Typography className="text-white/40 text-[8px] mt-2">Dihitung berdasarkan (Modal Awal + Laba - Prive - Kewajiban)</Typography>
+                    <Typography weight="bold" className="text-white text-3xl">{formatCurrency(capitalData.modal_akhir || 0)}</Typography>
+                    <Typography className="text-white/40 text-[8px] mt-2">Mengikuti laporan perubahan modal backend</Typography>
                 </View>
 
                 {/* Section A & C Group */}
@@ -423,30 +454,37 @@ export default function LaporanKeuanganScreen() {
                     <View className="space-y-4">
                         <View className="flex-row justify-between items-center bg-gray-50 p-4 rounded-2xl">
                             <Typography className="text-gray-500">Setoran Modal</Typography>
-                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(section_a.setoran_modal)}</Typography>
+                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(penambahan.setoran_modal || 0)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                            <Typography className="text-gray-500">Setoran Non-Kas / Stok</Typography>
+                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(modalNonKas)}</Typography>
+                        </View>
+                        <View className="flex-row justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                            <Typography className="text-gray-500">Dana Investor Mobil</Typography>
+                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(investorFunding)}</Typography>
                         </View>
                         <View className="flex-row justify-between items-center bg-gray-50 p-4 rounded-2xl">
                             <Typography className="text-gray-500">Laba Bersih Operasional</Typography>
-                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(section_a.total_laba)}</Typography>
+                            <Typography weight="bold" className="text-emerald-600">{formatCurrency(labaBersih)}</Typography>
                         </View>
                         <View className="flex-row justify-between items-center bg-rose-50 p-4 rounded-2xl">
                             <Typography className="text-rose-800">Prive / Penarikan</Typography>
-                            <Typography weight="bold" className="text-rose-600">({formatCurrency(section_c.prive)})</Typography>
+                            <Typography weight="bold" className="text-rose-600">({formatCurrency(prive)})</Typography>
                         </View>
                         <View className="flex-row justify-between items-center bg-rose-50 p-4 rounded-2xl">
-                            <Typography className="text-rose-800">Biaya Investasi (Stok/Mobil)</Typography>
-                            <Typography weight="bold" className="text-rose-600">({formatCurrency((section_c.pembelian_part?.total || 0) + (section_c.pembelian_mobil?.total || 0))})</Typography>
+                            <Typography className="text-rose-800">Pembayaran Investor Mobil</Typography>
+                            <Typography weight="bold" className="text-rose-600">({formatCurrency(pembayaranInvestor)})</Typography>
                         </View>
                     </View>
                 </View>
 
-                {/* Section B - Piutang */}
                 <View className="bg-white rounded-[40px] p-6 shadow-sm border border-gray-100">
                     <Typography weight="bold" className="text-gray-800 mb-6 flex-row items-center">
-                        <ArrowUpRight size={16} color="#059669" />  Estimasi Piutang Tertahan
+                        <ArrowUpRight size={16} color="#059669" />  Perubahan Bersih Modal
                     </Typography>
-                    <Typography weight="bold" className="text-emerald-600 text-2xl mb-4">{formatCurrency(section_b.total_b)}</Typography>
-                    <Typography className="text-gray-400 text-xs">Total tagihan yang belum tertagih menjadi potensi penambahan modal saat cair.</Typography>
+                    <Typography weight="bold" className="text-emerald-600 text-2xl mb-4">{formatCurrency(perubahanBersih)}</Typography>
+                    <Typography className="text-gray-400 text-xs">Nilai ini mengikuti komponen penambahan dan pengurangan pada laporan perubahan modal.</Typography>
                 </View>
             </View>
         );
@@ -456,6 +494,7 @@ export default function LaporanKeuanganScreen() {
         if (!neracaData) return null;
 
         const { aktiva_lancar, aktiva_tetap, hutang, modal, total_aktiva, total_pasiva } = neracaData;
+        const totalHutang = hutang?.total_hutang || 0;
 
         return (
             <View className="space-y-6">
@@ -507,7 +546,7 @@ export default function LaporanKeuanganScreen() {
                             <Typography weight="bold" className="text-gray-400 text-[10px] uppercase mb-3 ml-1">Aktiva Tetap</Typography>
                             <View className="flex-row justify-between items-center py-1">
                                 <Typography className="text-gray-600">Aset Tetap (Peralatan/Kendaraan)</Typography>
-                                <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_tetap.nilai_perolehan)}</Typography>
+                                <Typography weight="bold" className="text-gray-800">{formatCurrency(aktiva_tetap.total_aktiva_tetap || 0)}</Typography>
                             </View>
                         </View>
                     </View>
@@ -533,6 +572,30 @@ export default function LaporanKeuanganScreen() {
                                 <View className="flex-row justify-between items-center py-1">
                                     <Typography className="text-gray-600">Hutang Supplier Mobil</Typography>
                                     <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_mobil)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between items-center py-1">
+                                    <Typography className="text-gray-600">Hutang Investor</Typography>
+                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_investor || 0)}</Typography>
+                                </View>
+                                <View className="flex-row justify-between items-center py-1">
+                                    <Typography className="text-gray-600">Hutang Lainnya</Typography>
+                                    <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.hutang_lainnya || 0)}</Typography>
+                                </View>
+                                {(hutang.uang_muka_penjualan || 0) > 0 && (
+                                    <View className="flex-row justify-between items-center py-1">
+                                        <Typography className="text-gray-600">Uang Muka Penjualan</Typography>
+                                        <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.uang_muka_penjualan || 0)}</Typography>
+                                    </View>
+                                )}
+                                {(hutang.piutang_booking || 0) > 0 && (
+                                    <View className="flex-row justify-between items-center py-1">
+                                        <Typography className="text-gray-600">Sisa Kewajiban Booking</Typography>
+                                        <Typography weight="bold" className="text-gray-800">{formatCurrency(hutang.piutang_booking || 0)}</Typography>
+                                    </View>
+                                )}
+                                <View className="flex-row justify-between items-center py-1 border-t border-gray-50 mt-2 pt-3">
+                                    <Typography weight="bold" className="text-gray-700">Total Hutang</Typography>
+                                    <Typography weight="bold" className="text-rose-600">{formatCurrency(totalHutang)}</Typography>
                                 </View>
                             </View>
                         </View>
