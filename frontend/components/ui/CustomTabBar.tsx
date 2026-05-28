@@ -312,16 +312,18 @@ export const CustomTabBar = () => {
                 transparent
                 visible={quickActionsVisible}
                 animationType="none"
+                statusBarTranslucent
                 onRequestClose={hideQuickActions}
             >
                 <View className="flex-1 justify-end">
                     {/* Backdrop */}
                     <Animated.View
+                        testID="fab-backdrop-blur"
                         style={{
                             opacity: backdropOpacity,
-                            backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                            backgroundColor: 'rgba(15, 23, 42, 0.35)',
                         }}
-                        className="absolute inset-0"
+                        className="absolute inset-0 fab-backdrop-blur"
                     >
                         <Pressable className="flex-1" onPress={hideQuickActions} />
                     </Animated.View>

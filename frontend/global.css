@@ -10,3 +10,9 @@
   --color-text: #1C1C1C;
   --color-text-gray: #767676;
 }
+
+.fab-backdrop-blur,
+[data-testid="fab-backdrop-blur"] {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}

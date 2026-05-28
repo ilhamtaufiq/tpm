@@ -327,106 +327,32 @@ function RootLayoutContent() {
         </>
     );
 
-    const showMobileFrame = Platform.OS === 'web' && isMobileMode && windowWidth > 640;
+    const showMobilePreview = Platform.OS === 'web' && isMobileMode && windowWidth > 640;
 
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
-                {showMobileFrame ? (
-                    <View style={{ flex: 1, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center' }}>
-                        {/* Background ambient light */}
+                {showMobilePreview ? (
+                    <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center' }}>
                         <View 
                             style={{
-                                position: 'absolute',
-                                width: 500,
-                                height: 500,
-                                backgroundColor: themeColors.primary,
-                                opacity: 0.12,
-                                borderRadius: 250,
-                                top: -100,
-                                left: -100,
-                            }}
-                            className="blur-[120px]"
-                        />
-                        <View 
-                            style={{
-                                position: 'absolute',
-                                width: 500,
-                                height: 500,
-                                backgroundColor: '#6366f1',
-                                opacity: 0.12,
-                                borderRadius: 250,
-                                bottom: -100,
-                                right: -100,
-                            }}
-                            className="blur-[120px]"
-                        />
-
-                        {/* Device Mockup */}
-                        <View 
-                            style={{
-                                width: 390,
-                                height: 844,
-                                backgroundColor: '#000000',
-                                borderRadius: 48,
-                                padding: 10,
+                                width: 430,
+                                maxWidth: '100%',
+                                height: '100vh' as any,
+                                backgroundColor: '#ffffff',
+                                overflow: 'hidden',
+                                position: 'relative',
                                 shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 24 },
-                                shadowOpacity: 0.5,
-                                shadowRadius: 36,
-                                elevation: 20,
-                                borderWidth: 2,
-                                borderColor: '#334155',
-                                position: 'relative'
+                                shadowOffset: { width: 0, height: 12 },
+                                shadowOpacity: 0.08,
+                                shadowRadius: 24,
+                                elevation: 8,
                             }}
                         >
-                            {/* Speaker Notch */}
-                            <View 
-                                style={{
-                                    position: 'absolute',
-                                    top: 14,
-                                    left: '50%',
-                                    marginLeft: -64,
-                                    width: 128,
-                                    height: 24,
-                                    backgroundColor: 'black',
-                                    borderRadius: 12,
-                                    zIndex: 9999,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderWidth: 1,
-                                    borderColor: '#1e293b'
-                                }}
-                            >
-                                <View className="w-3.5 h-3.5 rounded-full bg-slate-900 border border-slate-700/40 mr-1.5 flex items-center justify-center">
-                                    <View className="w-1.5 h-1.5 rounded-full bg-indigo-900/80" />
-                                </View>
-                                <View className="w-12 h-1 bg-slate-800 rounded-full" />
-                            </View>
-
-                            {/* App Screen container */}
-                            <View className="flex-1 bg-white rounded-[38px] overflow-hidden relative">
-                                {appContent}
-                            </View>
-
-                            {/* Android Home Bar Line */}
-                            <View 
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 12,
-                                    left: '50%',
-                                    marginLeft: -72,
-                                    width: 144,
-                                    height: 4,
-                                    backgroundColor: '#475569',
-                                    borderRadius: 2,
-                                    zIndex: 9999
-                                }}
-                            />
+                            {appContent}
                         </View>
 
-                        {/* Floating Mode Switcher Button (Mobile mode active) */}
+                        {/* Floating Mode Switcher Button (Mobile preview active) */}
                         <View 
                             style={{
                                 position: 'absolute',
@@ -441,10 +367,10 @@ function RootLayoutContent() {
                                 className="px-4 py-2 rounded-xl flex-row items-center justify-center bg-primary active:scale-95 shadow-md shadow-primary/20"
                             >
                                 <Text className="text-xs font-bold text-white">
-                                    💻 Mode Desktop
+                                    Mode Desktop
                                 </Text>
                             </Pressable>
-                            <Text className="text-[10px] text-slate-500 font-bold px-1">TPM Android Mockup</Text>
+                            <Text className="text-[10px] text-slate-500 font-bold px-1">Mobile Preview</Text>
                         </View>
                     </View>
                 ) : (
