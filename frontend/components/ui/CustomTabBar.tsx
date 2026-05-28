@@ -130,6 +130,8 @@ export const CustomTabBar = () => {
             case 'profile':
                 return { path: '/profile', icon: User, color: '#374151' };
             default:
+                const route = APP_ROUTES.find((r) => r.id === id);
+                if (route) return { path: route.path, icon: route.icon, color: themeColors.primary };
                 return { path: '/home', icon: Home, color: '#3B82F6' };
         }
     };

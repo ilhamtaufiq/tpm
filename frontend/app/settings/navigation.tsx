@@ -8,18 +8,31 @@ import { useUIStore } from '../../store/useUIStore';
 import { useNavigationStore, defaultSlots } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 
-// Available options for the custom bottom navigation bar
+const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
+    Utama: { color: '#3B82F6', bgColor: '#E8F0FE' },
+    Bengkel: { color: '#023C69', bgColor: '#E2EFFC' },
+    Logistik: { color: '#6366F1', bgColor: '#E0E7FF' },
+    Mobil: { color: '#F43F5E', bgColor: '#FFE4E6' },
+    Master: { color: '#0F766E', bgColor: '#CCFBF1' },
+    SDM: { color: '#10B981', bgColor: '#E6F4EA' },
+    Laporan: { color: '#8B5CF6', bgColor: '#EDE9FE' },
+    Finance: { color: '#F59E0B', bgColor: '#FEF3C7' },
+    Sistem: { color: '#374151', bgColor: '#F3F4F6' },
+};
+
 const NAV_OPTIONS = [
-    { id: 'home', label: 'Beranda (Home)', description: 'Halaman dashboard utama', icon: Home, color: '#3B82F6', bgColor: '#E8F0FE', path: '/home' },
-    { id: 'sdm-absensi', label: 'Absensi Harian', description: 'Input absensi & kehadiran', icon: ShieldCheck, color: '#10B981', bgColor: '#E6F4EA', path: '/sdm/absensi' },
-    { id: 'bengkel', label: 'Transaksi Bengkel', description: 'Servis motor & sparepart', icon: Wrench, color: '#023C69', bgColor: '#E2EFFC', path: '/bengkel' },
-    { id: 'mobil', label: 'Jual Beli Mobil', description: 'Daftar stok mobil & penjualan', icon: CarFront, color: '#F43F5E', bgColor: '#FFE4E6', path: '/mobil' },
-    { id: 'angkut', label: 'Jasa Angkut', description: 'Logistik muatan & supir', icon: Truck, color: '#6366F1', bgColor: '#E0E7FF', path: '/jasa-angkut' },
-    { id: 'laporan', label: 'Semua Laporan', description: 'Rekap & statistik performa', icon: BarChart3, color: '#8B5CF6', bgColor: '#EDE9FE', path: '/laporan' },
-    { id: 'labarugi', label: 'Laba Rugi', description: 'Laporan keuangan profit', icon: BarChart3, color: '#EC4899', bgColor: '#FCE7F3', path: '/laporan/laba-rugi' },
-    { id: 'fin-mutasi', label: 'Mutasi Kas', description: 'Rekap kas masuk & keluar', icon: History, color: '#F59E0B', bgColor: '#FEF3C7', path: '/finance/mutasi' },
-    { id: 'sdm-gaji', label: 'Slip Gaji', description: 'Slip gaji bulanan & payroll', icon: Receipt, color: '#06B6D4', bgColor: '#CFFAFE', path: '/sdm/slip-gaji' },
-    { id: 'profile', label: 'Profil Saya', description: 'Pengaturan akun & logout', icon: User, color: '#374151', bgColor: '#F3F4F6', path: '/profile' },
+    ...APP_ROUTES.map((route) => {
+        const style = CATEGORY_STYLE[route.category] || CATEGORY_STYLE.Sistem;
+        return {
+            id: route.id,
+            label: route.label,
+            description: route.description,
+            icon: route.icon,
+            color: style.color,
+            bgColor: style.bgColor,
+            path: route.path,
+        };
+    }),
     { id: 'fab-plus', label: 'FAB+ (Tambah)', description: 'Floating Button aksi cepat', icon: Plus, color: '#EE2737', bgColor: '#FEE2E2', path: '#fab' },
 ];
 
