@@ -88,7 +88,7 @@ export default function HutangUsahaScreen() {
         : undefined;
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
     const unitLabel = getUnitDisplayLabel(unitFilter);
-    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER' || !!roleUnitMap[user?.role || ''];
     const [selectedFilter, setSelectedFilter] = useState<HutangStatus | 'all'>('BELUM_LUNAS');
     const [search, setSearch] = useState('');
     const [selectedHutang, setSelectedHutang] = useState<Hutang | null>(null);
@@ -274,7 +274,8 @@ export default function HutangUsahaScreen() {
                 .map(p => ({
                     metode: p.metode as any,
                     nominal: parseNumber(p.nominal),
-                    catatan: p.catatan || undefined
+                    catatan: p.catatan || undefined,
+                    kas_jenis: getUnitKasJenis(unitFilter)
                 }));
 
             const payload: any = {
@@ -283,12 +284,17 @@ export default function HutangUsahaScreen() {
                 nama_kreditur: createName,
                 nominal_hutang: parseNumber(createAmount),
                 catatan: createNote,
+                unit: unitFilter,
             };
 
             if (isCreateSplitPayment && validatedPayments.length > 0) {
                 payload.payments = validatedPayments;
             } else if (createMethod) {
-                payload.metode_pembayaran = createMethod;
+                payload.payments = [{
+                    metode: createMethod,
+                    nominal: parseNumber(createAmount),
+                    kas_jenis: getUnitKasJenis(unitFilter),
+                }];
             }
 
             if (!onlineManager.isOnline()) {

@@ -327,6 +327,7 @@ export const keuanganService = {
         payments: {
             metode: PaymentMethod;
             nominal: number;
+            kas_jenis?: string;
             catatan?: string;
         }[];
         catatan?: string;
@@ -340,11 +341,13 @@ export const keuanganService = {
         sumber: PiutangSource;
         nama_debitur: string;
         nominal_piutang: number;
+        unit?: KasBankSource;
         tanggal_jatuh_tempo?: string;
         metode_pembayaran?: PaymentMethod;
         payments?: {
             metode: PaymentMethod;
             nominal: number;
+            kas_jenis?: string;
             catatan?: string;
         }[];
         catatan?: string;
@@ -405,6 +408,7 @@ export const keuanganService = {
         payments: {
             metode: PaymentMethod;
             nominal: number;
+            kas_jenis?: string;
             catatan?: string;
         }[];
         catatan?: string;
@@ -418,11 +422,13 @@ export const keuanganService = {
         sumber: HutangSource;
         nama_kreditur: string;
         nominal_hutang: number;
+        unit?: KasBankSource;
         tanggal_jatuh_tempo?: string;
         metode_pembayaran?: PaymentMethod;
         payments?: {
             metode: PaymentMethod;
             nominal: number;
+            kas_jenis?: string;
             catatan?: string;
         }[];
         catatan?: string;

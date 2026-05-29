@@ -333,10 +333,10 @@ export default function LabaRugiScreen() {
 
             <View className="p-5 w-full">
                 <FinancialRow label="Total Beban Umum & Lainnya" value={reportData?.summary?.total_beban_umum || 0} isNegative bold large color="text-slate-800" />
-                {(reportData?.summary?.internal_elimination || 0) > 0 && (
+                {(reportData?.summary?.internal_profit_elimination || 0) > 0 && (
                     <FinancialRow
-                        label="Info Repair Internal Mobil Belum Terjual"
-                        value={reportData?.summary?.internal_elimination || 0}
+                        label="Info Laba Internal Mobil Belum Terjual"
+                        value={reportData?.summary?.internal_profit_elimination || 0}
                         color="text-amber-700"
                     />
                 )}

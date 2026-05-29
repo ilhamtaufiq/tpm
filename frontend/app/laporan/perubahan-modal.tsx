@@ -112,7 +112,7 @@ export default function LaporanPerubahanModalScreen() {
         const r = report;
         const modalAwal = r.modal_awal || 0;
         const setoranKas = r.penambahan?.setoran_modal || 0;
-        const modalNonKas = (r.penambahan?.modal_non_kas?.total || 0) + (r.penambahan?.modal_non_kas?.stok_mobil || 0);
+        const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
@@ -122,9 +122,11 @@ export default function LaporanPerubahanModalScreen() {
         const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
         const expectedModalAkhir = modalAwal + perubahanBersih;
         
-        // Expose true discrepancy (selisih)
-        const selisih = r.selisih !== undefined ? r.selisih : modalAkhir - expectedModalAkhir;
-        const isBalanced = r.is_balanced !== undefined ? r.is_balanced : Math.abs(selisih) < 100;
+        // Use the same values shown on screen for reconciliation. Backend
+        // `selisih` can include diagnostic fields that are not part of this
+        // displayed equity flow.
+        const selisih = modalAkhir - expectedModalAkhir;
+        const isBalanced = Math.abs(selisih) < 100;
 
         return {
             modalAwal,

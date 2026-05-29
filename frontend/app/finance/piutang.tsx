@@ -91,7 +91,7 @@ export default function PiutangUsahaScreen() {
         : undefined;
     const unitFilter = roleUnitMap[user?.role || ''] || requestedUnit;
     const unitLabel = getUnitDisplayLabel(unitFilter);
-    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+    const canCreate = user?.role === 'ADMIN' || user?.role === 'MANAGER' || !!roleUnitMap[user?.role || ''];
     const [selectedFilter, setSelectedFilter] = useState<PiutangStatus | 'all' | 'overdue'>('BELUM_LUNAS');
     const [selectedPiutang, setSelectedPiutang] = useState<Piutang | null>(null);
     const [viewMode, setViewMode] = useState<'detail' | 'payment'>('detail');
@@ -311,7 +311,11 @@ export default function PiutangUsahaScreen() {
             if (isCreateSplitPayment && validatedPayments.length > 0) {
                 payload.payments = validatedPayments;
             } else if (createMethod) {
-                payload.metode_pembayaran = createMethod;
+                payload.payments = [{
+                    metode: createMethod,
+                    nominal: parseNumber(createAmount),
+                    kas_jenis: getUnitKasJenis(unitFilter),
+                }];
             }
 
             if (!onlineManager.isOnline()) {
@@ -371,10 +375,12 @@ export default function PiutangUsahaScreen() {
 
             <View className="mb-6 bg-blue-50/60 border border-blue-100 rounded-2xl p-4">
                 <Typography variant="caption" weight="bold" className="text-blue-700 uppercase tracking-widest mb-1">
-                    Pencairan dari Bisnis Utama
+                    {unitLabel ? `Pencairan dari Dompet ${unitLabel}` : 'Pencairan dari Bisnis Utama'}
                 </Typography>
                 <Typography variant="caption" className="text-blue-600">
-                    Piutang manual dari menu Finance dicatat sebagai Piutang Lainnya dan dicairkan melalui Kas Utama untuk tunai atau Bank Utama untuk transfer.
+                    {unitLabel
+                        ? `Piutang manual dicatat sebagai Piutang Lainnya unit ${unitLabel} dan dicairkan melalui dompet unit tersebut.`
+                        : 'Piutang manual dari menu Finance dicatat sebagai Piutang Lainnya dan dicairkan melalui Kas Utama untuk tunai atau Bank Utama untuk transfer.'}
                 </Typography>
             </View>
 

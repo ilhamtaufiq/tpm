@@ -109,12 +109,13 @@ class HutangService:
                     tanggal=data.tanggal,
                     tipe=KasBankType.MASUK,
                     nominal=p_detail.nominal,
-                    sumber=KasBankSource.HUTANG,
+                    sumber=unit_source or KasBankSource.HUTANG,
                     metode_bayar=p_detail.metode,
                     referensi_id=hutang.id,
                     nomor_referensi=hutang.nomor_hutang,
                     keterangan=f"Penerimaan Pinjaman/Hutang dari {hutang.nama_kreditur} ({p_detail.metode.upper()})",
                     user_id=user_id,
+                    kas_jenis=p_detail.kas_jenis,
                 )
         elif data.metode_pembayaran:
             create_kas_entry(
@@ -122,7 +123,7 @@ class HutangService:
                 tanggal=data.tanggal,
                 tipe=KasBankType.MASUK,
                 nominal=data.nominal_hutang,
-                sumber=KasBankSource.HUTANG,
+                sumber=unit_source or KasBankSource.HUTANG,
                 metode_bayar=data.metode_pembayaran,
                 referensi_id=hutang.id,
                 nomor_referensi=hutang.nomor_hutang,

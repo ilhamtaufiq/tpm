@@ -70,6 +70,7 @@ class ModalService(BaseReportService):
         # Get Current Period Financial Breakdown (Source of Truth for unit performances)
         data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
         internal_elimination = float(data.get("internal_elimination", 0))
+        internal_profit_elimination = float(data.get("internal_jbm_unrealized_profit", 0))
         b = data["units"].get("bengkel", {})
         m = data["units"].get("mobil", {})
         ja = data["units"].get("jasa_angkut", {})
@@ -334,10 +335,10 @@ class ModalService(BaseReportService):
         laba_ja_tpm_gross = float(data["units"]["jasa_angkut"].get("revenue_tpm", 0))
         laba_bengkel_tpm_gross = float(data["units"]["bengkel"].get("laba_kotor", 0))
 
-        # Laba Kotor (Gross Profit) = Sum of all units' gross profit
-        # We subtract internal elimination here for UI display consistency, 
-        # but we add the value back via stock capitalization in Section B.
-        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross - internal_elimination
+        # Laba Kotor (Gross Profit) = Sum of all units' gross profit.
+        # Internal JB Mobil work is recognized immediately as Bengkel profit.
+        # `internal_profit_elimination` is kept as an informational trace only.
+        laba_kotor = laba_mobil_tpm_gross + laba_ja_tpm_gross + laba_bengkel_tpm_gross
 
         # 1. Mobil Stock Rotation
         beli_mobil = float(self.db.query(func.sum(KasBank.nominal)).filter(
@@ -522,13 +523,16 @@ class ModalService(BaseReportService):
         # Use the ACTUAL snapshot as the authoritative modal_akhir
         modal_akhir = modal_aktual
         
-        # Clean expected theoretical ending modal based on classical accounting formula
-        # Modal Akhir (Teoritis) = Modal Awal + Setoran Kas + Setoran Non-Kas + Laba Bersih - Prive
+        # Clean expected theoretical ending modal based on classical accounting formula.
+        # Internal workshop value on unsold car stock is already represented by
+        # Bengkel profit under the current unit-profit policy, so do not add it
+        # again as non-cash capital.
+        modal_stok_mobil_delta_external = max(0, modal_stok_mobil_delta - workshop_bills_unsold)
         raw_theoretical = (
             modal_awal_theoretical + 
             setoran_modal + 
             investor_capital_baru +
-            (total_non_kas + modal_stok_mobil_delta) + 
+            (total_non_kas + modal_stok_mobil_delta_external) + 
             period_profit_sot - 
             (prive + pengembalian_modal + pembayaran_investor)
         )
@@ -544,10 +548,10 @@ class ModalService(BaseReportService):
             "penambahan": {
                 "setoran_modal": setoran_modal,
                 "modal_non_kas": {
-                    "total": total_non_kas,
+                    "total": total_non_kas + modal_stok_mobil_delta_external,
                     "aset_tetap": modal_aset_tetap_delta,
                     "stok_part": modal_stok_part_delta,
-                    "stok_mobil": modal_stok_mobil_delta
+                    "stok_mobil": modal_stok_mobil_delta_external
                 },
                 "laba_kotor": {
                     "total": laba_kotor,
@@ -571,6 +575,7 @@ class ModalService(BaseReportService):
                 },
                 "investor_funding": investor_capital_baru,
                 "eliminasi_internal": internal_elimination,
+                "eliminasi_profit_internal": internal_profit_elimination,
                 "penyesuaian": 0,  # Set to 0 to keep API backward compatible without forced balance
                 "total": total_penambahan
             },
@@ -613,6 +618,7 @@ class ModalService(BaseReportService):
                 "gaji": gaji,
                 "lembur": lembur,
                 "eliminasi_internal": internal_elimination,
+                "eliminasi_profit_internal": internal_profit_elimination,
                 "penyesuaian": 0,  # Set to 0 to keep API backward compatible without forced balance
                 "total": total_pengurangan
             },
@@ -639,6 +645,7 @@ class ModalService(BaseReportService):
                 "laba_bersih": period_profit_sot,
                 "units": data.get("units"),
                 "eliminasi_internal": internal_elimination,
+                "eliminasi_profit_internal": internal_profit_elimination,
                 "debug": {
                     "kas": end_total_cash,
                     "part": persediaan_part,

@@ -12,11 +12,9 @@ class LabaRugiService(BaseReportService):
         b = data["units"]["bengkel"]
 
         # 1. BENGKEL
-        internal_jbm_revenue = data.get("internal_jbm_unrealized_revenue", 0)
         internal_jbm_profit = data.get("internal_jbm_unrealized_profit", 0)
-        internal_jbm_hpp = internal_jbm_revenue - internal_jbm_profit
-        b_revenue = data["raw_summaries"]["bengkel"]["total_penjualan"] - internal_jbm_revenue
-        b_hpp = data["raw_summaries"]["bengkel"]["total_hpp"] - internal_jbm_hpp
+        b_revenue = data["raw_summaries"]["bengkel"]["total_penjualan"]
+        b_hpp = data["raw_summaries"]["bengkel"]["total_hpp"]
         b_laba_kotor = data["units"]["bengkel"]["laba_kotor"]
         b_gaji = b["gaji"]
         b_lembur = b.get("lembur", 0)
@@ -63,8 +61,8 @@ class LabaRugiService(BaseReportService):
         elimination = float(data.get("internal_elimination", 0))
         
         # Total Laba Operasional (Bengkel + Jasa Angkut + Mobil)
-        # `internal_elimination` is exposed as an informational value for
-        # unsold stock repair, but unit profit summary remains the sum of units.
+        # Internal JB Mobil work is recognized immediately as Bengkel profit.
+        # `internal_jbm_profit` is kept as an informational trace only.
         total_laba_operasional = (b_laba_bersih + ja_laba_bersih + m_laba_bersih) - overhead_pusat
         laba_bersih_akhir = total_laba_operasional - prive
 
@@ -103,6 +101,7 @@ class LabaRugiService(BaseReportService):
             "summary": {
                 "total_beban_umum": overhead_pusat,
                 "internal_elimination": elimination,
+                "internal_profit_elimination": internal_jbm_profit,
                 "prive": prive,
                 "laba_operasional": total_laba_operasional,
                 "laba_bersih": laba_bersih_akhir

@@ -85,6 +85,7 @@ export default function NeracaScreen() {
         totalAktivaAdj,
         totalAktivaLancarAdj,
         totalStokAdj,
+        stockBreakdown,
         totalLabaAdj,
         adjUnitCashDetails,
     } = useMemo(() => {
@@ -99,6 +100,17 @@ export default function NeracaScreen() {
         const stockDetails = al.stok_mobil_detail || [];
         const stockFromDetails = stockDetails.reduce((acc: number, item: any) => acc + (item.total || 0), 0);
         const sAdj = al.stok_mobil || stockFromDetails || 0;
+        const stockBreakdown = stockDetails.reduce((acc: any, item: any) => ({
+            harga_beli: acc.harga_beli + Number(item.harga_beli || 0),
+            biaya_persiapan: acc.biaya_persiapan + Number(item.biaya_persiapan || 0),
+            perbaikan_external: acc.perbaikan_external + Number(item.perbaikan_external || 0),
+            perbaikan_internal: acc.perbaikan_internal + Number(item.perbaikan_internal || 0),
+        }), {
+            harga_beli: 0,
+            biaya_persiapan: 0,
+            perbaikan_external: 0,
+            perbaikan_internal: 0,
+        });
 
         // 3. Laba Ditahan: gunakan nilai dari backend cross_validation
         const lAdj = m.laba_ditahan ?? report?.cross_validation?.retained_earnings ?? report?.cross_validation?.laba_bersih_from_base ?? 0;
@@ -119,6 +131,7 @@ export default function NeracaScreen() {
         return {
             totalHutangExternal: hExt,
             totalStokAdj: sAdj,
+            stockBreakdown,
             totalLabaAdj: lAdj,
             adjUnitCashDetails,
             totalAktivaLancarAdj: alAdj,
@@ -194,7 +207,7 @@ export default function NeracaScreen() {
                             <Typography variant="caption" weight="bold" className="text-slate-500 uppercase tracking-widest text-[10px]">Piutang Usaha</Typography>
                         </View>
                         <View className="w-full pl-3">
-                            <FinancialRow label="Piutang Lainnya" value={al.piutang_lainnya} small />
+                            <FinancialRow label="Piutang Lainnya / Manual Unit" value={al.piutang_lainnya} small />
                             {(al.piutang_karyawan || 0) > 0 && <FinancialRow label="Piutang Karyawan (Kasbon)" value={al.piutang_karyawan} small />}
                             {(al.piutang_usaha || 0) > 0 && <FinancialRow label="Piutang Unit Bengkel" value={al.piutang_usaha} small />}
                             {(al.piutang_mobil || 0) > 0 && <FinancialRow label="Piutang Unit Mobil" value={al.piutang_mobil} small />}
@@ -212,6 +225,14 @@ export default function NeracaScreen() {
                         <View className="w-full pl-3">
                             <FinancialRow label="Persediaan Sparepart" value={al.persediaan_sparepart} small />
                             <FinancialRow label="Stok Mobil (Inventory)" value={totalStokAdj} small />
+                            {(totalStokAdj || 0) > 0 && (
+                                <View className="bg-amber-50/60 w-full p-3 rounded-xl border border-amber-100 mt-2">
+                                    <FinancialRow label="Harga Beli Unit" value={stockBreakdown.harga_beli || totalStokAdj} small indent />
+                                    {(stockBreakdown.biaya_persiapan || 0) > 0 && <FinancialRow label="Biaya Persiapan" value={stockBreakdown.biaya_persiapan} small indent />}
+                                    {(stockBreakdown.perbaikan_external || 0) > 0 && <FinancialRow label="Perbaikan Eksternal" value={stockBreakdown.perbaikan_external} small indent />}
+                                    {(stockBreakdown.perbaikan_internal || 0) > 0 && <FinancialRow label="Perbaikan Internal Bengkel" value={stockBreakdown.perbaikan_internal} small indent color="text-amber-700" />}
+                                </View>
+                            )}
                         </View>
                     </View>
                 </View>
@@ -340,7 +361,7 @@ export default function NeracaScreen() {
                     <FinancialRow label="1. Hutang Pembelian Part" value={h.hutang_part} small large />
                     <FinancialRow label="2. Hutang Pembelian Mobil" value={h.hutang_mobil} small large />
                     <FinancialRow label="3. Hutang Investor" value={h.hutang_investor} small large />
-                    <FinancialRow label="4. Hutang Lainnya" value={h.hutang_lainnya} small large />
+                    <FinancialRow label="4. Hutang Lainnya / Manual Unit" value={h.hutang_lainnya} small large />
                     {(h.hutang_jasa_angkut || 0) > 0 && (
                         <FinancialRow label="5. Hutang Jasa Angkut" value={h.hutang_jasa_angkut} small large />
                     )}
@@ -349,6 +370,9 @@ export default function NeracaScreen() {
                     )}
                     {(h.piutang_booking || 0) > 0 && (
                         <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking} small large />
+                    )}
+                    {(h.hutang_internal || 0) > 0 && (
+                        <FinancialRow label="Info Hutang Internal Perbaikan Mobil" value={h.hutang_internal} small large color="text-amber-700" />
                     )}
 
                     

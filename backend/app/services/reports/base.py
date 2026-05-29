@@ -749,7 +749,11 @@ class BaseReportService:
         laba_mobil_gross = sold_revenue - hpp_sold_price - hpp_sold_prep - mobil_total_repairs_sold
         laba_mobil_tpm = laba_mobil_gross - sold_laba_investor
         laba_bengkel_kotor_gross = float(bengkel_summary.get("total_laba_kotor", 0))
-        laba_bengkel_kotor = laba_bengkel_kotor_gross - internal_jbm_unrealized_profit
+        # Unit Bengkel recognizes internal JB Mobil work immediately. The
+        # konsolidasi fields below are kept only as trace data for reports that
+        # still need to show the unrealized internal profit amount.
+        laba_bengkel_kotor = laba_bengkel_kotor_gross
+        laba_bengkel_kotor_konsolidasi = laba_bengkel_kotor_gross - internal_jbm_unrealized_profit
         laba_ja_tpm = float(ja_revenue_tpm)
 
         total_laba_gross = laba_mobil_tpm + laba_bengkel_kotor + laba_ja_tpm
@@ -943,9 +947,11 @@ class BaseReportService:
                 "bengkel": {
                     "laba_kotor": laba_bengkel_kotor,
                     "laba_kotor_gross": laba_bengkel_kotor_gross,
+                    "laba_kotor_konsolidasi": laba_bengkel_kotor_konsolidasi,
                     "internal_jbm_unrealized_profit": internal_jbm_unrealized_profit,
                     "internal_jbm_unrealized_revenue": internal_jbm_unrealized_revenue,
                     "total_laba_tpm": laba_bengkel_kotor - bengkel_ops_total,
+                    "total_laba_tpm_konsolidasi": laba_bengkel_kotor_konsolidasi - bengkel_ops_total,
                     "total_hpp": float(bengkel_summary["total_hpp"]),
                     "common_expenses": bengkel_common,
                     "total_expenses": bengkel_ops_total,

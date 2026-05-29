@@ -39,6 +39,18 @@ const reportStyles = `
 
 export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType: string) => {
     const formattedDate = format(date, filterType === 'daily' ? 'd MMMM yyyy' : (filterType === 'monthly' ? 'MMMM yyyy' : 'yyyy'), { locale: localeID });
+    const stockDetails = data.aktiva_lancar.stok_mobil_detail || [];
+    const stockBreakdown = stockDetails.reduce((acc, item) => ({
+        harga_beli: acc.harga_beli + Number(item.harga_beli || 0),
+        biaya_persiapan: acc.biaya_persiapan + Number(item.biaya_persiapan || 0),
+        perbaikan_external: acc.perbaikan_external + Number(item.perbaikan_external || 0),
+        perbaikan_internal: acc.perbaikan_internal + Number(item.perbaikan_internal || 0),
+    }), {
+        harga_beli: 0,
+        biaya_persiapan: 0,
+        perbaikan_external: 0,
+        perbaikan_internal: 0,
+    });
     
     return `
         <!DOCTYPE html>
@@ -59,7 +71,7 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr class="section-title"><td colspan="2">I. AKTIVA LANCAR</td></tr>
                 <tr><td>Kas Tunai (Utama)</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_tunai)}</td></tr>
                 <tr><td>Kas Bank</td><td class="amount">${formatCurrency(data.aktiva_lancar.kas_bank)}</td></tr>
-                <tr><td>Piutang Usaha (All Units)</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_piutang)}</td></tr>
+                <tr><td>Piutang Usaha (Semua Unit)</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_piutang)}</td></tr>
                 ${data.cross_validation?.mismatches?.filter(m => m.piutang > 0).map(m => `
                 <tr class="sub-item">
                     <td>Tagihan Perbaikan ke ${m.ref}</td>
@@ -68,6 +80,12 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 `).join('')}
                 <tr><td>Persediaan Sparepart</td><td class="amount">${formatCurrency(data.aktiva_lancar.persediaan_sparepart)}</td></tr>
                 <tr><td>Stok Unit Mobil (Inventory)</td><td class="amount">${formatCurrency(data.aktiva_lancar.stok_mobil)}</td></tr>
+                ${(data.aktiva_lancar.stok_mobil || 0) > 0 ? `
+                <tr class="sub-item"><td>Harga Beli Unit Mobil</td><td class="amount">${formatCurrency(stockBreakdown.harga_beli || data.aktiva_lancar.stok_mobil)}</td></tr>
+                ${stockBreakdown.biaya_persiapan > 0 ? `<tr class="sub-item"><td>Biaya Persiapan</td><td class="amount">${formatCurrency(stockBreakdown.biaya_persiapan)}</td></tr>` : ''}
+                ${stockBreakdown.perbaikan_external > 0 ? `<tr class="sub-item"><td>Perbaikan Eksternal</td><td class="amount">${formatCurrency(stockBreakdown.perbaikan_external)}</td></tr>` : ''}
+                ${stockBreakdown.perbaikan_internal > 0 ? `<tr class="sub-item"><td>Perbaikan Internal Bengkel</td><td class="amount">${formatCurrency(stockBreakdown.perbaikan_internal)}</td></tr>` : ''}
+                ` : ''}
                 <tr class="total-row"><td>TOTAL AKTIVA LANCAR</td><td class="amount">${formatCurrency(data.aktiva_lancar.total_aktiva_lancar)}</td></tr>
 
                 <tr class="section-title"><td colspan="2">II. AKTIVA TETAP</td></tr>
@@ -84,10 +102,11 @@ export const buildNeracaExportHtml = (data: NeracaReport, date: Date, filterType
                 <tr><td>Hutang Pembelian Mobil</td><td class="amount">${formatCurrency(data.hutang.hutang_mobil)}</td></tr>
                 <tr><td>Hutang Pembelian Part</td><td class="amount">${formatCurrency(data.hutang.hutang_part)}</td></tr>
                 <tr><td>Hutang Investor</td><td class="amount">${formatCurrency(data.hutang.hutang_investor)}</td></tr>
-                <tr><td>Hutang Lainnya</td><td class="amount">${formatCurrency(data.hutang.hutang_lainnya)}</td></tr>
+                <tr><td>Hutang Lainnya / Manual Unit</td><td class="amount">${formatCurrency(data.hutang.hutang_lainnya)}</td></tr>
                 ${(data.hutang.hutang_jasa_angkut || 0) > 0 ? `<tr><td>Hutang Jasa Angkut</td><td class="amount">${formatCurrency(data.hutang.hutang_jasa_angkut || 0)}</td></tr>` : ''}
                 ${(data.hutang.uang_muka_penjualan || 0) > 0 ? `<tr><td>Uang Muka Penjualan</td><td class="amount">${formatCurrency(data.hutang.uang_muka_penjualan || 0)}</td></tr>` : ''}
                 ${(data.hutang.piutang_booking || 0) > 0 ? `<tr><td>Sisa Kewajiban Booking Mobil</td><td class="amount">${formatCurrency(data.hutang.piutang_booking || 0)}</td></tr>` : ''}
+                ${(data.hutang.hutang_internal || 0) > 0 ? `<tr class="sub-item"><td>Info Hutang Internal Perbaikan Mobil</td><td class="amount">${formatCurrency(data.hutang.hutang_internal || 0)}</td></tr>` : ''}
                 ${data.cross_validation?.mismatches?.filter(m => m.hutang > 0).map((m, idx) => `
                 <tr><td>Hutang Perbaikan ke ${m.ref}</td><td class="amount">${formatCurrency(m.hutang)}</td></tr>
                 `).join('')}
@@ -184,10 +203,10 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                     <span>Laba Operasional Setelah Beban Pusat</span>
                     <span class="amount">${formatCurrency(data.summary.laba_operasional)}</span>
                 </div>
-                ${(data.summary.internal_elimination || 0) > 0 ? `
+                ${(data.summary.internal_profit_elimination || 0) > 0 ? `
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Info Repair Internal Mobil Belum Terjual</span>
-                    <span class="amount">${formatCurrency(data.summary.internal_elimination || 0)}</span>
+                    <span>Info Laba Internal Mobil Belum Terjual</span>
+                    <span class="amount">${formatCurrency(data.summary.internal_profit_elimination || 0)}</span>
                 </div>` : ''}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <span>Pengambilan Prive Pemilik</span>
@@ -213,7 +232,7 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     
     const modalAwal = data.modal_awal || 0;
     const setoranKas = data.penambahan?.setoran_modal || 0;
-    const modalNonKas = (data.penambahan?.modal_non_kas?.total || 0) + (data.penambahan?.modal_non_kas?.stok_mobil || 0);
+    const modalNonKas = data.penambahan?.modal_non_kas?.total || 0;
     const investorFunding = data.penambahan?.investor_funding || 0;
     const labaBersih = data.info?.laba_bersih ?? data.laba_ditahan_periode ?? 0;
     const prive = (data.pengurangan?.prive || 0) + (data.pengurangan?.pengembalian_modal || 0);
@@ -222,8 +241,8 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
     const expectedModalAkhir = modalAwal + perubahanBersih;
     
-    const selisih = data.selisih !== undefined ? data.selisih : modalAkhir - expectedModalAkhir;
-    const isBalanced = data.is_balanced !== undefined ? data.is_balanced : Math.abs(selisih) < 100;
+    const selisih = modalAkhir - expectedModalAkhir;
+    const isBalanced = Math.abs(selisih) < 100;
 
     return `
         <!DOCTYPE html>

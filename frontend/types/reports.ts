@@ -55,6 +55,7 @@ export interface NeracaHutang {
     hutang_investor: number;
     hutang_lainnya: number;
     hutang_jasa_angkut?: number;
+    hutang_internal?: number;
     uang_muka_penjualan?: number;
     piutang_booking?: number;
     total_hutang: number;
@@ -131,6 +132,7 @@ export interface LabaRugiReport {
         total_beban_operasional: number;
         total_beban_umum: number;
         internal_elimination?: number;
+        internal_profit_elimination?: number;
         laba_operasional: number;
         prive: number;
         laba_bersih: number;
@@ -182,6 +184,7 @@ export interface CapitalReport {
             workshop: number;
         };
         eliminasi_internal?: number;
+        eliminasi_profit_internal?: number;
         penyesuaian?: number;
     };
     pengurangan?: {
@@ -210,6 +213,7 @@ export interface CapitalReport {
             workshop: number;
         };
         eliminasi_internal?: number;
+        eliminasi_profit_internal?: number;
         penyesuaian?: number;
         total: number;
     };
@@ -221,6 +225,8 @@ export interface CapitalReport {
         laba_jasa_angkut: number;
         laba_usaha?: number;
         overhead_gaji: number;
+        eliminasi_internal?: number;
+        eliminasi_profit_internal?: number;
         laba_bersih: number;
         units: {
             bengkel: UnitBreakdown;
