@@ -281,10 +281,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Dana Investor Mobil</td>
                     <td class="amount">${formatCurrency(investorFunding)}</td>
                 </tr>` : ''}
+                ${labaBersih >= 0 ? `
                 <tr>
-                    <td>${labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'}</td>
-                    <td class="amount ${labaBersih >= 0 ? 'positive' : 'negative'}">${labaBersih >= 0 ? formatCurrency(labaBersih) : `(${formatCurrency(Math.abs(labaBersih))})`}</td>
-                </tr>
+                    <td>Laba Bersih Periode</td>
+                    <td class="amount positive">${formatCurrency(labaBersih)}</td>
+                </tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">C. PENGURANGAN EKUITAS</td></tr>
                 ${prive > 0 ? `
@@ -296,6 +297,11 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
                     <td>Prive / Pengambilan Pemilik</td>
                     <td class="amount">${formatCurrency(0)}</td>
                 </tr>`}
+                ${labaBersih < 0 ? `
+                <tr>
+                    <td>Rugi Periode</td>
+                    <td class="amount negative">(${formatCurrency(Math.abs(labaBersih))})</td>
+                </tr>` : ''}
                 ${pembayaranInvestor > 0 ? `
                 <tr>
                     <td>Pembayaran Investor Mobil</td>

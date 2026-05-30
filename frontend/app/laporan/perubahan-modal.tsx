@@ -329,7 +329,9 @@ export default function LaporanPerubahanModalScreen() {
                                 {equity.investorFunding > 0 && (
                                     <FinancialRow label="Dana Investor Mobil" value={equity.investorFunding} color="text-emerald-700" />
                                 )}
-                                <FinancialRow label={equity.labaBersih >= 0 ? 'Laba Bersih Periode' : 'Rugi Periode'} value={Math.abs(equity.labaBersih)} isNegative={equity.labaBersih < 0} color={equity.labaBersih >= 0 ? 'text-emerald-700' : 'text-rose-700'} />
+                                {equity.labaBersih >= 0 && (
+                                    <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
+                                )}
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
@@ -338,6 +340,9 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={equity.prive} isNegative />
                                 ) : (
                                     <FinancialRow label="Prive / Pengambilan Pemilik" value={0} />
+                                )}
+                                {equity.labaBersih < 0 && (
+                                    <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
                                 )}
                                 {equity.pembayaranInvestor > 0 && (
                                     <FinancialRow label="Pembayaran Investor Mobil" value={equity.pembayaranInvestor} isNegative />

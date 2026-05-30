@@ -194,7 +194,7 @@ export default function PiutangUsahaScreen() {
             
             // Accumulate summary for visible items
             if (item.status !== 'LUNAS') {
-                totalSisa += item.sisa_piutang;
+                totalSisa += Number(item.sisa_piutang || 0);
                 countBelumLunas++;
                 if (item.is_overdue) countOverdue++;
             }

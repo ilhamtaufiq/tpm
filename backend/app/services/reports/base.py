@@ -540,8 +540,10 @@ class BaseReportService:
 
         hutang_part = get_debt_balance_by_unit([HutangSource.PEMBELIAN_PART])
         hutang_mobil = get_debt_balance_by_unit([HutangSource.PEMBELIAN_MOBIL, HutangSource.JUAL_BELI_MOBIL])
-        # Hutang Jasa Angkut (usually captured via unit filter on LAINNYA if not specified otherwise)
-        hutang_ja = get_debt_balance_by_unit([HutangSource.LAINNYA], unit=KasBankSource.JASA_ANGKUT)
+        # Manual unit debts use HutangSource.LAINNYA for all business units.
+        # Keep them together in "Hutang Lainnya / Manual Unit" instead of
+        # splitting Jasa Angkut manual debts into a separate liability line.
+        hutang_ja = 0
         
         # Hutang Investor (Unpaid capital + profit share)
         # 1. Capital from cars not yet sold (or sold after period end)
@@ -568,7 +570,25 @@ class BaseReportService:
         
         hutang_investor = unsold_investor_capital + max(0, investor_debt - investor_paid)
 
-        hutang_lainnya = get_debt_balance_by_unit([HutangSource.LAINNYA]) - hutang_ja
+        hutang_lainnya = get_debt_balance_by_unit([HutangSource.LAINNYA])
+        manual_hutang_non_pinjaman = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.LAINNYA,
+            HutangUsaha.tanggal >= tanggal_dari,
+            HutangUsaha.tanggal <= tanggal_sampai,
+            HutangUsaha.status != HutangStatus.BATAL,
+            HutangUsaha.is_internal != True,
+            ~self.db.query(KasBank.id).filter(
+                KasBank.tipe == KasBankType.MASUK,
+                KasBank.referensi_id == HutangUsaha.id,
+                KasBank.nomor_referensi == HutangUsaha.nomor_hutang,
+                KasBank.sumber.in_([
+                    KasBankSource.BENGKEL,
+                    KasBankSource.JASA_ANGKUT,
+                    KasBankSource.JUAL_BELI_MOBIL,
+                    KasBankSource.HUTANG,
+                ]),
+            ).exists()
+        ).scalar() or 0)
         
         # Add accrued expenses from ledger (KREDIT) to hutang lainnya
         # Sum of all KREDIT expenses
@@ -772,7 +792,8 @@ class BaseReportService:
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
             ja_expenses_trip + ja_expenses_bengkel + ja_tagged_from_wallet + general_ja_overhead +
-            admin_fees_unrecorded + ja_untracked_gap + general_mobil_overhead
+            admin_fees_unrecorded + ja_untracked_gap + general_mobil_overhead +
+            manual_hutang_non_pinjaman
         )
         
         # ═══════════════════════════════════════════════════════════════
@@ -896,6 +917,7 @@ class BaseReportService:
             "laba_bersih": laba_bersih,
             "laba_tpm": retained_earnings, # Legacy support
             "total_operasional": total_operasional,
+            "manual_hutang_non_pinjaman": manual_hutang_non_pinjaman,
             "internal_elimination": internal_elimination,
             "internal_jbm_unrealized_profit": internal_jbm_unrealized_profit,
             "internal_jbm_unrealized_revenue": internal_jbm_unrealized_revenue,

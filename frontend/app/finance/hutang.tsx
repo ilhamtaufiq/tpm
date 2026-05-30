@@ -204,7 +204,7 @@ export default function HutangUsahaScreen() {
             
             // Accumulate summary for visible items
             if (item.status !== 'LUNAS') {
-                totalSisa += item.sisa_hutang;
+                totalSisa += Number(item.sisa_hutang || 0);
                 countBelumLunas++;
             }
             

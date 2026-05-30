@@ -301,7 +301,12 @@ class ModalService(BaseReportService):
         lembur = float(b.get("lembur", 0))
         
         # Breakdown Beban Operasional
-        ops_umum = float(b.get("common_expenses", 0)) + float(data.get("admin_fees_unrecorded", 0)) + float(data.get("ja_untracked_gap", 0))
+        ops_umum = (
+            float(b.get("common_expenses", 0)) +
+            float(data.get("admin_fees_unrecorded", 0)) +
+            float(data.get("ja_untracked_gap", 0)) +
+            float(data.get("manual_hutang_non_pinjaman", 0))
+        )
         ops_bengkel = float(b.get("total_expenses", 0))
         # Mobil Breakdown: Only general overhead.
         # Capitalized costs (prep/repairs) are moved to Stock Allocation.
