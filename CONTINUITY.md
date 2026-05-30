@@ -45,7 +45,8 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 - **Done**: Hid the QrCode scanner and Filter buttons from the dashboard Search Overlay entirely for all roles, allowing the Search bar to beautifully expand and keep the UI clean, spacious, and highly optimized.
 - **Done**: Removed the "Info Hutang Internal Perbaikan Mobil" row from the Neraca report (`frontend/app/laporan/neraca.tsx`) per user request.
 - **Done**: Added `Laba Investor` to the equity flow calculation and UI display in `perubahan-modal.tsx` to fix the balance discrepancy caused by missing investor profit.
-- **Now**: The `Perubahan Ekuitas` report successfully balances and reconciles with the investor profit included.
+- **Done**: Synchronized app version to 1.0.0 across `package.json` and `app.json`, and fixed the `profile.tsx` settings page to dynamically pull the centralized version using `Constants.expoConfig.version`.
+- **Now**: The app version is correctly centralized and displayed.
 - **Next**: Monitor and support further user requests or feature improvements.
 
 ## Open Questions
@@ -54,4 +55,7 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 ## Working Set
 - `frontend/app/laporan/neraca.tsx`
 - `frontend/app/laporan/perubahan-modal.tsx`
+- `frontend/app.json`
+- `frontend/package.json`
+- `frontend/app/(tabs)/profile.tsx`
 - `CONTINUITY.md`

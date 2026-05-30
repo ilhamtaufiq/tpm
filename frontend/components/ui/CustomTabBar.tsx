@@ -41,9 +41,16 @@ export const CustomTabBar = () => {
     const hideQuickActions = () => {
         Animated.timing(animationProgress, {
             toValue: 0,
-            duration: 200,
+            duration: 150,
             useNativeDriver: true,
-        }).start(() => setQuickActionsVisible(false));
+        }).start(() => {
+            setQuickActionsVisible(false);
+        });
+        
+        // Failsafe untuk Android jika callback start() terinterupsi
+        setTimeout(() => {
+            setQuickActionsVisible(false);
+        }, 200);
     };
 
     // Helper to resolve route config by ID
@@ -315,23 +322,29 @@ export const CustomTabBar = () => {
                 statusBarTranslucent
                 onRequestClose={hideQuickActions}
             >
-                <View className="flex-1 justify-end">
+                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                     {/* Backdrop */}
                     <Animated.View
                         testID="fab-backdrop-blur"
                         style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
                             opacity: backdropOpacity,
                             backgroundColor: 'rgba(15, 23, 42, 0.35)',
                         }}
-                        className="absolute inset-0 fab-backdrop-blur"
                     >
-                        <Pressable className="flex-1" onPress={hideQuickActions} />
+                        <Pressable style={{ flex: 1 }} onPress={hideQuickActions} />
                     </Animated.View>
 
                     {/* Centered Radial FABs overlay at Bottom Navigation bar */}
                     <View
-                        className="absolute left-0 right-0 flex-row items-center justify-center px-2"
                         style={{
+                            position: 'absolute',
+                            left: 0, right: 0,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            paddingHorizontal: 8,
                             bottom: 0,
                             height: 80 + (Platform.OS === 'ios' ? insets.bottom : 0),
                             paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
@@ -355,7 +368,8 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        hideQuickActions();
+                                        setQuickActionsVisible(false);
+                                        animationProgress.setValue(0);
                                         router.navigate(subFab1.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -376,7 +390,8 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        hideQuickActions();
+                                        setQuickActionsVisible(false);
+                                        animationProgress.setValue(0);
                                         router.navigate(subFab2.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -398,7 +413,8 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        hideQuickActions();
+                                        setQuickActionsVisible(false);
+                                        animationProgress.setValue(0);
                                         router.navigate(subFab3.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
