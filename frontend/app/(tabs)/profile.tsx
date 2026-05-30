@@ -491,7 +491,7 @@ export default function ProfileScreen() {
                 </Pressable>
 
                 <View className="items-center pb-10">
-                    <Typography variant="caption" className="text-text/20">Versi Aplikasi 22042026-0105 {Constants.exproConfig?.version || '1.0.0'} • TPM Super App Mobile</Typography>
+                    <Typography variant="caption" className="text-text/20">Versi Aplikasi {Constants.expoConfig?.version || '1.0.0'} • TPM Super App Mobile</Typography>
                 </View>
             </ScrollView>
 
