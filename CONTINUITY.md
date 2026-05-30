@@ -43,13 +43,15 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 - **Done**: Resolved the Expo Router navigation deadlock and query param synchronization issues for the BENGKEL bottom tab bar menu. Built support for `router.setParams` when clicking the Dompet and FAB menu items from the active dashboard, added automatic parameter clearing on modal/sheet close, and added hybrid support for both Web (`showWalletModal`) and Mobile (`walletSheetRef`) triggers.
 - **Done**: Added a premium Wallet button directly inside the Filter Search Overlay on the workshop dashboard (`bengkel/index.tsx`) next to the Filter/Scanner buttons, resolving access issues and bringing visual consistency across all unit screens.
 - **Done**: Hid the QrCode scanner and Filter buttons from the dashboard Search Overlay entirely for all roles, allowing the Search bar to beautifully expand and keep the UI clean, spacious, and highly optimized.
-- **Now**: The custom BENGKEL role bottom tab bar, page-level wallet triggers, and active menu sheets are fully responsive, highly visible, and fully functional.
+- **Done**: Removed the "Info Hutang Internal Perbaikan Mobil" row from the Neraca report (`frontend/app/laporan/neraca.tsx`) per user request.
+- **Done**: Added `Laba Investor` to the equity flow calculation and UI display in `perubahan-modal.tsx` to fix the balance discrepancy caused by missing investor profit.
+- **Now**: The `Perubahan Ekuitas` report successfully balances and reconciles with the investor profit included.
 - **Next**: Monitor and support further user requests or feature improvements.
 
 ## Open Questions
 - None.
 
 ## Working Set
-- `frontend/components/ui/CustomTabBar.tsx`
-- `frontend/app/bengkel/index.tsx`
+- `frontend/app/laporan/neraca.tsx`
+- `frontend/app/laporan/perubahan-modal.tsx`
 - `CONTINUITY.md`

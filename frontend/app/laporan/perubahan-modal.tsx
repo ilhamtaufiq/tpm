@@ -98,6 +98,7 @@ export default function LaporanPerubahanModalScreen() {
                 modalNonKas: 0,
                 investorFunding: 0,
                 labaBersih: 0,
+                labaInvestor: 0,
                 prive: 0,
                 pembayaranInvestor: 0,
                 modalAkhir: 0,
@@ -115,11 +116,12 @@ export default function LaporanPerubahanModalScreen() {
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
+        const labaInvestor = r.info?.laba_investor || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
         const modalAkhir = r.modal_akhir || 0;
         
-        const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
+        const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih + labaInvestor - prive - pembayaranInvestor;
         const expectedModalAkhir = modalAwal + perubahanBersih;
         
         // Use the same values shown on screen for reconciliation. Backend
@@ -134,6 +136,7 @@ export default function LaporanPerubahanModalScreen() {
             modalNonKas,
             investorFunding,
             labaBersih,
+            labaInvestor,
             prive,
             pembayaranInvestor,
             modalAkhir,
@@ -332,6 +335,9 @@ export default function LaporanPerubahanModalScreen() {
                                 {equity.labaBersih >= 0 && (
                                     <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
                                 )}
+                                {equity.labaInvestor > 0 && (
+                                    <FinancialRow label="Laba Investor (Jual Beli Mobil)" value={equity.labaInvestor} color="text-emerald-700" />
+                                )}
                             </View>
 
                             <View className="mt-4 pt-4 border-t border-slate-50">
@@ -343,6 +349,9 @@ export default function LaporanPerubahanModalScreen() {
                                 )}
                                 {equity.labaBersih < 0 && (
                                     <FinancialRow label="Rugi Periode" value={Math.abs(equity.labaBersih)} isNegative />
+                                )}
+                                {equity.labaInvestor < 0 && (
+                                    <FinancialRow label="Rugi Investor (Jual Beli Mobil)" value={Math.abs(equity.labaInvestor)} isNegative />
                                 )}
                                 {equity.pembayaranInvestor > 0 && (
                                     <FinancialRow label="Pembayaran Investor Mobil" value={equity.pembayaranInvestor} isNegative />

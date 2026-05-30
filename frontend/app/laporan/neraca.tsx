@@ -371,9 +371,7 @@ export default function NeracaScreen() {
                     {(h.piutang_booking || 0) > 0 && (
                         <FinancialRow label="Sisa Kewajiban Booking Mobil" value={h.piutang_booking} small large />
                     )}
-                    {(h.hutang_internal || 0) > 0 && (
-                        <FinancialRow label="Info Hutang Internal Perbaikan Mobil" value={h.hutang_internal} small large color="text-amber-700" />
-                    )}
+
 
                     
                         
