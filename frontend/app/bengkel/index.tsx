@@ -167,13 +167,15 @@ export default function BengkelScreen() {
     const createPiutangMutation = useCreatePiutang();
     const { data: hutangData } = useHutangList({
         limit: 20,
-        sumber: 'PEMBELIAN_PART',
+        status: 'BELUM_LUNAS',
+        unit: 'BENGKEL',
         sort_by: 'tanggal',
         sort_order: 'desc',
     });
     const { data: piutangData } = usePiutangList({
         limit: 20,
         status: 'BELUM_LUNAS',
+        unit: 'BENGKEL',
         sort_by: 'tanggal',
         sort_order: 'desc',
     });
