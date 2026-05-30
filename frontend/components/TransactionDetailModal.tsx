@@ -579,7 +579,7 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
         <Modal
             visible={visible}
             animationType="slide"
-            transparent={true}
+            transparent={Platform.OS !== 'android'}
             onRequestClose={onClose}
         >
             <View className="flex-1 bg-black/60 justify-end">

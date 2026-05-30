@@ -46,7 +46,8 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 - **Done**: Removed the "Info Hutang Internal Perbaikan Mobil" row from the Neraca report (`frontend/app/laporan/neraca.tsx`) per user request.
 - **Done**: Added `Laba Investor` to the equity flow calculation and UI display in `perubahan-modal.tsx` to fix the balance discrepancy caused by missing investor profit.
 - **Done**: Synchronized app version to 1.0.0 across `package.json` and `app.json`, and fixed the `profile.tsx` settings page to dynamically pull the centralized version using `Constants.expoConfig.version`.
-- **Now**: The app version is correctly centralized and displayed.
+- **Done**: Fixed Android UI freezing bug on `CustomTabBar.tsx` FAB menu. Adjusted Absolute positioning constraints, added a failsafe timeout, and forced synchronous state updates before navigation to prevent the transparent modal from getting permanently stuck.
+- **Now**: The application should correctly handle FAB touches and navigation on Android without locking the UI.
 - **Next**: Monitor and support further user requests or feature improvements.
 
 ## Open Questions
@@ -58,4 +59,5 @@ Implement a fully customizable 5-item bottom navigation bar for the TPM Super Ap
 - `frontend/app.json`
 - `frontend/package.json`
 - `frontend/app/(tabs)/profile.tsx`
+- `frontend/components/ui/CustomTabBar.tsx`
 - `CONTINUITY.md`

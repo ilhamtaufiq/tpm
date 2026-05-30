@@ -55,7 +55,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     return (
         <Modal
             visible={visible}
-            transparent
+            transparent={Platform.OS !== 'android'}
             animationType="fade"
             onRequestClose={onClose}
         >
