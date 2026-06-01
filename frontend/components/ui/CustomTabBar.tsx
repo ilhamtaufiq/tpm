@@ -8,12 +8,11 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
-import { getFabIconOption } from '../../constants/FabIconOptions';
 import { router, usePathname } from 'expo-router';
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
-    const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots, pageFabSettings } = useNavigationStore();
+    const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
@@ -54,28 +53,6 @@ export const CustomTabBar = () => {
         }, 200);
     };
 
-    const mergedPageFabSettings = {
-        bengkel: {
-            fabIcon: pageFabSettings?.bengkel?.fabIcon || 'plus',
-            tabIcon: pageFabSettings?.bengkel?.tabIcon || 'wrench',
-        },
-        mobil: {
-            fabIcon: pageFabSettings?.mobil?.fabIcon || 'plus',
-            tabIcon: pageFabSettings?.mobil?.tabIcon || 'car-front',
-        },
-        angkut: {
-            fabIcon: pageFabSettings?.angkut?.fabIcon || 'plus',
-            tabIcon: pageFabSettings?.angkut?.tabIcon || 'truck',
-        },
-    };
-    const currentPageSetting = pathname?.startsWith('/bengkel')
-        ? mergedPageFabSettings.bengkel
-        : pathname?.startsWith('/mobil')
-            ? mergedPageFabSettings.mobil
-            : pathname?.startsWith('/jasa-angkut')
-                ? mergedPageFabSettings.angkut
-                : undefined;
-    const MainFabIcon = getFabIconOption(currentPageSetting?.fabIcon).icon;
     const currentPageId = pathname?.startsWith('/bengkel')
         ? 'bengkel'
         : pathname?.startsWith('/mobil')
@@ -134,9 +111,6 @@ export const CustomTabBar = () => {
             if (id === 'bengkel') label = 'Bengkel';
             if (id === 'mobil') label = 'Mobil';
             if (id === 'profile') label = 'Profile';
-            if (id === 'bengkel') icon = getFabIconOption(mergedPageFabSettings.bengkel.tabIcon).icon;
-            if (id === 'mobil') icon = getFabIconOption(mergedPageFabSettings.mobil.tabIcon).icon;
-            if (id === 'angkut') icon = getFabIconOption(mergedPageFabSettings.angkut.tabIcon).icon;
             
             return { ...route, label, icon };
         }
@@ -295,7 +269,7 @@ export const CustomTabBar = () => {
                                     elevation: 10,
                                 }}
                             >
-                                <MainFabIcon size={24} color="white" strokeWidth={2.5} />
+                                <Plus size={24} color="white" strokeWidth={2.5} />
                             </Pressable>
                         </View>
                     );
@@ -475,7 +449,7 @@ export const CustomTabBar = () => {
                                 }}
                             >
                                 <Animated.View style={{ transform: [{ rotate: mainFabRotation }] }}>
-                                    <MainFabIcon size={24} color="white" strokeWidth={2.5} />
+                                    <Plus size={24} color="white" strokeWidth={2.5} />
                                 </Animated.View>
                             </Pressable>
                         </View>
