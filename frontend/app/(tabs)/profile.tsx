@@ -142,6 +142,7 @@ export default function ProfileScreen() {
     };
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+    const isSuperAdmin = user?.role === 'ADMIN';
 
     return (
         <View className="flex-1 bg-background overflow-hidden">
@@ -327,22 +328,26 @@ export default function ProfileScreen() {
                             </Pressable>
                         </View>
 
-                        {/* BOTTOM NAVIGATION SETTINGS - DYNAMIC NAV SLOT */}
-                        <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Navigasi Utama</Typography>
+                        {isSuperAdmin && (
+                            <>
+                                {/* BOTTOM NAVIGATION SETTINGS - DYNAMIC NAV SLOT */}
+                                <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Navigasi Utama</Typography>
 
-                        <Pressable
-                            className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
-                            onPress={() => router.push('/settings/navigation')}
-                        >
-                            <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
-                                <Sliders size={24} color="#3B82F6" />
-                            </View>
-                            <View className="flex-1">
-                                <Typography variant="body1" weight="bold" className="text-text mb-0.5">Bottom Navigasi</Typography>
-                                <Typography variant="caption" className="text-text/40">Kustomisasi 5 slot menu utama aplikasi</Typography>
-                            </View>
-                            <ChevronRight size={20} color={themeColors.textGray} />
-                        </Pressable>
+                                <Pressable
+                                    className="bg-surface p-5 rounded-[40px] border border-gray-50 shadow-sm flex-row items-center mb-8"
+                                    onPress={() => router.push('/settings/navigation')}
+                                >
+                                    <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
+                                        <Sliders size={24} color="#3B82F6" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Typography variant="body1" weight="bold" className="text-text mb-0.5">Bottom Navigasi</Typography>
+                                        <Typography variant="caption" className="text-text/40">Kustomisasi 5 slot menu utama, FAB, dan ikon halaman</Typography>
+                                    </View>
+                                    <ChevronRight size={20} color={themeColors.textGray} />
+                                </Pressable>
+                            </>
+                        )}
 
                         {/* FEATURE PROTECTION SETTINGS - NEW SECTION */}
                         <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[4px] ml-4 mb-4">Pengaturan Keamanan</Typography>

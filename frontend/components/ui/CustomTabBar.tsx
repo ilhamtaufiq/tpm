@@ -8,11 +8,12 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
+import { getFabIconOption } from '../../constants/FabIconOptions';
 import { router, usePathname } from 'expo-router';
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
-    const { activeSlots: storeActiveSlots, fabSlots } = useNavigationStore();
+    const { activeSlots: storeActiveSlots, fabSlots, pageFabSettings } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
@@ -52,6 +53,23 @@ export const CustomTabBar = () => {
             setQuickActionsVisible(false);
         }, 200);
     };
+
+    const mergedPageFabSettings = {
+        mobil: {
+            fabIcon: pageFabSettings?.mobil?.fabIcon || 'plus',
+            tabIcon: pageFabSettings?.mobil?.tabIcon || 'car-front',
+        },
+        angkut: {
+            fabIcon: pageFabSettings?.angkut?.fabIcon || 'plus',
+            tabIcon: pageFabSettings?.angkut?.tabIcon || 'truck',
+        },
+    };
+    const currentPageSetting = pathname?.startsWith('/mobil')
+        ? mergedPageFabSettings.mobil
+        : pathname?.startsWith('/jasa-angkut')
+            ? mergedPageFabSettings.angkut
+            : undefined;
+    const MainFabIcon = getFabIconOption(currentPageSetting?.fabIcon).icon;
 
     // Helper to resolve route config by ID
     const getRouteInfo = (id: string) => {
@@ -103,6 +121,8 @@ export const CustomTabBar = () => {
             if (id === 'bengkel') label = 'Bengkel';
             if (id === 'mobil') label = 'Mobil';
             if (id === 'profile') label = 'Profile';
+            if (id === 'mobil') icon = getFabIconOption(mergedPageFabSettings.mobil.tabIcon).icon;
+            if (id === 'angkut') icon = getFabIconOption(mergedPageFabSettings.angkut.tabIcon).icon;
             
             return { ...route, label, icon };
         }
@@ -257,7 +277,7 @@ export const CustomTabBar = () => {
                                     elevation: 10,
                                 }}
                             >
-                                <Plus size={24} color="white" strokeWidth={2.5} />
+                                <MainFabIcon size={24} color="white" strokeWidth={2.5} />
                             </Pressable>
                         </View>
                     );
@@ -437,7 +457,7 @@ export const CustomTabBar = () => {
                                 }}
                             >
                                 <Animated.View style={{ transform: [{ rotate: mainFabRotation }] }}>
-                                    <Plus size={24} color="white" strokeWidth={2.5} />
+                                    <MainFabIcon size={24} color="white" strokeWidth={2.5} />
                                 </Animated.View>
                             </Pressable>
                         </View>

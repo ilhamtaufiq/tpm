@@ -51,10 +51,14 @@ import { Platform, Modal, TouchableOpacity } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
+import { getFabIconOption } from '../../constants/FabIconOptions';
+import { useNavigationStore } from '../../store/useNavigationStore';
 
 export default function MobilInventoryScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    const pageFabSettings = useNavigationStore(state => state.pageFabSettings);
+    const PageFabIcon = getFabIconOption(pageFabSettings?.mobil?.fabIcon).icon;
     // Filters
     const [dateRange, setDateRange] = useState({
         dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
@@ -1136,7 +1140,7 @@ export default function MobilInventoryScreen() {
                     style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
                     className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
                 >
-                    <Plus size={32} color="white" strokeWidth={2.5} />
+                    <PageFabIcon size={32} color="white" strokeWidth={2.5} />
                 </Pressable>
 
                 {/* Hybrid UI Logic modals (Web & Native) */}

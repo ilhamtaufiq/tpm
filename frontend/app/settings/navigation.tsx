@@ -5,8 +5,10 @@ import { ChevronLeft, RotateCcw, ChevronRight, Sliders, Check, Home, ShieldCheck
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
-import { useNavigationStore, defaultSlots } from '../../store/useNavigationStore';
+import { useNavigationStore, defaultPageFabSettings } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
+import { FAB_ICON_OPTIONS, getFabIconOption } from '../../constants/FabIconOptions';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
     Utama: { color: '#3B82F6', bgColor: '#E8F0FE' },
@@ -38,12 +40,23 @@ const NAV_OPTIONS = [
 
 export default function NavigationSettingsScreen() {
     const { themeColors } = useUIStore();
-    const { activeSlots, fabSlots, updateSlot, updateFabSlot, resetSlots } = useNavigationStore();
+    const user = useAuthStore(state => state.user);
+    const { activeSlots, fabSlots, pageFabSettings, updateSlot, updateFabSlot, updatePageFabIcon, updatePageTabIcon, resetSlots } = useNavigationStore();
     const [pickerVisible, setPickerVisible] = useState(false);
     const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
-    const [pickerMode, setPickerMode] = useState<'bar' | 'fab'>('bar');
+    const [pickerMode, setPickerMode] = useState<'bar' | 'fab' | 'pageFab' | 'pageTab'>('bar');
+    const [selectedPageId, setSelectedPageId] = useState<'mobil' | 'angkut' | null>(null);
 
     const currentFabSlots = fabSlots || ['bengkel', 'fin-mutasi', 'mobil'];
+    const isAdmin = user?.role === 'ADMIN';
+    const currentPageFabSettings = {
+        mobil: { ...defaultPageFabSettings.mobil, ...(pageFabSettings?.mobil || {}) },
+        angkut: { ...defaultPageFabSettings.angkut, ...(pageFabSettings?.angkut || {}) },
+    };
+    const pageTargets = [
+        { id: 'mobil' as const, label: 'Halaman Mobil', routeId: 'mobil' },
+        { id: 'angkut' as const, label: 'Halaman Jasa Angkut', routeId: 'angkut' },
+    ];
 
     // Resolves details for a slot option
     const getOptionDetails = (id: string) => {
@@ -52,11 +65,19 @@ export default function NavigationSettingsScreen() {
 
     const handleOpenPicker = (slotIndex: number) => {
         setSelectedSlotIndex(slotIndex);
+        setSelectedPageId(null);
         setPickerMode('bar');
         setPickerVisible(true);
     };
 
     const handleSelectOption = (optionId: string) => {
+        if ((pickerMode === 'pageFab' || pickerMode === 'pageTab') && selectedPageId) {
+            if (pickerMode === 'pageFab') updatePageFabIcon(selectedPageId, optionId);
+            else updatePageTabIcon(selectedPageId, optionId);
+            setPickerVisible(false);
+            return;
+        }
+
         if (selectedSlotIndex !== null) {
             if (pickerMode === 'bar') {
                 updateSlot(selectedSlotIndex, optionId);
@@ -66,6 +87,33 @@ export default function NavigationSettingsScreen() {
             setPickerVisible(false);
         }
     };
+
+    if (!isAdmin) {
+        return (
+            <SafeAreaView className="flex-1 bg-background">
+                <View className="flex-row items-center px-6 py-4">
+                    <Pressable
+                        onPress={() => router.back()}
+                        className="w-10 h-10 items-center justify-center rounded-2xl bg-surface border border-gray-100 shadow-sm"
+                    >
+                        <ChevronLeft size={24} color={themeColors.text} />
+                    </Pressable>
+                    <View className="flex-1 ml-4">
+                        <Typography variant="h3" weight="bold">Bottom Navigasi</Typography>
+                    </View>
+                </View>
+                <View className="flex-1 px-6 justify-center">
+                    <View className="bg-rose-50 border border-rose-100 rounded-[32px] p-6 items-center">
+                        <ShieldCheck size={32} color="#EF4444" />
+                        <Typography variant="h4" weight="bold" className="text-rose-600 mt-4 text-center">Khusus Admin</Typography>
+                        <Typography variant="caption" className="text-rose-500/70 text-center mt-2">
+                            Pengaturan ikon FAB dan bottom navigasi hanya dapat diubah oleh role ADMIN.
+                        </Typography>
+                    </View>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     const handleReset = () => {
         Alert.alert(
@@ -262,6 +310,77 @@ export default function NavigationSettingsScreen() {
                         })}
                     </View>
 
+                    {/* PAGE FAB + TAB ICON CUSTOMIZER */}
+                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Ikon Khusus Halaman Unit</Typography>
+
+                    <View className="gap-y-4">
+                        {pageTargets.map((page) => {
+                            const settings = currentPageFabSettings[page.id];
+                            const fabOption = getFabIconOption(settings.fabIcon);
+                            const tabOption = getFabIconOption(settings.tabIcon);
+                            const FabIcon = fabOption.icon;
+                            const TabIcon = tabOption.icon;
+
+                            return (
+                                <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm">
+                                    <View className="flex-row items-center mb-4">
+                                        <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
+                                            <TabIcon size={17} color={themeColors.primary} strokeWidth={2.5} />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Typography weight="bold" className="text-text text-[15px] font-outfit-bold leading-tight">
+                                                {page.label}
+                                            </Typography>
+                                            <Typography variant="caption" className="text-text/40 text-[10px]">
+                                                Atur ikon FAB halaman dan ikon tab bottom bar
+                                            </Typography>
+                                        </View>
+                                    </View>
+
+                                    <View className="flex-row gap-x-3">
+                                        <Pressable
+                                            onPress={() => {
+                                                setSelectedPageId(page.id);
+                                                setSelectedSlotIndex(null);
+                                                setPickerMode('pageFab');
+                                                setPickerVisible(true);
+                                            }}
+                                            className="flex-1 bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                                        >
+                                            <View style={{ backgroundColor: fabOption.bgColor }} className="w-9 h-9 rounded-xl items-center justify-center mr-3 border border-black/5">
+                                                <FabIcon size={18} color={fabOption.color} strokeWidth={2.5} />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">FAB</Typography>
+                                                <Typography weight="bold" className="text-text text-xs" numberOfLines={1}>{fabOption.label}</Typography>
+                                            </View>
+                                            <ChevronRight size={14} color="#9CA3AF" />
+                                        </Pressable>
+
+                                        <Pressable
+                                            onPress={() => {
+                                                setSelectedPageId(page.id);
+                                                setSelectedSlotIndex(null);
+                                                setPickerMode('pageTab');
+                                                setPickerVisible(true);
+                                            }}
+                                            className="flex-1 bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                                        >
+                                            <View style={{ backgroundColor: tabOption.bgColor }} className="w-9 h-9 rounded-xl items-center justify-center mr-3 border border-black/5">
+                                                <TabIcon size={18} color={tabOption.color} strokeWidth={2.5} />
+                                            </View>
+                                            <View className="flex-1">
+                                                <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">Tab</Typography>
+                                                <Typography weight="bold" className="text-text text-xs" numberOfLines={1}>{tabOption.label}</Typography>
+                                            </View>
+                                            <ChevronRight size={14} color="#9CA3AF" />
+                                        </Pressable>
+                                    </View>
+                                </View>
+                            );
+                        })}
+                    </View>
+
                     <View className="mt-8 p-5 bg-emerald-50/50 border border-emerald-100/50 rounded-[32px]">
                         <Typography variant="caption" className="text-emerald-700/80 text-center leading-relaxed font-outfit-medium">
                             Semua penyesuaian tersimpan otomatis dan langsung berlaku ke navigasi bawah aplikasi di layar beranda.
@@ -288,12 +407,22 @@ export default function NavigationSettingsScreen() {
                         <View className="px-8 pt-4 pb-4 flex-row justify-between items-center">
                             <View>
                                 <Typography variant="h3" weight="bold" className="text-text text-xl">
-                                    {pickerMode === 'bar' ? 'Pilih Menu Utama' : 'Pilih Aksi Cepat FAB+'}
+                                    {pickerMode === 'bar'
+                                        ? 'Pilih Menu Utama'
+                                        : pickerMode === 'fab'
+                                            ? 'Pilih Aksi Cepat FAB+'
+                                            : pickerMode === 'pageFab'
+                                                ? 'Pilih Ikon FAB Halaman'
+                                                : 'Pilih Ikon Tab Halaman'}
                                 </Typography>
                                 <Typography variant="caption" className="text-textGray">
                                     {pickerMode === 'bar'
                                         ? `Pilih fungsi untuk Slot ${selectedSlotIndex !== null ? selectedSlotIndex + 1 : ''}`
-                                        : `Pilih fungsi untuk Aksi ${selectedSlotIndex === 0 ? 'Kiri (←)' : selectedSlotIndex === 1 ? 'Tengah (↑)' : 'Kanan (→)'}`
+                                        : pickerMode === 'fab'
+                                            ? `Pilih fungsi untuk Aksi ${selectedSlotIndex === 0 ? 'Kiri (←)' : selectedSlotIndex === 1 ? 'Tengah (↑)' : 'Kanan (→)'}`
+                                            : selectedPageId === 'mobil'
+                                                ? 'Halaman Mobil'
+                                                : 'Halaman Jasa Angkut'
                                     }
                                 </Typography>
                             </View>
@@ -308,13 +437,21 @@ export default function NavigationSettingsScreen() {
                         {/* Options List */}
                         <ScrollView className="px-6 pb-8" showsVerticalScrollIndicator={false}>
                             <View className="gap-y-3 pb-8">
-                                {NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus').map((option) => {
+                                {(pickerMode === 'pageFab' || pickerMode === 'pageTab'
+                                    ? FAB_ICON_OPTIONS
+                                    : NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus')
+                                ).map((option) => {
                                     const OptionIcon = option.icon;
-                                    const isSelected = selectedSlotIndex !== null && 
-                                        (pickerMode === 'bar'
-                                            ? activeSlots[selectedSlotIndex] === option.id
-                                            : currentFabSlots[selectedSlotIndex] === option.id
-                                        );
+                                    const isPagePicker = pickerMode === 'pageFab' || pickerMode === 'pageTab';
+                                    const isSelected = isPagePicker && selectedPageId
+                                        ? (pickerMode === 'pageFab'
+                                            ? currentPageFabSettings[selectedPageId].fabIcon === option.id
+                                            : currentPageFabSettings[selectedPageId].tabIcon === option.id)
+                                        : selectedSlotIndex !== null &&
+                                            (pickerMode === 'bar'
+                                                ? activeSlots[selectedSlotIndex] === option.id
+                                                : currentFabSlots[selectedSlotIndex] === option.id
+                                            );
 
                                     return (
                                         <Pressable
@@ -341,7 +478,7 @@ export default function NavigationSettingsScreen() {
                                                         {option.label}
                                                     </Typography>
                                                     <Typography variant="caption" className="text-textGray text-xs mt-0.5">
-                                                        {option.description}
+                                                        {'description' in option ? option.description : 'Ikon visual untuk tombol halaman'}
                                                     </Typography>
                                                 </View>
                                             </View>
