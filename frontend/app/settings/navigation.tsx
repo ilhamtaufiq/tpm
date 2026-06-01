@@ -5,7 +5,7 @@ import { ChevronLeft, RotateCcw, ChevronRight, Sliders, Check, Home, ShieldCheck
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
-import { useNavigationStore, defaultPageFabSettings } from '../../store/useNavigationStore';
+import { PageFabSettingId, useNavigationStore, defaultPageFabSettings } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { FAB_ICON_OPTIONS, getFabIconOption } from '../../constants/FabIconOptions';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -45,17 +45,19 @@ export default function NavigationSettingsScreen() {
     const [pickerVisible, setPickerVisible] = useState(false);
     const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
     const [pickerMode, setPickerMode] = useState<'bar' | 'fab' | 'pageFab' | 'pageTab'>('bar');
-    const [selectedPageId, setSelectedPageId] = useState<'mobil' | 'angkut' | null>(null);
+    const [selectedPageId, setSelectedPageId] = useState<PageFabSettingId | null>(null);
 
     const currentFabSlots = fabSlots || ['bengkel', 'fin-mutasi', 'mobil'];
     const isAdmin = user?.role === 'ADMIN';
     const currentPageFabSettings = {
+        bengkel: { ...defaultPageFabSettings.bengkel, ...(pageFabSettings?.bengkel || {}) },
         mobil: { ...defaultPageFabSettings.mobil, ...(pageFabSettings?.mobil || {}) },
         angkut: { ...defaultPageFabSettings.angkut, ...(pageFabSettings?.angkut || {}) },
     };
     const pageTargets = [
-        { id: 'mobil' as const, label: 'Halaman Mobil', routeId: 'mobil' },
+        { id: 'bengkel' as const, label: 'Halaman Bengkel', routeId: 'bengkel' },
         { id: 'angkut' as const, label: 'Halaman Jasa Angkut', routeId: 'angkut' },
+        { id: 'mobil' as const, label: 'Halaman Jual Beli Mobil', routeId: 'mobil' },
     ];
 
     // Resolves details for a slot option
@@ -418,11 +420,13 @@ export default function NavigationSettingsScreen() {
                                 <Typography variant="caption" className="text-textGray">
                                     {pickerMode === 'bar'
                                         ? `Pilih fungsi untuk Slot ${selectedSlotIndex !== null ? selectedSlotIndex + 1 : ''}`
-                                        : pickerMode === 'fab'
-                                            ? `Pilih fungsi untuk Aksi ${selectedSlotIndex === 0 ? 'Kiri (←)' : selectedSlotIndex === 1 ? 'Tengah (↑)' : 'Kanan (→)'}`
-                                            : selectedPageId === 'mobil'
-                                                ? 'Halaman Mobil'
-                                                : 'Halaman Jasa Angkut'
+                                            : pickerMode === 'fab'
+                                                ? `Pilih fungsi untuk Aksi ${selectedSlotIndex === 0 ? 'Kiri (←)' : selectedSlotIndex === 1 ? 'Tengah (↑)' : 'Kanan (→)'}`
+                                            : selectedPageId === 'bengkel'
+                                                ? 'Halaman Bengkel'
+                                                : selectedPageId === 'mobil'
+                                                    ? 'Halaman Jual Beli Mobil'
+                                                    : 'Halaman Jasa Angkut'
                                     }
                                 </Typography>
                             </View>

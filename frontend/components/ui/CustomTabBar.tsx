@@ -55,6 +55,10 @@ export const CustomTabBar = () => {
     };
 
     const mergedPageFabSettings = {
+        bengkel: {
+            fabIcon: pageFabSettings?.bengkel?.fabIcon || 'plus',
+            tabIcon: pageFabSettings?.bengkel?.tabIcon || 'wrench',
+        },
         mobil: {
             fabIcon: pageFabSettings?.mobil?.fabIcon || 'plus',
             tabIcon: pageFabSettings?.mobil?.tabIcon || 'car-front',
@@ -64,11 +68,13 @@ export const CustomTabBar = () => {
             tabIcon: pageFabSettings?.angkut?.tabIcon || 'truck',
         },
     };
-    const currentPageSetting = pathname?.startsWith('/mobil')
-        ? mergedPageFabSettings.mobil
-        : pathname?.startsWith('/jasa-angkut')
-            ? mergedPageFabSettings.angkut
-            : undefined;
+    const currentPageSetting = pathname?.startsWith('/bengkel')
+        ? mergedPageFabSettings.bengkel
+        : pathname?.startsWith('/mobil')
+            ? mergedPageFabSettings.mobil
+            : pathname?.startsWith('/jasa-angkut')
+                ? mergedPageFabSettings.angkut
+                : undefined;
     const MainFabIcon = getFabIconOption(currentPageSetting?.fabIcon).icon;
 
     // Helper to resolve route config by ID
@@ -121,6 +127,7 @@ export const CustomTabBar = () => {
             if (id === 'bengkel') label = 'Bengkel';
             if (id === 'mobil') label = 'Mobil';
             if (id === 'profile') label = 'Profile';
+            if (id === 'bengkel') icon = getFabIconOption(mergedPageFabSettings.bengkel.tabIcon).icon;
             if (id === 'mobil') icon = getFabIconOption(mergedPageFabSettings.mobil.tabIcon).icon;
             if (id === 'angkut') icon = getFabIconOption(mergedPageFabSettings.angkut.tabIcon).icon;
             

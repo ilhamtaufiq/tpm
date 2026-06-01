@@ -63,12 +63,8 @@ import { FILE_URL } from '../../utils/api';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
-import { getFabIconOption } from '../../constants/FabIconOptions';
-import { useNavigationStore } from '../../store/useNavigationStore';
 
 export default function JasaAngkutScreen() {
-    const pageFabSettings = useNavigationStore(state => state.pageFabSettings);
-    const PageFabIcon = getFabIconOption(pageFabSettings?.angkut?.fabIcon).icon;
     // UI States (Moved up to prevent use-before-declaration)
     const [searchQuery, setSearchQuery] = useState('');
     const [groupBy, setGroupBy] = useState<'armada' | 'supir'>('armada');
@@ -1679,7 +1675,7 @@ export default function JasaAngkutScreen() {
                 style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
                 className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >
-                <PageFabIcon size={32} color="white" strokeWidth={2.5} />
+                <Plus size={32} color="white" strokeWidth={2.5} />
             </Pressable>
 
             {/* Bottom Sheet UI */}

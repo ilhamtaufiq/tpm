@@ -8,10 +8,12 @@ import {
     Receipt,
     Truck,
     Wallet,
+    Wrench,
 } from 'lucide-react-native';
 
 export const FAB_ICON_OPTIONS = [
     { id: 'plus', label: 'Tambah', icon: Plus, color: '#EE2737', bgColor: '#FEE2E2' },
+    { id: 'wrench', label: 'Bengkel', icon: Wrench, color: '#023C69', bgColor: '#E2EFFC' },
     { id: 'car-front', label: 'Mobil', icon: CarFront, color: '#F97316', bgColor: '#FFEDD5' },
     { id: 'car', label: 'Unit', icon: Car, color: '#F43F5E', bgColor: '#FFE4E6' },
     { id: 'truck', label: 'Angkut', icon: Truck, color: '#6366F1', bgColor: '#E0E7FF' },
