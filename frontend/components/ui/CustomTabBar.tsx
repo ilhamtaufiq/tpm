@@ -13,7 +13,7 @@ import { router, usePathname } from 'expo-router';
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
-    const { activeSlots: storeActiveSlots, fabSlots, pageFabSettings } = useNavigationStore();
+    const { activeSlots: storeActiveSlots, fabSlots, pageFabSlots, pageFabSettings } = useNavigationStore();
     const { themeColors } = useUIStore();
     const pathname = usePathname();
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
@@ -76,6 +76,13 @@ export const CustomTabBar = () => {
                 ? mergedPageFabSettings.angkut
                 : undefined;
     const MainFabIcon = getFabIconOption(currentPageSetting?.fabIcon).icon;
+    const currentPageId = pathname?.startsWith('/bengkel')
+        ? 'bengkel'
+        : pathname?.startsWith('/mobil')
+            ? 'mobil'
+            : pathname?.startsWith('/jasa-angkut')
+                ? 'angkut'
+                : undefined;
 
     // Helper to resolve route config by ID
     const getRouteInfo = (id: string) => {
@@ -177,7 +184,11 @@ export const CustomTabBar = () => {
         MOBIL: { kas: 'KAS_UNIT_MOBIL', history: 'mobil' },
     } as const;
     const unitConfig = roleUnitConfig[role as keyof typeof roleUnitConfig];
-    const currentFabSlots = isUnitRole ? ['fin-mutasi', 'fin-akun', 'history'] : (fabSlots || ['bengkel', 'fin-mutasi', 'mobil']);
+    const currentFabSlots = currentPageId && pageFabSlots?.[currentPageId]
+        ? pageFabSlots[currentPageId]
+        : isUnitRole
+            ? ['fin-mutasi', 'fin-akun', 'history']
+            : (fabSlots || ['bengkel', 'fin-mutasi', 'mobil']);
     const withUnitScope = (option: ReturnType<typeof getOptionDetails>, id: string) => {
         if (!unitConfig) return option;
         if (id === 'fin-mutasi') return { ...option, path: `/finance/mutasi?jenis=${unitConfig.kas}` };

@@ -5,9 +5,8 @@ import { ChevronLeft, RotateCcw, ChevronRight, Sliders, Check, Home, ShieldCheck
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
-import { PageFabSettingId, useNavigationStore, defaultPageFabSettings } from '../../store/useNavigationStore';
+import { PageFabSettingId, useNavigationStore, defaultPageFabSlots } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
-import { FAB_ICON_OPTIONS, getFabIconOption } from '../../constants/FabIconOptions';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
@@ -41,18 +40,17 @@ const NAV_OPTIONS = [
 export default function NavigationSettingsScreen() {
     const { themeColors } = useUIStore();
     const user = useAuthStore(state => state.user);
-    const { activeSlots, fabSlots, pageFabSettings, updateSlot, updateFabSlot, updatePageFabIcon, updatePageTabIcon, resetSlots } = useNavigationStore();
+    const { activeSlots, fabSlots, pageFabSlots, updateSlot, updateFabSlot, updatePageFabSlot, resetSlots } = useNavigationStore();
     const [pickerVisible, setPickerVisible] = useState(false);
     const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
-    const [pickerMode, setPickerMode] = useState<'bar' | 'fab' | 'pageFab' | 'pageTab'>('bar');
+    const [pickerMode, setPickerMode] = useState<'bar' | 'fab' | 'pageAction'>('bar');
     const [selectedPageId, setSelectedPageId] = useState<PageFabSettingId | null>(null);
 
-    const currentFabSlots = fabSlots || ['bengkel', 'fin-mutasi', 'mobil'];
     const isAdmin = user?.role === 'ADMIN';
-    const currentPageFabSettings = {
-        bengkel: { ...defaultPageFabSettings.bengkel, ...(pageFabSettings?.bengkel || {}) },
-        mobil: { ...defaultPageFabSettings.mobil, ...(pageFabSettings?.mobil || {}) },
-        angkut: { ...defaultPageFabSettings.angkut, ...(pageFabSettings?.angkut || {}) },
+    const currentPageFabSlots = {
+        bengkel: pageFabSlots?.bengkel || defaultPageFabSlots.bengkel,
+        angkut: pageFabSlots?.angkut || defaultPageFabSlots.angkut,
+        mobil: pageFabSlots?.mobil || defaultPageFabSlots.mobil,
     };
     const pageTargets = [
         { id: 'bengkel' as const, label: 'Halaman Bengkel', routeId: 'bengkel' },
@@ -73,9 +71,8 @@ export default function NavigationSettingsScreen() {
     };
 
     const handleSelectOption = (optionId: string) => {
-        if ((pickerMode === 'pageFab' || pickerMode === 'pageTab') && selectedPageId) {
-            if (pickerMode === 'pageFab') updatePageFabIcon(selectedPageId, optionId);
-            else updatePageTabIcon(selectedPageId, optionId);
+        if (pickerMode === 'pageAction' && selectedPageId && selectedSlotIndex !== null) {
+            updatePageFabSlot(selectedPageId, selectedSlotIndex, optionId);
             setPickerVisible(false);
             return;
         }
@@ -109,7 +106,7 @@ export default function NavigationSettingsScreen() {
                         <ShieldCheck size={32} color="#EF4444" />
                         <Typography variant="h4" weight="bold" className="text-rose-600 mt-4 text-center">Khusus Admin</Typography>
                         <Typography variant="caption" className="text-rose-500/70 text-center mt-2">
-                            Pengaturan ikon FAB dan bottom navigasi hanya dapat diubah oleh role ADMIN.
+                            Pengaturan aksi cepat FAB+ dan bottom navigasi hanya dapat diubah oleh role ADMIN.
                         </Typography>
                     </View>
                 </View>
@@ -262,121 +259,63 @@ export default function NavigationSettingsScreen() {
                     </View>
 
                     {/* FAB ACTIONS CUSTOMIZER */}
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Aksi Cepat FAB+ (Radial)</Typography>
-
-                    <View className="gap-y-4">
-                        {currentFabSlots.map((slotId, index) => {
-                            const details = getOptionDetails(slotId);
-                            if (!details) return null;
-                            const SlotIcon = details.icon;
-                            const positionLabels = ['Aksi Kiri (←)', 'Aksi Tengah (↑)', 'Aksi Kanan (→)'];
-
-                            return (
-                                <Pressable
-                                    key={index}
-                                    onPress={() => {
-                                        setSelectedSlotIndex(index);
-                                        setPickerMode('fab');
-                                        setPickerVisible(true);
-                                    }}
-                                    className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm flex-row items-center justify-between active:bg-gray-50/50"
-                                >
-                                    <View className="flex-row items-center flex-1">
-                                        {/* Position Indicator Badge */}
-                                        <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
-                                            <Typography weight="bold" className="text-primary text-sm font-outfit-bold">
-                                                {index === 0 ? '←' : index === 1 ? '↑' : '→'}
-                                            </Typography>
-                                        </View>
-
-                                        {/* Selected Option Meta */}
-                                        <View className="flex-1 mr-4">
-                                            <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[9px]">{positionLabels[index]}</Typography>
-                                            <View className="flex-row items-center mt-0.5">
-                                                <View style={{ backgroundColor: details.bgColor }} className="w-5 h-5 rounded-md items-center justify-center mr-2 border border-black/5">
-                                                    <SlotIcon size={11} color={details.color} strokeWidth={2.5} />
-                                                </View>
-                                                <Typography weight="bold" className="text-text text-[15px] font-outfit-bold leading-tight">
-                                                    {details.label}
-                                                </Typography>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {/* Action button */}
-                                    <View className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 justify-center items-center shadow-sm">
-                                        <ChevronRight size={14} color="#9CA3AF" />
-                                    </View>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-
-                    {/* PAGE FAB + TAB ICON CUSTOMIZER */}
-                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Ikon Khusus Halaman Unit</Typography>
+                    <Typography variant="caption" weight="bold" className="text-text/30 uppercase tracking-[2px] ml-4 mt-8 mb-3">Aksi Cepat FAB+ (Radial) Per Halaman</Typography>
 
                     <View className="gap-y-4">
                         {pageTargets.map((page) => {
-                            const settings = currentPageFabSettings[page.id];
-                            const fabOption = getFabIconOption(settings.fabIcon);
-                            const tabOption = getFabIconOption(settings.tabIcon);
-                            const FabIcon = fabOption.icon;
-                            const TabIcon = tabOption.icon;
+                            const slots = currentPageFabSlots[page.id];
+                            const PageIcon = getOptionDetails(page.routeId)?.icon || Plus;
+                            const positionLabels = ['Aksi Kiri', 'Aksi Tengah', 'Aksi Kanan'];
 
                             return (
                                 <View key={page.id} className="bg-surface p-5 rounded-[28px] border border-gray-100 shadow-sm">
                                     <View className="flex-row items-center mb-4">
                                         <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-4 border border-primary/10">
-                                            <TabIcon size={17} color={themeColors.primary} strokeWidth={2.5} />
+                                            <PageIcon size={17} color={themeColors.primary} strokeWidth={2.5} />
                                         </View>
                                         <View className="flex-1">
                                             <Typography weight="bold" className="text-text text-[15px] font-outfit-bold leading-tight">
                                                 {page.label}
                                             </Typography>
                                             <Typography variant="caption" className="text-text/40 text-[10px]">
-                                                Atur ikon FAB halaman dan ikon tab bottom bar
+                                                3 tombol radial saat FAB+ dibuka dari halaman ini
                                             </Typography>
                                         </View>
                                     </View>
 
-                                    <View className="flex-row gap-x-3">
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedPageId(page.id);
-                                                setSelectedSlotIndex(null);
-                                                setPickerMode('pageFab');
-                                                setPickerVisible(true);
-                                            }}
-                                            className="flex-1 bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
-                                        >
-                                            <View style={{ backgroundColor: fabOption.bgColor }} className="w-9 h-9 rounded-xl items-center justify-center mr-3 border border-black/5">
-                                                <FabIcon size={18} color={fabOption.color} strokeWidth={2.5} />
-                                            </View>
-                                            <View className="flex-1">
-                                                <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">FAB</Typography>
-                                                <Typography weight="bold" className="text-text text-xs" numberOfLines={1}>{fabOption.label}</Typography>
-                                            </View>
-                                            <ChevronRight size={14} color="#9CA3AF" />
-                                        </Pressable>
+                                    <View className="gap-y-3">
+                                        {slots.map((slotId, index) => {
+                                            const details = getOptionDetails(slotId);
+                                            if (!details) return null;
+                                            const SlotIcon = details.icon;
 
-                                        <Pressable
-                                            onPress={() => {
-                                                setSelectedPageId(page.id);
-                                                setSelectedSlotIndex(null);
-                                                setPickerMode('pageTab');
-                                                setPickerVisible(true);
-                                            }}
-                                            className="flex-1 bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
-                                        >
-                                            <View style={{ backgroundColor: tabOption.bgColor }} className="w-9 h-9 rounded-xl items-center justify-center mr-3 border border-black/5">
-                                                <TabIcon size={18} color={tabOption.color} strokeWidth={2.5} />
-                                            </View>
-                                            <View className="flex-1">
-                                                <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">Tab</Typography>
-                                                <Typography weight="bold" className="text-text text-xs" numberOfLines={1}>{tabOption.label}</Typography>
-                                            </View>
-                                            <ChevronRight size={14} color="#9CA3AF" />
-                                        </Pressable>
+                                            return (
+                                                <Pressable
+                                                    key={`${page.id}-${index}`}
+                                                    onPress={() => {
+                                                        setSelectedPageId(page.id);
+                                                        setSelectedSlotIndex(index);
+                                                        setPickerMode('pageAction');
+                                                        setPickerVisible(true);
+                                                    }}
+                                                    className="bg-gray-50/70 rounded-2xl border border-gray-100 p-4 flex-row items-center"
+                                                >
+                                                    <View className="w-9 h-9 bg-primary/5 rounded-xl justify-center items-center mr-3 border border-primary/10">
+                                                        <Typography weight="bold" className="text-primary text-sm font-outfit-bold">
+                                                            {index === 0 ? '←' : index === 1 ? '↑' : '→'}
+                                                        </Typography>
+                                                    </View>
+                                                    <View style={{ backgroundColor: details.bgColor }} className="w-9 h-9 rounded-xl items-center justify-center mr-3 border border-black/5">
+                                                        <SlotIcon size={17} color={details.color} strokeWidth={2.5} />
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <Typography variant="caption" className="text-text/30 uppercase font-bold tracking-widest text-[8px]">{positionLabels[index]}</Typography>
+                                                        <Typography weight="bold" className="text-text text-sm" numberOfLines={1}>{details.label}</Typography>
+                                                    </View>
+                                                    <ChevronRight size={14} color="#9CA3AF" />
+                                                </Pressable>
+                                            );
+                                        })}
                                     </View>
                                 </View>
                             );
@@ -413,9 +352,7 @@ export default function NavigationSettingsScreen() {
                                         ? 'Pilih Menu Utama'
                                         : pickerMode === 'fab'
                                             ? 'Pilih Aksi Cepat FAB+'
-                                            : pickerMode === 'pageFab'
-                                                ? 'Pilih Ikon FAB Halaman'
-                                                : 'Pilih Ikon Tab Halaman'}
+                                            : 'Pilih Aksi Radial Halaman'}
                                 </Typography>
                                 <Typography variant="caption" className="text-textGray">
                                     {pickerMode === 'bar'
@@ -441,21 +378,15 @@ export default function NavigationSettingsScreen() {
                         {/* Options List */}
                         <ScrollView className="px-6 pb-8" showsVerticalScrollIndicator={false}>
                             <View className="gap-y-3 pb-8">
-                                {(pickerMode === 'pageFab' || pickerMode === 'pageTab'
-                                    ? FAB_ICON_OPTIONS
-                                    : NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus')
-                                ).map((option) => {
+                                {NAV_OPTIONS.filter(opt => pickerMode === 'bar' || opt.id !== 'fab-plus').map((option) => {
                                     const OptionIcon = option.icon;
-                                    const isPagePicker = pickerMode === 'pageFab' || pickerMode === 'pageTab';
-                                    const isSelected = isPagePicker && selectedPageId
-                                        ? (pickerMode === 'pageFab'
-                                            ? currentPageFabSettings[selectedPageId].fabIcon === option.id
-                                            : currentPageFabSettings[selectedPageId].tabIcon === option.id)
-                                        : selectedSlotIndex !== null &&
-                                            (pickerMode === 'bar'
-                                                ? activeSlots[selectedSlotIndex] === option.id
-                                                : currentFabSlots[selectedSlotIndex] === option.id
-                                            );
+                                    const isSelected = selectedSlotIndex !== null &&
+                                        (pickerMode === 'bar'
+                                            ? activeSlots[selectedSlotIndex] === option.id
+                                            : pickerMode === 'pageAction' && selectedPageId
+                                                ? currentPageFabSlots[selectedPageId][selectedSlotIndex] === option.id
+                                                : (fabSlots || ['bengkel', 'fin-mutasi', 'mobil'])[selectedSlotIndex] === option.id
+                                        );
 
                                     return (
                                         <Pressable
