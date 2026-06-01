@@ -29,6 +29,8 @@ export const CustomTabBar = () => {
     const animationProgress = useRef(new Animated.Value(0)).current;
 
     const showQuickActions = () => {
+        animationProgress.stopAnimation();
+        animationProgress.setValue(0);
         setQuickActionsVisible(true);
         Animated.spring(animationProgress, {
             toValue: 1,
@@ -39,18 +41,9 @@ export const CustomTabBar = () => {
     };
 
     const hideQuickActions = () => {
-        Animated.timing(animationProgress, {
-            toValue: 0,
-            duration: 150,
-            useNativeDriver: true,
-        }).start(() => {
-            setQuickActionsVisible(false);
-        });
-        
-        // Failsafe untuk Android jika callback start() terinterupsi
-        setTimeout(() => {
-            setQuickActionsVisible(false);
-        }, 200);
+        animationProgress.stopAnimation();
+        animationProgress.setValue(0);
+        setQuickActionsVisible(false);
     };
 
     const currentPageId = pathname?.startsWith('/bengkel')
@@ -327,13 +320,15 @@ export const CustomTabBar = () => {
             })}
 
             {/* Radial FAB Modal Overlay */}
-            <Modal
-                transparent
-                visible={quickActionsVisible}
-                animationType="none"
-                statusBarTranslucent
-                onRequestClose={hideQuickActions}
-            >
+            {quickActionsVisible && (
+                <Modal
+                    transparent
+                    visible={quickActionsVisible}
+                    animationType="none"
+                    statusBarTranslucent
+                    onDismiss={() => animationProgress.setValue(0)}
+                    onRequestClose={hideQuickActions}
+                >
                 <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                     {/* Backdrop */}
                     <Animated.View
@@ -380,8 +375,7 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        setQuickActionsVisible(false);
-                                        animationProgress.setValue(0);
+                                        hideQuickActions();
                                         router.navigate(subFab1.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -402,8 +396,7 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        setQuickActionsVisible(false);
-                                        animationProgress.setValue(0);
+                                        hideQuickActions();
                                         router.navigate(subFab2.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -425,8 +418,7 @@ export const CustomTabBar = () => {
                             >
                                 <Pressable
                                     onPress={() => {
-                                        setQuickActionsVisible(false);
-                                        animationProgress.setValue(0);
+                                        hideQuickActions();
                                         router.navigate(subFab3.path as any);
                                     }}
                                     className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
@@ -455,7 +447,8 @@ export const CustomTabBar = () => {
                         </View>
                     </View>
                 </View>
-            </Modal>
+                </Modal>
+            )}
         </View>
     );
 };
