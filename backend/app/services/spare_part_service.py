@@ -11,6 +11,7 @@ from sqlalchemy import func, or_, case, text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, UploadFile
 from app.config import settings
+from app.realtime import publish_realtime_event
 
 from app.models.bengkel import SparePart
 from app.schemas.bengkel import SparePartCreate, SparePartUpdate
@@ -21,6 +22,20 @@ class SparePartService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, action: str, spare_part: Optional[SparePart] = None, spare_part_id: Optional[int] = None) -> None:
+        entity_id = spare_part.id if spare_part else spare_part_id
+        publish_realtime_event(
+            event=f"master.spare_parts.{action}",
+            scope="master",
+            entity="spare_parts",
+            action=action,
+            entity_id=entity_id,
+            data={
+                "kode": getattr(spare_part, "kode_part", None) if spare_part else None,
+                "nama": getattr(spare_part, "nama", None) if spare_part else None,
+            },
+        )
 
     def generate_next_kode(self, offset: int = 0) -> str:
         """Generate unique spare part code.
@@ -105,6 +120,7 @@ class SparePartService:
         self.db.add(spare_part)
         self.db.commit()
         self.db.refresh(spare_part)
+        self._emit_change("created", spare_part)
 
         return spare_part
 
@@ -164,6 +180,7 @@ class SparePartService:
 
         self.db.commit()
         self.db.refresh(spare_part)
+        self._emit_change("updated", spare_part)
 
         return spare_part
 
@@ -204,6 +221,7 @@ class SparePartService:
         spare_part.gambar = file_path
         self.db.commit()
         self.db.refresh(spare_part)
+        self._emit_change("image_uploaded", spare_part)
         
         return spare_part
 
@@ -297,6 +315,7 @@ class SparePartService:
 
         spare_part.deleted_at = datetime.now()
         self.db.commit()
+        self._emit_change("deleted", spare_part)
 
         return True
 
@@ -334,6 +353,7 @@ class SparePartService:
 
         self.db.commit()
         self.db.refresh(spare_part)
+        self._emit_change("stock_updated", spare_part)
 
         return spare_part
 
@@ -353,6 +373,7 @@ class SparePartService:
 
         self.db.commit()
         self.db.refresh(spare_part)
+        self._emit_change("price_updated", spare_part)
 
         return spare_part
 
@@ -858,6 +879,7 @@ class SparePartService:
             .update({SparePart.deleted_at: now}, synchronize_session=False)
         )
         self.db.commit()
+        self._emit_change("bulk_deleted")
         return updated
 
     def export_to_excel(self, ids: Optional[List[int]] = None) -> io.BytesIO:

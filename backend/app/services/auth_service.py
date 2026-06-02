@@ -305,6 +305,36 @@ class AuthService:
 
         return user
 
+    def set_push_token(self, user_id: int, expo_push_token: str) -> User:
+        """Store or update a user's Expo push token."""
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        user.expo_push_token = expo_push_token.strip()
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
+    def clear_push_token(self, user_id: int) -> User:
+        """Clear a user's Expo push token."""
+        user = self.get_user_by_id(user_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        user.expo_push_token = None
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+
     def delete_user(self, user_id: int) -> bool:
         """Delete a user (soft delete by deactivating)."""
         user = self.get_user_by_id(user_id)

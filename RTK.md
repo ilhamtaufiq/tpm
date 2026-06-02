@@ -28,6 +28,19 @@ rtk npm run build
 rtk gain
 ```
 
+## Finance / Laporan Guardrail
+
+- Flow keuangan dan laporan keuangan dianggap sudah stabil sebagai baseline operasional.
+- Setiap perubahan yang menyentuh `finance`, `laporan`, `kas_bank`, `piutang`, `hutang`, `neraca`, `laba_rugi`, atau `perubahan_modal` harus diverifikasi end-to-end.
+- Verifikasi minimum:
+  - cek dampak UI;
+  - cek source data / service;
+  - cek konsistensi laporan;
+  - jalankan typecheck atau test yang relevan.
+- Setiap perubahan finance/laporan wajib dicatat di dokumentasi alur keuangan/laporan keuangan sebelum dianggap selesai.
+- Jika ada perubahan perilaku, update dokumen alur keuangan/laporan agar tetap jadi single source of truth.
+- Dokumen acuan ada di `.agent/FINANCE_REPORTING_GUARDRAIL.md`.
+
 ## Windows Notes
 
 Use forward slashes in paths when possible:

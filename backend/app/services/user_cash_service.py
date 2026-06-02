@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from app.models.user import User
 from app.models.keuangan import UserCashAdjustment
 from app.schemas.user import UserCashAdjustmentCreate
+from app.realtime import publish_realtime_event
 
 
 class UserCashService:
@@ -52,6 +53,14 @@ class UserCashService:
         self.db.add(adjustment)
         self.db.commit()
         self.db.refresh(user)
+        publish_realtime_event(
+            event="users.cash.updated",
+            scope="users",
+            entity="user_cash",
+            action="adjusted",
+            entity_id=user_id,
+            data={"nominal": float(data.nominal)},
+        )
 
         return user
 
@@ -85,6 +94,14 @@ class UserCashService:
         self.db.add(adjustment)
         self.db.commit()
         self.db.refresh(user)
+        publish_realtime_event(
+            event="users.cash.updated",
+            scope="users",
+            entity="user_cash",
+            action="set",
+            entity_id=user_id,
+            data={"nominal": float(nominal)},
+        )
 
         return user
 
@@ -100,4 +117,3 @@ class UserCashService:
             stmt = stmt.where(UserCashAdjustment.user_id == user_id)
         
         return self.db.execute(stmt).scalars().all()
-

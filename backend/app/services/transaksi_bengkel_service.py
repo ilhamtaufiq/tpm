@@ -17,6 +17,7 @@ from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPi
 from app.models.mobil import MobilPartService, Mobil
 from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import TransaksiBengkelCreate
+from app.realtime import publish_realtime_event
 from app.utils.constants import (
     PaymentStatus,
     PaymentMethod,
@@ -39,6 +40,26 @@ class TransaksiBengkelService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, transaksi: TransaksiPenjualanBengkel, action: str) -> None:
+        scopes = {"bengkel"}
+        if transaksi.kategori == "jasa_angkut":
+            scopes.add("jasa_angkut")
+        elif transaksi.kategori == "jual_beli_mobil":
+            scopes.add("mobil")
+
+        for scope in scopes:
+            publish_realtime_event(
+                event=f"{scope}.transaction.{action}",
+                scope=scope,
+                entity="transaksi_bengkel",
+                action=action,
+                entity_id=transaksi.id,
+                data={
+                    "nomor_transaksi": transaksi.nomor_transaksi,
+                    "kategori": transaksi.kategori,
+                },
+            )
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
@@ -544,7 +565,7 @@ class TransaksiBengkelService:
                     )
 
         self.db.commit()
-
+        self._emit_change(transaksi, "created")
         return transaksi
 
     def update(
@@ -854,8 +875,8 @@ class TransaksiBengkelService:
                     )
 
         self.db.commit()
-
         self.db.refresh(transaksi)
+        self._emit_change(transaksi, "updated")
         return transaksi
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanBengkel:
@@ -1297,6 +1318,7 @@ class TransaksiBengkelService:
                 user_id=user_id,
             )
 
+        self._emit_change(transaksi, "payment_updated")
         return transaksi
 
     def update_status(
@@ -1310,7 +1332,7 @@ class TransaksiBengkelService:
         
         self.db.commit()
         self.db.refresh(transaksi)
-        
+        self._emit_change(transaksi, "status_updated")
         return transaksi
 
     def void_transaction(self, transaksi_id: int) -> bool:
@@ -1393,6 +1415,7 @@ class TransaksiBengkelService:
         transaksi.status_bayar = PaymentStatus.BATAL
         
         self.db.commit()
+        self._emit_change(transaksi, "voided")
 
         return True
 

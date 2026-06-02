@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -23,6 +23,7 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Hutang, HutangSummary, HutangStatus, PembayaranHutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useHutangList, useHutangSummary, useProcessHutangPaymentSplit, useCreateHutang } from '../../hooks/useKeuangan';
 import { useMobilList } from '../../hooks/useMobil';
 import { useTransaksiBengkelList } from '../../hooks/useBengkel';
@@ -76,6 +77,7 @@ const getUnitKasJenis = (unit?: string) => {
 };
 
 export default function HutangUsahaScreen() {
+    const insets = useSafeAreaInsets();
     const { user } = useAuthStore();
     const params = useLocalSearchParams<{ unit?: string }>();
     const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
@@ -844,7 +846,7 @@ export default function HutangUsahaScreen() {
                         backgroundStyle={{ borderRadius: 40 }}
                         onClose={() => setIsSheetOpen(false)}
                     >
-                        <BottomSheetScrollView>{renderDetailContent()}</BottomSheetScrollView>
+                        <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>{renderDetailContent()}</BottomSheetScrollView>
                     </BottomSheet>
                     <BottomSheet
                         ref={createSheetRef}
@@ -854,7 +856,7 @@ export default function HutangUsahaScreen() {
                         backgroundStyle={{ borderRadius: 40 }}
                         onClose={() => setIsSheetOpen(false)}
                     >
-                        <BottomSheetScrollView>{renderCreateContent()}</BottomSheetScrollView>
+                        <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>{renderCreateContent()}</BottomSheetScrollView>
                     </BottomSheet>
                 </>
             )}

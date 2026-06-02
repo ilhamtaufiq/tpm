@@ -25,7 +25,9 @@ import {
 import { useRouter, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { 
     usePendingInvestorDisbursements, 
     useInvestorDisbursementSummary, 
@@ -38,6 +40,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { printReportHTML } from '../../utils/printReport';
 
 export default function PencairanInvestorScreen() {
+    const insets = useSafeAreaInsets();
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -641,7 +644,7 @@ export default function PencairanInvestorScreen() {
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
                         {renderProcessDisbursementContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

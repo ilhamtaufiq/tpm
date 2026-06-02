@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from app.models.customer import Customer, CustomerVehicle
 from app.models.keuangan import PiutangUsaha
 from app.schemas.master import CustomerCreate, CustomerUpdate
+from app.realtime import publish_realtime_event
 from app.utils.constants import PiutangStatus
 
 
@@ -17,6 +18,17 @@ class CustomerService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, action: str, customer: Optional[Customer] = None, customer_id: Optional[int] = None) -> None:
+        entity_id = customer.id if customer else customer_id
+        publish_realtime_event(
+            event=f"master.customers.{action}",
+            scope="master",
+            entity="customers",
+            action=action,
+            entity_id=entity_id,
+            data={"kode": getattr(customer, "kode", None), "nama": getattr(customer, "nama", None)},
+        )
 
     def _generate_kode(self) -> str:
         """Generate unique customer code."""
@@ -85,6 +97,7 @@ class CustomerService:
 
         self.db.commit()
         self.db.refresh(customer)
+        self._emit_change("created", customer)
 
         return customer
 
@@ -202,6 +215,7 @@ class CustomerService:
 
         self.db.commit()
         self.db.refresh(customer)
+        self._emit_change("updated", customer)
 
         return customer
 
@@ -234,6 +248,7 @@ class CustomerService:
 
         customer.deleted_at = datetime.now()
         self.db.commit()
+        self._emit_change("deleted", customer)
 
         return True
 

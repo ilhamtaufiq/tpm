@@ -16,6 +16,7 @@ from app.schemas.mobil import MobilCreate, MobilUpdate
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory, PiutangSource
 from app.models.keuangan import HutangUsaha, HutangStatus, PiutangUsaha
 from app.services.kas_bank_integration import create_kas_entry
+from app.realtime import publish_realtime_event
 
 
 class MobilService:
@@ -23,6 +24,20 @@ class MobilService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, mobil: Mobil, action: str) -> None:
+        publish_realtime_event(
+            event=f"mobil.vehicle.{action}",
+            scope="mobil",
+            entity="mobil",
+            action=action,
+            entity_id=mobil.id,
+            data={
+                "kode": mobil.kode,
+                "nomor_plat": mobil.nomor_plat,
+                "status": mobil.status.value if hasattr(mobil.status, "value") else str(mobil.status),
+            },
+        )
 
     def _generate_kode(self) -> str:
         """Generate unique car code."""
@@ -268,7 +283,7 @@ class MobilService:
 
         self.db.commit()
         self.db.refresh(mobil)
-
+        self._emit_change(mobil, "created")
         return mobil
 
     def get_by_id(self, mobil_id: int) -> Mobil:
@@ -498,7 +513,7 @@ class MobilService:
 
         self.db.commit()
         self.db.refresh(mobil)
-
+        self._emit_change(mobil, "updated")
         return mobil
 
     def update_status(self, mobil_id: int, status: CarStatus) -> Mobil:
@@ -507,6 +522,7 @@ class MobilService:
         mobil.status = status
         self.db.commit()
         self.db.refresh(mobil)
+        self._emit_change(mobil, "status_updated")
         return mobil
 
     def delete(self, mobil_id: int) -> bool:
@@ -522,7 +538,7 @@ class MobilService:
 
         mobil.deleted_at = datetime.now()
         self.db.commit()
-
+        self._emit_change(mobil, "deleted")
         return True
 
     # Additional cost management
@@ -625,7 +641,7 @@ class MobilService:
 
         self.db.commit()
         self.db.refresh(biaya)
-
+        self._emit_change(mobil, "biaya_added")
         return biaya
 
     def delete_biaya(self, biaya_id: int) -> bool:
@@ -643,7 +659,8 @@ class MobilService:
 
         self.db.delete(biaya)
         self.db.commit()
-
+        mobil = self.get_by_id(biaya.mobil_id)
+        self._emit_change(mobil, "biaya_deleted")
         return True
 
     # Part/Service management
@@ -682,7 +699,7 @@ class MobilService:
         self.db.add(part_service)
         self.db.commit()
         self.db.refresh(part_service)
-
+        self._emit_change(mobil, "part_service_added")
         return part_service
 
 
@@ -700,9 +717,10 @@ class MobilService:
                 detail="Part/Service tidak ditemukan",
             )
 
+        mobil = self.get_by_id(ps.mobil_id)
         self.db.delete(ps)
         self.db.commit()
-
+        self._emit_change(mobil, "part_service_deleted")
         return True
 
     # Statistics
@@ -864,7 +882,7 @@ class MobilService:
         self.db.commit()
         for r in results:
             self.db.refresh(r)
-            
+        self._emit_change(mobil, "media_uploaded")
         return results
 
     def delete_media(self, media_id: int) -> bool:
@@ -890,8 +908,9 @@ class MobilService:
                 # Log error but continue with DB deletion if file is gone or inaccessible
                 print(f"Error deleting file {full_path}: {e}")
             
+        mobil = self.get_by_id(media.mobil_id)
         # Delete DB record
         self.db.delete(media)
         self.db.commit()
-        
+        self._emit_change(mobil, "media_deleted")
         return True

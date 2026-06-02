@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
+import { authService } from '../../services/auth';
+import { useNotificationStore } from '../../store/useNotificationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
 
@@ -44,6 +46,8 @@ export const Header = ({
 }: HeaderProps) => {
     const insets = useSafeAreaInsets();
     const { user, logout, isImpersonating, impersonatorUser, stopImpersonation } = useAuthStore();
+    const unreadCount = useNotificationStore(state => state.unreadCount);
+    const clearNotifications = useNotificationStore(state => state.clear);
     const { themeColors } = useUIStore();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -81,6 +85,29 @@ export const Header = ({
         setIsSearchOpen(false);
         setLocalSearchQuery('');
         router.push(path as any);
+    };
+
+    const handleLogout = () => {
+        setUserMenuVisible(false);
+        Alert.alert(
+            'Keluar Sesi',
+            'Apakah Anda yakin ingin keluar dari aplikasi?',
+            [
+                { text: 'Batal', style: 'cancel' },
+                    {
+                        text: 'Keluar',
+                        style: 'destructive',
+                        onPress: async () => {
+                            await authService.clearPushToken().catch((error) => {
+                                console.warn('[Header] Failed to clear push token before logout', error);
+                            });
+                            clearNotifications();
+                            logout();
+                            router.replace('/(auth)/login');
+                        },
+                    },
+            ]
+        );
     };
 
     const handleBack = () => {
@@ -147,6 +174,20 @@ export const Header = ({
                     </View>
 
                     <View className="flex-row items-center gap-2">
+                        <Pressable
+                            onPress={() => router.push('/settings/notifications')}
+                            className="w-11 h-11 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 active:opacity-75 relative"
+                        >
+                            <Bell size={20} color={themeColors.primary} strokeWidth={2.2} />
+                            {unreadCount > 0 && (
+                                <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
+                                    <Typography className="text-white text-[9px] font-black">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </Typography>
+                                </View>
+                            )}
+                        </Pressable>
+
                         {isImpersonating && (
                             <Pressable
                                 onPress={() => {
@@ -174,7 +215,9 @@ export const Header = ({
                         {rightElement}
                         {variant === 'home' && (
                             <Pressable
-                                onPress={() => setUserMenuVisible(true)}
+                                onPress={() => {
+                                    setUserMenuVisible(true);
+                                }}
                                 className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative active:opacity-75"
                             >
                                 <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
@@ -184,12 +227,21 @@ export const Header = ({
                                         <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                                     )}
                                 </View>
+                                {unreadCount > 0 && (
+                                    <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
+                                        <Typography className="text-white text-[9px] font-black">
+                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        </Typography>
+                                    </View>
+                                )}
                             </Pressable>
                         )}
                         {showProfile && variant !== 'home' && (
                             <View className="flex-row items-center">
                                 <Pressable
-                                    onPress={() => setUserMenuVisible(true)}
+                                    onPress={() => {
+                                        setUserMenuVisible(true);
+                                    }}
                                     className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden ml-2 active:opacity-75"
                                 >
                                     <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
@@ -199,6 +251,13 @@ export const Header = ({
                                             <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                                         )}
                                     </View>
+                                    {unreadCount > 0 && (
+                                        <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
+                                            <Typography className="text-white text-[9px] font-black">
+                                                {unreadCount > 9 ? '9+' : unreadCount}
+                                            </Typography>
+                                        </View>
+                                    )}
                                 </Pressable>
                             </View>
                         )}
@@ -327,7 +386,7 @@ export const Header = ({
                     {/* Transparent Backdrop to close the menu */}
                     <Pressable 
                         className="absolute inset-0 bg-black/5" 
-                        onPress={() => setUserMenuVisible(false)} 
+                        onPress={() => setUserMenuVisible(false)}
                     />
 
                     {/* Floating Dropdown Menu Card */}
@@ -339,21 +398,7 @@ export const Header = ({
                             elevation: 10,
                         }}
                     >
-                        {/* Option: Profile */}
-                        <Pressable
-                            onPress={() => {
-                                setUserMenuVisible(false);
-                                router.push('/(tabs)/profile');
-                            }}
-                            className="flex-row items-center p-3 rounded-2xl active:bg-gray-50"
-                        >
-                            <User size={16} color="#374151" strokeWidth={2.5} />
-                            <Typography className="text-gray-700 text-xs font-bold ml-2">
-                                Profil Saya
-                            </Typography>
-                        </Pressable>
-
-                        {/* Option: Settings */}
+                        {/* Option: Profile Settings */}
                         <Pressable
                             onPress={() => {
                                 setUserMenuVisible(false);
@@ -363,40 +408,18 @@ export const Header = ({
                         >
                             <User size={16} color="#6B7280" strokeWidth={2.2} />
                             <Typography className="text-gray-500 text-xs font-medium ml-2">
-                                Ubah Profil
+                                Ubah Profile
                             </Typography>
                         </Pressable>
 
-                        {/* Divider */}
-                        <View className="h-[1px] bg-gray-100 my-1 mx-2" />
-
                         {/* Option: Logout */}
                         <Pressable
-                            onPress={() => {
-                                setUserMenuVisible(false);
-                                setTimeout(() => {
-                                    Alert.alert(
-                                        'Keluar Sesi',
-                                        'Apakah Anda yakin ingin keluar dari aplikasi?',
-                                        [
-                                            { text: 'Batal', style: 'cancel' },
-                                            { 
-                                                text: 'Keluar', 
-                                                style: 'destructive', 
-                                                onPress: () => {
-                                                    logout();
-                                                    router.replace('/(auth)/login' as any);
-                                                } 
-                                            }
-                                        ]
-                                    );
-                                }, 100);
-                            }}
+                            onPress={handleLogout}
                             className="flex-row items-center p-3 rounded-2xl active:bg-red-50"
                         >
                             <LogOut size={16} color="#EF4444" strokeWidth={2.5} />
                             <Typography className="text-red-500 text-xs font-bold ml-2">
-                                Keluar Sesi
+                                Keluar
                             </Typography>
                         </Pressable>
                     </View>

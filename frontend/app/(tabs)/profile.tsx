@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders, UserPlus } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders, UserPlus, Bell } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -18,10 +19,15 @@ import { Switch } from 'react-native';
 import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 
 import { useAuthStore } from '../../store/useAuthStore';
+import { authService } from '../../services/auth';
 import { getFileUrl } from '../../utils/image';
+import { useNotificationStore } from '../../store/useNotificationStore';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function ProfileScreen() {
+    const insets = useSafeAreaInsets();
     const { user, logout } = useAuthStore();
+    const unreadCount = useNotificationStore(state => state.unreadCount);
     const { themeColors } = useUIStore();
     const { isPinEnabled, useBiometrics, protectedFeatures, syncWithBackend } = useSecurityStore();
     const updateSettingsMutation = useUpdateSecuritySettings();
@@ -135,8 +141,13 @@ export default function ProfileScreen() {
             message: "Anda yakin ingin mengakhiri sesi dan keluar dari aplikasi?",
             variant: 'warning',
             type: 'confirm',
-            onConfirm: () => {
+            onConfirm: async () => {
+                await authService.clearPushToken().catch((error) => {
+                    console.warn('[Profile] Failed to clear push token before logout', error);
+                });
+                setDialogConfig(prev => ({ ...prev, visible: false }));
                 logout();
+                router.replace('/(auth)/login');
             }
         });
     };
@@ -185,7 +196,7 @@ export default function ProfileScreen() {
 
             <ScrollView
                 className="flex-1 mt-4"
-                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+                contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 88) }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* ACCOUNT & SECURITY - BENTO GRID ROW */}
@@ -495,7 +506,7 @@ export default function ProfileScreen() {
                     <ChevronRight size={18} color="#9CA3AF" />
                 </Pressable>
 
-                <View className="items-center pb-10">
+                <View className="items-center pb-24">
                     <Typography variant="caption" className="text-text/20">Versi Aplikasi {Constants.expoConfig?.version || '1.0.0'} • TPM Super App Mobile</Typography>
                 </View>
             </ScrollView>
@@ -562,6 +573,26 @@ export default function ProfileScreen() {
                         </View>
                         <View className="w-8 h-8 bg-white rounded-full items-center justify-center shadow-sm">
                             <ChevronRight size={16} color="#EF4444" />
+                        </View>
+                    </Pressable>
+
+                    <Pressable
+                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
+                        onPress={() => router.push('/settings/notifications')}
+                    >
+                        <View className="w-10 h-10 bg-amber-50 rounded-[14px] items-center justify-center mb-3 relative">
+                            <Bell size={20} color="#F59E0B" />
+                            {unreadCount > 0 && (
+                                <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
+                                    <Typography className="text-white text-[9px] font-black">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </Typography>
+                                </View>
+                            )}
+                        </View>
+                        <View>
+                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Notifikasi</Typography>
+                            <Typography variant="caption" className="text-text/40 text-[10px]">Riwayat transaksi terbaru</Typography>
                         </View>
                     </Pressable>
                 </View>

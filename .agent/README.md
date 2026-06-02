@@ -23,6 +23,8 @@ Gunakan file ini untuk:
 3. `SYNC_LOGIC.md`
 4. `FILE_MAP_FINANCE.md`
 5. `INTERNAL_TRANSACTIONS.md`
+6. `FINANCE_REPORTING_GUARDRAIL.md`
+7. `REALTIME_COVERAGE.md`
 
 ### Jika akan mengerjakan frontend
 1. `CONTEXT.md`
@@ -42,6 +44,8 @@ Gunakan file ini untuk:
 | `SYNC_LOGIC.md` | Hubungan Laba Rugi, Perubahan Modal, dan Neraca. |
 | `FILE_MAP_FINANCE.md` | Peta file finance/reporting dan urutan debugging berbasis kode. |
 | `INTERNAL_TRANSACTIONS.md` | Detail transaksi antar-unit, khususnya repair internal mobil. |
+| `FINANCE_REPORTING_GUARDRAIL.md` | Aturan verifikasi dan dokumentasi wajib untuk perubahan finance/laporan. |
+| `REALTIME_COVERAGE.md` | Matrix coverage WS, emitter backend, invalidation scope, dan gap realtime. |
 | `FRONTEND_GUIDE.md` | Struktur route, state, security, data fetching, dan praktik frontend. |
 | `GUIDELINES.md` | Aturan kerja lintas backend/frontend/reporting saat membuat perubahan. |
 
@@ -59,6 +63,8 @@ Gunakan file ini untuk:
 | Mau tahu file backend mana yang harus diedit | `FILE_MAP_FINANCE.md` |
 | Perubahan UI/front-end | `FRONTEND_GUIDE.md` |
 | Takut patch melanggar aturan sistem | `GUIDELINES.md` |
+| Perubahan finance/laporan wajib audit ulang | `FINANCE_REPORTING_GUARDRAIL.md` |
+| Mau cek cakupan realtime / websocket | `REALTIME_COVERAGE.md` |
 
 ## 4. Peta Hubungan Dokumen
 

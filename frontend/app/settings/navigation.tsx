@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, Platform, Modal, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, RotateCcw, ChevronRight, Sliders, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
@@ -8,6 +8,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { PageFabSettingId, useNavigationStore, defaultPageFabSlots } from '../../store/useNavigationStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
     Utama: { color: '#3B82F6', bgColor: '#E8F0FE' },
@@ -38,6 +39,7 @@ const NAV_OPTIONS = [
 ];
 
 export default function NavigationSettingsScreen() {
+    const insets = useSafeAreaInsets();
     const { themeColors } = useUIStore();
     const user = useAuthStore(state => state.user);
     const { activeSlots, fabSlots, pageFabSlots, updateSlot, updateFabSlot, updatePageFabSlot, resetSlots } = useNavigationStore();
@@ -154,7 +156,7 @@ export default function NavigationSettingsScreen() {
                     </Pressable>
                 </View>
 
-                <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+                <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }} showsVerticalScrollIndicator={false}>
                     {/* Bento Info banner */}
                     <View className="bg-primary/5 p-6 rounded-[32px] mb-6 items-center border border-primary/10">
                         <View className="w-14 h-14 bg-primary rounded-full items-center justify-center mb-4 shadow-lg">

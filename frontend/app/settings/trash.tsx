@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Trash2, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
@@ -11,6 +11,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { useTrashList, useRestoreItem, usePermanentDelete, useEmptyTrash } from '../../hooks/useTrash';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const CATEGORIES = [
     { id: 'sparepart', label: 'Sparepart', icon: 'wrench' },
@@ -24,6 +25,7 @@ const CATEGORIES = [
 ];
 
 export default function TrashScreen() {
+    const insets = useSafeAreaInsets();
     const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id);
     const { data: items, isLoading, refetch } = useTrashList(activeCategory);
     const restoreMutation = useRestoreItem();
@@ -231,7 +233,7 @@ export default function TrashScreen() {
                 )}
             </View>
 
-            <View className="px-6 py-4">
+            <View className="px-6 py-4" style={{ marginBottom: getCustomTabBarBottomPadding(insets.bottom, 16) }}>
                <View className="p-4 bg-amber-50 rounded-2xl flex-row items-center border border-amber-100">
                     <AlertTriangle size={20} color="#D97706" className="mr-3" />
                     <Typography className="text-amber-800 text-[10px] flex-1 leading-4">

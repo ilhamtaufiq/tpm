@@ -21,6 +21,7 @@ import { mobilService } from '../../services/mobil';
 import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -391,7 +392,7 @@ export default function PenjualanMobilReportScreen() {
                 )
                 }
 
-                <View className="h-24" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
             {/* Detail Modal */}

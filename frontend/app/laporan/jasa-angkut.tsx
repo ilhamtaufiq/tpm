@@ -26,6 +26,7 @@ import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorho
 import { useActiveArmada } from '../../hooks/useJasaAngkut';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -555,7 +556,7 @@ export default function JasaAngkutReportScreen() {
                 )
                 }
 
-                <View className="h-24" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
             {/* Detail Modal */}

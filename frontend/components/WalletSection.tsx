@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { useUIStore } from '../store/useUIStore';
 
 export const WalletSection = () => {
-    const { data: balances, isLoading, isRefetching } = useKasBankBalances();
+    const { data: balances, isLoading } = useKasBankBalances();
     const { themeColors } = useUIStore();
     const [hideBalance, setHideBalance] = useState(true);
 
@@ -39,7 +39,7 @@ export const WalletSection = () => {
                                 )}
                             </Pressable>
                         </View>
-                        {isLoading || isRefetching ? (
+                        {isLoading && !balances ? (
                             <ActivityIndicator size="small" color="white" className="mt-1 self-start" />
                         ) : (
                             <Typography 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Alert, TextInput, Platform, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
@@ -23,6 +23,7 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { usePiutangList, usePiutangSummary, useProcessPayment, useProcessPaymentSplit, useCreatePiutang } from '../../hooks/useKeuangan';
 import { useMobilList } from '../../hooks/useMobil';
 import { useTransaksiBengkelList } from '../../hooks/useBengkel';
@@ -79,6 +80,7 @@ const getUnitKasJenis = (unit?: string) => {
 };
 
 export default function PiutangUsahaScreen() {
+    const insets = useSafeAreaInsets();
     const { user } = useAuthStore();
     const params = useLocalSearchParams<{ unit?: string }>();
     const roleUnitMap: Record<string, typeof FINANCE_UNITS[number]> = {
@@ -942,7 +944,7 @@ export default function PiutangUsahaScreen() {
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
+                    <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
                         {renderCreateContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -978,7 +980,7 @@ export default function PiutangUsahaScreen() {
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
-                    <BottomSheetScrollView>
+                    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
                         {renderDetailContent()}
                     </BottomSheetScrollView>
                 </BottomSheet>

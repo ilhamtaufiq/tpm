@@ -21,6 +21,8 @@ interface MasterDataSelectorProps {
     allowGuest?: boolean;
     onGuestNameChange?: (name: string) => void;
     onAddNew?: (item: any) => void;
+    inlineMode?: boolean;
+    inlineLimit?: number;
 }
 
 export const MasterDataSelector = ({
@@ -31,7 +33,9 @@ export const MasterDataSelector = ({
     placeholder,
     allowGuest = false,
     onGuestNameChange,
-    onAddNew
+    onAddNew,
+    inlineMode = false,
+    inlineLimit = 5
 }: MasterDataSelectorProps) => {
     const insets = useSafeAreaInsets();
 
@@ -41,18 +45,19 @@ export const MasterDataSelector = ({
 
     // Dynamic Query based on type
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search', type, searchQuery],
+        queryKey: ['search', type, searchQuery, inlineMode, inlineLimit],
         queryFn: async () => {
             if (type === 'customer') {
-                return masterDataService.searchCustomers(searchQuery);
+                return masterDataService.searchCustomers(searchQuery, inlineMode ? inlineLimit : 10);
             } else {
                 return masterDataService.searchSuppliers(searchQuery);
             }
         },
-        enabled: isOpen, // Only search when modal is open
+        enabled: inlineMode ? true : isOpen, // Always load inline preview when requested
     });
 
     const handleOpen = () => {
+        if (inlineMode) return;
         setIsOpen(true);
     };
 
@@ -84,7 +89,7 @@ export const MasterDataSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <Pressable onPress={handleOpen}>
+            <Pressable onPress={handleOpen} disabled={inlineMode}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     {type === 'customer' ? (
                         <User size={20} color={value ? '#2563EB' : '#9CA3AF'} />
@@ -109,7 +114,7 @@ export const MasterDataSelector = ({
                         )}
                     </View>
 
-                    {value && (
+                    {value && !inlineMode && (
                         <Pressable onPress={(e) => { e.stopPropagation(); onSelect(null); }}>
                             <X size={18} color="#9CA3AF" />
                         </Pressable>
@@ -117,8 +122,90 @@ export const MasterDataSelector = ({
                 </View>
             </Pressable>
 
+            {inlineMode && (
+                <View className="mt-3">
+                    <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-3">
+                        <Search size={20} color="#9CA3AF" />
+                        <TextInput
+                            className="flex-1 ml-3 text-base text-text font-outfit"
+                            placeholder={`Cari nama atau nopol ${type === 'customer' ? 'customer' : 'supplier'}...`}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="#9CA3AF"
+                        />
+                        {searchQuery.length > 0 && (
+                            <Pressable onPress={() => setSearchQuery('')}>
+                                <X size={18} color="#9CA3AF" />
+                            </Pressable>
+                        )}
+                    </View>
+
+                    {allowGuest && onGuestNameChange && searchQuery.length > 0 && (
+                        <Pressable onPress={() => {
+                            onGuestNameChange(searchQuery);
+                            onSelect(null);
+                        }} className="mb-3">
+                            <Card className="p-3 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
+                                <User size={18} color="#4B5563" />
+                                <View className="ml-2">
+                                    <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
+                                </View>
+                            </Card>
+                        </Pressable>
+                    )}
+
+                    {type === 'customer' && onAddNew && (
+                        <Pressable onPress={() => setIsAddModalOpen(true)} className="mb-3">
+                            <Card className="p-3 bg-blue-50 border border-dashed border-blue-300 flex-row items-center">
+                                <UserPlus size={18} color="#2563EB" />
+                                <View className="ml-2">
+                                    <Typography weight="semibold" className="text-xs text-primary">Daftarkan Baru</Typography>
+                                </View>
+                            </Card>
+                        </Pressable>
+                    )}
+
+                    {isLoading ? (
+                        <ActivityIndicator className="mt-4" color="#023C69" />
+                    ) : (
+                        <View>
+                            {(searchResults || []).map((item: any) => (
+                                <Pressable key={item.id} onPress={() => handleSelect(item)}>
+                                    <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                        <View className="flex-1 mr-2">
+                                            <Typography weight="semibold">{item.nama}</Typography>
+                                            <Typography variant="caption" className="text-gray-500">
+                                                {item.kota ? `${item.kota} â€¢ ` : ''}{item.telepon || '-'}
+                                            </Typography>
+                                            {type === 'customer' && item.vehicles && item.vehicles.length > 0 && (
+                                                <View className="flex-row flex-wrap mt-1">
+                                                    {item.vehicles.map((v: any, idx: number) => (
+                                                        <View key={v.id || idx} className="bg-blue-50 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100">
+                                                            <Typography className="text-blue-700 text-[10px] font-bold">
+                                                                {v.plat_nomor}
+                                                            </Typography>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            )}
+                                        </View>
+                                        <Badge
+                                            label={type === 'customer' ? item.tipe : 'Vendor'}
+                                            variant="neutral"
+                                        />
+                                    </Card>
+                                </Pressable>
+                            ))}
+                            {(!searchResults || searchResults.length === 0) && searchQuery.length > 0 && (
+                                <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
+                            )}
+                        </View>
+                    )}
+                </View>
+            )}
 
             {/* Search Overlay using Modal (Fixes clipping in ScrollViews on Android) */}
+            {!inlineMode && (
             <Modal
                 visible={isOpen}
                 animationType="slide"
@@ -218,6 +305,7 @@ export const MasterDataSelector = ({
                     </View>
                 </View>
             </Modal>
+            )}
 
             {/* Quick Add Customer Modal */}
             {type === 'customer' && (

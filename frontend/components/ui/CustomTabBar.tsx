@@ -1,14 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { View, Pressable, Platform, Modal, Animated } from 'react-native';
+import { View, Pressable, Modal, Animated } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
-import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home, Database } from 'lucide-react-native';
+import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home, Database, ArrowRightLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router, usePathname } from 'expo-router';
+
+export const CUSTOM_TAB_BAR_BASE_HEIGHT = 80;
+
+export const getCustomTabBarHeight = (bottomInset: number) => {
+    return CUSTOM_TAB_BAR_BASE_HEIGHT + bottomInset;
+};
+
+export const getCustomTabBarBottomPadding = (bottomInset: number, extraSpacing = 24) => {
+    return getCustomTabBarHeight(bottomInset) + extraSpacing;
+};
 
 export const CustomTabBar = () => {
     const insets = useSafeAreaInsets();
@@ -128,7 +138,7 @@ export const CustomTabBar = () => {
             case 'labarugi':
                 return { path: '/laporan/laba-rugi', icon: BarChart3, color: '#EC4899' };
             case 'fin-mutasi':
-                return { path: '/finance/mutasi', icon: Receipt, color: '#10B981' };
+                return { path: '/finance/mutasi', icon: ArrowRightLeft, color: '#10B981' };
             case 'fin-akun':
                 return { path: '/finance/akun', icon: Wallet, color: '#2563EB' };
             case 'history':
@@ -206,8 +216,8 @@ export const CustomTabBar = () => {
             className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-gray-200 bg-white"
             style={{
                 bottom: 0,
-                height: 80 + (Platform.OS === 'ios' ? insets.bottom : 0),
-                paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
+                height: getCustomTabBarHeight(insets.bottom),
+                paddingBottom: insets.bottom,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: -4 },
                 shadowOpacity: 0.05,
@@ -345,7 +355,7 @@ export const CustomTabBar = () => {
 
                     {/* Centered Radial FABs overlay at Bottom Navigation bar */}
                     <View
-                        style={{
+                    style={{
                             position: 'absolute',
                             left: 0, right: 0,
                             flexDirection: 'row',
@@ -353,8 +363,8 @@ export const CustomTabBar = () => {
                             justifyContent: 'center',
                             paddingHorizontal: 8,
                             bottom: 0,
-                            height: 80 + (Platform.OS === 'ios' ? insets.bottom : 0),
-                            paddingBottom: Platform.OS === 'ios' ? insets.bottom : 0,
+                            height: getCustomTabBarHeight(insets.bottom),
+                            paddingBottom: insets.bottom,
                             pointerEvents: 'box-none',
                         }}
                     >

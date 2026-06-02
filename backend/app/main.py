@@ -1,4 +1,5 @@
 import os
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,12 +11,14 @@ from app.api.router import api_router
 from app.middleware.error_handler import setup_exception_handlers
 from app.middleware.cors import setup_cors
 from app.middleware.logging import setup_logging
+from app.realtime import realtime_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
+    realtime_manager.set_loop(asyncio.get_running_loop())
     print(f"Starting {settings.app_name} v{settings.app_version}")
     print(f"Environment: {settings.environment}")
     print(f"Debug mode: {settings.debug}")
@@ -23,6 +26,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
+    realtime_manager.set_loop(None)  # type: ignore[arg-type]
     print("Shutting down application...")
 
 

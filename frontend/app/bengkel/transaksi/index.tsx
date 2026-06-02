@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { AlertCircle, Barcode as BarcodeIcon, Car, Check, CheckCircle2, ChevronLeft, Info, Package, Search, User, Wallet, Wrench, X } from 'lucide-react-native';
 
 import { Typography } from '../../../components/ui/Typography';
@@ -14,6 +14,7 @@ import { useCreateTransaksiBengkel, useSparePartsList } from '../../../hooks/use
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useMobilList } from '../../../hooks/useMobil';
 import { formatCurrency } from '../../../utils/format';
+import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG';
@@ -21,6 +22,7 @@ type NoticeType = 'error' | 'success' | 'info';
 
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
+    const { action, mode } = useLocalSearchParams<{ action?: string; mode?: string }>();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [partSearch, setPartSearch] = useState('');
     const [serviceSearch, setServiceSearch] = useState('');
@@ -41,7 +43,15 @@ export default function BengkelTransaksiScreen() {
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
     const createMutation = useCreateTransaksiBengkel();
-    const tabBarHeight = 80 + (Platform.OS === 'ios' ? insets.bottom : 0);
+    const tabBarHeight = getCustomTabBarHeight(insets.bottom);
+    const transaksiMode = mode === 'sparepart' ? 'sparepart' : mode === 'servis' ? 'servis' : 'all';
+    const showParts = transaksiMode !== 'servis';
+    const showServices = transaksiMode !== 'sparepart';
+    const itemModeLabel = transaksiMode === 'sparepart'
+        ? 'Sparepart'
+        : transaksiMode === 'servis'
+            ? 'Servis'
+            : 'Sparepart & Servis';
 
     const parts = useMemo(() => partsData?.pages.flatMap((page: any) => page.data || []) || [], [partsData]);
     const services = jasaData?.data || [];
@@ -49,7 +59,7 @@ export default function BengkelTransaksiScreen() {
 
     const selectedPartList = useMemo(() => Object.values(selectedParts), [selectedParts]);
     const selectedServiceList = useMemo(() => Object.values(selectedServices), [selectedServices]);
-    const hasItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
+    const hasItems = (showParts ? selectedPartList.length : 0) > 0 || (showServices ? selectedServiceList.length : 0) > 0;
     const subtotal = useMemo(() => {
         const partTotal = selectedPartList.reduce((sum, row) => sum + (Number(row.item.harga_jual || 0) * row.qty), 0);
         const serviceTotal = selectedServiceList.reduce((sum, row) => sum + (Number(row.item.harga || 0) * row.qty), 0);
@@ -232,7 +242,7 @@ export default function BengkelTransaksiScreen() {
                     </Pressable>
                     <View>
                         <Typography variant="h3" weight="bold">Transaksi Bengkel</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Step {step} dari 3</Typography>
+                        <Typography className="text-gray-400 text-xs mt-0.5">{itemModeLabel} • Step {step} dari 3</Typography>
                     </View>
                 </View>
             </View>
@@ -252,10 +262,15 @@ export default function BengkelTransaksiScreen() {
 
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}>
                 {step === 1 && (
-                    <View className="flex-row space-x-4">
-                        <View className="flex-1">
+                    <View className={showParts && showServices ? "flex-row space-x-4" : "space-y-6"}>
+                        {showParts && (
+                        <View className={showParts && showServices ? "flex-1" : "w-full"}>
                             <Typography variant="body1" weight="bold" className="text-textMain mb-1">Sparepart</Typography>
-                            <Typography className="text-gray-400 text-xs mb-3">Always Ready tampil dulu. Stok kosong tidak bisa dipilih.</Typography>
+                            <Typography className="text-gray-400 text-xs mb-3">
+                                {transaksiMode === 'servis'
+                                    ? 'Mode servis tidak menampilkan sparepart.'
+                                    : 'Always Ready tampil dulu. Stok kosong tidak bisa dipilih.'}
+                            </Typography>
                             <SearchBox value={partSearch} onChange={setPartSearch} placeholder="Cari sparepart..." />
                             <Pressable onPress={() => { setScanLog([]); setScannerOpen(true); }} className="mb-3 bg-blue-50 border border-blue-100 rounded-2xl p-3 flex-row items-center justify-center">
                                 <BarcodeIcon size={18} color="#2563EB" />
@@ -286,10 +301,16 @@ export default function BengkelTransaksiScreen() {
                                 );
                             })}
                         </View>
+                        )}
 
-                        <View className="flex-1">
+                        {showServices && (
+                        <View className={showParts && showServices ? "flex-1" : "w-full"}>
                             <Typography variant="body1" weight="bold" className="text-textMain mb-1">Service</Typography>
-                            <Typography className="text-gray-400 text-xs mb-3">Data dari Master Data Jasa Servis.</Typography>
+                            <Typography className="text-gray-400 text-xs mb-3">
+                                {transaksiMode === 'sparepart'
+                                    ? 'Mode sparepart tidak menampilkan servis.'
+                                    : 'Data dari Master Data Jasa Servis.'}
+                            </Typography>
                             <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[service.id];
@@ -313,6 +334,7 @@ export default function BengkelTransaksiScreen() {
                                 );
                             })}
                         </View>
+                        )}
                     </View>
                 )}
 
@@ -350,6 +372,8 @@ export default function BengkelTransaksiScreen() {
                                 allowGuest
                                 placeholder="Pilih Customer atau Ketik Nama"
                                 onGuestNameChange={(name) => { setGuestName(name); setSelectedCustomer(null); }}
+                                inlineMode
+                                inlineLimit={5}
                             />
                         )}
                         {kategori === 'jasa_angkut' && <ArmadaSelector value={selectedArmada} onSelect={setSelectedArmada} placeholder="Pilih armada jasa angkut" />}

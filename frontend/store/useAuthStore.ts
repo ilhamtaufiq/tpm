@@ -6,10 +6,12 @@ interface AuthState {
     user: any | null;
     token: string | null;
     isAuthenticated: boolean;
+    hasHydrated: boolean;
     isImpersonating: boolean;
     impersonatorUser: any | null;
     originalUser: any | null;
     originalToken: string | null;
+    setHasHydrated: (hasHydrated: boolean) => void;
     setAuth: (user: any, token: string) => void;
     updateUser: (user: any) => void;
     startImpersonation: (user: any, token: string, impersonatorUser?: any | null) => void;
@@ -23,10 +25,12 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             token: null,
             isAuthenticated: false,
+            hasHydrated: false,
             isImpersonating: false,
             impersonatorUser: null,
             originalUser: null,
             originalToken: null,
+            setHasHydrated: (hasHydrated) => set({ hasHydrated }),
             setAuth: (user, token) => set({
                 user,
                 token,
@@ -96,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
                 if (error) {
                     console.error('[Auth Store] Hydration error:', error);
                 } else {
+                    state?.setHasHydrated(true);
                     console.log('[Auth Store] Hydration complete:', state?.isAuthenticated ? 'Authenticated' : 'Not authenticated');
                 }
             },

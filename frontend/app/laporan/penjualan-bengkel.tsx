@@ -22,6 +22,7 @@ import { bengkelService } from '../../services/bengkel';
 import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -377,7 +378,7 @@ export default function PenjualanBengkelReportScreen() {
                 )
                 }
 
-                <View className="h-24" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
             {/* Detail Modal */}

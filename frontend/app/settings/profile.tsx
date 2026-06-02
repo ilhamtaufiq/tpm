@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, Pressable, TextInput, StatusBar, Platform, KeyboardAvoidingView, Image, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Camera, User, Mail, Phone, Briefcase, Save, CheckCircle2 } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { useRouter } from 'expo-router';
@@ -11,9 +12,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { authService } from '../../services/auth';
 import { getErrorMessage } from '../../utils/error';
 import { getFileUrl } from '../../utils/image';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function ProfileSettingsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { user, setAuth, token } = useAuthStore();
     const { themeColors } = useUIStore();
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
@@ -198,7 +201,7 @@ export default function ProfileSettingsScreen() {
             >
                 <ScrollView
                     className="flex-1 -mt-8"
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 112) }}
                     showsVerticalScrollIndicator={false}
                 >
                     <Animated.View entering={FadeInDown.delay(400)} className="space-y-6">
@@ -285,7 +288,7 @@ export default function ProfileSettingsScreen() {
             </KeyboardAvoidingView>
 
             {/* Bottom Floating Action Button */}
-            <View className="absolute bottom-10 left-6 right-6">
+            <View className="absolute left-6 right-6" style={{ bottom: getCustomTabBarBottomPadding(insets.bottom, 16) }}>
                 <Pressable
                     onPress={handleSave}
                     disabled={isSaving}

@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 
 from app.models.jasa_angkut import Supir, MuatanJasaAngkut
 from app.schemas.jasa_angkut import SupirCreate, SupirUpdate
+from app.realtime import publish_realtime_event
 from app.utils.constants import PaymentStatus, MuatanStatus
 
 
@@ -16,6 +17,17 @@ class SupirService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, action: str, supir: Optional[Supir] = None, supir_id: Optional[int] = None) -> None:
+        entity_id = supir.id if supir else supir_id
+        publish_realtime_event(
+            event=f"master.supir.{action}",
+            scope="master",
+            entity="supir",
+            action=action,
+            entity_id=entity_id,
+            data={"kode": getattr(supir, "kode", None), "nama": getattr(supir, "nama", None)},
+        )
 
     def _generate_kode(self) -> str:
         """Generate unique driver code."""
@@ -82,6 +94,7 @@ class SupirService:
         self.db.add(supir)
         self.db.commit()
         self.db.refresh(supir)
+        self._emit_change("created", supir)
 
         return supir
 
@@ -192,6 +205,7 @@ class SupirService:
 
         self.db.commit()
         self.db.refresh(supir)
+        self._emit_change("updated", supir)
 
         return supir
 
@@ -201,6 +215,7 @@ class SupirService:
         supir.is_active = is_active
         self.db.commit()
         self.db.refresh(supir)
+        self._emit_change("status_updated", supir)
         return supir
 
     def delete(self, supir_id: int) -> bool:
@@ -221,6 +236,7 @@ class SupirService:
 
         supir.deleted_at = datetime.now()
         self.db.commit()
+        self._emit_change("deleted", supir)
 
         return True
 

@@ -14,6 +14,7 @@ from app.schemas.user import (
     ResetPasswordRequest,
     LoginResponse,
     OTPVerifyRequest,
+    PushTokenRegisterRequest,
 )
 import os
 import uuid
@@ -257,6 +258,29 @@ def change_password(
     service = AuthService(db)
     service.change_password(current_user.id, old_password, new_password)
     return {"message": "Password changed successfully"}
+
+
+@router.post("/me/push-token", response_model=UserResponse)
+def register_push_token(
+    data: PushTokenRegisterRequest,
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Register Expo push token for the current user."""
+    service = AuthService(db)
+    service.set_push_token(current_user.id, data.expo_push_token)
+    return {"message": "Push token registered successfully"}
+
+
+@router.delete("/me/push-token", response_model=UserResponse)
+def clear_push_token(
+    db: DBSession,
+    current_user: CurrentUser,
+):
+    """Clear Expo push token for the current user."""
+    service = AuthService(db)
+    service.clear_push_token(current_user.id)
+    return {"message": "Push token cleared successfully"}
 
 
 # Admin endpoints for user management

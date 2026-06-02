@@ -65,3 +65,4 @@ Dokumen ini berisi aturan kerja agar perubahan tetap konsisten dengan desain sis
 ## 8. Dokumentasi
 - Jika mengubah alur inti, perbarui `.agent` pada turn yang sama.
 - Dokumentasi harus menjelaskan implementasi aktual, bukan desain lama yang sudah tidak dipakai.
+- Untuk perubahan finance/laporan, jadikan `FINANCE_REPORTING_GUARDRAIL.md` sebagai acuan utama dan update dokumen itu di turn yang sama.

@@ -20,6 +20,7 @@ import { useLabaRugiReport } from '../../hooks/useKeuangan';
 import { buildLabaRugiExportHtml } from '../../utils/reportTemplates';
 import { FinancialRow } from '../../components/ui/FinancialRow';
 import { LabaRugiReport } from '../../types/reports';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
@@ -448,7 +449,7 @@ export default function LabaRugiScreen() {
 
             <ScrollView
                 className="flex-1 px-4 pt-5"
-                contentContainerStyle={{ paddingBottom: 40 }}
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={fetchData} />}
                 showsVerticalScrollIndicator={false}
             >

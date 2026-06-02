@@ -15,6 +15,7 @@ from app.utils.constants import (
     KasBankJenis,
     TRANSACTION_PREFIXES,
 )
+from app.realtime import publish_realtime_event
 
 
 class KasBankService:
@@ -497,6 +498,17 @@ class KasBankService:
             ),
             user_id,
         )
+        publish_realtime_event(
+            event="finance.kas.updated",
+            scope="finance",
+            entity="kas_bank",
+            action="transfer",
+            data={
+                "from": dari.value if hasattr(dari, "value") else str(dari),
+                "to": ke.value if hasattr(ke, "value") else str(ke),
+                "nominal": float(nominal),
+            },
+        )
         return {"status": "success"}
     def adjust_balance(
         self,
@@ -538,5 +550,16 @@ class KasBankService:
         self.db.add(kas_bank)
         self.db.commit()
         self.db.refresh(kas_bank)
+        publish_realtime_event(
+            event="finance.kas.updated",
+            scope="finance",
+            entity="kas_bank",
+            action="adjusted",
+            entity_id=kas_bank.id,
+            data={
+                "jenis": jenis.value if hasattr(jenis, "value") else str(jenis),
+                "nominal": float(nominal),
+            },
+        )
         
         return kas_bank

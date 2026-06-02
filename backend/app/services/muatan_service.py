@@ -20,6 +20,7 @@ from app.utils.constants import (
     PiutangStatus,
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
+from app.realtime import publish_realtime_event
 
 
 class MuatanService:
@@ -27,6 +28,20 @@ class MuatanService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, muatan: MuatanJasaAngkut, action: str) -> None:
+        publish_realtime_event(
+            event=f"jasa_angkut.muatan.{action}",
+            scope="jasa_angkut",
+            entity="muatan",
+            action=action,
+            entity_id=muatan.id,
+            data={
+                "nomor_transaksi": muatan.nomor_transaksi,
+                "status": muatan.status.value if hasattr(muatan.status, "value") else str(muatan.status),
+                "status_bayar": muatan.status_bayar.value if hasattr(muatan.status_bayar, "value") else str(muatan.status_bayar),
+            },
+        )
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique transaction number."""
@@ -408,7 +423,7 @@ class MuatanService:
  
         self.db.commit()
         self.db.refresh(muatan)
- 
+        self._emit_change(muatan, "created")
         return muatan
 
 
@@ -820,6 +835,7 @@ class MuatanService:
                     
                 self.db.commit()
 
+        self._emit_change(muatan, "updated")
         return muatan
 
     def mark_paid(
@@ -900,7 +916,7 @@ class MuatanService:
 
         self.db.commit()
         self.db.refresh(muatan)
-
+        self._emit_change(muatan, "paid")
         return muatan
 
     def mark_paid_split(
@@ -968,7 +984,7 @@ class MuatanService:
 
         self.db.commit()
         self.db.refresh(muatan)
-
+        self._emit_change(muatan, "paid_split")
         return muatan
 
     def delete(self, muatan_id: int) -> bool:
@@ -984,7 +1000,7 @@ class MuatanService:
 
         self.db.delete(muatan)
         self.db.commit()
-
+        self._emit_change(muatan, "deleted")
         return True
 
     def void_muatan(self, muatan_id: int) -> bool:
@@ -1035,6 +1051,7 @@ class MuatanService:
         muatan.catatan = (muatan.catatan or "") + " | DIBATALKAN"
 
         self.db.commit()
+        self._emit_change(muatan, "voided")
         return True
 
     def _reverse_kas_entry(self, entry: KasBank, reason: str):
@@ -1091,7 +1108,7 @@ class MuatanService:
 
         self.db.commit()
         self.db.refresh(biaya)
-
+        self._emit_change(muatan, "biaya_added")
         return biaya
 
     def delete_biaya(self, biaya_id: int) -> bool:
@@ -1126,7 +1143,7 @@ class MuatanService:
         muatan.calculate_profit()
 
         self.db.commit()
-
+        self._emit_change(muatan, "biaya_deleted")
         return True
 
     def get_summary(

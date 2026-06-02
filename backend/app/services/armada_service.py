@@ -15,6 +15,7 @@ from app.schemas.jasa_angkut import (
 from decimal import Decimal
 from app.models.jasa_angkut import JasaAngkutBiayaLainnya
 from app.services.kas_bank_integration import create_kas_entry
+from app.realtime import publish_realtime_event
 from app.utils.constants import KasBankType, KasBankSource, PaymentMethod, TRANSACTION_PREFIXES, ExpenseCategory, MuatanStatus
 from datetime import date, datetime
 
@@ -23,6 +24,17 @@ class ArmadaService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, action: str, armada: Optional[ArmadaJasaAngkut] = None, armada_id: Optional[int] = None) -> None:
+        entity_id = armada.id if armada else armada_id
+        publish_realtime_event(
+            event=f"master.armada.{action}",
+            scope="master",
+            entity="armada",
+            action=action,
+            entity_id=entity_id,
+            data={"nama": getattr(armada, "nama", None), "nopol": getattr(armada, "nopol", None)},
+        )
 
     def _generate_pengeluaran_nomor(self) -> str:
         """Generate unique expense transaction number."""
@@ -62,6 +74,7 @@ class ArmadaService:
         self.db.add(armada)
         self.db.commit()
         self.db.refresh(armada)
+        self._emit_change("created", armada)
         return armada
 
     def get_by_id(self, armada_id: int) -> ArmadaJasaAngkut:
@@ -133,6 +146,7 @@ class ArmadaService:
 
         self.db.commit()
         self.db.refresh(armada)
+        self._emit_change("updated", armada)
         return armada
 
     def delete(self, armada_id: int) -> bool:
@@ -152,6 +166,7 @@ class ArmadaService:
         from datetime import datetime
         armada.deleted_at = datetime.now()
         self.db.commit()
+        self._emit_change("deleted", armada)
         return True
 
     def get_active_armada(self, on_date: Optional[date] = None) -> List[ArmadaJasaAngkut]:
@@ -318,8 +333,9 @@ class ArmadaService:
                 keterangan=f"Biaya Ops Jasa Angkut - {armada.nopol}: {data.deskripsi}",
                 user_id=user_id,
                 kas_jenis=data.kas_jenis,
-            )
+        )
         
         self.db.commit()
         self.db.refresh(expense)
+        self._emit_change("expense_added", armada)
         return expense

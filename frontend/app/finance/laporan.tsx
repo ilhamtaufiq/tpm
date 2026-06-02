@@ -29,10 +29,13 @@ import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ReportType = 'LABA_RUGI' | 'MODAL' | 'NERACA';
 
 export default function LaporanKeuanganScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const [reportType, setReportType] = useState<ReportType>('LABA_RUGI');
     const [isLoading, setIsLoading] = useState(true);
@@ -691,7 +694,7 @@ export default function LaporanKeuanganScreen() {
                         {reportType === 'LABA_RUGI' && renderProfitLoss()}
                         {reportType === 'MODAL' && renderCapitalReport()}
                         {reportType === 'NERACA' && renderNeraca()}
-                        <View className="h-20" />
+                        <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
                     </>
                 )}
             </ScrollView>

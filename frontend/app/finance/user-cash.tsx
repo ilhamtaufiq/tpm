@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { View, ScrollView, Pressable, StatusBar, FlatList, ActivityIndicator, RefreshControl, Platform, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -26,6 +27,7 @@ import { router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { useUserCashList, useAdjustUserCash, useSetUserCash, useUserCashHistory } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -46,6 +48,7 @@ interface AdjustmentForm {
 }
 
 export default function UserCashManagementScreen() {
+    const insets = useSafeAreaInsets();
     const currentUser = useAuthStore(state => state.user);
     const isAdmin = currentUser?.role === 'ADMIN';
 
@@ -309,7 +312,7 @@ export default function UserCashManagementScreen() {
                 handleIndicatorStyle={{ backgroundColor: '#e2e8f0', width: 40 }}
                 onClose={() => setForm(null)}
             >
-                <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+                <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
                     {form && (
                         <>
                             <Typography variant="h3" weight="bold" className="mb-1">

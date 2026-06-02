@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.models.keuangan import KasBank
 from app.schemas.keuangan import KasBankCreate
 from app.services.kas_bank_service import KasBankService
+from app.realtime import publish_realtime_event
 from app.utils.constants import (
     KasBankType,
     KasBankSource,
@@ -57,6 +58,16 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
     return KasBankJenis.KAS_UTAMA
 
 
+def _scope_for_kas_jenis(jenis: KasBankJenis) -> str:
+    if jenis == KasBankJenis.KAS_UNIT_BENGKEL:
+        return "bengkel"
+    if jenis == KasBankJenis.KAS_UNIT_JASA_ANGKUT:
+        return "jasa_angkut"
+    if jenis == KasBankJenis.KAS_UNIT_MOBIL:
+        return "mobil"
+    return "finance"
+
+
 def create_kas_entry(
     db: Session,
     tanggal: date,
@@ -95,5 +106,19 @@ def create_kas_entry(
         allow_negative=allow_negative,
     )
 
-    return service.create(data, user_id, commit=commit)
+    kas_bank = service.create(data, user_id, commit=commit)
+    if commit:
+        publish_realtime_event(
+            event="finance.kas.updated",
+            scope=_scope_for_kas_jenis(selected_jenis),
+            entity="kas_bank",
+            action="created",
+            entity_id=kas_bank.id,
+            data={
+                "nomor_transaksi": kas_bank.nomor_transaksi,
+                "jenis": kas_bank.jenis.value if hasattr(kas_bank.jenis, "value") else str(kas_bank.jenis),
+                "tipe": kas_bank.tipe.value if hasattr(kas_bank.tipe, "value") else str(kas_bank.tipe),
+            },
+        )
+    return kas_bank
 

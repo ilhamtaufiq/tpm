@@ -5,6 +5,8 @@ import { WalletSection } from '../../components/WalletSection';
 import { ServiceGrid } from '../../components/ServiceGrid';
 import { StatsSlider } from '../../components/StatsSlider';
 import { TransactionList } from '../../components/TransactionList';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 import { useQueryClient } from '@tanstack/react-query';
 import React from 'react';
@@ -13,6 +15,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
 
 export default function HomeScreen() {
+    const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
     const [refreshing, setRefreshing] = React.useState(false);
     const { themeColors } = useUIStore();
@@ -63,6 +66,7 @@ export default function HomeScreen() {
                 <Header variant="home" showSearch={false} showProfile={false} />
                 <ScrollView
                     className="flex-1"
+                    contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={themeColors.primary} />}
                 >

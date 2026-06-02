@@ -6,6 +6,7 @@ import { ChevronLeft, Package, ShoppingCart, Car, Wrench, Truck, BarChart3, Wall
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 interface ReportItem {
     title: string;
@@ -116,6 +117,7 @@ export default function ReportsScreen() {
 
             <ScrollView
                 className="flex-1 px-6 pt-10"
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 20) }}
                 showsVerticalScrollIndicator={false}
             >
                 {GROUPS.filter(group => {
@@ -196,7 +198,7 @@ export default function ReportsScreen() {
                         </View>
                     </View>
                 ))}
-                <View className="h-20" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
         </View>
     );

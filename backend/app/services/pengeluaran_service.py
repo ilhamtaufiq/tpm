@@ -18,6 +18,7 @@ from app.utils.constants import (
     KasBankSource,
 )
 from app.services.kas_bank_integration import create_kas_entry
+from app.realtime import publish_realtime_event
 
 
 class PengeluaranService:
@@ -25,6 +26,17 @@ class PengeluaranService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _emit_change(self, action: str, expense: Optional[PengeluaranBengkel] = None, expense_id: Optional[int] = None) -> None:
+        entity_id = expense.id if expense else expense_id
+        publish_realtime_event(
+            event=f"finance.expense.{action}",
+            scope="finance",
+            entity="pengeluaran",
+            action=action,
+            entity_id=entity_id,
+            data={"nomor_transaksi": getattr(expense, "nomor_transaksi", None)},
+        )
 
     def _generate_nomor_transaksi(self) -> str:
         """Generate unique expense transaction number."""
@@ -132,6 +144,7 @@ class PengeluaranService:
                 kas_jenis=data.kas_jenis,
             )
 
+        self._emit_change("created", pengeluaran)
         return pengeluaran
 
     def get_by_id(self, pengeluaran_id: int) -> PengeluaranBengkel:
@@ -234,6 +247,7 @@ class PengeluaranService:
 
         self.db.commit()
         self.db.refresh(pengeluaran)
+        self._emit_change("updated", pengeluaran)
         return pengeluaran
 
     def delete(self, pengeluaran_id: int) -> bool:
@@ -251,6 +265,7 @@ class PengeluaranService:
 
         self.db.delete(pengeluaran)
         self.db.commit()
+        self._emit_change("deleted", pengeluaran)
 
         return True
 

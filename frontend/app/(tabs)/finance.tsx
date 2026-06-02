@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
-import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUp } from 'lucide-react-native';
+import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle } from 'lucide-react-native';
 import { useRouter, router, Redirect } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
 import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
 import { SkeletonStats, SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function FinanceTab() {
+    const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
     const { user } = useAuthStore();
 
@@ -114,6 +117,7 @@ export default function FinanceTab() {
             <ScrollView
                 className="flex-1 px-6 pt-6"
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 32) }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
                 {/* Main Profit Card (Standard Bento Style) */}
@@ -332,13 +336,13 @@ export default function FinanceTab() {
                     <Typography variant="h3" weight="bold" className="mb-6 tracking-tight px-1">Aksi Cepat</Typography>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-2 px-2">
                         {[
-                            { label: 'Mutasi', icon: Wallet, color: '#3B82F6', path: '/finance/mutasi' },
-                            { label: 'Keluar', icon: ArrowUp, color: '#EF4444', path: '/finance/expenses' },
+                            { label: 'Mutasi', icon: ArrowRightLeft, color: '#3B82F6', path: '/finance/mutasi' },
+                            { label: 'Keluar', icon: ArrowUpCircle, color: '#EF4444', path: '/finance/expenses' },
                             { label: 'Cash User', icon: Users, color: '#06b6d4', path: '/finance/user-cash' },
 
 
                             { label: 'Piutang', icon: CircleDollarSign, color: '#F59E0B', path: '/finance/piutang' },
-                            { label: 'Hutang', icon: CircleDollarSign, color: '#E11D48', path: '/finance/hutang' },
+                            { label: 'Hutang', icon: ArrowDownCircle, color: '#E11D48', path: '/finance/hutang' },
                             { label: 'Investor', icon: TrendingUp, color: '#8B5CF6', path: '/finance/pencairan-investor' },
                             { label: 'Report', icon: BarChart3, color: '#10B981', path: '/laporan' },
                         ].map((action, idx) => (
@@ -438,7 +442,7 @@ export default function FinanceTab() {
                         </View>
                     </Pressable>
                 </View>
-                <View className="h-40" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
         </View>
     );

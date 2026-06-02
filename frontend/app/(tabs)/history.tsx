@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, TextInput, Image, StatusBar } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -26,6 +26,7 @@ import { id as localeID } from 'date-fns/locale';
 import { ActivityItem, KasBankTransaction } from '../../services/keuangan';
 import { formatCurrency } from '../../utils/format';
 import { TransactionDetailModal } from '../../components/TransactionDetailModal';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const getSourceConfig = (source: string, title?: string) => {
     const s = source?.toLowerCase() || '';
@@ -105,12 +106,15 @@ const FILTER_TYPES = [
 ] as const;
 
 export default function HistoryTab() {
+    const insets = useSafeAreaInsets();
     const [search, setSearch] = useState('');
     const [selectedSource, setSelectedSource] = useState<string>('all');
     const [selectedType, setSelectedType] = useState<'all' | 'in' | 'out'>('all');
     const { user } = useAuthStore();
-    const { unit } = useLocalSearchParams<{ unit?: string }>();
+    const { unit, focus_id, focus_entity } = useLocalSearchParams<{ unit?: string; focus_id?: string; focus_entity?: string }>();
     const unitKey = Array.isArray(unit) ? unit[0] : unit;
+    const focusId = Array.isArray(focus_id) ? focus_id[0] : focus_id;
+    const focusEntity = Array.isArray(focus_entity) ? focus_entity[0] : focus_entity;
 
     const walletFilters = {
         bengkel: {
@@ -237,6 +241,22 @@ export default function HistoryTab() {
                (item.ref_number && item.ref_number.toLowerCase().includes(search.toLowerCase()))
     }) || [];
 
+    useEffect(() => {
+        if (!focusId || !transactions || transactions.length === 0) return;
+        const numericFocusId = Number(focusId);
+
+        const target = transactions.find((item: ActivityItem) => {
+            if (Number.isFinite(numericFocusId) && item.original_id === numericFocusId) return true;
+            if (focusEntity === 'kas_bank' && item.type === 'financial' && Number.isFinite(numericFocusId) && item.original_id === numericFocusId) return true;
+            return item.id === focusId;
+        });
+
+        if (target) {
+            setSelectedItem(target);
+            setModalVisible(true);
+        }
+    }, [focusId, focusEntity, transactions]);
+
     return (
         <View className="flex-1 bg-background overflow-hidden">
             <StatusBar barStyle="dark-content" />
@@ -314,6 +334,7 @@ export default function HistoryTab() {
 
             <ScrollView
                 className="flex-1 mt-4"
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
             >
@@ -405,7 +426,7 @@ export default function HistoryTab() {
                         );
                     })
                 )}
-                <View className="h-40" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
             <TransactionDetailModal

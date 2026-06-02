@@ -35,7 +35,8 @@ import {
     ArrowDownCircle,
     TrendingDown,
     TrendingUp,
-    CircleDollarSign
+    CircleDollarSign,
+    Boxes
 } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -46,13 +47,14 @@ import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksi
 import { useMobilList } from '../../hooks/useMobil';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { formatDistanceToNow, format, startOfMonth, isValid, parse } from 'date-fns';
+import { formatDistanceToNow, format, isValid, parse } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
@@ -65,6 +67,56 @@ export default function BengkelScreen() {
 
     const { action } = useLocalSearchParams<{ action?: string }>();
     const user = useAuthStore(state => state.user);
+    const bengkelMenus = useMemo(() => ([
+        {
+            id: 'sparepart',
+            title: 'Sparepart',
+            description: 'Transaksi khusus part',
+            icon: Package,
+            color: '#059669',
+            route: { pathname: '/bengkel/transaksi', params: { mode: 'sparepart' } }
+        },
+        {
+            id: 'servis',
+            title: 'Servis',
+            description: 'Transaksi jasa servis',
+            icon: Wrench,
+            color: '#0F766E',
+            route: { pathname: '/bengkel/transaksi', params: { mode: 'servis' } }
+        },
+        {
+            id: 'jasa-angkut',
+            title: 'Jasa Angkut',
+            description: 'Akses unit logistik',
+            icon: Truck,
+            color: '#10B981',
+            route: '/jasa-angkut'
+        },
+        {
+            id: 'inventory',
+            title: 'Inventory',
+            description: 'Stok dan barang bengkel',
+            icon: Boxes,
+            color: '#2563EB',
+            route: '/bengkel/inventory'
+        },
+        {
+            id: 'master-data',
+            title: 'Master Data',
+            description: 'Kelola data referensi',
+            icon: Database,
+            color: '#7C3AED',
+            route: '/master-data'
+        },
+        {
+            id: 'absensi',
+            title: 'Absensi',
+            description: 'Presensi tim bengkel',
+            icon: Clock,
+            color: '#EA580C',
+            route: '/sdm/absensi'
+        }
+    ]), []);
 
     // Search & Filter State
     const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +125,7 @@ export default function BengkelScreen() {
 
     // Filters
     const [dateRange, setDateRange] = useState({
-        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        dari: format(new Date(), 'yyyy-MM-dd'),
         sampai: format(new Date(), 'yyyy-MM-dd')
     });
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
@@ -492,6 +544,10 @@ export default function BengkelScreen() {
             }
         }
     };
+
+    const handleMenuPress = useCallback((menu: typeof bengkelMenus[number]) => {
+        router.push(menu.route as any);
+    }, [bengkelMenus]);
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
@@ -1399,125 +1455,168 @@ export default function BengkelScreen() {
                 showProfile={true}
             />
 
-            {/* Filter Search Overlay */}
-            {sheetIndex === -1 && (
-                <View className="px-6 mt-4">
-                    <View className="bg-white p-3 rounded-[24px] border border-gray-100 shadow-sm flex-col">
-                        <View className="flex-row items-center">
-                            <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
-                                <Search size={16} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-xs font-semibold text-textMain"
-                                    placeholder="Cari antrian (Plat, Customer)..."
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    placeholderTextColor="#9CA3AF"
-                                    autoCorrect={false}
-                                    autoCapitalize="none"
-                                    returnKeyType="search"
-                                />
-                                {searchQuery.length > 0 && (
-                                    <Pressable onPress={() => setSearchQuery('')} className="ml-1">
-                                        <X size={16} color="#9CA3AF" />
-                                    </Pressable>
-                                )}
-                            </View>
-
-                            <Pressable 
-                                onPress={() => router.push('/bengkel/transaksi')}
-                                className="ml-2 w-11 h-11 bg-emerald-50 items-center justify-center rounded-2xl border border-emerald-100 active:scale-95"
-                            >
-                                <ShoppingCart size={18} color="#059669" />
-                            </Pressable>
-
-                            <Pressable 
-                                onPress={() => {
-                                    setShowWalletModal(true);
-                                    if (Platform.OS !== 'web') {
-                                        walletSheetRef.current?.expand();
-                                    }
-                                }}
-                                className="ml-2 w-11 h-11 bg-gray-50 items-center justify-center rounded-2xl border border-gray-100 active:scale-95"
-                            >
-                                <Wallet size={18} color="#023C69" />
-                            </Pressable>
+            <View className="px-6 mt-4">
+                <View className="bg-white p-3 rounded-[22px] border border-gray-100 shadow-sm">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View>
+                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Cari & Filter</Typography>
+                            <Typography variant="caption" className="text-textGray">Pencarian dan filter antrian</Typography>
                         </View>
-                        {/* Status Bayar Chips Filters */}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100 space-x-2">
-                            <Pressable
-                                onPress={() => setPaymentFilter('ALL')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                    Semua ({stats.total})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('LUNAS')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                    Lunas ({stats.lunas})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('PARTIAL')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
-                                    Belum Lunas ({stats.partial})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('UNPAID')}
-                                className={`px-4 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
-                                    Belum Bayar ({stats.unpaid})
-                                </Typography>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => setPaymentFilter('BATAL')}
-                                className={`px-4 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
-                            >
-                                <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
-                                    Batal ({stats.batal})
-                                </Typography>
-                            </Pressable>
-                        </ScrollView>
+                        <View className="bg-primary/5 px-2.5 py-1 rounded-full border border-primary/10">
+                            <Typography className="text-primary text-[9px] font-bold uppercase tracking-widest">Quick</Typography>
+                        </View>
+                    </View>
 
+                    <View className="flex-row items-center">
+                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                            <Search size={16} color="#9CA3AF" />
+                            <TextInput
+                                className="flex-1 ml-3 text-xs font-semibold text-textMain"
+                                placeholder="Cari antrian (Plat, Customer)..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                                placeholderTextColor="#9CA3AF"
+                                autoCorrect={false}
+                                autoCapitalize="none"
+                                returnKeyType="search"
+                            />
+                            {searchQuery.length > 0 && (
+                                <Pressable onPress={() => setSearchQuery('')} className="ml-1">
+                                    <X size={16} color="#9CA3AF" />
+                                </Pressable>
+                            )}
+                        </View>
+
+                        <Pressable 
+                            onPress={() => router.push('/bengkel/transaksi')}
+                            className="ml-2 w-11 h-11 bg-emerald-50 items-center justify-center rounded-2xl border border-emerald-100 active:scale-95"
+                        >
+                            <ShoppingCart size={18} color="#059669" />
+                        </Pressable>
+
+                        <Pressable 
+                            onPress={() => {
+                                setShowWalletModal(true);
+                                if (Platform.OS !== 'web') {
+                                    walletSheetRef.current?.expand();
+                                }
+                            }}
+                            className="ml-2 w-11 h-11 bg-gray-50 items-center justify-center rounded-2xl border border-gray-100 active:scale-95"
+                        >
+                            <Wallet size={18} color="#023C69" />
+                        </Pressable>
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100">
+                        <Pressable
+                            onPress={() => setPaymentFilter('ALL')}
+                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
+                                Semua ({stats.total})
+                            </Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setPaymentFilter('LUNAS')}
+                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
+                                Lunas ({stats.lunas})
+                            </Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setPaymentFilter('PARTIAL')}
+                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
+                                Belum Lunas ({stats.partial})
+                            </Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setPaymentFilter('UNPAID')}
+                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
+                                Belum Bayar ({stats.unpaid})
+                            </Typography>
+                        </Pressable>
+                        <Pressable
+                            onPress={() => setPaymentFilter('BATAL')}
+                            className={`px-3 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
+                                Batal ({stats.batal})
+                            </Typography>
+                        </Pressable>
+                    </ScrollView>
+                </View>
+
+                <View className="bg-white p-3 rounded-[22px] border border-gray-100 shadow-sm mt-2.5">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View>
+                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Ringkasan Antrian</Typography>
+                            <Typography variant="caption" className="text-textGray">Status pengerjaan saat ini</Typography>
+                        </View>
+                        <View className="bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">
+                            <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Live</Typography>
+                        </View>
+                    </View>
+
+                    <View className="flex-row space-x-2">
+                        {[
+                            { label: 'Antre', key: 'antre', color: '#F59E0B', icon: Clock },
+                            { label: 'Proses', key: 'proses', color: '#3B82F6', icon: Activity },
+                            { label: 'Selesai', key: 'selesai', color: '#10B981', icon: CheckCircle2 },
+                        ].map((stat) => (
+                            <View key={stat.key} className="flex-1 bg-slate-50 px-2 py-2.5 rounded-[18px] border border-slate-100 items-center">
+                                <View style={{ backgroundColor: stat.color + '15' }} className="w-7 h-7 rounded-xl items-center justify-center mb-1">
+                                    <stat.icon size={13} color={stat.color} />
+                                </View>
+                                <Typography weight="bold" style={{ color: stat.color }} className="text-[16px] leading-tight">
+                                    {summary ? summary[stat.key] : 0}
+                                </Typography>
+                                <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
+                            </View>
+                        ))}
+                    </View>
+
+                    <View className="mt-3 pt-3 border-t border-gray-100">
+                        <View className="flex-row items-center justify-between mb-2">
+                            <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">Quick Shortcut</Typography>
+                            <Typography className="text-textGray/50 text-[9px] font-semibold">Tap untuk buka</Typography>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                            {bengkelMenus.map((menu) => {
+                                const Icon = menu.icon;
+                                return (
+                                    <Pressable
+                                        key={menu.id}
+                                        onPress={() => handleMenuPress(menu)}
+                                        className="mr-2 px-3 py-2 rounded-2xl border border-gray-100 bg-white flex-row items-center"
+                                    >
+                                        <View style={{ backgroundColor: `${menu.color}15` }} className="w-7 h-7 rounded-xl items-center justify-center mr-2">
+                                            <Icon size={14} color={menu.color} />
+                                        </View>
+                                        <Typography className="text-textMain text-[10px] font-bold" numberOfLines={1}>
+                                            {menu.title}
+                                        </Typography>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 </View>
-            )}
+            </View>
 
             <ScrollView
-                className="flex-1 pt-10"
+                className="flex-1 pt-3"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
-                {/* Status Pengerjaan (Metric Row) */}
-                <View className="flex-row justify-between mb-8 mx-6">
-                    {[
-                        { label: 'ANTRE', key: 'antre', color: '#F59E0B', icon: Clock },
-                        { label: 'PROSES', key: 'proses', color: '#3B82F6', icon: Activity },
-                        { label: 'SELESAI', key: 'selesai', color: '#10B981', icon: CheckCircle2 },
-                    ].map((stat) => (
-                        <View key={stat.key} style={{ width: '31%' }} className="bg-white p-3 rounded-[32px] border border-gray-100 shadow-sm items-center">
-                            <View style={{ backgroundColor: stat.color + '15' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-1.5">
-                                <stat.icon size={16} color={stat.color} />
-                            </View>
-                            <Typography weight="bold" style={{ color: stat.color }} className="text-xl leading-tight">{summary ? summary[stat.key] : 0}</Typography>
-                            <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
-                        </View>
-                    ))}
-                </View>
-
-
-
                 {/* Section Header */}
-                <View className="flex-row justify-between items-center mb-6 px-6">
+                <View className="flex-row justify-between items-center mb-4 px-6">
                     <View>
                         <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">
                             {dateRange.dari === dateRange.sampai && dateRange.dari === format(new Date(), 'yyyy-MM-dd') ? 'Antrian Hari Ini' : 'Daftar Antrian'}
@@ -1535,7 +1634,7 @@ export default function BengkelScreen() {
                             dateSheetRef.current?.expand();
                         }
                     }}
-                    className="flex-row items-center justify-between mb-8 mx-6 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50"
+                    className="flex-row items-center justify-between mb-4 mx-6 bg-white p-4 rounded-[22px] shadow-sm border border-gray-100 active:bg-gray-50"
                 >
                     <View className="flex-row items-center">
                         <Calendar size={18} color="#023C69" />
@@ -1548,7 +1647,7 @@ export default function BengkelScreen() {
 
                 {/* Unpaid Info Pills */}
                 {summary && summary.piutang_count > 0 ? (
-                    <View className="flex-row space-x-2 mb-6 px-6">
+                    <View className="flex-row space-x-2 mb-4 px-6">
                         <View className="bg-rose-50 px-4 py-2.5 rounded-2xl border border-rose-100 flex-row items-center shadow-sm">
                             <AlertCircle size={16} color="#E11D48" />
                             <Typography variant="caption" weight="bold" className="text-rose-600 ml-2">
@@ -1683,7 +1782,7 @@ export default function BengkelScreen() {
                         </Pressable>
                     ))
                 )}
-                <View className="h-32" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
 
@@ -1737,11 +1836,11 @@ export default function BengkelScreen() {
                     {renderBottomSheetContent()}
                 </BottomSheet>
 
-                <BottomSheet
-                    ref={walletSheetRef}
-                    index={-1}
-                    snapPoints={walletSnapPoints}
-                    enablePanDownToClose
+            <BottomSheet
+                ref={walletSheetRef}
+                index={-1}
+                snapPoints={walletSnapPoints}
+                enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}

@@ -28,6 +28,7 @@ class User(Base, TimestampMixin):
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     profile_picture: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     home_background: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    expo_push_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     
     # PIN Security (server-side)
     hashed_pin: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -46,4 +47,3 @@ class User(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}')>"
-

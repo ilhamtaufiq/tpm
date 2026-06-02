@@ -51,6 +51,7 @@ import { Platform, Modal, TouchableOpacity } from 'react-native';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function MobilInventoryScreen() {
     const insets = useSafeAreaInsets();
@@ -1127,7 +1128,7 @@ export default function MobilInventoryScreen() {
                             ))
                         )}
                     </View>
-                    <View className="h-32" />
+                    <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
                 </ScrollView>
 
                 {/* FAB matching Home */}

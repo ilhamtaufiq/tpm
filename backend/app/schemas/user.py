@@ -36,6 +36,13 @@ class UserUpdate(BaseModel):
     home_background: Optional[str] = None
 
 
+class PushTokenRegisterRequest(BaseModel):
+    """Schema for registering device push token."""
+
+    expo_push_token: str = Field(..., min_length=10, max_length=255)
+    platform: Optional[str] = Field(None, max_length=20)
+
+
 class UserResponse(BaseModel):
     """Schema for user response."""
 
@@ -49,6 +56,7 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
     profile_picture: Optional[str] = None
     home_background: Optional[str] = None
+    expo_push_token: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     cash_balance: Decimal = Decimal("0")

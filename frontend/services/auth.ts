@@ -1,6 +1,5 @@
 import { Platform } from 'react-native';
-import api, { BASE_URL } from '../utils/api';
-import { useAuthStore } from '../store/useAuthStore';
+import api from '../utils/api';
 
 export interface User {
     id: number;
@@ -13,6 +12,7 @@ export interface User {
     last_login?: string;
     profile_picture?: string;
     home_background?: string;
+    expo_push_token?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -151,6 +151,19 @@ export const authService = {
                 new_password: newPassword
             }
         });
+        return response.data;
+    },
+
+    registerPushToken: async (expoPushToken: string, platform?: string): Promise<User> => {
+        const response = await api.post('/auth/me/push-token', {
+            expo_push_token: expoPushToken,
+            platform,
+        });
+        return response.data;
+    },
+
+    clearPushToken: async (): Promise<User> => {
+        const response = await api.delete('/auth/me/push-token');
         return response.data;
     },
 

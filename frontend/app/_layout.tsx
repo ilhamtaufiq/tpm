@@ -28,6 +28,8 @@ import { ConnectivityBanner } from '../components/ConnectivityBanner';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AlertProvider } from '../context/AlertContext';
 import { CustomTabBar } from '../components/ui/CustomTabBar';
+import { useRealtimeSync } from '../services/realtime';
+import { usePushNotifications } from '../services/pushNotifications';
 
 // Configure online manager to listen to NetInfo
 onlineManager.setEventListener((setOnline) => {
@@ -84,6 +86,7 @@ function RootLayoutContent() {
     const [isReady, setIsReady] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const hasHydrated = useAuthStore(state => state.hasHydrated);
     
     // States for Premium Web Mobile Preview Frame
     const [isMobileMode, setIsMobileMode] = useState(true);
@@ -107,6 +110,9 @@ function RootLayoutContent() {
     const { updateUser } = useAuthStore();
     const user = useAuthStore(state => state.user);
     const isImpersonating = useAuthStore(state => state.isImpersonating);
+
+    useRealtimeSync();
+    usePushNotifications();
 
     const theme = vars({
         '--color-primary': themeColors.primary,
@@ -178,7 +184,7 @@ function RootLayoutContent() {
 
     // Sync profile on startup
     useEffect(() => {
-        if (isAuthenticated && isReady) {
+        if (isAuthenticated && isReady && hasHydrated) {
             const syncProfile = async () => {
                 try {
                     const freshUser = await authService.getMe();
@@ -192,7 +198,7 @@ function RootLayoutContent() {
             };
             syncProfile();
         }
-    }, [isAuthenticated, isReady]);
+    }, [isAuthenticated, isReady, hasHydrated]);
 
     useEffect(() => {
         if (!isReady || !loaded) return;
@@ -274,7 +280,7 @@ function RootLayoutContent() {
     }
 
     // Show loading indicator while fonts are loading or update is downloading
-    if (!loaded || !isReady || isUpdating) {
+    if (!loaded || !isReady || !hasHydrated || isUpdating) {
         const loadingMessage = isUpdating 
             ? "Mendownload versi terbaru..." 
             : "Memuat TPM Super App...";

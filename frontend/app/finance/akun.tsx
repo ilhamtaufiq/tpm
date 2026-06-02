@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, Alert, Platform, Modal, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import {
     Wallet,
@@ -31,6 +32,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { formatCurrency } from '../../utils/format';
 import { Header } from '../../components/ui/Header';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const ACCOUNT_ICONS: Record<string, any> = {
     CASH: Wallet,
@@ -115,6 +117,7 @@ const LEGACY_ACCOUNTS: KasBankJenis[] = [
 ];
 
 export default function AkunKeuanganScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const user = useAuthStore(state => state.user);
     const role = user?.role;
@@ -631,7 +634,7 @@ export default function AkunKeuanganScreen() {
                     </>
                 )}
 
-                <View className="h-20" />
+                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
 
             {/* Adjustment Modal - Platform Specific */}
