@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, StatusBar, RefreshControl, ActivityIndicator, Image, Platform, TextInput, Modal, StyleSheet, Alert } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -32,6 +32,7 @@ import {
     usePendingInvestorDisbursements, 
     useInvestorDisbursementSummary, 
     useProcessInvestorDisbursement, 
+    useReverseInvestorDisbursement,
     useInvestorDisbursementHistory 
 } from '../../hooks/useKeuangan';
 import { AlertDialog } from '../../components/ui/AlertDialog';
@@ -74,6 +75,7 @@ export default function PencairanInvestorScreen() {
     } = useInvestorDisbursementSummary();
 
     const disburseMutation = useProcessInvestorDisbursement();
+    const reverseMutation = useReverseInvestorDisbursement();
 
     const { 
         data: historyData, 
@@ -161,6 +163,41 @@ export default function PencairanInvestorScreen() {
             const errorMessage = error?.response?.data?.detail || error?.message || 'Gagal memproses pencairan';
             showAlert('Gagal', errorMessage, 'error');
         }
+    };
+
+    const handleReverseDisbursement = (item: any) => {
+        const transaksiId = item?.transaksi?.id || item?.transaksi_id;
+        if (!transaksiId) {
+            showAlert('Gagal', 'Transaksi terkait tidak ditemukan untuk reversal.', 'error');
+            return;
+        }
+
+        const transaksiLabel = item?.transaksi?.nomor_transaksi || item?.transaksi?.mobil_info || 'transaksi investor';
+        const executeReverse = async () => {
+            try {
+                await reverseMutation.mutateAsync({
+                    transaksiId,
+                    data: {
+                        alasan: `Reversal pencairan investor ${transaksiLabel}`,
+                    },
+                });
+
+                await Promise.all([refetchList(), refetchSummary(), refetchHistory()]);
+                showAlert('Sukses', 'Pencairan investor berhasil direversal.', 'success');
+            } catch (error: any) {
+                const errorMessage = error?.response?.data?.detail || error?.message || 'Gagal melakukan reversal pencairan';
+                showAlert('Gagal', errorMessage, 'error');
+            }
+        };
+
+        Alert.alert(
+            'Reversal Pencairan Investor',
+            `Batalkan pencairan untuk ${transaksiLabel}? Saldo kas dan status pencairan akan dikembalikan sesuai reversal.`,
+            [
+                { text: 'Batal', style: 'cancel' },
+                { text: 'Reversal', style: 'destructive', onPress: executeReverse },
+            ]
+        );
     };
 
     const handleAddPaymentRow = () => {
@@ -586,6 +623,11 @@ export default function PencairanInvestorScreen() {
                                             <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(item.nominal)}</Typography>
                                             <View className="flex-row items-center mt-1">
                                                 <Badge label={item.metode_bayar} variant={item.metode_bayar === 'TUNAI' ? 'warning' : 'info'} />
+                                                {(item.catatan || '').toUpperCase().includes('[REVERSED]') && (
+                                                    <View className="ml-2">
+                                                        <Badge label="REVERSED" variant="error" />
+                                                    </View>
+                                                )}
                                             </View>
                                         </View>
                                         <Typography variant="caption" className="text-gray-400">{formatDateTime(item.created_at || item.tanggal)}</Typography>
@@ -601,6 +643,19 @@ export default function PencairanInvestorScreen() {
                                         <Car size={12} color="#9CA3AF" className="mr-1.5" />
                                         <Typography variant="caption" className="text-gray-400">Ref: {item.transaksi?.nomor_transaksi || '-'}</Typography>
                                     </View>
+
+                                    {!!(item.transaksi?.id || item.transaksi_id) && (
+                                        <View className="mt-4 flex-row justify-end">
+                                            <Button
+                                                title={reverseMutation.isPending ? 'Memproses...' : 'Reversal'}
+                                                onPress={() => handleReverseDisbursement(item)}
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={reverseMutation.isPending}
+                                                className="rounded-full px-4"
+                                            />
+                                        </View>
+                                    )}
                                 </Card>
                             ))
                         ) : (

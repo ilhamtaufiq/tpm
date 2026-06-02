@@ -12,6 +12,7 @@ from app.config import settings
 
 from app.models.mobil import Mobil, MobilMedia, MobilBiayaLainnya, MobilPartService, TransaksiPenjualanMobil
 from app.models.bengkel import SparePart, PengeluaranBengkel
+from app.models.bengkel import TransaksiPenjualanBengkel
 from app.schemas.mobil import MobilCreate, MobilUpdate
 from app.utils.constants import CarStatus, OwnershipType, PaymentStatus, PaymentMethod, TRANSACTION_PREFIXES, KasBankType, KasBankSource, KasBankJenis, HutangSource, HutangStatus, ExpenseCategory, PiutangSource
 from app.models.keuangan import HutangUsaha, HutangStatus, PiutangUsaha
@@ -526,15 +527,40 @@ class MobilService:
         return mobil
 
     def delete(self, mobil_id: int) -> bool:
-        """Soft delete car."""
+        """Soft delete car after reversing related sale/booking flows."""
         mobil = self.get_by_id(mobil_id)
 
-        # Cannot delete sold car
-        if mobil.status == CarStatus.TERJUAL:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tidak dapat menghapus mobil yang sudah terjual",
+        # Reverse booking/sale flow first if one exists.
+        if mobil.penjualan:
+            from app.services.penjualan_mobil_service import PenjualanMobilService
+            sale_service = PenjualanMobilService(self.db)
+
+            if mobil.penjualan.status_bayar == PaymentStatus.LUNAS:
+                sale_service.cancel_sale(
+                    mobil.penjualan.id,
+                    alasan="Dihapus dari modul mobil",
+                )
+            elif mobil.penjualan.status_bayar != PaymentStatus.BATAL:
+                sale_service.cancel_booking(
+                    mobil.penjualan.id,
+                    penalti=Decimal("0"),
+                    refund_entries=[],
+                    alasan="Dihapus dari modul mobil",
+                )
+
+        # Reverse any remaining workshop transactions that are still linked to this unit.
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+        bengkel_service = TransaksiBengkelService(self.db)
+        linked_bengkel = (
+            self.db.query(TransaksiPenjualanBengkel)
+            .filter(
+                TransaksiPenjualanBengkel.mobil_id == mobil.id,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             )
+            .all()
+        )
+        for tx in linked_bengkel:
+            bengkel_service.void_transaction(tx.id)
 
         mobil.deleted_at = datetime.now()
         self.db.commit()

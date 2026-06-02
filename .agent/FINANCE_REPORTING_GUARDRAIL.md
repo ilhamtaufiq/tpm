@@ -22,6 +22,15 @@ Setiap perubahan yang menyentuh area di atas wajib:
 3. dipastikan tidak merusak konsistensi laporan;
 4. dicatat di dokumen ini jika ada perubahan flow, label, atau aturan hitung.
 
+## Investor Reversal Requirement
+
+Untuk mobil milik investor:
+- `cancel-sale` tidak boleh dijalankan sebelum pencairan investor direversal secara eksplisit.
+- Reversal wajib memakai endpoint `/penjualan-mobil/{id}/investor/reversal`.
+- Setelah reversal, validasi ulang saldo kas, status pencairan, dan histori laporan yang terdampak.
+- Riwayat pencairan yang direversal harus tetap terlihat dan diberi penanda `REVERSED`, bukan dihapus dari histori.
+- Jika ada perubahan pada flow ini, pastikan notifikasi / realtime coverage ikut dicek ulang.
+
 ## Checklist Verifikasi Minimum
 
 - UI sesuai flow terbaru.

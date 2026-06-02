@@ -37,6 +37,16 @@ class CancelBookingRequest(BaseModel):
     alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
 
 
+class CancelSaleRequest(BaseModel):
+    """Schema for cancelling a completed sale."""
+    alasan: Optional[str] = Field(default="", max_length=500, description="Reason for cancellation")
+
+
+class ReverseInvestorDisbursementRequest(BaseModel):
+    """Schema for reversing investor disbursement."""
+    alasan: Optional[str] = Field(default="", max_length=500, description="Reason for reversal")
+
+
 router = APIRouter(prefix="/penjualan-mobil", tags=["Penjualan Mobil"])
 
 
@@ -208,6 +218,38 @@ def cancel_booking(
         transaksi_id=transaksi_id,
         penalti=data.penalti,
         refund_entries=refund_entries,
+        alasan=data.alasan or "",
+        user_id=current_user.id,
+    )
+
+
+@router.post("/{transaksi_id}/cancel-sale", response_model=TransaksiMobilResponse)
+def cancel_sale(
+    transaksi_id: int,
+    data: CancelSaleRequest,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Cancel a completed sale and reverse finance."""
+    service = PenjualanMobilService(db)
+    return service.cancel_sale(
+        transaksi_id=transaksi_id,
+        alasan=data.alasan or "",
+        user_id=current_user.id,
+    )
+
+
+@router.post("/{transaksi_id}/investor/reversal", response_model=TransaksiMobilResponse)
+def reverse_investor_disbursement(
+    transaksi_id: int,
+    data: ReverseInvestorDisbursementRequest,
+    db: DBSession,
+    current_user: ManagerUser,
+):
+    """Reverse all investor disbursement for a sold car."""
+    service = PenjualanMobilService(db)
+    return service.reverse_investor_disbursement(
+        transaksi_id=transaksi_id,
         alasan=data.alasan or "",
         user_id=current_user.id,
     )

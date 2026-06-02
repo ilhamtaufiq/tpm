@@ -103,6 +103,11 @@ export const mobilService = {
         return response.data;
     },
 
+    cancelSaleMobil: async (id: number, data: { alasan?: string }) => {
+        const response = await api.post(`/penjualan-mobil/${id}/cancel-sale`, data);
+        return response.data;
+    },
+
     uploadMedia: async (id: number, files: any[]) => {
         const formData = new FormData();
 

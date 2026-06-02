@@ -40,7 +40,7 @@ import { MobilCostForm } from '../../components/MobilCostForm';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { format, startOfMonth, isValid, parse } from 'date-fns';
+import { format, subMonths, isValid, parse } from 'date-fns';
 import { useMobilList, useDeleteMobil, usePenjualanSummary, useInventorySummary } from '../../hooks/useMobil';
 import { FILE_URL } from '../../utils/api';
 import { useKasBankBalances, useKasBankList, useCreateTransaction, useTransfer, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
@@ -56,11 +56,13 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 export default function MobilInventoryScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    // Filters
-    const [dateRange, setDateRange] = useState({
-        dari: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    const getDefaultDateRange = useCallback(() => ({
+        dari: format(subMonths(new Date(), 1), 'yyyy-MM-dd'),
         sampai: format(new Date(), 'yyyy-MM-dd')
-    });
+    }), []);
+    // Filters
+    const [dateRange, setDateRange] = useState(getDefaultDateRange);
+    const [useAllTime, setUseAllTime] = useState(false);
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
     const [tempDateRange, setTempDateRange] = useState({ ...dateRange });
     const dateSheetRef = useRef<BottomSheetModal>(null);
@@ -126,8 +128,8 @@ export default function MobilInventoryScreen() {
         status_bayar: paymentFilter,
         search: searchQuery,
         // Only apply date range for Sold/Booking, show all available inventory
-        tanggal_dari: (activeTab === 'tersedia' || activeTab === 'semua') ? undefined : dateRange.dari,
-        tanggal_sampai: (activeTab === 'tersedia' || activeTab === 'semua') ? undefined : dateRange.sampai
+        tanggal_dari: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.dari,
+        tanggal_sampai: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.sampai
     }, {
         refetchInterval: 15000 // Polling every 15 seconds
     });
@@ -138,8 +140,8 @@ export default function MobilInventoryScreen() {
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
         search: searchQuery,
-        tanggal_dari: dateRange.dari,
-        tanggal_sampai: dateRange.sampai
+        tanggal_dari: useAllTime ? undefined : dateRange.dari,
+        tanggal_sampai: useAllTime ? undefined : dateRange.sampai
     }, {
         refetchInterval: 15000 // Polling every 15 seconds
     });
@@ -290,7 +292,7 @@ export default function MobilInventoryScreen() {
         setDialogConfig({
             visible: true,
             title: "Hapus Unit",
-            message: `Apakah Anda yakin ingin menghapus ${unit.merek} ${unit.model} (${unit.nomor_plat})? Data yang dihapus tidak dapat dikembalikan.`,
+            message: `Apakah Anda yakin ingin menghapus ${unit.merek} ${unit.model} (${unit.nomor_plat})? Jika unit masih punya booking/penjualan, transaksi terkait akan dibatalkan lebih dulu.`,
             variant: 'error',
             type: 'confirm',
             onConfirm: async () => {
@@ -314,7 +316,7 @@ export default function MobilInventoryScreen() {
                         setDialogConfig({
                             visible: true,
                             title: "Error",
-                            message: "Gagal menghapus unit mobil",
+                            message: "Gagal menghapus atau membatalkan unit mobil",
                             variant: 'error',
                             type: 'alert'
                         });
@@ -345,6 +347,26 @@ export default function MobilInventoryScreen() {
         }
 
         setDateRange(tempDateRange);
+        setUseAllTime(false);
+        setIsDateModalVisible(false);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.dismiss();
+        }
+    };
+
+    const handleResetDateRange = () => {
+        const defaultRange = getDefaultDateRange();
+        setDateRange(defaultRange);
+        setUseAllTime(false);
+        setTempDateRange(defaultRange);
+        setIsDateModalVisible(false);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.dismiss();
+        }
+    };
+
+    const handleSetAllTime = () => {
+        setUseAllTime(true);
         setIsDateModalVisible(false);
         if (Platform.OS !== 'web') {
             dateSheetRef.current?.dismiss();
@@ -354,6 +376,18 @@ export default function MobilInventoryScreen() {
     const renderDateContent = () => (
         <View className="p-0">
             <Typography className="text-gray-400 text-[10px] uppercase font-bold mb-4 ml-1">Rentang Tanggal</Typography>
+            <Pressable
+                onPress={handleSetAllTime}
+                className={`mb-4 rounded-2xl border px-4 py-3 ${useAllTime ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'}`}
+            >
+                <View className="flex-row items-center justify-between">
+                    <View>
+                        <Typography weight="bold" className="text-sm text-gray-800">All Time</Typography>
+                        <Typography className="text-[11px] text-gray-500">Tampilkan semua data mobil tanpa batas tanggal.</Typography>
+                    </View>
+                    <View className={`w-5 h-5 rounded-full border-2 ${useAllTime ? 'bg-amber-500 border-amber-500' : 'bg-transparent border-gray-300'}`} />
+                </View>
+            </Pressable>
             <View className="space-y-4">
                 <View>
                     <Typography variant="caption" className="text-gray-500 mb-1 ml-1">Dari Tanggal</Typography>
@@ -393,6 +427,7 @@ export default function MobilInventoryScreen() {
                     />
                 </View>
             </View>
+            <Button title="Reset ke 1 Bulan" onPress={handleResetDateRange} variant="outline" className="rounded-2xl py-4 mt-3" />
         </View>
     );
 
@@ -980,15 +1015,24 @@ export default function MobilInventoryScreen() {
                             }}
                             className="flex-row items-center justify-between mb-6 bg-white p-4 rounded-[24px] shadow-sm border border-gray-100 active:bg-gray-50 mx-6"
                         >
-                            <View className="flex-row items-center">
-                                <Calendar size={18} color="#023C69" />
-                                <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
-                            </View>
+                    <View className="flex-row items-center">
+                        <Calendar size={18} color="#023C69" />
+                        <Typography className="text-gray-800 text-xs font-bold ml-3">
+                            {useAllTime ? 'Semua data' : `${dateRange.dari} s/d ${dateRange.sampai}`}
+                        </Typography>
+                    </View>
+                        <View className="flex-row items-center gap-2">
+                            {useAllTime && (
+                                <View className="bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                                    <Typography className="text-amber-700 text-[10px] font-bold">ALL TIME</Typography>
+                                </View>
+                            )}
                             <View className="bg-primary/5 px-2 py-1 rounded-lg">
                                 <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
                             </View>
-                        </Pressable>
-                    )}
+                        </View>
+                    </Pressable>
+                )}
 
 
 

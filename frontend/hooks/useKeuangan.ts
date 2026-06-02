@@ -295,6 +295,22 @@ export const useProcessInvestorDisbursement = () => {
         },
     });
 };
+export const useReverseInvestorDisbursement = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ transaksiId, data }: { transaksiId: number; data?: { alasan?: string } }) =>
+            keuanganService.reverseInvestorDisbursement(transaksiId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pending_investor_disbursements'] });
+            queryClient.invalidateQueries({ queryKey: ['investor_disbursement_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['investor_disbursement_history'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard_summary'] });
+            queryClient.invalidateQueries({ queryKey: ['capital_report'] });
+        },
+    });
+};
 export const useInvestorDisbursementHistory = (params?: any) => {
     return useQuery({
         queryKey: ['investor_disbursement_history', params],

@@ -180,10 +180,10 @@ def delete_muatan(
     db: DBSession,
     current_user: ManagerUser,
 ):
-    """Delete transport load."""
+    """Delete transport load (cancellation-safe)."""
     service = MuatanService(db)
     service.delete(muatan_id)
-    return {"message": "Muatan berhasil dihapus"}
+    return {"message": "Muatan berhasil dibatalkan"}
 
 
 @router.post("/{muatan_id}/void")

@@ -46,7 +46,6 @@ import {
     usePayMuatanSplit,
     useUpdateMuatanStatus,
     useVoidMuatan,
-    useDeleteMuatan
 } from '../../hooks/useJasaAngkut';
 import { useCreatePengeluaran } from '../../hooks/useBengkel';
 import { SkeletonCard } from '../../components/ui/Skeleton';
@@ -122,7 +121,6 @@ export default function JasaAngkutScreen() {
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
     const updateStatusMutation = useUpdateMuatanStatus();
     const voidMuatanMutation = useVoidMuatan();
-    const deleteMuatanMutation = useDeleteMuatan();
     const queryClient = useQueryClient();
 
     const { data: balances } = useKasBankBalances();
@@ -448,8 +446,8 @@ export default function JasaAngkutScreen() {
     const handleDelete = (item: Muatan) => {
         setDialogConfig({
             visible: true,
-            title: "Hapus Muatan",
-            message: "Apakah Anda yakin ingin menghapus data muatan ini? Data yang dihapus tidak dapat dikembalikan.",
+            title: "Batalkan Muatan",
+            message: "Apakah Anda yakin ingin membatalkan muatan ini? Seluruh catatan keuangan yang terkait akan dibalikkan dan data akan tetap tersimpan sebagai batal.",
             variant: 'error',
             type: 'confirm',
             onConfirm: async () => {
@@ -457,25 +455,22 @@ export default function JasaAngkutScreen() {
                     setActionLoading(true);
 
                     if (!onlineManager.isOnline()) {
-                        jasaAngkutService.deleteMuatan(item.id);
-                        handleCloseSheet();
-                        refetch();
-                        closeDialog();
-                        Alert.alert('Offline Mode', 'Data muatan telah dijadwalkan untuk dihapus saat online.');
+                        Alert.alert('Offline Mode', 'Pembatalan muatan membutuhkan koneksi karena harus membalikkan catatan keuangan.');
                         return;
                     }
 
-                    await jasaAngkutService.deleteMuatan(item.id);
+                    await voidMuatanMutation.mutateAsync(item.id);
                     handleCloseSheet();
                     refetch();
+                    refetchSummary();
                     closeDialog();
                 } catch (error) {
-                    console.error("Gagal menghapus:", error);
+                    console.error("Gagal membatalkan:", error);
                     setTimeout(() => {
                         setDialogConfig({
                             visible: true,
                             title: "Error",
-                            message: getErrorMessage(error, "Gagal menghapus data muatan"),
+                            message: getErrorMessage(error, "Gagal membatalkan data muatan"),
                             variant: 'error',
                             type: 'alert'
                         });

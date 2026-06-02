@@ -970,6 +970,205 @@ class PenjualanMobilService:
 
         return transaksi
 
+    def _reverse_sale_kas_entries(self, transaksi: TransaksiPenjualanMobil, user_id: Optional[int] = None) -> None:
+        """Reverse all cash book entries tied to a sale transaction."""
+        kas_entries = (
+            self.db.query(KasBank)
+            .filter(KasBank.nomor_referensi == transaksi.nomor_transaksi)
+            .all()
+        )
+
+        for entry in kas_entries:
+            reverse_type = KasBankType.KELUAR if entry.tipe == KasBankType.MASUK else KasBankType.MASUK
+            create_kas_entry(
+                db=self.db,
+                tanggal=date.today(),
+                tipe=reverse_type,
+                nominal=entry.nominal,
+                sumber=entry.sumber,
+                metode_bayar=entry.metode_bayar,
+                referensi_id=entry.referensi_id or transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                keterangan=f"[VOID] Pembatalan penjualan mobil {transaksi.nomor_transaksi}: {entry.keterangan}",
+                kas_jenis=entry.jenis,
+                allow_negative=True,
+                commit=False,
+            )
+
+    def reverse_investor_disbursement(
+        self,
+        transaksi_id: int,
+        alasan: str = "",
+        user_id: Optional[int] = None,
+    ) -> TransaksiPenjualanMobil:
+        """Reverse all investor disbursement entries for a sold car."""
+        transaksi = (
+            self.db.query(TransaksiPenjualanMobil)
+            .options(
+                joinedload(TransaksiPenjualanMobil.mobil),
+                joinedload(TransaksiPenjualanMobil.rincian_pencairan),
+            )
+            .filter(TransaksiPenjualanMobil.id == transaksi_id)
+            .first()
+        )
+
+        if not transaksi:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaksi penjualan tidak ditemukan",
+            )
+
+        if transaksi.tipe_kepemilikan != OwnershipType.INVESTOR:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hanya transaksi mobil investor yang memiliki reversal pencairan",
+            )
+
+        if not transaksi.rincian_pencairan:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak ada dana investor yang perlu direversal",
+            )
+
+        if all("[REVERSED]" in (detail.catatan or "") for detail in transaksi.rincian_pencairan):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pencairan investor ini sudah pernah direversal",
+            )
+
+        payout_entries = (
+            self.db.query(KasBank)
+            .filter(
+                KasBank.referensi_id == transaksi.id,
+                KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.keterangan.ilike("%Pencairan Investor%"),
+            )
+            .all()
+        )
+
+        for entry in payout_entries:
+            create_kas_entry(
+                db=self.db,
+                tanggal=date.today(),
+                tipe=KasBankType.MASUK,
+                nominal=entry.nominal,
+                sumber=entry.sumber,
+                metode_bayar=entry.metode_bayar,
+                referensi_id=transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                keterangan=f"[REVERSAL] Pembalikan pencairan investor {transaksi.nomor_transaksi}: {entry.keterangan}",
+                kas_jenis=entry.jenis,
+                allow_negative=True,
+                commit=False,
+            )
+
+        for detail in list(transaksi.rincian_pencairan or []):
+            current_note = (detail.catatan or "").strip()
+            if "[REVERSED]" not in current_note:
+                detail.catatan = f"[REVERSED] {current_note}".strip()
+
+        transaksi.nominal_pencairan = Decimal("0")
+        transaksi.tanggal_pencairan = None
+        transaksi.status_pencairan = InvestorDisbursementStatus.BELUM_DICAIRKAN
+        transaksi.catatan_pencairan = (
+            f"Reversal pencairan investor dilakukan. {alasan}".strip()
+            if alasan
+            else "Reversal pencairan investor dilakukan."
+        )
+
+        self.db.commit()
+        self.db.refresh(transaksi)
+        return transaksi
+
+    def cancel_sale(
+        self,
+        transaksi_id: int,
+        alasan: str = "",
+        user_id: Optional[int] = None,
+    ) -> TransaksiPenjualanMobil:
+        """Cancel a completed car sale and reverse related finance."""
+        transaksi = (
+            self.db.query(TransaksiPenjualanMobil)
+            .options(
+                joinedload(TransaksiPenjualanMobil.mobil),
+                joinedload(TransaksiPenjualanMobil.rincian_pencairan),
+            )
+            .filter(TransaksiPenjualanMobil.id == transaksi_id)
+            .first()
+        )
+
+        if not transaksi:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Transaksi penjualan tidak ditemukan",
+            )
+
+        if transaksi.status_bayar != PaymentStatus.LUNAS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hanya transaksi lunas yang dapat dibatalkan lewat pembatalan penjualan",
+            )
+
+        mobil = transaksi.mobil or self.db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
+        if not mobil:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mobil terkait tidak ditemukan",
+            )
+
+        disbursement_details = list(transaksi.rincian_pencairan or [])
+        disbursement_total = sum((d.nominal for d in disbursement_details), Decimal("0"))
+        all_reversed = bool(disbursement_details) and all(
+            "[REVERSED]" in (detail.catatan or "") for detail in disbursement_details
+        )
+        if (transaksi.status_pencairan == InvestorDisbursementStatus.DICAIRKAN) or (disbursement_total > 0 and not all_reversed):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tidak dapat membatalkan penjualan karena dana investor sudah dicairkan. Lakukan reversal pencairan investor terlebih dahulu.",
+            )
+
+        # 1. Void linked workshop transactions so sparepart stock returns.
+        linked_bengkel = (
+            self.db.query(TransaksiPenjualanBengkel)
+            .filter(
+                TransaksiPenjualanBengkel.mobil_id == mobil.id,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            )
+            .all()
+        )
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+        bengkel_service = TransaksiBengkelService(self.db)
+        for tx in linked_bengkel:
+            bengkel_service.void_transaction(tx.id)
+
+        # 2. Reverse cash book movement generated by the sale.
+        self._reverse_sale_kas_entries(transaksi, user_id)
+
+        # 3. Mark sale as cancelled and release the car back to inventory.
+        transaksi.status_bayar = PaymentStatus.BATAL
+        transaksi.metode_bayar = PaymentMethod.TUNAI
+        transaksi.dp = Decimal("0")
+        transaksi.sisa_bayar = Decimal("0")
+        transaksi.total_modal = Decimal("0")
+        transaksi.laba_kotor = Decimal("0")
+        transaksi.laba_investor = Decimal("0")
+        transaksi.laba_tpm = Decimal("0")
+        transaksi.catatan = (transaksi.catatan or "").strip()
+        if transaksi.catatan:
+            transaksi.catatan += " | "
+        transaksi.catatan += "DIBATALKAN"
+        if alasan:
+            transaksi.catatan += f" | Alasan: {alasan}"
+
+        mobil.status = CarStatus.TERSEDIA
+        mobil.tanggal_terjual = None
+        transaksi.mobil_id = None
+
+        self.db.commit()
+        self.db.refresh(transaksi)
+        return transaksi
+
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
         """Get transaction by ID."""
         transaksi = (

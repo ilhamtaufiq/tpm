@@ -988,20 +988,12 @@ class MuatanService:
         return muatan
 
     def delete(self, muatan_id: int) -> bool:
-        """Delete transport load."""
-        muatan = self.get_by_id(muatan_id)
+        """Delete transport load.
 
-        # Cannot delete paid transaction
-        if muatan.status_bayar == PaymentStatus.LUNAS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tidak dapat menghapus transaksi yang sudah lunas",
-            )
-
-        self.db.delete(muatan)
-        self.db.commit()
-        self._emit_change(muatan, "deleted")
-        return True
+        For transactional safety, delete is treated as a cancellation so
+        financial records are reversed instead of hard-deleting the row.
+        """
+        return self.void_muatan(muatan_id)
 
     def void_muatan(self, muatan_id: int) -> bool:
         """Void/Cancel a transport load and reverse related financial records."""

@@ -583,6 +583,10 @@ export const keuanganService = {
         const response = await api.post(`/penjualan-mobil/${transaksiId}/disburse`, data);
         return response.data;
     },
+    reverseInvestorDisbursement: async (transaksiId: number, data?: { alasan?: string }) => {
+        const response = await api.post(`/penjualan-mobil/${transaksiId}/investor/reversal`, data || {});
+        return response.data;
+    },
     getInvestorDisbursementHistory: async (params?: {
         nama_investor?: string;
         tanggal_dari?: string;
