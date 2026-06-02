@@ -68,7 +68,7 @@ export default function MobilInventoryScreen() {
     const dateSheetRef = useRef<BottomSheetModal>(null);
     const dateSnapPoints = useMemo(() => ['50%', '75%'], []);
 
-    const [activeTab, setActiveTab] = useState('semua');
+    const [activeTab, setActiveTab] = useState<'semua' | 'tersedia' | 'booking' | 'terjual'>('semua');
     const [searchQuery, setSearchQuery] = useState('');
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
@@ -124,7 +124,7 @@ export default function MobilInventoryScreen() {
 
     // API Hooks
     const { data, isLoading, refetch } = useMobilList({
-        status: activeTab === 'semua' ? undefined : activeTab,
+        status: activeTab === 'semua' ? undefined : activeTab.toUpperCase(),
         status_bayar: paymentFilter,
         search: searchQuery,
         // Only apply date range for Sold/Booking, show all available inventory
@@ -372,6 +372,8 @@ export default function MobilInventoryScreen() {
             dateSheetRef.current?.dismiss();
         }
     };
+
+    const getNormalizedStatus = (status: any) => String(status || '').toLowerCase();
 
     const renderDateContent = () => (
         <View className="p-0">
@@ -1077,15 +1079,15 @@ export default function MobilInventoryScreen() {
                                             )}
                                             
                                             {/* Status Badge Top Left */}
-                                            <View className="absolute top-2 left-2 right-2 flex-row flex-wrap gap-1">
-                                                {item.status_bayar_beli !== 'LUNAS' && (
+                            <View className="absolute top-2 left-2 right-2 flex-row flex-wrap gap-1">
+                                                {String(item.status_bayar_beli || '').toUpperCase() !== 'LUNAS' && (
                                                     <View className="bg-rose-600/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
                                                         <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
                                                             HUTANG
                                                         </Typography>
                                                     </View>
                                                 )}
-                                                {item.status === 'booking' && (
+                                                {getNormalizedStatus(item.status) === 'booking' && (
                                                     <View className="bg-amber-500/80 backdrop-blur-md px-2 py-1 rounded-lg border border-white/20 self-start">
                                                         <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[8px]">
                                                             PIUTANG
@@ -1114,16 +1116,16 @@ export default function MobilInventoryScreen() {
                                                         {item.merek} {item.model}
                                                     </Typography>
                                                     <View className={`px-2 py-1 rounded-md self-start ${
-                                                        item.status === 'tersedia' ? 'bg-emerald-50' : 
-                                                        item.status === 'booking' ? 'bg-amber-50' : 
+                                                        getNormalizedStatus(item.status) === 'tersedia' ? 'bg-emerald-50' : 
+                                                        getNormalizedStatus(item.status) === 'booking' ? 'bg-amber-50' : 
                                                         'bg-blue-50'
                                                     }`}>
                                                         <Typography weight="bold" className={`text-[8px] uppercase ${
-                                                            item.status === 'tersedia' ? 'text-emerald-700' : 
-                                                            item.status === 'booking' ? 'text-amber-700' : 
+                                                            getNormalizedStatus(item.status) === 'tersedia' ? 'text-emerald-700' : 
+                                                            getNormalizedStatus(item.status) === 'booking' ? 'text-amber-700' : 
                                                             'text-blue-700'
                                                         }`}>
-                                                            {item.status}
+                                                            {String(item.status || '').toUpperCase()}
                                                         </Typography>
                                                     </View>
                                                 </View>
@@ -1145,7 +1147,7 @@ export default function MobilInventoryScreen() {
                                             </View>
 
                                             <View className="flex-row justify-end space-x-2 border-t border-gray-50 pt-3 mt-1">
-                                                {(item.status === 'tersedia' || item.status === 'booking') && (
+                                                {(getNormalizedStatus(item.status) === 'tersedia' || getNormalizedStatus(item.status) === 'booking') && (
                                                     <Pressable
                                                         className="w-8 h-8 bg-emerald-50 rounded-lg items-center justify-center border border-emerald-100 active:bg-emerald-100"
                                                         onPress={() => handlePresentSalesModal(item)}
