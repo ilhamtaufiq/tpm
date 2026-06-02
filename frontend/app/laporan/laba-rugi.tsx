@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Modal, Alert, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useNavigation, Stack } from 'expo-router';
 import { 
     ChevronLeft, ChevronRight, Calendar, TrendingUp,
@@ -25,6 +25,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function LabaRugiScreen() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
     const [filterType, setFilterType] = useState<FilterType>('monthly');
