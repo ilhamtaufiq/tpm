@@ -11,6 +11,7 @@ import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { ArmadaSelector } from '../../../components/ui/ArmadaSelector';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
 import { useCreateTransaksiBengkel, useSparePartsList } from '../../../hooks/useBengkel';
+import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useMobilList } from '../../../hooks/useMobil';
 import { formatCurrency } from '../../../utils/format';
@@ -38,8 +39,21 @@ export default function BengkelTransaksiScreen() {
     const [scannerOpen, setScannerOpen] = useState(false);
     const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
     const [notice, setNotice] = useState<{ type: NoticeType; title: string; message: string } | null>(null);
+    const debouncedPartSearch = useDebounce(partSearch, 300);
+    const PART_PAGE_SIZE = 40;
 
-    const { data: partsData, isLoading: isPartsLoading } = useSparePartsList({ limit: 200, sort_by: 'nama', sort_order: 'asc' });
+    const {
+        data: partsData,
+        isLoading: isPartsLoading,
+        fetchNextPage: fetchNextPartsPage,
+        hasNextPage: hasNextPartsPage,
+        isFetchingNextPage: isFetchingNextPartsPage,
+    } = useSparePartsList({
+        limit: PART_PAGE_SIZE,
+        sort_by: 'nama',
+        sort_order: 'asc',
+        search: debouncedPartSearch || undefined,
+    });
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
     const createMutation = useCreateTransaksiBengkel();
@@ -66,27 +80,6 @@ export default function BengkelTransaksiScreen() {
         return partTotal + serviceTotal;
     }, [selectedPartList, selectedServiceList]);
 
-    const filteredParts = useMemo(() => {
-        const q = partSearch.trim().toLowerCase();
-        const list = q ? parts.filter((part: any) =>
-            (part.nama || '').toLowerCase().includes(q) ||
-            (part.kode || '').toLowerCase().includes(q) ||
-            (part.kode_part || '').toLowerCase().includes(q) ||
-            (part.kategori || '').toLowerCase().includes(q)
-        ) : parts;
-
-        return [...list].sort((a: any, b: any) => {
-            const rank = (part: any) => {
-                if (part.stok === 999) return 0;
-                if (Number(part.stok || 0) > 0) return 1;
-                return 2;
-            };
-            const diff = rank(a) - rank(b);
-            if (diff !== 0) return diff;
-            return String(a.nama || '').localeCompare(String(b.nama || ''), 'id');
-        });
-    }, [parts, partSearch]);
-
     const filteredServices = useMemo(() => {
         const q = serviceSearch.trim().toLowerCase();
         if (!q) return services;
@@ -96,8 +89,20 @@ export default function BengkelTransaksiScreen() {
             (service.deskripsi || '').toLowerCase().includes(q)
         );
     }, [services, serviceSearch]);
-    const visibleParts = partSearch.trim() ? filteredParts : filteredParts.slice(0, 10);
+    const visibleParts = parts;
     const visibleServices = serviceSearch.trim() ? filteredServices : filteredServices.slice(0, 10);
+
+    const handlePartsScroll = (event: any) => {
+        if (!hasNextPartsPage || isFetchingNextPartsPage) return;
+
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const paddingToBottom = 320;
+        const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+
+        if (distanceFromBottom < paddingToBottom) {
+            fetchNextPartsPage();
+        }
+    };
 
     const showNotice = (type: NoticeType, title: string, message: string) => {
         setNotice({ type, title, message });
@@ -260,7 +265,12 @@ export default function BengkelTransaksiScreen() {
 
             {notice && <NoticeBanner type={notice.type} title={notice.title} message={notice.message} onClose={() => setNotice(null)} />}
 
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}>
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}
+                onScroll={handlePartsScroll}
+                scrollEventThrottle={16}
+            >
                 {step === 1 && (
                     <View className={showParts && showServices ? "flex-row space-x-4" : "space-y-6"}>
                         {showParts && (
@@ -300,6 +310,11 @@ export default function BengkelTransaksiScreen() {
                                     </Pressable>
                                 );
                             })}
+                            {isFetchingNextPartsPage && (
+                                <View className="py-4">
+                                    <ActivityIndicator color="#023C69" />
+                                </View>
+                            )}
                         </View>
                         )}
 

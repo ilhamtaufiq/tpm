@@ -2,7 +2,7 @@ import React from 'react';
 import { View, ScrollView, Alert, Pressable, Platform, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, Sliders, UserPlus, Bell } from 'lucide-react-native';
+import { CircleUser, User, Trash2, LogOut, ChevronRight, Settings, Printer, Bluetooth, ShieldCheck, Palette, Mail, Lock, Fingerprint, Scan, Type, Database, MonitorOff, RefreshCw, SlidersHorizontal, UserPlus, Bell } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -349,7 +349,7 @@ export default function ProfileScreen() {
                                     onPress={() => router.push('/settings/navigation')}
                                 >
                                     <View className="w-12 h-12 bg-blue-50 rounded-[20px] items-center justify-center mr-4">
-                                        <Sliders size={24} color="#3B82F6" />
+                                        <SlidersHorizontal size={24} color="#3B82F6" />
                                     </View>
                                     <View className="flex-1">
                                         <Typography variant="body1" weight="bold" className="text-text mb-0.5">Bottom Navigasi</Typography>

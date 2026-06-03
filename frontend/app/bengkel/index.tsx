@@ -85,14 +85,6 @@ export default function BengkelScreen() {
             route: { pathname: '/bengkel/transaksi', params: { mode: 'servis' } }
         },
         {
-            id: 'jasa-angkut',
-            title: 'Jasa Angkut',
-            description: 'Akses unit logistik',
-            icon: Truck,
-            color: '#10B981',
-            route: '/jasa-angkut'
-        },
-        {
             id: 'inventory',
             title: 'Inventory',
             description: 'Stok dan barang bengkel',

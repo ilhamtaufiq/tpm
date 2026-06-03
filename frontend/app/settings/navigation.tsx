@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Pressable, Platform, Modal, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, RotateCcw, ChevronRight, Sliders, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
+import { ChevronLeft, RotateCcw, ChevronRight, SlidersHorizontal, Check, Home, ShieldCheck, Wrench, CarFront, Truck, BarChart3, History, Receipt, User, Plus, X } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { router } from 'expo-router';
 import { useUIStore } from '../../store/useUIStore';
@@ -160,7 +160,7 @@ export default function NavigationSettingsScreen() {
                     {/* Bento Info banner */}
                     <View className="bg-primary/5 p-6 rounded-[32px] mb-6 items-center border border-primary/10">
                         <View className="w-14 h-14 bg-primary rounded-full items-center justify-center mb-4 shadow-lg">
-                            <Sliders size={26} color="white" />
+                            <SlidersHorizontal size={26} color="white" />
                         </View>
                         <Typography variant="h4" weight="bold" className="text-primary text-center">Kustomisasi Menu Utama</Typography>
                         <Typography variant="caption" className="text-primary/60 text-center mt-1">Sesuaikan 5 tombol di bar bawah layar sesuai kebutuhan operasional harian Anda</Typography>

@@ -1,4 +1,4 @@
-import { Wrench, Truck, TruckFront, CarFront, Users, BarChart3, LayoutDashboard, Database, Receipt, History, Wallet, User, UserPlus, ShieldCheck, Printer, Settings, Home, ShoppingCart, CirclePlus, Boxes, ArrowRightLeft, Package, Archive, FileText, Landmark, CircleDollarSign, Banknote, ArrowDownCircle, Scale } from 'lucide-react-native';
+import { Wrench, Truck, CarFront, Users, BarChart3, LayoutDashboard, Database, Receipt, History, Wallet, User, UserPlus, ShieldCheck, Printer, Settings, Home, ShoppingCart, CirclePlus, Boxes, ArrowRightLeft, Package, Archive, FileText, Landmark, CircleDollarSign, Banknote, ArrowDownCircle, Scale } from 'lucide-react-native';
 
 export interface AppRoute {
     id: string;
@@ -23,7 +23,7 @@ export const APP_ROUTES: AppRoute[] = [
 
     // --- Jasa Angkut ---
     { id: 'angkut', label: 'Jasa Angkut', description: 'Input muatan dan logistik', path: '/jasa-angkut', icon: Truck, category: 'Logistik', keywords: ['truk', 'muatan', 'kirim', 'angkut'] },
-    { id: 'angkut-armada', label: 'Data Armada', description: 'Kelola unit armada jasa angkut', path: '/jasa-angkut/armada', icon: TruckFront, category: 'Logistik', keywords: ['truk', 'unit', 'armada'] },
+    { id: 'angkut-armada', label: 'Data Armada', description: 'Kelola unit armada jasa angkut', path: '/jasa-angkut/armada', icon: Truck, category: 'Logistik', keywords: ['truk', 'unit', 'armada'] },
     { id: 'angkut-armada-form', label: 'Form Armada', description: 'Tambah atau ubah data armada', path: '/jasa-angkut/armada/form', icon: CirclePlus, category: 'Logistik', keywords: ['form', 'tambah', 'edit', 'armada'] },
     { id: 'angkut-muatan-form', label: 'Form Muatan', description: 'Input muatan jasa angkut', path: '/jasa-angkut/muatan/form', icon: FileText, category: 'Logistik', keywords: ['muatan', 'ritase', 'ongkos'] },
     { id: 'supir', label: 'Data Supir', description: 'Kelola data dan komisi supir', path: '/jasa-angkut/supir', icon: Users, category: 'Logistik', keywords: ['driver', 'karyawan', 'angkut'] },
