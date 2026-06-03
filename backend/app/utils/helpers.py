@@ -1,20 +1,19 @@
-from datetime import date, datetime
-from zoneinfo import ZoneInfo
+from datetime import date, datetime, timezone, timedelta
 from typing import Optional
 import random
 import string
 
 
-JAKARTA_TZ = ZoneInfo("Asia/Jakarta")
+JAKARTA_TZ = timezone(timedelta(hours=7))
 
 
 def get_jakarta_now() -> datetime:
-    """Return current datetime in Asia/Jakarta."""
+    """Return current datetime in Asia/Jakarta (UTC+7)."""
     return datetime.now(JAKARTA_TZ)
 
 
 def get_jakarta_date() -> date:
-    """Return current date in Asia/Jakarta."""
+    """Return current date in Asia/Jakarta (UTC+7)."""
     return get_jakarta_now().date()
 
 
