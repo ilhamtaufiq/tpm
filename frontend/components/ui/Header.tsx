@@ -124,6 +124,7 @@ export const Header = ({
     };
 
     return (
+        <>
         <View 
             className="bg-white pb-4 border-b border-gray-100 px-6 relative overflow-hidden"
             style={{ paddingTop: Math.max(insets.top, 16) + 8 }}
@@ -427,18 +428,19 @@ export const Header = ({
                 </View>
             </Modal>
 
-            <AlertDialog
-                visible={logoutDialogVisible}
-                title="Keluar Sesi"
-                message="Apakah Anda yakin ingin keluar dari aplikasi?"
-                variant="warning"
-                type="confirm"
-                confirmText="Keluar"
-                cancelText="Batal"
-                loading={isLoggingOut}
-                onClose={() => setLogoutDialogVisible(false)}
-                onConfirm={performLogout}
-            />
         </View>
+        <AlertDialog
+            visible={logoutDialogVisible}
+            title="Keluar Sesi"
+            message="Apakah Anda yakin ingin keluar dari aplikasi?"
+            variant="warning"
+            type="confirm"
+            confirmText="Keluar"
+            cancelText="Batal"
+            loading={isLoggingOut}
+            onClose={() => setLogoutDialogVisible(false)}
+            onConfirm={performLogout}
+        />
+        </>
     );
 };
