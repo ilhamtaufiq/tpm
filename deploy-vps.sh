@@ -223,7 +223,7 @@ if ! command -v apache2 &> /dev/null && ! command -v httpd &> /dev/null; then
 fi
 
 log "Mengaktifkan module Apache yang dibutuhkan..."
-a2enmod rewrite proxy proxy_http headers
+a2enmod rewrite proxy proxy_http proxy_wstunnel headers
 
 log "Membuat konfigurasi VirtualHost Apache untuk $DOMAIN_NAME..."
 cat > "$APACHE_CONF" <<EOL
@@ -247,6 +247,13 @@ cat > "$APACHE_CONF" <<EOL
 
     # Proxy API Requests ke Backend (FastAPI)
     ProxyPreserveHost On
+    ProxyRequests Off
+    ProxyTimeout 86400
+
+    # WebSocket realtime endpoint harus diproxy sebagai ws:// agar upgrade jalan
+    ProxyPass /api/v1/realtime/ws ws://127.0.0.1:8000/api/v1/realtime/ws retry=0
+    ProxyPassReverse /api/v1/realtime/ws ws://127.0.0.1:8000/api/v1/realtime/ws
+
     ProxyPass /api http://127.0.0.1:8000/api
     ProxyPassReverse /api http://127.0.0.1:8000/api
     
