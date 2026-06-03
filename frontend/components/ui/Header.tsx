@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut, Briefcase } from 'lucide-react-native';
 import { Typography } from './Typography';
-import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image, Platform, Alert } from 'react-native';
+import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APP_ROUTES } from '../../constants/NavigationRoutes';
 import { router } from 'expo-router';
@@ -10,6 +10,7 @@ import { authService } from '../../services/auth';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { useUIStore } from '../../store/useUIStore';
 import { getFileUrl } from '../../utils/image';
+import { AlertDialog } from './AlertDialog';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -52,6 +53,8 @@ export const Header = ({
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [localSearchQuery, setLocalSearchQuery] = useState('');
     const [userMenuVisible, setUserMenuVisible] = useState(false);
+    const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const query = searchValue !== undefined ? searchValue : localSearchQuery;
     const setQuery = onSearchChange || setLocalSearchQuery;
@@ -87,27 +90,25 @@ export const Header = ({
         router.push(path as any);
     };
 
+    const performLogout = async () => {
+        setIsLoggingOut(true);
+        try {
+            await authService.clearPushToken().catch((error) => {
+                console.warn('[Header] Failed to clear push token before logout', error);
+            });
+            clearNotifications();
+            logout();
+            await (useAuthStore as any).persist?.clearStorage?.();
+            router.replace('/(auth)/login');
+        } finally {
+            setIsLoggingOut(false);
+            setLogoutDialogVisible(false);
+        }
+    };
+
     const handleLogout = () => {
         setUserMenuVisible(false);
-        Alert.alert(
-            'Keluar Sesi',
-            'Apakah Anda yakin ingin keluar dari aplikasi?',
-            [
-                { text: 'Batal', style: 'cancel' },
-                    {
-                        text: 'Keluar',
-                        style: 'destructive',
-                        onPress: async () => {
-                            await authService.clearPushToken().catch((error) => {
-                                console.warn('[Header] Failed to clear push token before logout', error);
-                            });
-                            clearNotifications();
-                            logout();
-                            router.replace('/(auth)/login');
-                        },
-                    },
-            ]
-        );
+        setLogoutDialogVisible(true);
     };
 
     const handleBack = () => {
@@ -425,6 +426,19 @@ export const Header = ({
                     </View>
                 </View>
             </Modal>
+
+            <AlertDialog
+                visible={logoutDialogVisible}
+                title="Keluar Sesi"
+                message="Apakah Anda yakin ingin keluar dari aplikasi?"
+                variant="warning"
+                type="confirm"
+                confirmText="Keluar"
+                cancelText="Batal"
+                loading={isLoggingOut}
+                onClose={() => setLogoutDialogVisible(false)}
+                onConfirm={performLogout}
+            />
         </View>
     );
 };
