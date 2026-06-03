@@ -250,7 +250,7 @@ class DetailServiceCreate(BaseModel):
 class TransaksiBengkelCreate(BaseModel):
     """Schema for creating workshop transaction."""
 
-    tanggal: date
+    tanggal: Optional[date] = None
     customer_id: Optional[int] = None
     nama_customer: Optional[str] = Field(None, max_length=100)
     nomor_plat: Optional[str] = Field(None, max_length=15)

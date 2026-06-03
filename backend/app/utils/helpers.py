@@ -1,7 +1,21 @@
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from typing import Optional
 import random
 import string
+
+
+JAKARTA_TZ = ZoneInfo("Asia/Jakarta")
+
+
+def get_jakarta_now() -> datetime:
+    """Return current datetime in Asia/Jakarta."""
+    return datetime.now(JAKARTA_TZ)
+
+
+def get_jakarta_date() -> date:
+    """Return current date in Asia/Jakarta."""
+    return get_jakarta_now().date()
 
 
 def generate_transaction_number(prefix: str, sequence: int = None) -> str:
@@ -15,7 +29,7 @@ def generate_transaction_number(prefix: str, sequence: int = None) -> str:
     Returns:
         Formatted transaction number (e.g., 'TRX-20240115-001')
     """
-    date_part = datetime.now().strftime("%Y%m%d")
+    date_part = get_jakarta_now().strftime("%Y%m%d")
 
     if sequence is not None:
         seq_part = f"{sequence:04d}"

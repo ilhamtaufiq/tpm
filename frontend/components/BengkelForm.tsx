@@ -451,7 +451,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         // For internal categories: auto-set internal payment (no cash involved)
 
         const payload: any = {
-            tanggal: initialData ? initialData.tanggal : new Date().toISOString().split('T')[0],
+            ...(initialData ? { tanggal: initialData.tanggal } : {}),
             nomor_plat: validatedPlat,
             jenis_kendaraan: finalJenis.substring(0, 50),
             nama_customer: validatedCustomerName,

@@ -18,6 +18,7 @@ from app.models.mobil import MobilPartService, Mobil
 from app.models.jasa_angkut import JasaAngkutPartService
 from app.schemas.bengkel import TransaksiBengkelCreate
 from app.realtime import publish_realtime_event
+from app.utils.helpers import get_jakarta_date
 from app.utils.constants import (
     PaymentStatus,
     PaymentMethod,
@@ -186,6 +187,8 @@ class TransaksiBengkelService:
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanBengkel:
         """Create a new workshop sales transaction."""
+        transaksi_tanggal = get_jakarta_date()
+
         # Validate customer if provided
         customer = None
         if data.customer_id:
@@ -298,7 +301,7 @@ class TransaksiBengkelService:
         # Create transaction record
         transaksi = TransaksiPenjualanBengkel(
             nomor_transaksi=nomor_transaksi,
-            tanggal=data.tanggal,
+            tanggal=transaksi_tanggal,
             customer_id=data.customer_id,
             nama_customer=nama_customer,
             nomor_plat=data.nomor_plat,
@@ -342,7 +345,7 @@ class TransaksiBengkelService:
             out_amount = grand_total
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
-                tanggal=data.tanggal,
+                tanggal=transaksi_tanggal,
                 customer_id=customer.id if customer else None,
                 nama_debitur=debtor_name,
                 telepon_debitur=customer.telepon if customer else None,
@@ -381,7 +384,7 @@ class TransaksiBengkelService:
                     # ALSO: Create corresponding HutangUsaha for the mobil side to balance the books
                     new_hutang = HutangUsaha(
                         nomor_hutang=self._generate_nomor_hutang(),
-                        tanggal=data.tanggal,
+                        tanggal=transaksi_tanggal,
                         nama_kreditur="BENGKEL TPM",
                         nominal_hutang=grand_total,
                         sisa_hutang=grand_total,
@@ -422,7 +425,7 @@ class TransaksiBengkelService:
                         p_service.process_payment_split(
                             PembayaranPiutangSplit(
                                 piutang_id=piutang_record.id,
-                                tanggal=data.tanggal,
+                                tanggal=transaksi_tanggal,
                                 payments=payment_items,
                                 catatan=f"DP Transaksi {nomor_transaksi}"
                             ),
@@ -511,7 +514,7 @@ class TransaksiBengkelService:
         def record_bilateral_payment(amount, method, ref_id, ref_num):
             # MASUK to Workshop
             create_kas_entry(
-                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
                 nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method,
                 referensi_id=ref_id, nomor_referensi=ref_num,
                 keterangan=f"Pembayaran ({method.upper()}) bengkel {ref_num}",
@@ -520,7 +523,7 @@ class TransaksiBengkelService:
             # KELUAR from Unit (if internal/integrated)
             if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(
-                    db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR,
+                    db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.KELUAR,
                     nominal=amount, sumber=source_pocket, metode_bayar=method,
                     referensi_id=ref_id, nomor_referensi=ref_num,
                     keterangan=f"Biaya Repair Internal via Bengkel: {ref_num}",
@@ -545,7 +548,7 @@ class TransaksiBengkelService:
                         rec_amount = min(p.jumlah, remaining_to_record)
                         if rec_amount > 0:
                             create_kas_entry(
-                                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                                db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
                                 nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
@@ -556,7 +559,7 @@ class TransaksiBengkelService:
                 else:
                     # Single payment
                     create_kas_entry(
-                        db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                        db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
                         nominal=grand_total, sumber=KasBankSource.BENGKEL, 
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
@@ -576,6 +579,7 @@ class TransaksiBengkelService:
     ) -> TransaksiPenjualanBengkel:
         """Update an existing workshop transaction."""
         transaksi = self.get_by_id(transaksi_id)
+        effective_tanggal = data.tanggal or transaksi.tanggal
 
         # 1. Restore stock
         for detail in transaksi.detail_parts:
@@ -708,7 +712,7 @@ class TransaksiBengkelService:
             status_bayar = PaymentStatus.BELUM_LUNAS
 
         # 5. Update main record
-        transaksi.tanggal = data.tanggal
+        transaksi.tanggal = effective_tanggal
         transaksi.customer_id = data.customer_id
         transaksi.nama_customer = data.nama_customer or (customer.nama if customer else None)
         transaksi.nomor_plat = data.nomor_plat
@@ -745,7 +749,7 @@ class TransaksiBengkelService:
             out_amount = grand_total
             new_piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
-                tanggal=data.tanggal,
+                tanggal=effective_tanggal,
                 customer_id=data.customer_id,
                 nama_debitur=debtor_name,
                  telepon_debitur=customer.telepon if customer else None,
@@ -768,7 +772,7 @@ class TransaksiBengkelService:
             if is_internal_mobil:
                 new_hutang = HutangUsaha(
                     nomor_hutang=self._generate_nomor_hutang(),
-                    tanggal=data.tanggal,
+                        tanggal=effective_tanggal,
                     nama_kreditur="BENGKEL TPM",
                     nominal_hutang=grand_total,
                     sisa_hutang=grand_total,
@@ -812,7 +816,7 @@ class TransaksiBengkelService:
                     p_service.process_payment_split(
                         PembayaranPiutangSplit(
                             piutang_id=new_piutang.id,
-                            tanggal=data.tanggal,
+                            tanggal=effective_tanggal,
                             payments=payment_items,
                             catatan=f"DP (EDITED) Transaksi {transaksi.nomor_transaksi}"
                         ),
@@ -840,9 +844,9 @@ class TransaksiBengkelService:
         elif data.kategori == 'jual_beli_mobil': source_pocket = KasBankSource.JUAL_BELI_MOBIL
 
         def record_bilateral_payment(amount, method, ref_id, ref_num):
-            create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", user_id=user_id)
-            if source_pocket != KasBankSource.BENGKEL:
-                create_kas_entry(db=self.db, tanggal=data.tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
+            create_kas_entry(db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", user_id=user_id)
+        if source_pocket != KasBankSource.BENGKEL:
+                create_kas_entry(db=self.db, tanggal=effective_tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
         if is_internal_jasa_angkut:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
@@ -856,7 +860,7 @@ class TransaksiBengkelService:
                         rec_amount = min(p.jumlah, remaining_to_record)
                         if rec_amount > 0:
                             create_kas_entry(
-                                db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                                db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK,
                                 nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
@@ -866,7 +870,7 @@ class TransaksiBengkelService:
                             remaining_to_record -= rec_amount
                 else:
                     create_kas_entry(
-                        db=self.db, tanggal=data.tanggal, tipe=KasBankType.MASUK,
+                        db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK,
                         nominal=grand_total, sumber=KasBankSource.BENGKEL, 
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,

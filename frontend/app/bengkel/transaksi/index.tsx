@@ -210,7 +210,6 @@ export default function BengkelTransaksiScreen() {
 
         try {
             await createMutation.mutateAsync({
-                tanggal: new Date().toISOString().split('T')[0],
                 customer_id: kategori === 'umum' ? selectedCustomer?.id || null : null,
                 nama_customer: customerName,
                 nomor_plat: String(nomorPlat).substring(0, 15),
