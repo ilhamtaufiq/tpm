@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -306,7 +306,15 @@ export default function BengkelTransaksiScreen() {
                                                 <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
                                             </View>
                                         </View>
-                                        {selected && <QtyControl value={selected.qty} color="blue" onMinus={() => setPartQty(part.id, selected.qty - 1)} onPlus={() => setPartQty(part.id, selected.qty + 1)} />}
+                                        {selected && (
+                                            <QtyControl
+                                                value={selected.qty}
+                                                color="blue"
+                                                onMinus={() => setPartQty(part.id, selected.qty - 1)}
+                                                onPlus={() => setPartQty(part.id, selected.qty + 1)}
+                                                onChangeQty={(qty) => setPartQty(part.id, qty)}
+                                            />
+                                        )}
                                     </Pressable>
                                 );
                             })}
@@ -344,7 +352,15 @@ export default function BengkelTransaksiScreen() {
                                                 <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
                                             </View>
                                         </View>
-                                        {selected && <QtyControl value={selected.qty} color="emerald" onMinus={() => setServiceQty(service.id, selected.qty - 1)} onPlus={() => setServiceQty(service.id, selected.qty + 1)} />}
+                                        {selected && (
+                                            <QtyControl
+                                                value={selected.qty}
+                                                color="emerald"
+                                                onMinus={() => setServiceQty(service.id, selected.qty - 1)}
+                                                onPlus={() => setServiceQty(service.id, selected.qty + 1)}
+                                                onChangeQty={(qty) => setServiceQty(service.id, qty)}
+                                            />
+                                        )}
                                     </Pressable>
                                 );
                             })}
@@ -505,15 +521,59 @@ function NoticeBanner({ type, title, message, onClose }: { type: NoticeType; tit
     );
 }
 
-function QtyControl({ value, color, onMinus, onPlus }: { value: number; color: 'blue' | 'emerald'; onMinus: () => void; onPlus: () => void }) {
+function QtyControl({
+    value,
+    color,
+    onMinus,
+    onPlus,
+    onChangeQty,
+}: {
+    value: number;
+    color: 'blue' | 'emerald';
+    onMinus: () => void;
+    onPlus: () => void;
+    onChangeQty: (qty: number) => void;
+}) {
+    const [text, setText] = useState(String(value));
+
+    useEffect(() => {
+        setText(String(value));
+    }, [value]);
+
     const textColor = color === 'blue' ? 'text-blue-600' : 'text-emerald-600';
     const borderColor = color === 'blue' ? 'border-blue-100' : 'border-emerald-100';
+
+    const commitQty = (raw: string) => {
+        const cleaned = raw.replace(/[^0-9]/g, '');
+        if (cleaned === '') {
+            setText('');
+            return;
+        }
+
+        const nextQty = Math.max(1, parseInt(cleaned, 10) || 1);
+        setText(String(nextQty));
+        onChangeQty(nextQty);
+    };
+
     return (
         <View className={`flex-row items-center self-end mt-3 bg-white rounded-xl border ${borderColor} overflow-hidden`}>
             <Pressable onPress={(e) => { e.stopPropagation(); onMinus(); }} className="px-3 py-1.5">
                 <Typography className={`font-bold ${textColor}`}>-</Typography>
             </Pressable>
-            <Typography className="px-2 text-xs font-bold">{value}</Typography>
+            <TextInput
+                value={text}
+                onChangeText={commitQty}
+                onBlur={() => {
+                    if (!text || Number(text) < 1) {
+                        setText('1');
+                        onChangeQty(1);
+                    }
+                }}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                className="w-14 px-2 py-1 text-xs font-bold text-center text-textMain"
+                selectTextOnFocus
+            />
             <Pressable onPress={(e) => { e.stopPropagation(); onPlus(); }} className="px-3 py-1.5">
                 <Typography className={`font-bold ${textColor}`}>+</Typography>
             </Pressable>
