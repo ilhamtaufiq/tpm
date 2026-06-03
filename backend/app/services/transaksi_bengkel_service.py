@@ -1344,84 +1344,87 @@ class TransaksiBengkelService:
 
         Note: Should only be used for recent transactions.
         """
-        transaksi = self.get_by_id(transaksi_id)
+        try:
+            transaksi = self.get_by_id(transaksi_id)
 
-        # 0. Check if already cancelled to prevent double stock restoration
-        if transaksi.status_bayar == PaymentStatus.BATAL:
-            return True
+            # 0. Check if already cancelled to prevent double stock restoration
+            if transaksi.status_bayar == PaymentStatus.BATAL:
+                return True
 
-        # 1. Restore spare part stock
-        for detail in transaksi.detail_parts:
-            spare_part = (
-                self.db.query(SparePart)
-                .filter(SparePart.id == detail.spare_part_id)
+            # 1. Restore spare part stock
+            for detail in transaksi.detail_parts:
+                spare_part = (
+                    self.db.query(SparePart)
+                    .filter(SparePart.id == detail.spare_part_id)
+                    .first()
+                )
+                if spare_part and spare_part.stok != 999:
+                    spare_part.stok += detail.qty
+
+            # 2. Void related Piutang
+            piutang = (
+                self.db.query(PiutangUsaha)
+                .filter(
+                    PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
+                )
                 .first()
             )
-            if spare_part and spare_part.stok != 999:
-                spare_part.stok += detail.qty
 
-        # 2. Void related Piutang
-        piutang = (
-            self.db.query(PiutangUsaha)
-            .filter(
-                PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
-                PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            # 3. Delete related KasBank entries (Financial Balance)
+            # Direct payments
+            self.db.query(KasBank).filter(
+                KasBank.referensi_id == transaksi.id,
+                KasBank.sumber == KasBankSource.BENGKEL,
+            ).delete(synchronize_session=False)
+
+            # Piutang and its payments
+            if piutang:
+                # Delete payment entries in KasBank for this Piutang
+                pembayaran_ids = [p.id for p in piutang.pembayaran]
+                if pembayaran_ids:
+                    self.db.query(KasBank).filter(
+                        KasBank.referensi_id.in_(pembayaran_ids),
+                        or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL)
+                    ).delete(synchronize_session=False)
+
+                # Set Piutang status to BATAL instead of deleting
+                piutang.status = PiutangStatus.BATAL
+                piutang.sisa_piutang = Decimal("0")
+
+            # 4. Void related Hutang (Internal)
+            hutang = (
+                self.db.query(HutangUsaha)
+                .filter(
+                    HutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
+                    HutangUsaha.is_internal == True,
+                )
+                .first()
             )
-            .first()
-        )
+            if hutang:
+                hutang.status = HutangStatus.BATAL
+                hutang.sisa_hutang = Decimal("0")
 
-        # 3. Delete related KasBank entries (Financial Balance)
-        # Direct payments
-        self.db.query(KasBank).filter(
-            KasBank.referensi_id == transaksi.id,
-            KasBank.sumber == KasBankSource.BENGKEL,
-        ).delete(synchronize_session=False)
+            # 5. Remove linked costs (Mobil & Jasa Angkut)
+            self.db.query(MobilPartService).filter(
+                MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
+            ).delete(synchronize_session=False)
 
-        # Piutang and its payments
-        if piutang:
-            # Delete payments entries in KasBank for this Piutang
-            pembayaran_ids = [p.id for p in piutang.pembayaran]
-            if pembayaran_ids:
-                self.db.query(KasBank).filter(
-                    KasBank.referensi_id.in_(pembayaran_ids),
-                    or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL)
-                ).delete(synchronize_session=False)
+            self.db.query(JasaAngkutPartService).filter(
+                JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
+            ).delete(synchronize_session=False)
 
-            
-            # Set Piutang status to BATAL instead of deleting
-            piutang.status = PiutangStatus.BATAL
-            piutang.sisa_piutang = Decimal("0")
+            # 6. VOID Transaction instead of deleting
+            transaksi.status_pengerjaan = WorkshopStatus.BATAL
+            transaksi.status_bayar = PaymentStatus.BATAL
 
-        # 4. Void related Hutang (Internal)
-        hutang = (
-            self.db.query(HutangUsaha)
-            .filter(
-                HutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
-                HutangUsaha.is_internal == True,
-            )
-            .first()
-        )
-        if hutang:
-            hutang.status = HutangStatus.BATAL
-            hutang.sisa_hutang = Decimal("0")
+            self.db.commit()
+            self._emit_change(transaksi, "voided")
 
-        # 5. Remove linked costs (Mobil & Jasa Angkut)
-        self.db.query(MobilPartService).filter(
-            MobilPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
-        ).delete(synchronize_session=False)
-
-        self.db.query(JasaAngkutPartService).filter(
-            JasaAngkutPartService.catatan.like(f"%{transaksi.nomor_transaksi}%")
-        ).delete(synchronize_session=False)
-
-        # 5. VOID Transaction instead of deleting
-        transaksi.status_pengerjaan = WorkshopStatus.BATAL
-        transaksi.status_bayar = PaymentStatus.BATAL
-        
-        self.db.commit()
-        self._emit_change(transaksi, "voided")
-
-        return True
+            return True
+        except Exception:
+            self.db.rollback()
+            raise
 
 
     def get_by_customer(

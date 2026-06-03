@@ -118,7 +118,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
         exc: IntegrityError,
     ) -> JSONResponse:
         """Handle database integrity errors."""
-        logger.error(f"Database integrity error: {exc}")
+        logger.exception("Database integrity error")
 
         # Parse common integrity errors
         error_msg = str(exc.orig) if exc.orig else str(exc)
@@ -148,7 +148,10 @@ def setup_exception_handlers(app: FastAPI) -> None:
             content={
                 "error": True,
                 "message": "Database constraint violation",
-                "detail": {},
+                "detail": {
+                    "error_type": exc.__class__.__name__,
+                    "message": error_msg,
+                },
             },
         )
 
@@ -158,14 +161,18 @@ def setup_exception_handlers(app: FastAPI) -> None:
         exc: SQLAlchemyError,
     ) -> JSONResponse:
         """Handle SQLAlchemy errors."""
-        logger.error(f"Database error: {exc}")
+        logger.exception("Database error")
 
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "error": True,
                 "message": "Database error occurred",
-                "detail": {},
+                "detail": {
+                    "error_type": exc.__class__.__name__,
+                    "message": str(exc),
+                    "orig": str(getattr(exc, "orig", "")) if getattr(exc, "orig", None) else "",
+                },
             },
         )
 
