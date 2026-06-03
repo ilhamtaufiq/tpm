@@ -216,27 +216,20 @@ export const Header = ({
                         )}
                         {rightElement}
                         {variant === 'home' && (
-                            <Pressable
-                                onPress={() => {
-                                    setUserMenuVisible(true);
-                                }}
-                                className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative active:opacity-75"
-                            >
-                                <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
-                                    {user?.profile_picture ? (
-                                        <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
-                                    ) : (
-                                        <User size={22} color={themeColors.primary} strokeWidth={2.5} />
-                                    )}
-                                </View>
-                                {unreadCount > 0 && (
-                                    <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
-                                        <Typography className="text-white text-[9px] font-black">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                        </Typography>
-                                    </View>
+                        <Pressable
+                            onPress={() => {
+                                setUserMenuVisible(true);
+                            }}
+                            className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden relative active:opacity-75"
+                        >
+                            <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                                {user?.profile_picture ? (
+                                    <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
+                                ) : (
+                                    <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                                 )}
-                            </Pressable>
+                            </View>
+                        </Pressable>
                         )}
                         {showProfile && variant !== 'home' && (
                             <View className="flex-row items-center">
@@ -246,23 +239,16 @@ export const Header = ({
                                     }}
                                     className="w-11 h-11 bg-gray-50 rounded-2xl p-0.5 border border-gray-100 overflow-hidden ml-2 active:opacity-75"
                                 >
-                                    <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
-                                        {user?.profile_picture ? (
-                                            <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
-                                        ) : (
-                                            <User size={22} color={themeColors.primary} strokeWidth={2.5} />
-                                        )}
-                                    </View>
-                                    {unreadCount > 0 && (
-                                        <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
-                                            <Typography className="text-white text-[9px] font-black">
-                                                {unreadCount > 9 ? '9+' : unreadCount}
-                                            </Typography>
-                                        </View>
+                                <View className="w-full h-full bg-white rounded-2xl items-center justify-center overflow-hidden">
+                                    {user?.profile_picture ? (
+                                        <Image source={{ uri: getFileUrl(user.profile_picture) as string }} className="w-full h-full" />
+                                    ) : (
+                                        <User size={22} color={themeColors.primary} strokeWidth={2.5} />
                                     )}
-                                </Pressable>
-                            </View>
-                        )}
+                                </View>
+                            </Pressable>
+                        </View>
+                    )}
                     </View>
                 </View>
 
