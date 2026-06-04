@@ -14,9 +14,9 @@ from app.models.mobil import Mobil, MobilMedia
 router = APIRouter(prefix="/public/gallery", tags=["Public Gallery"])
 
 
-@router.get("/mobil/{mobil_id}")
+@router.get("/mobil/{gallery_token}")
 async def get_mobil_gallery_data(
-    mobil_id: int,
+    gallery_token: str,
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     """
@@ -26,7 +26,7 @@ async def get_mobil_gallery_data(
     mobil = (
         db.query(Mobil)
         .options(joinedload(Mobil.media))
-        .filter(Mobil.id == mobil_id, Mobil.is_deleted == False)
+        .filter(Mobil.public_gallery_token == gallery_token, Mobil.is_deleted == False)
         .first()
     )
 
@@ -45,7 +45,7 @@ async def get_mobil_gallery_data(
         })
 
     return {
-        "id": mobil.id,
+        "public_gallery_token": gallery_token,
         "merek": mobil.merek,
         "model": mobil.model,
         "tahun": mobil.tahun,
@@ -59,9 +59,9 @@ async def get_mobil_gallery_data(
     }
 
 
-@router.get("/mobil/{mobil_id}/view", response_class=HTMLResponse)
+@router.get("/mobil/{gallery_token}/view", response_class=HTMLResponse)
 async def view_mobil_gallery(
-    mobil_id: int,
+    gallery_token: str,
     db: Session = Depends(get_db),
 ):
     """
@@ -71,7 +71,7 @@ async def view_mobil_gallery(
     mobil = (
         db.query(Mobil)
         .options(joinedload(Mobil.media))
-        .filter(Mobil.id == mobil_id, Mobil.is_deleted == False)
+        .filter(Mobil.public_gallery_token == gallery_token, Mobil.is_deleted == False)
         .first()
     )
 
@@ -91,7 +91,7 @@ async def view_mobil_gallery(
     subtitle = f"{mobil.nomor_plat} • {mobil.warna} • {mobil.transmisi or 'N/A'}"
 
     base_url = "https://tpm.cianjur.space"
-    page_url = f"{base_url}/api/v1/public/gallery/mobil/{mobil_id}/view"
+    page_url = f"{base_url}/api/v1/public/gallery/mobil/{gallery_token}/view"
 
     # OG image: use the first image or a placeholder
     og_image = ""

@@ -25,6 +25,7 @@ export interface PrintReceiptItem {
 export interface PrintReceiptData {
     type: 'bengkel' | 'jasa_angkut';
     transactionNumber: string;
+    publicReceiptToken?: string;
     antrian?: string | number;
     date: Date;
     customerName: string;
@@ -205,7 +206,7 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
 
             <!-- Transaction Info -->
             <div style="font-size: 11px;">
-                ${infoRow('No Nota', data.transactionNumber)}
+                ${infoRow('Nomor Transaksi', data.transactionNumber)}
                 ${infoRow('Antrian', data.antrian)}
                 ${infoRow('Pelanggan', data.customerName)}
                 ${infoRow('Tanggal', formatDate(data.date))}
@@ -251,7 +252,7 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
             ${template.features.showQRCode ? `
                 <div style="text-align: center; margin: 10px 0;">
                     <div style="font-size: 8px; color: #666; margin-bottom: 4px;">SCAN UNTUK CEK KEASLIAN</div>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tpm.app/receipt/${data.type}/${data.transactionNumber}" style="width: 80px; height: 80px;" />
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tpm.app/receipt/${data.type}/${data.publicReceiptToken || data.transactionNumber}" style="width: 80px; height: 80px;" />
                 </div>
                 <div class="divider"></div>
             ` : ''}
@@ -316,7 +317,7 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
     text += `<center>HP: ${companyPhone}</center>\n`;
     text += `${divider}\n`;
 
-    text += `No Nota  : ${data.transactionNumber}\n`;
+    text += `No Trans : ${data.transactionNumber}\n`;
     if (data.antrian) text += `Antrian  : ${data.antrian}\n`;
     text += `Plgn     : ${data.customerName}\n`;
     text += `Tanggal  : ${formatDateLocal(data.date)}\n`;

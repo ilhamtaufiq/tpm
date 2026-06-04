@@ -21,6 +21,7 @@ export interface SparePart {
 export interface TransaksiBengkel {
     id: number;
     nomor_transaksi: string;
+    public_receipt_token?: string;
     tanggal: string;
     customer_id?: number;
     customer_nama?: string;

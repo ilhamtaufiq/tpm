@@ -4,7 +4,7 @@ Accessible without authentication for QR code scanning
 """
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import Dict, Any, Optional
 from datetime import datetime
 import io
@@ -18,7 +18,7 @@ import base64
 from app.database.connection import get_db
 from app.models.bengkel import TransaksiPenjualanBengkel
 from app.models.jasa_angkut import MuatanJasaAngkut
-from app.models.mobil import Mobil
+from app.models.mobil import Mobil, TransaksiPenjualanMobil
 from app.models.system_setting import SystemSetting
 
 router = APIRouter(prefix="/public/receipt", tags=["Public Receipt"])
@@ -31,10 +31,10 @@ async def get_receipt(
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """
-    Get receipt data by transaction ID
+    Get receipt data by public receipt token
     Supports: bengkel, jasa_angkut, mobil
     
-    Example: GET /public/receipt/bengkel/123
+    Example: GET /public/receipt/bengkel/{token}
     """
     
     if receipt_type not in ["bengkel", "jasa_angkut", "mobil"]:
@@ -98,45 +98,51 @@ def apply_branding(db: Session, receipt: Dict[str, Any]):
 def get_bengkel_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     """Get Bengkel receipt"""
     
-    # Get transaction with related data
+    # Public workshop receipts must be addressed by an unguessable token, not
+    # by the internal sequential database ID.
     transaction = db.query(TransaksiPenjualanBengkel).filter(
-        TransaksiPenjualanBengkel.id == int(transaction_id)
+        TransaksiPenjualanBengkel.public_receipt_token == transaction_id
     ).first()
     
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
     
     # Build items list from services and parts
-    items = []
+    services = []
+    parts = []
     
     # Add services
     if hasattr(transaction, 'detail_services'):
         for service in transaction.detail_services:
-            items.append({
+            services.append({
                 "description": service.nama_jasa,
-                "quantity": 1,
+                "quantity": int(service.qty or 1),
                 "unitPrice": float(service.harga),
-                "subtotal": float(service.harga)
+                "subtotal": float(service.subtotal or service.harga)
             })
     
     # Add parts
     if hasattr(transaction, 'detail_parts'):
         for part in transaction.detail_parts:
-            items.append({
+            parts.append({
                 "description": part.spare_part_nama or "Sparepart",
-                "quantity": part.qty,
-                "unitPrice": float(part.subtotal) / part.qty if part.qty > 0 else 0,
+                "quantity": int(part.qty or 1),
+                "unitPrice": float(part.harga_jual or 0),
                 "subtotal": float(part.subtotal)
             })
+
+    items = services + parts
     
     # Build receipt
     receipt = {
-        "transactionNumber": str(transaction.id),
+        "transactionNumber": transaction.nomor_transaksi or str(transaction.id),
         "date": transaction.created_at.isoformat() if transaction.created_at else datetime.now().isoformat(),
         "customerName": transaction.nama_customer or "Umum",
         "vehiclePlate": transaction.nomor_plat,
         "vehicleType": transaction.jenis_kendaraan,
         "items": items,
+        "services": services,
+        "parts": parts,
         "subtotal": float(transaction.subtotal or 0),
         "tax": 0,
         "discount": float(transaction.diskon or 0),
@@ -219,9 +225,10 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
 def get_mobil_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     """Get Mobil receipt"""
     
-    mobil = db.query(Mobil).filter(
-        Mobil.id == int(transaction_id)
+    transaksi = db.query(TransaksiPenjualanMobil).options(joinedload(TransaksiPenjualanMobil.mobil)).filter(
+        TransaksiPenjualanMobil.public_receipt_token == transaction_id
     ).first()
+    mobil = transaksi.mobil if transaksi else None
     
     if not mobil or mobil.status.upper() != 'TERJUAL':
         raise HTTPException(status_code=404, detail="Sold car not found")
@@ -236,17 +243,17 @@ def get_mobil_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
     
     # Build receipt
     receipt = {
-        "transactionNumber": mobil.penjualan.nomor_transaksi if mobil.penjualan else f"TRX-MOBIL-{mobil.id}",
-        "date": mobil.penjualan.tanggal.isoformat() if mobil.penjualan else (mobil.tanggal_terjual.isoformat() if mobil.tanggal_terjual else datetime.now().isoformat()),
-        "customerName": mobil.penjualan.nama_pembeli if mobil.penjualan else "Umum",
+        "transactionNumber": transaksi.nomor_transaksi,
+        "date": transaksi.tanggal.isoformat() if transaksi.tanggal else datetime.now().isoformat(),
+        "customerName": transaksi.nama_pembeli or "Umum",
         "items": items,
         "subtotal": float(mobil.harga_jual or 0),
         "tax": 0,
         "discount": 0,
         "total": float(mobil.harga_jual or 0),
-        "paid": float((mobil.harga_jual or 0) - (mobil.penjualan.sisa_bayar or 0)) if mobil.penjualan else float(mobil.harga_jual or 0),
-        "paymentMethod": format_payment_method(mobil.penjualan.metode_bayar.value if mobil.penjualan and mobil.penjualan.metode_bayar else "TUNAI"),
-        "notes": mobil.penjualan.catatan if mobil.penjualan and mobil.penjualan.catatan else (mobil.catatan or "-"),
+        "paid": float((mobil.harga_jual or 0) - (transaksi.sisa_bayar or 0)),
+        "paymentMethod": format_payment_method(transaksi.metode_bayar.value if transaksi.metode_bayar else "TUNAI"),
+        "notes": transaksi.catatan if transaksi.catatan else (mobil.catatan or "-"),
         "companyName": "Tiga Putra Motor",
         "companyAddress": "Cianjur, Jawa Barat",
         "companyPhone": "+62 856 5999 4407"
@@ -355,7 +362,7 @@ def generate_receipt_image(data: Dict[str, Any]) -> io.BytesIO:
     
     y += 20
     # Info
-    draw.text((paper_x + 30, y), "No. Nota:", font=body_font, fill="black")
+    draw.text((paper_x + 30, y), "Nomor Transaksi:", font=body_font, fill="black")
     draw.text((paper_x + paper_width - 30, y), data['transactionNumber'], font=body_bold_font, fill="black", anchor="ra")
     y += 30
     
@@ -433,6 +440,8 @@ async def get_receipt_image(
             data = get_jasa_angkut_receipt(db, transaction_id)
         elif receipt_type == "mobil":
             data = get_mobil_receipt(db, transaction_id)
+        elif receipt_type == "mobil":
+            data = get_mobil_receipt(db, transaction_id)
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
             
@@ -496,6 +505,31 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
         desc += f" ({plate})"
     desc += f" senilai Rp {data['total']:,.0f}"
 
+    def render_item_html(item: Dict[str, Any]) -> str:
+        return f"""
+        <div class="item-row">
+            <div class="item-desc">{str(item['description']).upper()}</div>
+            <div class="item-details">
+                <span>{int(item['quantity'])} x {item['unitPrice']:,.0f}</span>
+                <span>{item['subtotal']:,.0f}</span>
+            </div>
+        </div>
+        """
+
+    def render_item_section(title: str, items: list) -> str:
+        if not items:
+            return ""
+        total = sum(float(item.get("subtotal", 0)) for item in items)
+        return f"""
+        <div class="section-title">{title}</div>
+        {''.join(render_item_html(item) for item in items)}
+        <div class="mini-divider"></div>
+        <div class="section-total">
+            <span>Total</span>
+            <span>{total:,.0f}</span>
+        </div>
+        """
+
     items_html = ""
     for detail in data.get("details", []):
         items_html += f"""
@@ -503,17 +537,13 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             <div class="item-desc" style="color: #666;">{detail}</div>
         </div>
         """
-        
-    for item in data.get("items", []):
-        items_html += f"""
-        <div class="item-row">
-            <div class="item-desc">{item['description'].upper()}</div>
-            <div class="item-details">
-                <span>{int(item['quantity'])} x {item['unitPrice']:,.0f}</span>
-                <span>{item['subtotal']:,.0f}</span>
-            </div>
-        </div>
-        """
+
+    if data.get("services") or data.get("parts"):
+        items_html += render_item_section("LAYANAN", data.get("services", []))
+        items_html += render_item_section("SPARE PART", data.get("parts", []))
+    else:
+        for item in data.get("items", []):
+            items_html += render_item_html(item)
 
     # Format Date
     try:
@@ -571,7 +601,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             .receipt-container {{ 
                 background: white; 
                 width: 100%;
-                max-width: {'300px' if data.get('paperSize') == '58mm' else '400px'}; 
+                max-width: {'220px' if data.get('paperSize') == '58mm' else '302px'}; 
                 padding: 20px;
                 box-sizing: border-box;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -594,12 +624,15 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             .business-info {{ font-size: 11px; margin-bottom: 2px; }}
             
             .divider {{ border-top: 1px dashed #000; margin: 10px 0; }}
+            .mini-divider {{ border-top: 1px dashed #000; margin: 4px 0; }}
             
             .info-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
             
             .item-row {{ margin-bottom: 8px; font-size: 12px; }}
             .item-desc {{ font-weight: bold; margin-bottom: 2px; }}
             .item-details {{ display: flex; justify-content: space-between; }}
+            .section-title {{ text-align: center; font-size: 12px; margin-bottom: 8px; }}
+            .section-total {{ display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }}
             
             .summary-row {{ display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }}
             .grand-total {{ font-size: 16px; font-weight: 700; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; margin: 10px 0; }}
@@ -652,7 +685,7 @@ def generate_html_receipt(data: Dict[str, Any], receipt_type: str = "", transact
             <div class="divider"></div>
             
             <div class="info-row">
-                <span>No. Nota:</span>
+                <span>Nomor Transaksi:</span>
                 <span>{data['transactionNumber']}</span>
             </div>
             <div class="info-row">
@@ -786,7 +819,7 @@ async def get_receipt_pdf(
         # Receipt Info
         p.setFont("Helvetica", 11)
         y = y_cursor
-        p.drawString(30, y, f"No. Nota: {data['transactionNumber']}")
+        p.drawString(30, y, f"Nomor Transaksi: {data['transactionNumber']}")
         
         try:
             dt = datetime.fromisoformat(data['date'])

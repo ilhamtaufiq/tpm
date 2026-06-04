@@ -154,7 +154,13 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     };
 
     const handleShareGallery = async () => {
-        const galleryUrl = `${(FILE_URL || 'https://tpm.cianjur.space')}/api/v1/public/gallery/mobil/${activeUnit.id}/view`;
+        const galleryToken = activeUnit.public_gallery_token;
+        if (!galleryToken) {
+            Alert.alert('Token Tidak Tersedia', 'Token publik detail mobil belum tersedia. Jalankan migrasi database lalu muat ulang data.');
+            return;
+        }
+
+        const galleryUrl = `${(FILE_URL || 'https://tpm.cianjur.space')}/api/v1/public/gallery/mobil/${galleryToken}/view`;
         const shareTitle = `${activeUnit.merek} ${activeUnit.model} ${activeUnit.tahun}`;
         const shareMessage = `${shareTitle} - ${activeUnit.nomor_plat}\n\nLihat foto & video unit ini:\n${galleryUrl}`;
 
@@ -189,10 +195,14 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
     };
 
     const handleShareReceipt = async () => {
-        if (!activeUnit?.id) return;
+        const receiptToken = activeTx?.public_receipt_token;
+        if (!receiptToken) {
+            Alert.alert('Token Tidak Tersedia', 'Token publik faktur belum tersedia. Jalankan migrasi database lalu muat ulang data.');
+            return;
+        }
         
         const baseUrl = (FILE_URL || 'https://tpm.cianjur.space').replace(/\/$/, '');
-        const shareUrl = `${baseUrl}/api/v1/public/receipt/view/mobil/${activeUnit.id}`;
+        const shareUrl = `${baseUrl}/api/v1/public/receipt/view/mobil/${receiptToken}`;
         const shareMessage = `Halo, ini adalah faktur penjualan unit mobil ${activeUnit.merek} ${activeUnit.model} Anda: ${shareUrl}`;
         
         try {
@@ -382,18 +392,16 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
 
                     {/* Media Quick Actions */}
                     <View className="absolute right-6 flex-row gap-2" style={{ bottom: 64 }}>
-                        {activeUnit.media && activeUnit.media.length > 0 && (
-                            <Pressable
-                                onPress={handleShareGallery}
-                                className="w-14 h-14 bg-emerald-500 rounded-2xl items-center justify-center shadow-2xl border border-emerald-400/30"
-                            >
-                                {shareSuccess ? (
-                                    <CheckCircle2 size={22} color="white" />
-                                ) : (
-                                    <Share2 size={22} color="white" />
-                                )}
-                            </Pressable>
-                        )}
+                        <Pressable
+                            onPress={handleShareGallery}
+                            className="w-14 h-14 bg-emerald-500 rounded-2xl items-center justify-center shadow-2xl border border-emerald-400/30"
+                        >
+                            {shareSuccess ? (
+                                <CheckCircle2 size={22} color="white" />
+                            ) : (
+                                <Share2 size={22} color="white" />
+                            )}
+                        </Pressable>
                         <Pressable
                             onPress={handlePickMedia}
                             disabled={uploadMediaAction.isPending}

@@ -5,7 +5,7 @@ import { Input } from './Input';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { Search, Plus, User, Building2, Check, X, Truck, UserPlus } from 'lucide-react-native';
+import { Search, Plus, User, Building2, Check, X, Truck, UserPlus, CheckCircle2 } from 'lucide-react-native';
 import { masterDataService } from '../../services/masterData';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ interface MasterDataSelectorProps {
     onAddNew?: (item: any) => void;
     inlineMode?: boolean;
     inlineLimit?: number;
+    hideTrigger?: boolean;
 }
 
 export const MasterDataSelector = ({
@@ -35,11 +36,13 @@ export const MasterDataSelector = ({
     onGuestNameChange,
     onAddNew,
     inlineMode = false,
-    inlineLimit = 5
+    inlineLimit = 5,
+    hideTrigger = false
 }: MasterDataSelectorProps) => {
     const insets = useSafeAreaInsets();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedGuestName, setSelectedGuestName] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -66,19 +69,23 @@ export const MasterDataSelector = ({
     };
 
     const handleSelect = (item: any) => {
+        setSelectedGuestName('');
         onSelect(item);
         handleClose();
     };
 
     const handleGuestSelect = () => {
-        if (onGuestNameChange) {
-            onGuestNameChange(searchQuery); // Use the search query as the guest name
+        const guestName = searchQuery.trim();
+        if (onGuestNameChange && guestName) {
+            setSelectedGuestName(guestName);
+            onGuestNameChange(guestName); // Use the search query as the guest name
             onSelect(null); // Clear ID
             handleClose();
         }
     };
 
     const handleAddNew = (item: any) => {
+        setSelectedGuestName('');
         onSelect(item);
         if (onAddNew) onAddNew(item);
         setIsAddModalOpen(false);
@@ -89,7 +96,7 @@ export const MasterDataSelector = ({
         <View className="mb-4 w-full">
             {label && <Typography weight="medium" className="text-textGray text-sm mb-1">{label}</Typography>}
 
-            <Pressable onPress={handleOpen} disabled={inlineMode}>
+            {!hideTrigger && <Pressable onPress={handleOpen} disabled={inlineMode}>
                 <View className="bg-gray-100 rounded-xl px-4 py-3 border-2 border-transparent flex-row items-center">
                     {type === 'customer' ? (
                         <User size={20} color={value ? '#2563EB' : '#9CA3AF'} />
@@ -120,10 +127,10 @@ export const MasterDataSelector = ({
                         </Pressable>
                     )}
                 </View>
-            </Pressable>
+            </Pressable>}
 
             {inlineMode && (
-                <View className="mt-3">
+                <View className={hideTrigger ? '' : 'mt-3'}>
                     <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-3">
                         <Search size={20} color="#9CA3AF" />
                         <TextInput
@@ -141,16 +148,19 @@ export const MasterDataSelector = ({
                     </View>
 
                     {allowGuest && onGuestNameChange && searchQuery.length > 0 && (
-                        <Pressable onPress={() => {
-                            onGuestNameChange(searchQuery);
-                            onSelect(null);
-                        }} className="mb-3">
-                            <Card className="p-3 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
-                                <User size={18} color="#4B5563" />
-                                <View className="ml-2">
+                        <Pressable
+                            onPress={handleGuestSelect}
+                            className={`mb-3 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-300'}`}
+                        >
+                            <View className="flex-row items-center flex-1">
+                                <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
+                                <View className="ml-2 flex-1">
                                     <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
                                 </View>
-                            </Card>
+                            </View>
+                            {selectedGuestName === searchQuery.trim() && !value && (
+                                <CheckCircle2 size={20} color="#10B981" />
+                            )}
                         </Pressable>
                     )}
 
@@ -170,8 +180,11 @@ export const MasterDataSelector = ({
                     ) : (
                         <View>
                             {(searchResults || []).map((item: any) => (
-                                <Pressable key={item.id} onPress={() => handleSelect(item)}>
-                                    <Card className="mb-3 p-4 border border-gray-100 flex-row items-center justify-between">
+                                <Pressable
+                                    key={item.id}
+                                    onPress={() => handleSelect(item)}
+                                    className={`mb-3 p-4 rounded-2xl border flex-row items-center justify-between shadow-sm ${value?.id === item.id ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-gray-100'}`}
+                                >
                                         <View className="flex-1 mr-2">
                                             <Typography weight="semibold">{item.nama}</Typography>
                                             <Typography variant="caption" className="text-gray-500">
@@ -189,11 +202,14 @@ export const MasterDataSelector = ({
                                                 </View>
                                             )}
                                         </View>
-                                        <Badge
-                                            label={type === 'customer' ? item.tipe : 'Vendor'}
-                                            variant="neutral"
-                                        />
-                                    </Card>
+                                        {value?.id === item.id ? (
+                                            <CheckCircle2 size={22} color="#10B981" />
+                                        ) : (
+                                            <Badge
+                                                label={type === 'customer' ? item.tipe : 'Vendor'}
+                                                variant="neutral"
+                                            />
+                                        )}
                                 </Pressable>
                             ))}
                             {(!searchResults || searchResults.length === 0) && searchQuery.length > 0 && (
@@ -239,13 +255,19 @@ export const MasterDataSelector = ({
 
                         <View className="flex-row space-x-2 mb-4">
                             {allowGuest && searchQuery.length > 0 && (
-                                <Pressable onPress={handleGuestSelect} className="flex-1">
-                                    <Card className="p-3 bg-gray-50 border border-dashed border-gray-300 flex-row items-center">
-                                        <User size={18} color="#4B5563" />
-                                        <View className="ml-2">
+                                <Pressable
+                                    onPress={handleGuestSelect}
+                                    className={`flex-1 p-3 rounded-2xl border border-dashed flex-row items-center justify-between ${selectedGuestName === searchQuery.trim() && !value ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-300'}`}
+                                >
+                                    <View className="flex-row items-center flex-1">
+                                        <User size={18} color={selectedGuestName === searchQuery.trim() && !value ? '#10B981' : '#4B5563'} />
+                                        <View className="ml-2 flex-1">
                                             <Typography weight="semibold" className="text-xs">Guest "{searchQuery}"</Typography>
                                         </View>
-                                    </Card>
+                                    </View>
+                                    {selectedGuestName === searchQuery.trim() && !value && (
+                                        <CheckCircle2 size={20} color="#10B981" />
+                                    )}
                                 </Pressable>
                             )}
 

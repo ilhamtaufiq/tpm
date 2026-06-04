@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
+import secrets
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_
@@ -215,6 +216,7 @@ class PenjualanMobilService:
             
             trans_bengkel = TransaksiPenjualanBengkel(
                 nomor_transaksi=no_trans_bengkel,
+                public_receipt_token=secrets.token_urlsafe(32),
                 tanggal=data.tanggal,
                 customer_id=None,
                 nama_customer=f"Persiapan Jual: {mobil.merek} {mobil.model} ({mobil.nomor_plat})",
@@ -326,6 +328,7 @@ class PenjualanMobilService:
         # Create transaction
         transaksi = TransaksiPenjualanMobil(
             nomor_transaksi=nomor_transaksi,
+            public_receipt_token=secrets.token_urlsafe(32),
             tanggal=data.tanggal,
             mobil_id=data.mobil_id,
             customer_id=data.customer_id,

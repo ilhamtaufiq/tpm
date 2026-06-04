@@ -196,6 +196,7 @@ class PembelianSparePartResponse(BaseModel):
 
     id: int
     nomor_transaksi: str
+    public_receipt_token: Optional[str] = None
     tanggal: date
     supplier_id: int
     supplier_nama: Optional[str] = None

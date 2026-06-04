@@ -91,6 +91,7 @@ class MobilMediaResponse(BaseModel):
 class MobilResponse(MobilBase):
     id: int
     kode: str
+    public_gallery_token: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     media: List[MobilMediaResponse] = []
@@ -132,6 +133,7 @@ class TransaksiMobilMinimal(BaseModel):
     """Minimal schema for car sale transaction to avoid circularity."""
     id: int
     nomor_transaksi: str
+    public_receipt_token: Optional[str] = None
     mobil_info: Optional[str] = None
     nama_pembeli: Optional[str] = None
     
@@ -156,6 +158,7 @@ class TransaksiMobilResponse(BaseModel):
     """Schema for car sale transaction response."""
     id: int
     nomor_transaksi: str
+    public_receipt_token: Optional[str] = None
     tanggal: date
     mobil_id: Optional[int] = None
     mobil_info: Optional[str] = None  # "Merek Model (Plat)"

@@ -86,6 +86,7 @@ class PembelianSparePart(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_transaksi: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    public_receipt_token: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
     supplier_id: Mapped[int] = mapped_column(ForeignKey("suppliers.id"))
     nomor_faktur: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

@@ -28,6 +28,7 @@ class Mobil(Base, TimestampMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     kode: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    public_gallery_token: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     merek: Mapped[str] = mapped_column(String(50), index=True)
     model: Mapped[str] = mapped_column(String(50))
     tahun: Mapped[int] = mapped_column(Integer)
@@ -267,6 +268,7 @@ class TransaksiPenjualanMobil(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_transaksi: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    public_receipt_token: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
     mobil_id: Mapped[Optional[int]] = mapped_column(ForeignKey("mobil.id"), unique=True, nullable=True)
     customer_id: Mapped[Optional[int]] = mapped_column(

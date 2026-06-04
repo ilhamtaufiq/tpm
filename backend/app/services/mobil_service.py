@@ -1,4 +1,5 @@
 import os
+import secrets
 import shutil
 import uuid
 from datetime import datetime, date
@@ -170,6 +171,7 @@ class MobilService:
 
         mobil = Mobil(
             kode=kode,
+            public_gallery_token=secrets.token_urlsafe(32),
             merek=data.merek,
             model=data.model,
             tahun=data.tahun,

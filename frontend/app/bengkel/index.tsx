@@ -27,7 +27,6 @@ import {
     Truck,
     Car,
     Share2,
-    ShoppingCart,
     Edit2,
     QrCode,
     Wallet,
@@ -36,7 +35,9 @@ import {
     TrendingDown,
     TrendingUp,
     CircleDollarSign,
-    Boxes
+    Boxes,
+    ShoppingCart,
+    History
 } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -62,12 +63,104 @@ import { FILE_URL } from '../../utils/api';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+    withDelay,
+    interpolate
+} from 'react-native-reanimated';
+
+const BengkelServiceCard = ({
+    menu,
+    index,
+    onPress
+}: {
+    menu: any;
+    index: number;
+    onPress: () => void;
+}) => {
+    const scale = useSharedValue(1);
+    const rotateX = useSharedValue(0);
+    const rotateY = useSharedValue(0);
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(20);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [
+            { translateY: translateY.value },
+            { scale: scale.value },
+            { perspective: 1000 },
+            { rotateX: `${rotateX.value}deg` },
+            { rotateY: `${rotateY.value}deg` },
+        ],
+    }));
+
+    const innerStyle = useAnimatedStyle(() => ({
+        shadowOpacity: interpolate(scale.value, [0.95, 1], [0.05, 0.1]),
+        shadowRadius: interpolate(scale.value, [0.95, 1], [2, 8]),
+    }));
+
+    React.useEffect(() => {
+        opacity.value = withDelay(index * 40, withSpring(1));
+        translateY.value = withDelay(index * 40, withSpring(0));
+    }, [index, opacity, translateY]);
+
+    const Icon = menu.icon;
+
+    return (
+        <Animated.View style={[animatedStyle, { width: '25%' }]} className="items-center mb-5 px-1">
+            <Pressable
+                onPressIn={() => {
+                    scale.value = withSpring(0.92);
+                    rotateX.value = withSpring(-5);
+                }}
+                onPressOut={() => {
+                    scale.value = withSpring(1);
+                    rotateX.value = withSpring(0);
+                    rotateY.value = withSpring(0);
+                }}
+                onPress={onPress}
+                className="items-center w-full"
+            >
+                <Animated.View
+                    style={[innerStyle, { backgroundColor: 'white', borderRadius: 20 }]}
+                    className="w-14 h-14 items-center justify-center mb-1.5 border border-gray-100 shadow-sm"
+                >
+                    <View
+                        style={{ backgroundColor: `${menu.color}15` }}
+                        className="w-10 h-10 rounded-xl items-center justify-center"
+                    >
+                        <Icon size={22} color={menu.color} strokeWidth={2} />
+                    </View>
+                </Animated.View>
+                <Typography
+                    variant="caption"
+                    weight="bold"
+                    className="text-gray-600 text-[9px] uppercase tracking-tighter text-center"
+                    numberOfLines={2}
+                >
+                    {menu.title}
+                </Typography>
+            </Pressable>
+        </Animated.View>
+    );
+};
 
 export default function BengkelScreen() {
 
     const { action } = useLocalSearchParams<{ action?: string }>();
     const user = useAuthStore(state => state.user);
     const bengkelMenus = useMemo(() => ([
+        {
+            id: 'transaksi',
+            title: 'Transaksi',
+            description: 'Buat transaksi bengkel',
+            icon: ShoppingCart,
+            color: '#0F766E',
+            route: '/bengkel/transaksi'
+        },
         {
             id: 'sparepart',
             title: 'Sparepart',
@@ -83,6 +176,14 @@ export default function BengkelScreen() {
             icon: Wrench,
             color: '#0F766E',
             route: { pathname: '/bengkel/transaksi', params: { mode: 'servis' } }
+        },
+        {
+            id: 'wallet',
+            title: 'Dompet',
+            description: 'Kas dan saldo unit',
+            icon: Wallet,
+            color: '#2563EB',
+            action: 'wallet'
         },
         {
             id: 'inventory',
@@ -107,10 +208,18 @@ export default function BengkelScreen() {
             icon: Clock,
             color: '#EA580C',
             route: '/sdm/absensi'
+        },
+        {
+            id: 'queue',
+            title: 'Antrian',
+            description: 'Lihat antrian hari ini',
+            icon: History,
+            color: '#059669',
+            action: 'queue'
         }
     ]), []);
 
-    // Search & Filter State
+    // Search & Filter State kept for compatibility with hidden legacy sections.
     const [searchQuery, setSearchQuery] = useState('');
     const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'LUNAS' | 'PARTIAL' | 'UNPAID' | 'BATAL'>('ALL');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -126,7 +235,6 @@ export default function BengkelScreen() {
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
 
     const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
-        search: searchQuery || undefined,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
@@ -134,7 +242,6 @@ export default function BengkelScreen() {
     });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
-        search: searchQuery || undefined,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
@@ -145,7 +252,7 @@ export default function BengkelScreen() {
         React.useCallback(() => {
             refetch();
             refetchSummary();
-        }, [searchQuery])
+        }, [refetch, refetchSummary])
     );
 
     const { data: historyData, isLoading: isHistoryLoading } = useKasBankList({
@@ -166,6 +273,8 @@ export default function BengkelScreen() {
     const [view, setView] = React.useState<'form' | 'detail' | 'edit'>('form');
     const [refreshing, setRefreshing] = React.useState(false);
     const [sheetIndex, setSheetIndex] = React.useState(-1);
+    const [queueSheetIndex, setQueueSheetIndex] = React.useState(-1);
+    const [queuePaymentFilter, setQueuePaymentFilter] = React.useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BATAL'>('ALL');
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
     const [printing, setPrinting] = React.useState(false);
     const [dialogConfig, setDialogConfig] = React.useState<{
@@ -243,51 +352,37 @@ export default function BengkelScreen() {
     }, [mobilData]);
 
     const queue = queueData?.data || [];
-
-    // Filtered queue based on search query and payment filter
-    const filteredQueue = useMemo(() => {
-        let result = queue;
-
-        if (paymentFilter === 'LUNAS') {
-            result = result.filter((item: any) => item.status_bayar === 'lunas' || item.status_bayar === 'LUNAS');
-        } else if (paymentFilter === 'PARTIAL') {
-            result = result.filter((item: any) =>
-                (item.status_bayar === 'belum_lunas' || item.status_bayar === 'BELUM_LUNAS') &&
-                (Number(item.jumlah_bayar) > 0)
-            );
-        } else if (paymentFilter === 'UNPAID') {
-            result = result.filter((item: any) =>
-                (item.status_bayar === 'belum_lunas' || item.status_bayar === 'BELUM_LUNAS') &&
-                (Number(item.jumlah_bayar) === 0)
-            );
-        } else if (paymentFilter === 'BATAL') {
-            result = result.filter((item: any) => item.status_bayar === 'batal' || item.status_bayar === 'BATAL');
-        }
-
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase().trim();
-            result = result.filter((item: any) => {
-                const plate = (item.nomor_plat || '').toLowerCase();
-                const customer = (item.nama_customer || '').toLowerCase();
-                const vehicle = (item.jenis_kendaraan || '').toLowerCase();
-                const trno = (item.nomor_transaksi || '').toLowerCase();
-                return plate.includes(q) || customer.includes(q) || vehicle.includes(q) || trno.includes(q);
-            });
-        }
-
-        // Virtual Elimination for Internal Orders
-        result = result.filter((item: any) => {
+    const todayQueue = useMemo(() => {
+        return queue.filter((item: any) => {
             const kategori = String(item.kategori || '').toLowerCase();
-            if (kategori === 'jual_beli_mobil' && item.mobil_id) {
-                if (soldCars.has(String(item.mobil_id))) {
-                    return false; // Hide if car is already sold
-                }
+            if (kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
+                return false;
             }
             return true;
         });
+    }, [queue, soldCars]);
+    const getQueuePaymentStatus = useCallback((item: any) => {
+        const status = String(item.status_bayar || '').toUpperCase();
+        const paidAmount = Number(item.jumlah_bayar || 0);
 
-        return result;
-    }, [queue, searchQuery, paymentFilter, soldCars]);
+        if (status === 'BATAL') return 'BATAL';
+        if (status === 'LUNAS') return 'LUNAS';
+        if (paidAmount > 0 || status !== 'LUNAS') return 'BELUM_LUNAS';
+        return 'BELUM_LUNAS';
+    }, []);
+    const queuePaymentStats = useMemo(() => {
+        return todayQueue.reduce((acc: any, item: any) => {
+            const status = getQueuePaymentStatus(item);
+            acc.total += 1;
+            acc[status] += 1;
+            return acc;
+        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BATAL: 0 });
+    }, [getQueuePaymentStatus, todayQueue]);
+    const queueSheetItems = useMemo(() => {
+        if (queuePaymentFilter === 'ALL') return todayQueue;
+        return todayQueue.filter((item: any) => getQueuePaymentStatus(item) === queuePaymentFilter);
+    }, [getQueuePaymentStatus, queuePaymentFilter, todayQueue]);
+    const filteredQueue = todayQueue;
 
     // Calculate counters for UI Pills (using values from summary API if available, else local)
     const stats = useMemo(() => {
@@ -352,6 +447,7 @@ export default function BengkelScreen() {
             const receiptData: PrintReceiptData = {
                 type: 'bengkel',
                 transactionNumber: item.nomor_transaksi || item.id.toString(),
+                publicReceiptToken: item.public_receipt_token,
                 antrian: item.nomor_antrian || '-',
                 date: new Date(item.created_at || new Date()),
                 customerName: item.customer_nama,
@@ -423,6 +519,7 @@ export default function BengkelScreen() {
             const receiptData: PrintReceiptData = {
                 type: 'bengkel',
                 transactionNumber: item.nomor_transaksi || item.id.toString(),
+                publicReceiptToken: item.public_receipt_token,
                 antrian: item.nomor_antrian || '-',
                 date: new Date(item.created_at || new Date()),
                 customerName: item.customer_nama,
@@ -474,7 +571,19 @@ export default function BengkelScreen() {
     };
 
     const handleShareLink = async (item: any) => {
-        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/bengkel/${item.id}`;
+        const receiptToken = item.public_receipt_token;
+        if (!receiptToken) {
+            setDialogConfig({
+                visible: true,
+                title: 'Token Tidak Tersedia',
+                message: 'Token struk publik belum tersedia untuk transaksi ini. Jalankan migrasi database lalu muat ulang data.',
+                variant: 'error',
+                type: 'alert'
+            });
+            return;
+        }
+
+        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/bengkel/${receiptToken}`;
         const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
 
         try {
@@ -538,6 +647,18 @@ export default function BengkelScreen() {
     };
 
     const handleMenuPress = useCallback((menu: typeof bengkelMenus[number]) => {
+        if ((menu as any).action === 'wallet') {
+            if (Platform.OS === 'web') {
+                setShowWalletModal(true);
+            } else {
+                walletSheetRef.current?.expand();
+            }
+            return;
+        }
+        if ((menu as any).action === 'queue') {
+            openQueueSheet();
+            return;
+        }
         router.push(menu.route as any);
     }, [bengkelMenus]);
 
@@ -546,6 +667,9 @@ export default function BengkelScreen() {
 
     const walletSheetRef = useRef<BottomSheet>(null);
     const walletSnapPoints = useMemo(() => ['85%', '95%'], []);
+
+    const queueSheetRef = useRef<BottomSheet>(null);
+    const queueSnapPoints = useMemo(() => ['78%', '92%'], []);
 
     const handlePresentModalPress = (type: 'form' | 'detail' | 'edit', item?: any) => {
         setView(type);
@@ -935,6 +1059,154 @@ export default function BengkelScreen() {
         setDebiturName('');
         router.setParams({ action: undefined } as any);
     };
+
+    const openQueueSheet = () => {
+        if (Platform.OS === 'web') {
+            setQueueSheetIndex(0);
+        } else {
+            queueSheetRef.current?.expand();
+            setQueueSheetIndex(0);
+        }
+    };
+
+    const closeQueueSheet = () => {
+        if (Platform.OS === 'web') {
+            setQueueSheetIndex(-1);
+        } else {
+            queueSheetRef.current?.close();
+            setQueueSheetIndex(-1);
+        }
+    };
+
+    const openQueueDateFilter = () => {
+        setTempDateRange(dateRange);
+        setIsDateModalVisible(true);
+        if (Platform.OS !== 'web') {
+            dateSheetRef.current?.expand();
+        }
+    };
+
+    const renderQueueSheetContent = () => (
+        <>
+            <View className="flex-row justify-between items-start mb-6">
+                <View>
+                    <Typography variant="h3" weight="bold" className="text-textMain text-2xl tracking-tight">Antrian Hari Ini</Typography>
+                    <Typography variant="caption" className="text-textGray">
+                        {dateRange.dari} s/d {dateRange.sampai}
+                    </Typography>
+                </View>
+                <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100">
+                    <X size={20} color="#6B7280" />
+                </Pressable>
+            </View>
+
+            <Pressable
+                onPress={openQueueDateFilter}
+                className="flex-row items-center justify-between mb-4 bg-gray-50 border border-gray-100 rounded-[20px] px-4 py-3"
+            >
+                <View className="flex-row items-center flex-1">
+                    <View className="w-9 h-9 rounded-2xl bg-white items-center justify-center border border-gray-100 mr-3">
+                        <Calendar size={16} color="#0F766E" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Tanggal</Typography>
+                        <Typography weight="bold" className="text-textMain text-xs mt-0.5">
+                            {dateRange.dari === dateRange.sampai ? dateRange.dari : `${dateRange.dari} s/d ${dateRange.sampai}`}
+                        </Typography>
+                    </View>
+                </View>
+                <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
+            </Pressable>
+
+            <View className="flex-row items-center justify-between mb-3">
+                <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
+                    <Typography className="text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
+                        {queueSheetItems.length} Order
+                    </Typography>
+                </View>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                {[
+                    { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                    { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'BATAL', label: 'Dibatalkan', count: queuePaymentStats.BATAL, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
+                ].map((filter) => {
+                    const isActive = queuePaymentFilter === filter.id;
+                    return (
+                        <Pressable
+                            key={filter.id}
+                            onPress={() => setQueuePaymentFilter(filter.id as any)}
+                            className={`px-3.5 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                        >
+                            <Typography
+                                variant="caption"
+                                weight="bold"
+                                className={isActive ? 'text-white' : filter.text}
+                            >
+                                {filter.label} ({filter.count})
+                            </Typography>
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
+            <View>
+                {queueSheetItems.length === 0 ? (
+                    <EmptyState
+                        title="Antrian Masih Kosong"
+                        description="Tidak ada data antrian untuk periode ini."
+                        icon={Clock}
+                    />
+                ) : (
+                    queueSheetItems.map((item: any) => (
+                        <Pressable
+                            key={item.id}
+                            onPress={() => {
+                                closeQueueSheet();
+                                handlePresentModalPress('detail', item);
+                            }}
+                            className="bg-white p-4 rounded-[24px] border border-gray-100 shadow-sm mb-3 flex-row items-center"
+                        >
+                            <View className="w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-3 border border-emerald-100/70">
+                                <Typography weight="bold" className="text-primary text-[10px] uppercase tracking-tighter">
+                                    {item.nomor_plat?.split(' ')[0] || '-'}
+                                </Typography>
+                                <Typography weight="bold" className="text-primary/40 text-[8px] mt-0.5">
+                                    KENDARAAN
+                                </Typography>
+                            </View>
+                            <View className="flex-1">
+                                <View className="flex-row items-start justify-between gap-2">
+                                    <View className="flex-1 mr-2">
+                                        <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>
+                                            {item.nomor_plat}
+                                        </Typography>
+                                        <Typography className="text-textGray text-[11px] mt-0.5" numberOfLines={1}>
+                                            {item.nama_customer || 'Umum'} • {item.jenis_kendaraan || '-'}
+                                        </Typography>
+                                    </View>
+                                    <Badge
+                                        label={(item.status_pengerjaan || '').toUpperCase()}
+                                        variant={item.status_pengerjaan === 'proses' ? 'info' : item.status_pengerjaan === 'selesai' ? 'success' : 'neutral'}
+                                    />
+                                </View>
+                                <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                                    <Typography className="text-textGray text-[10px] font-semibold">
+                                        {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
+                                    </Typography>
+                                    <Typography weight="bold" className="text-primary text-xs">
+                                        {formatCurrency(item.grand_total || 0)}
+                                    </Typography>
+                                </View>
+                            </View>
+                        </Pressable>
+                    ))
+                )}
+            </View>
+        </>
+    );
 
 
     const renderWalletContent = () => (
@@ -1440,15 +1712,14 @@ export default function BengkelScreen() {
             <StatusBar barStyle="light-content" />
 
             <Header 
-                title="Bengkel & POS" 
-                subtitle="Manajemen Antrian & Inventori" 
+                title="Bengkel" 
                 showBackButton={true}
                 onBackButtonPress={handleGoBack}
                 showProfile={true}
             />
 
             <View className="px-6 mt-4">
-                <View className="bg-white p-3 rounded-[22px] border border-gray-100 shadow-sm">
+                <View className="hidden">
                     <View className="flex-row items-center justify-between mb-3">
                         <View>
                             <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Cari & Filter</Typography>
@@ -1543,18 +1814,8 @@ export default function BengkelScreen() {
                     </ScrollView>
                 </View>
 
-                <View className="bg-white p-3 rounded-[22px] border border-gray-100 shadow-sm mt-2.5">
-                    <View className="flex-row items-center justify-between mb-3">
-                        <View>
-                            <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Ringkasan Antrian</Typography>
-                            <Typography variant="caption" className="text-textGray">Status pengerjaan saat ini</Typography>
-                        </View>
-                        <View className="bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">
-                            <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Live</Typography>
-                        </View>
-                    </View>
-
-                    <View className="flex-row space-x-2">
+                <View className="mt-2.5">
+                    <View className="flex-row space-x-2 px-1">
                         {[
                             { label: 'Antre', key: 'antre', color: '#F59E0B', icon: Clock },
                             { label: 'Proses', key: 'proses', color: '#3B82F6', icon: Activity },
@@ -1572,36 +1833,23 @@ export default function BengkelScreen() {
                         ))}
                     </View>
 
-                    <View className="mt-3 pt-3 border-t border-gray-100">
-                        <View className="flex-row items-center justify-between mb-2">
-                            <Typography className="text-textGray text-[10px] font-bold uppercase tracking-widest">Quick Shortcut</Typography>
-                            <Typography className="text-textGray/50 text-[9px] font-semibold">Tap untuk buka</Typography>
+                    <View className="mt-6">
+                        <View className="flex-row flex-wrap">
+                            {bengkelMenus.map((menu, index) => (
+                                <BengkelServiceCard
+                                    key={menu.id}
+                                    menu={menu}
+                                    index={index}
+                                    onPress={() => handleMenuPress(menu)}
+                                />
+                            ))}
                         </View>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                            {bengkelMenus.map((menu) => {
-                                const Icon = menu.icon;
-                                return (
-                                    <Pressable
-                                        key={menu.id}
-                                        onPress={() => handleMenuPress(menu)}
-                                        className="mr-2 px-3 py-2 rounded-2xl border border-gray-100 bg-white flex-row items-center"
-                                    >
-                                        <View style={{ backgroundColor: `${menu.color}15` }} className="w-7 h-7 rounded-xl items-center justify-center mr-2">
-                                            <Icon size={14} color={menu.color} />
-                                        </View>
-                                        <Typography className="text-textMain text-[10px] font-bold" numberOfLines={1}>
-                                            {menu.title}
-                                        </Typography>
-                                    </Pressable>
-                                );
-                            })}
-                        </ScrollView>
                     </View>
                 </View>
             </View>
 
             <ScrollView
-                className="flex-1 pt-3"
+                className="hidden"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
@@ -1790,6 +2038,20 @@ export default function BengkelScreen() {
                         </View>
                     </View>
                 </Modal>
+
+                <Modal visible={queueSheetIndex !== -1} transparent animationType="slide" onRequestClose={closeQueueSheet}>
+                    <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={closeQueueSheet} />
+                        <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '88%', alignSelf: 'center' }}>
+                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="px-8 pb-12">
+                                    {renderQueueSheetContent()}
+                                </View>
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
                 
                 <Modal
                     visible={showWalletModal}
@@ -1828,11 +2090,11 @@ export default function BengkelScreen() {
                     {renderBottomSheetContent()}
                 </BottomSheet>
 
-            <BottomSheet
-                ref={walletSheetRef}
-                index={-1}
-                snapPoints={walletSnapPoints}
-                enablePanDownToClose
+                <BottomSheet
+                    ref={walletSheetRef}
+                    index={-1}
+                    snapPoints={walletSnapPoints}
+                    enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
@@ -1842,6 +2104,24 @@ export default function BengkelScreen() {
                     <BottomSheetScrollView showsVerticalScrollIndicator={false}>
                         <View className="px-9 py-4 pb-12">
                             {renderWalletContent()}
+                        </View>
+                    </BottomSheetScrollView>
+                </BottomSheet>
+
+                <BottomSheet
+                    ref={queueSheetRef}
+                    index={queueSheetIndex}
+                    snapPoints={queueSnapPoints}
+                    enablePanDownToClose
+                    keyboardBehavior="interactive"
+                    keyboardBlurBehavior="restore"
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
+                    onChange={setQueueSheetIndex}
+                >
+                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+                        <View className="px-8 py-4 pb-12">
+                            {renderQueueSheetContent()}
                         </View>
                     </BottomSheetScrollView>
                 </BottomSheet>
@@ -1984,16 +2264,24 @@ export default function BengkelScreen() {
                     </View>
                 </View>
             </Modal>
-            <AlertDialogComponent
+            <Modal
                 visible={dialogConfig.visible}
-                title={dialogConfig.title}
-                message={dialogConfig.message}
-                variant={dialogConfig.variant}
-                type={dialogConfig.type}
-                loading={dialogConfig.loading}
-                onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
-                onConfirm={dialogConfig.onConfirm}
-            />
+                transparent
+                animationType="fade"
+                statusBarTranslucent
+                onRequestClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+            >
+                <AlertDialogComponent
+                    visible={dialogConfig.visible}
+                    title={dialogConfig.title}
+                    message={dialogConfig.message}
+                    variant={dialogConfig.variant}
+                    type={dialogConfig.type}
+                    loading={dialogConfig.loading}
+                    onClose={() => setDialogConfig(prev => ({ ...prev, visible: false }))}
+                    onConfirm={dialogConfig.onConfirm}
+                />
+            </Modal>
         </View>
     );
 }

@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
+import secrets
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_, case
@@ -301,6 +302,7 @@ class TransaksiBengkelService:
         # Create transaction record
         transaksi = TransaksiPenjualanBengkel(
             nomor_transaksi=nomor_transaksi,
+            public_receipt_token=secrets.token_urlsafe(32),
             tanggal=transaksi_tanggal,
             customer_id=data.customer_id,
             nama_customer=nama_customer,
