@@ -150,6 +150,7 @@ class TransaksiPenjualanBengkel(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nomor_transaksi: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    public_receipt_token: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=True)
     tanggal: Mapped[date] = mapped_column(Date, index=True)
     customer_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("customers.id"),
