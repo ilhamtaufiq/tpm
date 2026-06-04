@@ -322,6 +322,7 @@ class TransaksiBengkelResponse(BaseModel):
 
     id: int
     nomor_transaksi: str
+    public_receipt_token: Optional[str] = None
     tanggal: date
     customer_id: Optional[int] = None
     nama_customer: Optional[str] = None
