@@ -112,7 +112,7 @@ export default function BengkelTransaksiScreen() {
     const splitTotal = splitTunaiAmount + splitTransferAmount;
 
     useEffect(() => {
-        printSettingsService.loadSettings().then(setPrintSettings);
+        printSettingsService.getSettings().then(setPrintSettings);
     }, []);
 
     const filteredServices = useMemo(() => {

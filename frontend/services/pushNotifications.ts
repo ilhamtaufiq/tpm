@@ -19,6 +19,8 @@ if (Platform.OS !== 'web') {
             shouldShowAlert: true,
             shouldPlaySound: false,
             shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
         }),
     });
 }
@@ -91,12 +93,12 @@ const registerForPushNotificationsAsync = async () => {
         return null;
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    const existingPermissions: any = await Notifications.getPermissionsAsync();
+    let finalStatus = existingPermissions.status;
 
-    if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+    if (finalStatus !== 'granted') {
+        const requestedPermissions: any = await Notifications.requestPermissionsAsync();
+        finalStatus = requestedPermissions.status;
     }
 
     if (finalStatus !== 'granted') {

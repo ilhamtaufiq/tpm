@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 
 import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
-import { useNotificationStore } from '../../store/useNotificationStore';
+import { useNotificationStore, RealtimeNotification } from '../../store/useNotificationStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 const ENTITY_LABELS: Record<string, string> = {
@@ -49,7 +49,7 @@ const formatLabel = (value?: string, fallback = 'Data') => {
         .join(' ');
 };
 
-const getNotificationMeta = (item: typeof notifications[number]) => {
+const getNotificationMeta = (item: RealtimeNotification) => {
     const entityLabel = item.entity ? (ENTITY_LABELS[item.entity] || formatLabel(item.entity)) : 'Data';
     const actionLabel = item.action ? (ACTION_LABELS[item.action] || formatLabel(item.action, 'diperbarui')) : 'diperbarui';
     const refLabel = item.entityId ? `Ref #${item.entityId}` : 'Tanpa referensi';

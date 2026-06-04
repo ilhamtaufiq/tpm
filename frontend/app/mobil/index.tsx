@@ -987,7 +987,7 @@ export default function MobilInventoryScreen() {
                         ].map((chip) => (
                             <Pressable 
                                 key={chip.id}
-                                onPress={() => setActiveTab(chip.id)}
+                                onPress={() => setActiveTab(chip.id as 'semua' | 'tersedia' | 'booking' | 'terjual')}
                                 className={`px-4 py-2 rounded-xl mr-2 ${activeTab === chip.id ? 'bg-primary' : 'bg-gray-50 border border-gray-100'}`}
                             >
                                 <Typography weight="bold" className={`text-[10px] uppercase tracking-wider ${activeTab === chip.id ? 'text-white font-bold' : 'text-gray-400'}`}>
