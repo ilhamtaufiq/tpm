@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from decimal import Decimal
+import secrets
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import func, or_
@@ -282,6 +283,7 @@ class PembelianPartService:
 
         pembelian = PembelianSparePart(
             nomor_transaksi=self._generate_nomor_transaksi(),
+            public_receipt_token=secrets.token_urlsafe(32),
             created_by=user_id,
         )
 
