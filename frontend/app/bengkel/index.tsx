@@ -1991,48 +1991,59 @@ export default function BengkelScreen() {
                         </Pressable>
                     </View>
 
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-3 pt-3 border-t border-gray-100">
-                        <Pressable
-                            onPress={() => setPaymentFilter('ALL')}
-                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'ALL' ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-200'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={paymentFilter === 'ALL' ? 'text-white' : 'text-gray-500'}>
-                                Semua ({stats.total})
+                    <View className="mt-3 pt-3 border-t border-gray-100">
+                        <View className="flex-row items-center justify-between mb-2 px-1">
+                            <Typography variant="caption" weight="bold" className="text-textGray uppercase tracking-widest">
+                                Status Pembayaran
                             </Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setPaymentFilter('LUNAS')}
-                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'LUNAS' ? 'bg-emerald-500 border-emerald-500' : 'bg-emerald-50 border-emerald-200'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={paymentFilter === 'LUNAS' ? 'text-white' : 'text-emerald-700'}>
-                                Lunas ({stats.lunas})
+                            <Typography variant="caption" className="text-textGray">
+                                {paymentFilter === 'ALL'
+                                    ? 'Semua'
+                                    : paymentFilter === 'LUNAS'
+                                        ? 'Lunas'
+                                        : paymentFilter === 'PARTIAL'
+                                            ? 'Belum Lunas'
+                                            : paymentFilter === 'UNPAID'
+                                                ? 'Belum Bayar'
+                                                : 'Dibatalkan'}
                             </Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setPaymentFilter('PARTIAL')}
-                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'PARTIAL' ? 'bg-blue-500 border-blue-500' : 'bg-blue-50 border-blue-200'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={paymentFilter === 'PARTIAL' ? 'text-white' : 'text-blue-700'}>
-                                Belum Lunas ({stats.partial})
-                            </Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setPaymentFilter('UNPAID')}
-                            className={`px-3 py-1.5 rounded-full border mr-2 ${paymentFilter === 'UNPAID' ? 'bg-amber-500 border-amber-500' : 'bg-amber-50 border-amber-200'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={paymentFilter === 'UNPAID' ? 'text-white' : 'text-amber-700'}>
-                                Belum Bayar ({stats.unpaid})
-                            </Typography>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setPaymentFilter('BATAL')}
-                            className={`px-3 py-1.5 rounded-full border ${paymentFilter === 'BATAL' ? 'bg-rose-500 border-rose-500' : 'bg-rose-50 border-rose-200'}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={paymentFilter === 'BATAL' ? 'text-white' : 'text-rose-700'}>
-                                Batal ({stats.batal})
-                            </Typography>
-                        </Pressable>
-                    </ScrollView>
+                        </View>
+                        <View className="flex-row flex-wrap">
+                            {[
+                                { key: 'ALL', label: 'Semua', count: stats.total, active: 'bg-slate-900 border-slate-900', inactive: 'bg-white border-gray-200 text-gray-600' },
+                                { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
+                                { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
+                                { key: 'UNPAID', label: 'Belum Bayar', count: stats.unpaid, active: 'bg-amber-600 border-amber-600', inactive: 'bg-amber-50 border-amber-100 text-amber-700' },
+                                { key: 'BATAL', label: 'Batal', count: stats.batal, active: 'bg-rose-600 border-rose-600', inactive: 'bg-rose-50 border-rose-100 text-rose-700' },
+                            ].map((item) => {
+                                const active = paymentFilter === item.key;
+                                return (
+                                    <Pressable
+                                        key={item.key}
+                                        onPress={() => setPaymentFilter(item.key as any)}
+                                        className={`mr-2 mb-2 min-h-[40px] min-w-[106px] flex-1 flex-row items-center justify-between rounded-2xl border px-3 py-2 ${active ? item.active : item.inactive}`}
+                                    >
+                                        <Typography
+                                            variant="caption"
+                                            weight="bold"
+                                            className={active ? 'text-white text-[10px]' : 'text-[10px]'}
+                                        >
+                                            {item.label}
+                                        </Typography>
+                                        <View className={`ml-2 rounded-full px-2 py-0.5 ${active ? 'bg-white/15' : 'bg-black/5'}`}>
+                                            <Typography
+                                                variant="caption"
+                                                weight="bold"
+                                                className={active ? 'text-white text-[10px]' : 'text-textMain text-[10px]'}
+                                            >
+                                                {item.count}
+                                            </Typography>
+                                        </View>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </View>
                 </View>
 
                 <View className="mt-2.5">
@@ -2042,14 +2053,18 @@ export default function BengkelScreen() {
                             { label: 'Proses', key: 'proses', color: '#3B82F6', icon: Activity },
                             { label: 'Selesai', key: 'selesai', color: '#10B981', icon: CheckCircle2 },
                         ].map((stat) => (
-                            <View key={stat.key} className="flex-1 bg-slate-50 px-2 py-2.5 rounded-[18px] border border-slate-100 items-center">
-                                <View style={{ backgroundColor: stat.color + '15' }} className="w-7 h-7 rounded-xl items-center justify-center mb-1">
-                                    <stat.icon size={13} color={stat.color} />
+                            <View key={stat.key} className="flex-1 bg-white px-3 py-2.5 rounded-2xl border border-gray-100">
+                                <View className="flex-row items-center justify-between mb-1">
+                                    <View style={{ backgroundColor: stat.color + '15' }} className="w-5 h-5 rounded-full items-center justify-center">
+                                        <stat.icon size={10} color={stat.color} />
+                                    </View>
+                                    <Typography weight="bold" style={{ color: stat.color }} className="text-sm leading-none">
+                                        {summary ? summary[stat.key] : 0}
+                                    </Typography>
                                 </View>
-                                <Typography weight="bold" style={{ color: stat.color }} className="text-[16px] leading-tight">
-                                    {summary ? summary[stat.key] : 0}
+                                <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest">
+                                    {stat.label}
                                 </Typography>
-                                <Typography className="text-textGray/40 text-[7px] font-bold tracking-widest">{stat.label}</Typography>
                             </View>
                         ))}
                     </View>
