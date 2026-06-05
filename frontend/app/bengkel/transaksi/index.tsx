@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, Barcode as BarcodeIcon, Car, Check, CheckCircle2, ChevronLeft, Info, Package, Percent, Plus, Printer, Search, Share2, Truck, User, Wallet, Wrench, X } from 'lucide-react-native';
+import { AlertCircle, Barcode as BarcodeIcon, Calendar, Car, Check, CheckCircle2, ChevronLeft, ClipboardList, Info, Package, Percent, Plus, Printer, Search, Share2, Truck, User, Wallet, Wrench, X } from 'lucide-react-native';
 
 import { Typography } from '../../../components/ui/Typography';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
-import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useUpdateTransaksiBengkel } from '../../../hooks/useBengkel';
+import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useTransaksiBengkelList, useUpdateTransaksiBengkel } from '../../../hooks/useBengkel';
 import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
@@ -24,6 +24,20 @@ type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'SPLIT';
 type NoticeType = 'error' | 'success' | 'info';
 
+const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const isValidDateString = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
+
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
     const { action, mode, transactionId } = useLocalSearchParams<{ action?: string; mode?: string; transactionId?: string }>();
@@ -33,6 +47,12 @@ export default function BengkelTransaksiScreen() {
     const [showPartSearch, setShowPartSearch] = useState(false);
     const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
     const [partSheetOpen, setPartSheetOpen] = useState(false);
+    const [existingSheetOpen, setExistingSheetOpen] = useState(false);
+    const [existingSearch, setExistingSearch] = useState('');
+    const [existingDate, setExistingDate] = useState(() => formatLocalDate(new Date()));
+    const [tempExistingDate, setTempExistingDate] = useState(() => formatLocalDate(new Date()));
+    const [existingDatePickerOpen, setExistingDatePickerOpen] = useState(false);
+    const [existingDateError, setExistingDateError] = useState('');
     const [showDiscountInput, setShowDiscountInput] = useState(false);
     const [selectedParts, setSelectedParts] = useState<Record<number, { item: any; qty: number }>>({});
     const [selectedServices, setSelectedServices] = useState<Record<number, { item: any; qty: number }>>({});
@@ -58,7 +78,9 @@ export default function BengkelTransaksiScreen() {
     const [sharingReceipt, setSharingReceipt] = useState(false);
     const [receiptActionMessage, setReceiptActionMessage] = useState('');
     const debouncedPartSearch = useDebounce(partSearch, 300);
+    const debouncedExistingSearch = useDebounce(existingSearch, 300);
     const PART_PAGE_SIZE = 40;
+    const todayDate = useMemo(() => formatLocalDate(new Date()), []);
 
     const {
         data: partsData,
@@ -75,6 +97,16 @@ export default function BengkelTransaksiScreen() {
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
     const { data: armadaData, isLoading: isArmadaLoading } = useActiveArmada();
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
+    const { data: existingTransactionsData, isLoading: isExistingTransactionsLoading } = useTransaksiBengkelList({
+        limit: 100,
+        sort_by: 'tanggal',
+        sort_order: 'desc',
+        search: debouncedExistingSearch || undefined,
+        tanggal_dari: existingDate,
+        tanggal_sampai: existingDate,
+    }, {
+        enabled: existingSheetOpen,
+    });
     const createMutation = useCreateTransaksiBengkel();
     const updateMutation = useUpdateTransaksiBengkel();
     const editTransactionId = transactionId ? Number(transactionId) : null;
@@ -220,6 +252,32 @@ export default function BengkelTransaksiScreen() {
     }, [services, serviceSearch]);
     const visibleParts = parts;
     const visibleServices = serviceSearch.trim() || showServiceCatalog ? filteredServices : filteredServices.slice(0, 10);
+    const getEditablePaymentStatus = (item: any) => {
+        const status = String(item.status_bayar || '').toUpperCase();
+        const paidAmount = Number(item.jumlah_bayar || 0);
+
+        if (status === 'LUNAS' || status === 'BATAL') return status;
+        if (paidAmount > 0) return 'BELUM_LUNAS';
+        return 'BELUM_BAYAR';
+    };
+    const getEditableWorkStatus = (item: any) => {
+        const raw = String(item.status_pengerjaan || 'ANTRE').toUpperCase();
+        if (raw.includes('PROSES')) return 'PROSES';
+        if (raw.includes('SELESAI')) return 'SELESAI';
+        if (raw.includes('BATAL')) return 'BATAL';
+        return 'ANTRE';
+    };
+    const existingTransactions = useMemo(() => {
+        const rows = existingTransactionsData?.data || [];
+        return rows.filter((item: any) => {
+            if (editTransactionId && Number(item.id) === editTransactionId) return false;
+            const workStatus = getEditableWorkStatus(item);
+            const paymentStatus = getEditablePaymentStatus(item);
+            const canEditWorkStatus = workStatus === 'ANTRE' || workStatus === 'PROSES';
+            const canEditPaymentStatus = paymentStatus === 'BELUM_BAYAR' || paymentStatus === 'BELUM_LUNAS';
+            return canEditWorkStatus && canEditPaymentStatus;
+        });
+    }, [editTransactionId, existingTransactionsData]);
 
     const handlePartsScroll = (event: any) => {
         if (!hasNextPartsPage || isFetchingNextPartsPage) return;
@@ -301,6 +359,41 @@ export default function BengkelTransaksiScreen() {
             showNotice('error', 'Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di data sparepart.`);
             setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
         }
+    };
+
+    const handleSelectExistingTransaction = (item: any) => {
+        setExistingSheetOpen(false);
+        router.push({
+            pathname: '/bengkel/transaksi',
+            params: {
+                transactionId: String(item.id),
+                mode: transaksiMode === 'sparepart' || transaksiMode === 'servis' ? transaksiMode : 'all',
+            },
+        } as any);
+    };
+
+    const openExistingDatePicker = () => {
+        setTempExistingDate(existingDate);
+        setExistingDateError('');
+        setExistingDatePickerOpen(true);
+    };
+
+    const applyExistingDate = () => {
+        if (!isValidDateString(tempExistingDate)) {
+            setExistingDateError('Format tanggal tidak valid. Gunakan YYYY-MM-DD.');
+            return;
+        }
+
+        setExistingDate(tempExistingDate);
+        setExistingDatePickerOpen(false);
+        setExistingDateError('');
+    };
+
+    const selectTodayExistingDate = () => {
+        setTempExistingDate(todayDate);
+        setExistingDate(todayDate);
+        setExistingDatePickerOpen(false);
+        setExistingDateError('');
     };
 
     const next = () => {
@@ -513,6 +606,12 @@ export default function BengkelTransaksiScreen() {
                             }}
                         />
                         <ActionIcon
+                            active={!!editTransactionId}
+                            icon={<ClipboardList size={20} color={editTransactionId ? 'white' : '#023C69'} />}
+                            label="Open Trx"
+                            onPress={() => setExistingSheetOpen(true)}
+                        />
+                        <ActionIcon
                             active={transaksiMode === 'servis' ? selectedPartList.length > 0 : selectedServiceList.length > 0}
                             icon={<Plus size={21} color={(transaksiMode === 'servis' ? selectedPartList.length > 0 : selectedServiceList.length > 0) ? 'white' : '#023C69'} />}
                             label={transaksiMode === 'servis' ? 'Sparepart' : 'Servis'}
@@ -565,6 +664,37 @@ export default function BengkelTransaksiScreen() {
             >
                 {step === 1 && (
                     <View className="space-y-6">
+                        {showParts && editTransactionId && selectedPartList.length > 0 && (
+                        <View>
+                            <View className="flex-row items-center justify-between mb-3">
+                                <Typography variant="body1" weight="bold" className="text-textMain">Sparepart Transaksi Ini</Typography>
+                                <Typography className="text-gray-400 text-xs font-bold">{selectedPartList.length} item</Typography>
+                            </View>
+                            {selectedPartList.map(row => (
+                                <View key={`editing-selected-part-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-blue-50 border-blue-100">
+                                    <View className="flex-row items-start">
+                                        <Package size={18} color="#2563EB" />
+                                        <View className="flex-1 ml-2">
+                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1">{row.item.kode || '-'}</Typography>
+                                            <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(row.item.harga_jual || 0)}</Typography>
+                                        </View>
+                                        <Pressable onPress={() => togglePart(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
+                                            <X size={15} color="#64748B" />
+                                        </Pressable>
+                                    </View>
+                                    <QtyControl
+                                        value={row.qty}
+                                        color="blue"
+                                        onMinus={() => setPartQty(row.item.id, row.qty - 1)}
+                                        onPlus={() => setPartQty(row.item.id, row.qty + 1)}
+                                        onChangeQty={(qty) => setPartQty(row.item.id, qty)}
+                                    />
+                                </View>
+                            ))}
+                        </View>
+                        )}
+
                         {showParts && (
                         <View className="w-full">
                             {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
@@ -1008,6 +1138,134 @@ export default function BengkelTransaksiScreen() {
                                 closeAfterSubmit();
                             }}
                         />
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={existingSheetOpen} transparent animationType="slide" onRequestClose={() => setExistingSheetOpen(false)}>
+                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
+                    <Pressable className="absolute inset-0" onPress={() => setExistingSheetOpen(false)} />
+                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '78%', paddingBottom: insets.bottom + 20 }}>
+                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-1 mr-3">
+                                <Typography variant="h3" weight="bold">Pilih Transaksi Existing</Typography>
+                                <Typography className="text-gray-400 text-xs mt-0.5">Tambah atau kurangi sparepart dan servis dari transaksi lama.</Typography>
+                            </View>
+                            <Pressable onPress={() => setExistingSheetOpen(false)} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                                <X size={18} color="#475569" />
+                            </Pressable>
+                        </View>
+                        <SearchBox value={existingSearch} onChange={setExistingSearch} placeholder="Cari nomor, customer, atau plat..." />
+                        <Pressable
+                            onPress={openExistingDatePicker}
+                            className="flex-row items-center justify-between mb-3 bg-gray-50 border border-gray-100 rounded-2xl px-3 py-3"
+                        >
+                            <View className="flex-row items-center flex-1">
+                                <View className="w-9 h-9 rounded-2xl bg-white items-center justify-center border border-gray-100 mr-3">
+                                    <Calendar size={16} color="#0F766E" />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography className="text-textGray text-[9px] font-bold uppercase tracking-widest">Tanggal Transaksi</Typography>
+                                    <Typography weight="bold" className="text-textMain text-xs mt-0.5">{existingDate}</Typography>
+                                </View>
+                            </View>
+                            <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
+                        </Pressable>
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                            {isExistingTransactionsLoading ? (
+                                <View className="py-8">
+                                    <ActivityIndicator color="#023C69" />
+                                </View>
+                            ) : existingTransactions.length === 0 ? (
+                                <View className="py-8 items-center">
+                                    <ClipboardList size={34} color="#CBD5E1" />
+                                    <Typography weight="bold" className="text-gray-500 mt-3">Transaksi tidak ditemukan</Typography>
+                                    <Typography className="text-gray-400 text-xs mt-1 text-center">Coba cari nomor transaksi, nama customer, atau nomor plat lain.</Typography>
+                                </View>
+                            ) : existingTransactions.map((item: any) => {
+                                const status = String(item.status_pengerjaan || '').toUpperCase();
+                                const statusClass = status === 'SELESAI'
+                                    ? 'bg-emerald-50 border-emerald-100'
+                                    : status === 'PROSES'
+                                        ? 'bg-blue-50 border-blue-100'
+                                        : 'bg-amber-50 border-amber-100';
+                                const statusTextClass = status === 'SELESAI'
+                                    ? 'text-emerald-700'
+                                    : status === 'PROSES'
+                                        ? 'text-blue-700'
+                                        : 'text-amber-700';
+                                const customer = item.customer_nama || item.nama_customer || 'Guest';
+                                const plate = item.nomor_plat || item.plat_nomor || '-';
+                                const dateLabel = item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+
+                                return (
+                                    <Pressable key={`existing-${item.id}`} onPress={() => handleSelectExistingTransaction(item)} className="mb-3 p-3 rounded-2xl border bg-white border-gray-100">
+                                        <View className="flex-row items-start">
+                                            <View className="w-10 h-10 rounded-2xl bg-primary/10 items-center justify-center mr-3">
+                                                <ClipboardList size={19} color="#023C69" />
+                                            </View>
+                                            <View className="flex-1">
+                                                <View className="flex-row items-center justify-between">
+                                                    <Typography weight="bold" className="text-sm text-textMain flex-1 mr-2" numberOfLines={1}>{item.nomor_transaksi || `#${item.id}`}</Typography>
+                                                    <View className={`px-2 py-1 rounded-full border ${statusClass}`}>
+                                                        <Typography className={`text-[10px] font-bold ${statusTextClass}`}>{status || '-'}</Typography>
+                                                    </View>
+                                                </View>
+                                                <Typography className="text-gray-500 text-xs mt-1" numberOfLines={1}>{customer} - {plate}</Typography>
+                                                <View className="flex-row items-center justify-between mt-2">
+                                                    <Typography className="text-gray-400 text-[11px]">{dateLabel}</Typography>
+                                                    <Typography className="text-primary text-xs font-bold">{formatCurrency(item.total_biaya || item.total_bayar || 0)}</Typography>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal visible={existingDatePickerOpen} transparent animationType="fade" onRequestClose={() => setExistingDatePickerOpen(false)}>
+                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
+                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-row items-center flex-1">
+                                <View className="w-11 h-11 rounded-2xl bg-teal-50 items-center justify-center border border-teal-100 mr-3">
+                                    <Calendar size={20} color="#0F766E" />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography variant="h3" weight="bold" className="text-textMain">Pilih Tanggal</Typography>
+                                    <Typography className="text-gray-400 text-xs mt-0.5">Filter transaksi Open Trx.</Typography>
+                                </View>
+                            </View>
+                            <Pressable onPress={() => setExistingDatePickerOpen(false)} className="w-9 h-9 bg-gray-100 rounded-full items-center justify-center">
+                                <X size={17} color="#475569" />
+                            </Pressable>
+                        </View>
+
+                        <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                        <TextInput
+                            value={tempExistingDate}
+                            onChangeText={(value) => {
+                                setTempExistingDate(value);
+                                if (existingDateError) setExistingDateError('');
+                            }}
+                            placeholder="YYYY-MM-DD"
+                            placeholderTextColor="#94A3B8"
+                            autoCapitalize="none"
+                            keyboardType="numbers-and-punctuation"
+                            className="bg-gray-50 rounded-2xl px-4 h-11 text-sm text-textMain border border-gray-200"
+                        />
+                        {existingDateError ? (
+                            <Typography className="text-rose-500 text-xs mt-2">{existingDateError}</Typography>
+                        ) : null}
+
+                        <View className="flex-row space-x-3 mt-5">
+                            <Button title="Hari Ini" variant="outline" className="flex-1" onPress={selectTodayExistingDate} />
+                            <Button title="Terapkan" className="flex-1" onPress={applyExistingDate} />
+                        </View>
                     </View>
                 </View>
             </Modal>
