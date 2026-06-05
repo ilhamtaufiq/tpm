@@ -17,7 +17,7 @@ from app.services.pembelian_part_service import PembelianPartService
 from app.services.hutang_service import HutangService
 from app.services.mobil_service import MobilService
 from app.services.reports.laba_rugi_service import LabaRugiService
-from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType, ExpenseCategory
+from app.utils.constants import KasBankSource, KasBankType, KasBankJenis, PaymentStatus, PiutangSource, PiutangStatus, CarStatus, HutangSource, AssetStatus, InvestorDisbursementStatus, OwnershipType, ExpenseCategory, WorkshopStatus
 from app.models.keuangan import KasBank, PiutangUsaha as PiutangModel
 from app.models.bengkel import PengeluaranBengkel
 from app.utils.cache import build_key, get_cached, set_cached, invalidate_cache_prefix
@@ -241,7 +241,10 @@ def get_recent_activity(
         sort_by="created_at",
         sort_order="desc"
     )["data"]
-    bengkel_data = [item for item in bengkel_data if (item.grand_total or 0) > 0]
+    bengkel_data = [
+        item for item in bengkel_data
+        if (item.grand_total or 0) > 0 and item.status_pengerjaan == WorkshopStatus.SELESAI
+    ]
 
     # 3. Fetch recent transport loads (Jasa Angkut)
     muatan_service = MuatanService(db)

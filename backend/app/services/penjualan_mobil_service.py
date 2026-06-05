@@ -1273,6 +1273,7 @@ class PenjualanMobilService:
         # Total Bengkel for SOLD units only (Accrual)
         bengkel_parts_sold_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.mobil_id.in_(sold_mobil_ids) if sold_mobil_ids else False
         )
@@ -1288,6 +1289,7 @@ class PenjualanMobilService:
         # Total Bengkel (All workshop transactions in period for overall summary)
         bengkel_parts_all_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_parts_all_q = bengkel_parts_all_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
@@ -1370,6 +1372,7 @@ class PenjualanMobilService:
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)

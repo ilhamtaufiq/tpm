@@ -31,6 +31,14 @@ Untuk mobil milik investor:
 - Riwayat pencairan yang direversal harus tetap terlihat dan diberi penanda `REVERSED`, bukan dihapus dari histori.
 - Jika ada perubahan pada flow ini, pastikan notifikasi / realtime coverage ikut dicek ulang.
 
+## Bengkel Work Order Finance Gate
+
+Untuk transaksi bengkel:
+- `ANTRE` dan `PROSES` adalah work order / open bill operasional, bukan transaksi finansial final.
+- `kas_bank`, `piutang`, `hutang`, laba rugi, neraca, perubahan modal, HPP, dan nilai persediaan hanya boleh mengakui transaksi bengkel dengan `status_pengerjaan = SELESAI`.
+- Order slip dan bill order boleh berisi sparepart/servis, tetapi belum boleh menaikkan pendapatan, piutang/hutang, kas/bank, internal repair, atau HPP laporan.
+- Dashboard operasional boleh menampilkan `ANTRE/PROSES`; dashboard atau laporan finansial wajib memakai filter final finance.
+
 ## Checklist Verifikasi Minimum
 
 - UI sesuai flow terbaru.

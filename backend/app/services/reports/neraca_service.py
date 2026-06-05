@@ -15,7 +15,8 @@ from app.utils.constants import (
     HutangSource,
     KasBankSource,
     KasBankType,
-    PaymentStatus
+    PaymentStatus,
+    WorkshopStatus
 )
 
 class NeracaService(BaseReportService):
@@ -179,6 +180,7 @@ class NeracaService(BaseReportService):
         akumulasi_hpp_parts = float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
             TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
         ).filter(
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal <= as_of_date
         ).scalar() or 0)
@@ -411,6 +413,47 @@ class NeracaService(BaseReportService):
             from app.utils.constants import PiutangSource as PS
             from app.models.bengkel import TransaksiPenjualanBengkel
             from app.models.mobil import Mobil
+            from app.services.transaksi_bengkel_service import TransaksiBengkelService
+
+            bengkel_service = TransaksiBengkelService(self.db)
+            completed_unpaid = self.db.query(TransaksiPenjualanBengkel).filter(
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanBengkel.grand_total > TransaksiPenjualanBengkel.jumlah_bayar,
+                TransaksiPenjualanBengkel.kategori != "jasa_angkut",
+            ).all()
+
+            for trx in completed_unpaid:
+                existing_piutang = self.db.query(PiutangUsaha.id).filter(
+                    PiutangUsaha.nomor_referensi == trx.nomor_transaksi,
+                    PiutangUsaha.status != PiutangStatus.BATAL,
+                ).first()
+                if existing_piutang:
+                    continue
+
+                outstanding = Decimal(str(trx.grand_total or 0)) - Decimal(str(trx.jumlah_bayar or 0))
+                if outstanding <= 0:
+                    continue
+
+                is_internal_mobil = trx.kategori == "jual_beli_mobil" and trx.mobil_id is not None
+                self.db.add(PiutangUsaha(
+                    nomor_piutang=bengkel_service._generate_nomor_piutang(),
+                    tanggal=trx.tanggal,
+                    customer_id=trx.customer_id,
+                    nama_debitur=f"JB MOBIL - {trx.nomor_plat}" if is_internal_mobil else (trx.nama_customer or "Guest"),
+                    nominal_piutang=trx.grand_total,
+                    total_dibayar=trx.jumlah_bayar or Decimal("0"),
+                    sisa_piutang=outstanding,
+                    status=PiutangStatus.SEBAGIAN if (trx.jumlah_bayar or 0) > 0 else PiutangStatus.BELUM_LUNAS,
+                    sumber=PS.JUAL_BELI_MOBIL if is_internal_mobil else PS.BENGKEL,
+                    unit=KasBankSource.BENGKEL,
+                    is_internal=is_internal_mobil,
+                    referensi_id=trx.id,
+                    nomor_referensi=trx.nomor_transaksi,
+                    catatan=f"AUTO-SYNC: Piutang transaksi bengkel selesai {trx.nomor_transaksi}",
+                ))
+                created_count += 1
             
             mismarked = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.sumber == PS.JUAL_BELI_MOBIL,

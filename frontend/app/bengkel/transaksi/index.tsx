@@ -136,6 +136,7 @@ export default function BengkelTransaksiScreen() {
         enabled: !!selectedTransactionId && !editTransactionId,
     });
     const hydratedTransactionIdRef = useRef<number | null>(null);
+    const paymentActionOpenedRef = useRef<number | null>(null);
     const tabBarHeight = getCustomTabBarHeight(insets.bottom);
     const transaksiMode = mode === 'sparepart' ? 'sparepart' : mode === 'servis' ? 'servis' : 'all';
     const showParts = transaksiMode !== 'servis';
@@ -315,6 +316,16 @@ export default function BengkelTransaksiScreen() {
         }, {});
         setSelectedServices(existingServices);
     }, [editTransactionId, editingTransaction, services]);
+
+    useEffect(() => {
+        if (action !== 'payment' || !editTransactionId || !editingTransaction) return;
+        if (paymentActionOpenedRef.current === editTransactionId) return;
+        if (isEditingTransactionLoading || grossSubtotal <= 0) return;
+
+        paymentActionOpenedRef.current = editTransactionId;
+        setStep(3);
+        setPaymentSheetOpen(true);
+    }, [action, editTransactionId, editingTransaction, grossSubtotal, isEditingTransactionLoading]);
 
     const filteredServices = useMemo(() => {
         const q = serviceSearch.trim().toLowerCase();

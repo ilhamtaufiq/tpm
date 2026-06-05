@@ -17,7 +17,7 @@ from app.models.customer import Customer
 from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPiutang
 from app.models.mobil import MobilPartService, Mobil
 from app.models.jasa_angkut import JasaAngkutPartService
-from app.schemas.bengkel import TransaksiBengkelCreate
+from app.schemas.bengkel import DetailPartCreate, DetailServiceCreate, TransaksiBengkelCreate
 from app.realtime import publish_realtime_event
 from app.utils.helpers import get_jakarta_date
 from app.utils.constants import (
@@ -548,7 +548,7 @@ class TransaksiBengkelService:
         
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
         # (Internal Mobil and non-internal partial payments are already handled via Piutang system)
-        elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
+        elif should_finalize_finance and not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
             if total_pembayaran > 0:
                 # Record payments capped at grand_total (excess is 'kembalian')
                 remaining_to_record = grand_total
@@ -870,7 +870,7 @@ class TransaksiBengkelService:
 
         if should_finalize_finance and is_internal_jasa_angkut and grand_total > 0:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
-        elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
+        elif should_finalize_finance and not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
             # Re-create KasBank entries for regular LUNAS transactions (FIX: were missing in update)
             if total_pembayaran > 0:
                 remaining_to_record = grand_total
@@ -1098,7 +1098,10 @@ class TransaksiBengkelService:
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
         if financial_only:
-            query = query.filter(TransaksiPenjualanBengkel.grand_total > 0)
+            query = query.filter(
+                TransaksiPenjualanBengkel.grand_total > 0,
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+            )
 
         if exclude_sold_internal_jbm:
             # Keep the Bengkel queue UI summary consistent with its hidden list:
@@ -1262,6 +1265,7 @@ class TransaksiBengkelService:
         query = self.db.query(TransaksiPenjualanBengkel).filter(
             TransaksiPenjualanBengkel.tanggal == tanggal,
             TransaksiPenjualanBengkel.grand_total > 0,
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
         )
 
         # Internal jual_beli_mobil transactions included (HPP recognized immediately).
@@ -1353,9 +1357,48 @@ class TransaksiBengkelService:
         self,
         transaksi_id: int,
         status: WorkshopStatus,
+        user_id: Optional[int] = None,
     ) -> TransaksiPenjualanBengkel:
         """Update working status for a transaction."""
         transaksi = self.get_by_id(transaksi_id)
+
+        if status == WorkshopStatus.SELESAI and transaksi.status_pengerjaan != WorkshopStatus.SELESAI:
+            data = TransaksiBengkelCreate(
+                tanggal=transaksi.tanggal,
+                customer_id=transaksi.customer_id,
+                nama_customer=transaksi.nama_customer,
+                nomor_plat=transaksi.nomor_plat,
+                jenis_kendaraan=transaksi.jenis_kendaraan,
+                kategori=transaksi.kategori,
+                muatan_id=transaksi.muatan_id,
+                armada_id=transaksi.armada_id,
+                mobil_id=transaksi.mobil_id,
+                detail_parts=[
+                    DetailPartCreate(
+                        spare_part_id=detail.spare_part_id,
+                        qty=detail.qty,
+                        harga_jual=detail.harga_jual,
+                    )
+                    for detail in transaksi.detail_parts
+                ],
+                detail_services=[
+                    DetailServiceCreate(
+                        nama_jasa=detail.nama_jasa,
+                        deskripsi=detail.deskripsi,
+                        harga=detail.harga,
+                        qty=detail.qty,
+                    )
+                    for detail in transaksi.detail_services
+                ],
+                diskon=transaksi.diskon,
+                metode_bayar=transaksi.metode_bayar,
+                jumlah_bayar=transaksi.jumlah_bayar,
+                payments=[],
+                status_pengerjaan=status,
+                catatan=transaksi.catatan,
+            )
+            return self.update(transaksi_id, data, user_id=user_id)
+
         transaksi.status_pengerjaan = status
         
         self.db.commit()

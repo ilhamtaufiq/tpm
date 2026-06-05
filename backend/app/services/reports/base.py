@@ -38,7 +38,8 @@ from app.utils.constants import (
     CarStatus,
     PaymentMethod,
     PiutangSource,
-    InvestorDisbursementStatus
+    InvestorDisbursementStatus,
+    WorkshopStatus
 )
 
 class BaseReportService:
@@ -65,7 +66,7 @@ class BaseReportService:
         """
         # (Using the robust logic developed in previous step)
         bengkel_service = TransaksiBengkelService(self.db)
-        bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
+        bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai, financial_only=True)
 
         # Correct Opening Balance (Total system balance as of start of day)
         kas_bank_service = KasBankService(self.db)
@@ -404,6 +405,7 @@ class BaseReportService:
         ).scalar() or 0)
         
         usage_after = float(self.db.query(func.sum(DetailTransaksiSpareParts.qty * DetailTransaksiSpareParts.harga_beli)).join(TransaksiPenjualanBengkel).filter(
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.tanggal > tanggal_sampai
         ).scalar() or 0)
         
@@ -442,6 +444,7 @@ class BaseReportService:
         # We query TransaksiPenjualanBengkel directly for internal bills tagged to unsold cars
         snapshot_unsold_repairs_int = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.mobil_id.in_(unsold_car_ids),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
@@ -463,6 +466,7 @@ class BaseReportService:
         
         rep_int_per_car = dict(self.db.query(TransaksiPenjualanBengkel.mobil_id, func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.mobil_id.in_(unsold_car_ids),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).group_by(TransaksiPenjualanBengkel.mobil_id).all())
@@ -742,6 +746,7 @@ class BaseReportService:
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
@@ -754,6 +759,7 @@ class BaseReportService:
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
             TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,

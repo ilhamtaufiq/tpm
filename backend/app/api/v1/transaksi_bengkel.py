@@ -143,7 +143,7 @@ def update_status(
 ):
     """Update transaction working status."""
     service = TransaksiBengkelService(db)
-    return service.update_status(transaksi_id, status)
+    return service.update_status(transaksi_id, status, current_user.id)
 
 
 @router.delete("/{transaksi_id}")

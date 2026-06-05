@@ -18,6 +18,7 @@ from app.utils.constants import (
     MuatanStatus,
     PiutangSource,
     PiutangStatus,
+    WorkshopStatus,
 )
 from app.models.keuangan import PiutangUsaha, PembayaranPiutang, KasBank
 from app.realtime import publish_realtime_event
@@ -1227,6 +1228,7 @@ class MuatanService:
         # All JA workshop repairs in period
         bengkel_parts = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_parts = bengkel_parts.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
@@ -1368,6 +1370,7 @@ class MuatanService:
             ArmadaJasaAngkut, TransaksiPenjualanBengkel.armada_id == ArmadaJasaAngkut.id
         ).filter(
             TransaksiPenjualanBengkel.kategori == 'jasa_angkut',
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         )
         if tanggal_dari: bengkel_armada_query = bengkel_armada_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)

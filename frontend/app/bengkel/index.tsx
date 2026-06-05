@@ -919,6 +919,20 @@ export default function BengkelScreen() {
         </View>
     );
 
+    const handleSettleSelectedOrder = () => {
+        if (!selectedItem) return;
+        if (selectedItem.piutang_id) {
+            setPaymentModalVisible(true);
+            return;
+        }
+
+        handleClosePress();
+        router.push({
+            pathname: '/bengkel/transaksi',
+            params: { transactionId: String(selectedItem.id), mode: 'all', action: 'payment' }
+        } as any);
+    };
+
     const renderDetailContent = () => {
         if (!selectedItem) return null;
         const detailServices = selectedItem.detail_services || [];
@@ -927,6 +941,7 @@ export default function BengkelScreen() {
         const outstanding = Math.max((selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0), 0);
         const isPaid = selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas';
         const isVoided = selectedItem.status_bayar === 'batal' || selectedItem.status_bayar === 'BATAL';
+        const canSettlePayment = !isPaid && !isVoided && outstanding > 0 && selectedItem.kategori !== 'jual_beli_mobil';
         return (
             <>
                 <View className="flex-row justify-between items-start mb-4">
@@ -1078,9 +1093,9 @@ export default function BengkelScreen() {
                         </Typography>
                     </View>
 
-                    {selectedItem.piutang_id && !isPaid && (
+                    {canSettlePayment && (
                         <Pressable
-                            onPress={() => setPaymentModalVisible(true)}
+                            onPress={handleSettleSelectedOrder}
                             className="mt-3 bg-primary/10 py-3 rounded-xl flex-row items-center justify-center border border-primary/20"
                         >
                             <Banknote size={17} color="#023C69" />

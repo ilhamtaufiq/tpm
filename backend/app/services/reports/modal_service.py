@@ -18,7 +18,8 @@ from app.utils.constants import (
     InvestorDisbursementStatus,
     OwnershipType,
     PaymentStatus,
-    PaymentMethod
+    PaymentMethod,
+    WorkshopStatus
 )
 class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
@@ -142,6 +143,7 @@ class ModalService(BaseReportService):
             return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
                 TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
             ).filter(
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
                 TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
                 TransaksiPenjualanBengkel.tanggal <= d
             ).scalar() or 0)
@@ -759,6 +761,7 @@ class ModalService(BaseReportService):
                     Mobil.deleted_at.is_(None)
                 )
             ),
+            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal <= as_of
         )
