@@ -15,7 +15,6 @@ import {
     Clock,
     CheckCircle2,
     Package,
-    PackagePlus,
     Receipt,
     Database,
     Activity,
@@ -155,14 +154,6 @@ export default function BengkelScreen() {
     const user = useAuthStore(state => state.user);
     const bengkelMenus = useMemo(() => ([
         {
-            id: 'transaksi',
-            title: 'Restock',
-            description: 'Pembelian stok bengkel',
-            icon: PackagePlus,
-            color: '#0F766E',
-            route: '/bengkel/purchase'
-        },
-        {
             id: 'sparepart',
             title: 'Sparepart',
             description: 'Transaksi khusus part',
@@ -212,8 +203,8 @@ export default function BengkelScreen() {
         },
         {
             id: 'queue',
-            title: 'Riwayat',
-            description: 'Lihat riwayat order',
+            title: 'Transaksi',
+            description: 'Lihat transaksi hari ini',
             icon: History,
             color: '#059669',
             action: 'queue'
@@ -672,6 +663,77 @@ export default function BengkelScreen() {
         }
     };
 
+    const handlePrintOrderSlip = async (item: any) => {
+        if (!printSettings) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: 'Pengaturan cetak belum dimuat',
+                variant: 'error',
+                type: 'alert'
+            });
+            return;
+        }
+
+        try {
+            setPrinting(true);
+
+            const orderSlipData: PrintReceiptData = {
+                type: 'bengkel',
+                transactionNumber: item.nomor_transaksi || item.id.toString(),
+                publicReceiptToken: item.public_receipt_token,
+                antrian: item.nomor_antrian || '-',
+                date: new Date(item.created_at || new Date()),
+                customerName: item.customer_nama,
+                cashierName: item.kasir_nama || '-',
+                mechanicName: item.mekanik_nama || '-',
+                status: item.status_pengerjaan || item.status_bayar || 'ANTRE',
+                vehiclePlate: item.nomor_plat,
+                vehicleType: item.jenis_kendaraan,
+                services: (item.detail_services || []).map((s: any) => ({
+                    description: s.nama_jasa,
+                    quantity: 1,
+                    unitPrice: Number(s.harga),
+                    subtotal: Number(s.harga)
+                })),
+                parts: (item.detail_parts || []).map((p: any) => ({
+                    description: p.spare_part_nama || 'Sparepart',
+                    quantity: p.qty,
+                    unitPrice: Number(p.subtotal) / p.qty,
+                    subtotal: Number(p.subtotal)
+                })),
+                subtotal: item.subtotal || item.total_biaya || item.grand_total,
+                discount: item.diskon || 0,
+                total: item.grand_total,
+                paid: 0,
+                paymentMethod: 'ORDER SLIP',
+                notes: item.catatan
+            };
+
+            await printReceipt(orderSlipData, printSettings);
+
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'Order Slip berhasil dicetak',
+                variant: 'success',
+                type: 'alert',
+                onConfirm: undefined
+            });
+        } catch (error) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal mencetak Order Slip'),
+                variant: 'error',
+                type: 'alert',
+                onConfirm: undefined
+            });
+        } finally {
+            setPrinting(false);
+        }
+    };
+
     const handleMenuPress = useCallback((menu: typeof bengkelMenus[number]) => {
         if ((menu as any).action === 'wallet') {
             if (Platform.OS === 'web') {
@@ -876,6 +938,14 @@ export default function BengkelScreen() {
                         </Typography>
                     </View>
                     <View className="items-end">
+                        <Pressable
+                            onPress={() => handlePrintOrderSlip(selectedItem)}
+                            disabled={printing}
+                            className="bg-primary/10 rounded-full p-2 mb-2 border border-primary/20"
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Printer size={16} color="#023C69" />
+                        </Pressable>
                         <Badge
                             label={(selectedItem.status_pengerjaan || '').toUpperCase()}
                             variant={
@@ -1051,6 +1121,17 @@ export default function BengkelScreen() {
 
                 {/* Action Buttons */}
                 <View className="flex-row flex-wrap -mx-1">
+                    {!isVoided && (
+                        <View className="w-1/2 px-1 mb-2">
+                            <Button
+                                variant="secondary"
+                                title="Edit"
+                                onPress={() => openEditTransaction(selectedItem)}
+                                icon={<Edit2 size={17} color="white" />}
+                                className="rounded-xl h-12 bg-amber-500"
+                            />
+                        </View>
+                    )}
                     <View className="w-1/2 px-1 mb-2">
                         <Button
                             variant="primary"
@@ -1080,17 +1161,6 @@ export default function BengkelScreen() {
                             className="rounded-xl h-12 bg-[#00ADEF]"
                         />
                     </View>
-                    {!isVoided && (
-                        <View className="w-1/2 px-1 mb-2">
-                            <Button
-                                variant="secondary"
-                                title="Edit"
-                                onPress={() => setView('edit')}
-                                icon={<Edit2 size={17} color="white" />}
-                                className="rounded-xl h-12 bg-amber-500"
-                            />
-                        </View>
-                    )}
                     <View className="w-full px-1">
                         <Button
                             variant="outline-danger"
@@ -1149,6 +1219,12 @@ export default function BengkelScreen() {
     const openQueueTransactionMode = (mode: 'sparepart' | 'servis', item: any) => {
         closeQueueSheet();
         router.push({ pathname: '/bengkel/transaksi', params: { mode, transactionId: String(item.id) } } as any);
+    };
+
+    const openEditTransaction = (item: any) => {
+        if (!item?.id) return;
+        handleClosePress();
+        router.push({ pathname: '/bengkel/transaksi', params: { transactionId: String(item.id), mode: 'all' } } as any);
     };
 
     const renderQueueSheetContent = () => (
@@ -2152,7 +2228,7 @@ export default function BengkelScreen() {
                                             <Pressable
                                                 onPress={(e) => {
                                                     e.stopPropagation();
-                                                    handlePresentModalPress('edit', item);
+                                                    openEditTransaction(item);
                                                 }}
                                                 className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center border border-primary/10"
                                             >
@@ -2275,7 +2351,7 @@ export default function BengkelScreen() {
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
             <Pressable
-                onPress={() => router.push('/bengkel/transaksi')}
+                onPress={() => handlePresentModalPress('form')}
                 style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
                 className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >

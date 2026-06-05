@@ -154,7 +154,7 @@ export default function PiutangUsahaScreen() {
         setAlertState((prev) => ({ ...prev, visible: false }));
     };
 
-    const piutangListRaw = listData?.data || [];
+    const piutangListRaw = (listData?.data || []).filter((item: any) => Number(item.nominal_piutang || 0) > 0);
 
     // Fetch bengkel data to map BGL numbers to car IDs
     const { data: bengkelData } = useTransaksiBengkelList({ limit: 1000 });

@@ -49,7 +49,7 @@ def get_dashboard_summary(
 
     # Bengkel sales
     bengkel_service = TransaksiBengkelService(db)
-    bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai)
+    bengkel_summary = bengkel_service.get_summary(tanggal_dari, tanggal_sampai, financial_only=True)
 
     # Bengkel expenses
     pengeluaran_service = PengeluaranService(db)
@@ -241,6 +241,7 @@ def get_recent_activity(
         sort_by="created_at",
         sort_order="desc"
     )["data"]
+    bengkel_data = [item for item in bengkel_data if (item.grand_total or 0) > 0]
 
     # 3. Fetch recent transport loads (Jasa Angkut)
     muatan_service = MuatanService(db)

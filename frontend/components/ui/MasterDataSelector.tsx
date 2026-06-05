@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { View, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet, Modal } from 'react-native';
 import { Typography } from './Typography';
 import { Input } from './Input';
@@ -45,13 +45,18 @@ export const MasterDataSelector = ({
     const [selectedGuestName, setSelectedGuestName] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [visibleLimit, setVisibleLimit] = useState(inlineLimit);
+
+    useEffect(() => {
+        setVisibleLimit(inlineLimit);
+    }, [inlineLimit, searchQuery]);
 
     // Dynamic Query based on type
     const { data: searchResults, isLoading } = useQuery({
-        queryKey: ['search', type, searchQuery, inlineMode, inlineLimit],
+        queryKey: ['search', type, searchQuery, inlineMode, inlineLimit, visibleLimit],
         queryFn: async () => {
             if (type === 'customer') {
-                return masterDataService.searchCustomers(searchQuery, inlineMode ? inlineLimit : 10);
+                return masterDataService.searchCustomers(searchQuery, inlineMode ? visibleLimit : 10);
             } else {
                 return masterDataService.searchSuppliers(searchQuery);
             }
@@ -214,6 +219,14 @@ export const MasterDataSelector = ({
                             ))}
                             {(!searchResults || searchResults.length === 0) && searchQuery.length > 0 && (
                                 <Typography className="text-center text-gray-500 mt-4">Data tidak ditemukan</Typography>
+                            )}
+                            {inlineMode && (searchResults || []).length >= visibleLimit && (
+                                <Pressable
+                                    onPress={() => setVisibleLimit(prev => prev + inlineLimit)}
+                                    className="mt-1 mb-3 py-3 rounded-2xl bg-gray-100 border border-gray-200 items-center"
+                                >
+                                    <Typography className="text-primary text-xs font-bold">Muat lagi</Typography>
+                                </Pressable>
                             )}
                         </View>
                     )}

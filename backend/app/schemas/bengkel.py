@@ -266,6 +266,7 @@ class TransaksiBengkelCreate(BaseModel):
     metode_bayar: PaymentMethod = PaymentMethod.TUNAI
     jumlah_bayar: Decimal = Field(default=Decimal("0"), ge=0)
     payments: List[PaymentItem] = []  # For split payments
+    status_pengerjaan: Optional[WorkshopStatus] = None
     catatan: Optional[str] = None
 
 
@@ -287,6 +288,7 @@ class TransaksiBengkelUpdate(BaseModel):
     metode_bayar: Optional[PaymentMethod] = None
     jumlah_bayar: Optional[Decimal] = Field(None, ge=0)
     payments: Optional[List[PaymentItem]] = None
+    status_pengerjaan: Optional[WorkshopStatus] = None
     catatan: Optional[str] = None
 
 

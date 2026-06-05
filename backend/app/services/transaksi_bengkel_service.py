@@ -246,6 +246,9 @@ class TransaksiBengkelService:
         grand_total = subtotal - data.diskon
         laba_kotor = grand_total - hpp_parts
 
+        requested_work_status = getattr(data, "status_pengerjaan", None) or WorkshopStatus.ANTRE
+        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI
+
         # Calculate summary of payments
         total_pembayaran = Decimal("0")
         metode_utama = data.metode_bayar
@@ -255,7 +258,7 @@ class TransaksiBengkelService:
         is_internal_jasa_angkut = bool(getattr(data, "kategori", "umum") == "jasa_angkut")
         is_internal_mobil = bool(getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
-        if is_internal_jasa_angkut:
+        if is_internal_jasa_angkut and should_finalize_finance:
             # Internal transactions for Jasa Angkut are considered paid immediately
             total_pembayaran = grand_total
             # Respect user's choice (Tunai vs Transfer from Bank)
@@ -267,6 +270,9 @@ class TransaksiBengkelService:
                 metode_utama = PaymentMethod.TRANSFER
             else:
                 metode_utama = PaymentMethod.INTERNAL # Default to internal cash bookkeeping
+        elif is_internal_jasa_angkut:
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.KREDIT
         elif is_internal_mobil:
             # Internal transactions for JB Mobil are NOT paid immediately
             # They stay as Piutang (receivable) until the car is sold
@@ -320,6 +326,7 @@ class TransaksiBengkelService:
             hpp_parts=hpp_parts,
             laba_kotor=laba_kotor,
             status_bayar=status_bayar,
+            status_pengerjaan=requested_work_status,
             metode_bayar=metode_utama,
             jumlah_bayar=total_pembayaran,
             kembalian=kembalian,
@@ -338,7 +345,7 @@ class TransaksiBengkelService:
                 sp.stok -= item.qty
 
         # Create piutang if not fully paid
-        if status_bayar != PaymentStatus.LUNAS:
+        if should_finalize_finance and status_bayar != PaymentStatus.LUNAS and grand_total > 0:
             # Special debtor name for JB Mobil internal transfers
             debtor_name = nama_customer or (customer.nama if customer else "Guest")
             if is_internal_mobil:
@@ -371,7 +378,7 @@ class TransaksiBengkelService:
         self.db.refresh(transaksi)
 
         # Update Piutang's referensi_id and process DP if any
-        if not is_internal_jasa_angkut:
+        if should_finalize_finance and not is_internal_jasa_angkut:
             # Determine correct sumber based on category
             piutang_sumber = PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL
             piutang_record = self.db.query(PiutangUsaha).filter(
@@ -514,6 +521,8 @@ class TransaksiBengkelService:
 
         # Helper to record MASUK and KELUAR for internal flows
         def record_bilateral_payment(amount, method, ref_id, ref_num):
+            if amount <= 0:
+                return
             # MASUK to Workshop
             create_kas_entry(
                 db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
@@ -534,7 +543,7 @@ class TransaksiBengkelService:
                 )
 
         # Record internal transfer for integrated units
-        if is_internal_jasa_angkut:
+        if should_finalize_finance and is_internal_jasa_angkut and grand_total > 0:
             record_bilateral_payment(grand_total, metode_utama, transaksi.id, transaksi.nomor_transaksi)
         
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
@@ -681,6 +690,9 @@ class TransaksiBengkelService:
         grand_total = subtotal - data.diskon
         laba_kotor = grand_total - hpp_parts
 
+        requested_work_status = data.status_pengerjaan or transaksi.status_pengerjaan
+        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI
+
         # Payments logic
         total_pembayaran = Decimal("0")
         metode_utama = data.metode_bayar
@@ -688,9 +700,12 @@ class TransaksiBengkelService:
         is_internal_jasa_angkut = bool(data.kategori == "jasa_angkut")
         is_internal_mobil = bool(data.kategori == "jual_beli_mobil" and data.mobil_id)
         
-        if is_internal_jasa_angkut:
+        if is_internal_jasa_angkut and should_finalize_finance:
             total_pembayaran = grand_total
             metode_utama = PaymentMethod.INTERNAL
+        elif is_internal_jasa_angkut:
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.KREDIT
         elif is_internal_mobil:
             # Consistent with create logic
             total_pembayaran = Decimal("0")
@@ -731,6 +746,7 @@ class TransaksiBengkelService:
         transaksi.hpp_parts = hpp_parts
         transaksi.laba_kotor = laba_kotor
         transaksi.status_bayar = status_bayar
+        transaksi.status_pengerjaan = requested_work_status
         transaksi.metode_bayar = metode_utama
         transaksi.jumlah_bayar = total_pembayaran
         transaksi.kembalian = kembalian
@@ -744,7 +760,7 @@ class TransaksiBengkelService:
             if sp.stok != 999:
                 sp.stok -= item.qty
 
-        if status_bayar != PaymentStatus.LUNAS:
+        if should_finalize_finance and status_bayar != PaymentStatus.LUNAS and grand_total > 0:
             debtor_name = transaksi.nama_customer or (customer.nama if customer else "Guest")
             if is_internal_mobil: debtor_name = f"JB MOBIL - {data.nomor_plat}"
             
@@ -846,11 +862,13 @@ class TransaksiBengkelService:
         elif data.kategori == 'jual_beli_mobil': source_pocket = KasBankSource.JUAL_BELI_MOBIL
 
         def record_bilateral_payment(amount, method, ref_id, ref_num):
+            if amount <= 0:
+                return
             create_kas_entry(db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK, nominal=amount, sumber=KasBankSource.BENGKEL, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Pembayaran (EDIT: {method.upper()}) bengkel {ref_num}", user_id=user_id)
         if source_pocket != KasBankSource.BENGKEL:
                 create_kas_entry(db=self.db, tanggal=effective_tanggal, tipe=KasBankType.KELUAR, nominal=amount, sumber=source_pocket, metode_bayar=method, referensi_id=ref_id, nomor_referensi=ref_num, keterangan=f"Biaya Repair Internal (EDIT) via Bengkel: {ref_num}", user_id=user_id)
 
-        if is_internal_jasa_angkut:
+        if should_finalize_finance and is_internal_jasa_angkut and grand_total > 0:
             record_bilateral_payment(grand_total, PaymentMethod.INTERNAL, transaksi.id, transaksi.nomor_transaksi)
         elif not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
             # Re-create KasBank entries for regular LUNAS transactions (FIX: were missing in update)
@@ -1053,6 +1071,7 @@ class TransaksiBengkelService:
         mobil_id: Optional[int] = None,
         muatan_id: Optional[int] = None,
         exclude_sold_internal_jbm: bool = False,
+        financial_only: bool = False,
     ) -> Dict[str, Any]:
         """Get sales summary statistics with the same filters as get_list."""
         # Base query
@@ -1078,6 +1097,8 @@ class TransaksiBengkelService:
             query = query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai:
             query = query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
+        if financial_only:
+            query = query.filter(TransaksiPenjualanBengkel.grand_total > 0)
 
         if exclude_sold_internal_jbm:
             # Keep the Bengkel queue UI summary consistent with its hidden list:
@@ -1239,7 +1260,8 @@ class TransaksiBengkelService:
         from app.utils.constants import CarStatus
 
         query = self.db.query(TransaksiPenjualanBengkel).filter(
-            TransaksiPenjualanBengkel.tanggal == tanggal
+            TransaksiPenjualanBengkel.tanggal == tanggal,
+            TransaksiPenjualanBengkel.grand_total > 0,
         )
 
         # Internal jual_beli_mobil transactions included (HPP recognized immediately).

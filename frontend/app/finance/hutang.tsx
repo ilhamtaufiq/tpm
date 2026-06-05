@@ -163,7 +163,7 @@ export default function HutangUsahaScreen() {
         setAlertState((prev) => ({ ...prev, visible: false }));
     };
 
-    const hutangListRaw = listData?.data || [];
+    const hutangListRaw = (listData?.data || []).filter((item: any) => Number(item.nominal_hutang || 0) > 0);
 
     // Fetch bengkel data to map BGL numbers to car IDs
     const { data: bengkelData } = useTransaksiBengkelList({ limit: 1000 });
