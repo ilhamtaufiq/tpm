@@ -15,6 +15,7 @@ import {
     Clock,
     CheckCircle2,
     Package,
+    PackagePlus,
     Receipt,
     Database,
     Activity,
@@ -155,11 +156,11 @@ export default function BengkelScreen() {
     const bengkelMenus = useMemo(() => ([
         {
             id: 'transaksi',
-            title: 'Transaksi',
-            description: 'Buat transaksi bengkel',
-            icon: ShoppingCart,
+            title: 'Restock',
+            description: 'Pembelian stok bengkel',
+            icon: PackagePlus,
             color: '#0F766E',
-            route: '/bengkel/transaksi'
+            route: '/bengkel/purchase'
         },
         {
             id: 'sparepart',
@@ -211,8 +212,8 @@ export default function BengkelScreen() {
         },
         {
             id: 'queue',
-            title: 'Antrian',
-            description: 'Lihat antrian hari ini',
+            title: 'Riwayat',
+            description: 'Lihat riwayat order',
             icon: History,
             color: '#059669',
             action: 'queue'
@@ -274,7 +275,10 @@ export default function BengkelScreen() {
     const [refreshing, setRefreshing] = React.useState(false);
     const [sheetIndex, setSheetIndex] = React.useState(-1);
     const [queueSheetIndex, setQueueSheetIndex] = React.useState(-1);
-    const [queuePaymentFilter, setQueuePaymentFilter] = React.useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BATAL'>('ALL');
+    const [queuePaymentFilter, setQueuePaymentFilter] = React.useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BELUM_BAYAR' | 'BATAL'>('ALL');
+    const [queueWorkStatusFilter, setQueueWorkStatusFilter] = React.useState<'ALL' | 'antre' | 'proses' | 'selesai'>('ALL');
+    const [queueSearchOpen, setQueueSearchOpen] = React.useState(false);
+    const [queueSearchQuery, setQueueSearchQuery] = React.useState('');
     const [printSettings, setPrintSettings] = React.useState<PrintSettings | null>(null);
     const [printing, setPrinting] = React.useState(false);
     const [dialogConfig, setDialogConfig] = React.useState<{
@@ -367,8 +371,8 @@ export default function BengkelScreen() {
 
         if (status === 'BATAL') return 'BATAL';
         if (status === 'LUNAS') return 'LUNAS';
-        if (paidAmount > 0 || status !== 'LUNAS') return 'BELUM_LUNAS';
-        return 'BELUM_LUNAS';
+        if (paidAmount > 0) return 'BELUM_LUNAS';
+        return 'BELUM_BAYAR';
     }, []);
     const queuePaymentStats = useMemo(() => {
         return todayQueue.reduce((acc: any, item: any) => {
@@ -376,12 +380,34 @@ export default function BengkelScreen() {
             acc.total += 1;
             acc[status] += 1;
             return acc;
-        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BATAL: 0 });
+        }, { total: 0, LUNAS: 0, BELUM_LUNAS: 0, BELUM_BAYAR: 0, BATAL: 0 });
     }, [getQueuePaymentStatus, todayQueue]);
+    const queueWorkStatusStats = useMemo(() => {
+        return todayQueue.reduce((acc: any, item: any) => {
+            const status = String(item.status_pengerjaan || 'antre').toLowerCase();
+            acc.total += 1;
+            if (status === 'proses') acc.proses += 1;
+            else if (status === 'selesai') acc.selesai += 1;
+            else acc.antre += 1;
+            return acc;
+        }, { total: 0, antre: 0, proses: 0, selesai: 0 });
+    }, [todayQueue]);
     const queueSheetItems = useMemo(() => {
-        if (queuePaymentFilter === 'ALL') return todayQueue;
-        return todayQueue.filter((item: any) => getQueuePaymentStatus(item) === queuePaymentFilter);
-    }, [getQueuePaymentStatus, queuePaymentFilter, todayQueue]);
+        return todayQueue.filter((item: any) => {
+            const matchesPayment = queuePaymentFilter === 'ALL' || getQueuePaymentStatus(item) === queuePaymentFilter;
+            const workStatus = String(item.status_pengerjaan || 'antre').toLowerCase();
+            const matchesWorkStatus = queueWorkStatusFilter === 'ALL' || workStatus === queueWorkStatusFilter;
+            const q = queueSearchQuery.trim().toLowerCase();
+            const matchesSearch = !q || [
+                item.nomor_transaksi,
+                item.nomor_plat,
+                item.nama_customer,
+                item.customer_nama,
+                item.jenis_kendaraan,
+            ].some((value) => String(value || '').toLowerCase().includes(q));
+            return matchesPayment && matchesWorkStatus && matchesSearch;
+        });
+    }, [getQueuePaymentStatus, queuePaymentFilter, queueSearchQuery, queueWorkStatusFilter, todayQueue]);
     const filteredQueue = todayQueue;
 
     // Calculate counters for UI Pills (using values from summary API if available, else local)
@@ -833,33 +859,47 @@ export default function BengkelScreen() {
 
     const renderDetailContent = () => {
         if (!selectedItem) return null;
+        const detailServices = selectedItem.detail_services || [];
+        const detailParts = selectedItem.detail_parts || [];
+        const hasDetails = detailServices.length > 0 || detailParts.length > 0;
+        const outstanding = Math.max((selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0), 0);
+        const isPaid = selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas';
+        const isVoided = selectedItem.status_bayar === 'batal' || selectedItem.status_bayar === 'BATAL';
         return (
             <>
-                <View className="flex-row justify-between items-start mb-6">
-                    <View>
-                        <Typography variant="h2" weight="bold" className="text-2xl tracking-tighter">{selectedItem.nomor_plat}</Typography>
-                        <Typography variant="body2" className="text-textGray mt-1">{selectedItem.jenis_kendaraan}</Typography>
+                <View className="flex-row justify-between items-start mb-4">
+                    <View className="flex-1 mr-3">
+                        <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-widest mb-1">Rincian Order</Typography>
+                        <Typography variant="h2" weight="bold" className="text-xl tracking-tight" numberOfLines={1}>{selectedItem.nomor_plat}</Typography>
+                        <Typography variant="caption" className="text-textGray mt-0.5" numberOfLines={1}>
+                            {selectedItem.jenis_kendaraan} - {selectedItem.nama_customer || 'Umum'}
+                        </Typography>
                     </View>
-                    <Badge
-                        label={(selectedItem.status_pengerjaan || '').toUpperCase()}
-                        variant={
-                            selectedItem.status_pengerjaan === 'proses' ? 'info' :
-                                selectedItem.status_pengerjaan === 'selesai' ? 'success' :
-                                    selectedItem.status_pengerjaan === 'batal' ? 'error' : 'warning'
-                        }
-                    />
+                    <View className="items-end">
+                        <Badge
+                            label={(selectedItem.status_pengerjaan || '').toUpperCase()}
+                            variant={
+                                selectedItem.status_pengerjaan === 'proses' ? 'info' :
+                                    selectedItem.status_pengerjaan === 'selesai' ? 'success' :
+                                        selectedItem.status_pengerjaan === 'batal' ? 'error' : 'warning'
+                            }
+                        />
+                        <Typography weight="bold" className="text-primary text-sm mt-2">
+                            {formatCurrency(selectedItem.grand_total || 0)}
+                        </Typography>
+                    </View>
                 </View>
 
                 {/* Category Info */}
                 {selectedItem.kategori && selectedItem.kategori !== 'umum' && (
-                    <View className={`flex-row items-center mb-4 px-4 py-2.5 rounded-2xl border ${selectedItem.kategori === 'jasa_angkut'
+                    <View className={`flex-row items-center mb-3 px-3 py-2 rounded-xl border ${selectedItem.kategori === 'jasa_angkut'
                         ? 'bg-emerald-50 border-emerald-200'
                         : 'bg-blue-50 border-blue-200'
                         }`}>
                         {selectedItem.kategori === 'jasa_angkut' ? (
-                            <Truck size={16} color="#10B981" />
+                            <Truck size={14} color="#10B981" />
                         ) : (
-                            <Car size={16} color="#3B82F6" />
+                            <Car size={14} color="#3B82F6" />
                         )}
                         <Typography weight="bold" className={`ml-2 text-xs ${selectedItem.kategori === 'jasa_angkut' ? 'text-emerald-700' : 'text-blue-700'
                             }`}>
@@ -878,39 +918,51 @@ export default function BengkelScreen() {
                     </View>
                 )}
 
-                <Card variant="outlined" className="p-6 border-gray-100 mb-8 bg-gray-50/50 rounded-[32px]">
-                    <Typography variant="caption" weight="bold" className="mb-4 text-primary uppercase tracking-widest">Rincian Order</Typography>
+                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-gray-50/60 rounded-2xl">
+                    <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-row items-center">
+                            <Receipt size={15} color="#023C69" />
+                            <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Item Order</Typography>
+                        </View>
+                        <Typography variant="caption" className="text-textGray">{detailServices.length + detailParts.length} baris</Typography>
+                    </View>
 
-                    {(selectedItem.detail_services || []).map((s: any, idx: number) => (
-                        <View key={`svc-${idx}`} className="flex-row justify-between mb-2">
-                            <Typography variant="body2" className="flex-1 text-textMain">{s.nama_jasa}</Typography>
+                    {detailServices.map((s: any, idx: number) => (
+                        <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
+                            <View className="flex-1 mr-3">
+                                <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
+                                <Typography variant="caption" className="text-textGray/70">Jasa</Typography>
+                            </View>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(s.harga)}</Typography>
                         </View>
                     ))}
 
-                    {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
-                        <View key={`part-${idx}`} className="flex-row justify-between mb-2">
-                            <Typography variant="body2" className="flex-1 text-textGray">
-                                {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'} <Typography variant="caption" className="text-textGray/60">x{p.qty}</Typography>
-                            </Typography>
+                    {detailParts.map((p: any, idx: number) => (
+                        <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
+                            <View className="flex-1 mr-3">
+                                <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
+                                    {p.spare_part_nama || p.spare_part?.nama || 'Sparepart'}
+                                </Typography>
+                                <Typography variant="caption" className="text-textGray/70">Part x{formatNumber(p.qty || 0)}</Typography>
+                            </View>
                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                         </View>
                     ))}
 
-                    {(!selectedItem.detail_services?.length && !selectedItem.detail_parts?.length) ? (
-                        <Typography variant="body2" className="mb-4 text-gray-400 italic">Tidak ada item rincian</Typography>
+                    {!hasDetails ? (
+                        <Typography variant="body2" className="py-3 text-gray-400 italic">Tidak ada item rincian</Typography>
                     ) : null}
 
                     {selectedItem.catatan ? (
-                        <View className="mt-4 pt-4 border-t border-gray-100">
-                            <Typography variant="caption" className="text-gray-400 mb-1">Catatan:</Typography>
-                            <Typography variant="body2" className="italic text-textMain">{selectedItem.catatan}</Typography>
+                        <View className="mt-2 pt-3 border-t border-gray-100">
+                            <Typography variant="caption" className="text-gray-400 mb-1">Catatan</Typography>
+                            <Typography variant="body2" className="italic text-textMain" numberOfLines={3}>{selectedItem.catatan}</Typography>
                         </View>
                     ) : null}
 
-                    <View className="h-[1px] bg-gray-200 my-4" />
+                    <View className="h-[1px] bg-gray-200 my-3" />
 
-                    <View className="space-y-1 mb-2">
+                    <View className="space-y-0.5 mb-1">
                         <View className="flex-row justify-between items-center">
                             <Typography variant="caption" className="text-textGray">Subtotal</Typography>
                             <Typography variant="caption" weight="semibold">{formatCurrency(selectedItem.subtotal || 0)}</Typography>
@@ -927,14 +979,14 @@ export default function BengkelScreen() {
                         </View>
                     </View>
 
-                    <View className="h-[1px] bg-gray-200 my-4" />
+                    <View className="h-[1px] bg-gray-200 my-3" />
                     <View className="flex-row justify-between items-center">
-                        <View>
-                            <Typography weight="bold" className="text-lg">Total Pembayaran</Typography>
+                        <View className="flex-1 mr-3">
+                            <Typography variant="caption" className="text-textGray uppercase tracking-widest font-bold">Total</Typography>
                             {selectedItem.metode_bayar === 'INTERNAL' ? (
-                                (selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas') ? (
+                                isPaid ? (
                                     <Typography variant="caption" className="text-emerald-600 font-bold">
-                                        Lunas — Potong Laba TPM
+                                        Lunas - Potong Laba TPM
                                     </Typography>
                                 ) : (
                                     <Typography variant="caption" className="text-amber-600 font-bold">
@@ -943,34 +995,34 @@ export default function BengkelScreen() {
                                 )
                             ) : selectedItem.kategori === 'jual_beli_mobil' && selectedItem.mobil_id ? (
                                 <Typography variant="caption" className="text-orange-600 font-bold">
-                                    Hutang Unit (Piutang JB Mobil) — Dibayar saat Terjual
+                                    Hutang Unit - Dibayar saat Terjual
                                 </Typography>
-                            ) : (selectedItem.grand_total > (selectedItem.jumlah_bayar || 0)) && (
+                            ) : outstanding > 0 && (
                                 <Typography variant="caption" className="text-rose-600 font-bold">
-                                    Sisa: {formatCurrency(selectedItem.grand_total - (selectedItem.jumlah_bayar || 0))}
+                                    Sisa: {formatCurrency(outstanding)}
                                 </Typography>
                             )}
                         </View>
-                        <Typography variant="h2" weight="bold" className="text-primary">
+                        <Typography variant="h3" weight="bold" className="text-primary">
                             {formatCurrency(selectedItem.grand_total || 0)}
                         </Typography>
                     </View>
 
-                    {selectedItem.piutang_id && selectedItem.status_bayar !== 'LUNAS' && selectedItem.status_bayar !== 'lunas' && (
+                    {selectedItem.piutang_id && !isPaid && (
                         <Pressable
                             onPress={() => setPaymentModalVisible(true)}
-                            className="mt-6 bg-primary/10 py-4 rounded-2xl flex-row items-center justify-center border border-primary/20 shadow-sm"
+                            className="mt-3 bg-primary/10 py-3 rounded-xl flex-row items-center justify-center border border-primary/20"
                         >
-                            <Banknote size={20} color="#023C69" />
+                            <Banknote size={17} color="#023C69" />
                             <Typography weight="bold" className="text-primary ml-2 uppercase tracking-widest text-xs">Pelunasan / Bayar Cicilan</Typography>
                         </Pressable>
                     )}
                 </Card>
 
                 {/* Status Update Section */}
-                <View className="mb-8 mt-2">
-                    <Typography variant="caption" weight="bold" className="mb-3 text-textGray uppercase tracking-widest px-1">Update Status Pengerjaan</Typography>
-                    <View className="flex-row items-center space-x-3">
+                <View className="mb-4 mt-1">
+                    <Typography variant="caption" weight="bold" className="mb-2 text-textGray uppercase tracking-widest px-1">Status Pengerjaan</Typography>
+                    <View className="flex-row items-center space-x-2">
                         {[
                             { id: 'antre', label: 'Antre', activeBg: '#F59E0B', activeBorder: '#D97706' },
                             { id: 'proses', label: 'Proses', activeBg: '#3B82F6', activeBorder: '#2563EB' },
@@ -983,7 +1035,7 @@ export default function BengkelScreen() {
                                     onPress={() => updateStatus(selectedItem.id, s.id)}
                                     disabled={updateStatsMutation.isPending}
                                     style={isActive ? { backgroundColor: s.activeBg, borderColor: s.activeBorder } : {}}
-                                    className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${isActive ? 'shadow-lg' : 'bg-white border-gray-100 shadow-sm'}`}
+                                    className={`flex-1 py-3 rounded-xl border items-center justify-center ${isActive ? 'shadow-sm' : 'bg-white border-gray-100'}`}
                                 >
                                     <Typography
                                         weight="bold"
@@ -998,50 +1050,56 @@ export default function BengkelScreen() {
                 </View>
 
                 {/* Action Buttons */}
-                <View className="gap-3">
-                    <Button
-                        variant="primary"
-                        title="Cetak Struk Transaksi"
-                        onPress={() => handlePrintReceipt(selectedItem)}
-                        loading={printing}
-                        icon={<Printer size={20} color="white" />}
-                        className="rounded-2xl h-14 bg-primary shadow-lg shadow-primary/30"
-                    />
-
-                    <Button
-                        variant="secondary"
-                        title="Simpan / Bagikan PDF"
-                        onPress={() => handleSavePDF(selectedItem)}
-                        loading={printing}
-                        icon={<Download size={20} color="white" />}
-                        className="rounded-2xl h-14 bg-secondary shadow-lg shadow-secondary/30"
-                    />
-
-                    <Button
-                        variant="primary"
-                        title="Bagikan Link Struk"
-                        onPress={() => handleShareLink(selectedItem)}
-                        icon={<Share2 size={20} color="white" />}
-                        className="rounded-2xl h-14 bg-[#00ADEF] shadow-lg shadow-[#00ADEF]/30"
-                    />
-
-                    {selectedItem.status_bayar !== 'batal' && selectedItem.status_bayar !== 'BATAL' && (
+                <View className="flex-row flex-wrap -mx-1">
+                    <View className="w-1/2 px-1 mb-2">
+                        <Button
+                            variant="primary"
+                            title="Cetak"
+                            onPress={() => handlePrintReceipt(selectedItem)}
+                            loading={printing}
+                            icon={<Printer size={17} color="white" />}
+                            className="rounded-xl h-12 bg-primary"
+                        />
+                    </View>
+                    <View className="w-1/2 px-1 mb-2">
                         <Button
                             variant="secondary"
-                            title="Edit Transaksi"
-                            onPress={() => setView('edit')}
-                            icon={<Edit2 size={20} color="white" />}
-                            className="rounded-2xl h-14 bg-amber-500 shadow-lg shadow-amber-500/30"
+                            title="PDF"
+                            onPress={() => handleSavePDF(selectedItem)}
+                            loading={printing}
+                            icon={<Download size={17} color="white" />}
+                            className="rounded-xl h-12 bg-secondary"
                         />
+                    </View>
+                    <View className="w-1/2 px-1 mb-2">
+                        <Button
+                            variant="primary"
+                            title="Link"
+                            onPress={() => handleShareLink(selectedItem)}
+                            icon={<Share2 size={17} color="white" />}
+                            className="rounded-xl h-12 bg-[#00ADEF]"
+                        />
+                    </View>
+                    {!isVoided && (
+                        <View className="w-1/2 px-1 mb-2">
+                            <Button
+                                variant="secondary"
+                                title="Edit"
+                                onPress={() => setView('edit')}
+                                icon={<Edit2 size={17} color="white" />}
+                                className="rounded-xl h-12 bg-amber-500"
+                            />
+                        </View>
                     )}
-
-                    <Button
-                        variant="outline-danger"
-                        title="Batalkan Order"
-                        onPress={() => handleVoidOrder(selectedItem)}
-                        loading={voidMutation.isPending}
-                        className="rounded-2xl h-14"
-                    />
+                    <View className="w-full px-1">
+                        <Button
+                            variant="outline-danger"
+                            title="Batalkan Order"
+                            onPress={() => handleVoidOrder(selectedItem)}
+                            loading={voidMutation.isPending}
+                            className="rounded-xl h-12"
+                        />
+                    </View>
                 </View>
             </>
         );
@@ -1076,6 +1134,8 @@ export default function BengkelScreen() {
             queueSheetRef.current?.close();
             setQueueSheetIndex(-1);
         }
+        setQueueSearchOpen(false);
+        setQueueSearchQuery('');
     };
 
     const openQueueDateFilter = () => {
@@ -1086,19 +1146,60 @@ export default function BengkelScreen() {
         }
     };
 
+    const openQueueTransactionMode = (mode: 'sparepart' | 'servis', item: any) => {
+        closeQueueSheet();
+        router.push({ pathname: '/bengkel/transaksi', params: { mode, transactionId: String(item.id) } } as any);
+    };
+
     const renderQueueSheetContent = () => (
         <>
             <View className="flex-row justify-between items-start mb-6">
-                <View>
-                    <Typography variant="h3" weight="bold" className="text-textMain text-2xl tracking-tight">Antrian Hari Ini</Typography>
+                <View className="flex-1 mr-3">
+                    <View className="flex-row items-center">
+                        <Typography variant="h3" weight="bold" className="text-textMain text-2xl tracking-tight">Antrian Hari Ini</Typography>
+                        <View className="bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 ml-2">
+                            <Typography className="text-emerald-700 text-[9px] font-bold uppercase tracking-widest">
+                                {queueSheetItems.length} Order
+                            </Typography>
+                        </View>
+                    </View>
                     <Typography variant="caption" className="text-textGray">
                         {dateRange.dari} s/d {dateRange.sampai}
                     </Typography>
                 </View>
-                <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100">
-                    <X size={20} color="#6B7280" />
-                </Pressable>
+                <View className="flex-row items-center">
+                    <Pressable
+                        onPress={() => setQueueSearchOpen(prev => !prev)}
+                        className={`w-10 h-10 rounded-full items-center justify-center border mr-2 ${queueSearchOpen ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}
+                    >
+                        <Search size={18} color={queueSearchOpen ? 'white' : '#6B7280'} />
+                    </Pressable>
+                    <Pressable onPress={closeQueueSheet} className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100">
+                        <X size={20} color="#6B7280" />
+                    </Pressable>
+                </View>
             </View>
+
+            {queueSearchOpen && (
+                <View className="flex-row items-center mb-3 bg-gray-50 border border-gray-100 rounded-2xl px-3 h-11">
+                    <Search size={16} color="#9CA3AF" />
+                    <TextInput
+                        value={queueSearchQuery}
+                        onChangeText={setQueueSearchQuery}
+                        placeholder="Cari plat, customer, nomor transaksi..."
+                        placeholderTextColor="#9CA3AF"
+                        className="flex-1 ml-2 text-xs font-semibold text-textMain"
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        returnKeyType="search"
+                    />
+                    {queueSearchQuery.length > 0 && (
+                        <Pressable onPress={() => setQueueSearchQuery('')} className="w-7 h-7 items-center justify-center">
+                            <X size={15} color="#9CA3AF" />
+                        </Pressable>
+                    )}
+                </View>
+            )}
 
             <Pressable
                 onPress={openQueueDateFilter}
@@ -1118,19 +1219,38 @@ export default function BengkelScreen() {
                 <ChevronLeft size={18} color="#9CA3AF" style={{ transform: [{ rotate: '180deg' }] }} />
             </Pressable>
 
-            <View className="flex-row items-center justify-between mb-3">
-                <View className="bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-                    <Typography className="text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
-                        {queueSheetItems.length} Order
-                    </Typography>
-                </View>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+                {[
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
+                    { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                ].map((filter) => {
+                    const isActive = queueWorkStatusFilter === filter.id;
+                    return (
+                        <Pressable
+                            key={filter.id}
+                            onPress={() => setQueueWorkStatusFilter(filter.id as any)}
+                            className={`px-3.5 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                        >
+                            <Typography
+                                variant="caption"
+                                weight="bold"
+                                className={isActive ? 'text-white' : filter.text}
+                            >
+                                {filter.label} ({filter.count})
+                            </Typography>
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
                 {[
                     { id: 'ALL', label: 'Semua', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
                     { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
                     { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
                     { id: 'BATAL', label: 'Dibatalkan', count: queuePaymentStats.BATAL, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
                 ].map((filter) => {
                     const isActive = queuePaymentFilter === filter.id;
@@ -1200,6 +1320,31 @@ export default function BengkelScreen() {
                                         {formatCurrency(item.grand_total || 0)}
                                     </Typography>
                                 </View>
+                                {['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase()) ? (
+                                    <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50">
+                                        {[
+                                            { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
+                                            { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
+                                        ].map((action) => {
+                                            const ActionIcon = action.icon;
+                                            return (
+                                                <Pressable
+                                                    key={action.label}
+                                                    onPress={(event: any) => {
+                                                        event?.stopPropagation?.();
+                                                        openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
+                                                    }}
+                                                    className="flex-1 mr-2 h-9 rounded-xl bg-gray-50 border border-gray-100 flex-row items-center justify-center"
+                                                >
+                                                    <ActionIcon size={13} color={action.color} />
+                                                    <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
+                                                        {action.label}
+                                                    </Typography>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                ) : null}
                             </View>
                         </Pressable>
                     ))
@@ -1691,13 +1836,13 @@ export default function BengkelScreen() {
             ) : selectedItem ? (
                 Platform.OS === 'web' ? (
                     <ScrollView className="flex-1">
-                        <View className="p-8 pb-32">
+                        <View className="px-5 pt-3 pb-24">
                             {renderDetailContent()}
                         </View>
                     </ScrollView>
                 ) : (
                     <BottomSheetScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                        <View className="p-8 pb-32">
+                        <View className="px-5 pt-3 pb-24">
                             {renderDetailContent()}
                         </View>
                     </BottomSheetScrollView>
@@ -2130,7 +2275,7 @@ export default function BengkelScreen() {
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
             <Pressable
-                onPress={() => handlePresentModalPress('form')}
+                onPress={() => router.push('/bengkel/transaksi')}
                 style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
                 className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >

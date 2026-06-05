@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,7 +9,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
-import { useCreateTransaksiBengkel, useSparePartsList } from '../../../hooks/useBengkel';
+import { useCreateTransaksiBengkel, useSparePartsList, useTransaksiBengkelDetail, useUpdateTransaksiBengkel } from '../../../hooks/useBengkel';
 import { useDebounce } from '../../../hooks';
 import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
@@ -21,12 +21,12 @@ import { printSettingsService, PrintSettings } from '../../../utils/printSetting
 import { FILE_URL } from '../../../utils/api';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
-type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG' | 'SPLIT';
+type PaymentMode = 'TUNAI' | 'TRANSFER' | 'SPLIT';
 type NoticeType = 'error' | 'success' | 'info';
 
 export default function BengkelTransaksiScreen() {
     const insets = useSafeAreaInsets();
-    const { action, mode } = useLocalSearchParams<{ action?: string; mode?: string }>();
+    const { action, mode, transactionId } = useLocalSearchParams<{ action?: string; mode?: string; transactionId?: string }>();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [partSearch, setPartSearch] = useState('');
     const [serviceSearch, setServiceSearch] = useState('');
@@ -42,6 +42,7 @@ export default function BengkelTransaksiScreen() {
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
+    const [paymentAmount, setPaymentAmount] = useState('');
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
     const [note, setNote] = useState('');
@@ -75,6 +76,10 @@ export default function BengkelTransaksiScreen() {
     const { data: armadaData, isLoading: isArmadaLoading } = useActiveArmada();
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
     const createMutation = useCreateTransaksiBengkel();
+    const updateMutation = useUpdateTransaksiBengkel();
+    const editTransactionId = transactionId ? Number(transactionId) : null;
+    const { data: editingTransaction, isLoading: isEditingTransactionLoading } = useTransaksiBengkelDetail(editTransactionId);
+    const hydratedTransactionIdRef = useRef<number | null>(null);
     const tabBarHeight = getCustomTabBarHeight(insets.bottom);
     const transaksiMode = mode === 'sparepart' ? 'sparepart' : mode === 'servis' ? 'servis' : 'all';
     const showParts = transaksiMode !== 'servis';
@@ -107,6 +112,15 @@ export default function BengkelTransaksiScreen() {
     }, [selectedPartList, selectedServiceList]);
     const discountAmount = Math.min(Number(discount.replace(/[^0-9]/g, '')) || 0, grossSubtotal);
     const subtotal = Math.max(0, grossSubtotal - discountAmount);
+    const paymentAmountValue = Number(paymentAmount.replace(/[^0-9]/g, '')) || 0;
+    const hasPaymentAmountInput = paymentAmount.trim().length > 0;
+    const receivedAmount = hasPaymentAmountInput ? paymentAmountValue : subtotal;
+    const changeAmount = paymentMode === 'TUNAI' || paymentMode === 'TRANSFER'
+        ? Math.max(0, receivedAmount - subtotal)
+        : 0;
+    const paymentOutstandingAmount = paymentMode === 'TUNAI' || paymentMode === 'TRANSFER'
+        ? Math.max(0, subtotal - receivedAmount)
+        : 0;
     const splitTunaiAmount = Number(splitTunai.replace(/[^0-9]/g, '')) || 0;
     const splitTransferAmount = Number(splitTransfer.replace(/[^0-9]/g, '')) || 0;
     const splitTotal = splitTunaiAmount + splitTransferAmount;
@@ -114,6 +128,86 @@ export default function BengkelTransaksiScreen() {
     useEffect(() => {
         printSettingsService.getSettings().then(setPrintSettings);
     }, []);
+
+    useEffect(() => {
+        if (!editingTransaction || !editTransactionId || hydratedTransactionIdRef.current === editTransactionId) return;
+        const existingServiceDetails = editingTransaction.detail_services || [];
+        if (existingServiceDetails.length > 0 && services.length === 0) return;
+
+        hydratedTransactionIdRef.current = editTransactionId;
+        setKategori(editingTransaction.kategori || 'umum');
+        setGuestName(editingTransaction.customer_nama || editingTransaction.nama_customer || '');
+        setNote(editingTransaction.catatan || '');
+        setDiscount(String(Number(editingTransaction.diskon || 0) || ''));
+        setPaymentMode(editingTransaction.metode_bayar === 'TRANSFER' ? 'TRANSFER' : editingTransaction.metode_bayar === 'SPLIT' ? 'SPLIT' : 'TUNAI');
+        setPaymentAmount(String(Number(editingTransaction.jumlah_bayar || 0) || 0));
+
+        if (editingTransaction.customer_id) {
+            setSelectedCustomer({
+                id: editingTransaction.customer_id,
+                nama: editingTransaction.customer_nama || editingTransaction.nama_customer,
+                vehicles: [{
+                    plat_nomor: editingTransaction.nomor_plat,
+                    jenis_unit: editingTransaction.jenis_kendaraan,
+                }],
+            });
+        }
+        if (editingTransaction.armada_id) {
+            setSelectedArmada({
+                id: editingTransaction.armada_id,
+                nopol: editingTransaction.nomor_plat,
+                nama: (editingTransaction.nama_customer || '').replace(/^Armada\s+/i, ''),
+            });
+        }
+        if (editingTransaction.mobil_id) {
+            setSelectedMobil({
+                id: editingTransaction.mobil_id,
+                nomor_plat: editingTransaction.nomor_plat,
+                merek: editingTransaction.jenis_kendaraan,
+                model: '',
+            });
+        }
+
+        const existingParts = (editingTransaction.detail_parts || []).reduce((acc: any, detail: any) => {
+            const partId = detail.spare_part_id || detail.spare_part?.id;
+            if (!partId) return acc;
+            acc[partId] = {
+                item: {
+                    ...(detail.spare_part || {}),
+                    id: partId,
+                    nama: detail.spare_part_nama || detail.spare_part?.nama || 'Sparepart',
+                    harga_jual: Number(detail.harga_jual || detail.harga_satuan || detail.spare_part?.harga_jual || 0),
+                    stok: detail.spare_part?.stok ?? 999,
+                },
+                qty: Number(detail.qty || 1),
+            };
+            return acc;
+        }, {});
+        setSelectedParts(existingParts);
+
+        const existingServices = existingServiceDetails.reduce((acc: any, detail: any) => {
+            const matchedService = services.find((service: any) => {
+                const sameName = String(service.nama || '').toLowerCase() === String(detail.nama_jasa || detail.nama || '').toLowerCase();
+                const samePrice = Number(service.harga || 0) === Number(detail.harga || 0);
+                return sameName && samePrice;
+            });
+            const serviceId = detail.jasa_id || detail.service_id || matchedService?.id || detail.id;
+            if (!serviceId) return acc;
+            acc[serviceId] = {
+                item: {
+                    ...(matchedService || {}),
+                    id: serviceId,
+                    nama: matchedService?.nama || detail.nama_jasa || detail.nama || 'Servis',
+                    harga: Number(matchedService?.harga || detail.harga || 0),
+                    kategori: matchedService?.kategori || detail.kategori,
+                    deskripsi: matchedService?.deskripsi || detail.deskripsi,
+                },
+                qty: Number(detail.qty || 1),
+            };
+            return acc;
+        }, {});
+        setSelectedServices(existingServices);
+    }, [editTransactionId, editingTransaction, services]);
 
     const filteredServices = useMemo(() => {
         const q = serviceSearch.trim().toLowerCase();
@@ -214,16 +308,21 @@ export default function BengkelTransaksiScreen() {
             showNotice('error', 'Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
             return;
         }
+        if (step === 1 && editTransactionId) {
+            setNotice(null);
+            setStep(3);
+            return;
+        }
         if (step === 2) {
-            if (kategori === 'umum' && !(selectedCustomer || guestName.trim())) {
+            if (kategori === 'umum' && !(selectedCustomer || guestName.trim() || editingTransaction?.nama_customer || editingTransaction?.customer_nama)) {
                 showNotice('error', 'Validasi', 'Pilih customer atau isi nama guest.');
                 return;
             }
-            if (kategori === 'jasa_angkut' && !selectedArmada) {
+            if (kategori === 'jasa_angkut' && !(selectedArmada || editingTransaction?.armada_id)) {
                 showNotice('error', 'Validasi', 'Pilih armada jasa angkut.');
                 return;
             }
-            if (kategori === 'jual_beli_mobil' && !selectedMobil) {
+            if (kategori === 'jual_beli_mobil' && !(selectedMobil || editingTransaction?.mobil_id)) {
                 showNotice('error', 'Validasi', 'Pilih mobil stok.');
                 return;
             }
@@ -270,7 +369,7 @@ export default function BengkelTransaksiScreen() {
         subtotal: grossSubtotal,
         discount: discountAmount,
         total: subtotal,
-        paid: paymentMode === 'PIUTANG' ? 0 : subtotal,
+        paid: paymentMode === 'SPLIT' ? splitTotal : receivedAmount,
         paymentMethod: kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode,
         notes: note,
     });
@@ -333,12 +432,20 @@ export default function BengkelTransaksiScreen() {
             ? `Armada ${selectedArmada?.nama || selectedArmada?.nopol || ''}`.trim()
             : isMobil
                 ? 'TPM (Internal)'
-                : (selectedCustomer?.nama || guestName.trim());
-        const nomorPlat = isJA ? (selectedArmada?.nopol || '-') : isMobil ? (selectedMobil?.nomor_plat || '-') : (selectedCustomer?.vehicles?.[0]?.plat_nomor || '-');
-        const jenisKendaraan = isJA ? 'Armada Jasa Angkut' : isMobil ? `${selectedMobil?.merek || ''} ${selectedMobil?.model || ''}`.trim() || 'Mobil' : (selectedCustomer?.vehicles?.[0]?.jenis_unit || 'Umum');
+                : (selectedCustomer?.nama || guestName.trim() || editingTransaction?.nama_customer || editingTransaction?.customer_nama || 'Guest');
+        const nomorPlat = isJA
+            ? (selectedArmada?.nopol || editingTransaction?.nomor_plat || '-')
+            : isMobil
+                ? (selectedMobil?.nomor_plat || editingTransaction?.nomor_plat || '-')
+                : (selectedCustomer?.vehicles?.[0]?.plat_nomor || editingTransaction?.nomor_plat || '-');
+        const jenisKendaraan = isJA
+            ? 'Armada Jasa Angkut'
+            : isMobil
+                ? `${selectedMobil?.merek || ''} ${selectedMobil?.model || ''}`.trim() || editingTransaction?.jenis_kendaraan || 'Mobil'
+                : (selectedCustomer?.vehicles?.[0]?.jenis_unit || editingTransaction?.jenis_kendaraan || 'Umum');
 
         try {
-            const transaction = await createMutation.mutateAsync({
+            const payload = {
                 customer_id: kategori === 'umum' ? selectedCustomer?.id || null : null,
                 nama_customer: customerName,
                 nomor_plat: String(nomorPlat).substring(0, 15),
@@ -350,26 +457,31 @@ export default function BengkelTransaksiScreen() {
                 detail_services: selectedServiceList.map(row => ({ nama_jasa: row.item.nama, harga: Number(row.item.harga || 0), qty: row.qty })),
                 diskon: discountAmount,
                 metode_bayar: isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode,
-                jumlah_bayar: isJA ? subtotal : (isMobil || paymentMode === 'PIUTANG' ? 0 : subtotal),
+                jumlah_bayar: isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTotal : receivedAmount),
                 payments: isJA
                     ? [{ metode: 'INTERNAL', jumlah: subtotal }]
-                    : isMobil || paymentMode === 'PIUTANG'
+                    : isMobil
                         ? []
                         : paymentMode === 'SPLIT'
                             ? [
                                 ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: 'KAS_UNIT_BENGKEL' }] : []),
                                 ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                             ]
-                            : [{ metode: paymentMode, jumlah: subtotal, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }],
+                            : receivedAmount > 0
+                                ? [{ metode: paymentMode, jumlah: receivedAmount, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }]
+                                : [],
                 catatan: note,
-            });
+            };
+            const transaction = editTransactionId
+                ? await updateMutation.mutateAsync({ id: editTransactionId, data: payload })
+                : await createMutation.mutateAsync(payload);
             setCreatedTransaction(transaction);
             setReceiptActionMessage('');
             setConfirmSubmitOpen(false);
             setSuccessModalOpen(true);
         } catch {
             setConfirmSubmitOpen(false);
-            showNotice('error', 'Error', 'Gagal membuat transaksi bengkel.');
+            showNotice('error', 'Error', editTransactionId ? 'Gagal memperbarui transaksi bengkel.' : 'Gagal membuat transaksi bengkel.');
         }
     };
 
@@ -457,7 +569,7 @@ export default function BengkelTransaksiScreen() {
                         <View className="w-full">
                             {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
-                                const outOfStock = part.stok !== 999 && Number(part.stok || 0) <= 0;
+                                const outOfStock = !selected && part.stok !== 999 && Number(part.stok || 0) <= 0;
                                 return (
                                     <Pressable key={part.id} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
@@ -710,7 +822,6 @@ export default function BengkelTransaksiScreen() {
                                         { id: 'TUNAI', label: 'Tunai' },
                                         { id: 'TRANSFER', label: 'Transfer' },
                                         { id: 'SPLIT', label: 'Split' },
-                                        { id: 'PIUTANG', label: 'Piutang' },
                                     ].map(mode => (
                                         <Pressable key={mode.id} onPress={() => setPaymentMode(mode.id as PaymentMode)} className={`flex-1 py-4 rounded-2xl border items-center ${paymentMode === mode.id ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
                                             <Typography weight="bold" className={paymentMode === mode.id ? 'text-white' : 'text-gray-500'}>{mode.label}</Typography>
@@ -753,6 +864,41 @@ export default function BengkelTransaksiScreen() {
                                         </View>
                                     </View>
                                 )}
+                                {(paymentMode === 'TUNAI' || paymentMode === 'TRANSFER') && (
+                                    <View className="mt-4 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                                        <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Nominal Bayar</Typography>
+                                        <TextInput
+                                            value={paymentAmount}
+                                            onChangeText={(value) => setPaymentAmount(value.replace(/[^0-9]/g, ''))}
+                                            placeholder={String(subtotal)}
+                                            placeholderTextColor="#94A3B8"
+                                            keyboardType="number-pad"
+                                            inputMode="numeric"
+                                            className="bg-white rounded-2xl px-4 h-11 text-sm text-textMain border border-gray-100"
+                                        />
+                                        <View className="flex-row justify-between mt-3 pt-3 border-t border-slate-200">
+                                            <Typography className="text-gray-500 text-xs font-bold">Diterima</Typography>
+                                            <Typography weight="bold" className={receivedAmount >= subtotal ? 'text-emerald-600' : 'text-rose-500'}>
+                                                {formatCurrency(receivedAmount)}
+                                            </Typography>
+                                        </View>
+                                        {paymentOutstandingAmount > 0 ? (
+                                            <View className="flex-row justify-between mt-1">
+                                                <Typography className="text-gray-500 text-xs font-bold">Sisa Piutang</Typography>
+                                                <Typography weight="bold" className="text-rose-500">
+                                                    {formatCurrency(paymentOutstandingAmount)}
+                                                </Typography>
+                                            </View>
+                                        ) : (
+                                            <View className="flex-row justify-between mt-1">
+                                                <Typography className="text-gray-500 text-xs font-bold">Kembalian</Typography>
+                                                <Typography weight="bold" className="text-primary">
+                                                    {formatCurrency(changeAmount)}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         ) : (
                             <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-5">
@@ -773,7 +919,13 @@ export default function BengkelTransaksiScreen() {
                 </View>
                 <View className="flex-row space-x-3">
                     {step > 1 && <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />}
-                    <Button title={step === 3 ? 'Simpan Transaksi' : 'Lanjut'} className="flex-1" onPress={step === 3 ? confirmSubmit : next} loading={createMutation.isPending} icon={step === 3 ? <Wallet size={16} color="white" /> : undefined} />
+                    <Button
+                        title={step === 3 ? (editTransactionId ? 'Update Transaksi' : 'Simpan Transaksi') : 'Lanjut'}
+                        className="flex-1"
+                        onPress={step === 3 ? confirmSubmit : next}
+                        loading={createMutation.isPending || updateMutation.isPending}
+                        icon={step === 3 ? <Wallet size={16} color="white" /> : undefined}
+                    />
                 </View>
             </View>
 
@@ -784,7 +936,7 @@ export default function BengkelTransaksiScreen() {
                         <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
                             <Wallet size={22} color="#023C69" />
                         </View>
-                        <Typography variant="h3" weight="bold" className="text-textMain">Simpan Transaksi?</Typography>
+                        <Typography variant="h3" weight="bold" className="text-textMain">{editTransactionId ? 'Update Transaksi?' : 'Simpan Transaksi?'}</Typography>
                         <Typography className="text-gray-500 text-sm mt-2">
                             Pastikan detail sparepart, servis, customer, dan pembayaran sudah benar.
                         </Typography>
@@ -794,10 +946,20 @@ export default function BengkelTransaksiScreen() {
                             <SummaryRow label="Metode" value={kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode} />
                             <View className="h-[1px] bg-slate-200 my-2" />
                             <SummaryRow label="Total" value={formatCurrency(subtotal)} />
+                            {kategori === 'umum' && (paymentMode === 'TUNAI' || paymentMode === 'TRANSFER') && (
+                                <>
+                                    <SummaryRow label="Diterima" value={formatCurrency(receivedAmount)} />
+                                    {paymentOutstandingAmount > 0 ? (
+                                        <SummaryRow label="Sisa Piutang" value={formatCurrency(paymentOutstandingAmount)} />
+                                    ) : (
+                                        <SummaryRow label="Kembalian" value={formatCurrency(changeAmount)} />
+                                    )}
+                                </>
+                            )}
                         </View>
                         <View className="flex-row space-x-3 mt-5">
                             <Button title="Batal" variant="outline" className="flex-1" onPress={() => setConfirmSubmitOpen(false)} />
-                            <Button title="Simpan" className="flex-1" onPress={submit} loading={createMutation.isPending} />
+                            <Button title={editTransactionId ? 'Update' : 'Simpan'} className="flex-1" onPress={submit} loading={createMutation.isPending || updateMutation.isPending} />
                         </View>
                     </View>
                 </View>
@@ -873,7 +1035,7 @@ export default function BengkelTransaksiScreen() {
                         >
                             {isPartsLoading ? <ActivityIndicator color="#023C69" /> : visibleParts.map((part: any) => {
                                 const selected = selectedParts[part.id];
-                                const outOfStock = part.stok !== 999 && Number(part.stok || 0) <= 0;
+                                const outOfStock = !selected && part.stok !== 999 && Number(part.stok || 0) <= 0;
                                 return (
                                     <Pressable key={`sheet-part-${part.id}`} disabled={outOfStock} onPress={() => togglePart(part)} className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">

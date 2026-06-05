@@ -20,6 +20,15 @@ export const useTransaksiBengkelSummary = (params?: any, options?: any) => {
     });
 };
 
+export const useTransaksiBengkelDetail = (id?: number | null, options?: any) => {
+    return useQuery<any>({
+        queryKey: ['transaksi_bengkel_detail', id],
+        queryFn: () => bengkelService.getDetailTransaksi(id as number),
+        enabled: !!id,
+        ...options,
+    });
+};
+
 export const useCreateTransaksiBengkel = () => {
     const queryClient = useQueryClient();
     return useMutation({
