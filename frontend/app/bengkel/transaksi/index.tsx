@@ -62,7 +62,7 @@ export default function BengkelTransaksiScreen() {
     const [selectedArmada, setSelectedArmada] = useState<any>(null);
     const [selectedMobil, setSelectedMobil] = useState<any>(null);
     const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
-    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState('0');
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
     const [note, setNote] = useState('');
