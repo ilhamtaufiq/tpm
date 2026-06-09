@@ -8,7 +8,8 @@
       "Bash(./venv/Scripts/python.exe:*)",
       "Bash(source venv/Scripts/activate)",
       "Bash(alembic revision:*)",
-      "Bash(alembic upgrade:*)"
+      "Bash(alembic upgrade:*)",
+      "Bash(rtk git *)"
     ]
   }
 }

@@ -45,3 +45,18 @@ TPM_BACKUP*
 backend/__pycache__/
 **/*.pyc
 .pytest_cache/
+
+# AI & Agent Files (AI slop)
+.agent/
+.antigravitycli/
+.claude/
+.gemini/
+artifacts/scratch/
+AGENTS.md
+CLAUDE.md
+CONTINUITY.md
+patch_base.py
+scratch/
+test_neraca.py
+*.output
+
