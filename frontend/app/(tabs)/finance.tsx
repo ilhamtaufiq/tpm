@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, ActivityIndicator, Image, StatusBar } from 'react-native';
+import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getFileUrl } from '../../utils/image';
@@ -7,7 +8,6 @@ import { Header } from '../../components/ui/Header';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowRightLeft, CircleDollarSign, BarChart3, ChevronRight, AlertTriangle, Users, ArrowUpCircle, ArrowDownCircle } from 'lucide-react-native';
-import { useRouter, router, Redirect } from 'expo-router';
 import { formatCurrency } from '../../utils/format';
 import { keuanganService, PiutangSummary, KasBankAllBalances } from '../../services/keuangan';
 import { useDashboardSummary, usePiutangSummary, useHutangSummary, useInvestorDisbursementSummary } from '../../hooks/useKeuangan';
@@ -19,6 +19,17 @@ export default function FinanceTab() {
     const insets = useSafeAreaInsets();
     const [refreshing, setRefreshing] = useState(false);
     const { user } = useAuthStore();
+    const router = useRouter();
+    const { quickAction } = useLocalSearchParams<{ quickAction?: string }>();
+    const quickActionLockRef = React.useRef<string | null>(null);
+
+    useEffect(() => {
+        if (quickAction !== 'mutasi' && quickAction !== 'expenses') return;
+        if (quickActionLockRef.current === quickAction) return;
+
+        quickActionLockRef.current = quickAction;
+        router.push(quickAction === 'mutasi' ? '/finance/mutasi' : '/finance/expenses');
+    }, [quickAction, router]);
 
     if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
         return <Redirect href="/(tabs)/home" />;
@@ -177,7 +188,7 @@ export default function FinanceTab() {
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency(dashboard?.kas_bank?.kas_unit_bengkel?.saldo || 0)}</Typography>
                                 </View>
                                 <View className="flex-row justify-between">
-                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Mobil/JA</Typography>
+                                    <Typography className="text-textGray/40 text-[8px] uppercase font-bold">Mobil / Jasa Angkut</Typography>
                                     <Typography className="text-textMain text-[8px] font-bold">{formatCurrency((dashboard?.kas_bank?.kas_unit_mobil?.saldo || 0) + (dashboard?.kas_bank?.kas_unit_jasa_angkut?.saldo || 0))}</Typography>
                                 </View>
                             </View>

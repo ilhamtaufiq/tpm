@@ -1297,7 +1297,7 @@ export default function JasaAngkutScreen() {
 
             <Header
                 title="Jasa Angkut"
-                subtitle="Manajemen Ritase & Logistik"
+                subtitle="Manajemen Ritase & Jasa Angkut"
                 showBackButton={true}
                 onBackButtonPress={handleGoBack}
                 showProfile={true}

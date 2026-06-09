@@ -94,7 +94,7 @@ export const ServiceGrid = () => {
 
     const MENUS = [
         { id: 'bengkel', label: 'Bengkel', icon: Wrench, color: '#3b82f6', path: '/bengkel' }, // Blue
-        { id: 'logistik', label: 'Logistik', icon: Truck, color: '#f97316', path: '/jasa-angkut' }, // Orange
+        { id: 'logistik', label: 'Jasa Angkut', icon: Truck, color: '#f97316', path: '/jasa-angkut' }, // Orange
         { id: 'mobil', label: 'Jual Beli', icon: CarFront, color: '#10b981', path: '/mobil' }, // Emerald
         { id: 'keuangan', label: 'Keuangan', icon: Wallet, color: '#ef4444', path: '/finance' }, // Red
         { id: 'master', label: 'Master', icon: Database, color: '#8b5cf6', path: '/master-data' }, // Purple

@@ -300,7 +300,8 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     paymentMethod: details.metode_bayar || '-',
                     paid: details.total_bayar || 0,
                     change: details.kembalian || 0,
-                    notes: details.catatan
+                    notes: details.catatan,
+                    showDiscount: true,
                 };
             } else {
                 // Jasa Angkut
@@ -324,7 +325,8 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                     total: Number(details.pendapatan_kotor),
                     paymentMethod: 'TRANSFER/TUNAI',
                     paid: details.jumlah_bayar || 0,
-                    notes: details.catatan
+                    notes: details.catatan,
+                    showDiscount: true,
                 };
             }
 

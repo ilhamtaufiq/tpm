@@ -4,6 +4,8 @@ import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings } from './printSettings';
 import { RECEIPT_TEMPLATES, TEMPLATE_FONT_SIZES, TEMPLATE_SPACING } from './receiptTemplates';
+import { printHtmlInBrowser } from './printHtmlBrowser';
+import { printHtmlViaQz } from './qzTray';
 
 // Dynamically import thermal printer to avoid issues on non-android platforms
 let BLEPrinter: any = null;
@@ -43,6 +45,7 @@ export interface PrintReceiptData {
     change?: number;
     paymentMethod?: string;
     notes?: string;
+    showDiscount?: boolean;
     vehiclePlate?: string;
     vehicleType?: string;
     origin?: string;
@@ -122,6 +125,8 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
             <span>${value}</span>
         </div>
     ` : '';
+
+    const showDiscount = data.showDiscount !== false;
 
     return `
         <!DOCTYPE html>
@@ -227,7 +232,7 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
                 ${infoRow('Status', data.status)}
                 ${infoRow('Metode Bayar', data.paymentMethod)}
                 ${infoRow('SubTotal', formatCurrency(data.subtotal))}
-                ${data.discount ? infoRow('Diskon', '-' + formatCurrency(data.discount)) : ''}
+                ${showDiscount && data.discount ? infoRow('Diskon', '-' + formatCurrency(data.discount)) : ''}
                 <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; margin-top: 4px; border-top: 1px solid #000; padding-top: 4px;">
                     <span>Total</span>
                     <span>${formatCurrency(data.total)}</span>
@@ -365,7 +370,7 @@ export function generateThermalText(data: PrintReceiptData, settings: PrintSetti
 
     text += `${divider}\n`;
     text += `SubTotal  : ${formatCurrencyLocal(data.subtotal)}\n`;
-    if (data.discount) text += `Diskon    : -${formatCurrencyLocal(data.discount)}\n`;
+    if (data.showDiscount !== false && data.discount) text += `Diskon    : -${formatCurrencyLocal(data.discount)}\n`;
     text += `<B>Total     : ${formatCurrencyLocal(data.total)}</B>\n`;
 
     if (data.paid !== undefined) {
@@ -410,7 +415,6 @@ async function ensureLogoBase64(uri: string | null): Promise<string | null> {
     }
 
     if (targetUri.startsWith('data:')) return targetUri;
-    if (Platform.OS === 'web') return targetUri; // Web handles local/remote URIs better
 
     try {
         const response = await fetch(targetUri);
@@ -444,37 +448,13 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
         const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
         if (Platform.OS === 'web') {
-            // For web, use a hidden iframe for more reliable printing
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
+            const printedByQz = await printHtmlViaQz(html, {
+                printerName: settings.webPrinterName,
+                pageWidthPx: settings.paperSize === '80mm' ? 302 : 220
+            });
 
-            const iframeDoc = iframe.contentWindow?.document;
-            if (iframeDoc) {
-                iframeDoc.open();
-                iframeDoc.write(html);
-                iframeDoc.close();
-
-                // Wait for content to load
-                iframe.onload = () => {
-                    iframe.contentWindow?.focus();
-                    iframe.contentWindow?.print();
-                    // Remove iframe after print dialog is closed
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                    }, 2000);
-                };
-
-                // Fallback for browsers where onload doesn't fire for iframe.document.write
-                setTimeout(() => {
-                    if (document.body.contains(iframe)) {
-                        iframe.contentWindow?.focus();
-                        iframe.contentWindow?.print();
-                        setTimeout(() => {
-                            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                        }, 2000);
-                    }
-                }, 800);
+            if (!printedByQz) {
+                await printHtmlInBrowser(html);
             }
         } else {
             // For mobile, check if direct thermal printer is connected via bluetooth
@@ -524,7 +504,7 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
         }
     } catch (error) {
         console.error('Print error:', error);
-        throw new Error('Gagal mencetak struk. Pastikan printer terhubung.');
+        throw new Error('Gagal mencetak struk. Cek koneksi QZ Tray di Pengaturan Cetak atau pastikan printer terhubung.');
     }
 }
 
@@ -542,8 +522,8 @@ export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSett
         const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
         if (Platform.OS === 'web') {
-            // For web, browsers handle "Save as PDF" through the print dialog
-            return printReceipt(data, settings);
+            // For web, keep the browser print dialog so users can choose "Save as PDF"
+            return printHtmlInBrowser(html);
         }
 
         const { uri } = await Print.printToFileAsync({

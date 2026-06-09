@@ -219,7 +219,9 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                                 { label: 'Status', value: data.status },
                                 { label: 'Metode Bayar', value: data.paymentMethod },
                                 { label: 'SubTotal', value: formatCurrency(data.subtotal).replace('Rp', '').trim() },
-                                { label: 'Diskon', value: formatCurrency(data.discount || 0).replace('Rp', '').trim() },
+                                ...(data.showDiscount !== false && data.discount
+                                    ? [{ label: 'Diskon', value: formatCurrency(data.discount || 0).replace('Rp', '').trim() }]
+                                    : []),
                             ].map((row, i) => row.value ? (
                                 <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 * zoom }}>
                                     <Typography style={{ fontSize: 10 * zoom, fontFamily: 'monospace' }}>{row.label}</Typography>

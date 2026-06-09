@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Pressable, TextInput, Image, Platform } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, Image, Platform, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Printer, Image as ImageIcon, Save, RefreshCw } from 'lucide-react-native';
+import { ChevronLeft, Printer, Image as ImageIcon, Save, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { router } from 'expo-router';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
+import { testQzTrayConnection, QzConnectionTestResult, getQzPrinters } from '../../utils/qzTray';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
@@ -16,6 +17,11 @@ export default function PrintSettingsScreen() {
     const [settings, setSettings] = useState<PrintSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [checkingQz, setCheckingQz] = useState(false);
+    const [loadingPrinters, setLoadingPrinters] = useState(false);
+    const [printerPickerVisible, setPrinterPickerVisible] = useState(false);
+    const [qzPrinters, setQzPrinters] = useState<string[]>([]);
+    const [qzResult, setQzResult] = useState<QzConnectionTestResult | null>(null);
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -178,6 +184,72 @@ export default function PrintSettingsScreen() {
 
     const removeLogo = () => {
         setSettings(prev => prev ? { ...prev, logoUri: null } : null);
+    };
+
+    const loadQzPrinters = async () => {
+        if (Platform.OS !== 'web') return;
+        try {
+            setLoadingPrinters(true);
+            const printers = await getQzPrinters();
+            setQzPrinters(printers);
+        } catch (error) {
+            console.error('Error loading QZ printers:', error);
+        } finally {
+            setLoadingPrinters(false);
+        }
+    };
+
+    const handleCheckQz = async () => {
+        if (Platform.OS !== 'web') {
+            setDialogConfig({
+                visible: true,
+                title: 'Info',
+                message: 'Cek koneksi QZ Tray hanya tersedia di web.',
+                variant: 'info',
+                type: 'alert'
+            });
+            return;
+        }
+
+        try {
+            setCheckingQz(true);
+            const result = await testQzTrayConnection();
+            setQzResult(result);
+            setQzPrinters(result.printers || []);
+            setDialogConfig({
+                visible: true,
+                title: result.ok ? 'QZ Tray Tersambung' : 'QZ Tray Belum Tersambung',
+                message: result.ok
+                    ? `${result.message}${result.defaultPrinter ? `\nDefault printer: ${result.defaultPrinter}` : ''}`
+                    : `${result.message}\nPastikan QZ Tray sedang aktif di host dan site ini sudah dipercaya.`,
+                variant: result.ok ? 'success' : 'warning',
+                type: 'alert'
+            });
+        } catch (error) {
+            console.error('Error checking QZ:', error);
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: 'Gagal mengecek koneksi QZ Tray',
+                variant: 'error',
+                type: 'alert'
+            });
+        } finally {
+            setCheckingQz(false);
+        }
+    };
+
+    const openPrinterPicker = async () => {
+        setPrinterPickerVisible(true);
+        if (qzPrinters.length === 0) {
+            await loadQzPrinters();
+        }
+    };
+
+    const selectPrinter = (printerName: string) => {
+        if (!settings) return;
+        setSettings({ ...settings, webPrinterName: printerName });
+        setPrinterPickerVisible(false);
     };
 
     const handleGoBack = () => {
@@ -351,6 +423,83 @@ export default function PrintSettingsScreen() {
                     </View>
                 </Card>
 
+                {/* Web Printing */}
+                <Card className="p-6 mb-6 rounded-[24px]">
+                    <Typography variant="h4" weight="bold" className="mb-4">
+                        Web Printing
+                    </Typography>
+
+                    <View className="mb-4">
+                        <Typography variant="caption" weight="medium" className="mb-2 text-textGray">
+                            Nama Printer QZ Tray
+                        </Typography>
+                        <TextInput
+                            value={settings.webPrinterName ?? ''}
+                            onChangeText={(text) => setSettings({ ...settings, webPrinterName: text })}
+                            className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-base"
+                            placeholder="Kosongkan untuk printer default host"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
+                        <Typography variant="caption" className="text-textGray mt-2">
+                            {settings.webPrinterName
+                                ? `Printer terpilih: ${settings.webPrinterName}`
+                                : 'Printer default host yang akan dipakai.'}
+                        </Typography>
+                    </View>
+
+                    <View className="p-4 bg-blue-50 rounded-2xl">
+                        <Typography variant="caption" className="text-blue-700">
+                            Dipakai saat mencetak dari web via QZ Tray. Jika kosong, sistem memakai printer default pada host.
+                        </Typography>
+                    </View>
+
+                    <View className="mt-4 gap-3">
+                        <Button
+                            title="Pilih Printer dari QZ Tray"
+                            onPress={openPrinterPicker}
+                            variant="outline-neutral"
+                            className="h-14 rounded-2xl"
+                        />
+                        <Button
+                            title={checkingQz ? 'Mengecek QZ Tray...' : 'Cek Koneksi QZ Tray'}
+                            onPress={handleCheckQz}
+                            loading={checkingQz}
+                            variant="outline"
+                            className="h-14 rounded-2xl"
+                        />
+
+                        {qzResult ? (
+                            <View className={`p-4 rounded-2xl ${qzResult.ok ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                                <View className="flex-row items-center mb-2">
+                                    {qzResult.ok ? (
+                                        <CheckCircle2 size={18} color="#059669" />
+                                    ) : (
+                                        <AlertCircle size={18} color="#D97706" />
+                                    )}
+                                    <Typography variant="caption" weight="medium" className="ml-2">
+                                        {qzResult.ok ? 'Koneksi aktif' : 'Koneksi belum aktif'}
+                                    </Typography>
+                                </View>
+                                <Typography variant="caption" className={qzResult.ok ? 'text-emerald-700' : 'text-amber-700'}>
+                                    {qzResult.message}
+                                </Typography>
+                                {qzResult.defaultPrinter ? (
+                                    <Typography variant="caption" className="text-textGray mt-2">
+                                        Default printer: {qzResult.defaultPrinter}
+                                    </Typography>
+                                ) : null}
+                                {qzResult.printers.length > 0 ? (
+                                    <Typography variant="caption" className="text-textGray mt-1">
+                                        Printer terdeteksi: {qzResult.printers.slice(0, 5).join(', ')}
+                                        {qzResult.printers.length > 5 ? ` +${qzResult.printers.length - 5} lainnya` : ''}
+                                    </Typography>
+                                ) : null}
+                            </View>
+                        ) : null}
+                    </View>
+                </Card>
+
                 {/* Paper Size */}
                 <Card className="p-6 mb-6 rounded-[24px]">
                     <Typography variant="h4" weight="bold" className="mb-4">
@@ -404,6 +553,109 @@ export default function PrintSettingsScreen() {
                 onConfirm={dialogConfig.onConfirm}
                 loading={saving}
             />
+
+            <Modal
+                visible={printerPickerVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setPrinterPickerVisible(false)}
+            >
+                <View className="flex-1 justify-center items-center p-6">
+                    <Pressable
+                        className="absolute inset-0 bg-black/60"
+                        onPress={() => setPrinterPickerVisible(false)}
+                    />
+                    <View className="w-full max-w-[520px] bg-white rounded-[28px] p-5">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-1 pr-3">
+                                <Typography variant="h4" weight="bold">
+                                    Pilih Printer QZ Tray
+                                </Typography>
+                                <Typography variant="caption" className="text-textGray mt-1">
+                                    {qzResult?.connected
+                                        ? 'Pilih printer yang akan dipakai saat print dari web.'
+                                        : 'Daftar printer akan diambil dari QZ Tray saat koneksi aktif.'}
+                                </Typography>
+                            </View>
+                            <Pressable
+                                onPress={() => setPrinterPickerVisible(false)}
+                                className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+                            >
+                                <Typography weight="bold">×</Typography>
+                            </Pressable>
+                        </View>
+
+                        <Pressable
+                            onPress={() => selectPrinter('')}
+                            className={`p-4 rounded-2xl border mb-3 ${settings.webPrinterName ? 'border-gray-200 bg-white' : 'border-primary bg-primary/5'}`}
+                        >
+                            <Typography weight="semibold">
+                                Printer default host
+                            </Typography>
+                            <Typography variant="caption" className="text-textGray mt-1">
+                                Dipakai jika field printer dikosongkan.
+                            </Typography>
+                        </Pressable>
+
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Typography variant="caption" className="text-textGray">
+                                Printer terdeteksi: {qzPrinters.length}
+                            </Typography>
+                            <Button
+                                title="Refresh"
+                                onPress={loadQzPrinters}
+                                loading={loadingPrinters}
+                                variant="ghost"
+                                size="sm"
+                                className="px-2 py-1"
+                            />
+                        </View>
+
+                        <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+                            {loadingPrinters ? (
+                                <View className="py-8 items-center justify-center">
+                                    <ActivityIndicator color="#023C69" />
+                                    <Typography variant="caption" className="text-textGray mt-3">
+                                        Memuat daftar printer...
+                                    </Typography>
+                                </View>
+                            ) : qzPrinters.length > 0 ? (
+                                qzPrinters.map((printer) => {
+                                    const selected = settings.webPrinterName === printer;
+                                    return (
+                                        <Pressable
+                                            key={printer}
+                                            onPress={() => selectPrinter(printer)}
+                                            className={`p-4 rounded-2xl border mb-3 ${selected ? 'border-primary bg-primary/5' : 'border-gray-200 bg-white'}`}
+                                        >
+                                            <View className="flex-row items-center justify-between">
+                                                <View className="flex-1 pr-3">
+                                                    <Typography weight={selected ? 'bold' : 'semibold'}>
+                                                        {printer}
+                                                    </Typography>
+                                                    <Typography variant="caption" className="text-textGray mt-1">
+                                                        {selected ? 'Sedang dipilih' : 'Tap untuk memilih printer ini'}
+                                                    </Typography>
+                                                </View>
+                                                {selected ? (
+                                                    <View className="w-3 h-3 rounded-full bg-primary" />
+                                                ) : null}
+                                            </View>
+                                        </Pressable>
+                                    );
+                                })
+                            ) : (
+                                <View className="py-8 items-center justify-center">
+                                    <Typography weight="semibold">Tidak ada printer terdeteksi</Typography>
+                                    <Typography variant="caption" className="text-textGray mt-2 text-center">
+                                        Jalankan cek koneksi QZ Tray dulu, lalu refresh daftar printer.
+                                    </Typography>
+                                </View>
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }

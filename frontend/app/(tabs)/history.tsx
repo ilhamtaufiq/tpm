@@ -46,7 +46,7 @@ const getSourceConfig = (source: string, title?: string) => {
         return { icon: CarFront, color: '#F59E0B', label: 'Mobil' };
     }
     if (t.includes('angkut') || t.includes('muatan') || t.includes('jas')) {
-        return { icon: Truck, color: '#10B981', label: 'Logistik' };
+        return { icon: Truck, color: '#10B981', label: 'Jasa Angkut' };
     }
     if (t.includes('gaji') || t.includes('kantor') || t.includes('sdm')) {
         return { icon: User, color: '#8B5CF6', label: 'SDM' };
@@ -60,7 +60,7 @@ const getSourceConfig = (source: string, title?: string) => {
         case 'pembelian_mobil':
             return { icon: CarFront, color: '#F59E0B', label: 'Mobil' };
         case 'jasa_angkut':
-            return { icon: Truck, color: '#10B981', label: 'Logistik' };
+            return { icon: Truck, color: '#10B981', label: 'Jasa Angkut' };
         case 'pembelian_part':
             return { icon: Receipt, color: '#6366F1', label: 'Inventory' };
         case 'pengeluaran':
@@ -93,7 +93,7 @@ const getStatusBadge = (status: string): { variant: 'success' | 'warning' | 'inf
 const FILTER_SOURCES = [
     { label: 'Semua', value: 'all' },
     { label: 'Bengkel', value: 'bengkel' },
-    { label: 'Logistik', value: 'jasa_angkut' },
+    { label: 'Jasa Angkut', value: 'jasa_angkut' },
     { label: 'Mobil', value: 'jual_beli_mobil' },
     { label: 'Biaya Ops', value: 'pengeluaran' },
     { label: 'SDM', value: 'gaji' },

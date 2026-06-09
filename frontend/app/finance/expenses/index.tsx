@@ -347,7 +347,7 @@ export default function ExpensesScreen() {
                                             {[
                                                 { label: 'Kantor', value: 'KAS_UTAMA' },
                                                 { label: 'Bank', value: 'BANK_UTAMA' },
-                                                { label: 'Unit JA', value: 'KAS_UNIT_JASA_ANGKUT' },
+                                    { label: 'Unit Jasa Angkut', value: 'KAS_UNIT_JASA_ANGKUT' },
                                                 { label: 'Unit Bengkel', value: 'KAS_UNIT_BENGKEL' },
                                                 { label: 'Unit Mobil', value: 'KAS_UNIT_MOBIL' },
                                             ].map((opt) => {

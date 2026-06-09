@@ -70,7 +70,7 @@ export const Header = ({
                 if (role === 'BENGKEL') {
                     if (route.category !== 'Bengkel' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
                 } else if (role === 'JASA_ANGKUT') {
-                    if (route.category !== 'Logistik' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                    if (route.category !== 'Jasa Angkut' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
                 } else if (role === 'MOBIL') {
                     if (route.category !== 'Mobil' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
                 }

@@ -62,11 +62,25 @@ export default function PurchaseScreen() {
     const createPembelianMutation = useCreatePembelianParts();
     const updatePembelianMutation = useUpdatePembelianParts();
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-    const { data: partsData, isLoading: isLoadingParts } = useSparePartsList({ search: partSearchQuery });
+    const {
+        data: partsData,
+        isLoading: isLoadingParts,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = useSparePartsList({ search: partSearchQuery });
     const spareParts = useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data || []) || [],
         [partsData]
     );
+
+    useEffect(() => {
+        if (!isPartModalOpen) return;
+        if (partSearchQuery.trim()) return;
+        if (isLoadingParts || isFetchingNextPage || !hasNextPage) return;
+
+        fetchNextPage();
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLoadingParts, isPartModalOpen, partSearchQuery]);
 
     useEffect(() => {
         if (!isEditMode || !editId) return;

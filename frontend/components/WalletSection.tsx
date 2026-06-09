@@ -57,7 +57,7 @@ export const WalletSection = () => {
                 {/* Right Side: Actions */}
                 <View className="flex-row gap-2 flex-shrink-0">
                     <Pressable
-                        onPress={() => router.push({ pathname: '/finance/mutasi', params: { action: 'modal' } })}
+                        onPress={() => router.push({ pathname: '/finance', params: { quickAction: 'mutasi' } })}
                         className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-white/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-white/30"
                     >
                         <Plus size={16} color="white" strokeWidth={2.5} className="mb-0.5 sm:mb-1" />
@@ -65,7 +65,7 @@ export const WalletSection = () => {
                     </Pressable>
 
                     <Pressable
-                        onPress={() => router.push('/finance/expenses')}
+                        onPress={() => router.push({ pathname: '/finance', params: { quickAction: 'expenses' } })}
                         className="w-12 h-12 sm:w-[60px] sm:h-[60px] bg-white/20 border border-white/20 rounded-xl sm:rounded-2xl items-center justify-center active:bg-white/30"
                     >
                         <ArrowUp size={16} color="white" strokeWidth={2.5} className="mb-0.5 sm:mb-1" />

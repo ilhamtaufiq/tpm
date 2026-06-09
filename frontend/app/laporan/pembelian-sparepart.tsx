@@ -153,7 +153,7 @@ export default function PembelianSparepartReportScreen() {
                         <View>
                             <View className="flex-row items-center mb-0.5">
                                 <View className="w-1.5 h-1.5 rounded-full bg-secondary mr-2" />
-                                <Typography className="text-white/40 text-[9px] uppercase tracking-widest font-bold">Logistik & Stok</Typography>
+                                <Typography className="text-white/40 text-[9px] uppercase tracking-widest font-bold">Jasa Angkut & Stok</Typography>
                             </View>
                             <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Pembelian Sparepart</Typography>
                         </View>
@@ -383,7 +383,7 @@ export default function PembelianSparepartReportScreen() {
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
                             <Typography variant="h2" weight="bold">Detail Pembelian</Typography>
-                            <Typography className="text-gray-400 text-xs mt-1">Stok & Logistik Transaksi</Typography>
+                            <Typography className="text-gray-400 text-xs mt-1">Stok & Jasa Angkut Transaksi</Typography>
                         </View>
                         <Pressable onPress={handleCloseModal} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
                             <X size={16} color="#4B5563" />

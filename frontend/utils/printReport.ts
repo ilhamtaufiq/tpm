@@ -1,6 +1,8 @@
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { printHtmlInBrowser } from './printHtmlBrowser';
+import { printHtmlViaQz } from './qzTray';
 
 export interface PrintReportConfig {
     title: string;
@@ -127,30 +129,9 @@ export async function printReportHTML(htmlContent: string, config: PrintReportCo
 
     try {
         if (Platform.OS === 'web') {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-            const iframeDoc = iframe.contentWindow?.document;
-            if (iframeDoc) {
-                iframeDoc.open();
-                iframeDoc.write(fullHtml);
-                iframeDoc.close();
-                iframe.onload = () => {
-                    iframe.contentWindow?.focus();
-                    iframe.contentWindow?.print();
-                    setTimeout(() => {
-                        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                    }, 2000);
-                };
-                setTimeout(() => {
-                    if (document.body.contains(iframe)) {
-                        iframe.contentWindow?.focus();
-                        iframe.contentWindow?.print();
-                        setTimeout(() => {
-                            if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                        }, 2000);
-                    }
-                }, 1000);
+            const printedByQz = await printHtmlViaQz(fullHtml);
+            if (!printedByQz) {
+                await printHtmlInBrowser(fullHtml);
             }
         } else {
             const { uri } = await Print.printToFileAsync({ html: fullHtml });
@@ -164,6 +145,6 @@ export async function printReportHTML(htmlContent: string, config: PrintReportCo
         }
     } catch (error) {
         console.error('Print report error:', error);
-        throw new Error('Gagal mencetak laporan');
+        throw new Error('Gagal mencetak laporan. Cek koneksi QZ Tray di Pengaturan Cetak atau pastikan printer terhubung.');
     }
 }

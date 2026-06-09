@@ -13,7 +13,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 const CATEGORY_STYLE: Record<string, { color: string; bgColor: string }> = {
     Utama: { color: '#3B82F6', bgColor: '#E8F0FE' },
     Bengkel: { color: '#023C69', bgColor: '#E2EFFC' },
-    Logistik: { color: '#6366F1', bgColor: '#E0E7FF' },
+    'Jasa Angkut': { color: '#6366F1', bgColor: '#E0E7FF' },
     Mobil: { color: '#F43F5E', bgColor: '#FFE4E6' },
     Master: { color: '#0F766E', bgColor: '#CCFBF1' },
     SDM: { color: '#10B981', bgColor: '#E6F4EA' },

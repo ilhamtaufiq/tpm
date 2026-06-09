@@ -38,7 +38,6 @@ import {
     Wrench,
     User,
     Car,
-    Wallet
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useCreateTransaksiBengkel, useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts } from '../../hooks/useBengkel';
@@ -534,13 +533,6 @@ export default function InventoryScreen() {
                     <Typography variant="h2" weight="bold">Stok Sparepart</Typography>
                 </View>
                 <View className="flex-row items-center">
-                    <Pressable
-                        onPress={() => router.push('/bengkel/transaksi')}
-                        className="bg-emerald-50 px-3 py-1.5 rounded-full flex-row items-center mr-2 border border-emerald-100"
-                    >
-                        <Wallet size={16} color="#059669" />
-                        <Typography className="text-emerald-700 text-xs font-bold ml-1">Transaksi</Typography>
-                    </Pressable>
                     <Pressable
                         onPress={() => {
                             setScannerMode('stock');

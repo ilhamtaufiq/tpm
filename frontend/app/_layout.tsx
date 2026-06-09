@@ -362,8 +362,8 @@ function RootLayoutContent() {
                         <View 
                             style={{
                                 position: 'absolute',
-                                bottom: 24,
-                                left: 24,
+                                top: 24,
+                                right: 24,
                                 zIndex: 99999,
                             }}
                             className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"
@@ -388,8 +388,8 @@ function RootLayoutContent() {
                             <View 
                                 style={{
                                     position: 'absolute',
-                                    bottom: 24,
-                                    left: 24,
+                                    top: 24,
+                                    right: 24,
                                     zIndex: 99999,
                                 }}
                                 className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"

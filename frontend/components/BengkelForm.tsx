@@ -8,7 +8,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode, Banknote, Wallet, Building2, Printer } from 'lucide-react-native';
+import { Plus, Trash2, Wrench, Package, Truck, Car, Info, Search, X, ChevronRight, QrCode, Banknote, Wallet, Building2, Printer, CheckCircle2, Circle } from 'lucide-react-native';
 import { BarcodeScannerModal } from './ui/BarcodeScannerModal';
 import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList } from '../hooks/useBengkel';
 import { useMuatanList } from '../hooks/useJasaAngkut';
@@ -16,14 +16,13 @@ import { useKasBankBalances } from '../hooks/useKeuangan';
 import { useMobilList } from '../hooks/useMobil';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from './ui/MasterDataSelector';
-import { SparePartSelector } from './ui/SparePartSelector';
-import { JasaSelector } from './ui/JasaSelector';
 import { ArmadaSelector } from './ui/ArmadaSelector';
 import { Customer, Vehicle } from '../services/masterData';
 import { AlertDialog } from './ui/AlertDialog';
 import { getErrorMessage } from '../utils/error';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
+import { useJasaList } from '../hooks/useJasaServis';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -55,11 +54,10 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [guestName, setGuestName] = useState('');
-
-    const [metodeBayar, setMetodeBayar] = useState<string | null>(null);
+    const [showDiscountOnPrint, setShowDiscountOnPrint] = useState(true);
 
     const [services, setServices] = useState<{ id: number; service_id: number; nama_jasa: string; harga: string | number; qty: number }[]>([{ id: Date.now() + Math.random(), service_id: 0, nama_jasa: '', harga: 0, qty: 1 }]);
-    const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number }[]>([{ id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
+    const [parts, setParts] = useState<{ id: number; spare_part_id: number; nama: string; harga: string | number; qty: number; stok?: number; kode?: string }[]>([{ id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: 0, qty: 1 }]);
     const [total, setTotal] = useState(0); // Subtotal
     const [diskon, setDiskon] = useState('0');
     const [isSplitPayment, setIsSplitPayment] = useState(false);
@@ -71,15 +69,22 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
     const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
     const [isPrintingOrderSlip, setIsPrintingOrderSlip] = useState(false);
+    const [isSelectionSheetOpen, setIsSelectionSheetOpen] = useState(false);
+    const [selectionSheetSearch, setSelectionSheetSearch] = useState('');
+    const selectionSheetQuery = selectionSheetSearch.trim();
 
     const { data: balancesData } = useKasBankBalances();
-    const jasaAngkutCash = balancesData?.kas_unit_jasa_angkut?.saldo || 0;
-    const bankUtamaJasaAngkut = balancesData?.bank_utama?.sub_balances?.jasa_angkut || 0;
     const bankUtamaBengkel = balancesData?.bank_utama?.sub_balances?.bengkel || 0;
-    const bankUtamaMobil = balancesData?.bank_utama?.sub_balances?.mobil || 0;
 
     // API Hooks
-    const { data: sparePartsData } = useSparePartsList();
+    const { data: sparePartsData } = useSparePartsList({
+        limit: 5000,
+        search: selectionSheetQuery || undefined,
+    });
+    const { data: jasaData } = useJasaList({
+        limit: 5000,
+        search: selectionSheetQuery || undefined,
+    });
     const createTransaksiMutation = useCreateTransaksiBengkel();
     const updateTransaksiMutation = useUpdateTransaksiBengkel();
 
@@ -111,22 +116,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         );
     }, [muatanList, muatanSearchQuery, selectedArmada]);
 
-    const muatanSections = useMemo(() => {
-        const groups: { [key: string]: any[] } = {};
-        filteredMuatan.forEach((m: any) => {
-            const armadaName = m.armada?.nama || m.nopol || 'Armada Luar / Lainnya';
-            if (!groups[armadaName]) {
-                groups[armadaName] = [];
-            }
-            groups[armadaName].push(m);
-        });
-
-        return Object.keys(groups).sort().map(name => ({
-            title: name,
-            data: groups[name]
-        }));
-    }, [filteredMuatan]);
-
     const filteredMobil = useMemo(() => {
         if (!mobilSearchQuery.trim()) return mobilList;
         const q = mobilSearchQuery.toLowerCase();
@@ -153,6 +142,30 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const availableParts = useMemo(() => {
         return sparePartsData?.pages.flatMap(page => (page as any).data || []) || [];
     }, [sparePartsData]);
+    const availableServices = useMemo(() => {
+        const raw = jasaData?.data || [];
+        return Array.isArray(raw) ? raw : [];
+    }, [jasaData]);
+    const filteredPartChoices = useMemo(() => {
+        const q = selectionSheetQuery.toLowerCase();
+        if (!q) return availableParts;
+        return availableParts.filter((part: any) =>
+            String(part.nama || '').toLowerCase().includes(q) ||
+            String(part.kode || '').toLowerCase().includes(q) ||
+            String(part.kode_part || '').toLowerCase().includes(q) ||
+            String(part.kategori || '').toLowerCase().includes(q) ||
+            String(part.merek || '').toLowerCase().includes(q)
+        );
+    }, [availableParts, selectionSheetQuery]);
+    const filteredServiceChoices = useMemo(() => {
+        const q = selectionSheetQuery.toLowerCase();
+        if (!q) return availableServices;
+        return availableServices.filter((service: any) =>
+            String(service.nama || '').toLowerCase().includes(q) ||
+            String(service.kategori || '').toLowerCase().includes(q) ||
+            String(service.deskripsi || '').toLowerCase().includes(q)
+        );
+    }, [availableServices, selectionSheetQuery]);
 
     useEffect(() => {
         let mounted = true;
@@ -190,9 +203,9 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         }
     }, [services, parts, diskon, kategori, isSplitPayment]);
 
-    const serviceCount = useMemo(() => services.filter(s => s.nama_jasa.trim().length > 0).length, [services]);
-    const partCount = useMemo(() => parts.filter(p => p.spare_part_id !== 0).length, [parts]);
-    const hasBillableItems = serviceCount > 0 || partCount > 0;
+    const selectedPartsForDisplay = useMemo(() => parts.filter((part) => part.spare_part_id !== 0 || part.nama.trim().length > 0), [parts]);
+    const selectedServicesForDisplay = useMemo(() => services.filter((service) => service.service_id !== 0 || service.nama_jasa.trim().length > 0), [services]);
+    const hasBillableItems = selectedPartsForDisplay.length > 0 || selectedServicesForDisplay.length > 0;
 
     useEffect(() => {
         if (initialData) {
@@ -268,8 +281,58 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         }
     }, [initialData]);
 
-    const addService = () => setServices([...services, { id: Date.now() + Math.random(), service_id: 0, nama_jasa: '', harga: '', qty: 1 }]);
-    const addPart = () => setParts([...parts, { id: Date.now() + Math.random(), spare_part_id: 0, nama: '', harga: '', qty: 1 }]);
+    const openSelectionSheet = () => {
+        setSelectionSheetSearch('');
+        setIsSelectionSheetOpen(true);
+    };
+
+    const togglePartSelection = (part: any) => {
+        setParts(prev => {
+            const existing = prev.find(item => item.spare_part_id === part.id);
+            if (existing) {
+                return prev.filter(item => item.id !== existing.id);
+            }
+            return [
+                ...prev,
+                {
+                    id: Date.now() + Math.random(),
+                    spare_part_id: part.id,
+                    nama: part.nama,
+                    harga: formatNumber(Math.floor(Number(part.harga_jual || 0)).toString()),
+                    qty: 1,
+                    stok: part.stok,
+                    kode: part.kode,
+                } as any,
+            ];
+        });
+    };
+
+    const toggleServiceSelection = (service: any) => {
+        setServices(prev => {
+            const existing = prev.find(item => item.service_id === service.id);
+            if (existing) {
+                return prev.filter(item => item.id !== existing.id);
+            }
+            return [
+                ...prev,
+                {
+                    id: Date.now() + Math.random(),
+                    service_id: service.id,
+                    nama_jasa: service.nama,
+                    harga: formatNumber(Math.floor(Number(service.harga || 0)).toString()),
+                    qty: 1,
+                } as any,
+            ];
+        });
+    };
+
+    const updatePartQty = (id: number, qty: number) => {
+        setParts(prev => prev.map(item => item.id === id ? { ...item, qty: Math.max(1, qty) } : item));
+    };
+
+    const updateServiceQty = (id: number, qty: number) => {
+        setServices(prev => prev.map(item => item.id === id ? { ...item, qty: Math.max(1, qty) } : item));
+    };
 
     const resolveWorkOrderIdentity = () => {
         const isJasaAngkutInternal = kategori === 'jasa_angkut' && !!selectedArmada;
@@ -335,6 +398,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             paid: 0,
             paymentMethod: 'ORDER SLIP',
             notes: catatan || undefined,
+            showDiscount: showDiscountOnPrint,
         };
     };
 
@@ -544,7 +608,19 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
         const validatedPlat = finalPlat.substring(0, 15);
         const validatedCustomerName = finalCustomer.substring(0, 100);
 
-        // BengkelForm creates queue/work-order records. Payments are processed later from transaksi bengkel.
+        const paymentItems = kategori === 'umum'
+            ? payments
+                .map((payment) => ({
+                    metode: (payment.metode || 'Tunai').toUpperCase(),
+                    nominal: Number(parseNumber(payment.nominal)) || 0,
+                    catatan: payment.catatan || '',
+                }))
+                .filter((payment) => payment.nominal > 0)
+            : [];
+        const totalPaid = paymentItems.reduce((acc, payment) => acc + payment.nominal, 0);
+        const metodeBayarFinal = paymentItems.length > 1
+            ? 'SPLIT'
+            : (paymentItems[0]?.metode || 'KREDIT');
 
         const payload: any = {
             ...(initialData ? { tanggal: initialData.tanggal } : {}),
@@ -556,12 +632,12 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             muatan_id: kategori === 'jasa_angkut' ? selectedMuatan?.id : null,
             armada_id: kategori === 'jasa_angkut' ? selectedArmada?.id : null,
             mobil_id: kategori === 'jual_beli_mobil' ? selectedMobil?.id : null,
-            metode_bayar: 'KREDIT',
+            metode_bayar: kategori === 'umum' ? metodeBayarFinal : 'KREDIT',
             detail_services: detailServices,
             detail_parts: detailParts,
             diskon: 0,
-            payments: [],
-            jumlah_bayar: 0,
+            payments: kategori === 'umum' ? paymentItems : [],
+            jumlah_bayar: kategori === 'umum' ? totalPaid : 0,
             catatan: catatan
         };
 
@@ -634,6 +710,14 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                         id: Date.now() + Math.random(),
                                         metode: 'Transfer',
                                         nominal: formatNumber(grandTotal.toString()),
+                                        catatan: ''
+                                    }]);
+                                } else if (cat.key === 'umum' || cat.key === 'jual_beli_mobil') {
+                                    setIsSplitPayment(false);
+                                    setPayments([{
+                                        id: Date.now() + Math.random(),
+                                        metode: '',
+                                        nominal: '',
                                         catatan: ''
                                     }]);
                                 }
@@ -900,234 +984,173 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
 
             {true && (
             <>
-            <View className="mb-6 bg-gray-50 border border-gray-100 rounded-[24px] p-4">
-                <View className="flex-row items-center flex-wrap">
+            <View className="mb-6">
+                <View className="flex-row justify-between items-center mb-3">
                     <View className="flex-row items-center">
-                        <Package size={16} color="#2563EB" />
-                        <Typography variant="caption" weight="bold" className="ml-2 text-blue-600">Sparepart</Typography>
-                        <View className="ml-2 px-2 py-0.5 rounded-full bg-blue-600">
-                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
-                                {partCount}
-                            </Typography>
+                        <Package size={18} color="#2563EB" />
+                        <View className="ml-2">
+                            <Typography variant="body2" weight="semibold">Sparepart & Servis</Typography>
+                            <Typography style={{ fontSize: 9, color: '#94A3B8' }}>Tambah item lewat satu daftar pilihan</Typography>
                         </View>
                     </View>
-                    <View className="flex-row items-center ml-4">
-                        <Wrench size={16} color="#023C69" />
-                        <Typography variant="caption" weight="bold" className="ml-2 text-primary">Jasa (Service)</Typography>
-                        <View className="ml-2 px-2 py-0.5 rounded-full bg-primary">
-                            <Typography variant="caption" weight="bold" style={{ fontSize: 10, color: '#fff' }}>
-                                {serviceCount}
-                            </Typography>
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-
-            {/* Parts Section */}
-            <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <View className="flex-row items-center">
-                            <Package size={18} color="#2563EB" />
-                            <View className="ml-2">
-                                <Typography variant="body2" weight="semibold">Daftar Sparepart</Typography>
-                                <Typography style={{ fontSize: 9, color: '#94A3B8' }}>Scan Kode Pabrik / Stok Internal</Typography>
-                            </View>
-                        </View>
-                        <View className="flex-row items-center">
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    marginRight: 16,
-                                    backgroundColor: '#EFF6FF',
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 5,
-                                    borderRadius: 10,
-                                    borderWidth: 1,
-                                    borderColor: '#DBEAFE',
-                                }}
-                            >
-                                <Pressable
-                                    onPress={() => { setScannerMode('sparepart'); setIsScannerOpen(true); }}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    style={({ pressed }) => ({
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        opacity: pressed ? 0.6 : 1
-                                    })}
-                                >
-                                    <QrCode size={16} color="#2563EB" />
-                                    <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Scan</Typography>
-                                </Pressable>
-                            </View>
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: '#EFF6FF',
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 5,
-                                    borderRadius: 10,
-                                    borderWidth: 1,
-                                    borderColor: '#DBEAFE',
-                                }}
-                            >
-                                <Pressable
-                                    onPress={addPart}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    style={({ pressed }) => ({
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        opacity: pressed ? 0.6 : 1
-                                    })}
-                                >
-                                    <Plus size={16} color="#2563EB" />
-                                    <Typography style={{ color: '#2563EB', fontSize: 12, marginLeft: 6, fontWeight: '700' }}>Tambah</Typography>
-                                </Pressable>
-                            </View>
-                        </View>
-                    </View>
-
-                    {parts.map((part, index) => (
-                        <Card key={part.id} variant="outlined" className="p-3 mb-3 border-gray-100">
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View style={{ flex: 1 }}>
-                                    <SparePartSelector
-                                        value={(part.spare_part_id || part.nama) ? {
-                                            id: part.spare_part_id,
-                                            nama: part.nama,
-                                            harga_jual: part.harga,
-                                            stok: (part as any).stok ?? 0,
-                                            kode: (part as any).kode || ''
-                                        } : null}
-                                        onSelect={(ap) => {
-                                            const newP = [...parts];
-                                            if (ap) {
-                                                newP[index].spare_part_id = ap.id;
-                                                newP[index].nama = ap.nama;
-                                                const cleanPrice = Math.floor(Number(ap.harga_jual)).toString();
-                                                newP[index].harga = formatNumber(cleanPrice);
-                                                (newP[index] as any).stok = ap.stok;
-                                                (newP[index] as any).kode = ap.kode;
-                                            } else {
-                                                newP[index].spare_part_id = 0;
-                                                newP[index].nama = '';
-                                                newP[index].harga = '';
-                                            }
-                                            setParts(newP);
-                                        }}
-                                    />
-                                </View>
-                                <View style={{
-                                    width: 64,
-                                    backgroundColor: '#F3F4F6',
-                                    borderRadius: 12,
-                                    paddingHorizontal: 8,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    alignSelf: 'stretch',
-                                }}>
-                                    <Typography variant="caption" className="text-textGray" style={{ fontSize: 10, marginBottom: 2 }}>Qty</Typography>
-                                    <TextInput
-                                        keyboardType="numeric"
-                                        value={part.qty.toString()}
-                                        onChangeText={(val) => {
-                                            const newP = [...parts];
-                                            newP[index].qty = Number(val) || 0;
-                                            setParts(newP);
-                                        }}
-                                        style={{
-                                            fontSize: 15,
-                                            fontWeight: '700',
-                                            color: '#111827',
-                                            textAlign: 'center',
-                                            width: '100%',
-                                            padding: 0,
-                                        }}
-                                    />
-                                </View>
-                                {parts.length > 1 && (
-                                    <Pressable
-                                        onPress={() => setParts(parts.filter(p => p.id !== part.id))}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                        style={{
-                                            padding: 10,
-                                            zIndex: 100,
-                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined,
-                                            backgroundColor: '#FEF2F2',
-                                            borderRadius: 12,
-                                            alignSelf: 'stretch',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <Trash2 size={20} color="#EE2737" />
-                                    </Pressable>
-                                )}
-                            </View>
-                        </Card>
-                    ))}
-                </View>
-
-            {/* Jasa Section */}
-            <View className="mb-6">
-                    <View className="flex-row justify-between items-center mb-3">
-                        <View className="flex-row items-center">
-                            <Wrench size={18} color="#023C69" />
-                            <Typography variant="body2" weight="semibold" className="ml-2">Daftar Jasa (Service)</Typography>
-                        </View>
-                        <Pressable onPress={addService} className="flex-row items-center">
-                            <Plus size={16} color="#023C69" />
-                            <Typography className="text-primary text-xs ml-1 font-bold">Tambah</Typography>
+                    <View className="flex-row items-center gap-2">
+                        <Pressable onPress={openSelectionSheet} className="flex-row items-center bg-primary/10 px-3 py-2 rounded-xl border border-primary/10">
+                            <Plus size={14} color="#023C69" />
+                            <Typography className="text-primary text-[10px] ml-1 font-bold">Tambah Sparepart / Servis</Typography>
                         </Pressable>
                     </View>
-
-                    {services.map((service, index) => (
-                        <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
-                            <View className="flex-row items-center space-x-2">
-                                <View style={{ flex: 1 }}>
-                                    <JasaSelector
-                                        value={service.nama_jasa ? {
-                                            id: service.service_id || 0,
-                                            nama: service.nama_jasa,
-                                            harga: service.harga,
-                                            kategori: 'Servis',
-                                        } : null}
-                                        onSelect={(js) => {
-                                            const newS = [...services];
-                                            if (js) {
-                                                newS[index].service_id = js.id;
-                                                newS[index].nama_jasa = js.nama;
-                                                const cleanPrice = Math.floor(Number(js.harga)).toString();
-                                                newS[index].harga = formatNumber(cleanPrice);
-                                            } else {
-                                                newS[index].service_id = 0;
-                                                newS[index].nama_jasa = '';
-                                                newS[index].harga = '';
-                                            }
-                                            setServices(newS);
-                                        }}
-                                    />
-                                </View>
-                                {services.length > 1 && (
-                                    <Pressable
-                                        onPress={() => setServices(services.filter(s => s.id !== service.id))}
-                                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                                        style={{
-                                            padding: 10,
-                                            zIndex: 100,
-                                            cursor: Platform.OS === 'web' ? 'pointer' : undefined
-                                        }}
-                                        className="items-center justify-center bg-red-50 rounded-2xl"
-                                    >
-                                        <Trash2 size={22} color="#EE2737" />
-                                    </Pressable>
-                                )}
-                            </View>
-                        </Card>
-                    ))}
                 </View>
+
+                {selectedPartsForDisplay.length === 0 && selectedServicesForDisplay.length === 0 ? (
+                    <View className="bg-gray-50 border border-dashed border-gray-200 rounded-[24px] px-4 py-6">
+                        <Typography className="text-center text-gray-400 text-sm">Belum ada sparepart atau servis dipilih.</Typography>
+                        <Typography className="text-center text-gray-400 text-[11px] mt-1">Tekan tombol tambah untuk membuka daftar lalu centang item yang dibutuhkan.</Typography>
+                    </View>
+                ) : (
+                    <>
+                        {selectedPartsForDisplay.length > 0 && (
+                            <View className="mb-5">
+                                <View className="flex-row items-center mb-3">
+                                    <Package size={16} color="#2563EB" />
+                                    <Typography variant="body2" weight="semibold" className="ml-2">Daftar Sparepart</Typography>
+                                </View>
+                                {selectedPartsForDisplay.map((part) => (
+                                    <Card key={part.id} variant="outlined" className="p-3 mb-3 border-gray-100">
+                                        <View className="flex-row items-start justify-between mb-3">
+                                            <View className="flex-1 pr-3">
+                                                <Typography weight="bold" className="text-textMain">{part.nama || 'Sparepart'}</Typography>
+                                                <Typography variant="caption" className="text-gray-400">
+                                                    {part.kode ? `Kode: ${part.kode}` : 'Pilih dari daftar sparepart'}
+                                                </Typography>
+                                                <Typography variant="caption" className="text-gray-400">
+                                                    {part.stok !== undefined ? `Stok: ${part.stok}` : ''}
+                                                </Typography>
+                                            </View>
+                                            <Pressable
+                                                onPress={() => setParts(prev => prev.filter(p => p.id !== part.id))}
+                                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                className="bg-red-50 rounded-xl p-2"
+                                            >
+                                                <Trash2 size={18} color="#EE2737" />
+                                            </Pressable>
+                                        </View>
+
+                                        <View className="flex-row space-x-3">
+                                            <View className="w-20 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+                                                <Typography variant="caption" className="text-textGray mb-1">Qty</Typography>
+                                                <TextInput
+                                                    keyboardType="numeric"
+                                                    value={part.qty.toString()}
+                                                    onChangeText={(val) => updatePartQty(part.id, Number(val) || 0)}
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: '700',
+                                                        color: '#111827',
+                                                        textAlign: 'center',
+                                                        width: '100%',
+                                                        padding: 0,
+                                                    }}
+                                                />
+                                            </View>
+                                            <View className="flex-1 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+                                                <Typography variant="caption" className="text-textGray mb-1">Harga</Typography>
+                                                <TextInput
+                                                    keyboardType="numeric"
+                                                    value={String(part.harga || '')}
+                                                    onChangeText={(val) => {
+                                                        const newP = [...parts];
+                                                        const index = newP.findIndex((item) => item.id === part.id);
+                                                        if (index !== -1) {
+                                                            newP[index].harga = formatNumber(val);
+                                                            setParts(newP);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: '700',
+                                                        color: '#111827',
+                                                        width: '100%',
+                                                        padding: 0,
+                                                    }}
+                                                />
+                                            </View>
+                                        </View>
+                                    </Card>
+                                ))}
+                            </View>
+                        )}
+
+                        {selectedServicesForDisplay.length > 0 && (
+                            <View className="mb-2">
+                                <View className="flex-row items-center mb-3">
+                                    <Wrench size={16} color="#023C69" />
+                                    <Typography variant="body2" weight="semibold" className="ml-2">Daftar Servis</Typography>
+                                </View>
+                                {selectedServicesForDisplay.map((service) => (
+                                    <Card key={service.id} variant="outlined" className="p-3 mb-3 border-gray-100">
+                                        <View className="flex-row items-start justify-between mb-3">
+                                            <View className="flex-1 pr-3">
+                                                <Typography weight="bold" className="text-textMain">{service.nama_jasa || 'Jasa'}</Typography>
+                                                <Typography variant="caption" className="text-gray-400">
+                                                    {service.service_id ? `ID: ${service.service_id}` : 'Pilih dari daftar jasa'}
+                                                </Typography>
+                                            </View>
+                                            <Pressable
+                                                onPress={() => setServices(prev => prev.filter(s => s.id !== service.id))}
+                                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                className="bg-red-50 rounded-xl p-2"
+                                            >
+                                                <Trash2 size={18} color="#EE2737" />
+                                            </Pressable>
+                                        </View>
+
+                                        <View className="flex-row space-x-3">
+                                            <View className="w-20 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+                                                <Typography variant="caption" className="text-textGray mb-1">Qty</Typography>
+                                                <TextInput
+                                                    keyboardType="numeric"
+                                                    value={service.qty.toString()}
+                                                    onChangeText={(val) => updateServiceQty(service.id, Number(val) || 0)}
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: '700',
+                                                        color: '#111827',
+                                                        textAlign: 'center',
+                                                        width: '100%',
+                                                        padding: 0,
+                                                    }}
+                                                />
+                                            </View>
+                                            <View className="flex-1 bg-gray-50 rounded-2xl px-3 py-2 border border-gray-100">
+                                                <Typography variant="caption" className="text-textGray mb-1">Harga</Typography>
+                                                <TextInput
+                                                    keyboardType="numeric"
+                                                    value={String(service.harga || '')}
+                                                    onChangeText={(val) => {
+                                                        const newS = [...services];
+                                                        const index = newS.findIndex((item) => item.id === service.id);
+                                                        if (index !== -1) {
+                                                            newS[index].harga = formatNumber(val);
+                                                            setServices(newS);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        fontSize: 15,
+                                                        fontWeight: '700',
+                                                        color: '#111827',
+                                                        width: '100%',
+                                                        padding: 0,
+                                                    }}
+                                                />
+                                            </View>
+                                        </View>
+                                    </Card>
+                                ))}
+                            </View>
+                        )}
+                    </>
+                )}
+            </View>
 
 
             {/* Total Summary */}
@@ -1443,6 +1466,70 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             </>
             )}
 
+            {kategori === 'umum' && (
+                <View className="mb-6">
+                    <Card className="bg-primary/5 border border-primary/10 p-4 rounded-[28px]">
+                        <View className="flex-row items-start justify-between mb-3">
+                            <View className="flex-1 mr-3">
+                                <Typography variant="body2" weight="bold" className="text-primary">DP / Bayar Awal</Typography>
+                                <Typography variant="caption" className="text-slate-500 mt-1">
+                                    Bisa diisi sebelum atau sesudah part dan servis dimasukkan. Nilai ini akan ikut menyesuaikan ke piutang.
+                                </Typography>
+                            </View>
+                            <Pressable
+                                onPress={() => {
+                                    const newP = [...payments];
+                                    if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                    newP[0].nominal = formatNumber(grandTotal.toString());
+                                    setPayments(newP);
+                                }}
+                                className="bg-primary/10 rounded-full px-3 py-1.5 border border-primary/20"
+                            >
+                                <Typography className="text-[9px] text-primary font-bold">BAYAR PAS</Typography>
+                            </Pressable>
+                        </View>
+
+                        <View className="flex-row space-x-2 mb-3">
+                            {[
+                                { label: 'Dompet', value: 'Tunai' },
+                                { label: 'Bank', value: 'Transfer' },
+                            ].map((m) => (
+                                <Pressable
+                                    key={m.value}
+                                    onPress={() => {
+                                        const newP = [...payments];
+                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                        newP[0].metode = newP[0].metode === m.value ? '' : m.value;
+                                        setPayments(newP);
+                                    }}
+                                    className={`flex-1 py-3 rounded-2xl items-center justify-center border ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
+                                >
+                                    <Typography className={`${payments[0]?.metode === m.value ? 'text-white' : 'text-gray-600'} text-[10px] font-bold`}>
+                                        {m.label}
+                                    </Typography>
+                                </Pressable>
+                            ))}
+                        </View>
+
+                        <Input
+                            label="DP / Bayar (Rp)"
+                            placeholder="0"
+                            keyboardType="numeric"
+                            containerClassName="mb-0"
+                            innerContainerClassName="!bg-white border-gray-100"
+                            className="h-10 text-sm font-bold"
+                            value={payments[0]?.nominal || ''}
+                            onChangeText={(val) => {
+                                const newP = [...payments];
+                                if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                newP[0].nominal = formatNumber(val);
+                                setPayments(newP);
+                            }}
+                        />
+                    </Card>
+                </View>
+            )}
+
             <View className="mb-6">
                 <Typography variant="body2" weight="semibold" className="mb-3 text-primary">Catatan Tambahan</Typography>
                 <Input
@@ -1453,18 +1540,30 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                     value={catatan}
                     onChangeText={setCatatan}
                 />
-                    </View>
+            </View>
 
-                    <View className="mb-3">
-                        <Button
-                            title="Cetak Order Slip"
-                            variant="outline"
-                            icon={<Printer size={16} color="#023C69" />}
-                            onPress={handlePrintOrderSlip}
-                            className="rounded-2xl"
-                            loading={isPrintingOrderSlip}
-                        />
-                    </View>
+            <View className="mb-2 flex-row items-center justify-between">
+                <Typography variant="caption" weight="semibold" className="text-slate-500 uppercase tracking-widest text-[10px]">Opsi Cetak Struk</Typography>
+                <Pressable
+                    onPress={() => setShowDiscountOnPrint(prev => !prev)}
+                    className={`px-3 py-1.5 rounded-full border ${showDiscountOnPrint ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-200'}`}
+                >
+                    <Typography className={`text-[10px] font-bold ${showDiscountOnPrint ? 'text-emerald-700' : 'text-gray-500'}`}>
+                        {showDiscountOnPrint ? 'Diskon tampil' : 'Diskon disembunyikan'}
+                    </Typography>
+                </Pressable>
+            </View>
+
+            <View className="mb-3">
+                <Button
+                    title="Cetak Order Slip"
+                    variant="outline"
+                    icon={<Printer size={16} color="#023C69" />}
+                    onPress={handlePrintOrderSlip}
+                    className="rounded-2xl"
+                    loading={isPrintingOrderSlip}
+                />
+            </View>
 
                     {/* Submit Button */}
                     <View className="mb-8">
@@ -1477,6 +1576,248 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             </View>
         </View>
     );
+
+    const renderSelectionSheet = () => {
+        if (!isSelectionSheetOpen) return null;
+
+        const hasSearchQuery = selectionSheetSearch.trim().length > 0;
+        const sections = hasSearchQuery
+            ? [
+                {
+                    key: 'search',
+                    title: 'Hasil Pencarian',
+                    subtitle: 'Semua hasil yang cocok dari sparepart dan servis.',
+                    data: [
+                        ...filteredPartChoices.map((item) => ({ ...item, itemType: 'part' as const })),
+                        ...filteredServiceChoices.map((item) => ({ ...item, itemType: 'service' as const })),
+                    ],
+                },
+            ]
+            : [
+                {
+                    key: 'part',
+                    title: 'Daftar Sparepart',
+                    subtitle: 'Centang sparepart yang ingin ditambahkan ke transaksi.',
+                    data: filteredPartChoices.map((item) => ({ ...item, itemType: 'part' as const })),
+                },
+                {
+                    key: 'service',
+                    title: 'Daftar Servis',
+                    subtitle: 'Centang jasa servis yang ingin ditambahkan ke transaksi.',
+                    data: filteredServiceChoices.map((item) => ({ ...item, itemType: 'service' as const })),
+                },
+            ];
+
+        return (
+            <Modal
+                visible
+                transparent
+                animationType="slide"
+                onRequestClose={() => setIsSelectionSheetOpen(false)}
+                statusBarTranslucent
+            >
+                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                    <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setIsSelectionSheetOpen(false)} />
+                    <View className="bg-white rounded-t-[32px] overflow-hidden" style={{ maxHeight: 720 }}>
+                        <View className="px-6 pt-6 pb-4">
+                            <View className="items-center mb-2">
+                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
+                            </View>
+                            <View className="flex-row justify-between items-start mb-2">
+                                <View className="flex-1 pr-3">
+                                    <Typography variant="h3" weight="bold">Pilih Sparepart & Servis</Typography>
+                                    <Typography variant="caption" className="text-gray-400 mt-1">
+                                        Centang item dari daftar sparepart dan servis dalam satu bottomsheet.
+                                    </Typography>
+                                </View>
+                                <View className="flex-row items-center gap-2">
+                                    <Pressable
+                                        onPress={() => {
+                                            setScannerMode('sparepart');
+                                            setIsScannerOpen(true);
+                                        }}
+                                        className="flex-row items-center bg-blue-50 px-3 py-2 rounded-full border border-blue-100"
+                                    >
+                                        <QrCode size={14} color="#2563EB" />
+                                        <Typography className="text-blue-600 text-[10px] ml-1 font-bold">Scan</Typography>
+                                    </Pressable>
+                                    <Pressable onPress={() => setIsSelectionSheetOpen(false)} className="bg-gray-100 rounded-full p-2">
+                                        <X size={20} color="#6B7280" />
+                                    </Pressable>
+                                </View>
+                            </View>
+
+                            <View className="flex-row items-center bg-gray-100 rounded-2xl px-4 py-3 mb-4">
+                                <Search size={18} color="#9CA3AF" />
+                                <TextInput
+                                    className="flex-1 ml-3 text-base text-text font-outfit"
+                                    placeholder="Cari sparepart atau servis..."
+                                    value={selectionSheetSearch}
+                                    onChangeText={setSelectionSheetSearch}
+                                    autoFocus
+                                    placeholderTextColor="#9CA3AF"
+                                />
+                            </View>
+
+                            <Pressable
+                                onPress={() => {
+                                    setScannerMode('sparepart');
+                                    setIsScannerOpen(true);
+                                }}
+                                className="flex-row items-center justify-center bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4"
+                            >
+                                <QrCode size={16} color="#2563EB" />
+                                <Typography className="text-blue-600 text-xs ml-2 font-bold">
+                                    Shortcut Scan Sparepart
+                                </Typography>
+                            </Pressable>
+
+                            {(() => {
+                                const renderSelectableItem = (item: any, isPartSheet: boolean, showTypeBadge = false) => {
+                                    const isSelected = isPartSheet
+                                        ? parts.some((part) => part.spare_part_id === item.id)
+                                        : services.some((service) => service.service_id === item.id);
+
+                                    return (
+                                        <Pressable
+                                            key={`${item.id}-${isPartSheet ? 'part' : 'service'}`}
+                                            onPress={() => isPartSheet ? togglePartSelection(item) : toggleServiceSelection(item)}
+                                            className={`mb-3 rounded-2xl border p-4 flex-row items-center ${isSelected ? 'bg-primary/5 border-primary/20' : 'bg-white border-gray-100'}`}
+                                        >
+                                            <View className="flex-1 pr-3">
+                                                <View className="flex-row items-center flex-wrap">
+                                                    <Typography weight="bold" className="text-textMain">
+                                                        {item.nama || (isPartSheet ? 'Sparepart' : 'Jasa Servis')}
+                                                    </Typography>
+                                                    {showTypeBadge && (
+                                                        <View className={`ml-2 px-2 py-0.5 rounded-full ${isPartSheet ? 'bg-blue-50' : 'bg-primary/10'}`}>
+                                                            <Typography className={`text-[9px] font-bold ${isPartSheet ? 'text-blue-600' : 'text-primary'}`}>
+                                                                {isPartSheet ? 'Sparepart' : 'Servis'}
+                                                            </Typography>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Typography variant="caption" className="text-gray-400 mt-0.5">
+                                                    {isPartSheet
+                                                        ? `${item.kode || item.kode_part || '-'} â€¢ ${item.kategori || 'Umum'} â€¢ Stok ${item.stok ?? 0}`
+                                                        : `${item.kategori || 'Servis'} â€¢ ${formatCurrency(item.harga || 0)}`}
+                                                </Typography>
+                                            </View>
+                                            <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-gray-100'}`}>
+                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
+                                            </View>
+                                        </Pressable>
+                                    );
+                                };
+
+                                return hasSearchQuery ? (
+                                    <View style={{ maxHeight: 420 }}>
+                                        <Typography variant="body2" weight="semibold" className="mb-1">Hasil Pencarian</Typography>
+                                        <Typography variant="caption" className="text-gray-400 mb-4">
+                                            Hasil dibagi per kategori, tetap dalam satu section pencarian.
+                                        </Typography>
+
+                                        <View className="mb-5">
+                                            <View className="flex-row items-center justify-between mb-2">
+                                                <Typography variant="body2" weight="semibold">Daftar Sparepart</Typography>
+                                                <Typography variant="caption" className="text-gray-400">{filteredPartChoices.length} item</Typography>
+                                            </View>
+                                            {filteredPartChoices.length === 0 ? (
+                                                <View className="py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200 mb-3">
+                                                    <Typography className="text-center text-gray-400 text-sm">Tidak ada sparepart yang cocok</Typography>
+                                                </View>
+                                            ) : (
+                                                filteredPartChoices.map((item) => renderSelectableItem(item, true, true))
+                                            )}
+                                        </View>
+
+                                        <View>
+                                            <View className="flex-row items-center justify-between mb-2">
+                                                <Typography variant="body2" weight="semibold">Daftar Servis</Typography>
+                                                <Typography variant="caption" className="text-gray-400">{filteredServiceChoices.length} item</Typography>
+                                            </View>
+                                            {filteredServiceChoices.length === 0 ? (
+                                                <View className="py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                                    <Typography className="text-center text-gray-400 text-sm">Tidak ada servis yang cocok</Typography>
+                                                </View>
+                                            ) : (
+                                                filteredServiceChoices.map((item) => renderSelectableItem(item, false, true))
+                                            )}
+                                        </View>
+                                    </View>
+                                ) : (
+                            <SectionList
+                                sections={sections as any}
+                                keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
+                                keyboardShouldPersistTaps="handled"
+                                showsVerticalScrollIndicator={false}
+                                style={{ maxHeight: 420 }}
+                                renderSectionHeader={({ section }: any) => (
+                                    <View className="mb-3 mt-1">
+                                        <View className="flex-row items-center justify-between mb-1">
+                                            <Typography variant="body2" weight="semibold">{section.title}</Typography>
+                                            <Typography variant="caption" className="text-gray-400">
+                                                {section.data.length} item
+                                            </Typography>
+                                        </View>
+                                        <Typography variant="caption" className="text-gray-400">
+                                            {section.subtitle}
+                                        </Typography>
+                                        {section.data.length === 0 && (
+                                            <View className="mt-3 py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                                <Typography className="text-center text-gray-400 text-sm">
+                                                    {hasSearchQuery ? 'Data tidak ditemukan' : 'Belum ada data untuk dipilih'}
+                                                </Typography>
+                                            </View>
+                                        )}
+                                    </View>
+                                )}
+                                renderItem={({ item, section }: any) => {
+                                    const isPartSheet = item.itemType === 'part' || section.key === 'part';
+                                    const isSelected = isPartSheet
+                                        ? parts.some((part) => part.spare_part_id === item.id)
+                                        : services.some((service) => service.service_id === item.id);
+
+                                    return (
+                                        <Pressable
+                                            onPress={() => isPartSheet ? togglePartSelection(item) : toggleServiceSelection(item)}
+                                            className={`mb-3 rounded-2xl border p-4 flex-row items-center ${isSelected ? 'bg-primary/5 border-primary/20' : 'bg-white border-gray-100'}`}
+                                        >
+                                            <View className="flex-1 pr-3">
+                                                <View className="flex-row items-center flex-wrap">
+                                                    <Typography weight="bold" className="text-textMain">
+                                                        {item.nama || (isPartSheet ? 'Sparepart' : 'Jasa Servis')}
+                                                    </Typography>
+                                                    {hasSearchQuery && (
+                                                        <View className={`ml-2 px-2 py-0.5 rounded-full ${isPartSheet ? 'bg-blue-50' : 'bg-primary/10'}`}>
+                                                            <Typography className={`text-[9px] font-bold ${isPartSheet ? 'text-blue-600' : 'text-primary'}`}>
+                                                                {isPartSheet ? 'Sparepart' : 'Servis'}
+                                                            </Typography>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Typography variant="caption" className="text-gray-400 mt-0.5">
+                                                    {isPartSheet
+                                                        ? `${item.kode || item.kode_part || '-'} • ${item.kategori || 'Umum'} • Stok ${item.stok ?? 0}`
+                                                        : `${item.kategori || 'Servis'} • ${formatCurrency(item.harga || 0)}`}
+                                                </Typography>
+                                            </View>
+                                            <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-gray-100'}`}>
+                                                {isSelected ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
+                                            </View>
+                                        </Pressable>
+                                    );
+                                }}
+                                ListFooterComponent={<View className="h-4" />}
+                            />
+                                );
+                            })()}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+        );
+    };
 
     // Web version with regular ScrollView
     if (Platform.OS === 'web') {
@@ -1496,6 +1837,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </ScrollView>
+                {renderSelectionSheet()}
                 <BarcodeScannerModal
                     visible={isScannerOpen}
                     onClose={() => {
@@ -1539,6 +1881,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                 >
                     {renderFormContent()}
                 </BottomSheetScrollView>
+                {renderSelectionSheet()}
                 <BarcodeScannerModal
                     visible={isScannerOpen}
                     onClose={() => {

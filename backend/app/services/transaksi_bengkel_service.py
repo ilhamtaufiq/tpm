@@ -247,7 +247,11 @@ class TransaksiBengkelService:
         laba_kotor = grand_total - hpp_parts
 
         requested_work_status = getattr(data, "status_pengerjaan", None) or WorkshopStatus.ANTRE
-        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI
+        has_upfront_payment = bool(
+            (data.payments and any(p.jumlah > 0 for p in data.payments)) or
+            (data.jumlah_bayar and data.jumlah_bayar > 0)
+        )
+        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI or has_upfront_payment
 
         # Calculate summary of payments
         total_pembayaran = Decimal("0")
@@ -691,7 +695,11 @@ class TransaksiBengkelService:
         laba_kotor = grand_total - hpp_parts
 
         requested_work_status = data.status_pengerjaan or transaksi.status_pengerjaan
-        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI
+        has_upfront_payment = bool(
+            (data.payments and any(p.jumlah > 0 for p in data.payments)) or
+            (data.jumlah_bayar and data.jumlah_bayar > 0)
+        )
+        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI or has_upfront_payment
 
         # Payments logic
         total_pembayaran = Decimal("0")

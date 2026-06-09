@@ -491,7 +491,8 @@ export default function BengkelScreen() {
                 paid: item.jumlah_bayar,
                 change: item.kembalian,
                 paymentMethod: item.metode_bayar || '-',
-                notes: item.catatan
+                notes: item.catatan,
+                showDiscount: true
             };
 
             await printReceipt(receiptData, printSettings);
@@ -707,7 +708,8 @@ export default function BengkelScreen() {
                 total: item.grand_total,
                 paid: 0,
                 paymentMethod: 'ORDER SLIP',
-                notes: item.catatan
+                notes: item.catatan,
+                showDiscount: true
             };
 
             await printReceipt(orderSlipData, printSettings);

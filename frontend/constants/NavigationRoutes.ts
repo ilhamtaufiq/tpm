@@ -22,12 +22,12 @@ export const APP_ROUTES: AppRoute[] = [
     { id: 'bengkel-exp', label: 'Biaya Bengkel', description: 'Catat pengeluaran operasional', path: '/bengkel/expenses', icon: Wallet, category: 'Bengkel', keywords: ['keluar', 'ops', 'biaya'] },
 
     // --- Jasa Angkut ---
-    { id: 'angkut', label: 'Jasa Angkut', description: 'Input muatan dan logistik', path: '/jasa-angkut', icon: Truck, category: 'Logistik', keywords: ['truk', 'muatan', 'kirim', 'angkut'] },
-    { id: 'angkut-armada', label: 'Data Armada', description: 'Kelola unit armada jasa angkut', path: '/jasa-angkut/armada', icon: Truck, category: 'Logistik', keywords: ['truk', 'unit', 'armada'] },
-    { id: 'angkut-armada-form', label: 'Form Armada', description: 'Tambah atau ubah data armada', path: '/jasa-angkut/armada/form', icon: CirclePlus, category: 'Logistik', keywords: ['form', 'tambah', 'edit', 'armada'] },
-    { id: 'angkut-muatan-form', label: 'Form Muatan', description: 'Input muatan jasa angkut', path: '/jasa-angkut/muatan/form', icon: FileText, category: 'Logistik', keywords: ['muatan', 'ritase', 'ongkos'] },
-    { id: 'supir', label: 'Data Supir', description: 'Kelola data dan komisi supir', path: '/jasa-angkut/supir', icon: Users, category: 'Logistik', keywords: ['driver', 'karyawan', 'angkut'] },
-    { id: 'supir-form', label: 'Form Supir', description: 'Tambah atau ubah data supir', path: '/jasa-angkut/supir/form', icon: UserPlus, category: 'Logistik', keywords: ['driver', 'supir', 'form'] },
+    { id: 'angkut', label: 'Jasa Angkut', description: 'Input muatan dan jasa angkut', path: '/jasa-angkut', icon: Truck, category: 'Jasa Angkut', keywords: ['truk', 'muatan', 'kirim', 'angkut'] },
+    { id: 'angkut-armada', label: 'Data Armada', description: 'Kelola unit armada jasa angkut', path: '/jasa-angkut/armada', icon: Truck, category: 'Jasa Angkut', keywords: ['truk', 'unit', 'armada'] },
+    { id: 'angkut-armada-form', label: 'Form Armada', description: 'Tambah atau ubah data armada', path: '/jasa-angkut/armada/form', icon: CirclePlus, category: 'Jasa Angkut', keywords: ['form', 'tambah', 'edit', 'armada'] },
+    { id: 'angkut-muatan-form', label: 'Form Muatan', description: 'Input muatan jasa angkut', path: '/jasa-angkut/muatan/form', icon: FileText, category: 'Jasa Angkut', keywords: ['muatan', 'ritase', 'ongkos'] },
+    { id: 'supir', label: 'Data Supir', description: 'Kelola data dan komisi supir', path: '/jasa-angkut/supir', icon: Users, category: 'Jasa Angkut', keywords: ['driver', 'karyawan', 'angkut'] },
+    { id: 'supir-form', label: 'Form Supir', description: 'Tambah atau ubah data supir', path: '/jasa-angkut/supir/form', icon: UserPlus, category: 'Jasa Angkut', keywords: ['driver', 'supir', 'form'] },
 
     // --- Mobil ---
     { id: 'mobil', label: 'Jual Beli Mobil', description: 'Daftar stok mobil dan penjualan', path: '/mobil', icon: CarFront, category: 'Mobil', keywords: ['mobil', 'jual', 'beli', 'showroom'] },
@@ -37,7 +37,7 @@ export const APP_ROUTES: AppRoute[] = [
     { id: 'master-cust', label: 'Data Customer', description: 'Kelola database pelanggan', path: '/master-data/customer', icon: Users, category: 'Master', keywords: ['pelanggan', 'pembeli'] },
     { id: 'master-spare', label: 'Data Sparepart', description: 'Master data barang & harga', path: '/master-data/sparepart', icon: Package, category: 'Master', keywords: ['barang', 'onderdil'] },
     { id: 'master-supp', label: 'Data Supplier', description: 'Daftar pemasok barang', path: '/master-data/supplier', icon: Truck, category: 'Master', keywords: ['pemasok', 'kulakan'] },
-    { id: 'master-serv', label: 'Jasa Servis', description: 'Master tarif jasa bengkel', path: '/master-data/jasa-servis', icon: Wrench, category: 'Master', keywords: ['ongkos', 'biaya'] },
+    { id: 'master-serv', label: 'Jasa Servis', description: 'Master tarif jasa bengkel', path: '/master-data/jasa-servis', icon: FileText, category: 'Master', keywords: ['ongkos', 'biaya'] },
     { id: 'master-asset', label: 'Data Asset', description: 'Kelola asset operasional', path: '/master-data/asset', icon: Archive, category: 'Master', keywords: ['aset', 'asset', 'inventaris'] },
 
     // --- SDM ---

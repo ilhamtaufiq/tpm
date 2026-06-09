@@ -72,7 +72,7 @@ export default function SecurityFeaturesScreen() {
         },
         {
             id: 'jasa_angkut',
-            label: 'Logistik Jasa Angkut',
+            label: 'Jasa Angkut',
             desc: 'Proteksi muatan dan rute supir',
             icon: Truck,
             color: 'bg-indigo-50',

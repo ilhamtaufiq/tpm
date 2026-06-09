@@ -580,6 +580,7 @@ export default function BengkelTransaksiScreen() {
         paid: paymentMode === 'SPLIT' ? splitTotal : receivedAmount,
         paymentMethod: kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode,
         notes: note,
+        showDiscount: true,
     });
 
     const handlePrintCreatedReceipt = async () => {

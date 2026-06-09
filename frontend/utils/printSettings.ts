@@ -6,6 +6,7 @@ export interface PrintSettings {
     footer: string;
     logoUri: string | null;
     paperSize: '58mm' | '80mm';
+    webPrinterName: string;
     companyName: string;
     companyAddress: string;
     companyPhone: string;
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: PrintSettings = {
     footer: 'Terima kasih telah menggunakan layanan kami',
     logoUri: 'tpm_default',
     paperSize: '80mm',
+    webPrinterName: '',
     companyName: 'TPM Business',
     companyAddress: 'Jl. Contoh No. 123, Jakarta',
     companyPhone: '(021) 1234-5678',
