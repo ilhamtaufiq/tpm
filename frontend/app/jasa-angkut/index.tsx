@@ -108,15 +108,13 @@ export default function JasaAngkutScreen() {
         limit: 100,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
-    }, {
-        refetchInterval: 10000 // Polling every 10 seconds
+    }, { // Polling every 10 seconds
     });
     const { data: summaryData, refetch: refetchSummary } = useMuatanSummary({
         search: searchQuery,
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
-    }, {
-        refetchInterval: 10000 // Polling every 10 seconds
+    }, { // Polling every 10 seconds
     });
     const { data: armadaData, isLoading: isLoadingArmada } = useActiveArmada();
     const updateStatusMutation = useUpdateMuatanStatus();
@@ -134,7 +132,6 @@ export default function JasaAngkutScreen() {
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
-        refetchInterval: 5000
     });
     const { data: hutangData } = useHutangList({
         limit: 20,

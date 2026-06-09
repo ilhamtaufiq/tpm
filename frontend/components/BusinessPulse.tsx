@@ -6,8 +6,8 @@ import { usePiutangSummary, useDashboardSummary, useHutangSummary, useInvestorDi
 import { useLowStockParts } from '../hooks/useBengkel';
 
 export const BusinessPulse = () => {
-    const { data: piutang, isLoading: piutangLoading, isRefetching: piutangRefetching } = usePiutangSummary(undefined, { refetchInterval: 60000 });
-    const { data: dashboard, isLoading: dashboardLoading, isRefetching: dashboardRefetching } = useDashboardSummary(undefined, { refetchInterval: 60000 });
+    const { data: piutang, isLoading: piutangLoading, isRefetching: piutangRefetching } = usePiutangSummary(undefined, { });
+    const { data: dashboard, isLoading: dashboardLoading, isRefetching: dashboardRefetching } = useDashboardSummary(undefined, { });
     const { data: lowStock, isLoading: lowStockLoading, isRefetching: lowStockRefetching } = useLowStockParts();
 
     const stats = [

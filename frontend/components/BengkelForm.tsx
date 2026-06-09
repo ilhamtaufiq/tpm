@@ -14,6 +14,7 @@ import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { useMobilList } from '../hooks/useMobil';
+import { useDebounce } from '../hooks/useDebounce';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { ArmadaSelector } from './ui/ArmadaSelector';
@@ -23,6 +24,7 @@ import { getErrorMessage } from '../utils/error';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
 import { useJasaList } from '../hooks/useJasaServis';
+import { getCustomTabBarBottomPadding } from './ui/CustomTabBar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,9 +33,10 @@ type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 interface BengkelFormProps {
     onSuccess: () => void;
     initialData?: any;
+    isPage?: boolean;
 }
 
-export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
+export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelFormProps) => {
     const insets = useSafeAreaInsets();
     // Category selection
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
@@ -71,7 +74,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [isPrintingOrderSlip, setIsPrintingOrderSlip] = useState(false);
     const [isSelectionSheetOpen, setIsSelectionSheetOpen] = useState(false);
     const [selectionSheetSearch, setSelectionSheetSearch] = useState('');
-    const selectionSheetQuery = selectionSheetSearch.trim();
+    const debouncedSelectionSheetSearch = useDebounce(selectionSheetSearch, 500);
+    const selectionSheetQuery = debouncedSelectionSheetSearch.trim();
 
     const { data: balancesData } = useKasBankBalances();
     const bankUtamaBengkel = balancesData?.bank_utama?.sub_balances?.bengkel || 0;
@@ -148,7 +152,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     }, [jasaData]);
     const filteredPartChoices = useMemo(() => {
         const q = selectionSheetQuery.toLowerCase();
-        if (!q) return availableParts;
+        if (!q) return availableParts.slice(0, 20);
         return availableParts.filter((part: any) =>
             String(part.nama || '').toLowerCase().includes(q) ||
             String(part.kode || '').toLowerCase().includes(q) ||
@@ -159,7 +163,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     }, [availableParts, selectionSheetQuery]);
     const filteredServiceChoices = useMemo(() => {
         const q = selectionSheetQuery.toLowerCase();
-        if (!q) return availableServices;
+        if (!q) return availableServices.slice(0, 20);
         return availableServices.filter((service: any) =>
             String(service.nama || '').toLowerCase().includes(q) ||
             String(service.kategori || '').toLowerCase().includes(q) ||
@@ -612,12 +616,12 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             ? payments
                 .map((payment) => ({
                     metode: (payment.metode || 'Tunai').toUpperCase(),
-                    nominal: Number(parseNumber(payment.nominal)) || 0,
+                    jumlah: Number(parseNumber(payment.nominal)) || 0,
                     catatan: payment.catatan || '',
                 }))
-                .filter((payment) => payment.nominal > 0)
+                .filter((payment) => payment.jumlah > 0)
             : [];
-        const totalPaid = paymentItems.reduce((acc, payment) => acc + payment.nominal, 0);
+        const totalPaid = paymentItems.reduce((acc, payment) => acc + payment.jumlah, 0);
         const metodeBayarFinal = paymentItems.length > 1
             ? 'SPLIT'
             : (paymentItems[0]?.metode || 'KREDIT');
@@ -1699,8 +1703,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 </View>
                                                 <Typography variant="caption" className="text-gray-400 mt-0.5">
                                                     {isPartSheet
-                                                        ? `${item.kode || item.kode_part || '-'} â€¢ ${item.kategori || 'Umum'} â€¢ Stok ${item.stok ?? 0}`
-                                                        : `${item.kategori || 'Servis'} â€¢ ${formatCurrency(item.harga || 0)}`}
+                                                        ? `${item.kode || item.kode_part || '-'} • ${item.kategori || 'Umum'} • Stok ${item.stok ?? 0}`
+                                                        : `${item.kategori || 'Servis'} • ${formatCurrency(item.harga || 0)}`}
                                                 </Typography>
                                             </View>
                                             <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-gray-100'}`}>
@@ -1820,19 +1824,20 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     };
 
     // Web version with regular ScrollView
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || isPage) {
         return (
-            <View style={styles.webContainer}>
+            <View style={isPage ? { flex: 1, backgroundColor: 'white' } : styles.webContainer}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
-                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                </View>
+                {!isPage && (
+                    <View style={styles.header}>
+                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
+                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                    </View>
+                )}
 
-                {/* Scrollable Content */}
                 <ScrollView
-                    style={styles.webScrollView}
-                    contentContainerStyle={styles.webScrollContent}
+                    style={isPage ? { flex: 1 } : styles.webScrollView}
+                    contentContainerStyle={isPage ? { flexGrow: 1, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) } : styles.webScrollContent}
                     showsVerticalScrollIndicator={true}
                 >
                     {renderFormContent()}

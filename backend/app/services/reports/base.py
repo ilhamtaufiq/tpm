@@ -615,6 +615,17 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
+        bengkel_dp = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
+            TransaksiPenjualanBengkel, PiutangUsaha.referensi_id == TransaksiPenjualanBengkel.id
+        ).filter(
+            PembayaranPiutang.tanggal <= tanggal_sampai,
+            PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+        ).scalar() or 0)
+        
+        customer_dp += bengkel_dp
+
         # 4. Unearned Receivables (Piutang Booking)
         # If a car is BOOKED, we have a Piutang record, but the revenue isn't earned yet.
         # We must neutralize this in the equity calculation.
@@ -630,6 +641,18 @@ class BaseReportService:
                 Mobil.tanggal_terjual > tanggal_sampai
             )
         ).scalar() or 0)
+
+        bengkel_booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
+            TransaksiPenjualanBengkel, PiutangUsaha.referensi_id == TransaksiPenjualanBengkel.id
+        ).filter(
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+        ).scalar() or 0)
+        
+        booking_receivables += bengkel_booking_receivables
         
         # Subtract any payments already made on these booking receivables as of the cutoff
         booking_payments = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
@@ -643,6 +666,8 @@ class BaseReportService:
                 Mobil.tanggal_terjual > tanggal_sampai
             )
         ).scalar() or 0)
+
+        booking_payments += bengkel_dp
         
         net_booking_piutang = max(0, booking_receivables - booking_payments)
 

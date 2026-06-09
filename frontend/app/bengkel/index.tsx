@@ -41,7 +41,6 @@ import {
 } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { BengkelForm } from '../../components/BengkelForm';
 import { PaymentModal } from '../../components/PaymentModal';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
 import { useTransaksiBengkelList, useTransaksiBengkelSummary, useUpdateTransaksiBengkelStatus, useUpdateTransaksiBengkelPayment, useVoidTransaksiBengkel, useCreatePengeluaran } from '../../hooks/useBengkel';
@@ -207,7 +206,7 @@ export default function BengkelScreen() {
             description: 'Lihat transaksi hari ini',
             icon: History,
             color: '#059669',
-            action: 'queue'
+            route: '/bengkel/queue'
         }
     ]), []);
 
@@ -230,14 +229,12 @@ export default function BengkelScreen() {
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
-        refetchInterval: 5000
     });
 
     const { data: summary, refetch: refetchSummary } = useTransaksiBengkelSummary({
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
-        refetchInterval: 5000
     });
 
     useFocusEffect(
@@ -255,7 +252,6 @@ export default function BengkelScreen() {
         tanggal_dari: dateRange.dari,
         tanggal_sampai: dateRange.sampai
     }, {
-        refetchInterval: 5000
     });
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
@@ -745,10 +741,6 @@ export default function BengkelScreen() {
             }
             return;
         }
-        if ((menu as any).action === 'queue') {
-            openQueueSheet();
-            return;
-        }
         router.push(menu.route as any);
     }, [bengkelMenus]);
 
@@ -775,10 +767,7 @@ export default function BengkelScreen() {
 
     React.useEffect(() => {
         if (action === 'new-order' || action === 'form') {
-            const timer = setTimeout(() => {
-                handlePresentModalPress('form');
-            }, 200);
-            return () => clearTimeout(timer);
+            router.push('/bengkel/order');
         } else if (action === 'wallet' || action === 'dompet') {
             const timer = setTimeout(() => {
                 if (Platform.OS === 'web') {
@@ -1241,7 +1230,7 @@ export default function BengkelScreen() {
     const openEditTransaction = (item: any) => {
         if (!item?.id) return;
         handleClosePress();
-        router.push({ pathname: '/bengkel/transaksi', params: { transactionId: String(item.id), mode: 'all' } } as any);
+        router.push({ pathname: '/bengkel/order', params: { id: String(item.id) } } as any);
     };
 
     const renderQueueSheetContent = () => (
@@ -1921,12 +1910,7 @@ export default function BengkelScreen() {
 
     const renderBottomSheetContent = () => (
         <View style={{ flex: 1 }}>
-            {view === 'form' || view === 'edit' ? (
-                <BengkelForm
-                    initialData={view === 'edit' ? selectedItem : null}
-                    onSuccess={handleClosePress}
-                />
-            ) : selectedItem ? (
+            {selectedItem ? (
                 Platform.OS === 'web' ? (
                     <ScrollView className="flex-1">
                         <View className="px-5 pt-3 pb-24">
@@ -1956,7 +1940,14 @@ export default function BengkelScreen() {
                 showProfile={true}
             />
 
-            <View className="px-6 mt-4">
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                }
+                className="pt-4"
+            >
+                <View className="px-6">
                 <View className="hidden">
                     <View className="flex-row items-center justify-between mb-3">
                         <View>
@@ -2101,182 +2092,9 @@ export default function BengkelScreen() {
                 </View>
             </View>
 
-            <ScrollView
-                className="hidden"
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
-                }
-            >
-                {/* Section Header */}
-                <View className="flex-row justify-between items-center mb-4 px-6">
-                    <View>
-                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">
-                            {dateRange.dari === dateRange.sampai && dateRange.dari === format(new Date(), 'yyyy-MM-dd') ? 'Antrian Hari Ini' : 'Daftar Antrian'}
-                        </Typography>
-                        <Typography variant="caption" className="text-textGray">Monitoring pengerjaan bengkel</Typography>
-                    </View>
-                </View>
-
-                {/* Date Filter Selection */}
-                <Pressable
-                    onPress={() => {
-                        setTempDateRange(dateRange);
-                        setIsDateModalVisible(true);
-                        if (Platform.OS !== 'web') {
-                            dateSheetRef.current?.expand();
-                        }
-                    }}
-                    className="flex-row items-center justify-between mb-4 mx-6 bg-white p-4 rounded-[22px] shadow-sm border border-gray-100 active:bg-gray-50"
-                >
-                    <View className="flex-row items-center">
-                        <Calendar size={18} color="#023C69" />
-                        <Typography className="text-gray-800 text-xs font-bold ml-3">{dateRange.dari} s/d {dateRange.sampai}</Typography>
-                    </View>
-                    <View className="bg-primary/5 px-2 py-1 rounded-lg">
-                        <Typography className="text-primary text-[10px] font-bold">Ubah Periode</Typography>
-                    </View>
-                </Pressable>
-
-                {/* Unpaid Info Pills */}
-                {summary && summary.piutang_count > 0 ? (
-                    <View className="flex-row space-x-2 mb-4 px-6">
-                        <View className="bg-rose-50 px-4 py-2.5 rounded-2xl border border-rose-100 flex-row items-center shadow-sm">
-                            <AlertCircle size={16} color="#E11D48" />
-                            <Typography variant="caption" weight="bold" className="text-rose-600 ml-2">
-                                {summary.piutang_count} Order Belum Lunas
-                            </Typography>
-                        </View>
-                        <View className="bg-rose-50 px-4 py-2.5 rounded-2xl border border-rose-100 flex-row items-center shadow-sm">
-                            <Typography variant="caption" weight="bold" className="text-rose-600">
-                                Total: {formatCurrency(summary.piutang_nilai)}
-                            </Typography>
-                        </View>
-                    </View>
-                ) : null}
-
-                {/* Queue List */}
-                {isLoading ? (
-                    <View className="space-y-4 px-6">
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                    </View>
-                ) : queue.length === 0 ? (
-                    <EmptyState
-                        title="Antrian Masih Kosong"
-                        description="Klik tombol '+' di bawah untuk menambah antrian baru."
-                        icon={Wrench}
-                    />
-                ) : filteredQueue.length === 0 ? (
-                    <EmptyState
-                        title="Tidak Ditemukan"
-                        description={`Tidak ada antrian yang cocok dengan "${searchQuery}"`}
-                        icon={Search}
-                    />
-                ) : (
-                    filteredQueue.map((item: any) => (
-                        <Pressable
-                            key={item.id}
-                            onPress={() => handlePresentModalPress('detail', item)}
-                            className="bg-white p-5 border-b border-gray-50 flex-row items-center"
-                        >
-                            <View className="w-16 h-16 bg-emerald-50 rounded-[20px] items-center justify-center mr-4 border border-emerald-100/50">
-                                <Typography weight="bold" className="text-primary text-[10px] uppercase tracking-tighter">
-                                    {item.nomor_plat?.split(' ')[0] || '-'}
-                                </Typography>
-                                <Typography weight="bold" className="text-primary/40 text-[8px] mt-0.5">
-                                    KENDARAAN
-                                </Typography>
-                            </View>
-
-                            <View className="flex-1">
-                                <View className="flex-row items-start justify-between mb-2 gap-2">
-                                    <View className="flex-1 mr-2">
-                                        <Typography variant="body1" weight="bold" className="text-textMain text-lg tracking-tight" numberOfLines={1}>
-                                            {item.nomor_plat}
-                                        </Typography>
-                                    </View>
-                                    <View className="flex-row flex-wrap items-center gap-1.5 justify-end flex-shrink-0 max-w-[60%]">
-                                        {/* Category Badge */}
-                                        {item.kategori === 'jasa_angkut' && (
-                                            <View className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100 flex-row items-center">
-                                                <Truck size={8} color="#10B981" />
-                                                <Typography weight="bold" className="text-emerald-600 text-[7px] uppercase tracking-tighter ml-0.5">ANGKUT</Typography>
-                                            </View>
-                                        )}
-                                        {item.kategori === 'jual_beli_mobil' && (
-                                            <View className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-100 flex-row items-center">
-                                                <Car size={8} color="#3B82F6" />
-                                                <Typography weight="bold" className="text-blue-600 text-[7px] uppercase tracking-tighter ml-0.5">MOBIL</Typography>
-                                            </View>
-                                        )}
-                                        {item.status_bayar !== 'lunas' && item.status_bayar !== 'LUNAS' ? (
-                                            item.metode_bayar === 'INTERNAL' || item.metode_bayar === 'internal' ? (
-                                                <View className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-100">
-                                                    <Typography weight="bold" className="text-amber-600 text-[7px] uppercase tracking-tighter">IKUT ANGKUT</Typography>
-                                                </View>
-                                            ) : (
-                                                <View className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-100">
-                                                    <Typography weight="bold" className="text-rose-500 text-[7px] uppercase tracking-tighter">BELUM LUNAS</Typography>
-                                                </View>
-                                            )
-                                        ) : null}
-                                        <View className={`px-2.5 py-1 rounded-full ${item.status_pengerjaan === 'proses' ? 'bg-blue-50' :
-                                            item.status_pengerjaan === 'selesai' ? 'bg-emerald-50' : 'bg-amber-50'
-                                            }`}>
-                                            <Typography variant="caption" weight="bold" className={`uppercase text-[8px] tracking-widest ${item.status_pengerjaan === 'proses' ? 'text-blue-500' :
-                                                item.status_pengerjaan === 'selesai' ? 'text-emerald-500' : 'text-amber-500'
-                                                }`}>
-                                                {item.status_pengerjaan}
-                                            </Typography>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <Typography variant="caption" className="text-textGray font-medium" numberOfLines={2}>
-                                    {item.jenis_kendaraan} • {item.nama_customer || 'Umum'}
-                                    {item.metode_bayar && item.metode_bayar !== 'KREDIT' && (
-                                        <Typography variant="caption" className={`font-black ${item.metode_bayar === 'TRANSFER' ? 'text-blue-600' : 'text-emerald-600'} text-[9px] uppercase tracking-widest ml-1`}>
-                                            {' '}• {item.metode_bayar}
-                                        </Typography>
-                                    )}
-                                </Typography>
-
-                                <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50/50">
-                                    <View className="flex-row items-center flex-1 mr-2">
-                                        <Clock size={12} color="#9CA3AF" />
-                                        <Typography variant="caption" className="ml-1.5 text-textGray/60 font-medium" numberOfLines={1}>
-                                            {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
-                                        </Typography>
-                                    </View>
-                                    <View className="flex-row items-center flex-shrink-0">
-                                        {item.grand_total > 0 && (
-                                            <Typography weight="bold" className="text-primary text-xs mr-3">
-                                                {formatCurrency(item.grand_total)}
-                                            </Typography>
-                                        )}
-                                        {item.status_bayar !== 'batal' && item.status_bayar !== 'BATAL' && (
-                                            <Pressable
-                                                onPress={(e) => {
-                                                    e.stopPropagation();
-                                                    openEditTransaction(item);
-                                                }}
-                                                className="w-8 h-8 bg-primary/5 rounded-full items-center justify-center border border-primary/10"
-                                            >
-                                                <Edit2 size={14} color="#023C69" />
-                                            </Pressable>
-                                        )}
-
-                                    </View>
-                                </View>
-
-                            </View>
-                        </Pressable>
-                    ))
-                )}
                 <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
             </ScrollView>
+
 
 
             {/* Bottom Sheet UI */}
@@ -2292,20 +2110,6 @@ export default function BengkelScreen() {
                     </View>
                 </Modal>
 
-                <Modal visible={queueSheetIndex !== -1} transparent animationType="slide" onRequestClose={closeQueueSheet}>
-                    <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={closeQueueSheet} />
-                        <View className="bg-white rounded-t-[48px] shadow-2xl overflow-hidden" style={{ width: '100%', maxWidth: 640, height: '88%', alignSelf: 'center' }}>
-                            <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center my-6" />
-                            <ScrollView showsVerticalScrollIndicator={false}>
-                                <View className="px-8 pb-12">
-                                    {renderQueueSheetContent()}
-                                </View>
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
-                
                 <Modal
                     visible={showWalletModal}
                     transparent={true}
@@ -2361,29 +2165,12 @@ export default function BengkelScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
 
-                <BottomSheet
-                    ref={queueSheetRef}
-                    index={queueSheetIndex}
-                    snapPoints={queueSnapPoints}
-                    enablePanDownToClose
-                    keyboardBehavior="interactive"
-                    keyboardBlurBehavior="restore"
-                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
-                    onChange={setQueueSheetIndex}
-                >
-                    <BottomSheetScrollView showsVerticalScrollIndicator={false}>
-                        <View className="px-8 py-4 pb-12">
-                            {renderQueueSheetContent()}
-                        </View>
-                    </BottomSheetScrollView>
-                </BottomSheet>
                 </>
             )}
 
             {/* Floating Action Button (Design System) - Rendered last with high zIndex to ensure clickability on Android */}
             <Pressable
-                onPress={() => handlePresentModalPress('form')}
+                onPress={() => router.push('/bengkel/order')}
                 style={{ bottom: 100, right: 24, elevation: 5, zIndex: 999 }}
                 className="absolute bg-primary w-16 h-16 rounded-full items-center justify-center shadow-xl border-4 border-white/20 active:scale-95 transition-transform"
             >
