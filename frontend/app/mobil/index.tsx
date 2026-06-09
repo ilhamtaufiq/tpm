@@ -130,20 +130,17 @@ export default function MobilInventoryScreen() {
         // Only apply date range for Sold/Booking, show all available inventory
         tanggal_dari: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.dari,
         tanggal_sampai: (activeTab === 'tersedia' || activeTab === 'semua' || useAllTime) ? undefined : dateRange.sampai
-    }, {
-        refetchInterval: 15000 // Polling every 15 seconds
+    }, { // Polling every 15 seconds
     });
 
     const { data: inventorySummary, refetch: refetchInventorySum } = useInventorySummary({
-        refetchInterval: 15000
     });
 
     const { data: summaryData, refetch: refetchSummary } = usePenjualanSummary({
         search: searchQuery,
         tanggal_dari: useAllTime ? undefined : dateRange.dari,
         tanggal_sampai: useAllTime ? undefined : dateRange.sampai
-    }, {
-        refetchInterval: 15000 // Polling every 15 seconds
+    }, { // Polling every 15 seconds
     });
 
     const { data: balancesData } = useKasBankBalances();
@@ -155,7 +152,6 @@ export default function MobilInventoryScreen() {
         sort_by: 'tanggal',
         sort_order: 'desc'
     }, {
-        refetchInterval: 5000
     });
     const { data: hutangData } = useHutangList({
         limit: 20,

@@ -35,9 +35,23 @@ Untuk mobil milik investor:
 
 Untuk transaksi bengkel:
 - `ANTRE` dan `PROSES` adalah work order / open bill operasional, bukan transaksi finansial final.
-- `kas_bank`, `piutang`, `hutang`, laba rugi, neraca, perubahan modal, HPP, dan nilai persediaan hanya boleh mengakui transaksi bengkel dengan `status_pengerjaan = SELESAI`.
-- Order slip dan bill order boleh berisi sparepart/servis, tetapi belum boleh menaikkan pendapatan, piutang/hutang, kas/bank, internal repair, atau HPP laporan.
+- **Pendapatan, laba rugi, neraca, perubahan modal, HPP, dan nilai persediaan** hanya boleh mengakui transaksi bengkel dengan `status_pengerjaan = SELESAI`.
+- Order slip dan bill order boleh berisi sparepart/servis, tetapi belum boleh menaikkan pendapatan, internal repair, atau HPP laporan.
 - Dashboard operasional boleh menampilkan `ANTRE/PROSES`; dashboard atau laporan finansial wajib memakai filter final finance.
+
+### Pengecualian: DP / Pembayaran Awal (Uang Muka)
+
+DP yang diterima saat status `ANTRE` atau `PROSES` **boleh** langsung dicatat ke `kas_bank` dan `piutang` karena:
+- DP adalah arus kas nyata (uang sudah diterima), bukan pengakuan pendapatan.
+- `piutang` dicreate dengan nominal = `grand_total`, lalu dikurangi sebesar DP. Sisa piutang mencerminkan tagihan yang belum dibayar.
+- `kas_bank` mendebit sejumlah DP yang masuk — ini fakta kas, bukan revenue recognition.
+- **Pendapatan / Laba / HPP tetap tidak diakui** sampai `status_pengerjaan = SELESAI`.
+
+Alur balance:
+1. **Saat DP masuk** (ANTRE/PROSES): Kas +DP, Piutang nominal=total, dibayar=DP, sisa=total-DP.
+2. **Saat SELESAI & pelunasan**: Kas +sisa, Piutang lunas, Pendapatan diakui penuh.
+
+Implementasi: `transaksi_bengkel_service.py` → `should_finalize_finance = SELESAI or has_upfront_payment`. DP diproses via `piutang_service.process_payment_split()`.
 
 ## Checklist Verifikasi Minimum
 

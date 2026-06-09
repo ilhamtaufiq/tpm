@@ -10,9 +10,7 @@ export const useKasBankBalances = (options?: { refetchInterval?: number }) => {
         queryFn: () => keuanganService.getKasBankBalances(),
         staleTime: 0,
         refetchOnMount: 'always',
-        refetchOnReconnect: true,
-        // Polling every 5 seconds for near real-time balance updates
-        refetchInterval: 5000, 
+        refetchOnReconnect: true, 
         ...options
     });
 };
@@ -199,7 +197,6 @@ export const useRecentActivity = (
         staleTime: 0,
         refetchOnMount: 'always',
         refetchOnReconnect: true,
-        refetchInterval: 5000,
         ...options
     });
 };

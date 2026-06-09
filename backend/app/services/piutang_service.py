@@ -562,6 +562,8 @@ class PiutangService:
                         unit_label = "Kasbon"
 
 
+            action_label = "Pelunasan piutang" if piutang.sisa_piutang <= 0 else "DP"
+
             # Record to KasBank (Money In)
             create_kas_entry(
                 db=self.db,
@@ -572,7 +574,7 @@ class PiutangService:
                 metode_bayar=p_detail.metode,
                 referensi_id=pembayaran.id,
                 nomor_referensi=piutang.nomor_piutang,
-                keterangan=f"[{unit_label}] Pelunasan piutang {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
+                keterangan=f"[{unit_label}] {action_label} {piutang.nomor_piutang} - {piutang.nama_debitur} ({p_detail.metode.upper()})",
                 user_id=user_id,
                 kas_jenis=p_detail.kas_jenis,
             )

@@ -17,6 +17,8 @@ export default function BengkelLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="inventory" />
             <Stack.Screen name="purchase" />
+            <Stack.Screen name="order" />
+            <Stack.Screen name="queue" />
         </Stack>
     );
 }
