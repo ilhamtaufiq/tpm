@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
-import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Header } from '../../components/ui/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,11 +11,12 @@ import {
     Wrench,
     Tag,
     Box,
+    Clock,
+    Activity,
+    CheckCircle2,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { masterDataService } from '../../services/masterData';
-import { bengkelService } from '../../services/bengkel';
-import { jasaServisService } from '../../services/jasaServis';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function MasterDataScreen() {
@@ -37,33 +37,13 @@ export default function MasterDataScreen() {
 
     const loadData = useCallback(async () => {
         try {
-            const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
-            
-            const promises: any[] = [
-                masterDataService.getCustomerList({ limit: 1 }),
-                masterDataService.getSupplierList({ limit: 1 }),
-                bengkelService.getSpareParts({ limit: 1 }),
-                jasaServisService.getJasaList({ limit: 1 }),
-            ];
-            
-            if (isAdminOrManager) {
-                promises.push(masterDataService.getAssetList({ size: 1 }));
-            }
-            
-            const results = await Promise.allSettled(promises);
-            
-            const customersRes = results[0].status === 'fulfilled' ? results[0].value : { total: 0 };
-            const suppliersRes = results[1].status === 'fulfilled' ? results[1].value : { total: 0 };
-            const sparePartsRes = results[2].status === 'fulfilled' ? results[2].value : { total: 0 };
-            const jasaRes = results[3].status === 'fulfilled' ? results[3].value : { total: 0 };
-            const assetsRes = isAdminOrManager && results[4]?.status === 'fulfilled' ? results[4].value : { total: 0 };
-
+            const res = await masterDataService.getMasterDataStats();
             setStats({
-                customers: customersRes.total || 0,
-                suppliers: suppliersRes.total || 0,
-                spareparts: sparePartsRes.total || 0,
-                jasa: jasaRes.total || 0,
-                assets: assetsRes.total || 0,
+                customers: res.customers || 0,
+                suppliers: res.suppliers || 0,
+                spareparts: res.spareparts || 0,
+                jasa: res.jasa || 0,
+                assets: res.assets || 0,
             });
         } catch (error) {
             console.error('Failed to load master data stats:', error);
@@ -71,7 +51,7 @@ export default function MasterDataScreen() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [user?.role]);
+    }, []);
 
     useEffect(() => {
         loadData();
@@ -90,13 +70,20 @@ export default function MasterDataScreen() {
         );
     }
 
+    const statsPills = [
+        { label: 'Customer', key: 'customers', color: '#3B82F6', icon: Clock, value: stats.customers },
+        { label: 'Supplier', key: 'suppliers', color: '#F59E0B', icon: Activity, value: stats.suppliers },
+        { label: 'Sparepart', key: 'spareparts', color: '#059669', icon: CheckCircle2, value: stats.spareparts },
+        { label: 'Jasa Servis', key: 'jasa', color: '#8B5CF6', icon: Tag, value: stats.jasa },
+        { label: 'Aset', key: 'assets', color: '#E11D48', icon: Box, value: stats.assets },
+    ];
+
     return (
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            <Header 
-                title="Master Data"
-                subtitle="Pusat Data & Inventori"
+            <Header
+                title="Data Master"
                 showBackButton={true}
                 onBackButtonPress={handleGoBack}
                 showProfile={true}
@@ -107,6 +94,29 @@ export default function MasterDataScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Stats Pills (Bengkel-style) */}
+                <View className="mb-6">
+                    <View className="flex-row flex-wrap">
+                        {statsPills.map(({ label, key, color, icon: Icon, value }) => (
+                            <View key={key} className="w-1/3 px-1 mb-2">
+                                <View className="bg-white px-3 py-2.5 rounded-2xl border border-gray-100">
+                                    <View className="flex-row items-center justify-between mb-1">
+                                        <View style={{ backgroundColor: color + '15' }} className="w-5 h-5 rounded-full items-center justify-center">
+                                            <Icon size={10} color={color} />
+                                        </View>
+                                        <Typography weight="bold" style={{ color }} className="text-sm leading-none">
+                                            {value}
+                                        </Typography>
+                                    </View>
+                                    <Typography className="text-textGray/60 text-[9px] font-bold uppercase tracking-widest">
+                                        {label}
+                                    </Typography>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
                 {/* Menu Items */}
                 <View className="pt-2 pb-10">
                     <Pressable onPress={() => router.push('/master-data/customer')}>

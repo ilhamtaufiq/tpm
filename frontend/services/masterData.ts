@@ -173,6 +173,14 @@ export const masterDataService = {
     },
 
     // =============================================
+    // MASTER DATA STATS
+    // =============================================
+    getMasterDataStats: async () => {
+        const response = await api.get('/master-data/stats');
+        return response.data;
+    },
+
+    // =============================================
     // ASSET METHODS
     // =============================================
     getAssetList: async (params?: {

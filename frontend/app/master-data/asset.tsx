@@ -4,13 +4,13 @@ import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { Header } from '../../components/ui/Header';
 import {
     ChevronLeft,
     Search,
     Plus,
     X,
     MoreVertical,
-    RefreshCw,
     Box,
     MapPin,
     Calendar,
@@ -450,62 +450,29 @@ export default function AssetScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable onPress={handleGoBack} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5">
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Aset</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Aktiva Tetap Perusahaan</Typography>
-                        </View>
+            <Header
+                title="Aset"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+            >
+                {!sheetVisible && (
+                    <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                        <Search size={18} color="#9CA3AF" className="ml-4" />
+                        <TextInput
+                            placeholder="Cari nama atau kode..."
+                            className="flex-1 ml-3 text-sm font-medium text-textMain"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="#9CA3AF"
+                        />
                     </View>
-                    <Pressable onPress={onRefresh} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
-                        {refreshing ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </Pressable>
-                </View>
-
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="flex-row items-center">
-                            <View className="bg-white/20 p-2 rounded-xl mr-3">
-                                <Box size={16} color="white" />
-                            </View>
-                            <Typography className="text-white/90 text-sm font-bold">Total Nilai Aset</Typography>
-                        </View>
-                        <Typography variant="h2" weight="bold" className="text-white text-3xl tracking-tight">{formatCurrency(totalValue)}</Typography>
-                    </View>
-
-                    <View className="flex-row space-x-3">
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Jumlah Aset</Typography>
-                            <Typography className="text-rose-300 font-bold text-lg">{totalAssets} Item</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5">
-                            <Typography className="text-white/40 text-[9px] font-bold uppercase tracking-tighter mb-1">Kategori</Typography>
-                            <Typography className="text-blue-300 font-bold text-lg">{Object.keys(statsData?.by_kategori || {}).length || 0}</Typography>
-                        </View>
-                    </View>
-                </View>
-            </View>
+                )}
+            </Header>
 
             {!sheetVisible && (
-                <View className="px-6 -mt-10 z-10 mb-2">
-                    <View className="bg-white p-2 rounded-[24px] shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <TextInput
-                                placeholder="Cari nama atau kode..."
-                                className="flex-1 ml-3 text-sm font-medium text-textMain"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                        </View>
-                    </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4" contentContainerStyle={{ paddingRight: 20 }}>
+                <View className="px-6 mt-1">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 20 }}>
                         {KATEGORI_FILTERS.map((filter) => (
                             <Pressable
                                 key={filter.key}

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, FlatList, ActivityIndicator, Platform, Modal, TextInput } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Button } from '../../components/ui/Button';
+import { Header } from '../../components/ui/Header';
 import {
     ChevronLeft,
     Plus,
@@ -297,70 +298,25 @@ export default function JasaServisScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-20 px-6 rounded-b-[48px] shadow-2xl z-0">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Jasa Servis</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Master Data Jasa Bengkel</Typography>
-                        </View>
+            <Header
+                title="Jasa Servis"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+            >
+                {!sheetVisible && (
+                    <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                        <Search size={18} color="#9CA3AF" className="ml-4" />
+                        <TextInput
+                            placeholder="Cari jasa..."
+                            className="flex-1 ml-3 text-sm font-medium text-textMain"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            placeholderTextColor="#9CA3AF"
+                        />
                     </View>
-                    <Pressable
-                        onPress={() => refetch()}
-                        className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                    >
-                        {isRefetching ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                    </Pressable>
-                </View>
-
-                {/* Dashboard Stats (Glassmorphism) - Inside Header */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="flex-row items-center">
-                            <View className="bg-white/20 p-2 rounded-xl mr-3">
-                                <Tag size={16} color="white" />
-                            </View>
-                            <Typography className="text-white/90 text-sm font-bold">Total Jasa</Typography>
-                        </View>
-                        <Typography variant="h2" weight="bold" className="text-white text-3xl tracking-tight">{stats.total}</Typography>
-                    </View>
-
-                    <View className="bg-white/5 p-3 rounded-2xl border border-white/10 flex-row items-center">
-                        <View className="bg-white/10 p-1.5 rounded-lg mr-3">
-                            <Tag size={14} color="white" />
-                        </View>
-                        <View>
-                            <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Rerata Harga</Typography>
-                            <Typography className="text-white font-bold">Rp {Math.round(stats.avgPrice).toLocaleString('id-ID')}</Typography>
-                        </View>
-                    </View>
-                </View>
-            </View>
-
-            {/* Floating Search Overlay - Hide when form is open */}
-            {!sheetVisible && (
-                <View className="px-6 -mt-10 z-10 mb-4">
-                    <View className="bg-white p-2 rounded-[24px] shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
-                            <TextInput
-                                placeholder="Cari jasa..."
-                                className="flex-1 ml-3 text-sm font-medium text-textMain"
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                                placeholderTextColor="#9CA3AF"
-                            />
-                        </View>
-                    </View>
-                </View>
-            )}
+                )}
+            </Header>
 
             {/* List */}
             {isLoading ? (
