@@ -17,10 +17,7 @@ export default function MasterDataLayout() {
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: '#F9FAFB' },
-                headerShadowVisible: false,
-                headerTintColor: '#023C69',
-                headerTitleStyle: { fontWeight: 'bold' },
+                headerShown: false,
                 contentStyle: { backgroundColor: '#F9FAFB' },
             }}
         >

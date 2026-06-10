@@ -4,6 +4,7 @@ import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Header } from '../../components/ui/Header';
 import {
     ChevronLeft,
     Plus,
@@ -1090,51 +1091,16 @@ export default function SparePartMasterScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-16 px-6 rounded-b-[48px] shadow-2xl z-0">
-                <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tight">Sparepart</Typography>
-                            <Typography className="text-white/60 text-xs font-medium">Manajemen Stok & Harga</Typography>
-                        </View>
-                    </View>
-                    <View className="flex-row space-x-3">
-                        <Pressable
-                            onPress={() => setIsImportModalVisible(true)}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            <FileUp size={20} color="white" />
-                        </Pressable>
-                        <Pressable
-                            onPress={() => setIsPrintModalVisible(true)}
-                            className="w-11 h-11 bg-indigo-500/20 rounded-2xl items-center justify-center border border-indigo-500/30"
-                        >
-                            <Printer size={20} color="white" />
-                        </Pressable>
-
-                        <Pressable
-                            onPress={handleRefresh}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            {isRefetching ? <ActivityIndicator size="small" color="white" /> : <RefreshCw size={22} color="white" />}
-                        </Pressable>
-                    </View>
-                </View>
-            </View>
-
-            {/* Floating Search Overlay - Hide when form is open */}
-            {!sheetVisible && (
-                <View className="px-6 -mt-10 z-10 mb-4">
-                    <View className="bg-white p-2 rounded-[24px] shadow-xl flex-row items-center border border-gray-50">
-                        <View className="flex-1 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                            <Search size={18} color="#9CA3AF" />
+            <Header
+                title="Sparepart"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+            >
+                {!sheetVisible && (
+                    <>
+                        <View className="flex-row items-center bg-gray-50 h-11 rounded-2xl border border-gray-100">
+                            <Search size={18} color="#9CA3AF" className="ml-4" />
                             <TextInput
                                 placeholder="Cari sparepart..."
                                 className="flex-1 ml-3 text-sm font-medium text-textMain"
@@ -1143,9 +1109,23 @@ export default function SparePartMasterScreen() {
                                 placeholderTextColor="#9CA3AF"
                             />
                         </View>
-                    </View>
-                </View>
-            )}
+                        <View className="flex-row justify-end mt-2">
+                            <Pressable
+                                onPress={() => setIsImportModalVisible(true)}
+                                className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100 mr-2"
+                            >
+                                <FileUp size={16} color="#023C69" />
+                            </Pressable>
+                            <Pressable
+                                onPress={() => setIsPrintModalVisible(true)}
+                                className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100"
+                            >
+                                <Printer size={16} color="#023C69" />
+                            </Pressable>
+                        </View>
+                    </>
+                )}
+            </Header>
 
 
 

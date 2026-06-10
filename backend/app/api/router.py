@@ -33,6 +33,7 @@ from app.api.v1 import (
     trash,
     laporan,
     realtime,
+    master_data,
 )
 
 
@@ -68,7 +69,7 @@ api_router.include_router(settings.router)
 api_router.include_router(user_cash.router)
 api_router.include_router(backup.router)
 api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
-api_router.include_router(realtime.router)
+api_router.include_router(master_data.router)
 
 
 
