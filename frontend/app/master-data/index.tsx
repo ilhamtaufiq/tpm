@@ -2,15 +2,13 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, Pressable, RefreshControl, StatusBar, ActivityIndicator } from 'react-native';
 import { Card } from '../../components/ui/Card';
 import { Typography } from '../../components/ui/Typography';
+import { Header } from '../../components/ui/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import {
-    ChevronLeft,
     Users,
     Building2,
-    Settings,
     ChevronRight,
-    RefreshCw,
-    Database,
-    Archive,
     Wrench,
     Tag,
     Box,
@@ -24,6 +22,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 export default function MasterDataScreen() {
     const router = useRouter();
     const { user } = useAuthStore();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({ customers: 0, suppliers: 0, spareparts: 0, jasa: 0, assets: 0 });
@@ -95,55 +94,16 @@ export default function MasterDataScreen() {
         <View className="flex-1 bg-surface">
             <StatusBar barStyle="light-content" />
 
-            {/* Premium Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleGoBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Master Data</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Pusat Data & Inventori</Typography>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Database Summary (Glassmorphism) - Inside Header */}
-                <View className="bg-white/10 p-6 rounded-[32px] border border-white/10">
-                    <View className="flex-row justify-between items-center mb-6">
-                        <View className="bg-white/20 px-3 py-1.5 rounded-full border border-white/10">
-                            <Typography className="text-white text-[10px] font-bold uppercase tracking-widest">System Assets</Typography>
-                        </View>
-                        <Typography className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Total Entitas</Typography>
-                    </View>
-
-                    <View className="flex-row justify-between space-x-2">
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
-                            <Typography weight="bold" className="text-white text-xl mb-1">{stats.customers}</Typography>
-                            <Typography className="text-white/40 text-[9px] uppercase tracking-wider">Cust</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
-                            <Typography weight="bold" className="text-white text-xl mb-1">{stats.suppliers}</Typography>
-                            <Typography className="text-white/40 text-[9px] uppercase tracking-wider">Supp</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
-                            <Typography weight="bold" className="text-white text-xl mb-1">{stats.spareparts}</Typography>
-                            <Typography className="text-white/40 text-[9px] uppercase tracking-wider">Parts</Typography>
-                        </View>
-                        <View className="flex-1 bg-white/5 p-3 rounded-2xl border border-white/5 items-center">
-                            <Typography weight="bold" className="text-white text-xl mb-1">{stats.assets || 0}</Typography>
-                            <Typography className="text-white/40 text-[9px] uppercase tracking-wider">Aset</Typography>
-                        </View>
-                    </View>
-                </View>
-            </View>
+            <Header 
+                title="Master Data"
+                subtitle="Pusat Data & Inventori"
+                showBackButton={true}
+                onBackButtonPress={handleGoBack}
+                showProfile={true}
+            />
 
             <ScrollView
-                className="flex-1 px-6 -mt-6"
+                className="flex-1 px-6 mt-4"
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />}
                 showsVerticalScrollIndicator={false}
             >
@@ -260,6 +220,7 @@ export default function MasterDataScreen() {
                             </View>
                         </Pressable>
                     )}
+                    <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
                 </View>
             </ScrollView>
         </View>

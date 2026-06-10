@@ -149,7 +149,6 @@ export default function HistoryTab() {
         refetch: refetchRecent,
     } = useRecentActivity(100, {
         enabled: !walletFilter,
-        refetchInterval: 5000,
     });
 
     const {
@@ -167,7 +166,6 @@ export default function HistoryTab() {
             : undefined,
         {
             enabled: !!walletFilter,
-            refetchInterval: 5000,
         }
     );
 

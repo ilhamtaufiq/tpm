@@ -9,7 +9,10 @@
       "Bash(source venv/Scripts/activate)",
       "Bash(alembic revision:*)",
       "Bash(alembic upgrade:*)",
-      "Bash(rtk git *)"
+      "Bash(rtk git *)",
+      "Bash(rtk find *)",
+      "Bash(rtk read *)",
+      "Bash(rtk grep *)"
     ]
   }
 }

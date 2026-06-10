@@ -14,6 +14,7 @@ import { useCreateTransaksiBengkel, useUpdateTransaksiBengkel, useSparePartsList
 import { useMuatanList } from '../hooks/useJasaAngkut';
 import { useKasBankBalances } from '../hooks/useKeuangan';
 import { useMobilList } from '../hooks/useMobil';
+import { useDebounce } from '../hooks/useDebounce';
 import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from './ui/MasterDataSelector';
 import { ArmadaSelector } from './ui/ArmadaSelector';
@@ -23,6 +24,7 @@ import { getErrorMessage } from '../utils/error';
 import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
 import { useJasaList } from '../hooks/useJasaServis';
+import { getCustomTabBarBottomPadding } from './ui/CustomTabBar';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -31,9 +33,10 @@ type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 interface BengkelFormProps {
     onSuccess: () => void;
     initialData?: any;
+    isPage?: boolean;
 }
 
-export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
+export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelFormProps) => {
     const insets = useSafeAreaInsets();
     // Category selection
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
@@ -71,7 +74,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     const [isPrintingOrderSlip, setIsPrintingOrderSlip] = useState(false);
     const [isSelectionSheetOpen, setIsSelectionSheetOpen] = useState(false);
     const [selectionSheetSearch, setSelectionSheetSearch] = useState('');
-    const selectionSheetQuery = selectionSheetSearch.trim();
+    const debouncedSelectionSheetSearch = useDebounce(selectionSheetSearch, 500);
+    const selectionSheetQuery = debouncedSelectionSheetSearch.trim();
 
     const { data: balancesData } = useKasBankBalances();
     const bankUtamaBengkel = balancesData?.bank_utama?.sub_balances?.bengkel || 0;
@@ -148,7 +152,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     }, [jasaData]);
     const filteredPartChoices = useMemo(() => {
         const q = selectionSheetQuery.toLowerCase();
-        if (!q) return availableParts;
+        if (!q) return availableParts.slice(0, 20);
         return availableParts.filter((part: any) =>
             String(part.nama || '').toLowerCase().includes(q) ||
             String(part.kode || '').toLowerCase().includes(q) ||
@@ -159,7 +163,7 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     }, [availableParts, selectionSheetQuery]);
     const filteredServiceChoices = useMemo(() => {
         const q = selectionSheetQuery.toLowerCase();
-        if (!q) return availableServices;
+        if (!q) return availableServices.slice(0, 20);
         return availableServices.filter((service: any) =>
             String(service.nama || '').toLowerCase().includes(q) ||
             String(service.kategori || '').toLowerCase().includes(q) ||
@@ -612,12 +616,13 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             ? payments
                 .map((payment) => ({
                     metode: (payment.metode || 'Tunai').toUpperCase(),
-                    nominal: Number(parseNumber(payment.nominal)) || 0,
+                    jumlah: Number(parseNumber(payment.nominal)) || 0,
                     catatan: payment.catatan || '',
                 }))
-                .filter((payment) => payment.nominal > 0)
+                .filter((payment) => payment.jumlah > 0)
             : [];
-        const totalPaid = paymentItems.reduce((acc, payment) => acc + payment.nominal, 0);
+        const totalPaid = paymentItems.reduce((acc, payment) => acc + payment.jumlah, 0);
+
         const metodeBayarFinal = paymentItems.length > 1
             ? 'SPLIT'
             : (paymentItems[0]?.metode || 'KREDIT');
@@ -1187,175 +1192,6 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                         </View>
                     )}
 
-                    {/* Payment is intentionally hidden here; this form only prepares a work order. */}
-                    {false && hasBillableItems && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
-                        <>
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Typography weight="semibold">Metode Pembayaran</Typography>
-                                {kategori !== 'jasa_angkut' && (
-                                    <Pressable
-                                        onPress={() => {
-                                            setIsSplitPayment(!isSplitPayment);
-                                            // Reset payments to a single empty entry if switching from split to single
-                                            if (isSplitPayment) {
-                                                setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
-                                            }
-                                        }}
-                                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
-                                    >
-                                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
-                                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
-                                        </Typography>
-                                    </Pressable>
-                                )}
-                            </View>
-
-                            {/* Basic Mode: Single Payment (Hidden for Jasa Angkut as it is auto-transfer) */}
-                            {!isSplitPayment && kategori !== 'jasa_angkut' && (
-                                <View className="flex-row space-x-3 mb-4">
-                                    <View className="flex-[1.5]">
-                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Sumber Pembayaran</Typography>
-                                        <View className="flex-row space-x-2">
-                                            {[
-                                                { label: 'Dompet', value: 'Tunai', balance: kategori === 'umum' ? (balancesData?.kas_unit_bengkel?.saldo || 0) : 0, icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
-                                                { label: 'Bank', value: 'Transfer', balance: kategori === 'umum' ? bankUtamaBengkel : (balancesData?.bank_utama?.saldo || 0), icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
-                                            ].map((m) => (
-                                                <Pressable
-                                                    key={m.value}
-                                                    onPress={() => {
-                                                        const newP = [...payments];
-                                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                                        newP[0].metode = newP[0].metode === m.value ? '' : m.value;
-                                                        setPayments(newP);
-                                                    }}
-                                                    className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-slate-50 border-slate-100'}`}
-                                                >
-                                                    <View className="flex-row items-center mb-0.5">
-                                                        {m.icon}
-                                                        <Typography className={`ml-1.5 ${payments[0]?.metode === m.value ? 'text-white text-[10px] font-bold' : 'text-slate-600 text-[10px] font-semibold'}`}>{m.label}</Typography>
-                                                    </View>
-                                                    <Typography className={`text-[8px] ${payments[0]?.metode === m.value ? 'text-white/80' : 'text-slate-400'}`}>
-                                                        {formatCurrency(m.balance)}
-                                                    </Typography>
-                                                </Pressable>
-                                            ))}
-                                        </View>
-                                    </View>
-                                    <View className="flex-1">
-                                            <View className="flex-row items-center justify-between mb-2 ml-1">
-                                                <Typography variant="caption" weight="bold" className="text-primary">DP / Bayar (Rp)</Typography>
-                                                <Pressable
-                                                    onPress={() => {
-                                                        const newP = [...payments];
-                                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                                        newP[0].nominal = formatNumber(grandTotal.toString());
-                                                        setPayments(newP);
-                                                    }}
-                                                >
-                                                    <Typography className="text-[9px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">BAYAR PAS</Typography>
-                                                </Pressable>
-                                            </View>
-                                            <Input
-                                                placeholder="0"
-                                                keyboardType="numeric"
-                                                containerClassName="mb-0"
-                                                innerContainerClassName="!bg-white border-gray-100"
-                                                className="h-10 text-sm font-bold"
-                                                value={payments[0]?.nominal || ''}
-                                                onChangeText={(val) => {
-                                                    const newP = [...payments];
-                                                    if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                                    newP[0].nominal = formatNumber(val);
-                                                    setPayments(newP);
-                                                }}
-                                            />
-                                        </View>
-                                </View>
-                            )}
-
-                            {/* Split Mode: Multiple Payments */}
-                            {isSplitPayment && (
-                                <View className="mb-4">
-                                    {payments.map((p, idx) => (
-                                        <View key={p.id} className="flex-row space-x-2 items-end mb-3">
-                                            <View className="flex-1">
-                                                {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Metode</Typography>}
-                                                <View className="flex-row bg-white border border-white rounded-xl overflow-hidden h-10">
-                                                    {['Tunai', 'Trf'].map((m, mIdx) => {
-                                                        const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
-                                                        return (
-                                                            <Pressable
-                                                                key={m}
-                                                                onPress={() => {
-                                                                    const newP = [...payments];
-                                                                    // Toggle selection
-                                                                    newP[idx].metode = newP[idx].metode === longM ? '' : longM;
-                                                                    setPayments(newP);
-                                                                }}
-                                                                className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
-                                                            >
-                                                                <Typography className={`text-[10px] font-bold ${p.metode === longM ? 'text-white' : 'text-gray-600'}`}>{m}</Typography>
-                                                            </Pressable>
-                                                        );
-                                                    })}
-                                                </View>
-                                            </View>
-                                            <View className="flex-1">
-                                                <View className="flex-row items-center justify-between mb-1">
-                                                    {idx === 0 ? <Typography variant="caption" weight="medium" className="text-textGray px-1">Nominal</Typography> : <View />}
-                                                    <Pressable
-                                                        onPress={() => {
-                                                            const newP = [...payments];
-                                                            const otherPayments = newP.filter((_, i) => i !== idx).reduce((acc, cr) => acc + (Number(parseNumber(cr.nominal)) || 0), 0);
-                                                            newP[idx].nominal = formatNumber(Math.max(0, grandTotal - otherPayments).toString());
-                                                            setPayments(newP);
-                                                        }}
-                                                        className="px-1"
-                                                    >
-                                                        <Typography className="text-[8px] text-primary font-bold">LUNASKAN</Typography>
-                                                    </Pressable>
-                                                </View>
-                                                <Input
-                                                    placeholder="0"
-                                                    keyboardType="numeric"
-                                                    containerClassName="mb-0"
-                                                    innerContainerClassName="!bg-white border-gray-100"
-                                                    className="h-10 text-sm font-bold"
-                                                    value={p.nominal}
-                                                    onChangeText={(val) => {
-                                                        const newP = [...payments];
-                                                        newP[idx].nominal = formatNumber(val);
-                                                        setPayments(newP);
-                                                    }}
-                                                />
-                                            </View>
-                                            <Pressable
-                                                onPress={() => {
-                                                    if (payments.length > 1) {
-                                                        setPayments(payments.filter(pay => pay.id !== p.id));
-                                                    } else {
-                                                        setIsSplitPayment(false);
-                                                        setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]); // Reset to single empty payment
-                                                    }
-                                                }}
-                                                className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
-                                            >
-                                                <Trash2 size={14} color="#F43F5E" />
-                                            </Pressable>
-                                        </View>
-                                    ))}
-                                    <Pressable
-                                        onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
-                                        className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
-                                    >
-                                        <Plus size={14} color="#023C69" />
-                                        <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
-                                    </Pressable>
-                                </View>
-                            )}
-                        </>
-                    )}
-
                     <View className="flex-row space-x-3 mb-4">
                         {false && kategori !== 'jasa_angkut' && (
                             <View className="flex-1">
@@ -1466,66 +1302,166 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
             </>
             )}
 
-            {kategori === 'umum' && (
+            {/* DP / Uang Muka — muncul di bawah total */}
+            {kategori === 'umum' && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
                 <View className="mb-6">
-                    <Card className="bg-primary/5 border border-primary/10 p-4 rounded-[28px]">
-                        <View className="flex-row items-start justify-between mb-3">
-                            <View className="flex-1 mr-3">
-                                <Typography variant="body2" weight="bold" className="text-primary">DP / Bayar Awal</Typography>
-                                <Typography variant="caption" className="text-slate-500 mt-1">
-                                    Bisa diisi sebelum atau sesudah part dan servis dimasukkan. Nilai ini akan ikut menyesuaikan ke piutang.
-                                </Typography>
+                    <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm">
+                        <>
+                            <View className="flex-row justify-between items-center mb-4">
+                                <Typography weight="semibold">Uang Muka / DP (Opsional)</Typography>
+                                {kategori !== 'jasa_angkut' && (
+                                    <Pressable
+                                        onPress={() => {
+                                            setIsSplitPayment(!isSplitPayment);
+                                            if (isSplitPayment) {
+                                                setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
+                                            }
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-white border border-white'}`}
+                                    >
+                                        <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                            {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                                        </Typography>
+                                    </Pressable>
+                                )}
                             </View>
-                            <Pressable
-                                onPress={() => {
-                                    const newP = [...payments];
-                                    if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                    newP[0].nominal = formatNumber(grandTotal.toString());
-                                    setPayments(newP);
-                                }}
-                                className="bg-primary/10 rounded-full px-3 py-1.5 border border-primary/20"
-                            >
-                                <Typography className="text-[9px] text-primary font-bold">BAYAR PAS</Typography>
-                            </Pressable>
-                        </View>
 
-                        <View className="flex-row space-x-2 mb-3">
-                            {[
-                                { label: 'Dompet', value: 'Tunai' },
-                                { label: 'Bank', value: 'Transfer' },
-                            ].map((m) => (
-                                <Pressable
-                                    key={m.value}
-                                    onPress={() => {
-                                        const newP = [...payments];
-                                        if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                        newP[0].metode = newP[0].metode === m.value ? '' : m.value;
-                                        setPayments(newP);
-                                    }}
-                                    className={`flex-1 py-3 rounded-2xl items-center justify-center border ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
-                                >
-                                    <Typography className={`${payments[0]?.metode === m.value ? 'text-white' : 'text-gray-600'} text-[10px] font-bold`}>
-                                        {m.label}
-                                    </Typography>
-                                </Pressable>
-                            ))}
-                        </View>
+                            {/* Basic Mode: Single Payment */}
+                            {!isSplitPayment && kategori !== 'jasa_angkut' && (
+                                <View className="mb-4">
+                                    <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Sumber Pembayaran</Typography>
+                                    <View className="flex-row space-x-2 mb-3">
+                                        {[
+                                            { label: 'Dompet', value: 'Tunai', icon: <Wallet size={12} color={payments[0]?.metode === 'Tunai' ? 'white' : '#64748b'} /> },
+                                            { label: 'Bank', value: 'Transfer', icon: <Building2 size={12} color={payments[0]?.metode === 'Transfer' ? 'white' : '#64748b'} /> }
+                                        ].map((m) => (
+                                            <Pressable
+                                                key={m.value}
+                                                onPress={() => {
+                                                    const newP = [...payments];
+                                                    if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                                    newP[0].metode = newP[0].metode === m.value ? '' : m.value;
+                                                    setPayments(newP);
+                                                }}
+                                                className={`flex-1 py-2.5 rounded-2xl items-center justify-center border shadow-sm ${payments[0]?.metode === m.value ? 'bg-primary border-primary' : 'bg-slate-50 border-slate-100'}`}
+                                            >
+                                                <View className="flex-row items-center">
+                                                    {m.icon}
+                                                    <Typography className={`ml-1.5 ${payments[0]?.metode === m.value ? 'text-white text-[10px] font-bold' : 'text-slate-600 text-[10px] font-semibold'}`}>{m.label}</Typography>
+                                                </View>
+                                            </Pressable>
+                                        ))}
+                                    </View>
+                                    <View className="flex-row items-center justify-between mb-2 ml-1">
+                                        <Typography variant="caption" weight="bold" className="text-primary">DP / Bayar (Rp)</Typography>
+                                        <Pressable
+                                            onPress={() => {
+                                                const newP = [...payments];
+                                                if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                                newP[0].nominal = formatNumber(grandTotal.toString());
+                                                setPayments(newP);
+                                            }}
+                                        >
+                                            <Typography className="text-[9px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">BAYAR PAS</Typography>
+                                        </Pressable>
+                                    </View>
+                                    <Input
+                                        placeholder="0"
+                                        keyboardType="numeric"
+                                        containerClassName="mb-0"
+                                        innerContainerClassName="!bg-white border-gray-100"
+                                        className="h-10 text-sm font-bold"
+                                        value={payments[0]?.nominal || ''}
+                                        onChangeText={(val) => {
+                                            const newP = [...payments];
+                                            if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
+                                            newP[0].nominal = formatNumber(val);
+                                            setPayments(newP);
+                                        }}
+                                    />
+                                </View>
+                            )}
 
-                        <Input
-                            label="DP / Bayar (Rp)"
-                            placeholder="0"
-                            keyboardType="numeric"
-                            containerClassName="mb-0"
-                            innerContainerClassName="!bg-white border-gray-100"
-                            className="h-10 text-sm font-bold"
-                            value={payments[0]?.nominal || ''}
-                            onChangeText={(val) => {
-                                const newP = [...payments];
-                                if (newP.length === 0) newP.push({ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' });
-                                newP[0].nominal = formatNumber(val);
-                                setPayments(newP);
-                            }}
-                        />
+                            {/* Split Mode: Multiple Payments */}
+                            {isSplitPayment && (
+                                <View className="mb-4">
+                                    {payments.map((p, idx) => (
+                                        <View key={p.id} className="flex-row space-x-2 items-end mb-3">
+                                            <View className="flex-1">
+                                                {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1">Metode</Typography>}
+                                                <View className="flex-row bg-white border border-white rounded-xl overflow-hidden h-10">
+                                                    {['Tunai', 'Trf'].map((m) => {
+                                                        const longM = m === 'Trf' ? 'Transfer' : 'Tunai';
+                                                        return (
+                                                            <Pressable
+                                                                key={m}
+                                                                onPress={() => {
+                                                                    const newP = [...payments];
+                                                                    newP[idx].metode = newP[idx].metode === longM ? '' : longM;
+                                                                    setPayments(newP);
+                                                                }}
+                                                                className={`flex-1 items-center justify-center ${p.metode === longM ? 'bg-primary' : 'bg-transparent'}`}
+                                                            >
+                                                                <Typography className={`text-[10px] font-bold ${p.metode === longM ? 'text-white' : 'text-gray-600'}`}>{m}</Typography>
+                                                            </Pressable>
+                                                        );
+                                                    })}
+                                                </View>
+                                            </View>
+                                            <View className="flex-1">
+                                                <View className="flex-row items-center justify-between mb-1">
+                                                    {idx === 0 ? <Typography variant="caption" weight="medium" className="text-textGray px-1">Nominal</Typography> : <View />}
+                                                    <Pressable
+                                                        onPress={() => {
+                                                            const newP = [...payments];
+                                                            const otherPayments = newP.filter((_, i) => i !== idx).reduce((acc, cr) => acc + (Number(parseNumber(cr.nominal)) || 0), 0);
+                                                            newP[idx].nominal = formatNumber(Math.max(0, grandTotal - otherPayments).toString());
+                                                            setPayments(newP);
+                                                        }}
+                                                        className="px-1"
+                                                    >
+                                                        <Typography className="text-[8px] text-primary font-bold">LUNASKAN</Typography>
+                                                    </Pressable>
+                                                </View>
+                                                <Input
+                                                    placeholder="0"
+                                                    keyboardType="numeric"
+                                                    containerClassName="mb-0"
+                                                    innerContainerClassName="!bg-white border-gray-100"
+                                                    className="h-10 text-sm font-bold"
+                                                    value={p.nominal}
+                                                    onChangeText={(val) => {
+                                                        const newP = [...payments];
+                                                        newP[idx].nominal = formatNumber(val);
+                                                        setPayments(newP);
+                                                    }}
+                                                />
+                                            </View>
+                                            <Pressable
+                                                onPress={() => {
+                                                    if (payments.length > 1) {
+                                                        setPayments(payments.filter(pay => pay.id !== p.id));
+                                                    } else {
+                                                        setIsSplitPayment(false);
+                                                        setPayments([{ id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }]);
+                                                    }
+                                                }}
+                                                className="h-10 w-8 items-center justify-center bg-rose-50 rounded-xl"
+                                            >
+                                                <Trash2 size={14} color="#F43F5E" />
+                                            </Pressable>
+                                        </View>
+                                    ))}
+                                    <Pressable
+                                        onPress={() => setPayments([...payments, { id: Date.now() + Math.random(), metode: '', nominal: '', catatan: '' }])}
+                                        className="flex-row items-center justify-center py-2 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
+                                    >
+                                        <Plus size={14} color="#023C69" />
+                                        <Typography className="text-primary text-[10px] font-bold ml-1 text-center">Tambah Metode Pembayaran</Typography>
+                                    </Pressable>
+                                </View>
+                            )}
+                        </>
                     </Card>
                 </View>
             )}
@@ -1699,8 +1635,8 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
                                                 </View>
                                                 <Typography variant="caption" className="text-gray-400 mt-0.5">
                                                     {isPartSheet
-                                                        ? `${item.kode || item.kode_part || '-'} â€¢ ${item.kategori || 'Umum'} â€¢ Stok ${item.stok ?? 0}`
-                                                        : `${item.kategori || 'Servis'} â€¢ ${formatCurrency(item.harga || 0)}`}
+                                                        ? `${item.kode || item.kode_part || '-'} • ${item.kategori || 'Umum'} • Stok ${item.stok ?? 0}`
+                                                        : `${item.kategori || 'Servis'} • ${formatCurrency(item.harga || 0)}`}
                                                 </Typography>
                                             </View>
                                             <View className={`w-7 h-7 rounded-full items-center justify-center ${isSelected ? 'bg-primary' : 'bg-gray-100'}`}>
@@ -1820,19 +1756,20 @@ export const BengkelForm = ({ onSuccess, initialData }: BengkelFormProps) => {
     };
 
     // Web version with regular ScrollView
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || isPage) {
         return (
-            <View style={styles.webContainer}>
+            <View style={isPage ? { flex: 1, backgroundColor: 'white' } : styles.webContainer}>
                 {/* Header */}
-                <View style={styles.header}>
-                    <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
-                    <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
-                </View>
+                {!isPage && (
+                    <View style={styles.header}>
+                        <Typography variant="h3" weight="bold">{initialData ? 'Edit Antrian' : 'Buat Antrian Bengkel'}</Typography>
+                        <Badge label={initialData ? initialData.nomor_transaksi : "Antre"} variant={initialData ? "info" : "neutral"} />
+                    </View>
+                )}
 
-                {/* Scrollable Content */}
                 <ScrollView
-                    style={styles.webScrollView}
-                    contentContainerStyle={styles.webScrollContent}
+                    style={isPage ? { flex: 1 } : styles.webScrollView}
+                    contentContainerStyle={isPage ? { flexGrow: 1, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) } : styles.webScrollContent}
                     showsVerticalScrollIndicator={true}
                 >
                     {renderFormContent()}
