@@ -12,6 +12,7 @@ import {
     Filter,
     Calendar,
     Wrench,
+    Settings,
     Clock,
     CheckCircle2,
     Package,
@@ -164,7 +165,7 @@ export default function BengkelScreen() {
             id: 'servis',
             title: 'Servis',
             description: 'Transaksi jasa servis',
-            icon: Wrench,
+            icon: Settings,
             color: '#0F766E',
             route: { pathname: '/bengkel/transaksi', params: { mode: 'servis' } }
         },
@@ -1398,15 +1399,22 @@ export default function BengkelScreen() {
                                     <Typography className="text-textGray text-[10px] font-semibold">
                                         {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
                                     </Typography>
-                                    <Typography weight="bold" className="text-primary text-xs">
-                                        {formatCurrency(item.grand_total || 0)}
-                                    </Typography>
+                                    <View className="flex-row items-center">
+                                        {Number(item.jumlah_bayar || 0) > 0 && (
+                                            <Typography className="text-emerald-600 text-[9px] font-bold mr-2">
+                                                DP: {formatCurrency(item.jumlah_bayar)}
+                                            </Typography>
+                                        )}
+                                        <Typography weight="bold" className="text-primary text-xs">
+                                            {formatCurrency(item.grand_total || 0)}
+                                        </Typography>
+                                    </View>
                                 </View>
                                 {['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase()) ? (
                                     <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50">
                                         {[
                                             { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
-                                            { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
+                                            { label: 'Servis', mode: 'servis', icon: Settings, color: '#2563EB' },
                                         ].map((action) => {
                                             const ActionIcon = action.icon;
                                             return (

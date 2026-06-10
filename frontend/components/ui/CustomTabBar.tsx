@@ -111,7 +111,7 @@ export const CustomTabBar = () => {
             let label = route.label;
             let icon = route.icon;
             if (id === 'bengkel') label = 'Bengkel';
-            if (id === 'mobil') label = 'Mobil';
+            if (id === 'mobil') label = 'Jual Beli Mobil';
             if (id === 'profile') label = 'Profile';
             
             return { ...route, label, icon };

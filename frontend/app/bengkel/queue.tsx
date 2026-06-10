@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import {
@@ -29,6 +30,8 @@ import {
     Printer,
     Edit2,
     Banknote,
+    Wallet,
+    CheckCircle2,
     ChevronRight
 } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -40,11 +43,12 @@ import {
     useTransaksiBengkelSummary,
     useUpdateTransaksiBengkelStatus,
     useUpdateTransaksiBengkelPayment,
+    useUpdateTransaksiBengkel,
     useVoidTransaksiBengkel,
     useSparePartsList
 } from '../../hooks/useBengkel';
 import { useMobilList } from '../../hooks/useMobil';
-import { formatCurrency, formatNumber } from '../../utils/format';
+import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
 export default function QueueScreen() {
@@ -62,6 +66,14 @@ export default function QueueScreen() {
     // Detail Modal State
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+    // Payment State
+    const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+    const [paymentMode, setPaymentMode] = useState<'TUNAI' | 'TRANSFER' | 'SPLIT'>('TUNAI');
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [splitTunai, setSplitTunai] = useState('');
+    const [splitTransfer, setSplitTransfer] = useState('');
+    const updateTransaksiMutation = useUpdateTransaksiBengkel();
 
     // Dialog State
     const [dialogConfig, setDialogConfig] = useState<any>({
@@ -414,9 +426,16 @@ export default function QueueScreen() {
                                         <Typography className="text-textGray text-[10px] font-semibold">
                                             {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
                                         </Typography>
-                                        <Typography weight="bold" className="text-primary text-xs">
-                                            {formatCurrency(item.grand_total || 0)}
-                                        </Typography>
+                                        <View className="flex-row items-center">
+                                            {Number(item.jumlah_bayar || 0) > 0 && (
+                                                <Typography className="text-emerald-600 text-[9px] font-bold mr-2">
+                                                    DP: {formatCurrency(item.jumlah_bayar)}
+                                                </Typography>
+                                            )}
+                                            <Typography weight="bold" className="text-primary text-xs">
+                                                {formatCurrency(item.grand_total || 0)}
+                                            </Typography>
+                                        </View>
                                     </View>
                                     {['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase()) ? (
                                         <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50">
@@ -558,16 +577,185 @@ export default function QueueScreen() {
                                     </View>
                                 )}
 
-                                {/* Edit Action Button */}
-                                <Pressable
-                                    onPress={() => openEditTransaction(selectedItem)}
-                                    className="bg-amber-500 py-3 rounded-xl items-center justify-center flex-row mb-4 active:opacity-90"
-                                >
-                                    <Edit2 size={16} color="white" />
-                                    <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                        Edit Antrian
-                                    </Typography>
+                                {/* Payment Summary Card */}
+                                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-emerald-50/60 rounded-2xl">
+                                    <View className="flex-row items-center justify-between mb-2">
+                                        <Typography variant="body2" weight="bold" className="text-emerald-800">Total Tagihan</Typography>
+                                        <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency(selectedItem.grand_total || 0)}</Typography>
+                                    </View>
+                                    {(selectedItem.jumlah_bayar || 0) > 0 && (
+                                        <>
+                                            <View className="flex-row items-center justify-between mb-1">
+                                                <Typography className="text-emerald-600 text-xs">DP Dibayar</Typography>
+                                                <Typography className="text-emerald-600 text-xs font-bold">-{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
+                                            </View>
+                                            <View className="flex-row items-center justify-between pt-2 border-t border-emerald-200">
+                                                <Typography variant="body2" weight="bold" className="text-emerald-800">Sisa Bayar</Typography>
+                                                <Typography variant="h4" weight="bold" className="text-emerald-800">
+                                                    {formatCurrency(Math.max(0, (selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0)))}
+                                                </Typography>
+                                            </View>
+                                        </>
+                                    )}
+                                </Card>
+
+                                {/* Action Buttons */}
+                                <View className="flex-row space-x-3 mb-4">
+                                    <Pressable
+                                        onPress={() => openEditTransaction(selectedItem)}
+                                        className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
+                                    >
+                                        <Edit2 size={16} color="white" />
+                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                            Edit
+                                        </Typography>
+                                    </Pressable>
+                                    {selectedItem.status_pengerjaan !== 'selesai' && selectedItem.grand_total > 0 && (
+                                        <Pressable
+                                            onPress={() => { setPaymentAmount(''); setSplitTunai(''); setSplitTransfer(''); setPaymentMode('TUNAI'); setPaymentSheetOpen(true); }}
+                                            className="flex-1 bg-emerald-600 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
+                                        >
+                                            <Wallet size={16} color="white" />
+                                            <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                                Bayar
+                                            </Typography>
+                                        </Pressable>
+                                    )}
+                                </View>
+                            </ScrollView>
+                        </View>
+                    </View>
+                </Modal>
+            )}
+
+            {/* Payment Sheet Modal */}
+            {selectedItem && (
+                <Modal visible={paymentSheetOpen} transparent animationType="slide" onRequestClose={() => setPaymentSheetOpen(false)} statusBarTranslucent>
+                    <View className="flex-1 justify-end bg-black/50">
+                        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setPaymentSheetOpen(false)} />
+                        <View className="bg-white rounded-t-[48px] p-6 max-h-[85%] overflow-hidden">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <Typography variant="h3" weight="bold">Pembayaran</Typography>
+                                <Pressable onPress={() => setPaymentSheetOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
+                                    <X size={18} color="#4B5563" />
                                 </Pressable>
+                            </View>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="bg-emerald-50 p-4 rounded-2xl mb-5">
+                                    <Typography className="text-emerald-700 text-xs">Total Tagihan</Typography>
+                                    <Typography variant="h3" weight="bold" className="text-emerald-800">{formatCurrency(selectedItem.grand_total || 0)}</Typography>
+                                    {(selectedItem.jumlah_bayar || 0) > 0 && (
+                                        <View className="flex-row justify-between mt-2 pt-2 border-t border-emerald-200">
+                                            <Typography className="text-emerald-600 text-xs">DP: {formatCurrency(selectedItem.jumlah_bayar)}</Typography>
+                                            <Typography className="text-emerald-700 text-xs font-bold">
+                                                Sisa: {formatCurrency(Math.max(0, (selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0)))}
+                                            </Typography>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Payment Mode Selector */}
+                                <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Metode Pembayaran</Typography>
+                                <View className="flex-row space-x-2 mb-4">
+                                    {[
+                                        { id: 'TUNAI', label: 'Tunai', icon: Banknote },
+                                        { id: 'TRANSFER', label: 'Transfer', icon: Wallet },
+                                        { id: 'SPLIT', label: 'Split', icon: ChevronRight },
+                                    ].map((mode) => {
+                                        const Icon = mode.icon;
+                                        const aktif = paymentMode === mode.id;
+                                        return (
+                                            <Pressable key={mode.id} onPress={() => setPaymentMode(mode.id as any)} className={`flex-1 py-3 rounded-2xl border items-center ${aktif ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
+                                                <Icon size={18} color={aktif ? 'white' : '#64748B'} />
+                                                <Typography weight="bold" className={`text-[10px] mt-1 ${aktif ? 'text-white' : 'text-gray-500'}`}>{mode.label}</Typography>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+
+                                {paymentMode === 'SPLIT' ? (
+                                    <>
+                                        <View className="mb-3">
+                                            <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Tunai (Rp)</Typography>
+                                            <TextInput
+                                                placeholder="0" keyboardType="number-pad"
+                                                className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
+                                                value={splitTunai} onChangeText={setSplitTunai}
+                                            />
+                                        </View>
+                                        <View className="mb-4">
+                                            <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Transfer (Rp)</Typography>
+                                            <TextInput
+                                                placeholder="0" keyboardType="number-pad"
+                                                className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
+                                                value={splitTransfer} onChangeText={setSplitTransfer}
+                                            />
+                                        </View>
+                                    </>
+                                ) : (
+                                    <View className="mb-4">
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Nominal Pembayaran (Rp)</Typography>
+                                        <TextInput
+                                            placeholder="0" keyboardType="number-pad"
+                                            className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
+                                            value={paymentAmount} onChangeText={setPaymentAmount}
+                                        />
+                                    </View>
+                                )}
+
+                                <Button
+                                    title="Konfirmasi Pembayaran"
+                                    className="mb-4"
+                                    loading={updateTransaksiMutation.isPending}
+                                    onPress={async () => {
+                                        const sisa = Math.max(0, (selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0));
+                                        let paymentItems: { metode: string; jumlah: number }[] = [];
+                                        if (paymentMode === 'SPLIT') {
+                                            const tunaiAmt = parseNumber(splitTunai);
+                                            const trfAmt = parseNumber(splitTransfer);
+                                            if (tunaiAmt > 0) paymentItems.push({ metode: 'TUNAI', jumlah: tunaiAmt });
+                                            if (trfAmt > 0) paymentItems.push({ metode: 'TRANSFER', jumlah: trfAmt });
+                                            if (paymentItems.reduce((a, p) => a + p.jumlah, 0) < sisa) {
+                                                setDialogConfig({ visible: true, title: 'Validasi', message: 'Jumlah pembayaran split kurang dari sisa tagihan.', variant: 'warning' });
+                                                return;
+                                            }
+                                        } else {
+                                            const amt = parseNumber(paymentAmount);
+                                            if (amt < sisa) {
+                                                setDialogConfig({ visible: true, title: 'Validasi', message: 'Jumlah pembayaran kurang dari sisa tagihan.', variant: 'warning' });
+                                                return;
+                                            }
+                                            paymentItems.push({ metode: paymentMode === 'TUNAI' ? 'TUNAI' : 'TRANSFER', jumlah: amt });
+                                        }
+                                        if (paymentItems.length === 0) {
+                                            setDialogConfig({ visible: true, title: 'Validasi', message: 'Masukkan nominal pembayaran.', variant: 'warning' });
+                                            return;
+                                        }
+                                        try {
+                                            await updateTransaksiMutation.mutateAsync({
+                                                id: selectedItem.id,
+                                                data: {
+                                                    status_pengerjaan: 'SELESAI',
+                                                    payments: paymentItems,
+                                                    jumlah_bayar: paymentItems.reduce((a, p) => a + p.jumlah, 0),
+                                                    metode_bayar: paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode,
+                                                    catatan: selectedItem.catatan || '',
+                                                }
+                                            });
+                                            setPaymentSheetOpen(false);
+                                            setDetailModalOpen(false);
+                                            refetch();
+                                            refetchSummary();
+                                            setDialogConfig({
+                                                visible: true, title: 'Pembayaran Berhasil',
+                                                message: `Transaksi ${selectedItem.nomor_transaksi} berhasil dibayar.`,
+                                                variant: 'success'
+                                            });
+                                        } catch (e) {
+                                            setDialogConfig({ visible: true, title: 'Gagal', message: 'Gagal memproses pembayaran.', variant: 'error' });
+                                        }
+                                    }}
+                                />
                             </ScrollView>
                         </View>
                     </View>

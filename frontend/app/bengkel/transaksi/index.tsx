@@ -220,6 +220,8 @@ export default function BengkelTransaksiScreen() {
     }, [billPartList, billServiceList]);
     const discountAmount = Math.min(parseNumber(discount), grossSubtotal);
     const subtotal = Math.max(0, grossSubtotal - discountAmount);
+    const existingDp = editingTransaction?.jumlah_bayar || selectedOpenTransactionDetail?.jumlah_bayar || 0;
+    const sisaBayar = Math.max(0, subtotal - existingDp);
     const paymentAmountValue = parseNumber(paymentAmount);
     const hasPaymentAmountInput = paymentAmount.trim().length > 0;
     const receivedAmount = hasPaymentAmountInput ? paymentAmountValue : subtotal;
@@ -359,7 +361,7 @@ export default function BengkelTransaksiScreen() {
             if (editTransactionId && Number(item.id) === editTransactionId) return false;
             const workStatus = getEditableWorkStatus(item);
             const paymentStatus = getEditablePaymentStatus(item);
-            const canEditWorkStatus = workStatus === 'ANTRE' || workStatus === 'PROSES';
+            const canEditWorkStatus = workStatus === 'PROSES';
             const canEditPaymentStatus = paymentStatus === 'BELUM_BAYAR' || paymentStatus === 'BELUM_LUNAS';
             return canEditWorkStatus && canEditPaymentStatus;
         });
@@ -370,7 +372,7 @@ export default function BengkelTransaksiScreen() {
         return rows.filter((item: any) => {
             const workStatus = getEditableWorkStatus(item);
             const isGeneralCustomer = String(item.kategori || 'umum').toLowerCase() === 'umum';
-            if (!(isGeneralCustomer && (workStatus === 'ANTRE' || workStatus === 'PROSES'))) return false;
+            if (!(isGeneralCustomer && (workStatus === 'PROSES'))) return false;
             if (!query) return true;
             return [
                 item.customer_nama,
@@ -427,6 +429,29 @@ export default function BengkelTransaksiScreen() {
 
     const setServiceQty = (serviceId: number, qty: number) => {
         setSelectedServices(prev => prev[serviceId] ? { ...prev, [serviceId]: { ...prev[serviceId], qty: Math.max(1, qty) } } : prev);
+    };
+
+    const setServicePrice = (serviceId: number, priceStr: string, fallbackItem?: any) => {
+        setSelectedServices(prev => {
+            const existing = prev[serviceId];
+            if (existing) {
+                return {
+                    ...prev,
+                    [serviceId]: {
+                        ...existing,
+                        item: { ...existing.item, harga: parseNumber(priceStr) }
+                    }
+                };
+            }
+            if (!fallbackItem) return prev;
+            return {
+                ...prev,
+                [serviceId]: {
+                    item: { ...fallbackItem, harga: parseNumber(priceStr) },
+                    qty: 1
+                }
+            };
+        });
     };
 
     const addScannedPart = (part: any) => {
@@ -510,7 +535,7 @@ export default function BengkelTransaksiScreen() {
         }
         if (step === 2) {
             if (kategori === 'umum' && customerSource === 'antrian' && !(selectedCustomerTransaction || editingTransaction?.nama_customer || editingTransaction?.customer_nama)) {
-                showNotice('error', 'Validasi', 'Pilih transaksi customer yang masih antre atau proses.');
+                showNotice('error', 'Validasi', 'Pilih transaksi customer yang masih proses.');
                 return;
             }
             if (kategori === 'umum' && customerSource === 'customer' && !(selectedCustomer || guestName.trim())) {
@@ -683,7 +708,7 @@ export default function BengkelTransaksiScreen() {
                 status_pengerjaan: shouldPay ? 'SELESAI' : undefined,
                 metode_bayar: shouldPay
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
-                    : 'KREDIT',
+                    : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
                 jumlah_bayar: shouldPay
                     ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTotal : receivedAmount))
                     : 0,
@@ -892,7 +917,19 @@ export default function BengkelTransaksiScreen() {
                                                     <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
                                                 </View>
                                                 <Typography className="text-gray-400 text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
-                                                <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                                                {selected ? (
+                                                    <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
+                                                        <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                                                        <TextInput
+                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
+                                                            onChangeText={(val) => setServicePrice(service.id, val)}
+                                                            keyboardType="number-pad"
+                                                            className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                                                        />
+                                                    </View>
+                                                ) : (
+                                                    <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                                                )}
                                             </View>
                                         </View>
                                         {selected && (
@@ -943,7 +980,7 @@ export default function BengkelTransaksiScreen() {
                         </View>
                         )}
 
-                        {!showServiceCatalog && selectedServiceList.length > 0 && (
+                        {!showServiceCatalog && (selectedServiceList.length > 0 || openBillServiceList.length > 0) && (
                         <View>
                             <View className="flex-row items-center justify-between mb-3">
                                 <Typography variant="body1" weight="bold" className="text-textMain">Servis Terpilih</Typography>
@@ -955,10 +992,18 @@ export default function BengkelTransaksiScreen() {
                                 <View key={`selected-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-emerald-50 border-emerald-100">
                                     <View className="flex-row items-start">
                                         <Wrench size={18} color="#059669" />
-                                        <View className="flex-1 ml-2">
+                                        <View className="flex-1 ml-2 mr-2">
                                             <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
-                                            <Typography className="text-gray-500 text-[11px] mt-1">{row.item.kategori || 'Servis'}</Typography>
-                                            <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(row.item.harga || 0)}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'}</Typography>
+                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start">
+                                                <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                                                <TextInput
+                                                    value={formatNumber(String(row.item.harga || '0'))}
+                                                    onChangeText={(val) => setServicePrice(row.item.id, val)}
+                                                    keyboardType="number-pad"
+                                                    className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                                                />
+                                            </View>
                                         </View>
                                         <Pressable onPress={() => toggleService(row.item)} className="w-8 h-8 rounded-full bg-white items-center justify-center">
                                             <X size={15} color="#64748B" />
@@ -969,6 +1014,33 @@ export default function BengkelTransaksiScreen() {
                                         color="emerald"
                                         onMinus={() => setServiceQty(row.item.id, row.qty - 1)}
                                         onPlus={() => setServiceQty(row.item.id, row.qty + 1)}
+                                        onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
+                                    />
+                                </View>
+                            ))}
+                            {openBillServiceList.filter(obs => !selectedServices[obs.item.id]).map(row => (
+                                <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
+                                    <View className="flex-row items-start">
+                                        <Wrench size={18} color="#D97706" />
+                                        <View className="flex-1 ml-2 mr-2">
+                                            <Typography weight="bold" className="text-sm text-textMain" numberOfLines={1}>{row.item.nama}</Typography>
+                                            <Typography className="text-gray-500 text-[11px] mt-1 mb-2">{row.item.kategori || 'Servis'} (dari transaksi)</Typography>
+                                            <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-amber-100 self-start">
+                                                <Typography className="text-amber-700 text-xs font-bold mr-1">Rp</Typography>
+                                                <TextInput
+                                                    value={formatNumber(String(row.item.harga || '0'))}
+                                                    onChangeText={(val) => setServicePrice(row.item.id, val, row.item)}
+                                                    keyboardType="number-pad"
+                                                    className="text-amber-700 text-xs font-bold min-w-[80px] p-0"
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+                                    <QtyControl
+                                        value={selectedServices[row.item.id]?.qty || row.qty}
+                                        color="amber"
+                                        onMinus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) - 1)}
+                                        onPlus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) + 1)}
                                         onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
                                     />
                                 </View>
@@ -1035,7 +1107,7 @@ export default function BengkelTransaksiScreen() {
                                     <ActivityIndicator color="#023C69" />
                                 ) : openCustomerTransactions.length === 0 ? (
                                     <View className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-                                        <Typography className="text-gray-500 text-sm text-center">Tidak ada transaksi customer dengan status antre atau proses.</Typography>
+                                        <Typography className="text-gray-500 text-sm text-center">Tidak ada transaksi customer dengan status proses.</Typography>
                                     </View>
                                 ) : openCustomerTransactions.map((item: any) => {
                                     const active = selectedCustomerTransaction?.id === item.id;
@@ -1183,6 +1255,12 @@ export default function BengkelTransaksiScreen() {
                                 />
                             ))}
                             {discountAmount > 0 && <SummaryRow label="Diskon" value={`-${formatCurrency(discountAmount)}`} />}
+                            {existingDp > 0 && (
+                                <>
+                                    <SummaryRow label="DP Sudah Dibayar" value={`-${formatCurrency(existingDp)}`} muted />
+                                    <SummaryRow label="Sisa Bayar" value={formatCurrency(sisaBayar)} bold color="text-amber-700" />
+                                </>
+                            )}
                             <View className="h-[1px] bg-slate-200 my-3" />
                             <View className="flex-row justify-between items-center">
                                 <Typography weight="bold" className="text-textMain">Total</Typography>
@@ -1190,12 +1268,26 @@ export default function BengkelTransaksiScreen() {
                             </View>
                         </View>
 
-                        <View className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-5">
-                            <Typography weight="bold" className="text-blue-800">Pembayaran belum diproses</Typography>
-                            <Typography className="text-blue-700 text-xs mt-1">
-                                Pilih Update Transaksi untuk menyimpan sparepart/servis saja, atau Lanjut Pembayaran untuk mengisi metode dan nominal bayar.
-                            </Typography>
-                        </View>
+                        {existingDp > 0 ? (
+                            <View className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl mb-5">
+                                <View className="flex-row items-start">
+                                    <CheckCircle2 size={18} color="#059669" className="mt-0.5" />
+                                    <View className="ml-3 flex-1">
+                                        <Typography weight="bold" className="text-emerald-800">DP Rp{formatCurrency(existingDp)} sudah dibayar</Typography>
+                                        <Typography className="text-emerald-700 text-xs mt-1">
+                                            Sisa yang perlu dibayar: <Typography weight="bold">{formatCurrency(sisaBayar)}</Typography>
+                                        </Typography>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : (
+                            <View className="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-5">
+                                <Typography weight="bold" className="text-blue-800">Pembayaran belum diproses</Typography>
+                                <Typography className="text-blue-700 text-xs mt-1">
+                                    Pilih Update Transaksi untuk menyimpan sparepart/servis saja, atau Lanjut Pembayaran untuk mengisi metode dan nominal bayar.
+                                </Typography>
+                            </View>
+                        )}
 
                         <Input label="Catatan" placeholder="Catatan transaksi..." value={note} onChangeText={setNote} multiline />
                     </View>
@@ -1204,8 +1296,17 @@ export default function BengkelTransaksiScreen() {
 
             <View className="absolute left-0 right-0 bg-white border-t border-gray-100 px-5 py-4" style={{ bottom: tabBarHeight }}>
                 <View className="flex-row items-center justify-between mb-3">
-                    <Typography className="text-gray-400 text-xs font-bold uppercase">Total Transaksi</Typography>
-                    <Typography weight="bold" className="text-primary text-lg">{formatCurrency(subtotal)}</Typography>
+                    <Typography className="text-gray-400 text-xs font-bold uppercase">{existingDp > 0 ? 'Sisa Bayar' : 'Total Transaksi'}</Typography>
+                    <View className="items-end">
+                        {existingDp > 0 && (
+                            <Typography className="text-gray-400 text-[10px]">
+                                Total: {formatCurrency(subtotal)} • DP: {formatCurrency(existingDp)}
+                            </Typography>
+                        )}
+                        <Typography weight="bold" className="text-primary text-lg">
+                            {existingDp > 0 ? formatCurrency(sisaBayar) : formatCurrency(subtotal)}
+                        </Typography>
+                    </View>
                 </View>
                 <View className="flex-row space-x-3">
                     {step > 1 && <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />}
@@ -1695,7 +1796,19 @@ export default function BengkelTransaksiScreen() {
                                                     <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
                                                 </View>
                                                 <Typography className="text-gray-400 text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
-                                                <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                                                {selected ? (
+                                                    <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
+                                                        <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
+                                                        <TextInput
+                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
+                                                            onChangeText={(val) => setServicePrice(service.id, val)}
+                                                            keyboardType="number-pad"
+                                                            className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
+                                                        />
+                                                    </View>
+                                                ) : (
+                                                    <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
+                                                )}
                                             </View>
                                         </View>
                                         {selected && (

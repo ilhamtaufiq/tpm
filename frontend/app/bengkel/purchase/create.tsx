@@ -16,7 +16,9 @@ import {
     Truck,
     Search,
     Package,
-    X
+    X,
+    CheckCircle2,
+    Circle
 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { QrCode } from 'lucide-react-native';
@@ -58,7 +60,7 @@ export default function PurchaseScreen() {
     const [isPartModalOpen, setIsPartModalOpen] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [partSearchQuery, setPartSearchQuery] = useState('');
-    const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null); // Track which item row triggered the modal
+    const [checkedParts, setCheckedParts] = useState<Map<number, { id: number; nama: string; harga_beli: number }>>(new Map());
 
     // API Hooks
     const createPembelianMutation = useCreatePembelianParts();
@@ -157,10 +159,9 @@ export default function PurchaseScreen() {
     }, [payments]);
 
     const handleAddItem = () => {
-        setItems([
-            ...items,
-            { id: Date.now() + Math.random(), spare_part_id: 0, name: '', qty: '', price: '' }
-        ]);
+        setCheckedParts(new Map());
+        setPartSearchQuery('');
+        setIsPartModalOpen(true);
     };
 
     const handleRemoveItem = (id: number) => {
@@ -200,21 +201,36 @@ export default function PurchaseScreen() {
         }
     };
 
-    const handleSelectPart = (part: any) => {
-        if (activeItemIndex !== null) {
-            const newItems = [...items];
-            newItems[activeItemIndex] = {
-                ...newItems[activeItemIndex],
-                spare_part_id: part.id,
-                name: part.nama,
-                price: formatNumber(part.harga_beli.toString()), // Default to last buy price
-                qty: '1'
-            };
-            setItems(newItems);
-            setIsPartModalOpen(false);
-            setActiveItemIndex(null);
-            setPartSearchQuery('');
-        }
+    const handleTogglePart = (part: any) => {
+        setCheckedParts(prev => {
+            const next = new Map(prev);
+            if (next.has(part.id)) {
+                next.delete(part.id);
+            } else {
+                next.set(part.id, { id: part.id, nama: part.nama, harga_beli: part.harga_beli });
+            }
+            return next;
+        });
+    };
+
+    const handleConfirmParts = () => {
+        const newItems = [...items];
+        checkedParts.forEach((part) => {
+            const alreadyExists = newItems.some(i => i.spare_part_id === part.id);
+            if (!alreadyExists) {
+                newItems.push({
+                    id: Date.now() + Math.random(),
+                    spare_part_id: part.id,
+                    name: part.nama,
+                    qty: '1',
+                    price: formatNumber(part.harga_beli.toString()),
+                });
+            }
+        });
+        setItems(newItems);
+        setIsPartModalOpen(false);
+        setCheckedParts(new Map());
+        setPartSearchQuery('');
     };
 
     const handleScanPart = (data: string) => {
@@ -398,23 +414,15 @@ export default function PurchaseScreen() {
                             </Pressable>
                         </View>
 
-                        <Pressable
-                            onPress={() => {
-                                setActiveItemIndex(index);
-                                setIsPartModalOpen(true);
-                            }}
-                        >
-                            <View pointerEvents="none">
-                                <Input
-                                    label="Nama Barang"
-                                    placeholder="Ketuk untuk cari sparepart..."
-                                    value={item.name}
-                                    editable={false}
-                                    containerClassName="mb-3"
-                                    endIcon={<Search size={18} color="#9CA3AF" />}
-                                />
-                            </View>
-                        </Pressable>
+                        <View>
+                            <Input
+                                label="Nama Barang"
+                                placeholder="—"
+                                value={item.name}
+                                editable={false}
+                                containerClassName="mb-3"
+                            />
+                        </View>
 
                         <View className="flex-row space-x-3">
                             <Input
@@ -658,11 +666,11 @@ export default function PurchaseScreen() {
                 visible={isPartModalOpen}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => setIsPartModalOpen(false)}
+                onRequestClose={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }}
                 statusBarTranslucent
             >
                 <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={() => setIsPartModalOpen(false)} />
+                    <Pressable style={{ flex: 1 }} onPress={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }} />
                     <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
                         <View className="p-6 flex-1">
                             <View className="items-center mb-2">
@@ -670,7 +678,7 @@ export default function PurchaseScreen() {
                             </View>
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography variant="h3" weight="bold">Pilih Sparepart</Typography>
-                                <Pressable onPress={() => setIsPartModalOpen(false)}>
+                                <Pressable onPress={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }}>
                                     <X size={24} color="#6B7280" />
                                 </Pressable>
                             </View>
@@ -694,27 +702,45 @@ export default function PurchaseScreen() {
                                     data={spareParts}
                                     keyExtractor={(item: any) => item.id.toString()}
                                     showsVerticalScrollIndicator={false}
-                                    renderItem={({ item }: { item: any }) => (
-                                        <Pressable
-                                            onPress={() => handleSelectPart(item)}
-                                            className="mb-3"
-                                        >
-                                            <Card className="p-4 border border-gray-100 flex-row items-center justify-between">
-                                                <View>
-                                                    <Typography weight="semibold">{item.nama}</Typography>
-                                                    <Typography variant="caption" className="text-gray-500">
-                                                        Stok: {item.stok} {item.satuan || 'pcs'} • {item.kode}
-                                                    </Typography>
-                                                </View>
-                                                <View className="items-end">
-                                                    <Typography weight="bold" className="text-primary">
-                                                        {formatCurrency(item.harga_beli)}
-                                                    </Typography>
-                                                    <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
-                                                </View>
-                                            </Card>
-                                        </Pressable>
-                                    )}
+                                    contentContainerStyle={{ paddingBottom: 80 }}
+                                    renderItem={({ item }: { item: any }) => {
+                                        const alreadyInItems = items.some(i => i.spare_part_id === item.id);
+                                        const isChecked = checkedParts.has(item.id) || alreadyInItems;
+
+                                        return (
+                                            <Pressable
+                                                onPress={() => {
+                                                    if (!alreadyInItems) handleTogglePart(item);
+                                                }}
+                                                className="mb-3"
+                                            >
+                                                <Card className={`p-4 flex-row items-center justify-between border ${isChecked ? 'bg-primary/5 border-primary/20' : 'border-gray-100'}`}>
+                                                    <View className="flex-1 mr-3">
+                                                        <Typography weight="semibold">{item.nama}</Typography>
+                                                        <Typography variant="caption" className="text-gray-500">
+                                                            Stok: {item.stok} {item.satuan || 'pcs'} • {item.kode}
+                                                        </Typography>
+                                                        {alreadyInItems && (
+                                                            <Typography variant="caption" weight="bold" className="text-emerald-600 mt-0.5">
+                                                                ✓ Sudah ditambahkan
+                                                            </Typography>
+                                                        )}
+                                                    </View>
+                                                    <View className="items-end flex-row">
+                                                        <View className="items-end mr-3">
+                                                            <Typography weight="bold" className="text-primary">
+                                                                {formatCurrency(item.harga_beli)}
+                                                            </Typography>
+                                                            <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
+                                                        </View>
+                                                        <View className={`w-7 h-7 rounded-full items-center justify-center ${isChecked ? 'bg-primary' : 'bg-gray-100'}`}>
+                                                            {isChecked ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
+                                                        </View>
+                                                    </View>
+                                                </Card>
+                                            </Pressable>
+                                        );
+                                    }}
                                     ListEmptyComponent={
                                         <Typography className="text-center text-gray-500 mt-4">
                                             {partSearchQuery ? 'Data tidak ditemukan' : 'Mulai ketik untuk mencari'}
@@ -723,6 +749,17 @@ export default function PurchaseScreen() {
                                 />
                             )}
                         </View>
+
+                        {/* Sticky Confirm Button */}
+                        {checkedParts.size > 0 && (
+                            <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
+                                <Button
+                                    title={`Tambah ${checkedParts.size} Barang`}
+                                    onPress={handleConfirmParts}
+                                    className="rounded-xl"
+                                />
+                            </View>
+                        )}
                     </View>
                 </View>
             </Modal>

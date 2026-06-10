@@ -623,8 +623,24 @@ class BaseReportService:
             TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         ).scalar() or 0)
-        
-        customer_dp += bengkel_dp
+
+        # Direct DP on bengkel transactions without linked piutang (grand_total = 0 case)
+        direct_bengkel_dp = float(self.db.query(
+            func.coalesce(func.sum(TransaksiPenjualanBengkel.jumlah_bayar), 0)
+        ).filter(
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.jumlah_bayar > 0,
+            ~TransaksiPenjualanBengkel.id.in_(
+                self.db.query(PiutangUsaha.referensi_id).filter(
+                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
+                    PiutangUsaha.referensi_id.isnot(None)
+                )
+            )
+        ).scalar() or 0)
+
+        customer_dp += direct_bengkel_dp
 
         # 4. Unearned Receivables (Piutang Booking)
         # If a car is BOOKED, we have a Piutang record, but the revenue isn't earned yet.
@@ -642,18 +658,21 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
-        bengkel_booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
-            TransaksiPenjualanBengkel, PiutangUsaha.referensi_id == TransaksiPenjualanBengkel.id
-        ).filter(
+        # Note: Bengkel PROSES booking_receivables intentionally excluded.
+        # Bengkel PROSES now finalizes finance (piutang + laba), not unearned.
+        booking_receivables = float(self.db.query(func.sum(PiutangUsaha.nominal_piutang)).select_from(PiutangUsaha).join(
+            TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
+        ).join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id).filter(
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
-            PiutangUsaha.sumber == PiutangSource.BENGKEL,
-            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+            TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
+            or_(
+                Mobil.status != CarStatus.TERJUAL,
+                Mobil.tanggal_terjual > tanggal_sampai
+            )
         ).scalar() or 0)
-        
-        booking_receivables += bengkel_booking_receivables
-        
+
         # Subtract any payments already made on these booking receivables as of the cutoff
         booking_payments = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
             TransaksiPenjualanMobil, PiutangUsaha.referensi_id == TransaksiPenjualanMobil.id
@@ -667,8 +686,6 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
-        booking_payments += bengkel_dp
-        
         net_booking_piutang = max(0, booking_receivables - booking_payments)
 
         hutang_internal = float(self.db.query(func.sum(HutangUsaha.sisa_hutang)).filter(
