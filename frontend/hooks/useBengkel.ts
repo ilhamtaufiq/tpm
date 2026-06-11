@@ -67,6 +67,7 @@ export const useUpdateTransaksiBengkelPayment = () => {
             bengkelService.updateTransaksiPayment(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
+            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
         },
     });

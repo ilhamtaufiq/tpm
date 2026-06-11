@@ -324,8 +324,8 @@ function RootLayoutContent() {
                         <Stack.Screen name="+not-found" options={{ title: 'Oops!' }} />
                     </Stack>
                     
-                    {/* Global Custom Bottom Navigation */}
-                    {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && (
+                                    {/* Global Custom Bottom Navigation */}
+                    {isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'BENGKEL') && segments[0] !== '(auth)' && segments[0] !== 'landing' && segments[0] !== 'index' && segments[0] !== '(security)' && segments[0] !== 'receipt' && (
                         <CustomTabBar />
                     )}
                 </BottomSheetModalProvider>
@@ -340,7 +340,7 @@ function RootLayoutContent() {
             <GestureHandlerRootView style={[{ flex: 1 }, theme]}>
                 {showMobilePreview ? (
                     <View style={{ flex: 1, backgroundColor: '#f3f4f6', alignItems: 'center' }}>
-                        <View 
+                        <View
                             style={{
                                 width: 430,
                                 maxWidth: '100%',
@@ -358,51 +358,58 @@ function RootLayoutContent() {
                             {appContent}
                         </View>
 
-                        {/* Floating Mode Switcher Button (Mobile preview active) */}
-                        <View 
+                        {/* Toggle icon: Mobile -> Desktop */}
+                        <Pressable
+                            onPress={() => setIsMobileMode(false)}
                             style={{
                                 position: 'absolute',
                                 top: 24,
                                 right: 24,
                                 zIndex: 99999,
+                                width: 44,
+                                height: 44,
+                                borderRadius: 22,
+                                backgroundColor: 'rgba(255,255,255,0.85)',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 8,
+                                elevation: 4,
                             }}
-                            className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"
                         >
-                            <Pressable
-                                onPress={() => setIsMobileMode(false)}
-                                className="px-4 py-2 rounded-xl flex-row items-center justify-center bg-primary active:scale-95 shadow-md shadow-primary/20"
-                            >
-                                <Text className="text-xs font-bold text-white">
-                                    Mode Desktop
-                                </Text>
-                            </Pressable>
-                            <Text className="text-[10px] text-slate-500 font-bold px-1">Mobile Preview</Text>
-                        </View>
+                            <Text style={{ fontSize: 20, lineHeight: 24 }}>🖥️</Text>
+                        </Pressable>
                     </View>
                 ) : (
                     <>
                         {appContent}
-                        
-                        {/* Floating Mode Switcher Button (Desktop mode active) */}
+
+                        {/* Toggle icon: Desktop -> Mobile */}
                         {Platform.OS === 'web' && windowWidth > 640 && (
-                            <View 
+                            <Pressable
+                                onPress={() => setIsMobileMode(true)}
                                 style={{
                                     position: 'absolute',
                                     top: 24,
                                     right: 24,
                                     zIndex: 99999,
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: 'rgba(255,255,255,0.85)',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 8,
+                                    elevation: 4,
                                 }}
-                                className="bg-white/85 backdrop-blur-md p-3 rounded-2xl border border-gray-200/50 shadow-lg flex-row items-center space-x-2"
                             >
-                                <Pressable
-                                    onPress={() => setIsMobileMode(true)}
-                                    className="px-4 py-2 rounded-xl flex-row items-center justify-center bg-slate-100 hover:bg-slate-200 active:scale-95"
-                                >
-                                    <Text className="text-xs font-bold text-slate-700">
-                                        📱 Preview Mobile
-                                    </Text>
-                                </Pressable>
-                            </View>
+                                <Text style={{ fontSize: 20, lineHeight: 24 }}>📱</Text>
+                            </Pressable>
                         )}
                     </>
                 )}

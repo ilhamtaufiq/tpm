@@ -12,7 +12,8 @@
       "Bash(rtk git *)",
       "Bash(rtk find *)",
       "Bash(rtk read *)",
-      "Bash(rtk grep *)"
+      "Bash(rtk grep *)",
+      "Bash(xargs grep -l \"receipt\\\\|struk\")"
     ]
   }
 }

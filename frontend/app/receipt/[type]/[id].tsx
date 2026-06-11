@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { View, ScrollView, ActivityIndicator, Platform, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
@@ -11,6 +11,7 @@ import api, { FILE_URL } from '../../../utils/api';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Alert } from 'react-native';
+import { printSettingsService } from '../../../utils/printSettings';
 
 /**
  * Public receipt view page
@@ -29,10 +30,17 @@ export default function PublicReceiptPage() {
     const [loading, setLoading] = useState(true);
     const [sharing, setSharing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [printSettings, setPrintSettings] = useState<any>(null);
 
     useEffect(() => {
+        loadSettings();
         loadReceipt();
     }, [id, type]);
+
+    const loadSettings = async () => {
+        const settings = await printSettingsService.getSettings();
+        setPrintSettings(settings);
+    };
 
     const loadReceipt = async () => {
         try {
@@ -98,7 +106,9 @@ export default function PublicReceiptPage() {
     const handleShare = async () => {
         if (!receipt) return;
 
-        const shareUrl = `${FILE_URL}/receipt/${type}/${id}`;
+        const shareUrl = typeof window !== 'undefined' && window.location?.origin
+            ? `${window.location.origin}/receipt/${type}/${id}`
+            : `${FILE_URL}/receipt/${type}/${id}`;
 
         if (Platform.OS === 'web') {
             // Web share
@@ -227,36 +237,50 @@ export default function PublicReceiptPage() {
         }
     };
 
+    const ps = printSettings;
+    const companyName = receipt.companyName || ps?.companyName || 'TPM';
+    const companyAddress = receipt.companyAddress || ps?.companyAddress || '';
+    const companyPhone = receipt.companyPhone || ps?.companyPhone || '';
+
     return (
         <SafeAreaView className="flex-1 bg-gray-100" edges={['top']}>
-            {/* Header */}
-            <View className="bg-white px-6 py-4 border-b border-gray-200 flex-row items-center">
-                <Button 
-                    variant="ghost" 
-                    onPress={() => router.back()}
-                    icon={<ArrowLeft size={24} color="#374151" />}
-                    className="mr-2 p-0 w-10"
-                />
-                <Typography variant="h3" weight="bold">Struk Digital</Typography>
-            </View>
- 
             <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-                <View style={receiptStyles.paper}>
-                    {/* Header Info */}
+                <View style={[receiptStyles.paper, { maxWidth: ps?.paperSize === '58mm' ? 302 : 400 }]}>
+                    {/* Custom Header */}
+                    {ps?.header && (
+                        <Typography style={[{ fontSize: 10, textAlign: 'center', marginBottom: 8 }, receiptStyles.mono]}>
+                            {ps.header}
+                        </Typography>
+                    )}
+
+                    {/* Logo */}
+                    {ps?.logoUri && (
+                        <View className="items-center mb-2">
+                            <Image
+                                source={ps.logoUri === 'tpm_default'
+                                    ? require('../../../assets/logo_tpm.png')
+                                    : { uri: ps.logoUri }}
+                                style={{ width: 80, height: 60 }}
+                                resizeMode="contain"
+                            />
+                        </View>
+                    )}
+
+                    {/* Header Info from settings */}
                     <View className="items-center mb-2">
                         <Typography weight="bold" style={[{ fontSize: 18, textAlign: 'center' }, receiptStyles.mono]}>
-                            {receipt.companyName}
+                            {companyName}
                         </Typography>
                         <Typography style={[{ fontSize: 12, textAlign: 'center', marginTop: 4 }, receiptStyles.mono]}>
-                            {receipt.companyAddress}
+                            {companyAddress}
                         </Typography>
                         <Typography style={[{ fontSize: 12, textAlign: 'center' }, receiptStyles.mono]}>
-                            Telp: {receipt.companyPhone}
+                            Telp: {companyPhone}
                         </Typography>
                     </View>
- 
+
                     <View style={receiptStyles.divider} />
- 
+
                     {/* Transaction Info */}
                     <View>
                         <View className="flex-row justify-between mb-1">
@@ -278,9 +302,9 @@ export default function PublicReceiptPage() {
                             </View>
                         )}
                     </View>
- 
+
                     <View style={receiptStyles.divider} />
- 
+
                     {/* Items List */}
                     <View>
                         {receipt.items.map((item: any, index: number) => (
@@ -299,39 +323,39 @@ export default function PublicReceiptPage() {
                             </View>
                         ))}
                     </View>
- 
+
                     <View style={receiptStyles.divider} />
- 
+
                     {/* Summary */}
                     <View>
                         <View className="flex-row justify-between mb-1">
                             <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>SUBTOTAL</Typography>
                             <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.subtotal).replace('Rp', '').trim()}</Typography>
                         </View>
-                        
+
                         {receipt.tax > 0 && (
                             <View className="flex-row justify-between mb-1">
                                 <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>PAJAK</Typography>
                                 <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.tax).replace('Rp', '').trim()}</Typography>
                             </View>
                         )}
- 
+
                         {receipt.discount > 0 && (
                             <View className="flex-row justify-between mb-1">
                                 <Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>DISKON</Typography>
                                 <Typography style={[{ fontSize: 13, color: '#EF4444' }, receiptStyles.mono]}>-{formatCurrency(receipt.discount).replace('Rp', '').trim()}</Typography>
                             </View>
                         )}
- 
+
                         <View className="my-2" style={{ borderTopWidth: 1, borderTopColor: '#000' }} />
-                        
+
                         <View className="flex-row justify-between items-center py-1">
                             <Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>TOTAL</Typography>
                             <Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>
                                 {formatCurrency(receipt.total).replace('Rp', '').trim()}
                             </Typography>
                         </View>
- 
+
                         {receipt.total - receipt.paid > 0 ? (
                             <>
                                 <View className="flex-row justify-between mb-1 mt-2">
@@ -350,22 +374,27 @@ export default function PublicReceiptPage() {
                                 *** LUNAS ***
                             </Typography>
                         )}
- 
+
                         <View className="flex-row justify-between mt-4">
                             <Typography style={[{ fontSize: 11 }, receiptStyles.mono]}>Metode Bayar:</Typography>
                             <Typography style={[{ fontSize: 11, fontWeight: 'bold' }, receiptStyles.mono]}>{String(receipt.paymentMethod || '-').toUpperCase()}</Typography>
                         </View>
                     </View>
- 
+
                     <View style={receiptStyles.divider} />
- 
-                    {/* Footer */}
+
+                    {/* Footer from settings */}
                     <View className="items-center">
+                        {ps?.footer && (
+                            <Typography style={[{ fontSize: 11, textAlign: 'center', marginBottom: 8 }, receiptStyles.mono]}>
+                                {ps.footer}
+                            </Typography>
+                        )}
                         <Typography style={[{ fontSize: 11, textAlign: 'center' }, receiptStyles.mono]}>
-                            TERIMA KASIH ATAS KUNJUNGANNYA
+                            TERIMA KASIH
                         </Typography>
                         <Typography style={[{ fontSize: 10, textAlign: 'center', marginTop: 4, color: '#6B7280' }, receiptStyles.mono]}>
-                            Bukti pembayaran sah {receipt.companyName}
+                            Bukti pembayaran sah {companyName}
                         </Typography>
                         {receipt.notes && (
                             <Typography style={[{ fontSize: 11, textAlign: 'center', marginTop: 10, fontStyle: 'italic' }, receiptStyles.mono]}>
@@ -374,7 +403,7 @@ export default function PublicReceiptPage() {
                         )}
                     </View>
                 </View>
- 
+
                 {/* Action Buttons */}
                 <View className="mt-8 mb-10" style={{ gap: 12 }}>
                     <Button

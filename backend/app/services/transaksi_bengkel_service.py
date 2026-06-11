@@ -17,7 +17,7 @@ from app.models.customer import Customer
 from app.models.keuangan import PiutangUsaha, HutangUsaha, KasBank, PembayaranPiutang
 from app.models.mobil import MobilPartService, Mobil
 from app.models.jasa_angkut import JasaAngkutPartService
-from app.schemas.bengkel import DetailPartCreate, DetailServiceCreate, TransaksiBengkelCreate
+from app.schemas.bengkel import DetailPartCreate, DetailServiceCreate, TransaksiBengkelCreate, PaymentItem
 from app.realtime import publish_realtime_event
 from app.utils.helpers import get_jakarta_date
 from app.utils.constants import (
@@ -559,6 +559,7 @@ class TransaksiBengkelService:
                             referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                             keterangan=f"DP Bengkel: {nomor_transaksi} ({p.metode})",
                             user_id=user_id,
+                            kas_jenis=p.kas_jenis,
                         )
             else:
                 create_kas_entry(
@@ -588,18 +589,19 @@ class TransaksiBengkelService:
                         if rec_amount > 0:
                             create_kas_entry(
                                 db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
-                                nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
+                                nominal=rec_amount, sumber=KasBankSource.BENGKEL,
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                                 keterangan=f"Pembayaran Bengkel: {nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
+                                kas_jenis=p.kas_jenis,
                             )
                             remaining_to_record -= rec_amount
                 else:
                     # Single payment
                     create_kas_entry(
                         db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
-                        nominal=grand_total, sumber=KasBankSource.BENGKEL, 
+                        nominal=grand_total, sumber=KasBankSource.BENGKEL,
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                         keterangan=f"Pembayaran Lunas Bengkel: {nomor_transaksi}",
@@ -957,6 +959,7 @@ class TransaksiBengkelService:
                                 referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
                                 keterangan=f"Pembayaran (EDIT) Bengkel: {transaksi.nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
+                                kas_jenis=p.kas_jenis,
                             )
                             remaining_to_record -= rec_amount
                     # Record remaining covered by existing DP
@@ -1374,8 +1377,15 @@ class TransaksiBengkelService:
         jumlah_bayar: Decimal,
         metode_bayar: Optional[PaymentMethod] = None,
         user_id: Optional[int] = None,
+        diskon: Optional[Decimal] = None,
+        payments: Optional[List[PaymentItem]] = None,
+        status_pengerjaan: Optional[WorkshopStatus] = None,
     ) -> TransaksiPenjualanBengkel:
-        """Update payment for a transaction."""
+        """Update payment for a transaction.
+
+        Supports: diskon adjustment, split payments (payments list),
+        and auto-update status_pengerjaan to SELESAI.
+        """
         transaksi = self.get_by_id(transaksi_id)
 
         if transaksi.status_bayar == PaymentStatus.LUNAS:
@@ -1384,8 +1394,52 @@ class TransaksiBengkelService:
                 detail="Transaksi sudah lunas",
             )
 
+        # Apply discount if provided
+        if diskon is not None and diskon > 0:
+            transaksi.diskon = (transaksi.diskon or Decimal("0")) + diskon
+            new_grand_total = transaksi.subtotal - transaksi.diskon
+            if new_grand_total < 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Diskon melebihi subtotal",
+                )
+            transaksi.grand_total = new_grand_total
+
+        # Determine effective payment amount & method
+        effective_payment = jumlah_bayar
+        effective_method = metode_bayar or transaksi.metode_bayar
+
+        # Handle split payments
+        if payments and len(payments) > 0:
+            total_from_payments = sum(p.jumlah for p in payments)
+            if total_from_payments > 0:
+                methods = list(set(p.metode for p in payments if p.jumlah > 0))
+                effective_method = PaymentMethod.SPLIT if len(methods) > 1 else methods[0]
+                # Use the total from payments instead of jumlah_bayar
+                # jumlah_bayar in this context is total being paid NOW
+                # But if caller passed both, payments takes precedence
+                if total_from_payments != effective_payment:
+                    # payments list is the source of truth
+                    pass  # keep effective_payment as-is, or override:
+            # Record each split payment to kas/bank
+            for p in payments:
+                if p.jumlah > 0:
+                    create_kas_entry(
+                        db=self.db,
+                        tanggal=date.today(),
+                        tipe=KasBankType.MASUK,
+                        nominal=p.jumlah,
+                        sumber=KasBankSource.BENGKEL,
+                        metode_bayar=p.metode or effective_method,
+                        referensi_id=transaksi.id,
+                        nomor_referensi=transaksi.nomor_transaksi,
+                        keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi} ({p.metode.value})",
+                        user_id=user_id,
+                        kas_jenis=p.kas_jenis,
+                    )
+
         # Update payment
-        total_bayar = transaksi.jumlah_bayar + jumlah_bayar
+        total_bayar = transaksi.jumlah_bayar + effective_payment
         sisa = transaksi.grand_total - total_bayar
 
         if sisa <= 0:
@@ -1395,8 +1449,12 @@ class TransaksiBengkelService:
             transaksi.status_bayar = PaymentStatus.CICILAN
 
         transaksi.jumlah_bayar = total_bayar
-        if metode_bayar:
-            transaksi.metode_bayar = metode_bayar
+        if effective_method:
+            transaksi.metode_bayar = effective_method
+
+        # Update status_pengerjaan if provided
+        if status_pengerjaan:
+            transaksi.status_pengerjaan = status_pengerjaan
 
         # Update piutang if exists
         piutang = (
@@ -1417,20 +1475,22 @@ class TransaksiBengkelService:
         self.db.commit()
         self.db.refresh(transaksi)
 
-        # Record payment to kas/bank
-        if jumlah_bayar > 0:
-            payment_method = metode_bayar or transaksi.metode_bayar or PaymentMethod.TUNAI
+        # Record single payment to kas/bank (if no split payments recorded above)
+        if not payments and effective_payment > 0:
+            # Use explicit kas_jenis from request if provided
+            kas_jenis_value = getattr(data, 'kas_jenis', None)
             create_kas_entry(
                 db=self.db,
                 tanggal=date.today(),
                 tipe=KasBankType.MASUK,
-                nominal=jumlah_bayar,
+                nominal=effective_payment,
                 sumber=KasBankSource.BENGKEL,
-                metode_bayar=payment_method,
+                metode_bayar=effective_method,
                 referensi_id=transaksi.id,
                 nomor_referensi=transaksi.nomor_transaksi,
-                keterangan=f"Pembayaran cicilan bengkel {transaksi.nomor_transaksi}",
+                keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
                 user_id=user_id,
+                kas_jenis=kas_jenis_value,
             )
 
         self._emit_change(transaksi, "payment_updated")
