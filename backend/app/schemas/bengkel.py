@@ -374,6 +374,9 @@ class PaymentUpdate(BaseModel):
     """Schema for adding payment to transaction."""
     jumlah_bayar: Decimal = Field(..., ge=0)
     metode_bayar: Optional[PaymentMethod] = None
+    diskon: Optional[Decimal] = Field(None, ge=0)
+    payments: Optional[List[PaymentItem]] = None
+    status_pengerjaan: Optional[WorkshopStatus] = None
 
 
 # ============================================

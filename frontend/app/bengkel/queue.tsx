@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     View,
     ScrollView,
@@ -28,6 +29,8 @@ import {
     Wrench,
     Receipt,
     Printer,
+    Share2,
+    Trash2,
     Edit2,
     Banknote,
     Wallet,
@@ -43,7 +46,6 @@ import {
     useTransaksiBengkelSummary,
     useUpdateTransaksiBengkelStatus,
     useUpdateTransaksiBengkelPayment,
-    useUpdateTransaksiBengkel,
     useVoidTransaksiBengkel,
     useSparePartsList
 } from '../../hooks/useBengkel';
@@ -73,7 +75,11 @@ export default function QueueScreen() {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [splitTunai, setSplitTunai] = useState('');
     const [splitTransfer, setSplitTransfer] = useState('');
-    const updateTransaksiMutation = useUpdateTransaksiBengkel();
+    const [diskonValue, setDiskonValue] = useState('');
+    const [showDiskonInReceipt, setShowDiskonInReceipt] = useState(true);
+    const [payExact, setPayExact] = useState(false);
+    const updateTransaksiMutation = useUpdateTransaksiBengkelPayment();
+    const queryClient = useQueryClient();
 
     // Dialog State
     const [dialogConfig, setDialogConfig] = useState<any>({
@@ -99,6 +105,40 @@ export default function QueueScreen() {
     const { data: mobilData } = useMobilList({ status: 'TERJUAL', limit: 100 });
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
+    const voidTransaksiMutation = useVoidTransaksiBengkel();
+
+    const handleVoidTransaction = (item: any) => {
+        if (!item?.id) return;
+        setDialogConfig({
+            visible: true,
+            title: 'Batalkan Transaksi?',
+            message: `Transaksi ${item.nomor_transaksi} akan dibatalkan dan stok dikembalikan. Lanjutkan?`,
+            variant: 'warning',
+            onConfirm: async () => {
+                try {
+                    await voidTransaksiMutation.mutateAsync(item.id);
+                    setDetailModalOpen(false);
+                    setSelectedItem(null);
+                    refetch();
+                    refetchSummary();
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Transaksi Dibatalkan',
+                        message: `Transaksi ${item.nomor_transaksi} berhasil dibatalkan.`,
+                        variant: 'success'
+                    });
+                } catch (error) {
+                    console.error('Failed to void transaction:', error);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Gagal',
+                        message: 'Gagal membatalkan transaksi.',
+                        variant: 'error'
+                    });
+                }
+            }
+        });
+    };
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -518,11 +558,11 @@ export default function QueueScreen() {
                                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Rincian Item</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-textGray">
-                                            {(selectedItem.detail_services?.length || 0) + (selectedItem.detail_parts?.length || 0)} baris
+                                            {(selectedItem?.detail_services?.length || selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || selectedItem?.detail_parts?.length || 0)} baris
                                         </Typography>
                                     </View>
 
-                                    {(selectedItem.detail_services || []).map((s: any, idx: number) => (
+                                    {((selectedItem?.detail_services || selectedItem?.detail_services) || []).map((s: any, idx: number) => (
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
@@ -532,7 +572,7 @@ export default function QueueScreen() {
                                         </View>
                                     ))}
 
-                                    {(selectedItem.detail_parts || []).map((p: any, idx: number) => (
+                                    {((selectedItem?.detail_parts || selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
                                         <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
@@ -543,6 +583,33 @@ export default function QueueScreen() {
                                             <Typography variant="body2" weight="bold" className="text-textMain">{formatCurrency(p.subtotal || 0)}</Typography>
                                         </View>
                                     ))}
+                                </Card>
+
+                                {/* Customer Details Card */}
+                                <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-white rounded-2xl">
+                                    <View className="flex-row items-center justify-between mb-3">
+                                        <View className="flex-row items-center">
+                                            <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-widest">Detail Pelanggan</Typography>
+                                        </View>
+                                    </View>
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography variant="caption" className="text-textGray">Nama</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-textMain">
+                                            {selectedItem?.nama_customer || selectedItem?.customer_nama || '-'}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography variant="caption" className="text-textGray">No. Polisi</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-textMain">
+                                            {selectedItem?.nomor_plat || '-'}
+                                        </Typography>
+                                    </View>
+                                    <View className="flex-row justify-between mb-2">
+                                        <Typography variant="caption" className="text-textGray">Jenis Kendaraan</Typography>
+                                        <Typography variant="body2" weight="medium" className="text-textMain">
+                                            {selectedItem?.jenis_kendaraan || '-'}
+                                        </Typography>
+                                    </View>
                                 </Card>
 
                                 {/* Status Update */}
@@ -581,18 +648,18 @@ export default function QueueScreen() {
                                 <Card variant="outlined" className="p-4 border-gray-100 mb-4 bg-emerald-50/60 rounded-2xl">
                                     <View className="flex-row items-center justify-between mb-2">
                                         <Typography variant="body2" weight="bold" className="text-emerald-800">Total Tagihan</Typography>
-                                        <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency(selectedItem.grand_total || 0)}</Typography>
+                                        <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0)}</Typography>
                                     </View>
-                                    {(selectedItem.jumlah_bayar || 0) > 0 && (
+                                    {(selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0) > 0 && (
                                         <>
                                             <View className="flex-row items-center justify-between mb-1">
                                                 <Typography className="text-emerald-600 text-xs">DP Dibayar</Typography>
-                                                <Typography className="text-emerald-600 text-xs font-bold">-{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
+                                                <Typography className="text-emerald-600 text-xs font-bold">-{formatCurrency(selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0)}</Typography>
                                             </View>
                                             <View className="flex-row items-center justify-between pt-2 border-t border-emerald-200">
                                                 <Typography variant="body2" weight="bold" className="text-emerald-800">Sisa Bayar</Typography>
                                                 <Typography variant="h4" weight="bold" className="text-emerald-800">
-                                                    {formatCurrency(Math.max(0, (selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0)))}
+                                                    {formatCurrency(Math.max(0, ((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0) - (selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0)))}
                                                 </Typography>
                                             </View>
                                         </>
@@ -601,27 +668,78 @@ export default function QueueScreen() {
 
                                 {/* Action Buttons */}
                                 <View className="flex-row space-x-3 mb-4">
-                                    <Pressable
-                                        onPress={() => openEditTransaction(selectedItem)}
-                                        className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
-                                    >
-                                        <Edit2 size={16} color="white" />
-                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                            Edit
-                                        </Typography>
-                                    </Pressable>
-                                    {selectedItem.status_pengerjaan !== 'selesai' && selectedItem.grand_total > 0 && (
+                                    {selectedItem.status_bayar !== 'LUNAS' && (
                                         <Pressable
-                                            onPress={() => { setPaymentAmount(''); setSplitTunai(''); setSplitTransfer(''); setPaymentMode('TUNAI'); setPaymentSheetOpen(true); }}
+                                            onPress={() => openEditTransaction(selectedItem)}
+                                            className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
+                                        >
+                                            <Edit2 size={16} color="white" />
+                                            <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                                Edit
+                                            </Typography>
+                                        </Pressable>
+                                    )}
+
+                                    {selectedItem.status_bayar !== 'LUNAS' && selectedItem.grand_total > 0 ? (
+                                        <Pressable
+                                            onPress={() => { setPaymentAmount(''); setSplitTunai(''); setSplitTransfer(''); setPaymentMode('TUNAI'); setDiskonValue(''); setShowDiskonInReceipt(true); setPaymentSheetOpen(true); }}
                                             className="flex-1 bg-emerald-600 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
                                         >
                                             <Wallet size={16} color="white" />
                                             <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                                Bayar
+                                                Pelunasan
                                             </Typography>
                                         </Pressable>
+                                    ) : (
+                                        <View className="flex-1 py-3 rounded-xl items-center justify-center flex-row bg-gray-100">
+                                            <CheckCircle2 size={16} color="#10B981" />
+                                            <Typography weight="bold" className="text-emerald-600 text-xs ml-2 uppercase tracking-widest">
+                                                LUNAS
+                                            </Typography>
+                                        </View>
                                     )}
                                 </View>
+
+                                <View className="flex-row space-x-3 mb-4">
+                                    <Pressable
+                                        onPress={() => {
+                                            setDetailModalOpen(false);
+                                            router.push(`/receipt/bengkel/${selectedItem?.public_receipt_token || selectedItem.public_receipt_token}`);
+                                        }}
+                                        className="flex-1 bg-primary py-3.5 rounded-xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
+                                    >
+                                        <Printer size={16} color="white" />
+                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                            Print Struk
+                                        </Typography>
+                                    </Pressable>
+                                </View>
+
+                                {/* Share Struk Public */}
+                                {(selectedItem?.public_receipt_token || selectedItem.public_receipt_token) && (
+                                    <Pressable
+                                        onPress={() => {
+                                            setDetailModalOpen(false);
+                                            router.push(`/receipt/bengkel/${selectedItem?.public_receipt_token || selectedItem.public_receipt_token}`);
+                                        }}
+                                        className="bg-primary py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
+                                    >
+                                        <Share2 size={16} color="white" />
+                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                            Share Struk Public
+                                        </Typography>
+                                    </Pressable>
+                                )}
+
+                                <Pressable
+                                    onPress={() => handleVoidTransaction(selectedItem)}
+                                    className="mt-3 bg-rose-600 py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90"
+                                >
+                                    <Trash2 size={16} color="white" />
+                                    <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                        Void Transaksi
+                                    </Typography>
+                                </Pressable>
                             </ScrollView>
                         </View>
                     </View>
@@ -654,6 +772,53 @@ export default function QueueScreen() {
                                     )}
                                 </View>
 
+                                {/* Diskon Field + Toggle Struk */}
+                                <View className="mb-5">
+                                    <View className="flex-row items-center justify-between mb-1">
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 ml-1">Diskon (Rp)</Typography>
+                                        <Pressable onPress={() => setShowDiskonInReceipt(!showDiskonInReceipt)} className="flex-row items-center">
+                                            <View className={`w-5 h-5 rounded border-2 items-center justify-center mr-1 ${showDiskonInReceipt ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                                {showDiskonInReceipt && <CheckCircle2 size={14} color="white" />}
+                                            </View>
+                                            <Typography className="text-gray-500 text-[10px]">Tampilkan di struk</Typography>
+                                        </Pressable>
+                                    </View>
+                                    <TextInput
+                                        placeholder="0"
+                                        keyboardType="number-pad"
+                                        className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
+                                        value={diskonValue}
+                                        onChangeText={(t) => {
+                                            const cleaned = t.replace(/[^0-9]/g, '');
+                                            setDiskonValue(cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                                        }}
+                                    />
+                                </View>
+
+                                {/* Payment Summary with Diskon */}
+                                {diskonValue && parseNumber(diskonValue) > 0 && (
+                                    <View className="bg-amber-50 p-4 rounded-2xl mb-5 border border-amber-100">
+                                        <View className="flex-row justify-between mb-1">
+                                            <Typography className="text-amber-700 text-xs">Total Tagihan</Typography>
+                                            <Typography className="text-amber-800 text-xs font-bold">{formatCurrency(selectedItem.grand_total || 0)}</Typography>
+                                        </View>
+                                        <View className="flex-row justify-between mb-1">
+                                            <Typography className="text-amber-700 text-xs">Diskon</Typography>
+                                            <Typography className="text-amber-700 text-xs font-bold">-{formatCurrency(parseNumber(diskonValue))}</Typography>
+                                        </View>
+                                        <View className="flex-row justify-between mb-1">
+                                            <Typography className="text-amber-700 text-xs">DP Sebelumnya</Typography>
+                                            <Typography className="text-amber-700 text-xs font-bold">{formatCurrency(selectedItem.jumlah_bayar || 0)}</Typography>
+                                        </View>
+                                        <View className="flex-row justify-between pt-2 border-t border-amber-200">
+                                            <Typography className="text-amber-800 text-xs font-bold">Sisa Bayar</Typography>
+                                            <Typography className="text-amber-800 text-xs font-bold">
+                                                {formatCurrency(Math.max(0, (selectedItem.grand_total || 0) - parseNumber(diskonValue) - (selectedItem.jumlah_bayar || 0)))}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                )}
+
                                 {/* Payment Mode Selector */}
                                 <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Metode Pembayaran</Typography>
                                 <View className="flex-row space-x-2 mb-4">
@@ -665,13 +830,31 @@ export default function QueueScreen() {
                                         const Icon = mode.icon;
                                         const aktif = paymentMode === mode.id;
                                         return (
-                                            <Pressable key={mode.id} onPress={() => setPaymentMode(mode.id as any)} className={`flex-1 py-3 rounded-2xl border items-center ${aktif ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
+                                            <Pressable key={mode.id} onPress={() => { setPayExact(false); setPaymentMode(mode.id as any); }} className={`flex-1 py-3 rounded-2xl border items-center ${aktif ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
                                                 <Icon size={18} color={aktif ? 'white' : '#64748B'} />
                                                 <Typography weight="bold" className={`text-[10px] mt-1 ${aktif ? 'text-white' : 'text-gray-500'}`}>{mode.label}</Typography>
                                             </Pressable>
                                         );
                                     })}
                                 </View>
+
+                                {/* Hitung sisa dulu */}
+                                {(() => {
+                                    const diskonAmt = parseNumber(diskonValue);
+                                    const grandTotal = (selectedItem.grand_total || 0) - diskonAmt;
+                                    const sisa = Math.max(0, grandTotal - (selectedItem.jumlah_bayar || 0));
+                                    return null;
+                                })()}
+
+                                {/* Uang Pas toggle — only for Tunai */}
+                                {paymentMode === 'TUNAI' && (
+                                    <Pressable onPress={() => setPayExact(!payExact)} className="flex-row items-center mb-4 ml-1">
+                                        <View className={`w-5 h-5 rounded border-2 items-center justify-center mr-2 ${payExact ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                            {payExact && <CheckCircle2 size={14} color="white" />}
+                                        </View>
+                                        <Typography className="text-gray-600 text-xs">Uang Pas (tidak perlu kembalian)</Typography>
+                                    </Pressable>
+                                )}
 
                                 {paymentMode === 'SPLIT' ? (
                                     <>
@@ -680,7 +863,11 @@ export default function QueueScreen() {
                                             <TextInput
                                                 placeholder="0" keyboardType="number-pad"
                                                 className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
-                                                value={splitTunai} onChangeText={setSplitTunai}
+                                                value={splitTunai}
+                                                onChangeText={(t) => {
+                                                    const cleaned = t.replace(/[^0-9]/g, '');
+                                                    setSplitTunai(cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                                                }}
                                             />
                                         </View>
                                         <View className="mb-4">
@@ -688,27 +875,59 @@ export default function QueueScreen() {
                                             <TextInput
                                                 placeholder="0" keyboardType="number-pad"
                                                 className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
-                                                value={splitTransfer} onChangeText={setSplitTransfer}
+                                                value={splitTransfer}
+                                                onChangeText={(t) => {
+                                                    const cleaned = t.replace(/[^0-9]/g, '');
+                                                    setSplitTransfer(cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                                                }}
                                             />
                                         </View>
                                     </>
                                 ) : (
                                     <View className="mb-4">
-                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Nominal Pembayaran (Rp)</Typography>
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">
+                                            {payExact ? 'Total Dibayar (Uang Pas)' : 'Nominal Pembayaran (Rp)'}
+                                        </Typography>
                                         <TextInput
                                             placeholder="0" keyboardType="number-pad"
                                             className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
-                                            value={paymentAmount} onChangeText={setPaymentAmount}
+                                            value={paymentAmount}
+                                            onChangeText={(t) => {
+                                                const cleaned = t.replace(/[^0-9]/g, '');
+                                                setPaymentAmount(cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+                                            }}
                                         />
                                     </View>
                                 )}
 
+                                {/* Kembalian preview */}
+                                {!payExact && paymentMode !== 'SPLIT' && paymentAmount && parseNumber(paymentAmount) > 0 && (() => {
+                                    const diskonAmt = parseNumber(diskonValue);
+                                    const grandTotal = (selectedItem.grand_total || 0) - diskonAmt;
+                                    const sisa = Math.max(0, grandTotal - (selectedItem.jumlah_bayar || 0));
+                                    const dibayar = parseNumber(paymentAmount);
+                                    const kembalian = dibayar - sisa;
+                                    return kembalian > 0 ? (
+                                        <View className="bg-blue-50 p-3 rounded-2xl mb-5 border border-blue-100 flex-row justify-between">
+                                            <Typography className="text-blue-700 text-xs font-bold">Kembalian</Typography>
+                                            <Typography className="text-blue-800 text-xs font-bold">{formatCurrency(kembalian)}</Typography>
+                                        </View>
+                                    ) : null;
+                                })()}
+
                                 <Button
-                                    title="Konfirmasi Pembayaran"
+                                    title={payExact ? "Bayar Uang Pas" : "Konfirmasi Pembayaran"}
                                     className="mb-4"
                                     loading={updateTransaksiMutation.isPending}
                                     onPress={async () => {
-                                        const sisa = Math.max(0, (selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0));
+                                        const diskonAmt = parseNumber(diskonValue);
+                                        const grandTotal = (selectedItem.grand_total || 0) - diskonAmt;
+                                        if (grandTotal < 0) {
+                                            setDialogConfig({ visible: true, title: 'Validasi', message: 'Diskon melebihi total tagihan.', variant: 'warning' });
+                                            return;
+                                        }
+                                        const sudahBayar = selectedItem.jumlah_bayar || 0;
+                                        const sisa = Math.max(0, grandTotal - sudahBayar);
                                         let paymentItems: { metode: string; jumlah: number }[] = [];
                                         if (paymentMode === 'SPLIT') {
                                             const tunaiAmt = parseNumber(splitTunai);
@@ -719,6 +938,8 @@ export default function QueueScreen() {
                                                 setDialogConfig({ visible: true, title: 'Validasi', message: 'Jumlah pembayaran split kurang dari sisa tagihan.', variant: 'warning' });
                                                 return;
                                             }
+                                        } else if (payExact) {
+                                            paymentItems.push({ metode: 'TUNAI', jumlah: sisa });
                                         } else {
                                             const amt = parseNumber(paymentAmount);
                                             if (amt < sisa) {
@@ -732,18 +953,20 @@ export default function QueueScreen() {
                                             return;
                                         }
                                         try {
+                                            const totalBayar = paymentItems.reduce((a, p) => a + p.jumlah, 0);
                                             await updateTransaksiMutation.mutateAsync({
                                                 id: selectedItem.id,
                                                 data: {
+                                                    jumlah_bayar: sudahBayar + totalBayar,
+                                                    metode_bayar: payExact ? 'TUNAI' : (paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode),
+                                                    diskon: diskonAmt > 0 ? diskonAmt : null,
+                                                    payments: paymentItems.length > 0 ? paymentItems : null,
                                                     status_pengerjaan: 'SELESAI',
-                                                    payments: paymentItems,
-                                                    jumlah_bayar: paymentItems.reduce((a, p) => a + p.jumlah, 0),
-                                                    metode_bayar: paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode,
-                                                    catatan: selectedItem.catatan || '',
                                                 }
                                             });
                                             setPaymentSheetOpen(false);
                                             setDetailModalOpen(false);
+                                            queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_detail', selectedItem.id] });
                                             refetch();
                                             refetchSummary();
                                             setDialogConfig({

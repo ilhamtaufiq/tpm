@@ -119,7 +119,15 @@ def update_payment(
 ):
     """Add payment to transaction."""
     service = TransaksiBengkelService(db)
-    return service.update_payment(transaksi_id, data.jumlah_bayar, data.metode_bayar, current_user.id)
+    return service.update_payment(
+        transaksi_id,
+        jumlah_bayar=data.jumlah_bayar,
+        metode_bayar=data.metode_bayar,
+        user_id=current_user.id,
+        diskon=data.diskon,
+        payments=data.payments,
+        status_pengerjaan=data.status_pengerjaan,
+    )
 
 
 @router.put("/{transaksi_id}", response_model=TransaksiBengkelResponse)

@@ -49,10 +49,10 @@ async def get_bengkel_receipt(cursor, transaction_id: str) -> Dict[str, Any]:
     
     # Get main transaction
     cursor.execute("""
-        SELECT id, nama_customer, nomor_plat, jenis_kendaraan, 
+        SELECT id, nama_customer, nomor_plat, jenis_kendaraan,
                grand_total, metode_bayar, catatan, created_at
         FROM transaksi_bengkel
-        WHERE id = %s
+        WHERE id = ?
     """, (transaction_id,))
     
     transaction = cursor.fetchone()

@@ -54,6 +54,7 @@ export default function BengkelTransaksiScreen() {
     const [existingDatePickerOpen, setExistingDatePickerOpen] = useState(false);
     const [existingDateError, setExistingDateError] = useState('');
     const [showDiscountInput, setShowDiscountInput] = useState(false);
+    const [showDiscountInReceipt, setShowDiscountInReceipt] = useState(true);
     const [selectedParts, setSelectedParts] = useState<Record<number, { item: any; qty: number }>>({});
     const [selectedServices, setSelectedServices] = useState<Record<number, { item: any; qty: number }>>({});
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
@@ -605,7 +606,7 @@ export default function BengkelTransaksiScreen() {
         paid: paymentMode === 'SPLIT' ? splitTotal : receivedAmount,
         paymentMethod: kategori === 'jasa_angkut' ? 'INTERNAL' : kategori === 'jual_beli_mobil' ? 'KREDIT' : paymentMode,
         notes: note,
-        showDiscount: true,
+        showDiscount: showDiscountInReceipt,
     });
 
     const handlePrintCreatedReceipt = async () => {
@@ -1374,6 +1375,17 @@ export default function BengkelTransaksiScreen() {
                                         inputMode="numeric"
                                         className="bg-white rounded-2xl px-4 h-11 text-sm text-textMain border border-gray-100"
                                     />
+                                    <Pressable
+                                        onPress={() => setShowDiscountInReceipt(prev => !prev)}
+                                        className="flex-row items-center mt-3"
+                                    >
+                                        <View className={`w-5 h-5 rounded border-2 items-center justify-center mr-2 ${showDiscountInReceipt ? 'bg-primary border-primary' : 'border-gray-300 bg-white'}`}>
+                                            {showDiscountInReceipt && <CheckCircle2 size={14} color="white" />}
+                                        </View>
+                                        <Typography className="text-gray-600 text-xs">
+                                            Tampilkan diskon di struk
+                                        </Typography>
+                                    </Pressable>
                                 </View>
                                 <View className="h-[1px] bg-slate-200 my-3" />
                                 <SummaryRow label="Total Setelah Diskon" value={formatCurrency(subtotal)} />
