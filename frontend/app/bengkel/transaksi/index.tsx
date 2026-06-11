@@ -225,12 +225,12 @@ export default function BengkelTransaksiScreen() {
     const sisaBayar = Math.max(0, subtotal - existingDp);
     const paymentAmountValue = parseNumber(paymentAmount);
     const hasPaymentAmountInput = paymentAmount.trim().length > 0;
-    const receivedAmount = hasPaymentAmountInput ? paymentAmountValue : subtotal;
+    const receivedAmount = hasPaymentAmountInput ? paymentAmountValue : sisaBayar;
     const changeAmount = paymentMode === 'TUNAI' || paymentMode === 'TRANSFER'
-        ? Math.max(0, receivedAmount - subtotal)
+        ? Math.max(0, receivedAmount - sisaBayar)
         : 0;
     const paymentOutstandingAmount = paymentMode === 'TUNAI' || paymentMode === 'TRANSFER'
-        ? Math.max(0, subtotal - receivedAmount)
+        ? Math.max(0, sisaBayar - receivedAmount)
         : 0;
     const splitTunaiAmount = parseNumber(splitTunai);
     const splitTransferAmount = parseNumber(splitTransfer);
@@ -563,8 +563,8 @@ export default function BengkelTransaksiScreen() {
     const confirmSubmit = (withPayment = false) => {
         const isJA = kategori === 'jasa_angkut';
         const isMobil = kategori === 'jual_beli_mobil';
-        if (withPayment && !isJA && !isMobil && paymentMode === 'SPLIT' && splitTotal !== subtotal) {
-            showNotice('error', 'Validasi', 'Total split payment harus sama dengan total transaksi.');
+        if (withPayment && !isJA && !isMobil && paymentMode === 'SPLIT' && splitTotal !== sisaBayar) {
+            showNotice('error', 'Validasi', 'Total split payment harus sama dengan sisa bayar.');
             return;
         }
         setSubmitWithPayment(withPayment);
@@ -711,7 +711,7 @@ export default function BengkelTransaksiScreen() {
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
                 jumlah_bayar: shouldPay
-                    ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTotal : receivedAmount))
+                    ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTunaiAmount + splitTransferAmount : receivedAmount))
                     : 0,
                 payments: !shouldPay
                     ? []
@@ -721,11 +721,11 @@ export default function BengkelTransaksiScreen() {
                         ? []
                         : paymentMode === 'SPLIT'
                             ? [
-                                ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount, kas_jenis: 'KAS_UNIT_BENGKEL' }] : []),
+                                ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
                                 ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                             ]
                             : receivedAmount > 0
-                                ? [{ metode: paymentMode, jumlah: receivedAmount, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }]
+                                ? [{ metode: paymentMode, jumlah: receivedAmount }]
                                 : [],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
@@ -1389,6 +1389,16 @@ export default function BengkelTransaksiScreen() {
                                 </View>
                                 <View className="h-[1px] bg-slate-200 my-3" />
                                 <SummaryRow label="Total Setelah Diskon" value={formatCurrency(subtotal)} />
+                                {existingDp > 0 && (
+                                    <>
+                                        <SummaryRow label="DP Sudah Dibayar" value={`-${formatCurrency(existingDp)}`} muted />
+                                        <View className="h-[1px] bg-slate-200 my-3" />
+                                        <View className="flex-row justify-between items-center">
+                                            <Typography weight="bold" className="text-amber-700">Sisa Bayar</Typography>
+                                            <Typography variant="h3" weight="bold" className="text-amber-700">{formatCurrency(sisaBayar)}</Typography>
+                                        </View>
+                                    </>
+                                )}
                             </View>
 
                             {kategori === 'umum' ? (
@@ -1445,7 +1455,7 @@ export default function BengkelTransaksiScreen() {
                                         <View className="mt-4 bg-slate-50 border border-slate-100 rounded-2xl p-4">
                                             <View className="flex-row items-center justify-between mb-1">
                                                 <Typography className="text-gray-500 text-[10px] font-bold uppercase">Nominal Bayar</Typography>
-                                                <Pressable onPress={() => setPaymentAmount(formatNumber(subtotal))}>
+                                                <Pressable onPress={() => setPaymentAmount(formatNumber(sisaBayar))}>
                                                     <Typography className="text-primary text-[10px] font-bold">BAYAR PAS</Typography>
                                                 </Pressable>
                                             </View>
@@ -1460,7 +1470,7 @@ export default function BengkelTransaksiScreen() {
                                             />
                                             <View className="flex-row justify-between mt-3 pt-3 border-t border-slate-200">
                                                 <Typography className="text-gray-500 text-xs font-bold">Diterima</Typography>
-                                                <Typography weight="bold" className={receivedAmount >= subtotal ? 'text-emerald-600' : 'text-rose-500'}>
+                                                <Typography weight="bold" className={receivedAmount >= sisaBayar ? 'text-emerald-600' : 'text-rose-500'}>
                                                     {formatCurrency(receivedAmount)}
                                                 </Typography>
                                             </View>

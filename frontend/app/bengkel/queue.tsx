@@ -77,7 +77,6 @@ export default function QueueScreen() {
     const [splitTransfer, setSplitTransfer] = useState('');
     const [diskonValue, setDiskonValue] = useState('');
     const [showDiskonInReceipt, setShowDiskonInReceipt] = useState(true);
-    const [payExact, setPayExact] = useState(false);
     const updateTransaksiMutation = useUpdateTransaksiBengkelPayment();
     const queryClient = useQueryClient();
 
@@ -830,7 +829,7 @@ export default function QueueScreen() {
                                         const Icon = mode.icon;
                                         const aktif = paymentMode === mode.id;
                                         return (
-                                            <Pressable key={mode.id} onPress={() => { setPayExact(false); setPaymentMode(mode.id as any); }} className={`flex-1 py-3 rounded-2xl border items-center ${aktif ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
+                                            <Pressable key={mode.id} onPress={() => { setPaymentMode(mode.id as any); }} className={`flex-1 py-3 rounded-2xl border items-center ${aktif ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}>
                                                 <Icon size={18} color={aktif ? 'white' : '#64748B'} />
                                                 <Typography weight="bold" className={`text-[10px] mt-1 ${aktif ? 'text-white' : 'text-gray-500'}`}>{mode.label}</Typography>
                                             </Pressable>
@@ -845,16 +844,6 @@ export default function QueueScreen() {
                                     const sisa = Math.max(0, grandTotal - (selectedItem.jumlah_bayar || 0));
                                     return null;
                                 })()}
-
-                                {/* Uang Pas toggle — only for Tunai */}
-                                {paymentMode === 'TUNAI' && (
-                                    <Pressable onPress={() => setPayExact(!payExact)} className="flex-row items-center mb-4 ml-1">
-                                        <View className={`w-5 h-5 rounded border-2 items-center justify-center mr-2 ${payExact ? 'bg-primary border-primary' : 'border-gray-300'}`}>
-                                            {payExact && <CheckCircle2 size={14} color="white" />}
-                                        </View>
-                                        <Typography className="text-gray-600 text-xs">Uang Pas (tidak perlu kembalian)</Typography>
-                                    </Pressable>
-                                )}
 
                                 {paymentMode === 'SPLIT' ? (
                                     <>
@@ -885,9 +874,7 @@ export default function QueueScreen() {
                                     </>
                                 ) : (
                                     <View className="mb-4">
-                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">
-                                            {payExact ? 'Total Dibayar (Uang Pas)' : 'Nominal Pembayaran (Rp)'}
-                                        </Typography>
+                                        <Typography variant="caption" weight="semibold" className="text-gray-600 mb-1 ml-1">Nominal Pembayaran (Rp)</Typography>
                                         <TextInput
                                             placeholder="0" keyboardType="number-pad"
                                             className="bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 text-sm font-bold"
@@ -901,7 +888,7 @@ export default function QueueScreen() {
                                 )}
 
                                 {/* Kembalian preview */}
-                                {!payExact && paymentMode !== 'SPLIT' && paymentAmount && parseNumber(paymentAmount) > 0 && (() => {
+                                {paymentMode !== 'SPLIT' && paymentAmount && parseNumber(paymentAmount) > 0 && (() => {
                                     const diskonAmt = parseNumber(diskonValue);
                                     const grandTotal = (selectedItem.grand_total || 0) - diskonAmt;
                                     const sisa = Math.max(0, grandTotal - (selectedItem.jumlah_bayar || 0));
@@ -916,7 +903,7 @@ export default function QueueScreen() {
                                 })()}
 
                                 <Button
-                                    title={payExact ? "Bayar Uang Pas" : "Konfirmasi Pembayaran"}
+                                    title="Konfirmasi Pembayaran"
                                     className="mb-4"
                                     loading={updateTransaksiMutation.isPending}
                                     onPress={async () => {
@@ -929,25 +916,32 @@ export default function QueueScreen() {
                                         const sudahBayar = selectedItem.jumlah_bayar || 0;
                                         const sisa = Math.max(0, grandTotal - sudahBayar);
                                         let paymentItems: { metode: string; jumlah: number }[] = [];
+
                                         if (paymentMode === 'SPLIT') {
                                             const tunaiAmt = parseNumber(splitTunai);
                                             const trfAmt = parseNumber(splitTransfer);
                                             if (tunaiAmt > 0) paymentItems.push({ metode: 'TUNAI', jumlah: tunaiAmt });
                                             if (trfAmt > 0) paymentItems.push({ metode: 'TRANSFER', jumlah: trfAmt });
+                                            if (paymentItems.length === 0) {
+                                                setDialogConfig({ visible: true, title: 'Validasi', message: 'Masukkan nominal Tunai dan/atau Transfer untuk Split Payment.', variant: 'warning' });
+                                                return;
+                                            }
                                             if (paymentItems.reduce((a, p) => a + p.jumlah, 0) < sisa) {
                                                 setDialogConfig({ visible: true, title: 'Validasi', message: 'Jumlah pembayaran split kurang dari sisa tagihan.', variant: 'warning' });
                                                 return;
                                             }
-                                        } else if (payExact) {
-                                            paymentItems.push({ metode: 'TUNAI', jumlah: sisa });
                                         } else {
                                             const amt = parseNumber(paymentAmount);
                                             if (amt < sisa) {
                                                 setDialogConfig({ visible: true, title: 'Validasi', message: 'Jumlah pembayaran kurang dari sisa tagihan.', variant: 'warning' });
                                                 return;
                                             }
-                                            paymentItems.push({ metode: paymentMode === 'TUNAI' ? 'TUNAI' : 'TRANSFER', jumlah: amt });
+                                            paymentItems.push({
+                                                metode: paymentMode === 'TUNAI' ? 'TUNAI' : 'TRANSFER',
+                                                jumlah: amt,
+                                            });
                                         }
+
                                         if (paymentItems.length === 0) {
                                             setDialogConfig({ visible: true, title: 'Validasi', message: 'Masukkan nominal pembayaran.', variant: 'warning' });
                                             return;
@@ -958,9 +952,9 @@ export default function QueueScreen() {
                                                 id: selectedItem.id,
                                                 data: {
                                                     jumlah_bayar: sudahBayar + totalBayar,
-                                                    metode_bayar: payExact ? 'TUNAI' : (paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode),
+                                                    metode_bayar: paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode,
                                                     diskon: diskonAmt > 0 ? diskonAmt : null,
-                                                    payments: paymentItems.length > 0 ? paymentItems : null,
+                                                    payments: paymentItems,
                                                     status_pengerjaan: 'SELESAI',
                                                 }
                                             });

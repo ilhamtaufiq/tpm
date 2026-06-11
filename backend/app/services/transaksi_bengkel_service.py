@@ -559,6 +559,7 @@ class TransaksiBengkelService:
                             referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                             keterangan=f"DP Bengkel: {nomor_transaksi} ({p.metode})",
                             user_id=user_id,
+                            kas_jenis=p.kas_jenis,
                         )
             else:
                 create_kas_entry(
@@ -588,18 +589,19 @@ class TransaksiBengkelService:
                         if rec_amount > 0:
                             create_kas_entry(
                                 db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
-                                nominal=rec_amount, sumber=KasBankSource.BENGKEL, 
+                                nominal=rec_amount, sumber=KasBankSource.BENGKEL,
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                                 keterangan=f"Pembayaran Bengkel: {nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
+                                kas_jenis=p.kas_jenis,
                             )
                             remaining_to_record -= rec_amount
                 else:
                     # Single payment
                     create_kas_entry(
                         db=self.db, tanggal=transaksi_tanggal, tipe=KasBankType.MASUK,
-                        nominal=grand_total, sumber=KasBankSource.BENGKEL, 
+                        nominal=grand_total, sumber=KasBankSource.BENGKEL,
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=nomor_transaksi,
                         keterangan=f"Pembayaran Lunas Bengkel: {nomor_transaksi}",
@@ -957,6 +959,7 @@ class TransaksiBengkelService:
                                 referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
                                 keterangan=f"Pembayaran (EDIT) Bengkel: {transaksi.nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
+                                kas_jenis=p.kas_jenis,
                             )
                             remaining_to_record -= rec_amount
                     # Record remaining covered by existing DP
@@ -1432,6 +1435,7 @@ class TransaksiBengkelService:
                         nomor_referensi=transaksi.nomor_transaksi,
                         keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi} ({p.metode.value})",
                         user_id=user_id,
+                        kas_jenis=p.kas_jenis,
                     )
 
         # Update payment
@@ -1473,6 +1477,8 @@ class TransaksiBengkelService:
 
         # Record single payment to kas/bank (if no split payments recorded above)
         if not payments and effective_payment > 0:
+            # Use explicit kas_jenis from request if provided
+            kas_jenis_value = getattr(data, 'kas_jenis', None)
             create_kas_entry(
                 db=self.db,
                 tanggal=date.today(),
@@ -1484,6 +1490,7 @@ class TransaksiBengkelService:
                 nomor_referensi=transaksi.nomor_transaksi,
                 keterangan=f"Pembayaran bengkel {transaksi.nomor_transaksi}",
                 user_id=user_id,
+                kas_jenis=kas_jenis_value,
             )
 
         self._emit_change(transaksi, "payment_updated")

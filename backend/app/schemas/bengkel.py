@@ -376,6 +376,7 @@ class PaymentUpdate(BaseModel):
     metode_bayar: Optional[PaymentMethod] = None
     diskon: Optional[Decimal] = Field(None, ge=0)
     payments: Optional[List[PaymentItem]] = None
+    kas_jenis: Optional[KasBankJenis] = None
     status_pengerjaan: Optional[WorkshopStatus] = None
 
 
