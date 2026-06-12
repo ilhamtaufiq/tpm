@@ -96,7 +96,7 @@ export default function PurchaseScreen() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-    } = useSparePartsList({ search: debouncedPartSearch || undefined });
+    } = useSparePartsList({ limit: 20, search: debouncedPartSearch || undefined });
     const spareParts = useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data || []) || [],
         [partsData]
@@ -293,6 +293,18 @@ export default function PurchaseScreen() {
     };
 
     // Navigation
+    const handlePartsScroll = (event: any) => {
+        if (!hasNextPage || isFetchingNextPage) return;
+
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const paddingToBottom = 320;
+        const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+
+        if (distanceFromBottom < paddingToBottom) {
+            fetchNextPage();
+        }
+    };
+
     const next = () => {
         if (step === 1 && items.length === 0) {
             showNotice('error', 'Validasi', 'Pilih minimal satu sparepart.');
@@ -513,6 +525,8 @@ export default function PurchaseScreen() {
                 className="flex-1"
                 contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}
                 showsVerticalScrollIndicator={false}
+                onScroll={handlePartsScroll}
+                scrollEventThrottle={16}
             >
                 {/* STEP 1: Item Selection — inline picker like transaksi */}
                 {step === 1 && (
@@ -816,13 +830,12 @@ export default function PurchaseScreen() {
                                 <View className="bg-primary/5 border border-primary/10 p-4 rounded-2xl mb-4">
                                     <View className="flex-row justify-between items-center mb-2">
                                         <Typography variant="caption" weight="bold" className="text-primary uppercase">Jumlah Bayar (Rp)</Typography>
-                                        <Typography
-                                            variant="caption"
-                                            weight="bold"
-                                            className={parseNumber(payments[0]?.nominal || '0') >= total ? 'text-emerald-600' : 'text-amber-600'}
-                                        >
-                                            {parseNumber(payments[0]?.nominal || '0') >= total ? 'Lunas' : 'Titip / DP'}
-                                        </Typography>
+                                        <Pressable onPress={() => {
+                                            handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(String(total)));
+                                            setStatusBayar('LUNAS');
+                                        }}>
+                                            <Typography className="text-primary text-[10px] font-bold">BAYAR PAS</Typography>
+                                        </Pressable>
                                     </View>
                                     <TextInput
                                         value={payments[0]?.nominal || ''}
@@ -837,8 +850,22 @@ export default function PurchaseScreen() {
                                         inputMode="numeric"
                                         className="bg-white rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
                                     />
+                                    <View className="flex-row justify-between items-center mt-2 px-1">
+                                        <Typography
+                                            variant="caption"
+                                            weight="bold"
+                                            className={parseNumber(payments[0]?.nominal || '0') >= total ? 'text-emerald-600' : 'text-amber-600'}
+                                        >
+                                            {parseNumber(payments[0]?.nominal || '0') >= total ? 'Lunas' : 'Titip / DP'}
+                                        </Typography>
+                                        {parseNumber(payments[0]?.nominal || '0') > total && (
+                                            <Typography variant="caption" weight="bold" className="text-primary">
+                                                Kembalian: {formatCurrency(parseNumber(payments[0]?.nominal || '0') - total)}
+                                            </Typography>
+                                        )}
+                                    </View>
                                     {parseNumber(payments[0]?.nominal || '0') < total && (
-                                        <Typography className="text-amber-600 text-xs mt-2">
+                                        <Typography className="text-amber-600 text-xs mt-1">
                                             Sisa {formatCurrency(Math.max(0, total - parseNumber(payments[0]?.nominal || '0')))} akan dicatat sebagai Hutang.
                                         </Typography>
                                     )}
