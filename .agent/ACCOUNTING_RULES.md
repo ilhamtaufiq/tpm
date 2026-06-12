@@ -65,6 +65,12 @@ Yang harus dikecualikan:
 - Bagian laba investor bukan equity perusahaan.
 - Prive mengurangi modal, bukan beban operasional.
 
+## 8. Down Payment (DP) / Uang Muka Penjualan
+- DP yang diterima dari pelanggan sebelum transaksi selesai dicatat sebagai **Hutang (Uang Muka Penjualan)**.
+- Saat transaksi selesai (SELESAI) dan fully paid, pos ini dihapus dan diakui sebagai pendapatan.
+- Perhitungan `kewajiban_usaha` di `modal_service.py` tidak boleh double-counting `customer_dp` karena sudah termasuk di `hutang_usaha_total`.
+- Query `direct_bengkel_dp` dan `bengkel_dp` di `reports/base.py` menghitung selisih `jumlah_bayar > grand_total` sebagai DP liability, terlepas dari `status_bayar`.
+
 ## 8. Aturan Audit Cepat
 - Ada aset baru? cari kas keluar, hutang, atau modal non-kas.
 - Ada piutang internal? pastikan hutang internal pasangannya ada.

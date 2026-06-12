@@ -51,7 +51,7 @@ export const useNotificationStore = create<NotificationState>()(
                     };
 
                     return {
-                        items: [item, ...state.items].slice(0, 50),
+                        items: [item, ...state.items].slice(0, 20),
                         unreadCount: state.unreadCount + 1,
                     };
                 });
@@ -88,7 +88,21 @@ export const useNotificationStore = create<NotificationState>()(
         }),
         {
             name: 'TPM_NOTIFICATION_STORE',
-            storage: createJSONStorage(() => AsyncStorage),
+            storage: createJSONStorage(() => ({
+                ...AsyncStorage,
+                setItem: async (key: string, value: string) => {
+                    try {
+                        await AsyncStorage.setItem(key, value);
+                    } catch (error: any) {
+                        if (error?.message?.includes('quota') || error?.message?.includes('exceeded')) {
+                            await AsyncStorage.clear();
+                            await AsyncStorage.setItem(key, value);
+                        } else {
+                            throw error;
+                        }
+                    }
+                },
+            })),
         }
     )
 );

@@ -39,6 +39,24 @@ Jika aset atau stok ada tetapi tidak ditemukan pembelian kas/hutang yang sesuai,
 - kas belum berubah,
 - saat pelanggan membayar, `KasBank` mencatat `MASUK` dan saldo piutang turun.
 
+### C. Down Payment (DP) / Uang Muka Penjualan
+Ketika pelanggan membayar uang muka sebelum transaksi selesai:
+1. `KasBank` mencatat `MASUK` sesuai nominal DP.
+2. `PiutangUsaha` atau transaksi terkait mencatat pembayaran DP.
+3. Selisih `jumlah_bayar - grand_total` (jika positif) diakui sebagai **Uang Muka Penjualan** di Neraca (kategori Hutang).
+4. Saat transaksi selesai (SELESAI) dan fully paid, pos "Uang Muka Penjualan" hilang dan diakui sebagai pendapatan penuh.
+5. **Penting**: Jangan double-counting `customer_dp` di perhitungan kewajiban usaha, karena sudah termasuk di `total_hutang`.
+
+### D. Pembatalan Transaksi (Void)
+Ketika transaksi bengkel dibatalkan:
+1. `TransaksiPenjualanBengkel.status_pengerjaan` dan `status_bayar` di-set ke `BATAL`.
+2. **Stok sparepart dikembalikan**: qty setiap `DetailTransaksiSpareParts` ditambahkan kembali ke `SparePart.stok`.
+3. **KasBank dihapus**: semua entry dengan `referensi_id = transaksi.id` dihapus dari ledger.
+4. **PiutangUsaha dihapus**: jika ada piutang terkait transaksi, dihapus beserta `PembayaranPiutang`.
+5. **HutangUsaha internal dihapus**: jika ada hutang internal (dari mobil/jasa angkut), dihapus.
+6. **MobilPartService dihapus**: jika transaksi terkait mobil (kategori `jual_beli_mobil`), kapitalisasi biaya di-reverse.
+7. **Catatan**: Transaksi yang sudah `BATAL` tidak bisa di-unvoid. Buat transaksi baru jika perlu.
+
 ## 4. Internal Service Flow
 ### A. Bengkel -> Jual Beli Mobil
 1. Bengkel mengerjakan mobil stok.
@@ -78,6 +96,8 @@ Jika aset atau stok ada tetapi tidak ditemukan pembelian kas/hutang yang sesuai,
 |---|---|---|---|
 | Penjualan tunai eksternal | pendapatan/laba naik | laba periode naik | kas naik, equity naik |
 | Penjualan piutang | pendapatan/laba naik | laba periode naik | piutang naik, equity naik |
+| DP / uang muka diterima | belum diakui pendapatan | tidak mengubah equity | kas naik, hutang (uang muka penjualan) naik |
+| DP diselesaikan saat lunas | pendapatan diakui penuh | laba periode naik | hutang turun, equity naik |
 | Pembelian stok tunai | belum otomatis beban | tidak langsung | kas turun, persediaan naik |
 | Kasbon karyawan | bukan beban | tidak mengubah equity | kas turun, piutang naik |
 | Repair internal mobil belum terjual | laba unit Bengkel ada, lalu dieliminasi konsolidasi | laba ditahan disesuaikan | stok dan internal receivable/payable direkonsiliasi |

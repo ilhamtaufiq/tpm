@@ -409,48 +409,52 @@ export default function LaporanPerubahanModalScreen() {
                 )}
             </ScrollView>
 
-            <Modal visible={showExportMenu} transparent animationType="fade">
-                <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setShowExportMenu(false)}>
-                    <View className="bg-white rounded-t-[40px] p-8">
-                        <View className="w-12 h-1.5 bg-slate-200 rounded-full self-center mb-8" />
-                        <Typography variant="h4" weight="bold" className="text-slate-900 mb-6 text-center">Ekspor Laporan</Typography>
+            {showExportMenu && (
+                <Modal visible={showExportMenu} transparent animationType="fade">
+                    <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setShowExportMenu(false)}>
+                        <View className="bg-white rounded-t-[40px] p-8">
+                            <View className="w-12 h-1.5 bg-slate-200 rounded-full self-center mb-8" />
+                            <Typography variant="h4" weight="bold" className="text-slate-900 mb-6 text-center">Ekspor Laporan</Typography>
 
-                        <View className="space-y-4">
-                            <Pressable onPress={() => handleExportPDF('preview')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-                                <View className="w-12 h-12 bg-indigo-100 rounded-2xl items-center justify-center mr-4"><Eye size={22} color="#4f46e5" /></View>
-                                <View className="flex-1">
-                                    <Typography variant="body1" weight="bold" className="text-slate-900">Preview Laporan</Typography>
-                                    <Typography variant="caption" className="text-slate-500">Lihat tampilan PDF secara instan</Typography>
-                                </View>
-                            </Pressable>
+                            <View className="space-y-4">
+                                <Pressable onPress={() => handleExportPDF('preview')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+                                    <View className="w-12 h-12 bg-indigo-100 rounded-2xl items-center justify-center mr-4"><Eye size={22} color="#4f46e5" /></View>
+                                    <View className="flex-1">
+                                        <Typography variant="body1" weight="bold" className="text-slate-900">Preview Laporan</Typography>
+                                        <Typography variant="caption" className="text-slate-500">Lihat tampilan PDF secara instan</Typography>
+                                    </View>
+                                </Pressable>
 
-                            <Pressable onPress={() => handleExportPDF('print')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-                                <View className="w-12 h-12 bg-emerald-100 rounded-2xl items-center justify-center mr-4"><Printer size={22} color="#059669" /></View>
-                                <View className="flex-1">
-                                    <Typography variant="body1" weight="bold" className="text-slate-900">Cetak / Simpan PDF</Typography>
-                                    <Typography variant="caption" className="text-slate-500">Kirim ke printer atau simpan ke file</Typography>
-                                </View>
+                                <Pressable onPress={() => handleExportPDF('print')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+                                    <View className="w-12 h-12 bg-emerald-100 rounded-2xl items-center justify-center mr-4"><Printer size={22} color="#059669" /></View>
+                                    <View className="flex-1">
+                                        <Typography variant="body1" weight="bold" className="text-slate-900">Cetak / Simpan PDF</Typography>
+                                        <Typography variant="caption" className="text-slate-500">Kirim ke printer atau simpan ke file</Typography>
+                                    </View>
+                                </Pressable>
+                            </View>
+
+                            <Pressable onPress={() => setShowExportMenu(false)} className="mt-8 py-5 items-center justify-center">
+                                <Typography variant="body1" weight="bold" className="text-rose-500">Batalkan</Typography>
                             </Pressable>
                         </View>
-
-                        <Pressable onPress={() => setShowExportMenu(false)} className="mt-8 py-5 items-center justify-center">
-                            <Typography variant="body1" weight="bold" className="text-rose-500">Batalkan</Typography>
-                        </Pressable>
-                    </View>
-                </Pressable>
-            </Modal>
+                    </Pressable>
+                </Modal>
+            )}
 
             {/* PDF PREVIEW MODAL */}
-            <Modal visible={showPdfPreview} animationType="slide">
-                <SafeAreaView className="flex-1 bg-white">
-                    <View className="flex-row items-center justify-between p-4 border-b border-slate-100">
-                        <Pressable onPress={() => setShowPdfPreview(false)} className="p-2"><X size={24} color="#64748b" /></Pressable>
-                        <Typography variant="body1" weight="bold">Pratinjau Laporan</Typography>
-                        <Pressable onPress={() => handleExportPDF('print')} className="p-2"><Printer size={24} color="#4f46e5" /></Pressable>
-                    </View>
-                    <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
-                </SafeAreaView>
-            </Modal>
+            {showPdfPreview && (
+                <Modal visible={showPdfPreview} animationType="slide">
+                    <SafeAreaView className="flex-1 bg-white">
+                        <View className="flex-row items-center justify-between p-4 border-b border-slate-100">
+                            <Pressable onPress={() => setShowPdfPreview(false)} className="p-2"><X size={24} color="#64748b" /></Pressable>
+                            <Typography variant="body1" weight="bold">Pratinjau Laporan</Typography>
+                            <Pressable onPress={() => handleExportPDF('print')} className="p-2"><Printer size={24} color="#4f46e5" /></Pressable>
+                        </View>
+                        <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
+                    </SafeAreaView>
+                </Modal>
+            )}
         </SafeAreaView>
     );
 }

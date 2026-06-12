@@ -61,7 +61,7 @@ export default function QueueScreen() {
     const [date, setDate] = useState(new Date());
     const [queueSearchOpen, setQueueSearchOpen] = useState(false);
     const [queueSearchQuery, setQueueSearchQuery] = useState('');
-    const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai'>('ALL');
+    const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai' | 'batal'>('ALL');
     const [queuePaymentFilter, setQueuePaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BELUM_BAYAR' | 'BATAL'>('ALL');
     const [refreshing, setRefreshing] = useState(false);
 
@@ -108,6 +108,7 @@ export default function QueueScreen() {
 
     const handleVoidTransaction = (item: any) => {
         if (!item?.id) return;
+        setDetailModalOpen(false);
         setDialogConfig({
             visible: true,
             title: 'Batalkan Transaksi?',
@@ -116,7 +117,6 @@ export default function QueueScreen() {
             onConfirm: async () => {
                 try {
                     await voidTransaksiMutation.mutateAsync(item.id);
-                    setDetailModalOpen(false);
                     setSelectedItem(null);
                     refetch();
                     refetchSummary();
@@ -206,16 +206,20 @@ export default function QueueScreen() {
             acc.total += 1;
             if (status === 'proses') acc.proses += 1;
             else if (status === 'selesai') acc.selesai += 1;
+            else if (status === 'batal') acc.batal += 1;
             else acc.antre += 1;
             return acc;
-        }, { total: 0, antre: 0, proses: 0, selesai: 0 });
+        }, { total: 0, antre: 0, proses: 0, selesai: 0, batal: 0 });
     }, [todayQueue]);
 
     const queueSheetItems = useMemo(() => {
         return todayQueue.filter((item: any) => {
             const matchesPayment = queuePaymentFilter === 'ALL' || getQueuePaymentStatus(item) === queuePaymentFilter;
             const workStatus = String(item.status_pengerjaan || 'antre').toLowerCase();
-            const matchesWorkStatus = queueWorkStatusFilter === 'ALL' || workStatus === queueWorkStatusFilter;
+            // ALL filter excludes batal; only show batal when explicitly selected
+            const matchesWorkStatus = queueWorkStatusFilter === 'ALL'
+                ? workStatus !== 'batal'
+                : workStatus === queueWorkStatusFilter;
             const q = queueSearchQuery.trim().toLowerCase();
             const matchesSearch = !q || [
                 item.nomor_transaksi,
@@ -243,7 +247,7 @@ export default function QueueScreen() {
     const openEditTransaction = (item: any) => {
         if (!item?.id) return;
         setDetailModalOpen(false);
-        router.push({ pathname: '/bengkel/order', params: { id: String(item.id) } } as any);
+        router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all', transactionId: String(item.id) } } as any);
     };
 
     const openQueueTransactionMode = (mode: 'sparepart' | 'servis', item: any) => {
@@ -359,6 +363,7 @@ export default function QueueScreen() {
                         { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
                         { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
                         { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                        { id: 'batal', label: 'Batal', count: queueWorkStatusStats.batal, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
                     ].map((filter) => {
                         const isActive = queueWorkStatusFilter === filter.id;
                         return (
@@ -667,17 +672,15 @@ export default function QueueScreen() {
 
                                 {/* Action Buttons */}
                                 <View className="flex-row space-x-3 mb-4">
-                                    {selectedItem.status_bayar !== 'LUNAS' && (
-                                        <Pressable
-                                            onPress={() => openEditTransaction(selectedItem)}
-                                            className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
-                                        >
-                                            <Edit2 size={16} color="white" />
-                                            <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                                Edit
-                                            </Typography>
-                                        </Pressable>
-                                    )}
+                                    <Pressable
+                                        onPress={() => openEditTransaction(selectedItem)}
+                                        className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
+                                    >
+                                        <Edit2 size={16} color="white" />
+                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                            Edit
+                                        </Typography>
+                                    </Pressable>
 
                                     {selectedItem.status_bayar !== 'LUNAS' && selectedItem.grand_total > 0 ? (
                                         <Pressable
@@ -979,22 +982,15 @@ export default function QueueScreen() {
                 </Modal>
             )}
 
-            {/* Alert Dialog */}
-            <Modal
+            {/* Alert Dialog - rendered last for proper z-index */}
+            <AlertDialogComponent
                 visible={dialogConfig.visible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
-            >
-                <AlertDialogComponent
-                    visible={dialogConfig.visible}
-                    title={dialogConfig.title}
-                    message={dialogConfig.message}
-                    variant={dialogConfig.variant}
-                    type="alert"
-                    onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
-                />
-            </Modal>
+                title={dialogConfig.title}
+                message={dialogConfig.message}
+                variant={dialogConfig.variant}
+                type="alert"
+                onClose={() => setDialogConfig((prev: any) => ({ ...prev, visible: false }))}
+            />
         </SafeAreaView>
     );
 }

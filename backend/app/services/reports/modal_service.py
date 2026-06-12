@@ -46,20 +46,77 @@ class ModalService(BaseReportService):
         raw_start_m_stock = start_hist["assets"].get("persediaan_mobil", 0)
         start_stok_mobil = float(raw_start_m_stock.get("total", 0)) if isinstance(raw_start_m_stock, dict) else float(raw_start_m_stock)
         start_aset_tetap = float(start_hist["assets"].get("tetap", 0))
-        # Opening debt and piutang should be the balances as of yesterday
-        # We use the raw summaries from our historical snapshot to ensure consistency 
+        # opening debt and piutang should be the balances as of yesterday
+        # We use the raw summaries from our historical snapshot to ensure consistency
         # with the current period's asset calculations (including internal eliminations,
         # investor debt, and accrued expenses).
         start_piutang = float(start_hist["raw_summaries"]["piutang"].get("total", 0))
         start_hutang_total = float(start_hist["raw_summaries"]["hutang"].get("total", 0))
         start_hutang_investor = float(start_hist["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
-        
+
         # We exclude investor debt from the opening equity calculation because we treat it as Capital
         start_hutang = start_hutang_total - start_hutang_investor
 
-        # TOTAL OPENING EQUITY = (Cash + Assets) - Liabilities
-        modal_awal_theoretical = (start_cash + start_stok_part + start_stok_mobil + start_aset_tetap + start_piutang) - start_hutang
-        
+        from app.models.bengkel import TransaksiPenjualanBengkel, DetailTransaksiSpareParts
+
+        # Helper to get accumulated HPP up to a specific date
+        def get_akumulasi_hpp_parts(d: date) -> float:
+            return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
+                TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
+            ).filter(
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanBengkel.tanggal <= d
+            ).scalar() or 0)
+
+        def get_akumulasi_hpp_mobil(d: date) -> float:
+            from app.models.mobil import Mobil
+            return float(self.db.query(func.sum(Mobil.harga_beli)).filter(
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.tanggal_terjual <= d
+            ).scalar() or 0)
+
+        def get_akumulasi_hpp_mobil_prep(d: date) -> float:
+            from app.models.bengkel import PengeluaranBengkel
+            from app.models.mobil import Mobil
+            return float(self.db.query(func.sum(PengeluaranBengkel.jumlah)).join(Mobil).filter(
+                PengeluaranBengkel.bisnis_kategori.in_(["mobil", "jual_beli_mobil", "penjualan_mobil"]),
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.tanggal_terjual <= d,
+                PengeluaranBengkel.tanggal <= d
+            ).scalar() or 0)
+
+        # Snapshot Start (Yesterday) - Capitalized Value (Equity component)
+        p_aset_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber == KasBankSource.ASET,
+            KasBank.referensi_id.is_not(None),
+            KasBank.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_aset_tetap_start = max(0, start_aset_tetap - p_aset_start)
+
+        p_part_start = float(self.db.query(func.sum(PembelianSparePart.grand_total)).filter(
+            PembelianSparePart.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_stok_part_start = max(0, (start_stok_part + get_akumulasi_hpp_parts(yesterday)) - p_part_start)
+
+        p_mobil_start = float(self.db.query(func.sum(KasBank.nominal)).filter(
+            KasBank.tipe == KasBankType.KELUAR,
+            KasBank.sumber.in_([KasBankSource.PEMBELIAN_MOBIL, KasBankSource.JUAL_BELI_MOBIL]),
+            ~KasBank.keterangan.ilike("Transfer %"),
+            ~KasBank.keterangan.ilike("%Pelunasan Biaya Repair Internal%"),
+            KasBank.tanggal <= yesterday
+        ).scalar() or 0)
+        h_mobil_start = float(self.db.query(func.sum(HutangUsaha.nominal_hutang)).filter(
+            HutangUsaha.sumber == HutangSource.PEMBELIAN_MOBIL,
+            HutangUsaha.tanggal <= yesterday
+        ).scalar() or 0)
+        modal_stok_mobil_start = max(0, (start_stok_mobil + get_akumulasi_hpp_mobil(yesterday) + get_akumulasi_hpp_mobil_prep(yesterday)) - (p_mobil_start + h_mobil_start))
+
+        # TOTAL OPENING EQUITY = (Cash + Capitalized Stock/Assets) - Liabilities
+        # We use modal_stok_* instead of raw start_stok_* to ignore stock bought with cash/debt.
+        modal_awal_theoretical = (start_cash + modal_stok_part_start + modal_stok_mobil_start + start_aset_tetap + start_piutang) - start_hutang
+
         # Modal Masuk (Setoran Baru in this period)
         setoran_modal = float(self.db.query(func.sum(KasBank.nominal)).filter(
             KasBank.sumber == KasBankSource.MODAL,
@@ -516,15 +573,15 @@ class ModalService(BaseReportService):
         piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0))
         hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
         hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
+        customer_dp = float(data["raw_summaries"]["hutang"]["breakdown"].get("uang_muka_penjualan", 0))
+        piutang_booking = float(data["raw_summaries"]["hutang"]["breakdown"].get("piutang_booking", 0))
 
-        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
-        
+        kewajiban_usaha = (hutang_usaha_total - hutang_investor_total) + piutang_booking
+
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
-        
-        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities.
-        # Internal hutang is not a consolidated liability, so it must not be
-        # added back here. It is kept only for tracing.
+
+        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities (including DP/Unearned).
         modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external) - kewajiban_usaha
         
         # Use the ACTUAL snapshot as the authoritative modal_akhir

@@ -622,71 +622,75 @@ export default function NeracaScreen() {
             </ScrollView>
 
             {/* Export Menu */}
-            <Modal visible={showExportMenu} transparent animationType="fade">
-                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
-                    <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-8">
-                            <View>
-                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+            {showExportMenu && (
+                <Modal visible={showExportMenu} transparent animationType="fade">
+                    <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
+                        <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
+                            <View className="flex-row justify-between items-center mb-8">
+                                <View>
+                                    <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
+                                    <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
+                                </View>
+                                <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2 rounded-full">
+                                    <X size={20} color="#64748b" />
+                                </Pressable>
                             </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2 rounded-full">
-                                <X size={20} color="#64748b" />
-                            </Pressable>
+                            <View className="flex-row gap-4">
+                                <Pressable onPress={() => handleExportPDF('preview')} className="flex-1 bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 items-center">
+                                    <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-indigo-200"><Eye size={28} color="white" /></View>
+                                    <Typography weight="bold" className="text-indigo-900">Preview</Typography>
+                                </Pressable>
+                                <Pressable onPress={() => handleExportPDF('print')} className="flex-1 bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 items-center">
+                                    <View className="w-14 h-14 bg-emerald-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200"><Printer size={28} color="white" /></View>
+                                    <Typography weight="bold" className="text-emerald-900">Cetak</Typography>
+                                </Pressable>
+                                <Pressable onPress={() => handleExportPDF('download')} className="flex-1 bg-amber-50 p-6 rounded-[32px] border border-amber-100 items-center">
+                                    <View className="w-14 h-14 bg-amber-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-amber-200"><Download size={28} color="white" /></View>
+                                    <Typography weight="bold" className="text-amber-900">PDF</Typography>
+                                </Pressable>
+                            </View>
                         </View>
-                        <View className="flex-row gap-4">
-                            <Pressable onPress={() => handleExportPDF('preview')} className="flex-1 bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 items-center">
-                                <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-indigo-200"><Eye size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-indigo-900">Preview</Typography>
-                            </Pressable>
-                            <Pressable onPress={() => handleExportPDF('print')} className="flex-1 bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 items-center">
-                                <View className="w-14 h-14 bg-emerald-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200"><Printer size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-emerald-900">Cetak</Typography>
-                            </Pressable>
-                            <Pressable onPress={() => handleExportPDF('download')} className="flex-1 bg-amber-50 p-6 rounded-[32px] border border-amber-100 items-center">
-                                <View className="w-14 h-14 bg-amber-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-amber-200"><Download size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-amber-900">PDF</Typography>
-                            </Pressable>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
+                    </Pressable>
+                </Modal>
+            )}
 
             {/* Preview Modal */}
-            <Modal visible={showPdfPreview} animationType="slide">
-                <SafeAreaView className="flex-1 bg-white">
-                    <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
-                        <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"><X size={20} color="#1e293b" /></Pressable>
-                        <Typography variant="body1" weight="bold" className="text-slate-900">Preview Neraca</Typography>
-                        <Pressable
-                            onPress={async () => {
-                                if (Platform.OS === 'web') {
-                                    const printWindow = window.open('', '_blank');
-                                    if (printWindow) {
-                                        printWindow.document.write(previewHtml);
-                                        printWindow.document.close();
-                                        printWindow.print();
+            {showPdfPreview && (
+                <Modal visible={showPdfPreview} animationType="slide">
+                    <SafeAreaView className="flex-1 bg-white">
+                        <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100 bg-white">
+                            <Pressable onPress={() => setShowPdfPreview(false)} className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"><X size={20} color="#1e293b" /></Pressable>
+                            <Typography variant="body1" weight="bold" className="text-slate-900">Preview Neraca</Typography>
+                            <Pressable
+                                onPress={async () => {
+                                    if (Platform.OS === 'web') {
+                                        const printWindow = window.open('', '_blank');
+                                        if (printWindow) {
+                                            printWindow.document.write(previewHtml);
+                                            printWindow.document.close();
+                                            printWindow.print();
+                                        }
+                                    } else {
+                                        await Print.printAsync({ html: previewHtml });
                                     }
-                                } else {
-                                    await Print.printAsync({ html: previewHtml });
-                                }
-                            }}
-                            className="flex-row items-center px-4 py-2 rounded-xl shadow-sm"
-                            style={{ backgroundColor: '#4f46e5' }}
-                        >
-                            <Download size={16} color="white" className="mr-2" />
-                            <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
-                        </Pressable>
-                    </View>
-                    <View className="flex-1 bg-slate-100">
-                        {Platform.OS === 'web' ? (
-                            <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Neraca Preview" />
-                        ) : (
-                            <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
-                        )}
-                    </View>
-                </SafeAreaView>
-            </Modal>
+                                }}
+                                className="flex-row items-center px-4 py-2 rounded-xl shadow-sm"
+                                style={{ backgroundColor: '#4f46e5' }}
+                            >
+                                <Download size={16} color="white" className="mr-2" />
+                                <Typography variant="caption" weight="bold" className="text-white">CETAK</Typography>
+                            </Pressable>
+                        </View>
+                        <View className="flex-1 bg-slate-100">
+                            {Platform.OS === 'web' ? (
+                                <iframe srcDoc={previewHtml} style={{ width: '100%', height: '100%', border: 'none', backgroundColor: 'white' }} title="Neraca Preview" />
+                            ) : (
+                                <WebView originWhitelist={['*']} source={{ html: previewHtml }} style={{ flex: 1 }} />
+                            )}
+                        </View>
+                    </SafeAreaView>
+                </Modal>
+            )}
         </SafeAreaView>
     );
 }

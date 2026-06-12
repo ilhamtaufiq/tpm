@@ -727,8 +727,9 @@ class TransaksiBengkelService:
         )
         should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI or has_upfront_payment or grand_total > 0
 
-        # Payments logic — include existing DP from prior transactions
-        existing_dp = transaksi.jumlah_bayar if transaksi.status_pengerjaan != WorkshopStatus.SELESAI else Decimal("0")
+        # Payments logic — frontend always sends full payment amount (restored from initialData.jumlah_bayar),
+        # so existing_dp must be 0 during edit to avoid double-counting.
+        existing_dp = Decimal("0")
         total_pembayaran = Decimal("0")
         metode_utama = data.metode_bayar
 
@@ -946,38 +947,24 @@ class TransaksiBengkelService:
                 for entry in existing_kas:
                     self.db.delete(entry)
             if total_pembayaran > 0:
-                remaining_to_record = grand_total
+                # Frontend sends total_pembayaran as the full amount already paid.
+                # Record this directly; existing_dp is no longer double-counted.
                 if data.payments:
                     for p in data.payments:
-                        if remaining_to_record <= 0: break
-                        rec_amount = min(p.jumlah, remaining_to_record)
-                        if rec_amount > 0:
+                        if p.jumlah > 0:
                             create_kas_entry(
                                 db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK,
-                                nominal=rec_amount, sumber=KasBankSource.BENGKEL,
+                                nominal=p.jumlah, sumber=KasBankSource.BENGKEL,
                                 metode_bayar=p.metode,
                                 referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
                                 keterangan=f"Pembayaran (EDIT) Bengkel: {transaksi.nomor_transaksi} ({p.metode})",
                                 user_id=user_id,
                                 kas_jenis=p.kas_jenis,
                             )
-                            remaining_to_record -= rec_amount
-                    # Record remaining covered by existing DP
-                    if remaining_to_record > 0 and existing_dp > 0:
-                        rec_amount = min(existing_dp, remaining_to_record)
-                        if rec_amount > 0:
-                            create_kas_entry(
-                                db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK,
-                                nominal=rec_amount, sumber=KasBankSource.BENGKEL,
-                                metode_bayar=PaymentMethod.TUNAI,
-                                referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
-                                keterangan=f"DP (EDIT) Bengkel: {transaksi.nomor_transaksi}",
-                                user_id=user_id,
-                            )
                 else:
                     create_kas_entry(
                         db=self.db, tanggal=effective_tanggal, tipe=KasBankType.MASUK,
-                        nominal=grand_total, sumber=KasBankSource.BENGKEL, 
+                        nominal=total_pembayaran, sumber=KasBankSource.BENGKEL,
                         metode_bayar=metode_utama,
                         referensi_id=transaksi.id, nomor_referensi=transaksi.nomor_transaksi,
                         keterangan=f"Pembayaran Lunas (EDIT) Bengkel: {transaksi.nomor_transaksi}",

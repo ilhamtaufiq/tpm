@@ -16,7 +16,11 @@
       "Bash(xargs grep -l \"receipt\\\\|struk\")",
       "Bash(rtk ls *)",
       "Bash(grep \":$\")",
-      "Bash(rtk tsc *)"
+      "Bash(rtk tsc *)",
+      "Bash(git checkout *)",
+      "Bash(git push *)",
+      "Bash(netstat -ano)",
+      "Bash(pm2 list *)"
     ]
   }
 }
