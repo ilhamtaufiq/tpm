@@ -573,15 +573,15 @@ class ModalService(BaseReportService):
         piutang_external = float(data["raw_summaries"]["piutang"].get("total", 0))
         hutang_usaha_total = float(data["raw_summaries"]["hutang"].get("total", 0))
         hutang_investor_total = float(data["raw_summaries"]["hutang"]["breakdown"].get("investor", 0))
+        customer_dp = float(data["raw_summaries"]["hutang"]["breakdown"].get("uang_muka_penjualan", 0))
+        piutang_booking = float(data["raw_summaries"]["hutang"]["breakdown"].get("piutang_booking", 0))
 
-        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
-        
+        kewajiban_usaha = (hutang_usaha_total - hutang_investor_total) + customer_dp + piutang_booking
+
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))
-        
-        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities.
-        # Internal hutang is not a consolidated liability, so it must not be
-        # added back here. It is kept only for tracing.
+
+        # Modal Aktual = Actual Cash + Inventory + Fixed Assets + Receivables - Liabilities (including DP/Unearned).
         modal_aktual = (end_total_cash + persediaan_part + persediaan_mobil + aset_tetap + piutang_external) - kewajiban_usaha
         
         # Use the ACTUAL snapshot as the authoritative modal_akhir
