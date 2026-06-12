@@ -2,6 +2,21 @@
 
 Catatan perubahan untuk dokumentasi di folder `.agent`.
 
+## 2026-06-12
+
+### Fixed (Code & Docs)
+- **Bug DP (Uang Muka) tidak masuk Hutang di Neraca**:
+  - `reports/base.py`: Hapus filter `status_bayar != LUNAS` pada query `direct_bengkel_dp` dan `bengkel_dp`. Overpayment/DP tetap dihitung liabilitas meski transaksi berstatus LUNAS (terjadi saat `grand_total = 0`).
+  - `modal_service.py`: Hapus `+ customer_dp` pada `kewajiban_usaha`. `hutang_usaha_total` sudah memuat DP — menambahkan lagi menyebabkan double-counting (modal aktual turun palsu).
+  - `api/router.py`: Daftarkan `realtime.router` ke `api_router` agar WebSocket `/api/v1/realtime/ws` tidak 404.
+- **UI Accessibility**: Bungkus `<Modal>` dengan `{show && <Modal>}` di `neraca.tsx` dan `perubahan-modal.tsx` untuk mencegah error `aria-hidden` pada elemen retain focus.
+
+### Updated (Docs)
+- `FINANCIAL_FLOW.md`: Tambah section 3.C (Down Payment Flow) dan row DP di tabel dampak laporan.
+- `ACCOUNTING_RULES.md`: Tambah section 8 (DP / Uang Muka Penjualan).
+- `SYNC_LOGIC.md`: Tambah section 10 (Down Payment) dengan pitfall double-counting dan filter LUNAS.
+- `FINANCE_REPORTING_GUARDRAIL.md`: Tambah dua pitfall DP (double-counting kewajiban, filter LUNAS di query).
+
 ## 2026-05-16
 
 ### Added

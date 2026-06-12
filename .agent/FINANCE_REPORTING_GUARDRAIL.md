@@ -40,7 +40,21 @@ Untuk transaksi bengkel:
 - `ANTRE`/`PROSES` dengan `grand_total = 0` = belum finalize (kecuali ada DP).
 - DP pada transaksi tanpa item (`grand_total = 0`) dicatat sebagai kas masuk dan muncul di Neraca sebagai "Uang Muka Penjualan" (Hutang).
 - Saat transaksi di-settle (SELESAI), DP diakui sebagai pendapatan dan pos "Uang Muka Penjualan" hilang.
+- **Pitfall**: Jangan double-counting `customer_dp` di `kewajiban_usaha` (`modal_service.py`) karena `hutang_usaha_total` sudah memuatnya.
+- **Pitfall**: Query DP di `reports/base.py` tidak boleh memfilter `status_bayar != LUNAS` atau `status != LUNAS` untuk piutang, agar overpayment/DP tetap masuk sebagai liabilitas meski sistem menandainya LUNAS (karena `bayar >= grand_total`).
 - Dashboard operasional boleh menampilkan semua status; dashboard finansial pakai filter `SELESAI` untuk laporan final.
+
+## Pembatalan Transaksi (Void)
+
+Ketika transaksi bengkel dibatalkan:
+- Semua entry `KasBank` terkait transaksi **harus dihapus** agar saldo kas kembali normal.
+- `PiutangUsaha` terkait transaksi **harus dihapus** agar tidak muncul di laporan piutang.
+- `HutangUsaha` internal (jika ada) **harus dihapus** agar neraca tetap seimbang.
+- Stok sparepart **harus dikembalikan** ke jumlah awal.
+- Status transaksi di-set ke `status_pengerjaan = BATAL` dan `status_bayar = BATAL`.
+- Transaksi yang sudah `BATAL` **tidak bisa di-unvoid**. Buat transaksi baru jika perlu.
+- **File utama**: `backend/app/services/transaksi_bengkel_service.py` method `void_transaction()`.
+- **File terkait**: `backend/app/services/kas_bank_service.py`, `backend/app/services/piutang_service.py`, `backend/app/services/hutang_service.py`.
 
 ## Checklist Verifikasi Minimum
 

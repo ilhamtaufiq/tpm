@@ -164,7 +164,7 @@ export default function BengkelTransaksiScreen() {
     const selectedServiceList = useMemo(() => Object.values(selectedServices), [selectedServices]);
     const hasItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
     const openBillPartList = useMemo(() => {
-        if (editTransactionId || !selectedOpenTransactionDetail) return [];
+        if (!selectedOpenTransactionDetail) return [];
         return (selectedOpenTransactionDetail.detail_parts || []).map((detail: any) => {
             const partId = detail.spare_part_id || detail.spare_part?.id;
             return {
@@ -712,7 +712,7 @@ export default function BengkelTransaksiScreen() {
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
                 jumlah_bayar: shouldPay
                     ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTunaiAmount + splitTransferAmount : receivedAmount))
-                    : 0,
+                    : existingDp, // Preserve existing DP when updating without payment
                 payments: !shouldPay
                     ? []
                     : isJA
@@ -1237,36 +1237,62 @@ export default function BengkelTransaksiScreen() {
                     <View>
                         <Typography variant="body1" weight="bold" className="text-textMain mb-4">Review Transaksi</Typography>
                         <View className="bg-slate-50 p-5 rounded-3xl border border-slate-100 mb-5">
-                            <SummaryRow label="Sparepart" value={`${billPartList.length} item`} />
+                            {/* Total Part */}
+                            <Typography weight="bold" className="text-textMain text-sm mb-2">- Total part</Typography>
                             {billPartList.map(row => (
-                                <SummaryRow
-                                    key={`payment-part-${row.item.id}`}
-                                    label={`${row.item.nama} x${row.qty}`}
-                                    value={formatCurrency(Number(row.item.harga_jual || 0) * row.qty)}
-                                    muted
-                                />
+                                <View key={`review-part-${row.item.id}`} className="flex-row justify-between items-center pl-4 mb-1">
+                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.item.nama}</Typography>
+                                    <Typography className="text-textMain text-sm ml-2">{formatCurrency(Number(row.item.harga_jual || 0) * row.qty)}</Typography>
+                                </View>
                             ))}
-                            <SummaryRow label="Service" value={`${billServiceList.length} item`} />
+                            {billPartList.length === 0 && (
+                                <Typography className="text-gray-400 text-xs pl-4 mb-1">Tidak ada part</Typography>
+                            )}
+                            <View className="h-[1px] bg-slate-300 my-2 ml-4" />
+                            <View className="flex-row justify-end pr-0 mb-4">
+                                <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(billPartList.reduce((sum, row) => sum + (Number(row.item.harga_jual || 0) * row.qty), 0))}</Typography>
+                            </View>
+
+                            {/* Total Service */}
+                            <Typography weight="bold" className="text-textMain text-sm mb-2">- Total service</Typography>
                             {billServiceList.map((row, index) => (
-                                <SummaryRow
-                                    key={`payment-service-${row.item.id}-${index}`}
-                                    label={`${row.item.nama} x${row.qty}`}
-                                    value={formatCurrency(Number(row.item.harga || 0) * row.qty)}
-                                    muted
-                                />
+                                <View key={`review-service-${row.item.id}-${index}`} className="flex-row justify-between items-center pl-4 mb-1">
+                                    <Typography className="text-textGray text-sm flex-1" numberOfLines={1}>{row.item.nama}</Typography>
+                                    <Typography className="text-textMain text-sm ml-2">{formatCurrency(Number(row.item.harga || 0) * row.qty)}</Typography>
+                                </View>
                             ))}
-                            {discountAmount > 0 && <SummaryRow label="Diskon" value={`-${formatCurrency(discountAmount)}`} />}
+                            {billServiceList.length === 0 && (
+                                <Typography className="text-gray-400 text-xs pl-4 mb-1">Tidak ada service</Typography>
+                            )}
+                            <View className="h-[1px] bg-slate-300 my-2 ml-4" />
+                            <View className="flex-row justify-end pr-0 mb-4">
+                                <Typography weight="bold" className="text-textMain text-sm">{formatCurrency(billServiceList.reduce((sum, row) => sum + (Number(row.item.harga || 0) * row.qty), 0))}</Typography>
+                            </View>
+
+                            {/* Grand Total */}
+                            <View className="h-[2px] bg-slate-400 my-3" />
+                            <View className="flex-row justify-between items-center mb-1">
+                                <Typography weight="bold" className="text-textMain">- Total</Typography>
+                                <Typography weight="bold" className="text-primary text-base">{formatCurrency(subtotal)}</Typography>
+                            </View>
+                            {discountAmount > 0 && (
+                                <View className="flex-row justify-between items-center mb-1">
+                                    <Typography className="text-rose-600 text-sm">  Diskon</Typography>
+                                    <Typography className="text-rose-600 text-sm">-{formatCurrency(discountAmount)}</Typography>
+                                </View>
+                            )}
                             {existingDp > 0 && (
                                 <>
-                                    <SummaryRow label="DP Sudah Dibayar" value={`-${formatCurrency(existingDp)}`} muted />
-                                    <SummaryRow label="Sisa Bayar" value={formatCurrency(sisaBayar)} bold color="text-amber-700" />
+                                    <View className="flex-row justify-between items-center mb-1">
+                                        <Typography className="text-emerald-700 text-sm">- DP Awal</Typography>
+                                        <Typography className="text-emerald-700 text-sm">({formatCurrency(existingDp)})</Typography>
+                                    </View>
+                                    <View className="flex-row justify-between items-center">
+                                        <Typography weight="bold" className="text-amber-700">- Sisa bayar</Typography>
+                                        <Typography weight="bold" className="text-amber-700">({formatCurrency(sisaBayar)})/{formatCurrency(subtotal)}</Typography>
+                                    </View>
                                 </>
                             )}
-                            <View className="h-[1px] bg-slate-200 my-3" />
-                            <View className="flex-row justify-between items-center">
-                                <Typography weight="bold" className="text-textMain">Total</Typography>
-                                <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(subtotal)}</Typography>
-                            </View>
                         </View>
 
                         {existingDp > 0 ? (
@@ -1274,7 +1300,7 @@ export default function BengkelTransaksiScreen() {
                                 <View className="flex-row items-start">
                                     <CheckCircle2 size={18} color="#059669" className="mt-0.5" />
                                     <View className="ml-3 flex-1">
-                                        <Typography weight="bold" className="text-emerald-800">DP Rp{formatCurrency(existingDp)} sudah dibayar</Typography>
+                                        <Typography weight="bold" className="text-emerald-800">DP {formatCurrency(existingDp)} sudah dibayar</Typography>
                                         <Typography className="text-emerald-700 text-xs mt-1">
                                             Sisa yang perlu dibayar: <Typography weight="bold">{formatCurrency(sisaBayar)}</Typography>
                                         </Typography>

@@ -632,7 +632,6 @@ class BaseReportService:
             PiutangUsaha.sumber == PiutangSource.BENGKEL,
             PiutangUsaha.tanggal <= tanggal_sampai,
             PiutangUsaha.status != PiutangStatus.BATAL,
-            PiutangUsaha.status != PiutangStatus.LUNAS,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         ).scalar() or 0)
 
@@ -653,7 +652,6 @@ class BaseReportService:
             ), 0)
         ).filter(
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.jumlah_bayar > 0,
             ~TransaksiPenjualanBengkel.id.in_(subq_piutang)

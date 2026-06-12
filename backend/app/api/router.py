@@ -70,6 +70,7 @@ api_router.include_router(user_cash.router)
 api_router.include_router(backup.router)
 api_router.include_router(trash.router, prefix="/trash", tags=["Trash"])
 api_router.include_router(master_data.router)
+api_router.include_router(realtime.router)
 
 
 

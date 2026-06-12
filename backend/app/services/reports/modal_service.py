@@ -576,7 +576,7 @@ class ModalService(BaseReportService):
         customer_dp = float(data["raw_summaries"]["hutang"]["breakdown"].get("uang_muka_penjualan", 0))
         piutang_booking = float(data["raw_summaries"]["hutang"]["breakdown"].get("piutang_booking", 0))
 
-        kewajiban_usaha = (hutang_usaha_total - hutang_investor_total) + customer_dp + piutang_booking
+        kewajiban_usaha = (hutang_usaha_total - hutang_investor_total) + piutang_booking
 
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))

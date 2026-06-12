@@ -88,3 +88,8 @@ Jika tidak cocok, cek:
 3. Cek `reports/base.py` untuk agregasi sumber.
 4. Cek gaji, investor sharing, dan internal elimination.
 5. Cek `neraca_service.py` untuk modal non-kas dan selisih.
+
+## 10. Down Payment (Uang Muka Penjualan)
+- DP dicatat sebagai Hutang (Uang Muka Penjualan) sampai transaksi diselesaikan.
+- Di `modal_service.py`, perhitungan `kewajiban_usaha` mengambil `hutang_usaha_total` yang sudah termasuk DP. **Jangan** menambahkan `+ customer_dp` lagi — menyebabkan double-counting (modal aktual turun palsu).
+- Di `reports/base.py`, query `direct_bengkel_dp` dan `bengkel_dp` tidak boleh memfilter keluar transaksi berstatus `LUNAS` jika ada kelebihan bayar (`jumlah_bayar > grand_total`), agar DP tetap diakui sebagai liabilitas.

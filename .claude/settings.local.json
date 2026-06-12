@@ -18,7 +18,9 @@
       "Bash(grep \":$\")",
       "Bash(rtk tsc *)",
       "Bash(git checkout *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(netstat -ano)",
+      "Bash(pm2 list *)"
     ]
   }
 }
