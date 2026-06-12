@@ -615,29 +615,48 @@ class BaseReportService:
             )
         ).scalar() or 0)
 
-        bengkel_dp = float(self.db.query(func.sum(PembayaranPiutang.nominal)).join(PiutangUsaha).join(
+        # Bengkel DP via piutang: unearned portion = overpayment on the piutang.
+        # Unearned DP exists when total_dibayar exceeds nominal_piutang
+        # (customer paid more than final bill = credit balance).
+        bengkel_dp = float(self.db.query(
+            func.coalesce(func.sum(
+                case(
+                    (PiutangUsaha.total_dibayar > PiutangUsaha.nominal_piutang,
+                     PiutangUsaha.total_dibayar - PiutangUsaha.nominal_piutang),
+                    else_=0
+                )
+            ), 0)
+        ).join(
             TransaksiPenjualanBengkel, PiutangUsaha.referensi_id == TransaksiPenjualanBengkel.id
         ).filter(
-            PembayaranPiutang.tanggal <= tanggal_sampai,
             PiutangUsaha.sumber == PiutangSource.BENGKEL,
-            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
+            PiutangUsaha.tanggal <= tanggal_sampai,
+            PiutangUsaha.status != PiutangStatus.BATAL,
+            PiutangUsaha.status != PiutangStatus.LUNAS,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
         ).scalar() or 0)
 
-        # Direct DP on bengkel transactions without linked piutang (grand_total = 0 case)
+        # Direct DP on bengkel transactions without linked piutang.
+        # DP = unearned portion: max(0, jumlah_bayar - grand_total).
+        # When parts/services are added, grand_total rises → DP liability auto-decreases.
+        subq_piutang = self.db.query(PiutangUsaha.referensi_id).filter(
+            PiutangUsaha.sumber == PiutangSource.BENGKEL,
+            PiutangUsaha.referensi_id.isnot(None)
+        )
         direct_bengkel_dp = float(self.db.query(
-            func.coalesce(func.sum(TransaksiPenjualanBengkel.jumlah_bayar), 0)
+            func.coalesce(func.sum(
+                case(
+                    (TransaksiPenjualanBengkel.jumlah_bayar > TransaksiPenjualanBengkel.grand_total,
+                     TransaksiPenjualanBengkel.jumlah_bayar - TransaksiPenjualanBengkel.grand_total),
+                    else_=0
+                )
+            ), 0)
         ).filter(
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
-            TransaksiPenjualanBengkel.status_pengerjaan != WorkshopStatus.SELESAI,
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.jumlah_bayar > 0,
-            ~TransaksiPenjualanBengkel.id.in_(
-                self.db.query(PiutangUsaha.referensi_id).filter(
-                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
-                    PiutangUsaha.referensi_id.isnot(None)
-                )
-            )
+            ~TransaksiPenjualanBengkel.id.in_(subq_piutang)
         ).scalar() or 0)
 
         customer_dp += direct_bengkel_dp
