@@ -204,7 +204,9 @@ export default function PurchaseScreen() {
 
     const setItemPrice = (index: number, val: string) => {
         const newItems = [...items];
-        newItems[index] = { ...newItems[index], price: formatNumber(val) };
+        // Pastikan konversi string ke number aman sebelum format
+        const numericVal = parseNumber(val);
+        newItems[index] = { ...newItems[index], price: formatNumber(String(numericVal)) };
         setItems(newItems);
     };
 
@@ -534,12 +536,11 @@ export default function PurchaseScreen() {
                                     const currentItem = selected ? items[itemIdx] : null;
 
                                     return (
-                                        <Pressable
+                                        <View
                                             key={part.id}
-                                            onPress={() => toggleItem(part)}
                                             className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
                                         >
-                                            <View className="flex-row items-start">
+                                            <Pressable onPress={() => toggleItem(part)} className="flex-row items-start">
                                                 <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
                                                     {selected && <Check size={16} color="white" />}
                                                 </View>
@@ -559,7 +560,7 @@ export default function PurchaseScreen() {
                                                         </Typography>
                                                     )}
                                                 </View>
-                                            </View>
+                                            </Pressable>
 
                                             {selected && currentItem && (
                                                 <View className="mt-3 pt-3 border-t border-blue-100">
@@ -594,7 +595,7 @@ export default function PurchaseScreen() {
                                                     </View>
                                                 </View>
                                             )}
-                                        </Pressable>
+                                        </View>
                                     );
                                 })
                             )}
@@ -670,6 +671,15 @@ export default function PurchaseScreen() {
                                 <SummaryRow
                                     key={`review-${item.id}`}
                                     label={`${item.name} x${item.qty}`}
+                                    value={`${formatCurrency(Number(parseNumber(item.price)) || 0)}/pcs`}
+                                    muted
+                                />
+                            ))}
+                            <View className="h-[1px] bg-slate-200 my-1 mx-2" />
+                            {items.map(item => (
+                                <SummaryRow
+                                    key={`review-subtotal-${item.id}`}
+                                    label={`Subtotal ${item.name}`}
                                     value={formatCurrency(Number(item.qty || 0) * Number(parseNumber(item.price) || 0))}
                                     muted
                                 />
@@ -706,21 +716,12 @@ export default function PurchaseScreen() {
                             onPress={next}
                         />
                     ) : (
-                        <>
-                            <Button
-                                title={isEditMode ? 'Simpan Perubahan' : 'Simpan Pembelian'}
-                                variant="secondary"
-                                className="flex-1"
-                                onPress={() => confirmSubmit(false)}
-                                loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
-                            />
-                            <Button
-                                title="Lanjut Pembayaran"
-                                className="flex-1"
-                                onPress={() => setPaymentSheetOpen(true)}
-                                icon={<Wallet size={16} color="white" />}
-                            />
-                        </>
+                        <Button
+                            title="Lanjut Pembayaran"
+                            className="flex-1"
+                            onPress={() => setPaymentSheetOpen(true)}
+                            icon={<Wallet size={16} color="white" />}
+                        />
                     )}
                 </View>
             </View>
