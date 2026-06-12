@@ -13,7 +13,10 @@
       "Bash(rtk find *)",
       "Bash(rtk read *)",
       "Bash(rtk grep *)",
-      "Bash(xargs grep -l \"receipt\\\\|struk\")"
+      "Bash(xargs grep -l \"receipt\\\\|struk\")",
+      "Bash(rtk ls *)",
+      "Bash(grep \":$\")",
+      "Bash(rtk tsc *)"
     ]
   }
 }

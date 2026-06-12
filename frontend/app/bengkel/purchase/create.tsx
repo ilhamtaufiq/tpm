@@ -1,45 +1,69 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 import { Typography } from '../../../components/ui/Typography';
 import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { Badge } from '../../../components/ui/Badge';
 import {
+    AlertCircle,
+    Check,
     ChevronLeft,
-    ShoppingCart,
     Plus,
     Trash2,
     Calendar,
-    Truck,
     Search,
     Package,
     X,
     CheckCircle2,
-    Circle
+    Barcode as BarcodeIcon,
+    Info,
+    Wallet,
 } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { QrCode } from 'lucide-react-native';
 import { BarcodeScannerModal } from '../../../components/ui/BarcodeScannerModal';
-import { useQueryClient, onlineManager } from '@tanstack/react-query';
+import { onlineManager } from '@tanstack/react-query';
 import { MasterDataSelector } from '../../../components/ui/MasterDataSelector';
 import { useCreatePembelianParts, useSparePartsList, useUpdatePembelianParts } from '../../../hooks/useBengkel';
 import { formatNumber, parseNumber, formatCurrency } from '../../../utils/format';
 import { bengkelService } from '../../../services/bengkel';
+import { useDebounce } from '../../../hooks';
+
+type NoticeType = 'error' | 'success' | 'info';
+
+const formatLocalDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const isValidDateString = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
 
 export default function PurchaseScreen() {
-    const router = useRouter(); const queryClient = useQueryClient();
+    const router = useRouter();
     const params = useLocalSearchParams<{ id?: string }>();
     const insets = useSafeAreaInsets();
     const editId = params.id ? Number(params.id) : null;
     const isEditMode = Number.isFinite(editId) && !!editId;
 
+    // Step management
+    const [step, setStep] = useState<1 | 2 | 3>(1);
+
     // Form State
     const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
     const [nomorFaktur, setNomorFaktur] = useState('');
     const [tanggal, setTanggal] = useState(new Date());
+    const [tanggalText, setTanggalText] = useState(() => formatLocalDate(new Date()));
+    const [tanggalError, setTanggalError] = useState('');
+    const [tanggalPickerOpen, setTanggalPickerOpen] = useState(false);
+    const [tempTanggalText, setTempTanggalText] = useState(() => formatLocalDate(new Date()));
     const [items, setItems] = useState<any[]>([]);
     const [catatan, setCatatan] = useState('');
     const [statusBayar, setStatusBayar] = useState('LUNAS');
@@ -49,20 +73,20 @@ export default function PurchaseScreen() {
         { id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }
     ]);
 
-    const getPaymentDetails = (sumber: string) => {
-        if (sumber === 'BENGKEL_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
-        if (sumber === 'UTAMA_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UTAMA' };
-        if (sumber === 'UTAMA_TRANSFER') return { metode: 'TRANSFER', kas_jenis: 'BANK_UTAMA' };
-        return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
-    };
+    // UI State — transaksi pattern
+    const [showPartSearch, setShowPartSearch] = useState(false);
+    const [partSearch, setPartSearch] = useState('');
+    const debouncedPartSearch = useDebounce(partSearch, 300);
+    const [scannerOpen, setScannerOpen] = useState(false);
+    const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
+    const [notice, setNotice] = useState<{ type: NoticeType; title: string; message: string } | null>(null);
+    const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+    const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
+    const [submitWithPayment, setSubmitWithPayment] = useState(false);
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
+    const [createdTransaction, setCreatedTransaction] = useState<any | null>(null);
 
-    // Modal State
-    const [isPartModalOpen, setIsPartModalOpen] = useState(false);
-    const [isScannerOpen, setIsScannerOpen] = useState(false);
-    const [partSearchQuery, setPartSearchQuery] = useState('');
-    const [checkedParts, setCheckedParts] = useState<Map<number, { id: number; nama: string; harga_beli: number }>>(new Map());
-
-    // API Hooks
+    // Hooks
     const createPembelianMutation = useCreatePembelianParts();
     const updatePembelianMutation = useUpdatePembelianParts();
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -72,20 +96,21 @@ export default function PurchaseScreen() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-    } = useSparePartsList({ search: partSearchQuery });
+    } = useSparePartsList({ search: debouncedPartSearch || undefined });
     const spareParts = useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data || []) || [],
         [partsData]
     );
 
+    // Preload parts
     useEffect(() => {
-        if (!isPartModalOpen) return;
-        if (partSearchQuery.trim()) return;
+        if (!showPartSearch && items.length > 0) return;
+        if (partSearch.trim()) return;
         if (isLoadingParts || isFetchingNextPage || !hasNextPage) return;
-
         fetchNextPage();
-    }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLoadingParts, isPartModalOpen, partSearchQuery]);
+    }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLoadingParts, showPartSearch, partSearch, items.length]);
 
+    // Edit mode detail loading
     useEffect(() => {
         if (!isEditMode || !editId) return;
 
@@ -99,6 +124,7 @@ export default function PurchaseScreen() {
                 });
                 setNomorFaktur(detail.nomor_faktur && detail.nomor_faktur !== '-' ? detail.nomor_faktur : '');
                 setTanggal(detail.tanggal ? new Date(detail.tanggal) : new Date());
+                setTanggalText(detail.tanggal ? formatLocalDate(new Date(detail.tanggal)) : formatLocalDate(new Date()));
                 setCatatan(detail.catatan || '');
                 setItems((detail.detail || []).map((item: any) => ({
                     id: item.id || Date.now() + Math.random(),
@@ -158,26 +184,31 @@ export default function PurchaseScreen() {
         return payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
     }, [payments]);
 
-    const handleAddItem = () => {
-        setCheckedParts(new Map());
-        setPartSearchQuery('');
-        setIsPartModalOpen(true);
+    const getPaymentDetails = (sumber: string) => {
+        if (sumber === 'BENGKEL_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
+        if (sumber === 'UTAMA_TUNAI') return { metode: 'TUNAI', kas_jenis: 'KAS_UTAMA' };
+        if (sumber === 'UTAMA_TRANSFER') return { metode: 'TRANSFER', kas_jenis: 'BANK_UTAMA' };
+        return { metode: 'TUNAI', kas_jenis: 'KAS_UNIT_BENGKEL' };
     };
 
+    // Item handlers
     const handleRemoveItem = (id: number) => {
         setItems(items.filter(item => item.id !== id));
     };
 
-    const handleUpdateItem = (index: number, field: string, value: any) => {
+    const setItemQty = (index: number, qty: number) => {
         const newItems = [...items];
-        if (field === 'price') {
-            newItems[index] = { ...newItems[index], [field]: formatNumber(value) };
-        } else {
-            newItems[index] = { ...newItems[index], [field]: value };
-        }
+        newItems[index] = { ...newItems[index], qty: String(Math.max(1, qty)) };
         setItems(newItems);
     };
 
+    const setItemPrice = (index: number, val: string) => {
+        const newItems = [...items];
+        newItems[index] = { ...newItems[index], price: formatNumber(val) };
+        setItems(newItems);
+    };
+
+    // Payment handlers
     const handleAddPaymentRow = () => {
         setPayments([...payments, { id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }]);
     };
@@ -201,42 +232,28 @@ export default function PurchaseScreen() {
         }
     };
 
-    const handleTogglePart = (part: any) => {
-        setCheckedParts(prev => {
-            const next = new Map(prev);
-            if (next.has(part.id)) {
-                next.delete(part.id);
-            } else {
-                next.set(part.id, { id: part.id, nama: part.nama, harga_beli: part.harga_beli });
-            }
-            return next;
-        });
+    // Part selection — inline (no bottom sheet)
+    const toggleItem = (part: any) => {
+        const exists = items.find(i => i.spare_part_id === part.id);
+        if (exists) {
+            // Remove
+            setItems(items.filter(i => i.id !== exists.id));
+        } else {
+            // Add
+            setItems([...items, {
+                id: Date.now() + Math.random(),
+                spare_part_id: part.id,
+                name: part.nama,
+                qty: '1',
+                price: formatNumber(part.harga_beli.toString()),
+            }]);
+        }
     };
 
-    const handleConfirmParts = () => {
-        const newItems = [...items];
-        checkedParts.forEach((part) => {
-            const alreadyExists = newItems.some(i => i.spare_part_id === part.id);
-            if (!alreadyExists) {
-                newItems.push({
-                    id: Date.now() + Math.random(),
-                    spare_part_id: part.id,
-                    name: part.nama,
-                    qty: '1',
-                    price: formatNumber(part.harga_beli.toString()),
-                });
-            }
-        });
-        setItems(newItems);
-        setIsPartModalOpen(false);
-        setCheckedParts(new Map());
-        setPartSearchQuery('');
-    };
-
+    // Scan handler
     const handleScanPart = (data: string) => {
         const cleanData = data.trim();
         const availableParts = spareParts || [];
-        // Better logic: use the hook that fetches all for search but maybe we need a dedicated search by code.
 
         let part = availableParts.find((p: any) => p.kode === cleanData);
         if (!part) {
@@ -245,7 +262,6 @@ export default function PurchaseScreen() {
         }
 
         if (part) {
-            // Check if already in items
             const existingIndex = items.findIndex(i => i.spare_part_id === part.id);
             if (existingIndex !== -1) {
                 const newItems = [...items];
@@ -260,32 +276,75 @@ export default function PurchaseScreen() {
                     price: formatNumber(part.harga_beli.toString())
                 }]);
             }
-            setIsScannerOpen(false);
+            setScannerOpen(false);
+            setScanLog(prev => [{
+                id: Math.random().toString(),
+                title: part.nama,
+                subtitle: `Kode: ${part.kode || '-'}`,
+                timestamp: Date.now(),
+            }, ...prev]);
         } else {
-            setIsScannerOpen(false);
-            alert(`Part dengan kode "${data}" tidak ditemukan.`);
+            setScannerOpen(false);
+            setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${data}`, timestamp: Date.now() }, ...prev]);
+            showNotice('error', 'Tidak Ditemukan', `Part dengan kode "${data}" tidak ditemukan.`);
         }
+    };
+
+    // Navigation
+    const next = () => {
+        if (step === 1 && items.length === 0) {
+            showNotice('error', 'Validasi', 'Pilih minimal satu sparepart.');
+            return;
+        }
+        if (step === 2) {
+            if (!selectedSupplier) {
+                showNotice('error', 'Validasi', 'Pilih supplier terlebih dahulu.');
+                return;
+            }
+            if (!isValidDateString(tanggalText)) {
+                showNotice('error', 'Validasi', 'Format tanggal tidak valid (YYYY-MM-DD).');
+                return;
+            }
+            // Sync tanggal from tanggalText
+            const [y, m, d] = tanggalText.split('-').map(Number);
+            setTanggal(new Date(y, m - 1, d));
+        }
+        setNotice(null);
+        setStep(prev => Math.min(3, prev + 1) as 1 | 2 | 3);
+    };
+
+    const confirmSubmit = (withPayment = false) => {
+        if (withPayment && isSplitPayment) {
+            const totalSplit = payments.reduce((acc, p) => acc + parseNumber(p.nominal), 0);
+            if (totalSplit !== total) {
+                showNotice('error', 'Validasi', 'Total split payment harus sama dengan total pembelian.');
+                return;
+            }
+        }
+        setSubmitWithPayment(withPayment);
+        setNotice(null);
+        setConfirmSubmitOpen(true);
     };
 
     const handleSubmit = async () => {
         if (!selectedSupplier) {
-            alert('Mohon pilih supplier terlebih dahulu');
+            showNotice('error', 'Validasi', 'Mohon pilih supplier terlebih dahulu.');
             return;
         }
         if (items.length === 0 || items.some(i => !i.spare_part_id || !i.qty || Number(i.qty) <= 0)) {
-            alert('Mohon lengkapi data barang dengan jumlah yang valid (> 0)');
+            showNotice('error', 'Validasi', 'Mohon lengkapi data barang dengan jumlah yang valid (> 0).');
             return;
         }
 
         if (!isSplitPayment && !metodeBayar) {
-            alert('Mohon pilih metode pembayaran');
+            showNotice('error', 'Validasi', 'Mohon pilih metode pembayaran');
             return;
         }
 
         const payload = {
             tanggal: tanggal.toISOString().split('T')[0],
             supplier_id: selectedSupplier.id,
-            nomor_faktur: nomorFaktur || '-', // Optional
+            nomor_faktur: nomorFaktur || '-',
             catatan: catatan,
             status_bayar: isSplitPayment ? (totalSplitAmount >= total ? 'LUNAS' : 'BELUM_LUNAS') : statusBayar,
             metode_bayar: isSplitPayment ? 'SPLIT' : (metodeBayar === 'KREDIT' ? 'KREDIT' : getPaymentDetails(metodeBayar || 'BENGKEL_TUNAI').metode),
@@ -309,179 +368,428 @@ export default function PurchaseScreen() {
             }))
         };
 
-        // Check online status via TanStack Query's onlineManager
         const isOnline = onlineManager.isOnline();
 
         if (!isOnline) {
-            // Mode Offline: Fire and forget (it will be queued in TanStack Query)
             createPembelianMutation.mutate(payload);
-            alert('Mode Offline: Transaksi telah disimpan di antrian. Data akan disinkronkan otomatis saat Anda terhubung ke internet kembali.');
+            showNotice('success', 'Mode Offline', 'Transaksi telah disimpan di antrian.');
             handleBack();
             return;
         }
 
         try {
+            setConfirmSubmitOpen(false);
+            setPaymentSheetOpen(false);
             if (isEditMode && editId) {
                 await updatePembelianMutation.mutateAsync({ id: editId, data: payload });
             } else {
-                await createPembelianMutation.mutateAsync(payload);
+                const result = await createPembelianMutation.mutateAsync(payload);
+                setCreatedTransaction(result);
             }
-            handleBack();
+            setSuccessModalOpen(true);
         } catch (error: any) {
             console.error(error);
             const errorDetail = error.response?.data?.detail;
             const message = typeof errorDetail === 'string' ? errorDetail : 'Gagal menyimpan transaksi pembelian. Pastikan semua data valid dan saldo mencukupi.';
-            alert(message);
+            showNotice('error', 'Error', message);
         }
     };
 
+    const closeAfterSubmit = () => {
+        setSuccessModalOpen(false);
+        if (router.canGoBack()) router.back();
+        else router.replace('/bengkel');
+    };
+
+    const showNotice = (type: NoticeType, title: string, message: string) => {
+        setNotice({ type, title, message });
+    };
+
+    const openTanggalPicker = () => {
+        setTempTanggalText(tanggalText);
+        setTanggalError('');
+        setTanggalPickerOpen(true);
+    };
+
+    const applyTanggalPicker = () => {
+        if (!isValidDateString(tempTanggalText)) {
+            setTanggalError('Format tanggal tidak valid. Gunakan YYYY-MM-DD.');
+            return;
+        }
+        setTanggalText(tempTanggalText);
+        const [y, m, d] = tempTanggalText.split('-').map(Number);
+        setTanggal(new Date(y, m - 1, d));
+        setTanggalPickerOpen(false);
+        setTanggalError('');
+    };
+
+    const selectTodayTanggal = () => {
+        const today = formatLocalDate(new Date());
+        setTempTanggalText(today);
+        setTanggalText(today);
+        setTanggal(new Date());
+        setTanggalPickerOpen(false);
+        setTanggalError('');
+    };
+
+    // --- RENDER ---
+
+    const tabBarBottom = getCustomTabBarBottomPadding(insets.bottom, 24);
+    const tabBarHeight = 60;
+
     return (
-        <SafeAreaView className="flex-1 bg-surface">
+        <SafeAreaView className="flex-1 bg-white">
             <StatusBar barStyle="dark-content" />
 
             {/* Header */}
-            <View className="px-6 py-4 flex-row items-center border-b border-gray-100 bg-white">
-                <Pressable onPress={handleBack} className="mr-4">
-                    <ChevronLeft size={24} color="#1C1C1C" />
-                </Pressable>
-                <Typography variant="h2" weight="bold">{isEditMode ? 'Edit Restock' : 'Restock (Pembelian)'}</Typography>
+            <View className="px-5 py-4 border-b border-gray-100 flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                    <Pressable onPress={handleBack} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center mr-3">
+                        <ChevronLeft size={20} color="#475569" />
+                    </Pressable>
+                    <View>
+                        <Typography variant="h3" weight="bold">{isEditMode ? 'Edit Restock' : 'Restock (Pembelian)'}</Typography>
+                        <Typography className="text-gray-400 text-xs mt-0.5">Pembelian Sparepart</Typography>
+                    </View>
+                </View>
             </View>
 
-            <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }} showsVerticalScrollIndicator={false}>
-                {isLoadingDetail && (
-                    <View className="py-10 items-center justify-center">
-                        <ActivityIndicator color="#023C69" />
-                        <Typography className="text-gray-500 mt-3">Memuat data pembelian...</Typography>
+            {/* Step 1 Action Bar */}
+            {step === 1 && (
+                <View className="px-5 py-3 bg-white border-b border-gray-100">
+                    <View className="flex-row items-center justify-between">
+                        <ActionIcon
+                            active={showPartSearch}
+                            icon={<Search size={20} color={showPartSearch ? 'white' : '#023C69'} />}
+                            label="Search"
+                            onPress={() => {
+                                setShowPartSearch(prev => !prev);
+                                if (showPartSearch) setPartSearch('');
+                            }}
+                        />
+                        <ActionIcon
+                            icon={<BarcodeIcon size={20} color="#023C69" />}
+                            label="Scan"
+                            onPress={() => { setScanLog([]); setScannerOpen(true); }}
+                        />
+                    </View>
+                    {showPartSearch && (
+                        <View className="mt-3">
+                            <SearchBox
+                                value={partSearch}
+                                onChange={setPartSearch}
+                                placeholder="Cari sparepart..."
+                            />
+                        </View>
+                    )}
+                    {scanLog.length > 0 && (
+                        <View className="mt-2">
+                            {scanLog.slice(0, 3).map(log => (
+                                <View key={log.id} className="flex-row items-center bg-blue-50 rounded-xl px-3 py-2 mb-1 border border-blue-100">
+                                    <CheckCircle2 size={14} color="#2563EB" />
+                                    <Typography className="text-blue-700 text-xs font-semibold ml-2 flex-1" numberOfLines={1}>{log.title}</Typography>
+                                    {log.subtitle ? (
+                                        <Typography className="text-blue-600/70 text-[10px] ml-2">{log.subtitle}</Typography>
+                                    ) : null}
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                </View>
+            )}
+
+            {isLoadingDetail && (
+                <View className="py-10 items-center justify-center">
+                    <ActivityIndicator color="#023C69" />
+                    <Typography className="text-gray-500 mt-3">Memuat data pembelian...</Typography>
+                </View>
+            )}
+
+            {notice && <NoticeBanner type={notice.type} title={notice.title} message={notice.message} onClose={() => setNotice(null)} />}
+
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ padding: 20, paddingBottom: tabBarHeight + 140 }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* STEP 1: Item Selection — inline picker like transaksi */}
+                {step === 1 && (
+                    <View>
+                        {/* Part catalog — always visible */}
+                        <View className="w-full">
+                            <View className="flex-row items-center justify-between mb-3 px-1">
+                                <View className="flex-row items-center">
+                                    <Package size={18} color="#023C69" />
+                                    <Typography weight="bold" className="ml-2 text-primary uppercase">Katalog Sparepart</Typography>
+                                </View>
+                                {items.length > 0 && <Typography className="text-gray-400 text-xs font-bold">{items.length} item dipilih</Typography>}
+                            </View>
+
+                            {isLoadingParts ? (
+                                <ActivityIndicator color="#023C69" />
+                            ) : (
+                                spareParts.map((part: any) => {
+                                    const itemIdx = items.findIndex(i => i.spare_part_id === part.id);
+                                    const selected = itemIdx >= 0;
+                                    const currentItem = selected ? items[itemIdx] : null;
+
+                                    return (
+                                        <Pressable
+                                            key={part.id}
+                                            onPress={() => toggleItem(part)}
+                                            className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
+                                        >
+                                            <View className="flex-row items-start">
+                                                <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                                                    {selected && <Check size={16} color="white" />}
+                                                </View>
+                                                <View className="flex-1">
+                                                    <View className="flex-row items-center">
+                                                        <Package size={18} color={selected ? '#2563EB' : '#94A3B8'} />
+                                                        <Typography weight="bold" className="text-sm ml-2 flex-1 text-textMain" numberOfLines={1}>
+                                                            {part.nama}
+                                                        </Typography>
+                                                    </View>
+                                                    <Typography className="text-gray-400 text-[11px] mt-1">
+                                                        {part.kode || '-'} • Stok: {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}
+                                                    </Typography>
+                                                    {!selected && (
+                                                        <Typography className="text-primary text-xs font-bold mt-1">
+                                                            {formatCurrency(part.harga_beli)}
+                                                        </Typography>
+                                                    )}
+                                                </View>
+                                            </View>
+
+                                            {selected && currentItem && (
+                                                <View className="mt-3 pt-3 border-t border-blue-100">
+                                                    <View className="flex-row items-center space-x-3">
+                                                        <View className="flex-1">
+                                                            <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Qty</Typography>
+                                                            <QtyControl
+                                                                value={Number(currentItem.qty)}
+                                                                color="blue"
+                                                                onMinus={() => setItemQty(itemIdx, Number(currentItem.qty) - 1)}
+                                                                onPlus={() => setItemQty(itemIdx, Number(currentItem.qty) + 1)}
+                                                                onChangeQty={(qty) => setItemQty(itemIdx, qty)}
+                                                            />
+                                                        </View>
+                                                        <View className="flex-1">
+                                                            <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Harga Beli</Typography>
+                                                            <View className="flex-row items-center bg-white rounded-xl border border-blue-100 px-3 h-9">
+                                                                <Typography className="text-blue-600 text-xs font-bold mr-1">Rp</Typography>
+                                                                <TextInput
+                                                                    value={currentItem.price}
+                                                                    onChangeText={(val) => setItemPrice(itemIdx, val)}
+                                                                    keyboardType="number-pad"
+                                                                    className="flex-1 text-blue-600 text-xs font-bold p-0"
+                                                                />
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                    <View className="flex-row justify-end mt-2">
+                                                        <Typography className="text-blue-700 text-[10px] font-bold">
+                                                            Subtotal: {formatCurrency((Number(currentItem.qty) || 0) * (Number(parseNumber(currentItem.price)) || 0))}
+                                                        </Typography>
+                                                    </View>
+                                                </View>
+                                            )}
+                                        </Pressable>
+                                    );
+                                })
+                            )}
+                            {isFetchingNextPage && (
+                                <View className="py-4">
+                                    <ActivityIndicator color="#023C69" />
+                                </View>
+                            )}
+                        </View>
                     </View>
                 )}
-                {/* Supplier Info */}
-                <Card variant="outlined" className="p-4 mb-6 border-gray-100 bg-gray-50/30">
-                    <MasterDataSelector
-                        type="supplier"
-                        label="Informasi Supplier"
-                        value={selectedSupplier}
-                        onSelect={setSelectedSupplier}
-                        placeholder="Pilih Supplier..."
-                    />
-                </Card>
-                <Input
-                    label="Nomor Faktur"
-                    placeholder="INV/2024/001"
-                    value={nomorFaktur}
-                    onChangeText={setNomorFaktur}
-                    containerClassName="mb-6"
-                />
 
-                <View className="mb-6">
-                    <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal Pembelian</Typography>
-                    <Pressable className="bg-gray-100 rounded-xl px-4 h-[52px] justify-center border-2 border-transparent">
-                        <View className="flex-row items-center">
-                            <Calendar size={18} color="#767676" />
-                            <Typography className="ml-2 font-medium">
-                                {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </Typography>
-                        </View>
-                    </Pressable>
-                </View>
+                {/* STEP 2: Supplier Info */}
+                {step === 2 && (
+                    <View>
+                        <Card variant="outlined" className="p-4 mb-6 border-gray-100 bg-gray-50/30">
+                            <MasterDataSelector
+                                type="supplier"
+                                label="Informasi Supplier"
+                                value={selectedSupplier}
+                                onSelect={setSelectedSupplier}
+                                placeholder="Pilih Supplier..."
+                            />
+                        </Card>
 
-                {/* Items List */}
-                <View className="flex-row justify-between items-center mt-2 mb-4">
-                    <View className="flex-row items-center">
-                        <Package size={18} color="#023C69" />
-                        <Typography weight="bold" className="ml-2 text-primary uppercase">Daftar Barang</Typography>
-                    </View>
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={() => setIsScannerOpen(true)}
-                            className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-xl mr-2 border border-blue-100"
-                        >
-                            <QrCode size={14} color="#2563EB" />
-                            <Typography weight="bold" className="text-blue-700 text-[10px] ml-1.5 uppercase">Scan</Typography>
-                        </Pressable>
-                        <Pressable onPress={handleAddItem} className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-xl">
-                            <Plus size={14} color="#023C69" />
-                            <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah</Typography>
-                        </Pressable>
-                    </View>
-                </View>
+                        <Input
+                            label="Nomor Faktur"
+                            placeholder="INV/2024/001"
+                            value={nomorFaktur}
+                            onChangeText={setNomorFaktur}
+                            containerClassName="mb-6"
+                        />
 
-                {items.map((item, index) => (
-                    <Card key={item.id} className="mb-4 p-4 border border-gray-100 shadow-sm">
-                        <View className="flex-row justify-between items-start mb-3">
-                            <Typography variant="caption" weight="bold" className="text-primary">ITEM #{index + 1}</Typography>
-                            <Pressable onPress={() => handleRemoveItem(item.id)} className="bg-red-50 p-1.5 rounded-lg">
-                                <Trash2 size={16} color="#EE2737" />
+                        <View className="mb-6">
+                            <Typography variant="body2" className="text-textGray text-sm mb-1 font-medium">Tanggal Pembelian</Typography>
+                            <Pressable
+                                onPress={openTanggalPicker}
+                                className="bg-gray-100 rounded-2xl px-4 h-[52px] justify-center border-2 border-transparent"
+                            >
+                                <View className="flex-row items-center">
+                                    <Calendar size={18} color="#767676" />
+                                    <Typography className="ml-2 font-medium">
+                                        {tanggal.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </Typography>
+                                </View>
                             </Pressable>
                         </View>
 
-                        <View>
-                            <Input
-                                label="Nama Barang"
-                                placeholder="—"
-                                value={item.name}
-                                editable={false}
-                                containerClassName="mb-3"
-                            />
-                        </View>
-
-                        <View className="flex-row space-x-3">
-                            <Input
-                                label="Qty"
-                                placeholder="0"
-                                keyboardType="numeric"
-                                containerClassName="flex-1"
-                                value={item.qty}
-                                onChangeText={(val) => handleUpdateItem(index, 'qty', val)}
-                            />
-                            <Input
-                                label="Harga Beli (Satuan)"
-                                placeholder="Rp 0"
-                                keyboardType="numeric"
-                                containerClassName="flex-[1.5]"
-                                value={item.price}
-                                onChangeText={(val) => handleUpdateItem(index, 'price', val)}
-                            />
-                        </View>
-
-                        {/* Subtotal preview */}
-                        <View className="flex-row justify-end mt-1">
-                            <Typography variant="caption" className="text-gray-500">
-                                Subtotal: {formatCurrency((Number(item.qty) || 0) * (Number(parseNumber(item.price)) || 0))}
-                            </Typography>
-                        </View>
-                    </Card>
-                ))}
-
-                {items.length === 0 && (
-                    <View className="items-center py-8 border-2 border-dashed border-gray-200 rounded-xl mb-6">
-                        <Truck size={32} color="#D1D5DB" />
-                        <Typography className="text-gray-400 mt-2">Belum ada barang dipilih</Typography>
-                        <Pressable onPress={handleAddItem} className="mt-2">
-                            <Typography weight="bold" className="text-primary">Tambah Barang</Typography>
-                        </Pressable>
+                        <Input
+                            label="Catatan (Opsional)"
+                            placeholder="Contoh: Pengiriman via JNE"
+                            value={catatan}
+                            onChangeText={setCatatan}
+                            multiline
+                            numberOfLines={2}
+                            containerClassName="mt-2"
+                        />
                     </View>
                 )}
 
-                {/* Metode Pembayaran */}
-                <View className="mb-6 mt-4">
-                    <View className="flex-row justify-between items-center mb-4">
-                        <Typography variant="body2" weight="bold" className="text-primary uppercase pr-1">Pembayaran</Typography>
-                        <Pressable
-                            onPress={() => setIsSplitPayment(!isSplitPayment)}
-                            className={`px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
-                        >
-                            <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
-                                {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
-                            </Typography>
-                        </Pressable>
-                    </View>
+                {/* STEP 3: Review & Payment */}
+                {step === 3 && (
+                    <View>
+                        <Typography variant="body1" weight="bold" className="text-textMain mb-4">Review Transaksi</Typography>
 
-                    {!isSplitPayment ? (
-                        <View className="space-y-4">
-                            {/* Row: Method */}
+                        <View className="bg-slate-50 p-5 rounded-3xl border border-slate-100 mb-5">
+                            <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
+                            {nomorFaktur && <SummaryRow label="Faktur" value={nomorFaktur} />}
+                            <SummaryRow label="Tanggal" value={tanggalText} />
+                            <View className="h-[1px] bg-slate-200 my-3" />
+                            <SummaryRow label="Sparepart" value={`${items.length} item`} />
+                            {items.map(item => (
+                                <SummaryRow
+                                    key={`review-${item.id}`}
+                                    label={`${item.name} x${item.qty}`}
+                                    value={formatCurrency(Number(item.qty || 0) * Number(parseNumber(item.price) || 0))}
+                                    muted
+                                />
+                            ))}
+                            {catatan && <SummaryRow label="Catatan" value={catatan} />}
+                            <View className="h-[1px] bg-slate-200 my-3" />
+                            <View className="flex-row justify-between items-center">
+                                <Typography weight="bold" className="text-textMain">Total</Typography>
+                                <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(total)}</Typography>
+                            </View>
+                        </View>
+
+                        <Input label="Catatan" placeholder="Catatan transaksi..." value={catatan} onChangeText={setCatatan} multiline />
+                    </View>
+                )}
+            </ScrollView>
+
+            {/* Bottom Bar */}
+            <View className="absolute left-0 right-0 bg-white border-t border-gray-100 px-5 py-4" style={{ bottom: tabBarBottom }}>
+                <View className="flex-row items-center justify-between mb-3">
+                    <Typography className="text-gray-400 text-xs font-bold uppercase">{step === 3 ? 'Total Pembelian' : ''}</Typography>
+                    {step === 3 && (
+                        <Typography weight="bold" className="text-primary text-lg">{formatCurrency(total)}</Typography>
+                    )}
+                </View>
+                <View className="flex-row space-x-3">
+                    {step > 1 && (
+                        <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />
+                    )}
+                    {step < 3 ? (
+                        <Button
+                            title="Lanjut"
+                            className="flex-1"
+                            onPress={next}
+                        />
+                    ) : (
+                        <>
+                            <Button
+                                title={isEditMode ? 'Simpan Perubahan' : 'Simpan Pembelian'}
+                                variant="secondary"
+                                className="flex-1"
+                                onPress={() => confirmSubmit(false)}
+                                loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
+                            />
+                            <Button
+                                title="Lanjut Pembayaran"
+                                className="flex-1"
+                                onPress={() => setPaymentSheetOpen(true)}
+                                icon={<Wallet size={16} color="white" />}
+                            />
+                        </>
+                    )}
+                </View>
+            </View>
+
+            {/* Tanggal Modal */}
+            <Modal visible={tanggalPickerOpen} transparent animationType="fade" onRequestClose={() => setTanggalPickerOpen(false)}>
+                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
+                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-row items-center flex-1">
+                                <View className="w-11 h-11 rounded-2xl bg-teal-50 items-center justify-center border border-teal-100 mr-3">
+                                    <Calendar size={20} color="#0F766E" />
+                                </View>
+                                <View className="flex-1">
+                                    <Typography variant="h3" weight="bold" className="text-textMain">Pilih Tanggal</Typography>
+                                    <Typography className="text-gray-400 text-xs mt-0.5">Tanggal pembelian</Typography>
+                                </View>
+                            </View>
+                            <Pressable onPress={() => setTanggalPickerOpen(false)} className="w-9 h-9 bg-gray-100 rounded-full items-center justify-center">
+                                <X size={17} color="#475569" />
+                            </Pressable>
+                        </View>
+
+                        <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Tanggal</Typography>
+                        <TextInput
+                            value={tempTanggalText}
+                            onChangeText={(value) => {
+                                setTempTanggalText(value);
+                                if (tanggalError) setTanggalError('');
+                            }}
+                            placeholder="YYYY-MM-DD"
+                            placeholderTextColor="#94A3B8"
+                            autoCapitalize="none"
+                            keyboardType="numbers-and-punctuation"
+                            className="bg-gray-50 rounded-2xl px-4 h-11 text-sm text-textMain border border-gray-200"
+                        />
+                        {tanggalError ? (
+                            <Typography className="text-rose-500 text-xs mt-2">{tanggalError}</Typography>
+                        ) : null}
+
+                        <View className="flex-row space-x-3 mt-5">
+                            <Button title="Hari Ini" variant="outline" className="flex-1" onPress={selectTodayTanggal} />
+                            <Button title="Terapkan" className="flex-1" onPress={applyTanggalPicker} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Payment Sheet */}
+            <Modal visible={paymentSheetOpen} transparent animationType="slide" onRequestClose={() => setPaymentSheetOpen(false)}>
+                <View className="flex-1 justify-end" style={{ backgroundColor: 'rgba(15, 23, 42, 0.38)' }}>
+                    <Pressable className="absolute inset-0" onPress={() => setPaymentSheetOpen(false)} />
+                    <View className="bg-white rounded-t-[32px] px-5 pt-4" style={{ maxHeight: '82%', paddingBottom: insets.bottom + 20 }}>
+                        <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-5" />
+                        <View className="flex-row items-center justify-between mb-4">
                             <View>
-                                <Typography variant="caption" weight="bold" className="text-textGray mb-2 uppercase tracking-tight">Metode Pembayaran</Typography>
-                                <View className="flex-row flex-wrap justify-between bg-gray-100 rounded-2xl p-1 border border-gray-200/50">
+                                <Typography variant="h3" weight="bold">Pembayaran</Typography>
+                                <Typography className="text-gray-400 text-xs mt-0.5">Total {formatCurrency(total)}</Typography>
+                            </View>
+                            <Pressable onPress={() => setPaymentSheetOpen(false)} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                                <X size={18} color="#475569" />
+                            </Pressable>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+                            {/* Metode Pembayaran */}
+                            <View className="mb-6">
+                                <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase">Metode Pembayaran</Typography>
+                                <View className="flex-row flex-wrap space-x-2">
                                     {[
                                         { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
                                         { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
@@ -492,123 +800,129 @@ export default function PurchaseScreen() {
                                             key={m.value}
                                             onPress={() => {
                                                 setMetodeBayar(m.value);
-                                                if (m.value === 'KREDIT') {
-                                                    setStatusBayar('BELUM_LUNAS');
-                                                    handleUpdatePaymentRow(payments[0].id, 'nominal', '0');
-                                                } else {
-                                                    // Default to Lunas if switching to Cash/Trf
-                                                    setStatusBayar('LUNAS');
-                                                    handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(total.toString()));
-                                                }
+                                                setStatusBayar(m.value === 'KREDIT' ? 'BELUM_LUNAS' : 'LUNAS');
                                             }}
-                                            className={`w-[48%] mb-1 py-3 rounded-xl items-center justify-center ${metodeBayar === m.value ? 'bg-white shadow-sm' : ''}`}
+                                            className={`flex-1 min-w-[45%] mb-2 py-3 rounded-2xl border items-center ${metodeBayar === m.value ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
                                         >
-                                            <Typography variant="caption" weight="bold" className={`text-center ${metodeBayar === m.value ? 'text-primary' : 'text-gray-400'}`}>
-                                                {m.label}
-                                            </Typography>
+                                            <Typography weight="bold" className={metodeBayar === m.value ? 'text-white' : 'text-gray-500'}>{m.label}</Typography>
                                         </Pressable>
                                     ))}
                                 </View>
                             </View>
 
-                            {/* Row: Nominal if NOT full Hutang and NOT null */}
+                            {/* Nominal (non-KREDIT) */}
                             {metodeBayar && metodeBayar !== 'KREDIT' && (
-                                <View className="bg-primary/5 border border-primary/10 p-4 rounded-[28px]">
-                                    <View className="flex-row justify-between items-center mb-2 px-1">
-                                        <Typography variant="caption" weight="bold" className="text-primary uppercase tracking-tight">Jumlah Bayar (Rp)</Typography>
+                                <View className="bg-primary/5 border border-primary/10 p-4 rounded-2xl mb-4">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Typography variant="caption" weight="bold" className="text-primary uppercase">Jumlah Bayar (Rp)</Typography>
                                         <Typography
                                             variant="caption"
                                             weight="bold"
-                                            className={parseNumber(payments[0]?.nominal || '0') >= total ? "text-emerald-600" : "text-amber-600"}
+                                            className={parseNumber(payments[0]?.nominal || '0') >= total ? 'text-emerald-600' : 'text-amber-600'}
                                         >
-                                            {parseNumber(payments[0]?.nominal || '0') >= total ? "Lunas" : "Titip / DP"}
+                                            {parseNumber(payments[0]?.nominal || '0') >= total ? 'Lunas' : 'Titip / DP'}
                                         </Typography>
                                     </View>
-                                    <Input
-                                        placeholder="0"
-                                        keyboardType="numeric"
-                                        containerClassName="mb-1"
-                                        className="h-12 text-lg border-primary/20 bg-white"
+                                    <TextInput
                                         value={payments[0]?.nominal || ''}
                                         onChangeText={(v) => {
                                             const nominal = parseNumber(v);
                                             handleUpdatePaymentRow(payments[0].id, 'nominal', v);
                                             setStatusBayar(nominal >= total ? 'LUNAS' : 'BELUM_LUNAS');
                                         }}
+                                        placeholder="0"
+                                        placeholderTextColor="#94A3B8"
+                                        keyboardType="number-pad"
+                                        inputMode="numeric"
+                                        className="bg-white rounded-2xl px-4 h-12 text-base text-textMain border border-primary/20"
                                     />
                                     {parseNumber(payments[0]?.nominal || '0') < total && (
-                                        <Typography variant="caption" className="text-amber-600 italic mt-1 px-1">
-                                            * Sisa {formatCurrency(Math.max(0, total - parseNumber(payments[0]?.nominal || '0')))} akan dicatat sebagai <Typography weight="bold">Hutang</Typography>.
+                                        <Typography className="text-amber-600 text-xs mt-2">
+                                            Sisa {formatCurrency(Math.max(0, total - parseNumber(payments[0]?.nominal || '0')))} akan dicatat sebagai Hutang.
                                         </Typography>
                                     )}
                                 </View>
                             )}
 
-                            {/* Feedback if full Hutang */}
                             {metodeBayar === 'KREDIT' && (
-                                <View className="bg-amber-50/50 border border-amber-100 p-5 rounded-[28px] flex-row items-center">
+                                <View className="bg-amber-50 border border-amber-100 p-5 rounded-2xl flex-row items-center mb-4">
                                     <View className="w-10 h-10 bg-amber-100 rounded-full items-center justify-center mr-4">
                                         <Package size={20} color="#D97706" />
                                     </View>
                                     <View className="flex-1">
                                         <Typography variant="caption" weight="bold" className="text-amber-800 uppercase tracking-widest text-[10px] mb-1">Status: HUTANG PENUH</Typography>
-                                        <Typography variant="body2" className="text-amber-700 font-medium">
+                                        <Typography className="text-amber-700 font-medium">
                                             Transaksi dicatat sebagai hutang sebesar {formatCurrency(total)}.
                                         </Typography>
                                     </View>
                                 </View>
                             )}
-                        </View>
-                    ) : (
-                        <View className="space-y-3">
-                            {payments.map((p, idx) => (
-                                <View key={p.id} className="flex-col mb-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                                    {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Metode & Akun</Typography>}
-                                    <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
-                                        {[
-                                            { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
-                                            { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
-                                            { label: 'Transfer Utama', value: 'UTAMA_TRANSFER' }
-                                        ].map((m) => (
-                                            <Pressable
-                                                key={m.value}
-                                                onPress={() => handleUpdatePaymentRow(p.id, 'sumber', m.value)}
-                                                className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-gray-100 ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
-                                            >
-                                                <Typography weight="bold" className={`text-[9px] ${p.sumber === m.value ? 'text-white' : 'text-textGray'}`}>{m.label}</Typography>
-                                            </Pressable>
-                                        ))}
-                                    </View>
-                                    <View className="flex-row items-center space-x-2">
-                                        <View className="flex-1">
-                                            {idx === 0 && <Typography variant="caption" weight="medium" className="text-textGray mb-1 ml-1">Nominal (Rp)</Typography>}
-                                            <Input
-                                                placeholder="0"
-                                                keyboardType="numeric"
-                                                containerClassName="mb-0"
-                                                className="h-10 text-sm"
-                                                value={p.nominal}
-                                                onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
-                                            />
-                                        </View>
-                                        <Pressable
-                                            onPress={() => handleRemovePaymentRow(p.id)}
-                                            className="h-10 w-10 items-center justify-center bg-rose-50 rounded-xl"
-                                        >
-                                            <Trash2 size={16} color="#F43F5E" />
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            ))}
-                            <Pressable
-                                onPress={handleAddPaymentRow}
-                                className="flex-row items-center justify-center py-2.5 bg-white border border-dashed border-primary/30 rounded-xl mt-1"
-                            >
-                                <Plus size={14} color="#023C69" />
-                                <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
-                            </Pressable>
 
-                            <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-2xl border border-primary/10 mt-2">
+                            {/* Split Payment Toggle */}
+                            <View className="mb-4">
+                                <Pressable
+                                    onPress={() => setIsSplitPayment(!isSplitPayment)}
+                                    className={`self-end px-3 py-1.5 rounded-full ${isSplitPayment ? 'bg-amber-100 border border-amber-200' : 'bg-gray-100 border border-gray-200'}`}
+                                >
+                                    <Typography className={`text-[10px] font-bold ${isSplitPayment ? 'text-amber-700' : 'text-gray-500'}`}>
+                                        {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
+                                    </Typography>
+                                </Pressable>
+                            </View>
+
+                            {isSplitPayment && (
+                                <View className="space-y-3 mb-4">
+                                    {payments.map((p, idx) => (
+                                        <View key={p.id} className="bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
+                                            <View className="flex-row flex-wrap bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
+                                                {[
+                                                    { label: 'Tunai Bengkel', value: 'BENGKEL_TUNAI' },
+                                                    { label: 'Tunai Utama', value: 'UTAMA_TUNAI' },
+                                                    { label: 'Transfer Utama', value: 'UTAMA_TRANSFER' }
+                                                ].map((m) => (
+                                                    <Pressable
+                                                        key={m.value}
+                                                        onPress={() => handleUpdatePaymentRow(p.id, 'sumber', m.value)}
+                                                        className={`flex-1 min-w-[30%] py-2 items-center justify-center border-r border-gray-100 ${p.sumber === m.value ? 'bg-primary' : 'bg-transparent'}`}
+                                                    >
+                                                        <Typography weight="bold" className={`text-[9px] ${p.sumber === m.value ? 'text-white' : 'text-textGray'}`}>{m.label}</Typography>
+                                                    </Pressable>
+                                                ))}
+                                            </View>
+                                            <View className="flex-row items-center space-x-2">
+                                                <View className="flex-1">
+                                                    <Typography className="text-gray-500 text-[10px] font-bold uppercase mb-1">Nominal (Rp)</Typography>
+                                                    <TextInput
+                                                        value={p.nominal}
+                                                        onChangeText={(v) => handleUpdatePaymentRow(p.id, 'nominal', v)}
+                                                        placeholder="0"
+                                                        placeholderTextColor="#94A3B8"
+                                                        keyboardType="number-pad"
+                                                        inputMode="numeric"
+                                                        className="bg-white rounded-xl px-3 h-10 text-sm text-textMain border border-gray-200"
+                                                    />
+                                                </View>
+                                                <Pressable
+                                                    onPress={() => handleRemovePaymentRow(p.id)}
+                                                    className="h-10 w-10 items-center justify-center bg-rose-50 rounded-xl mt-5"
+                                                >
+                                                    <Trash2 size={16} color="#F43F5E" />
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    ))}
+                                    <Pressable
+                                        onPress={handleAddPaymentRow}
+                                        className="flex-row items-center justify-center py-2.5 bg-white border border-dashed border-primary/30 rounded-xl"
+                                    >
+                                        <Plus size={14} color="#023C69" />
+                                        <Typography weight="bold" className="text-primary text-[10px] ml-1.5 uppercase">Tambah Metode</Typography>
+                                    </Pressable>
+                                </View>
+                            )}
+
+                            {/* Total Payment Summary */}
+                            <View className="flex-row justify-between items-center p-4 bg-primary/5 rounded-2xl border border-primary/10">
                                 <View>
                                     <Typography variant="caption" weight="bold" className="text-primary text-[10px]">TOTAL TERBAYAR</Typography>
                                     <Typography weight="bold" className="text-primary text-lg">{formatCurrency(totalSplitAmount)}</Typography>
@@ -627,148 +941,192 @@ export default function PurchaseScreen() {
                                     )}
                                 </View>
                             </View>
-                        </View>
-                    )}
+                        </ScrollView>
+
+                        <Button
+                            title="Simpan & Proses Pembayaran"
+                            onPress={() => confirmSubmit(true)}
+                            loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
+                            className="mt-4"
+                        />
+                    </View>
                 </View>
+            </Modal>
 
-                <Input
-                    label="Catatan (Opsional)"
-                    placeholder="Contoh: Pengiriman via JNE"
-                    value={catatan}
-                    onChangeText={setCatatan}
-                    multiline
-                    numberOfLines={2}
-                    containerClassName="mt-2"
-                />
-
-                {/* Summary */}
-                <View className="mt-6 mb-10">
-                    <Card className="bg-primary/5 border border-primary/10 p-5 rounded-2xl">
-                        <View className="flex-row justify-between items-center">
-                            <Typography variant="h3" weight="bold">Total Pembelian</Typography>
-                            <Typography variant="h2" weight="bold" className="text-primary">
-                                {formatCurrency(total)}
-                            </Typography>
+            {/* Confirm Submit Modal */}
+            <Modal visible={confirmSubmitOpen} transparent animationType="fade" onRequestClose={() => setConfirmSubmitOpen(false)}>
+                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
+                    <View className="bg-white rounded-[28px] p-5 w-full max-w-sm">
+                        <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-4">
+                            <Wallet size={22} color="#023C69" />
                         </View>
-                    </Card>
+                        <Typography variant="h3" weight="bold" className="text-textMain">{isEditMode ? 'Simpan Perubahan?' : 'Simpan Pembelian?'}</Typography>
+                        <Typography className="text-gray-500 text-sm mt-2">
+                            {submitWithPayment
+                                ? 'Pastikan detail barang, supplier, dan pembayaran sudah benar.'
+                                : 'Transaksi akan disimpan tanpa memproses pembayaran.'}
+                        </Typography>
+                        <View className="bg-slate-50 rounded-2xl p-4 mt-4 border border-slate-100">
+                            <SummaryRow label="Sparepart" value={`${items.length} item`} />
+                            <SummaryRow label="Supplier" value={selectedSupplier?.nama || '-'} />
+                            <SummaryRow label="Metode" value={submitWithPayment ? (metodeBayar === 'KREDIT' ? 'Hutang' : (metodeBayar || '-')) : 'Belum diproses'} />
+                            <View className="h-[1px] bg-slate-200 my-2" />
+                            <SummaryRow label="Total" value={formatCurrency(total)} />
+                        </View>
+                        <View className="flex-row space-x-3 mt-5">
+                            <Button title="Batal" variant="outline" className="flex-1" onPress={() => setConfirmSubmitOpen(false)} />
+                            <Button title={isEditMode ? 'Update' : 'Simpan'} className="flex-1" onPress={handleSubmit} loading={createPembelianMutation.isPending || updatePembelianMutation.isPending} />
+                        </View>
+                    </View>
                 </View>
+            </Modal>
 
-                <Button
-                    title={isEditMode ? 'Simpan Perubahan' : 'Simpan Pembelian'}
-                    onPress={handleSubmit}
-                    className="mb-10 rounded-xl"
-                    loading={createPembelianMutation.isPending || updatePembelianMutation.isPending}
-                />
-            </ScrollView>
-
-            {/* Part Selection Modal */}
-            <Modal
-                visible={isPartModalOpen}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }}
-                statusBarTranslucent
-            >
-                <View className="flex-1 justify-end bg-black/50">
-                    <Pressable style={{ flex: 1 }} onPress={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }} />
-                    <View className="bg-white rounded-t-[32px] h-[85%] overflow-hidden">
-                        <View className="p-6 flex-1">
-                            <View className="items-center mb-2">
-                                <View className="w-10 h-1 bg-gray-300 rounded-full" />
-                            </View>
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Typography variant="h3" weight="bold">Pilih Sparepart</Typography>
-                                <Pressable onPress={() => { setIsPartModalOpen(false); setCheckedParts(new Map()); }}>
-                                    <X size={24} color="#6B7280" />
-                                </Pressable>
-                            </View>
-
-                            <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 mb-4">
-                                <Search size={20} color="#9CA3AF" />
-                                <TextInput
-                                    className="flex-1 ml-3 text-base text-text font-outfit"
-                                    placeholder="Cari sparepart..."
-                                    value={partSearchQuery}
-                                    onChangeText={setPartSearchQuery}
-                                    autoFocus
-                                    placeholderTextColor="#9CA3AF"
-                                />
-                            </View>
-
-                            {isLoadingParts ? (
-                                <ActivityIndicator color="#023C69" className="mt-4" />
-                            ) : (
-                                <FlatList
-                                    data={spareParts}
-                                    keyExtractor={(item: any) => item.id.toString()}
-                                    showsVerticalScrollIndicator={false}
-                                    contentContainerStyle={{ paddingBottom: 80 }}
-                                    renderItem={({ item }: { item: any }) => {
-                                        const alreadyInItems = items.some(i => i.spare_part_id === item.id);
-                                        const isChecked = checkedParts.has(item.id) || alreadyInItems;
-
-                                        return (
-                                            <Pressable
-                                                onPress={() => {
-                                                    if (!alreadyInItems) handleTogglePart(item);
-                                                }}
-                                                className="mb-3"
-                                            >
-                                                <Card className={`p-4 flex-row items-center justify-between border ${isChecked ? 'bg-primary/5 border-primary/20' : 'border-gray-100'}`}>
-                                                    <View className="flex-1 mr-3">
-                                                        <Typography weight="semibold">{item.nama}</Typography>
-                                                        <Typography variant="caption" className="text-gray-500">
-                                                            Stok: {item.stok} {item.satuan || 'pcs'} • {item.kode}
-                                                        </Typography>
-                                                        {alreadyInItems && (
-                                                            <Typography variant="caption" weight="bold" className="text-emerald-600 mt-0.5">
-                                                                ✓ Sudah ditambahkan
-                                                            </Typography>
-                                                        )}
-                                                    </View>
-                                                    <View className="items-end flex-row">
-                                                        <View className="items-end mr-3">
-                                                            <Typography weight="bold" className="text-primary">
-                                                                {formatCurrency(item.harga_beli)}
-                                                            </Typography>
-                                                            <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
-                                                        </View>
-                                                        <View className={`w-7 h-7 rounded-full items-center justify-center ${isChecked ? 'bg-primary' : 'bg-gray-100'}`}>
-                                                            {isChecked ? <CheckCircle2 size={16} color="white" /> : <Circle size={16} color="#94A3B8" />}
-                                                        </View>
-                                                    </View>
-                                                </Card>
-                                            </Pressable>
-                                        );
-                                    }}
-                                    ListEmptyComponent={
-                                        <Typography className="text-center text-gray-500 mt-4">
-                                            {partSearchQuery ? 'Data tidak ditemukan' : 'Mulai ketik untuk mencari'}
-                                        </Typography>
-                                    }
-                                />
-                            )}
+            {/* Success Modal */}
+            <Modal visible={successModalOpen} transparent animationType="fade" onRequestClose={() => { setSuccessModalOpen(false); closeAfterSubmit(); }}>
+                <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(15, 23, 42, 0.45)' }}>
+                    <View className="bg-white rounded-[28px] p-6 w-full max-w-sm items-center">
+                        <View className="w-16 h-16 rounded-full bg-emerald-50 items-center justify-center border border-emerald-100 mb-4">
+                            <CheckCircle2 size={34} color="#10B981" />
                         </View>
-
-                        {/* Sticky Confirm Button */}
-                        {checkedParts.size > 0 && (
-                            <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
-                                <Button
-                                    title={`Tambah ${checkedParts.size} Barang`}
-                                    onPress={handleConfirmParts}
-                                    className="rounded-xl"
-                                />
-                            </View>
-                        )}
+                        <Typography variant="h3" weight="bold" className="text-textMain text-center">
+                            {isEditMode ? 'Pembelian Berhasil Diupdate' : 'Pembelian Berhasil'}
+                        </Typography>
+                        <Typography className="text-gray-500 text-sm mt-2 text-center">
+                            {submitWithPayment
+                                ? 'Transaksi pembelian dan pembayaran berhasil diproses.'
+                                : 'Data pembelian sparepart berhasil disimpan.'}
+                        </Typography>
+                        <Button
+                            title="OK"
+                            variant="outline"
+                            className="w-full mt-6"
+                            onPress={closeAfterSubmit}
+                        />
                     </View>
                 </View>
             </Modal>
 
             <BarcodeScannerModal
-                visible={isScannerOpen}
-                onClose={() => setIsScannerOpen(false)}
+                visible={scannerOpen}
+                onClose={() => setScannerOpen(false)}
                 onScan={handleScanPart}
             />
-        </SafeAreaView >
+        </SafeAreaView>
+    );
+}
+
+// --- Helper Components ---
+
+function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
+    return (
+        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
+            <Search size={16} color="#94A3B8" />
+            <TextInput placeholder={placeholder} placeholderTextColor="#94A3B8" className="flex-1 ml-2 text-sm text-textMain" value={value} onChangeText={onChange} />
+            {value.length > 0 && (
+                <Pressable onPress={() => onChange('')}>
+                    <X size={16} color="#94A3B8" />
+                </Pressable>
+            )}
+        </View>
+    );
+}
+
+function ActionIcon({ active, icon, label, onPress }: { active?: boolean; icon: React.ReactNode; label: string; onPress: () => void }) {
+    return (
+        <Pressable onPress={onPress} className="items-center flex-1">
+            <View className={`w-12 h-12 rounded-2xl items-center justify-center border ${active ? 'bg-primary border-primary' : 'bg-gray-50 border-gray-100'}`}>
+                {icon}
+            </View>
+            <Typography className={`text-[10px] font-bold mt-1 ${active ? 'text-primary' : 'text-gray-500'}`}>{label}</Typography>
+        </Pressable>
+    );
+}
+
+function NoticeBanner({ type, title, message, onClose }: { type: NoticeType; title: string; message: string; onClose: () => void }) {
+    const isError = type === 'error';
+    const isSuccess = type === 'success';
+    const IconComp = isError ? AlertCircle : isSuccess ? CheckCircle2 : Info;
+    const iconColor = isSuccess ? '#059669' : isError ? '#E11D48' : '#2563EB';
+    const container = isSuccess
+        ? 'bg-emerald-50 border-emerald-100'
+        : isError
+            ? 'bg-rose-50 border-rose-100'
+            : 'bg-blue-50 border-blue-100';
+    const titleColor = isSuccess ? 'text-emerald-800' : isError ? 'text-rose-800' : 'text-blue-800';
+    const messageColor = isSuccess ? 'text-emerald-700' : isError ? 'text-rose-700' : 'text-blue-700';
+
+    return (
+        <View className={`mx-5 mt-3 p-3 rounded-2xl border flex-row items-start ${container}`}>
+            <IconComp size={18} color={iconColor} />
+            <View className="flex-1 ml-2">
+                <Typography weight="bold" className={`text-sm ${titleColor}`}>{title}</Typography>
+                <Typography className={`text-xs mt-0.5 ${messageColor}`}>{message}</Typography>
+            </View>
+            <Pressable onPress={onClose} className="w-7 h-7 items-center justify-center">
+                <X size={16} color={iconColor} />
+            </Pressable>
+        </View>
+    );
+}
+
+function QtyControl({ value, color, onMinus, onPlus, onChangeQty }: {
+    value: number;
+    color: 'blue' | 'emerald';
+    onMinus: () => void;
+    onPlus: () => void;
+    onChangeQty: (qty: number) => void;
+}) {
+    const [text, setText] = useState(String(value));
+
+    useEffect(() => {
+        setText(String(value));
+    }, [value]);
+
+    const textColor = color === 'blue' ? 'text-blue-600' : 'text-emerald-600';
+    const borderColor = color === 'blue' ? 'border-blue-100' : 'border-emerald-100';
+
+    const commitQty = (raw: string) => {
+        const cleaned = raw.replace(/[^0-9]/g, '');
+        if (cleaned === '') {
+            setText('');
+            return;
+        }
+        const nextQty = Math.max(1, parseInt(cleaned, 10) || 1);
+        setText(String(nextQty));
+        onChangeQty(nextQty);
+    };
+
+    return (
+        <View className={`flex-row items-center self-start bg-white rounded-xl border ${borderColor} overflow-hidden`}>
+            <Pressable onPress={(e) => { e.stopPropagation(); onMinus(); }} className="px-3 py-1.5">
+                <Typography className={`font-bold ${textColor}`}>-</Typography>
+            </Pressable>
+            <TextInput
+                value={text}
+                onChangeText={commitQty}
+                onBlur={() => {
+                    if (!text || Number(text) < 1) {
+                        setText('1');
+                        onChangeQty(1);
+                    }
+                }}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                className="w-14 px-2 py-1 text-xs font-bold text-center text-textMain"
+                selectTextOnFocus
+            />
+            <Pressable onPress={(e) => { e.stopPropagation(); onPlus(); }} className="px-3 py-1.5">
+                <Typography className={`font-bold ${textColor}`}>+</Typography>
+            </Pressable>
+        </View>
+    );
+}
+
+function SummaryRow({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
+    return (
+        <View className="flex-row justify-between mb-2">
+            <Typography className={muted ? 'text-gray-400 text-xs flex-1 mr-3' : 'text-gray-500 flex-1 mr-3'} numberOfLines={1}>{label}</Typography>
+            <Typography weight="bold" className={muted ? 'text-gray-500 text-xs' : ''}>{value}</Typography>
+        </View>
     );
 }
