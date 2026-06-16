@@ -10,8 +10,9 @@ import { formatCurrency } from '../../../utils/format';
 import api, { FILE_URL } from '../../../utils/api';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { Alert as RNAlert } from 'react-native';
 import { printSettingsService } from '../../../utils/printSettings';
-import { printReceipt } from '../../../utils/printReceipt';
+import { printReceipt, generateReceiptHTML, PrintReceiptData, ensureLogoBase64 } from '../../../utils/printReceipt';
 import { printHtmlViaQz } from '../../../utils/qzTray';
 
 export default function PublicReceiptPage() {
@@ -52,9 +53,35 @@ export default function PublicReceiptPage() {
     const handlePrint = async () => {
         if (!receipt) return;
         try {
+            const settings = await printSettingsService.getSettings();
+
+            // Pre-process logo to ensure it's base64 for QZ Tray and thermal
+            const base64Logo = await ensureLogoBase64(settings.logoUri);
+            const processedSettings = { ...settings, logoUri: base64Logo };
+
+            const printData: PrintReceiptData = {
+                type: type as 'bengkel' | 'jasa_angkut',
+                transactionNumber: receipt.transactionNumber,
+                publicReceiptToken: id,
+                date: new Date(receipt.date),
+                customerName: receipt.customerName || '-',
+                cashierName: receipt.cashierName,
+                mechanicName: receipt.mechanicName,
+                items: receipt.items,
+                subtotal: receipt.subtotal || 0,
+                discount: receipt.discount || 0,
+                total: receipt.total || 0,
+                paid: receipt.paid,
+                change: receipt.change,
+                paymentMethod: receipt.paymentMethod,
+                notes: receipt.notes,
+                showDiscount: true,
+                vehiclePlate: receipt.vehiclePlate,
+                vehicleType: receipt.vehicleType,
+            };
+
             if (Platform.OS === 'web') {
-                const settings = await printSettingsService.getSettings();
-                const html = generateStrukHtml(receipt, settings);
+                const html = generateReceiptHTML(printData, processedSettings);
                 const is80mm = settings.paperSize !== '58mm';
                 const widthPx = is80mm ? 302 : 220;
                 const ok = await printHtmlViaQz(html, {
@@ -64,64 +91,11 @@ export default function PublicReceiptPage() {
                 });
                 if (!ok) window.print();
             } else {
-                const settings = printSettings || await printSettingsService.getSettings();
-                await printReceipt({
-                    type: type as 'bengkel' | 'jasa_angkut',
-                    transactionNumber: receipt.transactionNumber,
-                    publicReceiptToken: id,
-                    date: new Date(receipt.date),
-                    customerName: receipt.customerName || '-',
-                    cashierName: receipt.cashierName,
-                    mechanicName: receipt.mechanicName,
-                    items: receipt.items,
-                    subtotal: receipt.subtotal || 0,
-                    discount: receipt.discount || 0,
-                    total: receipt.total || 0,
-                    paid: receipt.paid,
-                    change: receipt.change,
-                    paymentMethod: receipt.paymentMethod,
-                    notes: receipt.notes,
-                    showDiscount: true,
-                    vehiclePlate: receipt.vehiclePlate,
-                    vehicleType: receipt.vehicleType,
-                }, settings);
+                await printReceipt(printData, processedSettings);
             }
         } catch (err: any) {
             Alert.alert('Gagal Mencetak', err.message || 'Gagal mencetak struk.');
         }
-    };
-
-    const generateStrukHtml = (r: any, s: any) => {
-        const is80mm = s?.paperSize !== '58mm';
-        const fmt = (n: number) => new Intl.NumberFormat('id-ID').format(n);
-        const fsT = is80mm ? 15 : 13;    // title
-        const fsB = is80mm ? 11 : 10;    // body
-        const fsS = is80mm ? 10 : 9;     // small
-        const itemsHtml = (r.items || []).map((i: any) => `
-            <div style="font-size:${fsB}px;font-weight:bold;margin-top:4px">${i.description.toUpperCase()}</div>
-            <div style="font-size:${fsB}px;display:flex;justify-content:space-between">
-                <span>${i.quantity} x ${fmt(i.unitPrice)}</span>
-                <span>${fmt(i.subtotal)}</span>
-            </div>
-        `).join('');
-        const logoHtml = s?.logoUri && s.logoUri.startsWith('data:') && !s.logoUri.includes('tpm_default')
-            ? `<img src="${s.logoUri}" style="max-width:60px;height:auto;display:block;margin:0 auto 4px" />`
-            : '';
-        const row = (l: string, v: string) => `<div style="font-size:${fsB}px;display:flex;justify-content:space-between"><span>${l}</span><span>${v}</span></div>`;
-        return `${logoHtml}
-<div style="text-align:center;font-size:${fsT}px;font-weight:bold">${s?.companyName || 'TIGA PUTRA MOTOR'}</div>
-<div style="text-align:center;font-size:${fsS}px">${s?.companyAddress || ''}</div>
-<div style="text-align:center;font-size:${fsS}px">${s?.companyPhone || ''}</div>
-<div class="divider"></div>
-${row('No', r.transactionNumber)}${row('Tgl', new Date(r.date).toLocaleString('id-ID'))}${row('Plg', r.customerName || '-')}
-<div class="divider"></div>
-${itemsHtml}
-<div class="divider"></div>
-${row('TOTAL', fmt(r.total))}
-${r.paid >= 0 ? row('Dibayar', fmt(r.paid)) : ''}
-${r.change > 0 ? row('Kembali', fmt(r.change)) : ''}
-<div class="divider"></div>
-<div style="text-align:center;font-size:${fsS}px">${s?.footer || 'Terima kasih'}</div>`;
     };
 
     const handleDownloadPDF = async () => {
