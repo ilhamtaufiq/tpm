@@ -3,11 +3,9 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings } from './printSettings';
-import { RECEIPT_TEMPLATES, TEMPLATE_FONT_SIZES, TEMPLATE_SPACING } from './receiptTemplates';
 import { printHtmlInBrowser } from './printHtmlBrowser';
 import { printHtmlViaQz } from './qzTray';
 
-// Dynamically import thermal printer to avoid issues on non-android platforms
 let BLEPrinter: any = null;
 if (Platform.OS === 'android') {
     try {
@@ -34,7 +32,7 @@ export interface PrintReceiptData {
     cashierName?: string;
     mechanicName?: string;
     status?: string;
-    items?: PrintReceiptItem[]; // For backward compatibility
+    items?: PrintReceiptItem[];
     services?: PrintReceiptItem[];
     parts?: PrintReceiptItem[];
     subtotal: number;
@@ -53,23 +51,16 @@ export interface PrintReceiptData {
     driverName?: string;
 }
 
-/**
- * Generate HTML for thermal receipt
- */
-function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): string {
-    const paperWidth = settings.paperSize === '80mm' ? '80mm' : '58mm';
-    // For CSS width on screen, we'll keep using px but strictly controlled
-    const widthPx = settings.paperSize === '80mm' ? '302px' : '220px';
+export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): string {
+    const is80mm = settings.paperSize !== '58mm';
+    const paperWidth = is80mm ? '80mm' : '58mm';
+    const fsB = is80mm ? 11 : 10;
+    const fsS = is80mm ? 10 : 9;
+    const fsTitle = is80mm ? 16 : 14;
+    const fsFooter = is80mm ? 10 : 9;
+    const pad = is80mm ? '4mm' : '2mm';
 
-    const template = RECEIPT_TEMPLATES[settings.template] || RECEIPT_TEMPLATES.standard;
-    const font = TEMPLATE_FONT_SIZES[template.features.fontSize];
-    const spacing = TEMPLATE_SPACING[template.features.spacing];
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            minimumFractionDigits: 0
-        }).format(amount);
-    };
+    const fmt = (n: number) => 'Rp' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
     const formatDate = (date: Date) => {
         const d = date.getDate().toString().padStart(2, '0');
@@ -80,342 +71,81 @@ function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): s
         return `${d}/${m}/${y} - ${h}:${min}`;
     };
 
-    const renderItem = (item: PrintReceiptItem) => `
-        <div style="margin-bottom: 4px;">
-            <div style="font-size: 11px; text-transform: uppercase;">${item.description}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                <span>${item.quantity} x ${formatCurrency(item.unitPrice)}</span>
-                <span>${formatCurrency(item.subtotal)}</span>
-            </div>
-        </div>
-    `;
-
-    let layananHTML = '';
-    const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
-    if (services.length > 0) {
-        layananHTML = `
-            <div style="text-align: center; font-size: 12px; margin-bottom: 8px;">LAYANAN</div>
-            ${services.map(renderItem).join('')}
-            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
-                <span>Total</span>
-                <span>${formatCurrency(services.reduce((acc, curr) => acc + curr.subtotal, 0))}</span>
-            </div>
-        `;
-    }
-
-    let sparePartHTML = '';
-    const parts = data.parts || [];
-    if (parts.length > 0) {
-        sparePartHTML = `
-            <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-            <div style="text-align: center; font-size: 12px; margin-bottom: 8px;">SPARE PART</div>
-            ${parts.map(renderItem).join('')}
-            <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px;">
-                <span>Total</span>
-                <span>${formatCurrency(parts.reduce((acc, curr) => acc + curr.subtotal, 0))}</span>
-            </div>
-        `;
-    }
-
     const infoRow = (label: string, value: string | number | undefined) => value ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: ${font.info}px;">
-            <span>${label}</span>
-            <span>${value}</span>
-        </div>
+        <tr><td style="font-size:${fsB}px;padding:1px 0">${label}</td><td style="font-size:${fsB}px;padding:1px 0;text-align:right">${value}</td></tr>
     ` : '';
 
-    const showDiscount = data.showDiscount !== false;
-
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                @page { 
-                    size: ${paperWidth} auto; 
-                    margin: 0; 
-                }
-                * { 
-                    margin: 0; 
-                    padding: 0; 
-                    box-sizing: border-box; 
-                    -webkit-print-color-adjust: exact;
-                }
-                html {
-                    margin: 0;
-                    padding: 0;
-                    width: 100%;
-                }
-                body {
-                    width: ${paperWidth} !important;
-                    max-width: ${paperWidth} !important;
-                    margin: 0 auto !important;
-                    padding: ${spacing.section}mm 4mm !important;
-                    background: white;
-                    color: black;
-                    font-family: 'Courier New', Courier, monospace;
-                    font-size: ${font.info}px;
-                    font-weight: 600;
-                    line-height: 1.2;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                .receipt-container {
-                    width: 100%;
-                    max-width: 100%;
-                    margin: 0 auto;
-                }
-                .divider { 
-                    width: 100%;
-                    border-bottom: 1px dashed #000; 
-                    margin: ${spacing.divider / 2}mm 0; 
-                }
-                .text-center { text-align: center; width: 100%; }
-                .text-right { text-align: right; }
-                .font-bold { font-weight: bold; }
-                .flex-between { display: flex; justify-content: space-between; width: 100%; }
-                
-                @media print {
-                    body {
-                        padding: 2mm 2mm !important;
-                        width: ${paperWidth} !important;
-                        margin: 0 !important;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="receipt-container">
-            <!-- Header -->
-            <div class="text-center">
-                ${template.features.showLogo && settings.logoUri ? `
-                    <img 
-                        src="${settings.logoUri}" 
-                        style="width: 80px; height: 80px; display: block; margin: 0 auto 10px auto; object-fit: contain;" 
-                    />` : ''}
-                
-                ${template.features.showCompanyInfo ? `
-                    <div style="font-size: ${font.company}px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
-                    <div style="font-size: ${font.header}px; margin-bottom: 2px;">${settings.companyAddress || 'jl.raya cianjur sukabumi km 5 ciwalen'}</div>
-                    <div style="font-size: ${font.header}px;">cianjur &nbsp; HP ${settings.companyPhone || '087720225244'}</div>
-                ` : `
-                    <div style="font-size: ${font.company}px; font-weight: bold; margin-bottom: 2px;">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
-                `}
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Transaction Info -->
-            <div style="font-size: 11px;">
-                ${infoRow('Nomor Transaksi', data.transactionNumber)}
-                ${infoRow('Antrian', data.antrian)}
-                ${infoRow('Pelanggan', data.customerName)}
-                ${infoRow('Tanggal', formatDate(data.date))}
-                ${infoRow('Kasir', data.cashierName)}
-                ${infoRow('Mekanik', data.mechanicName)}
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- Content -->
-            ${layananHTML}
-            ${sparePartHTML}
-
-            <div class="divider"></div>
-
-            <!-- Summary -->
-            <div style="font-size: 11px;">
-                ${infoRow('Status', data.status)}
-                ${infoRow('Metode Bayar', data.paymentMethod)}
-                ${infoRow('SubTotal', formatCurrency(data.subtotal))}
-                ${showDiscount && data.discount ? infoRow('Diskon', '-' + formatCurrency(data.discount)) : ''}
-                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; margin-top: 4px; border-top: 1px solid #000; padding-top: 4px;">
-                    <span>Total</span>
-                    <span>${formatCurrency(data.total)}</span>
-                </div>
-                ${data.paid !== undefined ? `
-                <div style="display: flex; justify-content: space-between; margin-top: 4px;">
-                    <span>Dibayar</span>
-                    <span>${formatCurrency(data.paid)}</span>
-                </div>
-                ` : ''}
-                ${data.paid !== undefined && data.total > data.paid ? `
-                <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 2px;">
-                    <span>Sisa (Piutang)</span>
-                    <span>${formatCurrency(data.total - data.paid)}</span>
-                </div>
-                ` : ''}
-                ${data.change !== undefined && data.change > 0 ? infoRow('Kembalian', formatCurrency(data.change)) : ''}
-            </div>
-
-            <div class="divider"></div>
-            
-            ${template.features.showQRCode ? `
-                <div style="text-align: center; margin: 10px 0;">
-                    <div style="font-size: 8px; color: #666; margin-bottom: 4px;">SCAN UNTUK CEK KEASLIAN</div>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://tpm.app/receipt/${data.type}/${data.publicReceiptToken || data.transactionNumber}" style="width: 80px; height: 80px;" />
-                </div>
-                <div class="divider"></div>
-            ` : ''}
-
-            ${data.vehiclePlate ? `
-                <div style="font-size: ${font.info}px; margin-bottom: 8px; text-align: center;">${data.vehiclePlate}</div>
-                <div class="divider"></div>
-            ` : ''}
-
-            <!-- Footer -->
-            <div class="text-center" style="font-size: ${font.footer}px; margin-top: 10px;">
-                ${settings.footer || 'Terimakasih atas kepercayaan anda'}
-            </div>
-
-            <div class="text-center" style="font-size: 8px; margin-top: 15px; color: #555; border-top: 1px dotted #ccc; padding-top: 5px;">
-                Waktu Cetak: ${new Date().toLocaleString('id-ID', { 
-                    day: '2-digit', 
-                    month: '2-digit', 
-                    year: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit' 
-                }).replace(/\//g, '-')}
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
-}
-
-/**
- * Generate text for thermal printer (ESC/POS)
- */
-export function generateThermalText(data: PrintReceiptData, settings: PrintSettings): string {
-    const is80mm = settings.paperSize === '80mm';
-    const divider = is80mm ? '------------------------------------------------' : '--------------------------------';
-    
-    const formatCurrencyLocal = (amount: number) => {
-        return new Intl.NumberFormat('id-ID', {
-            minimumFractionDigits: 0
-        }).format(amount).replace('Rp', '').trim();
+    const renderItems = (items: PrintReceiptItem[] | undefined, title: string) => {
+        if (!items || items.length === 0) return '';
+        const rows = items.map(i => `
+            <tr><td colspan="2" style="font-size:${fsB}px;padding:1px 0;font-weight:bold">${i.description.toUpperCase()}</td></tr>
+            <tr>
+                <td style="font-size:${fsB}px;padding:1px 0">${i.quantity} x ${fmt(i.unitPrice)}</td>
+                <td style="font-size:${fsB}px;padding:1px 0;text-align:right">${fmt(i.subtotal)}</td>
+            </tr>
+        `).join('');
+        return `<div style="text-align:center;font-size:${fsB}px;font-weight:bold;padding:2px 0;text-transform:uppercase">--- ${title} ---</div><table style="width:100%;border-collapse:collapse">${rows}</table>`;
     };
 
-    const formatDateLocal = (date: Date) => {
-        const d = date.getDate().toString().padStart(2, '0');
-        const m = (date.getMonth() + 1).toString().padStart(2, '0');
-        const y = date.getFullYear();
-        const h = date.getHours().toString().padStart(2, '0');
-        const min = date.getMinutes().toString().padStart(2, '0');
-        return `${d}/${m}/${y} ${h}:${min}`;
-    };
-
-    const cleanStr = (str: string) => (str || '').trim().replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/[^\x20-\x7E]/g, '');
-    const companyName = cleanStr(settings.companyName || 'TIGA PUTRA MOTOR');
-    const companyAddress = cleanStr(settings.companyAddress || 'jl.raya cianjur sukabumi km 5');
-    const companyPhone = cleanStr(settings.companyPhone || '087720225244');
-
-    // Use [C] and [B] if the printer prefers them, but <C> and <B> are standard for this library
-    // Trying lowercase for better compatibility with some firmware
-    let text = `<center><b>${companyName}</b></center>\n`;
-    text += `<center>${companyAddress}</center>\n`;
-    text += `<center>HP: ${companyPhone}</center>\n`;
-    text += `${divider}\n`;
-
-    text += `No Trans : ${data.transactionNumber}\n`;
-    if (data.antrian) text += `Antrian  : ${data.antrian}\n`;
-    text += `Plgn     : ${data.customerName}\n`;
-    text += `Tanggal  : ${formatDateLocal(data.date)}\n`;
-    if (data.cashierName) text += `Kasir    : ${data.cashierName}\n`;
-    if (data.mechanicName) text += `Mekanik  : ${data.mechanicName}\n`;
-    text += `${divider}\n`;
-
-    // Items logic
-    const renderItem = (item: PrintReceiptItem) => {
-        // Adjust spacing based on paper size
-        const description = item.description.substring(0, is80mm ? 30 : 18).toUpperCase();
-        const priceStr = formatCurrencyLocal(item.unitPrice);
-        const subtotalStr = formatCurrencyLocal(item.subtotal);
-        const qtyStr = `${item.quantity} x ${priceStr}`;
-        
-        // Simple align
-        return `${description}\n  ${qtyStr}\t${subtotalStr}\n`;
-    };
-
-    let layananHTML = '';
     const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
-    if (services.length > 0) {
-        text += `<center>LAYANAN</center>\n`;
-        services.forEach(item => {
-            text += renderItem(item);
-        });
-        text += `${divider}\n`;
-        text += `Total Layanan: ${formatCurrencyLocal(services.reduce((acc, curr) => acc + curr.subtotal, 0))}\n`;
-    }
-
     const parts = data.parts || [];
-    if (parts.length > 0) {
-        if (text.endsWith(divider + '\n')) {
-            // avoid double divider
-        } else {
-            text += `${divider}\n`;
-        }
-        text += `<center>SPARE PART</center>\n`;
-        parts.forEach(item => {
-            text += renderItem(item);
-        });
-        text += `${divider}\n`;
-        text += `Total Part: ${formatCurrencyLocal(parts.reduce((acc, curr) => acc + curr.subtotal, 0))}\n`;
-    }
+    const items = data.items || [];
+    const servicesHtml = (services.length > 0)
+        ? renderItems(services, 'JASA')
+        : (data.type !== 'bengkel' && items.length > 0)
+            ? renderItems(items, 'ITEMS')
+            : '';
+    const partsHtml = parts.length > 0 ? renderItems(parts, 'SPAREPART') : '';
 
-    text += `${divider}\n`;
-    text += `SubTotal  : ${formatCurrencyLocal(data.subtotal)}\n`;
-    if (data.showDiscount !== false && data.discount) text += `Diskon    : -${formatCurrencyLocal(data.discount)}\n`;
-    text += `<B>Total     : ${formatCurrencyLocal(data.total)}</B>\n`;
+    const logoHtml = settings.logoUri && settings.logoUri.startsWith('data:')
+        ? `<img src="${settings.logoUri}" style="max-width:80px;height:auto;display:block;margin:0 auto 6px" />`
+        : '';
 
-    if (data.paid !== undefined) {
-        text += `Dibayar   : ${formatCurrencyLocal(data.paid)}\n`;
-        if (data.total > data.paid) {
-            text += `Sisa      : ${formatCurrencyLocal(data.total - data.paid)}\n`;
-        }
-    }
-    if (data.change !== undefined && data.change > 0) {
-        text += `Kembalian : ${formatCurrencyLocal(data.change)}\n`;
-    }
+    const sisa = data.total - (data.paid || 0);
 
-    text += `${divider}\n`;
-    
-    if (data.paymentMethod) {
-        text += `Metode    : ${data.paymentMethod}\n`;
-        text += `${divider}\n`;
-    }
-    
-    if (data.vehiclePlate) {
-        text += `<center>${data.vehiclePlate}</center>\n`;
-        text += `${divider}\n`;
-    }
-
-    text += `<center>${settings.footer || 'Terimakasih'}</center>\n`;
-    text += `\n\n\n\n`; // Feed space
-
-    return text;
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Courier New',monospace; font-size:${fsB}px; padding:${pad}; background:#fff; color:#000; width:${paperWidth}; }
+.divider { border-top:1px dashed #000; margin:4px 0; }
+.center { text-align:center; }
+.bold { font-weight:bold; }
+table { width:100%; border-collapse:collapse; }
+</style></head><body>
+<div class="center">${logoHtml}</div>
+<div class="center bold" style="font-size:${fsTitle}px">${settings.companyName || 'TIGA PUTRA MOTOR'}</div>
+${settings.header ? `<div class="center" style="font-size:${fsS}px">${settings.header}</div>` : ''}
+<div class="center" style="font-size:${fsS}px">${settings.companyAddress || ''}</div>
+<div class="center" style="font-size:${fsS}px">Telp: ${settings.companyPhone || ''}</div>
+<div class="divider"></div>
+<table>${infoRow('No. Nota:', data.transactionNumber)}${infoRow('Tanggal:', formatDate(data.date))}${infoRow('Pelanggan:', data.customerName)}${data.vehiclePlate ? infoRow('No. Polisi:', data.vehiclePlate) : ''}</table>
+<div class="divider"></div>
+${servicesHtml}
+${servicesHtml && partsHtml ? '<div class="divider"></div>' : ''}
+${partsHtml}
+<div class="divider"></div>
+<table><tr><td style="font-size:${fsB}px;font-weight:bold">SUBTOTAL</td><td style="font-size:${fsB}px;text-align:right;font-weight:bold">${fmt(data.subtotal)}</td></tr></table>
+<div class="divider"></div>
+<table>
+<tr><td style="font-size:${is80mm ? 14 : 12}px;font-weight:bold">TOTAL</td><td style="font-size:${is80mm ? 14 : 12}px;text-align:right;font-weight:bold">${fmt(data.total)}</td></tr>
+${data.discount && data.showDiscount !== false ? `<tr><td style="font-size:${fsB}px">Diskon</td><td style="font-size:${fsB}px;text-align:right">-${fmt(data.discount)}</td></tr>` : ''}
+${data.paid !== undefined ? `<tr><td style="font-size:${fsB}px">Dibayar</td><td style="font-size:${fsB}px;text-align:right">${fmt(data.paid)}</td></tr>` : ''}
+${sisa > 0 ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">SISA</td><td style="font-size:${fsB}px;text-align:right;color:#EF4444;font-weight:bold">${fmt(sisa)}</td></tr>` : '<tr><td colspan="2" style="text-align:center;font-weight:bold;padding-top:4px">LUNAS</td></tr>'}
+${data.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${String(data.paymentMethod).toUpperCase()}</td></tr>` : ''}
+</table>
+<div class="divider"></div>
+<div class="center" style="font-size:${fsFooter}px">${settings.footer || 'Terima kasih'}</div>
+</body></html>`;
 }
 
-/**
- * Helper to ensure logo is base64 for better compatibility
- */
-async function ensureLogoBase64(uri: string | null): Promise<string | null> {
+export async function ensureLogoBase64(uri: string | null): Promise<string | null> {
     if (!uri) return null;
-    
-    // Handle default TPM logo
     let targetUri = uri;
     if (uri === 'tpm_default') {
         const asset = Image.resolveAssetSource(require('../assets/logo_tpm.png'));
         targetUri = asset.uri;
     }
-
     if (targetUri.startsWith('data:')) return targetUri;
-
     try {
         const response = await fetch(targetUri);
         const blob = await response.blob();
@@ -431,76 +161,47 @@ async function ensureLogoBase64(uri: string | null): Promise<string | null> {
     }
 }
 
-/**
- * Print receipt using Expo Print
- */
 export async function printReceipt(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
-        // Pre-process logo to ensure it's base64 (helps with WebView and Direct Thermal)
         const base64Logo = await ensureLogoBase64(settings.logoUri);
         const processedSettings = { ...settings, logoUri: base64Logo };
-        
         const html = generateReceiptHTML(data, processedSettings);
-        
-        // Calculations for points (1/72 inch)
-        // 80mm = 226.77 points
-        // 58mm = 164.41 points
         const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
         if (Platform.OS === 'web') {
             const printedByQz = await printHtmlViaQz(html, {
                 printerName: settings.webPrinterName,
-                pageWidthPx: settings.paperSize === '80mm' ? 302 : 220
+                pageWidthPx: settings.paperSize === '80mm' ? 302 : 220,
             });
-
-            if (!printedByQz) {
-                await printHtmlInBrowser(html);
-            }
+            if (!printedByQz) await printHtmlInBrowser(html);
         } else {
-            // For mobile, check if direct thermal printer is connected via bluetooth
             if (Platform.OS === 'android' && BLEPrinter) {
                 try {
                     const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
                     if (savedPrinter) {
                         const device = JSON.parse(savedPrinter);
-                        // Initialize and connect (even if already connected, the library handles it)
                         await BLEPrinter.init();
                         await BLEPrinter.connectPrinter(device.inner_mac_address);
-                        
-                        // Generate thermal text
-                        const thermalText = generateThermalText(data, processedSettings);
-                        
-                        // If logo exists, print it first
-                        if (processedSettings.logoUri) {
-                            try {
-                                // Extract base64 if it's a data URI
-                                const base64Data = processedSettings.logoUri.includes('base64,') 
-                                    ? processedSettings.logoUri.split('base64,')[1] 
-                                    : processedSettings.logoUri;
-                                
-                                await BLEPrinter.printPic(base64Data, { 
-                                    width: settings.paperSize === '80mm' ? 200 : 150, 
-                                    left: settings.paperSize === '80mm' ? 50 : 20 
-                                });
-                            } catch (logoError) {
-                                console.warn('Failed to print logo to thermal printer:', logoError);
-                            }
-                        }
-                        
-                        await BLEPrinter.printText(thermalText);
-                        return; // Successfully printed directly
+                        let text = `<center><b>${processedSettings.companyName || 'TIGA PUTRA MOTOR'}</b></center>\n`;
+                        text += `${'--------------------------------'}\n`;
+                        text += `No: ${data.transactionNumber}\nTgl: ${new Date(data.date).toLocaleString('id-ID')}\nPlg: ${data.customerName}\n`;
+                        text += `${'--------------------------------'}\n`;
+                        const all = [...(data.services || []), ...(data.parts || []), ...(data.items || [])];
+                        all.forEach(i => { text += `${i.description.toUpperCase()}\n  ${i.quantity} x ${i.unitPrice}\t${i.subtotal}\n`; });
+                        text += `${'--------------------------------'}\n`;
+                        text += `<B>Total: ${data.total}</B>\n`;
+                        if (data.paid !== undefined) text += `Dibayar: ${data.paid}\n`;
+                        if (data.paid !== undefined && data.total > data.paid) text += `Sisa: ${data.total - data.paid}\n`;
+                        text += `${'--------------------------------'}\n`;
+                        text += `<center>${processedSettings.footer || 'Terimakasih'}</center>\n\n\n\n`;
+                        await BLEPrinter.printText(text);
+                        return;
                     }
-                } catch (thermalError) {
-                    console.warn('Failed to print to direct thermal printer, falling back to system print:', thermalError);
-                    // Fallback to system print if direct printing fails
+                } catch (e) {
+                    console.warn('BLE print failed:', e);
                 }
             }
-
-            // Fallback for mobile: use Expo Print (which shows the preview dialog)
-            await Print.printAsync({
-                html,
-                width: paperWidthPoints,
-            });
+            await Print.printAsync({ html, width: paperWidthPoints });
         }
     } catch (error) {
         console.error('Print error:', error);
@@ -508,36 +209,18 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
     }
 }
 
-/**
- * Save receipt as PDF and share
- */
 export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
     try {
         const base64Logo = await ensureLogoBase64(settings.logoUri);
         const processedSettings = { ...settings, logoUri: base64Logo };
-        
         const html = generateReceiptHTML(data, processedSettings);
-        
-        // Use points for Expo Print (72dpi)
         const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
 
-        if (Platform.OS === 'web') {
-            // For web, keep the browser print dialog so users can choose "Save as PDF"
-            return printHtmlInBrowser(html);
-        }
+        if (Platform.OS === 'web') return printHtmlInBrowser(html);
 
-        const { uri } = await Print.printToFileAsync({
-            html,
-            width: paperWidthPoints,
-        });
-
-        // Share the PDF
+        const { uri } = await Print.printToFileAsync({ html, width: paperWidthPoints });
         if (await Sharing.isAvailableAsync()) {
-            await Sharing.shareAsync(uri, {
-                mimeType: 'application/pdf',
-                dialogTitle: `Struk ${data.transactionNumber}`,
-                UTI: 'com.adobe.pdf'
-            });
+            await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Struk ${data.transactionNumber}`, UTI: 'com.adobe.pdf' });
         } else {
             throw new Error('Sharing tidak tersedia di perangkat ini');
         }
@@ -546,4 +229,3 @@ export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSett
         throw new Error('Gagal menyimpan struk sebagai PDF');
     }
 }
-
