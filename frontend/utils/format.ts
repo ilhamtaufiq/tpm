@@ -28,15 +28,16 @@ export const formatCurrency = (amount: any): string => {
         value = 0;
     }
     const safeAmount = isNaN(value) ? 0 : value;
-
     return 'Rp' + Math.round(safeAmount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
 export const formatNumber = (value: string | number): string => {
-    if (value === undefined || value === null || value === '') return '';
-    const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.]/g, '')) : value;
-    if (isNaN(num)) return '';
-    return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    if (value === undefined || value === null || value === '' || value === '0') return '0';
+    const cleaned = typeof value === 'string' ? value.replace(/[^0-9]/g, '') : String(value);
+    if (cleaned === '' || cleaned === '0') return '0';
+    const num = parseInt(cleaned, 10);
+    if (isNaN(num)) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 };
 
 export const parseNumber = (formattedValue: string): number => {
