@@ -924,7 +924,7 @@ export default function BengkelTransaksiScreen() {
                                                     <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
                                                         <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
                                                         <TextInput
-                                                            value={String(selected.item.harga || service.harga || '0')}
+                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
                                                             onChangeText={(val) => setServicePrice(service.id, val)}
                                                             keyboardType="number-pad"
                                                             className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
