@@ -909,11 +909,11 @@ export default function BengkelTransaksiScreen() {
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
                                 const selected = selectedServices[service.id];
                                 return (
-                                    <Pressable key={`service-${service.id}`} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
+                                    <View key={`service-${service.id}`} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
-                                            <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-gray-300'}`}>
+                                            <Pressable onPress={() => toggleService(service)} className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-gray-300'}`}>
                                                 {selected && <Check size={16} color="white" />}
-                                            </View>
+                                            </Pressable>
                                             <View className="flex-1">
                                                 <View className="flex-row items-center">
                                                     <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
@@ -924,7 +924,7 @@ export default function BengkelTransaksiScreen() {
                                                     <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
                                                         <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
                                                         <TextInput
-                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
+                                                            value={String(selected.item.harga || service.harga || '0')}
                                                             onChangeText={(val) => setServicePrice(service.id, val)}
                                                             keyboardType="number-pad"
                                                             className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
@@ -944,7 +944,7 @@ export default function BengkelTransaksiScreen() {
                                                 onChangeQty={(qty) => setServiceQty(service.id, qty)}
                                             />
                                         )}
-                                    </Pressable>
+                                    </View>
                                 );
                             })}
                         </View>
