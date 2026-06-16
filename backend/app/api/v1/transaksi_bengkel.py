@@ -127,6 +127,7 @@ def update_payment(
         diskon=data.diskon,
         payments=data.payments,
         status_pengerjaan=data.status_pengerjaan,
+        kas_jenis=data.kas_jenis,
     )
 
 

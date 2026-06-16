@@ -711,7 +711,7 @@ export default function BengkelTransaksiScreen() {
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
                 jumlah_bayar: shouldPay
-                    ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTunaiAmount + splitTransferAmount : receivedAmount))
+                    ? (isJA ? subtotal : (isMobil ? 0 : paymentMode === 'SPLIT' ? splitTunaiAmount + splitTransferAmount + existingDp : receivedAmount + existingDp))
                     : existingDp, // Preserve existing DP when updating without payment
                 payments: !shouldPay
                     ? []
@@ -721,12 +721,14 @@ export default function BengkelTransaksiScreen() {
                         ? []
                         : paymentMode === 'SPLIT'
                             ? [
+                                ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
                                 ...(splitTunaiAmount > 0 ? [{ metode: 'TUNAI', jumlah: splitTunaiAmount }] : []),
                                 ...(splitTransferAmount > 0 ? [{ metode: 'TRANSFER', jumlah: splitTransferAmount }] : []),
                             ]
-                            : receivedAmount > 0
-                                ? [{ metode: paymentMode, jumlah: receivedAmount }]
-                                : [],
+                            : [
+                                ...(existingDp > 0 ? [{ metode: 'TUNAI', jumlah: existingDp }] : []),
+                                ...(receivedAmount > 0 ? [{ metode: paymentMode, jumlah: receivedAmount }] : []),
+                            ],
                 catatan: note || selectedOpenTransactionDetail?.catatan || editingTransaction?.catatan || '',
             };
             const transaction = transactionToUpdateId
