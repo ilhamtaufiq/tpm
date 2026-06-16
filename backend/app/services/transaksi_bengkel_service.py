@@ -768,7 +768,16 @@ class TransaksiBengkelService:
             self.db.add(new_piutang)
         elif existing_piutang:
             existing_piutang.nominal_piutang = grand_total
-            existing_piutang.sisa_piutang = max(Decimal("0"), grand_total - existing_piutang.total_dibayar)
+            existing_piutang.total_dibayar = transaksi.jumlah_bayar
+            existing_piutang.sisa_piutang = max(Decimal("0"), grand_total - transaksi.jumlah_bayar)
+            # Update status based on payment completion
+            if existing_piutang.sisa_piutang <= 0:
+                existing_piutang.status = PiutangStatus.LUNAS
+                existing_piutang.tanggal_lunas = date.today()
+            elif existing_piutang.total_dibayar > 0:
+                existing_piutang.status = PiutangStatus.SEBAGIAN
+            else:
+                existing_piutang.status = PiutangStatus.BELUM_LUNAS
 
         # Link entries (Mobil & Jasa Angkut)
         if transaksi.kategori == 'jual_beli_mobil' and transaksi.mobil_id:
