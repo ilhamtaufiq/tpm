@@ -21,7 +21,9 @@
       "Bash(git push *)",
       "Bash(netstat -ano)",
       "Bash(pm2 list *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(rtk du *)",
+      "Bash(rtk wc *)"
     ]
   }
 }

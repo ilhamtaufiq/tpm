@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { router } from 'expo-router';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
-import { testQzTrayConnection, QzConnectionTestResult, getQzPrinters } from '../../utils/qzTray';
+import { testQzTrayConnection, QzConnectionTestResult, getQzPrinters, printHtmlViaQz } from '../../utils/qzTray';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
@@ -22,6 +22,7 @@ export default function PrintSettingsScreen() {
     const [printerPickerVisible, setPrinterPickerVisible] = useState(false);
     const [qzPrinters, setQzPrinters] = useState<string[]>([]);
     const [qzResult, setQzResult] = useState<QzConnectionTestResult | null>(null);
+    const [testingPrint, setTestingPrint] = useState(false);
     const [dialogConfig, setDialogConfig] = useState<{
         visible: boolean;
         title: string;
@@ -236,6 +237,47 @@ export default function PrintSettingsScreen() {
             });
         } finally {
             setCheckingQz(false);
+        }
+    };
+
+    const handleTestPrint = async () => {
+        if (Platform.OS !== 'web') return;
+        try {
+            setTestingPrint(true);
+            const testHtml = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+@page { margin: 0; }
+body { font-family: 'Courier New', monospace; padding: 10mm; text-align: center; }
+h1 { font-size: 24px; margin-bottom: 20px; }
+p { font-size: 14px; margin: 5px 0; }
+</style></head><body>
+<h1>TPM</h1>
+<p>Test Print QZ Tray</p>
+<p>${new Date().toLocaleString('id-ID')}</p>
+<p style="margin-top:40px;font-size:20px;font-weight:bold;">✅ BERHASIL</p>
+<p style="font-size:12px;color:#666;">Printer: ${settings.webPrinterName || 'Default'}</p>
+</body></html>`;
+            const ok = await printHtmlViaQz(testHtml, {
+                printerName: settings.webPrinterName || undefined,
+                pageWidthPx: 302,
+            });
+            setDialogConfig({
+                visible: true,
+                title: ok ? 'Test Print Berhasil' : 'Test Print Gagal',
+                message: ok
+                    ? 'Struk test berhasil dikirim ke printer.'
+                    : 'Gagal mencetak. Periksa koneksi QZ Tray dan nama printer.',
+                variant: ok ? 'success' : 'error',
+                type: 'alert',
+            });
+        } catch (err: any) {
+            setDialogConfig({
+                visible: true, title: 'Error',
+                message: err.message || 'Gagal test print.',
+                variant: 'error', type: 'alert',
+            });
+        } finally {
+            setTestingPrint(false);
         }
     };
 
@@ -466,6 +508,13 @@ export default function PrintSettingsScreen() {
                             onPress={handleCheckQz}
                             loading={checkingQz}
                             variant="outline"
+                            className="h-14 rounded-2xl"
+                        />
+                        <Button
+                            title={testingPrint ? 'Mencetak...' : 'Test Print QZ Tray'}
+                            onPress={handleTestPrint}
+                            loading={testingPrint}
+                            variant="outline-neutral"
                             className="h-14 rounded-2xl"
                         />
 

@@ -34,21 +34,37 @@ export async function printHtmlViaQz(html: string, options: QzPrintOptions = {})
             copies: 1,
             margins: 0,
             rasterize: true,
-            scaleContent: true
+            scaleContent: true,
         });
+
+        const widthPx = options.pageWidthPx || 302;
+        const heightPx = options.pageHeightPx || 9999;
+
+        // Simple HTML without SVG wrapper - let QZ handle page size naturally
+        const fullHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Courier New',monospace; font-size:13px; padding:3mm; background:#fff; color:#000; }
+.divider { border-top:1px dashed #000; margin:5px 0; }
+.center { text-align:center; }
+.bold { font-weight:bold; }
+img { max-width: 80px; height: auto; display: block; margin: 0 auto 5px; }
+</style>
+</head>
+<body style="width:${widthPx}px;height:auto;">
+${html}
+</body>
+</html>`;
 
         const printData: any = {
             type: 'pixel',
             format: 'html',
             flavor: 'plain',
-            data: html
+            data: fullHtml,
         };
-
-        if (options.pageWidthPx) {
-            printData.options = {
-                pageWidth: options.pageWidthPx
-            };
-        }
 
         await qz.print(config, [printData]);
         return true;
