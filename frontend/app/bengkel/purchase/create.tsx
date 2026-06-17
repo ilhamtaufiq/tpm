@@ -131,7 +131,7 @@ export default function PurchaseScreen() {
                     spare_part_id: item.spare_part_id,
                     name: item.spare_part?.nama || item.spare_part_nama || '',
                     qty: String(item.qty || 1),
-                    price: formatNumber(String(item.harga_satuan || 0)),
+                    price: formatNumber(Number(item.harga_satuan ?? 0)),
                 })));
 
                 const hydratedPayments = Array.isArray(detail.payments) && detail.payments.length > 0
@@ -142,7 +142,7 @@ export default function PurchaseScreen() {
                             : payment.kas_jenis === 'KAS_UTAMA'
                                 ? 'UTAMA_TUNAI'
                                 : 'BENGKEL_TUNAI',
-                        nominal: formatNumber(String(payment.jumlah || 0)),
+                        nominal: formatNumber(Number(payment.jumlah ?? 0)),
                     }))
                     : [{ id: Date.now() + Math.random(), sumber: 'BENGKEL_TUNAI', nominal: '' }];
 
