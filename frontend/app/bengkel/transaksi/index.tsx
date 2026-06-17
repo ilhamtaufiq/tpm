@@ -924,7 +924,7 @@ export default function BengkelTransaksiScreen() {
                                                     <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
                                                         <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
                                                         <TextInput
-                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
+                                                            value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
                                                             onChangeText={(val) => setServicePrice(service.id, val)}
                                                             keyboardType="number-pad"
                                                             className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
@@ -1001,7 +1001,7 @@ export default function BengkelTransaksiScreen() {
                                             <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start">
                                                 <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
                                                 <TextInput
-                                                    value={formatNumber(String(row.item.harga || '0'))}
+                                                    value={formatNumber(Number(row.item.harga ?? 0))}
                                                     onChangeText={(val) => setServicePrice(row.item.id, val)}
                                                     keyboardType="number-pad"
                                                     className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"
@@ -1031,7 +1031,7 @@ export default function BengkelTransaksiScreen() {
                                             <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-amber-100 self-start">
                                                 <Typography className="text-amber-700 text-xs font-bold mr-1">Rp</Typography>
                                                 <TextInput
-                                                    value={formatNumber(String(row.item.harga || '0'))}
+                                                    value={formatNumber(Number(row.item.harga ?? 0))}
                                                     onChangeText={(val) => setServicePrice(row.item.id, val, row.item)}
                                                     keyboardType="number-pad"
                                                     className="text-amber-700 text-xs font-bold min-w-[80px] p-0"
@@ -1291,7 +1291,7 @@ export default function BengkelTransaksiScreen() {
                                     </View>
                                     <View className="flex-row justify-between items-center">
                                         <Typography weight="bold" className="text-amber-700">- Sisa bayar</Typography>
-                                        <Typography weight="bold" className="text-amber-700">({formatCurrency(sisaBayar)})/{formatCurrency(subtotal)}</Typography>
+                                        <Typography weight="bold" className="text-amber-700">{formatCurrency(sisaBayar)}</Typography>
                                     </View>
                                 </>
                             )}
@@ -1850,7 +1850,7 @@ export default function BengkelTransaksiScreen() {
                                                     <View className="flex-row items-center bg-white rounded-lg px-2 py-1 border border-emerald-100 self-start mt-1">
                                                         <Typography className="text-emerald-700 text-xs font-bold mr-1">Rp</Typography>
                                                         <TextInput
-                                                            value={formatNumber(String(selected.item.harga || service.harga || '0'))}
+                                                            value={formatNumber(Number(selected.item.harga ?? service.harga ?? 0))}
                                                             onChangeText={(val) => setServicePrice(service.id, val)}
                                                             keyboardType="number-pad"
                                                             className="text-emerald-700 text-xs font-bold min-w-[80px] p-0"

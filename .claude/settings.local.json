@@ -23,7 +23,10 @@
       "Bash(pm2 list *)",
       "Bash(gh pr *)",
       "Bash(rtk du *)",
-      "Bash(rtk wc *)"
+      "Bash(rtk wc *)",
+      "PowerShell(Get-Content \"C:\\\\laragon\\\\www\\\\tpm\\\\frontend\\\\app\\\\bengkel\\\\transaksi\\\\index.tsx\" -Encoding UTF8 | Select-Object -Index 923,924,925,926,927,928,929,930,931 | ForEach-Object { \"$\\($_.Replace\\(\"`t\",\"<tab>\"\\)\\)\" })",
+      "Bash(Select-Object -Last 5)",
+      "PowerShell(taskkill *)"
     ]
   }
 }

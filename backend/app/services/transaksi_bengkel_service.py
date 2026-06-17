@@ -1281,6 +1281,7 @@ class TransaksiBengkelService:
             piutang.sisa_piutang = max(sisa, Decimal("0"))
             if sisa <= 0:
                 piutang.status = PiutangStatus.LUNAS
+                piutang.tanggal_lunas = date.today()
             else:
                 piutang.status = PiutangStatus.SEBAGIAN
 
