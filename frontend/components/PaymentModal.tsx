@@ -39,7 +39,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
     const [isSplitPayment, setIsSplitPayment] = useState(false);
     const [payments, setPayments] = useState<{ id: number; metode: string; nominal: string; catatan: string }[]>([
-        { id: Date.now() + Math.random(), metode: '', nominal: formatNumber(initialAmount.toString()), catatan: '' }
+        { id: Date.now() + Math.random(), metode: '', nominal: formatNumber(Number(initialAmount ?? 0)), catatan: '' }
     ]);
     const [paymentNote, setPaymentNote] = useState('');
     const [loading, setLoading] = useState(false);
