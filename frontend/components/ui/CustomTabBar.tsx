@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { View, Pressable, Modal, Animated } from 'react-native';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { View, Pressable, Animated } from 'react-native';
 import { Typography } from './Typography';
 import { cn } from './Card';
 import { Plus, X, ShieldCheck, Wrench, Wallet, CarFront, Truck, History, Package, Receipt, BarChart3, User, Home, Database, ArrowRightLeft } from 'lucide-react-native';
+import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useUIStore } from '../../store/useUIStore';
@@ -37,21 +38,31 @@ export const CustomTabBar = () => {
 
     // Animation progress for Radial FAB menu
     const animationProgress = useRef(new Animated.Value(0)).current;
+    const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+
+    // Cleanup animation on unmount
+    useEffect(() => {
+        return () => {
+            animationRef.current?.stop();
+            setQuickActionsVisible(false);
+        };
+    }, []);
 
     const showQuickActions = () => {
-        animationProgress.stopAnimation();
+        animationRef.current?.stop();
         animationProgress.setValue(0);
         setQuickActionsVisible(true);
-        Animated.spring(animationProgress, {
+        animationRef.current = Animated.spring(animationProgress, {
             toValue: 1,
             friction: 6,
             tension: 40,
             useNativeDriver: true,
-        }).start();
+        });
+        animationRef.current.start();
     };
 
     const hideQuickActions = () => {
-        animationProgress.stopAnimation();
+        animationRef.current?.stop();
         animationProgress.setValue(0);
         setQuickActionsVisible(false);
     };
@@ -175,40 +186,40 @@ export const CustomTabBar = () => {
     const subFab2 = withUnitScope(getOptionDetails(currentFabSlots[1] || 'fin-mutasi'), currentFabSlots[1] || 'fin-mutasi');
     const subFab3 = withUnitScope(getOptionDetails(currentFabSlots[2] || 'mobil'), currentFabSlots[2] || 'mobil');
 
-    const backdropOpacity = animationProgress.interpolate({
+    const backdropOpacity = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, 1],
-    });
+    }), [animationProgress]);
 
-    const mainFabRotation = animationProgress.interpolate({
+    const mainFabRotation = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: ['0deg', '45deg'],
-    });
+    }), [animationProgress]);
 
-    const subFab1X = animationProgress.interpolate({
+    const subFab1X = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, -60],
-    });
+    }), [animationProgress]);
 
-    const subFab1Y = animationProgress.interpolate({
+    const subFab1Y = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, -60],
-    });
+    }), [animationProgress]);
 
-    const subFab2Y = animationProgress.interpolate({
+    const subFab2Y = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, -85],
-    });
+    }), [animationProgress]);
 
-    const subFab3X = animationProgress.interpolate({
+    const subFab3X = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, 60],
-    });
+    }), [animationProgress]);
 
-    const subFab3Y = animationProgress.interpolate({
+    const subFab3Y = useMemo(() => animationProgress.interpolate({
         inputRange: [0, 1],
         outputRange: [0, -60],
-    });
+    }), [animationProgress]);
 
     return (
         <View
@@ -225,7 +236,7 @@ export const CustomTabBar = () => {
                 zIndex: 50,
             }}
         >
-            {activeSlots.map((slotId, index) => {
+            {activeSlots.map((slotId) => {
                 const routeInfo = getRouteInfo(slotId);
                 if (!routeInfo) return null;
 
@@ -233,24 +244,21 @@ export const CustomTabBar = () => {
                 
                 // Match exact pathname or handle root routing
                 const isActiveTab = (path: string) => {
-                    if (path === '/home' && (pathname === '/home' || pathname === '/')) return true;
+                    const cleanPathname = pathname?.split('?')[0] || '';
                     const cleanPath = path.split('?')[0];
-                    if (cleanPath === '/bengkel') return pathname === '/bengkel';
-                    return pathname === cleanPath || pathname?.startsWith(cleanPath + '/');
+                    if (cleanPath === '/home') return cleanPathname === '/home' || cleanPathname === '/';
+                    return cleanPathname === cleanPath || cleanPathname?.startsWith(cleanPath + '/');
                 };
                 
                 const isFocused = !isFab && isActiveTab(routeInfo.path);
 
                 const handlePress = () => {
-                    const cleanPath = pathname.split('?')[0];
                     if (isFab) {
                         showQuickActions();
                         return;
                     }
-
                     if (!isFocused) {
-                        // Use router.navigate to properly traverse the stack
-                        router.navigate(routeInfo.path as any);
+                        router.navigate(routeInfo.path as Href);
                     }
                 };
 
@@ -258,7 +266,7 @@ export const CustomTabBar = () => {
 
                 if (isFab) {
                     return (
-                        <View key={index} className="flex flex-col items-center justify-center flex-1 h-full -mt-12 group relative" style={{ overflow: 'visible', zIndex: 60 }}>
+                        <View key={slotId} className="flex flex-col items-center justify-center flex-1 h-full -mt-12 group relative" style={{ overflow: 'visible', zIndex: 60 }}>
                             <Pressable
                                 onPress={handlePress}
                                 className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
@@ -279,7 +287,7 @@ export const CustomTabBar = () => {
 
                 return (
                     <Pressable
-                        key={index}
+                        key={slotId}
                         onPress={handlePress}
                         className="flex-1 flex flex-col items-center justify-center h-full active:opacity-70"
                     >
@@ -328,17 +336,16 @@ export const CustomTabBar = () => {
                 );
             })}
 
-            {/* Radial FAB Modal Overlay */}
+            {/* Radial FAB Overlay (no Modal — avoid Android touch-eating bug) */}
             {quickActionsVisible && (
-                <Modal
-                    transparent
-                    visible={quickActionsVisible}
-                    animationType="none"
-                    statusBarTranslucent
-                    onDismiss={() => animationProgress.setValue(0)}
-                    onRequestClose={hideQuickActions}
+                <View
+                    style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        zIndex: 999,
+                    }}
+                    pointerEvents="box-none"
                 >
-                <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                     {/* Backdrop */}
                     <Animated.View
                         testID="fab-backdrop-blur"
@@ -354,7 +361,7 @@ export const CustomTabBar = () => {
 
                     {/* Centered Radial FABs overlay at Bottom Navigation bar */}
                     <View
-                    style={{
+                        style={{
                             position: 'absolute',
                             left: 0, right: 0,
                             flexDirection: 'row',
@@ -371,7 +378,7 @@ export const CustomTabBar = () => {
                             className="w-16 h-16 items-center justify-center -mt-12 relative"
                             style={{ overflow: 'visible' }}
                         >
-                            {/* Sub-FAB 1: Tambah Bengkel */}
+                            {/* Sub-FAB 1 */}
                             <Animated.View
                                 style={{
                                     position: 'absolute',
@@ -393,7 +400,7 @@ export const CustomTabBar = () => {
                                 </Pressable>
                             </Animated.View>
 
-                            {/* Sub-FAB 2: Tambah Transaksi */}
+                            {/* Sub-FAB 2 */}
                             <Animated.View
                                 style={{
                                     position: 'absolute',
@@ -414,7 +421,7 @@ export const CustomTabBar = () => {
                                 </Pressable>
                             </Animated.View>
 
-                            {/* Sub-FAB 3: Tambah Unit */}
+                            {/* Sub-FAB 3 */}
                             <Animated.View
                                 style={{
                                     position: 'absolute',
@@ -436,10 +443,10 @@ export const CustomTabBar = () => {
                                 </Pressable>
                             </Animated.View>
 
-                            {/* Main FAB inside Modal */}
+                            {/* Main FAB (now acts as X close) */}
                             <Pressable
                                 onPress={hideQuickActions}
-                                className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white z-50 active:scale-95 transition-all duration-300"
+                                className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
                                 style={{
                                     backgroundColor: themeColors.primary,
                                     shadowColor: themeColors.primary,
@@ -456,7 +463,6 @@ export const CustomTabBar = () => {
                         </View>
                     </View>
                 </View>
-                </Modal>
             )}
         </View>
     );

@@ -200,6 +200,7 @@ export default function SparePartMasterScreen() {
     };
 
     const [sheetVisible, setSheetVisible] = useState(false);
+    const [sheetIndex, setSheetIndex] = useState(-1);
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['85%', '95%'], []);
 
@@ -236,26 +237,24 @@ export default function SparePartMasterScreen() {
             setForm(INITIAL_FORM);
             setIsAlwaysReady(false);
         }
-
-        // Set visible for both platforms
         setSheetVisible(true);
-
-        if (Platform.OS !== 'web') {
-            bottomSheetRef.current?.expand();
-        }
+        setSheetIndex(0);
+        bottomSheetRef.current?.snapToIndex(0);
     };
 
     const handleCloseSheet = () => {
         setSheetVisible(false);
+        setSheetIndex(-1);
         setIsAlwaysReady(false);
-
-        if (Platform.OS !== 'web') {
-            bottomSheetRef.current?.close();
-        }
-
         setForm(INITIAL_FORM);
         setIsEditing(false);
+        bottomSheetRef.current?.close();
     };
+
+    const handleSheetChange = useCallback((index: number) => {
+        setSheetIndex(index);
+        if (index === -1) setSheetVisible(false);
+    }, []);
 
     const handleScanCode = (data: string) => {
         setForm(prev => ({ ...prev, [scannerTarget]: data }));
@@ -1180,10 +1179,11 @@ export default function SparePartMasterScreen() {
             ) : (
                 <BottomSheet
                     ref={bottomSheetRef}
-                    index={-1}
+                    index={sheetIndex}
                     snapPoints={snapPoints}
                     enablePanDownToClose
                     onClose={handleCloseSheet}
+                    onChange={handleSheetChange}
                     backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48 }}
                 >
