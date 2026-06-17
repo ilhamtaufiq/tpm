@@ -206,7 +206,7 @@ export default function PurchaseScreen() {
         const newItems = [...items];
         // Pastikan konversi string ke number aman sebelum format
         const numericVal = parseNumber(val);
-        newItems[index] = { ...newItems[index], price: formatNumber(String(numericVal)) };
+        newItems[index] = { ...newItems[index], price: formatNumber(numericVal) };
         setItems(newItems);
     };
 
@@ -247,7 +247,7 @@ export default function PurchaseScreen() {
                 spare_part_id: part.id,
                 name: part.nama,
                 qty: '1',
-                price: formatNumber(part.harga_beli.toString()),
+                price: formatNumber(Number(part.harga_beli ?? 0)),
             }]);
         }
     };
@@ -275,7 +275,7 @@ export default function PurchaseScreen() {
                     spare_part_id: part.id,
                     name: part.nama,
                     qty: '1',
-                    price: formatNumber(part.harga_beli.toString())
+                    price: formatNumber(Number(part.harga_beli ?? 0))
                 }]);
             }
             setScannerOpen(false);
@@ -831,7 +831,7 @@ export default function PurchaseScreen() {
                                     <View className="flex-row justify-between items-center mb-2">
                                         <Typography variant="caption" weight="bold" className="text-primary uppercase">Jumlah Bayar (Rp)</Typography>
                                         <Pressable onPress={() => {
-                                            handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(String(total)));
+                                            handleUpdatePaymentRow(payments[0].id, 'nominal', formatNumber(total));
                                             setStatusBayar('LUNAS');
                                         }}>
                                             <Typography className="text-primary text-[10px] font-bold">BAYAR PAS</Typography>
