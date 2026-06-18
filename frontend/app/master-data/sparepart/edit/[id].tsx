@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Header } from '../../../../components/ui/Header';
 import { Typography } from '../../../../components/ui/Typography';
 import SparepartForm, { SparePartFormData } from '../../../../components/forms/SparepartForm';
-import { useSparePartsList } from '../../../../hooks';
+import { useSparePartDetail } from '../../../../hooks';
 import { formatNumber } from '../../../../utils/format';
 
 export default function EditSparepartScreen() {
@@ -12,13 +12,7 @@ export default function EditSparepartScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const sparepartId = Number(id);
 
-    const { data: sparePartsData, isLoading } = useSparePartsList({ limit: 10000 });
-
-    const sparepart = useMemo(() => {
-        if (!sparePartsData?.pages) return null;
-        const allItems = sparePartsData.pages.flatMap((page: any) => page.data);
-        return allItems.find((item: any) => item.id === sparepartId);
-    }, [sparePartsData, sparepartId]);
+    const { data: sparepart, isLoading } = useSparePartDetail(sparepartId);
 
     const [formData, setFormData] = useState<SparePartFormData | null>(null);
 

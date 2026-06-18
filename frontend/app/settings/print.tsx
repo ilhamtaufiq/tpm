@@ -92,7 +92,8 @@ export default function PrintSettingsScreen() {
                         footer: settings.footer,
                         logo_uri: settings.logoUri || undefined,
                         show_qr_code: settings.showQRCode,
-                        paper_size: settings.paperSize
+                        paper_size: settings.paperSize,
+                        print_method: settings.printMethod,
                     }
                 });
             } catch (syncError) {
@@ -546,6 +547,30 @@ p { font-size: 14px; margin: 5px 0; }
                                 ) : null}
                             </View>
                         ) : null}
+                    </View>
+                </Card>
+
+                {/* Print Method */}
+                <Card className="p-6 mb-6 rounded-[24px]">
+                    <Typography variant="h4" weight="bold" className="mb-4">
+                        Metode Cetak
+                    </Typography>
+
+                    <Tabs
+                        items={[
+                            { label: 'Browser Native', value: 'browser' },
+                            { label: 'QZ Tray Direct', value: 'qz' }
+                        ]}
+                        value={settings.printMethod}
+                        onChange={(value: string) => setSettings({ ...settings, printMethod: value as 'browser' | 'qz' })}
+                    />
+
+                    <View className="mt-4 p-4 bg-blue-50 rounded-2xl">
+                        <Typography variant="caption" className="text-blue-700">
+                            {settings.printMethod === 'qz'
+                                ? 'Mencetak langsung ke thermal printer via QZ Tray. Pastikan QZ Tray aktif.'
+                                : 'Menggunakan dialog print bawaan browser. Cocok untuk printernon-thermal.'}
+                        </Typography>
                     </View>
                 </Card>
 

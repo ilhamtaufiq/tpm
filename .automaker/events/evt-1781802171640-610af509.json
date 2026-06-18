@@ -1,0 +1,10 @@
+{
+  "id": "evt-1781802171640-610af509",
+  "trigger": "feature_success",
+  "timestamp": "2026-06-18T17:02:51.640Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781798285758-4w9u6iih6je",
+  "featureName": "qz tray web",
+  "passes": true
+}

@@ -120,6 +120,11 @@ export const bengkelService = {
         return response.data;
     },
 
+    getSparePartById: async (id: number) => {
+        const response = await api.get(`/spare-parts/${id}`);
+        return response.data;
+    },
+
     searchSpareParts: async (query: string) => {
         const response = await api.get('/spare-parts/search', { params: { q: query } });
         return response.data;
