@@ -16,24 +16,21 @@ export default function Index() {
         console.log('===== INDEX: Component mounted =====');
         console.log('INDEX: isAuthenticated (initial):', isAuthenticated);
 
-        // Wait for Zustand store to hydrate from AsyncStorage
-        const timer = setTimeout(() => {
-            console.log('INDEX: Hydration timeout complete');
-            console.log('INDEX: isAuthenticated (after hydration):', isAuthenticated);
+        // If already hydrated, set immediately
+        if (useAuthStore.persist?.hasHydrated?.()) {
             setIsHydrated(true);
-        }, 2000); // 2 seconds for very slow devices
+            return;
+        }
 
-        // Fallback: Force navigation after 5 seconds
-        const forceTimer = setTimeout(() => {
-            console.warn('INDEX: Force navigation timeout (app stuck?)');
-            setForceNav(true);
+        // Otherwise, use Zustand's built-in hydration event
+        const unsub = useAuthStore.persist?.onFinishHydration?.(() => {
+            console.log('INDEX: Store hydration complete');
+            console.log('INDEX: isAuthenticated (after hydration):', useAuthStore.getState().isAuthenticated);
             setIsHydrated(true);
-        }, 5000);
+        });
 
         return () => {
-            console.log('INDEX: Component unmounting');
-            clearTimeout(timer);
-            clearTimeout(forceTimer);
+            unsub?.();
         };
     }, []);
 

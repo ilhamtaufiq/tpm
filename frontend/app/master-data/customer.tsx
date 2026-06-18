@@ -27,7 +27,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useUIStore } from '../../store/useUIStore';
 import { onlineManager } from '@tanstack/react-query';
 
@@ -576,7 +576,7 @@ export default function CustomerScreen() {
 
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface" style={{ position: 'relative' }}>
             <StatusBar barStyle="light-content" />
 
             {/* Premium Header (Design System) */}
@@ -651,17 +651,6 @@ export default function CustomerScreen() {
                 }
             />
 
-            {/* FAB */}
-            <Pressable
-                onPress={openAddForm}
-                style={({ pressed }) => ({
-                    opacity: pressed ? 0.8 : 1
-                })}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-            >
-                <Plus size={32} color="white" />
-            </Pressable>
-
             {/* UI - Platform Specific */}
             {Platform.OS === 'web' ? (
                 <Modal
@@ -706,6 +695,15 @@ export default function CustomerScreen() {
                     </BottomSheetScrollView>
                 </BottomSheet>
             )}
+
+            {/* Floating Action Button */}
+            <Pressable
+                onPress={openAddForm}
+                style={{ position: 'absolute', right: 24, bottom: 100, elevation: 5, zIndex: 999, width: 64, height: 64 }}
+                className="bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
+            >
+                <Plus size={32} color="white" />
+            </Pressable>
 
             <AlertDialog
                 visible={dialogConfig.visible}

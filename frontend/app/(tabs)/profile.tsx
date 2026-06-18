@@ -21,6 +21,7 @@ import { useUpdateSecuritySettings } from '../../hooks/useSecurityAPI';
 import { useAuthStore } from '../../store/useAuthStore';
 import { authService } from '../../services/auth';
 import { getFileUrl } from '../../utils/image';
+import api from '../../utils/api';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
@@ -87,6 +88,14 @@ export default function ProfileScreen() {
     };
 
     const handleReset = () => {
+        // Require PIN re-authentication before allowing destructive reset
+        if (isPinEnabled) {
+            router.push({
+                pathname: '/(security)/pin',
+                params: { mode: 'verify', action: 'reset_transactions' }
+            });
+            return;
+        }
         setDialogConfig({
             visible: true,
             title: "Hapus Transaksi & Stok?",
@@ -144,6 +153,10 @@ export default function ProfileScreen() {
             onConfirm: async () => {
                 await authService.clearPushToken().catch((error) => {
                     console.warn('[Profile] Failed to clear push token before logout', error);
+                });
+                // Server-side logout to invalidate session token
+                await api.post('/auth/logout').catch((error) => {
+                    console.warn('[Profile] Server-side logout failed', error);
                 });
                 setDialogConfig(prev => ({ ...prev, visible: false }));
                 logout();
@@ -575,28 +588,23 @@ export default function ProfileScreen() {
                             <ChevronRight size={16} color="#EF4444" />
                         </View>
                     </Pressable>
-
-                    <Pressable
-                        className="flex-1 bg-surface p-5 rounded-[32px] border border-gray-50 shadow-sm items-start justify-between min-h-[140px]"
-                        onPress={() => router.push('/settings/notifications')}
-                    >
-                        <View className="w-10 h-10 bg-amber-50 rounded-[14px] items-center justify-center mb-3 relative">
-                            <Bell size={20} color="#F59E0B" />
-                            {unreadCount > 0 && (
-                                <View className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
-                                    <Typography className="text-white text-[9px] font-black">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </Typography>
-                                </View>
-                            )}
-                        </View>
-                        <View>
-                            <Typography weight="bold" className="text-text text-[15px] leading-tight mb-1">Notifikasi</Typography>
-                            <Typography variant="caption" className="text-text/40 text-[10px]">Riwayat transaksi terbaru</Typography>
-                        </View>
-                    </Pressable>
                 </View>
             </BaseModal>
+
+            {/* Notification Button - Fixed placement outside PIN modal */}
+            <Pressable
+                className="absolute bottom-6 right-6 w-14 h-14 bg-amber-500 rounded-full items-center justify-center shadow-lg shadow-amber-500/30"
+                onPress={() => router.push('/settings/notifications')}
+            >
+                <Bell size={24} color="#FFF" />
+                {unreadCount > 0 && (
+                    <View className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 rounded-full bg-red-500 items-center justify-center border-2 border-white">
+                        <Typography className="text-white text-[10px] font-black">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </Typography>
+                    </View>
+                )}
+            </Pressable>
         </View>
     );
 }

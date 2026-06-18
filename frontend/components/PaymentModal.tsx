@@ -6,7 +6,7 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Plus, Trash2, X, Banknote, CreditCard, Wallet, CircleDollarSign, Building2, Store, ArrowUpRight } from 'lucide-react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { formatCurrency, formatNumber, parseNumber } from '../utils/format';
 import { useProcessPaymentSplit, useProcessHutangPaymentSplit } from '../hooks/useKeuangan';
 import { getErrorMessage } from '../utils/error';

@@ -26,6 +26,8 @@ import { bengkelService } from '../../services/bengkel';
 import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function StockSparepartReportScreen() {
@@ -345,8 +347,8 @@ export default function StockSparepartReportScreen() {
                                                     ${parts.map(part => `
                                                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                                                             <td style="padding: 8px;">
-                                                                <b>${part.nama}</b><br/>
-                                                                <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
+                                                                <b>${escapeHtml(part.nama)}</b><br/>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${escapeHtml(part.kode)}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: center;">
                                                                 <span style="font-weight: bold; color: ${part.stok === 999 ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">
@@ -413,8 +415,8 @@ export default function StockSparepartReportScreen() {
                                                     ${parts.map(part => `
                                                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                                                             <td style="padding: 8px;">
-                                                                <b>${part.nama}</b><br/>
-                                                                <span style="font-size: 8px; color: #94a3b8;">${part.kode}</span>
+                                                                <b>${escapeHtml(part.nama)}</b><br/>
+                                                                <span style="font-size: 8px; color: #94a3b8;">${escapeHtml(part.kode)}</span>
                                                             </td>
                                                             <td style="padding: 8px; text-align: center;">
                                                                 <span style="font-weight: bold; color: ${part.stok === 999 ? '#10b981' : (part.stok <= (part.stok_minimum || 0) ? '#ef4444' : '#1e293b')};">

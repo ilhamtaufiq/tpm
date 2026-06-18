@@ -21,7 +21,7 @@ import {
     Trash,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Calendar as RNCalendar } from 'react-native-calendars';
 import { useQuery } from '@tanstack/react-query';
 import { SlipGaji, SlipGajiPreviewItem, PaymentStatus, sdmService } from '../../services/sdm';
@@ -843,7 +843,7 @@ export default function SlipGajiScreen() {
                     index={-1}
                     snapPoints={snapPoints}
                     enablePanDownToClose
-                    backgroundStyle={{ borderRadius: 56, backgroundColor: 'white' }}
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
                     onClose={() => setSelectedSlip(null)}
                 >
                     <BottomSheetScrollView className="px-10">

@@ -58,22 +58,25 @@ tpm/
 │   ├── alembic/              # File migrasi database versi skema
 │   └── app/
 │       ├── api/              # HTTP Route endpoints (REST API)
-│       │   └── v1/
-│       │       └── endpoints/# Endpoint controller per modul bisnis
+│       │   └── v1/           # Endpoint per modul bisnis (auth, bengkel, mobil, dll)
 │       ├── database/         # Koneksi DB, Base model SQLAlchemy, mixins
-│       ├── middleware/       # CORS, Logging, Exception/Error handler
-│       ├── models/           # Definisi skema tabel/relasi database SQL
+│       ├── middleware/       # CORS, Auth (JWT), Logging, Error handler
+│       ├── models/           # Definisi skema tabel/relasi database SQL (SQLAlchemy 2.x)
 │       ├── schemas/          # Validasi tipe request/response Pydantic v2
 │       ├── services/         # Layer Logika Bisnis & Penghitungan Akuntansi
-│       └── utils/            # Helper global (Cache, Email, Validators)
+│       │   └── reports/      # Laporan Keuangan (Laba Rugi, Neraca, Modal)
+│       ├── utils/            # Helper global (Constants, Cache, Email, Security)
+│       └── realtime.py       # WebSocket real-time manager
 ├── frontend/
 │   ├── app/                  # Router navigasi berbasis file (Expo Router v4)
-│   ├── components/           # Komponen UI reusable (Form, Card, Modal, UI Kit)
-│   ├── context/              # Context Providers (State global platform)
-│   ├── hooks/                # React Hooks untuk fetching & caching (TanStack Query)
+│   ├── components/           # Komponen UI reusable
+│   │   └── ui/               # UI Kit (Header, CustomTabBar, AppBottomSheet, dll)
+│   ├── context/              # Context Providers (AlertContext)
+│   ├── hooks/                # React Hooks TanStack Query (useBengkel, useMobil, useKeuangan, dll)
 │   ├── services/             # HTTP Client endpoints adapter (Axios instance)
-│   ├── store/                # State management client (Zustand)
-│   └── utils/                # Formatter Rupiah, helper QZ Tray & printer thermal
+│   ├── store/                # State management (Zustand): auth, nav, UI, security, notifications, monitor
+│   ├── constants/            # APP_ROUTES index untuk pencarian global
+│   └── utils/                # Formatter Rupiah, helper QZ Tray, printer thermal, receipt templates
 └── deploy/                   # Script deployment server & setup tunnel SSL
 ```
 
@@ -112,6 +115,52 @@ Untuk menjaga akurasi laporan akuntansi, setiap pengembang wajib mengikuti atura
 2. **Prinsip Double-Entry**: Setiap mutasi kas masuk/keluar harus memiliki akun lawan yang seimbang. Total Aktiva (Aset/Kas/Piutang) pada neraca harus selalu sama dengan Pasiva (Kewajiban/Hutang + Modal + Laba Ditahan).
 3. **Immutability Jurnal**: Transaksi yang telah memiliki nomor referensi jurnal akuntansi tidak boleh di-`DELETE` secara fisik dari database. Jika terjadi kesalahan input atau pembatalan transaksi, wajib menggunakan mekanisme **Reversal Transaction** (jurnal balik) untuk menihilkan efek nominalnya.
 4. **Integrasi Kasir Mandiri (User Cash)**: Setiap transaksi kasir wajib terikat dengan sesi kas kasir yang aktif (`user_cash`). Kasir tidak bisa bertransaksi jika belum melakukan pembukaan kas awal, dan harus melakukan rekonsiliasi (tutup kas) di akhir shift.
+
+---
+
+## 🔒 Keamanan & Kontrol Akses
+
+### PIN & Biometric Authentication
+Sistem memiliki lapisan keamanan berbasis **PIN** dan **biometric** (fingerprint/face ID via `expo-local-authentication`):
+- **App Lock**: Kunci seluruh aplikasi saat di-background (kecuali mode DEV).
+- **Feature-Level Protection**: Admin dapat mengaktifkan PIN per modul (Finance, Reports, Settings, dll.).
+- **Biometric**: Opsi login dengan sidik jari/wajah.
+- Status keamanan disinkronkan dari backend ke `useSecurityStore` via API.
+- Route guard di `app/_layout.tsx` mengarahkan ke halaman PIN (`/(security)/pin`) jika fitur terkunci.
+
+### Impersonation Mode
+Admin/Manager dapat login sebagai user lain untuk troubleshooting tanpa perlu tahu password mereka. Mode impersonasi ditandai dengan banner kuning di Header dan tombol "Stop" untuk kembali ke sesi admin asli.
+
+---
+
+## 🔄 Sinkronisasi Real-Time & Offline
+
+### WebSocket Real-Time Sync
+Notifikasi real-time dikirim dari backend via WebSocket (`backend/app/realtime.py`) dan diterima frontend via `frontend/services/realtime.ts`. Event meliputi:
+- Transaksi bengkel baru
+- Perubahan status pembayaran
+- Update stok sparepart
+
+### Offline Cache (TanStack Query Persist)
+Frontend menggunakan `@tanstack/react-query-persist-client` dengan `AsyncStorage` sebagai backend penyimpanan offline:
+- **Stale time**: 10 detik (near real-time).
+- **GC time**: 24 jam.
+- **Retry**: 2 kali (kecuali network error).
+- Data di-refetch otomatis saat koneksi kembali (`refetchOnReconnect`).
+
+### Connectivity Banner
+`ConnectivityBanner` (frontend) menampilkan indikator online/offline di atas konten ketika koneksi terputus.
+
+---
+
+## 🧭 Navigasi Dinamis (CustomTabBar)
+
+Sistem memiliki **CustomTabBar** yang dapat dikonfigurasi oleh user:
+- **5 slot navigasi utama**: home, bengkel, fab-plus, angkut, mobil (default).
+- **3 slot FAB radial**: shortcut cepat yang muncul saat menekan tombol + di tengah tab bar.
+- **Slot per halaman (pageFabSlots)**: shortcut berbeda muncul tergantung halaman aktif (bengkel/mobil/angkut).
+- Role **BENGKEL** mendapat layout khusus: Home, Inventori, FAB+, Master Data, Absensi.
+- Semua konfigurasi tersimpan di `useNavigationStore` (persisted via AsyncStorage).
 
 ---
 
@@ -208,10 +257,15 @@ Docker compose akan menjalankan 4 kontainer utama:
 ## 📝 Aturan Pengembangan (Dev Guidelines)
 
 1. **Business Logic Isolation**: Dilarang keras menulis query database, manipulasi model finansial, atau kalkulasi harga langsung di dalam file route controller (`api/v1/endpoints/`). Logika bisnis wajib dibungkus dalam service class di dalam folder `app/services/`.
-2. **Schema Validation**: Setiap data masuk dari frontend wajib divalidasi menggunakan skema Pydantic di folder `app/schemas/` sebelum diproses oleh ORM SQLAlchemy.
+2. **Schema Validation**: Setiap data masuk dari frontend wajib divalidasi menggunakan skema Pydantic v2 di folder `app/schemas/` sebelum diproses oleh ORM SQLAlchemy.
 3. **Database Changes**: Semua modifikasi kolom, tabel, atau tipe data index pada database wajib melalui file migrasi Alembic baru:
    ```bash
    alembic revision --autogenerate -m "deskripsi_perubahan"
    alembic upgrade head
    ```
 4. **Immutability Pattern (Frontend Store)**: Pada frontend client, dilarang melakukan mutasi state global Zustand secara langsung. Gunakan function dispatcher yang mengembalikan salinan state baru (immutable pattern) sesuai standard `coding-style.md`.
+5. **Code-first Models**: Gunakan SQLAlchemy 2.x `Mapped`/`mapped_column` style. Semua skema ditentukan di `app/models/` -- pastikan enum ditambahkan ke `app/utils/constants.py` agar tercakup di migrasi autogenerate Alembic.
+6. **Anti Rp0 Transaksi Finansial**: Dilarang membuat jurnal entri kas/bank atau piutang dengan nominal Rp0 pada database.
+7. **Prinsip Double-Entry**: Setiap mutasi kas masuk/keluar harus memiliki akun lawan yang seimbang. Total Aktiva (Aset/Kas/Piutang) pada neraca harus selalu sama dengan Pasiva (Kewajiban/Hutang + Modal + Laba Ditahan).
+8. **Immutability Jurnal**: Transaksi yang telah memiliki nomor referensi jurnal akuntansi tidak boleh di-`DELETE` secara fisik dari database. Jika terjadi kesalahan input atau pembatalan transaksi, wajib menggunakan mekanisme **Reversal Transaction** (jurnal balik) untuk menihilkan efek nominalnya.
+9. **Integrasi Kasir Mandiri (User Cash)**: Setiap transaksi kasir wajib terikat dengan sesi kas kasir yang aktif (`user_cash`). Kasir tidak bisa bertransaksi jika belum melakukan pembukaan kas awal, dan harus melakukan rekonsiliasi (tutup kas) di akhir shift.

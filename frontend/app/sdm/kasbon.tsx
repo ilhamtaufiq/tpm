@@ -20,7 +20,7 @@ import {
     Search,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { sdmService, Kasbon, KasbonSummary, PaymentStatus, Karyawan } from '../../services/sdm';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
 import { useAlert } from '../../context/AlertContext';
@@ -77,6 +77,11 @@ export default function KasbonScreen() {
 
     // Sheet State
     const [activeSheet, setActiveSheet] = useState<'none' | 'create' | 'detail'>('none');
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     const { showAlert } = useAlert();
 

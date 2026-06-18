@@ -1,0 +1,11 @@
+{
+  "id": "evt-1781797521277-7dfb199c",
+  "trigger": "feature_error",
+  "timestamp": "2026-06-18T15:45:21.279Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781795898123-mse4d89oudj",
+  "featureName": "",
+  "error": "Operation was cancelled",
+  "errorType": "cancellation"
+}

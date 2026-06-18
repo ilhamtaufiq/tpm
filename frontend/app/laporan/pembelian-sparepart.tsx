@@ -23,6 +23,8 @@ import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PembelianSparepartReportScreen() {
@@ -569,15 +571,15 @@ export default function PembelianSparepartReportScreen() {
                                                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                                                             <td style="padding: 8px;">
                                                                 ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_transaksi}</span>
+                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
                                                             </td>
                                                             <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${item.supplier?.nama || item.supplier_nama || 'Supplier Umum'}</span>
+                                                                <span style="font-weight: bold;">${escapeHtml(item.supplier?.nama || item.supplier_nama || 'Supplier Umum')}</span>
                                                             </td>
                                                             <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
                                                             <td style="padding: 8px;">
                                                                 <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
-                                                                    ${item.status_bayar}
+                                                                    ${escapeHtml(item.status_bayar)}
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -642,15 +644,15 @@ export default function PembelianSparepartReportScreen() {
                                                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                                                             <td style="padding: 8px;">
                                                                 ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_transaksi}</span>
+                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
                                                             </td>
                                                             <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${item.supplier?.nama || item.supplier_nama || 'Supplier Umum'}</span>
+                                                                <span style="font-weight: bold;">${escapeHtml(item.supplier?.nama || item.supplier_nama || 'Supplier Umum')}</span>
                                                             </td>
                                                             <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
                                                             <td style="padding: 8px;">
                                                                 <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
-                                                                    ${item.status_bayar}
+                                                                    ${escapeHtml(item.status_bayar)}
                                                                 </span>
                                                             </td>
                                                         </tr>

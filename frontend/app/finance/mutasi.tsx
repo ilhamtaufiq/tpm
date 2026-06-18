@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { KasBankTransaction, KasBankAllBalances, KasBankJenis } from '../../services/keuangan';
 import { User } from '../../services/auth';

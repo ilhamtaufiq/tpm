@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -11,7 +11,32 @@ import { StatusBar } from 'expo-status-bar';
 import { useUIStore } from '../../store/useUIStore';
 import { Image } from 'react-native';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const navigateByRole = (router: ReturnType<typeof useRouter>, role?: string) => {
+    switch (role) {
+        case 'ADMIN':
+        case 'MANAGER':
+            router.replace('/(tabs)/home');
+            break;
+        case 'BENGKEL':
+            router.replace('/bengkel');
+            break;
+        case 'JASA_ANGKUT':
+            router.replace('/jasa-angkut');
+            break;
+        case 'MOBIL':
+            router.replace('/mobil');
+            break;
+        default:
+            router.replace('/(tabs)/home');
+    }
+};
+
+const getSafeErrorMessage = (error: any, fallback: string): string => {
+    if (__DEV__) {
+        return error?.response?.data?.detail || fallback;
+    }
+    return fallback;
+};
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -21,17 +46,7 @@ export default function LoginScreen() {
     useEffect(() => {
         if (isAuthenticated) {
             const user = useAuthStore.getState().user;
-            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-                router.replace('/(tabs)/home');
-            } else if (user?.role === 'BENGKEL') {
-                router.replace('/bengkel');
-            } else if (user?.role === 'JASA_ANGKUT') {
-                router.replace('/jasa-angkut');
-            } else if (user?.role === 'MOBIL') {
-                router.replace('/mobil');
-            } else {
-                router.replace('/(tabs)/home');
-            }
+            navigateByRole(router, user?.role);
         }
     }, [isAuthenticated]);
 
@@ -70,24 +85,14 @@ export default function LoginScreen() {
             }
 
             setAuth(user, access_token);
-            
-            // Redirect based on role
-            if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
-                router.replace('/(tabs)/home');
-            } else if (user?.role === 'BENGKEL') {
-                router.replace('/bengkel');
-            } else if (user?.role === 'JASA_ANGKUT') {
-                router.replace('/jasa-angkut');
-            } else if (user?.role === 'MOBIL') {
-                router.replace('/mobil');
-            } else {
-                router.replace('/(tabs)/home');
-            }
+            navigateByRole(router, user?.role);
         } catch (error: any) {
-            console.error('Login error:', error.response?.data || error.message);
+            if (__DEV__) {
+                console.error('Login error:', error.response?.data || error.message);
+            }
             Alert.alert(
                 'Gagal Masuk',
-                error.response?.data?.detail || 'Username atau password salah'
+                getSafeErrorMessage(error, 'Username atau password salah')
             );
         } finally {
             setLoading(false);

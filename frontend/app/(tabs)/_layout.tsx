@@ -1,6 +1,13 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function TabsLayout() {
+    const { isAuthenticated, hasHydrated } = useAuthStore();
+
+    if (hasHydrated && !isAuthenticated) {
+        return <Redirect href="/(auth)/login" />;
+    }
+
     return (
         <Tabs
             screenOptions={{

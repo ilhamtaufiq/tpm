@@ -25,28 +25,30 @@ export default function HomeScreen() {
 
     useFocusEffect(
         React.useCallback(() => {
+            if (!user) return;
+
             // Role Guard: Redirect specific roles away from Home
-            if (user?.role === 'BENGKEL') {
+            if (user.role === 'BENGKEL') {
                 router.replace('/bengkel');
                 return;
             }
-            if (user?.role === 'JASA_ANGKUT') {
+            if (user.role === 'JASA_ANGKUT') {
                 router.replace('/jasa-angkut');
                 return;
             }
-            if (user?.role === 'MOBIL') {
+            if (user.role === 'MOBIL') {
                 router.replace('/mobil');
                 return;
             }
 
-            queryClient.invalidateQueries();
+            queryClient.invalidateQueries({ queryKey: ['home'] });
         }, [queryClient, user, router])
     );
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await queryClient.invalidateQueries();
-        setTimeout(() => setRefreshing(false), 1000);
+        await queryClient.invalidateQueries({ queryKey: ['home'] });
+        setRefreshing(false);
     };
 
     return (

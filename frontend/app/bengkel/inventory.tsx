@@ -1336,8 +1336,8 @@ export default function InventoryScreen() {
                     snapPoints={['65%', '85%']}
                     enablePanDownToClose
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 32 }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 40 }}
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={setSheetIndex}
                 >
                     <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24, paddingTop: 12 }}>

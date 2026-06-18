@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,15 @@ import { useRouter } from 'expo-router';
 import api from '../../utils/api';
 import { Mail, ArrowLeft, Send } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const getSafeErrorMessage = (error: any, fallback: string): string => {
+    if (__DEV__) {
+        return error?.response?.data?.detail || fallback;
+    }
+    return fallback;
+};
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
@@ -20,15 +29,22 @@ export default function ForgotPasswordScreen() {
             return;
         }
 
+        if (!EMAIL_REGEX.test(email)) {
+            Alert.alert('Error', 'Format email tidak valid');
+            return;
+        }
+
         setLoading(true);
         try {
             await api.post('/auth/forgot-password', { email });
             setSent(true);
         } catch (error: any) {
-            console.error('Forgot password error:', error.response?.data || error.message);
+            if (__DEV__) {
+                console.error('Forgot password error:', error.response?.data || error.message);
+            }
             Alert.alert(
                 'Gagal',
-                error.response?.data?.detail || 'Gagal mengirim email reset password'
+                getSafeErrorMessage(error, 'Gagal mengirim email reset password')
             );
         } finally {
             setLoading(false);

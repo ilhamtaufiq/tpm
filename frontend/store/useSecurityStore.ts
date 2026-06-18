@@ -134,8 +134,14 @@ export const useSecurityStore = create<SecurityState>()(
                 useBiometrics: state.useBiometrics,
                 // We keep a backup of backend sync locally so app can boot immediately with last known state
                 isPinEnabled: state.isPinEnabled,
+                isLocked: state.isLocked,
                 protectedFeatures: state.protectedFeatures
             }),
+            onRehydrateStorage: () => (state) => {
+                if (state?.isPinEnabled) {
+                    state.isLocked = true;
+                }
+            },
         }
     )
 );

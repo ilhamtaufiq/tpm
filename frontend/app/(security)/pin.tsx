@@ -18,6 +18,10 @@ export default function PinScreen() {
         feature?: string
     }>();
 
+    // Validate redirect against whitelist
+    const SAFE_REDIRECTS = ['/(tabs)/home', '/bengkel', '/mobil', '/jasa-angkut', '/settings/profile'];
+    const safeRedirect = redirect && SAFE_REDIRECTS.includes(redirect) ? redirect : '/(tabs)/home';
+
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [oldPin, setOldPin] = useState('');
@@ -82,9 +86,8 @@ export default function PinScreen() {
                     unlockFeature(feature);
                 }
 
-                if (redirect) {
-                    const targetPath = redirect.startsWith('/') ? redirect : `/${redirect}`;
-                    router.replace(targetPath as any);
+                if (safeRedirect) {
+                    router.replace(safeRedirect as any);
                 } else {
                     router.replace('/(tabs)/home');
                 }
@@ -171,10 +174,9 @@ export default function PinScreen() {
                         unlockFeature(feature);
                     }
 
-                    if (redirect) {
+                    if (safeRedirect) {
                         // Redirect back to original target path
-                        const targetPath = redirect.startsWith('/') ? redirect : `/${redirect}`;
-                        router.replace(targetPath as any);
+                        router.replace(safeRedirect as any);
                     } else {
                         router.replace('/(tabs)/home');
                     }

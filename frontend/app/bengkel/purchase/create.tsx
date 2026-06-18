@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, TextInput, StatusBar, Modal, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCustomTabBarBottomPadding } from '../../../components/ui/CustomTabBar';
 import { Typography } from '../../../components/ui/Typography';
@@ -157,7 +157,7 @@ export default function PurchaseScreen() {
             } catch (error: any) {
                 const errorDetail = error.response?.data?.detail;
                 const message = typeof errorDetail === 'string' ? errorDetail : 'Gagal memuat detail pembelian';
-                alert(message);
+                Alert.alert('Error', message);
                 handleBack();
             } finally {
                 setIsLoadingDetail(false);

@@ -295,7 +295,7 @@ export default function JasaServisScreen() {
     );
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface" style={{ position: 'relative' }}>
             <StatusBar barStyle="light-content" />
 
             <Header
@@ -324,37 +324,38 @@ export default function JasaServisScreen() {
                     <ActivityIndicator size="large" color="#023C69" />
                 </View>
             ) : (
-                <FlatList
-                    data={jasaList}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={renderItem}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
-                    refreshControl={
-                        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#023C69" />
-                    }
-                    ListEmptyComponent={
-                        <View className="items-center justify-center py-20 mt-10">
-                            <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-4">
-                                <Tag size={32} color="#D1D5DB" />
+                <View className="flex-1" style={{ position: 'relative' }}>
+                    <FlatList
+                        data={jasaList}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={renderItem}
+                        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 10 }}
+                        refreshControl={
+                            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#023C69" />
+                        }
+                        ListEmptyComponent={
+                            <View className="items-center justify-center py-20 mt-10">
+                                <View className="w-20 h-20 bg-gray-50 rounded-full items-center justify-center mb-4">
+                                    <Tag size={32} color="#D1D5DB" />
+                                </View>
+                                <Typography className="text-gray-400 text-center font-medium">
+                                    Belum ada data jasa servis.{'\n'}Tap + untuk menambah.
+                                </Typography>
                             </View>
-                            <Typography className="text-gray-400 text-center font-medium">
-                                Belum ada data jasa servis.{'\n'}Tap + untuk menambah.
-                            </Typography>
-                        </View>
-                    }
-                />
-            )}
+                        }
+                    />
 
-            {/* FAB */}
-            <Pressable
-                onPress={() => handleOpenSheet()}
-                style={({ pressed }) => ({
-                    opacity: pressed ? 0.8 : 1
-                })}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl shadow-primary/40 border-4 border-white/20"
-            >
-                <Plus size={32} color="white" />
-            </Pressable>
+                    {/* Floating Action Button */}
+                    <Pressable
+                        onPress={() => handleOpenSheet()}
+                        style={{ position: 'absolute', right: 24, bottom: 100, elevation: 5, zIndex: 999, width: 64, height: 64 }}
+                        className="bg-primary rounded-[24px] items-center justify-center shadow-2xl elevation-8"
+                    >
+                        <Plus size={32} color="white" />
+                    </Pressable>
+
+                </View>
+            )}
 
             {/* Form UI - Platform Specific */}
             {Platform.OS === 'web' ? (
@@ -391,8 +392,8 @@ export default function JasaServisScreen() {
                     snapPoints={snapPoints}
                     enablePanDownToClose
                     backdropComponent={renderBackdrop}
-                    backgroundStyle={{ borderRadius: 32, backgroundColor: 'white' }}
-                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48 }}
+                    backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={(index) => setSheetVisible(index !== -1)}
                     onClose={() => setSheetVisible(false)}
                 >

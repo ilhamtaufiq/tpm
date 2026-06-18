@@ -47,6 +47,17 @@ export const parseNumber = (formattedValue: string): number => {
     return isNaN(num) ? 0 : num;
 };
 
+export const formatDateTime = (dateString: string): string => {
+    if (!dateString) return '-';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '-';
+        return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return '-';
+    }
+};
+
 export const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
     try {

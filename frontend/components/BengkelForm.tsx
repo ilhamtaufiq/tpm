@@ -987,8 +987,6 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 </View>
             )}
 
-            {true && (
-            <>
             <View className="mb-6">
                 <View className="flex-row justify-between items-center mb-3">
                     <View className="flex-row items-center">
@@ -1155,8 +1153,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                         )}
                     </>
                 )}
-            </View>
-
+                </View>
 
             {/* Total Summary */}
             <View className="mb-6">
@@ -1193,33 +1190,6 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                     )}
 
                     <View className="flex-row space-x-3 mb-4">
-                        {false && kategori !== 'jasa_angkut' && (
-                            <View className="flex-1">
-                                <View className="flex-row items-center justify-between mb-1 ml-1">
-                                    <Typography variant="caption" weight="semibold" className="text-gray-600">Diskon Total (Rp)</Typography>
-                                    <Pressable
-                                        onPress={() => {
-                                            const roundedTotal = Math.floor(total / 1000) * 1000;
-                                            const diff = total - roundedTotal;
-                                            if (diff > 0) {
-                                                setDiskon(formatNumber(diff.toString()));
-                                            }
-                                        }}
-                                    >
-                                        <Typography className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20">BULATKAN KE 1.000</Typography>
-                                    </Pressable>
-                                </View>
-                                <Input
-                                    placeholder="0"
-                                    keyboardType="numeric"
-                                    containerClassName="mb-0"
-                                    innerContainerClassName="!bg-white border-gray-100"
-                                    className="h-10 text-sm font-bold"
-                                    value={diskon}
-                                    onChangeText={(val) => setDiskon(formatNumber(val))}
-                                />
-                            </View>
-                        )}
                         <View className={`flex-1 justify-end items-end pb-2 ${kategori === 'jasa_angkut' ? 'items-start' : ''}`}>
                             <Typography variant="caption" className="text-gray-500 font-medium">Subtotal: {formatCurrency(total)}</Typography>
                         </View>
@@ -1299,8 +1269,6 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                     </View>
                 </Card>
             </View>
-            </>
-            )}
 
             {/* DP / Uang Muka — muncul di bawah total */}
             {kategori === 'umum' && !(kategori === 'jual_beli_mobil' && selectedMobil) && (

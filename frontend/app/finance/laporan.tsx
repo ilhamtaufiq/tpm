@@ -21,7 +21,7 @@ import {
     Info,
     X
 } from 'lucide-react-native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Input } from '../../components/ui/Input';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { keuanganService } from '../../services/keuangan';
@@ -75,6 +75,11 @@ export default function LaporanKeuanganScreen() {
     const setupSnapPoints = useMemo(() => ['75%', '90%'], []);
     const dateSnapPoints = useMemo(() => ['50%', '70%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     // Sync sheet with visible state
     useEffect(() => {
