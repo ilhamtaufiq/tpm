@@ -25,7 +25,7 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { formatCurrency } from '../../utils/format';
 
 const KATEGORI_FILTERS = [
@@ -447,7 +447,7 @@ export default function AssetScreen() {
     };
 
     return (
-        <View className="flex-1 bg-surface">
+        <View className="flex-1 bg-surface" style={{ position: 'relative' }}>
             <StatusBar barStyle="light-content" />
 
             <Header
@@ -502,16 +502,6 @@ export default function AssetScreen() {
                     )
                 }
             />
-
-            <Pressable
-                onPress={openAddForm}
-                style={({ pressed }) => ({
-                    opacity: pressed ? 0.8 : 1
-                })}
-                className="absolute bottom-10 right-6 w-16 h-16 bg-primary rounded-full items-center justify-center shadow-2xl border-4 border-white/20"
-            >
-                <Plus size={32} color="white" />
-            </Pressable>
 
             {Platform.OS === 'web' ? (
                 <Modal visible={sheetVisible} transparent={true} animationType="fade" onRequestClose={handleCloseSheet}>

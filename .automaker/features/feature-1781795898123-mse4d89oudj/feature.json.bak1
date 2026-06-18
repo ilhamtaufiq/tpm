@@ -1,0 +1,38 @@
+{
+  "category": "Bugs",
+  "description": "cek halaman master-data, bagian index sparepart, customer, jasa-servis, dan supplier. icon fab + pada halaman masing-masing tersebut tidak tampil. contoh halaman master-data/sparepart index sudah benar atau fix\n",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "branchName": "dev",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "verified",
+  "createdAt": "2026-06-18T15:18:18.122Z",
+  "startedAt": "2026-06-18T15:45:57.956Z",
+  "id": "feature-1781795898123-mse4d89oudj",
+  "descriptionHistory": [
+    {
+      "description": "cek halaman master-data, bagian index sparepart, customer, jasa-servis, dan supplier. icon fab + pada halaman masing-masing tersebut tidak tampi/muncul",
+      "timestamp": "2026-06-18T15:18:18.474Z",
+      "source": "initial"
+    },
+    {
+      "description": "cek halaman master-data, bagian index sparepart, customer, jasa-servis, dan supplier. icon fab + pada halaman masing-masing tersebut tidak tampil. contoh halaman master-data/sparepart index sudah benar atau fix\n",
+      "timestamp": "2026-06-18T15:45:57.261Z",
+      "source": "edit"
+    }
+  ],
+  "updatedAt": "2026-06-18T15:53:03.783Z",
+  "workMode": "custom",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "summary": "## Summary: Added Missing FABs to Master Data Pages\n\n### Changes Implemented\n- Added Floating Action Button (+) to `customer.tsx`, `jasa-servis.tsx`, and `supplier.tsx` for creating new entries\n- Each FAB uses identical styling: absolute bottom-right, 64x64, primary background, Plus icon\n- Wired to existing page-specific \"add\" functions\n- `sparepart.tsx` already had a working FAB (verified)\n\n### Files Modified\n- `frontend/app/master-data/customer.tsx`\n- `frontend/app/master-data/jasa-servis.tsx`\n- `frontend/app/master-data/supplier.tsx`\n\n### Notes for Developer\n- All root views already have `position: relative` — no extra layout fix needed\n- FAB placement is consistent across all 4 master-data index pages",
+  "justFinishedAt": "2026-06-18T15:53:03.783Z"
+}

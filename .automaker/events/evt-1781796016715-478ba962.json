@@ -1,0 +1,11 @@
+{
+  "id": "evt-1781796016715-478ba962",
+  "trigger": "feature_error",
+  "timestamp": "2026-06-18T15:20:16.715Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781795898123-mse4d89oudj",
+  "featureName": "",
+  "error": "Failed to parse output: [22:20:16.630] ERROR (#10954): failed {",
+  "errorType": "execution"
+}

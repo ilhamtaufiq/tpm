@@ -19,7 +19,7 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter, router, useLocalSearchParams } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { onlineManager } from '@tanstack/react-query';
 import { keuanganService, Piutang, PiutangSummary, PiutangStatus, PembayaranPiutang } from '../../services/keuangan';
 import { formatCurrency, formatDate, formatNumber, parseNumber } from '../../utils/format';
@@ -215,6 +215,11 @@ export default function PiutangUsahaScreen() {
     }, [piutangListRaw, mobilData, bengkelData, summary]);
 
     const piutangList = filteredList;
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     const handleGoBack = () => {
         if (router.canGoBack()) {
@@ -941,7 +946,9 @@ export default function PiutangUsahaScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
+                    backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
                     <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>
@@ -977,7 +984,9 @@ export default function PiutangUsahaScreen() {
                     enablePanDownToClose
                     keyboardBehavior="interactive"
                     keyboardBlurBehavior="restore"
+                    backdropComponent={renderBackdrop}
                     backgroundStyle={{ borderRadius: 48, backgroundColor: 'white' }}
+                    handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                     onChange={(index) => setIsSheetOpen(index !== -1)}
                 >
                     <BottomSheetScrollView contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>

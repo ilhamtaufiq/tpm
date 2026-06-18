@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter, router } from 'expo-router';
 import { Header } from '../../components/ui/Header';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, parseNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -39,6 +39,8 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { printReportHTML } from '../../utils/printReport';
+
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
 
 export default function PencairanInvestorScreen() {
     const insets = useSafeAreaInsets();
@@ -82,6 +84,11 @@ export default function PencairanInvestorScreen() {
         isLoading: isLoadingHistory, 
         refetch: refetchHistory 
     } = useInvestorDisbursementHistory({ search: search || undefined });
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -241,10 +248,10 @@ export default function PencairanInvestorScreen() {
                     htmlContent += `
                         <tr>
                             <td style="border: 1px solid #e5e7eb; padding: 12px;">${formatDate(activeTab === 'PENDING' ? item.tanggal_jual : item.tanggal)}</td>
-                            <td style="border: 1px solid #e5e7eb; padding: 12px;">${item.nama_investor || (item.transaksi?.mobil?.nama_investor || '-')}</td>
-                            <td style="border: 1px solid #e5e7eb; padding: 12px;">${item.mobil || (item.transaksi?.mobil?.merek + ' ' + item.transaksi?.mobil?.model || '-')}</td>
+                            <td style="border: 1px solid #e5e7eb; padding: 12px;">${escapeHtml(item.nama_investor || (item.transaksi?.mobil?.nama_investor || '-'))}</td>
+                            <td style="border: 1px solid #e5e7eb; padding: 12px;">${escapeHtml(item.mobil || (item.transaksi?.mobil?.merek + ' ' + item.transaksi?.mobil?.model || '-'))}</td>
                             <td style="border: 1px solid #e5e7eb; padding: 12px; text-align: right;">${formatCurrency(activeTab === 'PENDING' ? item.total_pencairan : item.nominal)}</td>
-                            ${activeTab === 'HISTORY' ? `<td style="border: 1px solid #e5e7eb; padding: 12px;">${item.metode_bayar}</td>` : ''}
+                            ${activeTab === 'HISTORY' ? `<td style="border: 1px solid #e5e7eb; padding: 12px;">${escapeHtml(item.metode_bayar)}</td>` : ''}
                         </tr>
                     `;
                 });
@@ -258,8 +265,8 @@ export default function PencairanInvestorScreen() {
             `;
 
             await printReportHTML(htmlContent, { 
-                title, 
-                dateRange: search ? `Pencarian: ${search}` : 'Semua Data' 
+                title,
+                dateRange: search ? `Pencarian: ${escapeHtml(search)}` : 'Semua Data'
             });
         } catch (error) {
             showAlert('Gagal', 'Terjadi kesalahan saat mengunduh laporan', 'error');

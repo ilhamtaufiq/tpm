@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
@@ -18,17 +18,65 @@ export default function OTPScreen() {
 
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, []);
+
+    const startCooldown = () => {
+        setCooldown(30);
+        intervalRef.current = setInterval(() => {
+            setCooldown((prev) => {
+                if (prev <= 1) {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleResend = async () => {
+        if (cooldown > 0) return;
+
+        const parsedUserId = parseInt(user_id as string, 10);
+        if (isNaN(parsedUserId)) {
+            Alert.alert('Error', 'ID pengguna tidak valid');
+            return;
+        }
+
+        try {
+            await api.post('/auth/resend-otp', { user_id: parsedUserId });
+            Alert.alert('Berhasil', 'Kode OTP telah dikirim ulang');
+            startCooldown();
+        } catch (error: any) {
+            if (__DEV__) {
+                console.error('Resend OTP error:', error.response?.data || error.message);
+            }
+            Alert.alert('Gagal', 'Gagal mengirim ulang kode OTP');
+        }
+    };
 
     const handleVerify = async () => {
-        if (otp.length < 4) {
-            Alert.alert('Error', 'Silakan masukkan kode OTP yang valid');
+        if (otp.length !== 6) {
+            Alert.alert('Error', 'Kode OTP harus 6 digit');
+            return;
+        }
+
+        const parsedUserId = parseInt(user_id as string, 10);
+        if (isNaN(parsedUserId)) {
+            Alert.alert('Error', 'ID pengguna tidak valid');
             return;
         }
 
         setLoading(true);
         try {
             const response = await api.post('/auth/verify-otp', {
-                user_id: parseInt(user_id as string),
+                user_id: parsedUserId,
                 otp_code: otp,
             });
 
@@ -36,11 +84,10 @@ export default function OTPScreen() {
             setAuth(user, access_token);
             router.replace('/(tabs)/home');
         } catch (error: any) {
-            console.error('OTP verification error:', error.response?.data || error.message);
-            Alert.alert(
-                'Gagal',
-                error.response?.data?.detail || 'Kode OTP salah atau sudah kadaluarsa'
-            );
+            if (__DEV__) {
+                console.error('OTP verification error:', error.response?.data || error.message);
+            }
+            Alert.alert('Gagal', 'Kode OTP salah atau sudah kadaluarsa');
         } finally {
             setLoading(false);
         }
@@ -63,7 +110,7 @@ export default function OTPScreen() {
                         <View className="absolute bottom-[-30] left-[-30] w-48 h-48 bg-white/5 rounded-full" />
 
                         <Pressable
-                            onPress={() => router.back()}
+                            onPress={() => router.replace('/(auth)/login')}
                             className="absolute top-16 left-6 p-2 rounded-full bg-white/10"
                         >
                             <ArrowLeft size={24} color="white" />
@@ -92,7 +139,7 @@ export default function OTPScreen() {
                                 keyboardType="number-pad"
                                 autoFocus
                                 value={otp}
-                                onChangeText={setOtp}
+                                onChangeText={(t) => setOtp(t.replace(/[^0-9]/g, ''))}
                                 className="text-center text-3xl font-bold tracking-[10px]"
                                 containerClassName="mb-8"
                                 maxLength={6}
@@ -108,8 +155,21 @@ export default function OTPScreen() {
                             />
 
                             <Pressable
-                                onPress={() => router.back()}
-                                className="mt-6 items-center"
+                                onPress={handleResend}
+                                disabled={cooldown > 0}
+                                className="mt-4 items-center"
+                            >
+                                <Typography variant="caption" weight="bold" className="text-textGray">
+                                    TIDAK MENERIMA KODE?{' '}
+                                    <Typography variant="caption" weight="bold" className={cooldown > 0 ? 'text-gray-400' : 'text-primary'}>
+                                        {cooldown > 0 ? `KIRIM ULANG (${cooldown}s)` : 'KIRIM ULANG'}
+                                    </Typography>
+                                </Typography>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={() => router.replace('/(auth)/login')}
+                                className="mt-4 items-center"
                             >
                                 <Typography variant="caption" weight="bold" className="text-textGray">
                                     BUKAN AKUN ANDA? <Typography variant="caption" weight="bold" className="text-primary">KEMBALI KE LOGIN</Typography>

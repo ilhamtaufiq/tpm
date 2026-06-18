@@ -28,6 +28,8 @@ import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function JasaAngkutReportScreen() {
@@ -803,8 +805,8 @@ export default function JasaAngkutReportScreen() {
                                             <div class="section-header" style="margin-top:30px;">RINCIAN TRIP (Group by ${groupBy.toUpperCase()})</div>
                                             ${groupedTrips.map(group => `
                                                 <div style="background-color: #f8fafc; padding: 10px; margin-top: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                                    <div style="font-weight: bold; font-size: 11px;">${group.title}</div>
-                                                    <div style="font-size: 9px; color: #64748b;">${group.subtitle || ''} • ${group.trips.length} Transaksi</div>
+                                                    <div style="font-weight: bold; font-size: 11px;">${escapeHtml(group.title)}</div>
+                                                    <div style="font-size: 9px; color: #64748b;">${escapeHtml(group.subtitle || '')} • ${group.trips.length} Transaksi</div>
                                                     <div style="font-size: 10px; margin-top: 5px;">Total Laba: <b>${formatCurrency(group.totalPendapatanTPM)}</b></div>
                                                 </div>
                                                 <table style="width:100%; border-collapse: collapse; margin-top:5px;">
@@ -820,11 +822,11 @@ export default function JasaAngkutReportScreen() {
                                                             <tr style="font-size: 9px; border-bottom: 1px solid #f1f5f9;">
                                                                 <td style="padding: 5px;">
                                                                     ${formatDate(trip.tanggal)}<br/>
-                                                                    <span style="font-size: 7px; color: #94a3b8;">${trip.nomor_transaksi}</span>
+                                                                    <span style="font-size: 7px; color: #94a3b8;">${escapeHtml(trip.nomor_transaksi)}</span>
                                                                 </td>
                                                                 <td style="padding: 5px;">
-                                                                    <b>${trip.asal} &rarr; ${trip.tujuan}</b><br/>
-                                                                    <span style="font-size: 8px; color: #64748b;">${trip.supir_nama}</span>
+                                                                    <b>${escapeHtml(trip.asal)} &rarr; ${escapeHtml(trip.tujuan)}</b><br/>
+                                                                    <span style="font-size: 8px; color: #64748b;">${escapeHtml(trip.supir_nama)}</span>
                                                                 </td>
                                                                 <td style="padding: 5px; text-align: right; font-weight: bold;">${formatCurrency(trip.laba_tpm || 0)}</td>
                                                             </tr>
@@ -878,8 +880,8 @@ export default function JasaAngkutReportScreen() {
                                             <div class="section-header" style="margin-top:30px;">RINCIAN TRIP (Group by ${groupBy.toUpperCase()})</div>
                                             ${groupedTrips.map(group => `
                                                 <div style="background-color: #f8fafc; padding: 10px; margin-top: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                                    <div style="font-weight: bold; font-size: 11px;">${group.title}</div>
-                                                    <div style="font-size: 9px; color: #64748b;">${group.subtitle || ''} • ${group.trips.length} Transaksi</div>
+                                                    <div style="font-weight: bold; font-size: 11px;">${escapeHtml(group.title)}</div>
+                                                    <div style="font-size: 9px; color: #64748b;">${escapeHtml(group.subtitle || '')} • ${group.trips.length} Transaksi</div>
                                                     <div style="font-size: 10px; margin-top: 5px;">Total Laba: <b>${formatCurrency(group.totalPendapatanTPM)}</b></div>
                                                 </div>
                                                 <table style="width:100%; border-collapse: collapse; margin-top:5px;">
@@ -895,11 +897,11 @@ export default function JasaAngkutReportScreen() {
                                                             <tr style="font-size: 9px; border-bottom: 1px solid #f1f5f9;">
                                                                 <td style="padding: 5px;">
                                                                     ${formatDate(trip.tanggal)}<br/>
-                                                                    <span style="font-size: 7px; color: #94a3b8;">${trip.nomor_transaksi}</span>
+                                                                    <span style="font-size: 7px; color: #94a3b8;">${escapeHtml(trip.nomor_transaksi)}</span>
                                                                 </td>
                                                                 <td style="padding: 5px;">
-                                                                    <b>${trip.asal} &rarr; ${trip.tujuan}</b><br/>
-                                                                    <span style="font-size: 8px; color: #64748b;">${trip.supir_nama}</span>
+                                                                    <b>${escapeHtml(trip.asal)} &rarr; ${escapeHtml(trip.tujuan)}</b><br/>
+                                                                    <span style="font-size: 8px; color: #64748b;">${escapeHtml(trip.supir_nama)}</span>
                                                                 </td>
                                                                 <td style="padding: 5px; text-align: right; font-weight: bold;">${formatCurrency(trip.laba_tpm || 0)}</td>
                                                             </tr>

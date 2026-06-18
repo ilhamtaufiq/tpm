@@ -21,7 +21,7 @@ import {
     Trash2,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet, { BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Platform, Modal } from 'react-native';
 
 import { sdmService, Karyawan, EmployeeStatus } from '../../services/sdm';
@@ -98,6 +98,11 @@ export default function KaryawanScreen() {
 
     const bottomSheetRef = useRef<BottomSheet>(null);
     const snapPoints = useMemo(() => ['75%', '90%'], []);
+
+    const renderBackdrop = useCallback(
+        (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />,
+        []
+    );
 
     const handleGoBack = () => {
         if (router.canGoBack()) {

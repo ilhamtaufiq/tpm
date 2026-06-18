@@ -1,6 +1,7 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 interface AuthState {
     user: any | null;
@@ -95,7 +96,20 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'auth-storage',
-            storage: createJSONStorage(() => AsyncStorage),
+            storage: createJSONStorage(() => {
+                if (Platform.OS === 'web') {
+                    return {
+                        getItem: async (key: string) => localStorage.getItem(key),
+                        setItem: async (key: string, value: string) => { localStorage.setItem(key, value); },
+                        removeItem: async (key: string) => localStorage.removeItem(key),
+                    };
+                }
+                return {
+                    getItem: SecureStore.getItemAsync,
+                    setItem: SecureStore.setItemAsync,
+                    removeItem: SecureStore.deleteItemAsync,
+                };
+            }),
             onRehydrateStorage: () => (state, error) => {
                 if (error) {
                     console.error('[Auth Store] Hydration error:', error);

@@ -19,7 +19,7 @@ import {
     Calendar,
     User
 } from 'lucide-react-native';
-import { useRouter, router, Redirect, useLocalSearchParams } from 'expo-router';
+import { router, Redirect, useLocalSearchParams } from 'expo-router';
 import { useKasBankList, useRecentActivity } from '../../hooks/useKeuangan';
 import { format, formatDistanceToNow } from 'date-fns';
 import { id as localeID } from 'date-fns/locale';
@@ -233,9 +233,9 @@ export default function HistoryTab() {
         }
 
         // Then apply search filter
-        return item.title.toLowerCase().includes(search.toLowerCase()) ||
-               item.subtitle.toLowerCase().includes(search.toLowerCase()) ||
-               item.source.toLowerCase().includes(search.toLowerCase()) ||
+        return (item.title || '').toLowerCase().includes(search.toLowerCase()) ||
+               (item.subtitle || '').toLowerCase().includes(search.toLowerCase()) ||
+               (item.source || '').toLowerCase().includes(search.toLowerCase()) ||
                (item.ref_number && item.ref_number.toLowerCase().includes(search.toLowerCase()))
     }) || [];
 

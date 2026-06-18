@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions, Pressable } from 'react-native';
+import { View, KeyboardAvoidingView, Platform, ScrollView, Alert, Pressable } from 'react-native';
 import { Typography } from '../../components/ui/Typography';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +8,15 @@ import api from '../../utils/api';
 import { Lock, Eye, EyeOff, Save, CheckCircle } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+
+const getSafeErrorMessage = (error: any, fallback: string): string => {
+    if (__DEV__) {
+        return error?.response?.data?.detail || fallback;
+    }
+    return fallback;
+};
+
 export default function ResetPasswordScreen() {
     const router = useRouter();
     const { token } = useLocalSearchParams();
@@ -15,6 +24,7 @@ export default function ResetPasswordScreen() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
@@ -24,13 +34,18 @@ export default function ResetPasswordScreen() {
             return;
         }
 
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Password konfirmasi tidak cocok');
+        if (password.length < 8) {
+            Alert.alert('Error', 'Password minimal 8 karakter');
             return;
         }
 
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password minimal 6 karakter');
+        if (!PASSWORD_REGEX.test(password)) {
+            Alert.alert('Error', 'Password harus mengandung huruf besar, huruf kecil, dan angka');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Password konfirmasi tidak cocok');
             return;
         }
 
@@ -47,10 +62,12 @@ export default function ResetPasswordScreen() {
             });
             setSuccess(true);
         } catch (error: any) {
-            console.error('Reset password error:', error.response?.data || error.message);
+            if (__DEV__) {
+                console.error('Reset password error:', error.response?.data || error.message);
+            }
             Alert.alert(
                 'Gagal',
-                error.response?.data?.detail || 'Gagal mereset password. Token mungkin sudah kadaluarsa.'
+                getSafeErrorMessage(error, 'Gagal mereset password. Token mungkin sudah kadaluarsa.')
             );
         } finally {
             setLoading(false);
@@ -126,10 +143,19 @@ export default function ResetPasswordScreen() {
                                     <Input
                                         label="Konfirmasi Password"
                                         placeholder="Masukkan kembali password baru"
-                                        secureTextEntry={!showPassword}
+                                        secureTextEntry={!showConfirmPassword}
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                         startIcon={<Lock size={18} color="#023C69" opacity={0.6} />}
+                                        endIcon={
+                                            <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                                {showConfirmPassword ? (
+                                                    <EyeOff size={18} color="#023C69" opacity={0.6} />
+                                                ) : (
+                                                    <Eye size={18} color="#023C69" opacity={0.6} />
+                                                )}
+                                            </Pressable>
+                                        }
                                         containerClassName="mb-8"
                                     />
 

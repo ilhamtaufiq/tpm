@@ -1,0 +1,30 @@
+{
+  "category": "Bugs",
+  "description": "scan typesctipt errors and fix",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "backlog",
+  "createdAt": "2026-06-18T15:34:54.403Z",
+  "id": "feature-1781796894404-1fya40cv8ss",
+  "descriptionHistory": [
+    {
+      "description": "scan typesctipt errors and fix",
+      "timestamp": "2026-06-18T15:34:54.448Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-06-18T15:34:56.335Z",
+  "updatedAt": "2026-06-18T16:29:42.220Z"
+}

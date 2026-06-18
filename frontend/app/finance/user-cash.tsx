@@ -309,7 +309,7 @@ export default function UserCashManagementScreen() {
                 snapPoints={snapPoints}
                 enablePanDownToClose
                 backdropComponent={renderBackdrop}
-                handleIndicatorStyle={{ backgroundColor: '#e2e8f0', width: 40 }}
+                handleIndicatorStyle={{ backgroundColor: '#E5E7EB', width: 48, height: 6 }}
                 onClose={() => setForm(null)}
             >
                 <BottomSheetScrollView contentContainerStyle={{ padding: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}>

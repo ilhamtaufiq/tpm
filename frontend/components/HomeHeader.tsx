@@ -24,13 +24,27 @@ export const HomeHeader = ({ onRefresh, refreshing = false }: HomeHeaderProps) =
     const filteredRoutes = useMemo(() => {
         if (!searchQuery.trim()) return [];
         const q = searchQuery.toLowerCase();
-        return APP_ROUTES.filter(route =>
-            route.label.toLowerCase().includes(q) ||
-            route.description.toLowerCase().includes(q) ||
-            route.category.toLowerCase().includes(q) ||
-            route.keywords.some(k => k.toLowerCase().includes(q))
-        ).slice(0, 10);
-    }, [searchQuery]);
+        const role = user?.role;
+
+        return APP_ROUTES.filter(route => {
+            // Role-based filtering (same logic as Header)
+            if (role !== 'ADMIN' && role !== 'MANAGER') {
+                if (role === 'BENGKEL') {
+                    if (route.category !== 'Bengkel' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                } else if (role === 'JASA_ANGKUT') {
+                    if (route.category !== 'Jasa Angkut' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                } else if (role === 'MOBIL') {
+                    if (route.category !== 'Mobil' && route.id !== 'profile' && !route.path.startsWith('/settings/')) return false;
+                }
+            }
+
+            // Search query filtering
+            return route.label.toLowerCase().includes(q) ||
+                route.description.toLowerCase().includes(q) ||
+                route.category.toLowerCase().includes(q) ||
+                route.keywords.some(k => k.toLowerCase().includes(q));
+        }).slice(0, 10);
+    }, [searchQuery, user?.role]);
 
     const handleNavigate = (path: string) => {
         setIsSearchOpen(false);

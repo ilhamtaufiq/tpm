@@ -7,6 +7,9 @@ import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera } from 'lucide-react-native';
 import { Button } from './Button';
 
+// Dynamic import type for html5-qrcode (web only)
+type Html5QrcodeType = any;
+
 interface BarcodeScannerModalProps {
     visible: boolean;
     onClose: () => void;
@@ -28,9 +31,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [torch, setTorch] = useState(false);
     const [laserPos, setLaserPos] = useState(0);
     const [movingDown, setMovingDown] = useState(true);
-    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware'>('camera');
+    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>('camera');
     const [hwInput, setHwInput] = useState('');
     const hwInputRef = useRef<TextInput>(null);
+
+    // html5-qrcode refs (web camera scanner)
+    const html5QrcodeRef = useRef<Html5QrcodeType>(null);
+    const webScannerContainerRef = useRef<View | null>(null);
+    const webScanInProgress = useRef(false);
 
     // Laser Animation Effect
     useEffect(() => {
@@ -50,21 +58,27 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     }, [visible, movingDown]);
 
     useEffect(() => {
-        if (visible && !permission?.granted && scannerMode === 'camera') {
-            requestPermission();
-        }
-        
+        let mounted = true;
+
+        const initializeScanner = async () => {
+            if (!mounted) return;
+
+            if (visible && !permission?.granted && scannerMode === 'camera') {
+                requestPermission();
+            }
+
+            // Load preferred mode
+            const saved = await AsyncStorage.getItem('@scanner_mode');
+            if (mounted && saved) setScannerMode(saved as any);
+        };
+
+        initializeScanner();
+
         // Auto-focus hardware input if visible
         if (visible) {
-            setTimeout(() => hwInputRef.current?.focus(), 500);
+            const timeoutId = setTimeout(() => hwInputRef.current?.focus(), 500);
+            return () => clearTimeout(timeoutId);
         }
-
-        // Load preferred mode
-        const loadMode = async () => {
-            const saved = await AsyncStorage.getItem('@scanner_mode');
-            if (saved) setScannerMode(saved as any);
-        };
-        if (visible) loadMode();
 
         // Browser compatibility check for 1D barcodes
         if (visible && Platform.OS === 'web' && (window as any).BarcodeDetector) {
@@ -72,10 +86,89 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 console.log(`[Scanner] Browser natively supports: ${formats.join(', ')}`);
             }).catch(console.error);
         }
+
+        return () => {
+            mounted = false;
+        };
     }, [visible, permission, scannerMode]);
 
+    // html5-qrcode lifecycle (web-camera mode)
+    useEffect(() => {
+        if (Platform.OS !== 'web' || scannerMode !== 'web-camera' || !visible) return;
+
+        let isCancelled = false;
+
+        const startWebScanner = async () => {
+            try {
+                // Dynamic import — only loaded on web, no native bundle impact
+                const { Html5Qrcode } = await import('html5-qrcode');
+
+                if (isCancelled) return;
+
+                const scannerId = 'web-scanner-reader';
+
+                // Ensure the DOM element exists before init
+                const container = document.getElementById(scannerId);
+                if (!container) {
+                    // Not mounted yet — retry briefly
+                    setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
+                    return;
+                }
+
+                const html5Qrcode = new Html5Qrcode(scannerId);
+                html5QrcodeRef.current = html5Qrcode;
+
+                await html5Qrcode.start(
+                    { facingMode: 'environment' },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                    },
+                    (decodedText: string) => {
+                        if (webScanInProgress.current) return;
+                        webScanInProgress.current = true;
+                        onScan(decodedText);
+                        // Short cooldown before allowing next scan
+                        setTimeout(() => {
+                            webScanInProgress.current = false;
+                        }, 1500);
+                    },
+                    () => {
+                        // Scan failure callback — ignore (fires on every frame with no barcode)
+                    }
+                );
+            } catch (err) {
+                console.error('[WebScanner] Failed to start html5-qrcode:', err);
+            }
+        };
+
+        startWebScanner();
+
+        return () => {
+            isCancelled = true;
+            if (html5QrcodeRef.current) {
+                html5QrcodeRef.current
+                    .stop()
+                    .then(() => {
+                        html5QrcodeRef.current?.clear();
+                        html5QrcodeRef.current = null;
+                    })
+                    .catch(() => {
+                        html5QrcodeRef.current = null;
+                    });
+            }
+        };
+    }, [visible, scannerMode, onScan]);
+
     const toggleScannerMode = async () => {
-        const newMode = scannerMode === 'camera' ? 'hardware' : 'camera';
+        let newMode: 'camera' | 'hardware' | 'web-camera';
+        if (Platform.OS === 'web') {
+            // Web: cycle 'hardware' ↔ 'web-camera'
+            newMode = scannerMode === 'hardware' ? 'web-camera' : 'hardware';
+        } else {
+            // Native: cycle 'camera' ↔ 'hardware'
+            newMode = scannerMode === 'camera' ? 'hardware' : 'camera';
+        }
         setScannerMode(newMode);
         await AsyncStorage.setItem('@scanner_mode', newMode);
         if (newMode === 'hardware') {
@@ -117,7 +210,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                 <StatusBar barStyle="light-content" />
                 
-                {!permission?.granted ? (
+                {!permission?.granted && scannerMode !== 'web-camera' ? (
                     <View style={styles.permissionContainer}>
                         <Typography variant="h3" weight="bold" className="text-center mb-4">Izin Kamera Diperlukan</Typography>
                         <Typography className="text-gray-500 text-center mb-8 px-10">
@@ -130,7 +223,35 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     </View>
                 ) : (
                     <View style={styles.cameraContainer}>
-                        {scannerMode === 'camera' ? (
+                        {scannerMode === 'web-camera' ? (
+                            <View className="flex-1 items-center justify-center bg-gray-900 px-4">
+                                {/* Web Camera Scanner via html5-qrcode */}
+                                <View className="w-full max-w-md">
+                                    <View className="items-center mb-4">
+                                        <View className="w-16 h-16 bg-blue-500/10 rounded-full items-center justify-center mb-4 border border-blue-500/20">
+                                            <Camera size={32} color="#3B82F6" strokeWidth={1} />
+                                        </View>
+                                        <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Web Camera</Typography>
+                                        <Typography className="text-gray-400 text-center text-sm">
+                                            Arahkan kamera ke barcode/QR code untuk memindai.
+                                        </Typography>
+                                    </View>
+                                    <View
+                                        // @ts-ignore — id is valid on web for html5-qrcode to attach
+                                        id="web-scanner-reader"
+                                        ref={webScannerContainerRef}
+                                        style={{
+                                            width: '100%',
+                                            height: 350,
+                                            borderRadius: 16,
+                                            overflow: 'hidden',
+                                            backgroundColor: '#000',
+                                            border: '2px solid rgba(59,130,246,0.3)',
+                                        }}
+                                    />
+                                </View>
+                            </View>
+                        ) : scannerMode === 'camera' ? (
                             <CameraView
                                 style={styles.camera}
                                 enableTorch={torch}
@@ -285,11 +406,16 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
                         {/* Controls */}
                         <View style={styles.header}>
-                            <Pressable 
-                                onPress={toggleScannerMode} 
+                            <Pressable
+                                onPress={toggleScannerMode}
                                 style={[styles.iconButton, { width: 'auto', paddingHorizontal: 16 }]}
                             >
                                 {scannerMode === 'camera' ? (
+                                    <View className="flex-row items-center">
+                                        <Scan size={18} color="white" />
+                                        <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Hardware</Typography>
+                                    </View>
+                                ) : scannerMode === 'web-camera' ? (
                                     <View className="flex-row items-center">
                                         <Scan size={18} color="white" />
                                         <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Hardware</Typography>

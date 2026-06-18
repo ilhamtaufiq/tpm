@@ -66,12 +66,10 @@ cd "$FRONTEND_DIR"
 npm install
 
 # ─── Prebuild (generate android/ folder) ────────────────────────
-if [ ! -d "$FRONTEND_DIR/android" ]; then
-    info "Menjalankan expo prebuild..."
-    npx expo prebuild --platform android --clean
-else
-    info "Folder android/ sudah ada, skip prebuild"
-fi
+info "Menjalankan expo prebuild (hapus lama + generate ulang)..."
+cd "$FRONTEND_DIR"
+rm -rf android
+npx expo prebuild --platform android --clean
 
 # ─── Build APK lokal ───────────────────────────────────────────
 info "Memulai build Android APK lokal..."

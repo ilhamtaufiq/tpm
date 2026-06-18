@@ -23,6 +23,8 @@ export default function FinanceTab() {
     const { quickAction } = useLocalSearchParams<{ quickAction?: string }>();
     const quickActionLockRef = React.useRef<string | null>(null);
 
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+
     useEffect(() => {
         if (quickAction !== 'mutasi' && quickAction !== 'expenses') return;
         if (quickActionLockRef.current === quickAction) return;
@@ -31,15 +33,15 @@ export default function FinanceTab() {
         router.push(quickAction === 'mutasi' ? '/finance/mutasi' : '/finance/expenses');
     }, [quickAction, router]);
 
-    if (!(user?.role === 'ADMIN' || user?.role === 'MANAGER')) {
+    if (!isAdmin) {
         return <Redirect href="/(tabs)/home" />;
     }
 
-    // API Hooks - Enable auto-refresh every 60 seconds
-    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(undefined, { });
-    const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary(undefined, { });
+    // API Hooks - Conditional query enabling based on auth state
+    const { data: dashboard, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useDashboardSummary(undefined);
+    const { data: piutangSummary, isLoading: isLoadingPiutang, refetch: refetchPiutang } = usePiutangSummary(undefined);
     const { data: hutangSummary, isLoading: isLoadingHutang, refetch: refetchHutang } = useHutangSummary();
-    const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary(undefined, { });
+    const { data: investorSummary, refetch: refetchInvestor } = useInvestorDisbursementSummary(undefined);
 
     const handleGoBack = () => {
         if (router.canGoBack()) {

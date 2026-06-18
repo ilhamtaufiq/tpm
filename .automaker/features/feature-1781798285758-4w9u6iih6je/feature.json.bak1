@@ -1,0 +1,29 @@
+{
+  "category": "Feature",
+  "description": "Audit & Standardize Receipt Print/Share Features, Add QZ Tray for Web\n\nAudit all existing receipt (struk) printing and sharing features across the application, then implement QZ Tray integration enabling direct thermal printing from web browsers.\n\nRequirements:\n- Audit all current receipt print/share flows (browser print, PDF, email, WhatsApp, image share) across both referenced features (`feature-1781795898123-mse4d89oudj`, `feature-1781796894404-1fya40cv8ss`)\n- Standardize receipt data schema and formatting consistency across all output methods\n- Integrate QZ Tray SDK (v2.x) into the web frontend for direct printer communication\n- Add a user-configurable toggle/setting: browser-native print vs. QZ Tray\n- Implement auto-detection of QZ Tray local service; show install prompt + download link if missing\n- Support printer discovery, selection UI, and connection status indicator\n- Configure digital certificate signing (QZ Tray trusted sources) to suppress browser security popups\n- Format receipt output for thermal printers (58mm and 80mm widths) using ESC/POS or raw commands\n- Implement graceful fallback: QZ Tray unavailable → standard browser print dialog or PDF download\n- Handle edge cases: printer offline, paper-out, connection timeouts, multiple printers\n- Ensure cross-browser compatibility (Chrome, Firefox, Edge) and mobile share flows remain intact\n- Validate printed output: alignment, font sizing, barcode/QR rendering, line truncation at paper width\n- Test across OS platforms (Windows, macOS, Linux) where QZ Tray behavior differs",
+  "title": "qz tray web",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "backlog",
+  "createdAt": "2026-06-18T15:58:05.757Z",
+  "id": "feature-1781798285758-4w9u6iih6je",
+  "descriptionHistory": [
+    {
+      "description": "Audit & Standardize Receipt Print/Share Features, Add QZ Tray for Web\n\nAudit all existing receipt (struk) printing and sharing features across the application, then implement QZ Tray integration enabling direct thermal printing from web browsers.\n\nRequirements:\n- Audit all current receipt print/share flows (browser print, PDF, email, WhatsApp, image share) across both referenced features (`feature-1781795898123-mse4d89oudj`, `feature-1781796894404-1fya40cv8ss`)\n- Standardize receipt data schema and formatting consistency across all output methods\n- Integrate QZ Tray SDK (v2.x) into the web frontend for direct printer communication\n- Add a user-configurable toggle/setting: browser-native print vs. QZ Tray\n- Implement auto-detection of QZ Tray local service; show install prompt + download link if missing\n- Support printer discovery, selection UI, and connection status indicator\n- Configure digital certificate signing (QZ Tray trusted sources) to suppress browser security popups\n- Format receipt output for thermal printers (58mm and 80mm widths) using ESC/POS or raw commands\n- Implement graceful fallback: QZ Tray unavailable → standard browser print dialog or PDF download\n- Handle edge cases: printer offline, paper-out, connection timeouts, multiple printers\n- Ensure cross-browser compatibility (Chrome, Firefox, Edge) and mobile share flows remain intact\n- Validate printed output: alignment, font sizing, barcode/QR rendering, line truncation at paper width\n- Test across OS platforms (Windows, macOS, Linux) where QZ Tray behavior differs",
+      "timestamp": "2026-06-18T15:58:05.806Z",
+      "source": "initial"
+    }
+  ],
+  "workMode": "custom"
+}

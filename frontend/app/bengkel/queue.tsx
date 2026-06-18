@@ -8,6 +8,7 @@ import {
     Modal,
     StatusBar,
     ActivityIndicator,
+    Alert,
     Platform,
     RefreshControl as RNRefreshControl
 } from 'react-native';
@@ -556,11 +557,11 @@ export default function QueueScreen() {
                                             <Typography variant="caption" weight="bold" className="ml-2 text-primary uppercase tracking-widest">Rincian Item</Typography>
                                         </View>
                                         <Typography variant="caption" className="text-textGray">
-                                            {(selectedItem?.detail_services?.length || selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || selectedItem?.detail_parts?.length || 0)} baris
+                                            {(selectedItem?.detail_services?.length || 0) + (selectedItem?.detail_parts?.length || 0)} baris
                                         </Typography>
                                     </View>
 
-                                    {((selectedItem?.detail_services || selectedItem?.detail_services) || []).map((s: any, idx: number) => (
+                                    {((selectedItem?.detail_services) || []).map((s: any, idx: number) => (
                                         <View key={`svc-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>{s.nama_jasa}</Typography>
@@ -570,7 +571,7 @@ export default function QueueScreen() {
                                         </View>
                                     ))}
 
-                                    {((selectedItem?.detail_parts || selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
+                                    {((selectedItem?.detail_parts) || []).map((p: any, idx: number) => (
                                         <View key={`part-${idx}`} className="flex-row justify-between items-center py-1.5 border-t border-gray-100">
                                             <View className="flex-1 mr-3">
                                                 <Typography variant="body2" weight="semibold" className="text-textMain" numberOfLines={1}>
@@ -699,8 +700,13 @@ export default function QueueScreen() {
                                 <View className="flex-row space-x-3 mb-4">
                                     <Pressable
                                         onPress={() => {
+                                            const token = selectedItem?.public_receipt_token;
+                                            if (!token) {
+                                                Alert.alert('Error', 'Struk tidak tersedia');
+                                                return;
+                                            }
                                             setDetailModalOpen(false);
-                                            router.push(`/receipt/bengkel/${selectedItem?.public_receipt_token || selectedItem.public_receipt_token}`);
+                                            router.push(`/receipt/bengkel/${token}`);
                                         }}
                                         className="flex-1 bg-primary py-3.5 rounded-xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
                                     >
@@ -712,11 +718,16 @@ export default function QueueScreen() {
                                 </View>
 
                                 {/* Share Struk Public */}
-                                {(selectedItem?.public_receipt_token || selectedItem.public_receipt_token) && (
+                                {selectedItem?.public_receipt_token && (
                                     <Pressable
                                         onPress={() => {
+                                            const token = selectedItem?.public_receipt_token;
+                                            if (!token) {
+                                                Alert.alert('Error', 'Struk tidak tersedia');
+                                                return;
+                                            }
                                             setDetailModalOpen(false);
-                                            router.push(`/receipt/bengkel/${selectedItem?.public_receipt_token || selectedItem.public_receipt_token}`);
+                                            router.push(`/receipt/bengkel/${token}`);
                                         }}
                                         className="bg-primary py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
                                     >

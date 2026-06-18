@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "notifications": [
+    {
+      "id": "ca803c40-befe-4fd9-aef6-39122480512f",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:18:59.229Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "1549b926-933f-40d5-affe-51d7b0b84a5d",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:18:59.231Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "271ec74b-9737-40f9-957b-fef2ae867c9b",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Failed to parse output: [22:20:16.630] ERROR (#10954): failed {",
+      "createdAt": "2026-06-18T15:20:16.715Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "b051ecee-5d95-4d7e-b33e-b4059b00d48c",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:21:27.073Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "e1ac32f3-4010-42aa-835f-b06175eb45f1",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:25:10.111Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "1b820f9f-4e3c-4883-9121-aa1c461e4697",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:26:20.636Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "b3f91cb7-d613-4dee-b689-ff347fb4cc42",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:30:58.608Z",
+      "read": false,
+      "dismissed": true,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "d0aa1e29-ed6d-4e68-8312-bbd37a5139a1",
+      "type": "feature_waiting_approval",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T15:39:58.362Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "d1603902-4ecc-4479-97ef-540373f5d8f0",
+      "type": "auto_mode_error",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T15:45:21.282Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "fcb3f2db-0fac-4b90-a860-f115e1726f75",
+      "type": "feature_waiting_approval",
+      "title": "feature-1781795898123-mse4d89oudj",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T15:53:03.804Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781795898123-mse4d89oudj",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "728f192f-c6a2-4f0c-8b9a-798d6cc0cf87",
+      "type": "auto_mode_error",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T15:54:34.486Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "3a2c7f5f-8c90-4dee-8f9b-5878a1dd99d9",
+      "type": "auto_mode_error",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T16:07:20.714Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "9e6f343b-a4be-4ffc-913c-06fc4e39475a",
+      "type": "auto_mode_error",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T16:08:55.561Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "c1fde244-cd71-4edb-b977-e89d3c6a9887",
+      "type": "auto_mode_error",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T16:09:14.768Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "2f6e7a5c-a2b5-4475-9f4e-fed2b79ee992",
+      "type": "auto_mode_error",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T16:29:42.235Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "evt-1781798069618-0e45c318",
+  "trigger": "feature_success",
+  "timestamp": "2026-06-18T15:54:29.619Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781795898123-mse4d89oudj",
+  "featureName": "",
+  "passes": true
+}

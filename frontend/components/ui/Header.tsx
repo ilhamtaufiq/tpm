@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut, Briefcase } from 'lucide-react-native';
+import { Search, Bell, User, X, ChevronRight, ChevronLeft, LogOut } from 'lucide-react-native';
 import { Typography } from './Typography';
 import { Pressable, View, Modal, TextInput, ScrollView, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -150,9 +150,6 @@ export const Header = ({
                         <View className="flex-1">
                             {variant === 'home' ? (
                                 <View className="flex-row items-center gap-3">
-                                    <View className="w-10 h-10 bg-gray-50 rounded-2xl items-center justify-center border border-gray-100">
-                                        <Briefcase size={20} color={themeColors.primary} />
-                                    </View>
                                     <Typography variant="h2" weight="bold" className="text-gray-900 tracking-tighter">
                                         TPM
                                     </Typography>

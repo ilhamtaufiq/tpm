@@ -1021,7 +1021,7 @@ export default function BengkelTransaksiScreen() {
                                     />
                                 </View>
                             ))}
-                            {openBillServiceList.filter(obs => !selectedServices[obs.item.id]).map(row => (
+                            {openBillServiceList.filter((obs: any) => !selectedServices[obs.item.id]).map((row: any) => (
                                 <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
                                     <View className="flex-row items-start">
                                         <Wrench size={18} color="#D97706" />
@@ -1041,7 +1041,7 @@ export default function BengkelTransaksiScreen() {
                                     </View>
                                     <QtyControl
                                         value={selectedServices[row.item.id]?.qty || row.qty}
-                                        color="amber"
+                                        color={"amber" as "blue" | "emerald"}
                                         onMinus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) - 1)}
                                         onPlus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) + 1)}
                                         onChangeQty={(qty) => setServiceQty(row.item.id, qty)}

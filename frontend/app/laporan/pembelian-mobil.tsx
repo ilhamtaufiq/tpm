@@ -22,6 +22,8 @@ import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PembelianMobilReportScreen() {
@@ -547,14 +549,14 @@ export default function PembelianMobilReportScreen() {
                                                                 ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
                                                             </td>
                                                             <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${item.merek} ${item.model}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_plat} • ${item.tahun}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}</span>
+                                                                <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_plat)} • ${escapeHtml(item.tahun)}</span><br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${escapeHtml(item.nama_investor)}`}</span>
                                                             </td>
                                                             <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.harga_beli || 0)}</td>
                                                             <td style="padding: 8px;">
                                                                 <span style="color: ${item.status === 'Tersedia' ? '#10b981' : item.status === 'Terjual' ? '#3b82f6' : '#f59e0b'}; font-weight: bold; font-size: 8px;">
-                                                                    ${item.status}
+                                                                    ${escapeHtml(item.status)}
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -622,14 +624,14 @@ export default function PembelianMobilReportScreen() {
                                                                 ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
                                                             </td>
                                                             <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${item.merek} ${item.model}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_plat} • ${item.tahun}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}</span>
+                                                                <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_plat)} • ${escapeHtml(item.tahun)}</span><br/>
+                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${escapeHtml(item.nama_investor)}`}</span>
                                                             </td>
                                                             <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.harga_beli || 0)}</td>
                                                             <td style="padding: 8px;">
                                                                 <span style="color: ${item.status === 'Tersedia' ? '#10b981' : item.status === 'Terjual' ? '#3b82f6' : '#f59e0b'}; font-weight: bold; font-size: 8px;">
-                                                                    ${item.status}
+                                                                    ${escapeHtml(item.status)}
                                                                 </span>
                                                             </td>
                                                         </tr>

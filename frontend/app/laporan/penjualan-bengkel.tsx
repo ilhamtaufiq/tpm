@@ -24,6 +24,8 @@ import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 
+const escapeHtml = (str) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+
 type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PenjualanBengkelReportScreen() {
@@ -605,11 +607,11 @@ export default function PenjualanBengkelReportScreen() {
                                                         <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
                                                             <td style="padding: 8px;">
                                                                 ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.nomor_transaksi}</span>
+                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
                                                             </td>
                                                             <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${item.customer_nama}</span><br/>
-                                                                <span style="color: #64748b; font-size: 9px;">${item.nomor_plat}</span>
+                                                                <span style="font-weight: bold;">${escapeHtml(item.customer_nama)}</span><br/>
+                                                                <span style="color: #64748b; font-size: 9px;">${escapeHtml(item.nomor_plat)}</span>
                                                             </td>
                                                             <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.grand_total || 0)}</td>
                                                             <td style="padding: 8px; color: #10b981; font-weight: bold;">${formatCurrency(item.laba_kotor || 0)}</td>
