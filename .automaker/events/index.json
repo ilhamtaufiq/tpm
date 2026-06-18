@@ -2,6 +2,38 @@
   "version": 1,
   "events": [
     {
+      "id": "evt-1781801661922-263ddca9",
+      "trigger": "feature_success",
+      "timestamp": "2026-06-18T16:54:21.922Z",
+      "featureName": "",
+      "featureId": "feature-1781796894404-1fya40cv8ss"
+    },
+    {
+      "id": "evt-1781801652488-ae8dc19f",
+      "trigger": "feature_success",
+      "timestamp": "2026-06-18T16:54:12.488Z",
+      "featureName": "",
+      "featureId": "feature-1781796894404-1fya40cv8ss"
+    },
+    {
+      "id": "evt-1781801634355-15b9b1fc",
+      "trigger": "auto_mode_complete",
+      "timestamp": "2026-06-18T16:53:54.358Z"
+    },
+    {
+      "id": "evt-1781801542791-570ec230",
+      "trigger": "feature_error",
+      "timestamp": "2026-06-18T16:52:22.792Z",
+      "featureName": "qz tray web",
+      "featureId": "feature-1781798285758-4w9u6iih6je"
+    },
+    {
+      "id": "evt-1781801380577-866594d5",
+      "trigger": "feature_success",
+      "timestamp": "2026-06-18T16:49:40.578Z",
+      "featureId": "feature-1781796894404-1fya40cv8ss"
+    },
+    {
       "id": "evt-1781800182234-15be2262",
       "trigger": "feature_error",
       "timestamp": "2026-06-18T16:29:42.234Z",

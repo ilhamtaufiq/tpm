@@ -94,7 +94,7 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 const targetId = savedPart?.id || form.id;
                 const fd = new FormData();
                 if (Platform.OS === 'web') { const r = await fetch(form.imageUri); fd.append('file', await r.blob(), 'image.jpg'); }
-                else { /* @ts-ignore */ fd.append('file', { uri: form.imageUri, name: 'image.jpg', type: 'image/jpeg' }); }
+                else { /* @ts-ignore */ fd.append('file', { uri: form.imageUri, name: 'image.jpg', type: 'image/jpeg' } as any); }
                 await uploadImageMutation.mutateAsync({ id: targetId!, formData: fd });
             }
             onSuccess?.();

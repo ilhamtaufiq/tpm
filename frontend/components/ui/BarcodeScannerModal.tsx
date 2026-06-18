@@ -101,6 +101,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         const startWebScanner = async () => {
             try {
                 // Dynamic import — only loaded on web, no native bundle impact
+                // @ts-expect-error -- dynamic import fine for web build
                 const { Html5Qrcode } = await import('html5-qrcode');
 
                 if (isCancelled) return;
@@ -246,7 +247,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             borderRadius: 16,
                                             overflow: 'hidden',
                                             backgroundColor: '#000',
-                                            border: '2px solid rgba(59,130,246,0.3)',
+                                            borderWidth: 2,
+                                            borderColor: 'rgba(59,130,246,0.3)',
+                                            borderStyle: 'solid',
                                         }}
                                     />
                                 </View>
