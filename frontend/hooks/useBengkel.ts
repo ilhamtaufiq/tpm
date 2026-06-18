@@ -116,6 +116,15 @@ export const useSparePartsList = (params?: any) => {
     });
 };
 
+export const useSparePartDetail = (id?: number | null, options?: any) => {
+    return useQuery({
+        queryKey: ['spare_parts_detail', id],
+        queryFn: () => bengkelService.getSparePartById(id as number),
+        enabled: !!id,
+        ...options,
+    });
+};
+
 export const useLowStockParts = () => {
     return useQuery({
         queryKey: ['spare_parts_low_stock'],

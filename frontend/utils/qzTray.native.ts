@@ -1,5 +1,7 @@
 import { QzPrintOptions } from './qzTray.types';
 
+export const QZ_TRAY_INSTALL_URL = 'https://qz.io/download/';
+
 export async function printHtmlViaQz(_html: string, _options: QzPrintOptions = {}): Promise<boolean> {
     return false;
 }
@@ -28,4 +30,8 @@ export async function testQzTrayConnection(): Promise<QzConnectionTestResult> {
 
 export async function getQzPrinters(): Promise<string[]> {
     return [];
+}
+
+export async function checkQzAvailability(): Promise<{ available: boolean; needsInstall: boolean; message: string }> {
+    return { available: false, needsInstall: false, message: 'QZ Tray hanya tersedia untuk web.' };
 }

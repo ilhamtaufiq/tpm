@@ -1,0 +1,11 @@
+{
+  "id": "evt-1781803462606-3aea35d9",
+  "trigger": "feature_error",
+  "timestamp": "2026-06-18T17:24:22.606Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781798285758-4w9u6iih6je",
+  "featureName": "qz tray web",
+  "error": "Operation was cancelled",
+  "errorType": "cancellation"
+}

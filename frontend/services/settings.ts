@@ -18,6 +18,7 @@ export interface PrintSettings {
     logo_uri?: string;
     show_qr_code?: boolean;
     paper_size?: string;
+    print_method?: 'browser' | 'qz';
 }
 
 export interface SystemSettings {

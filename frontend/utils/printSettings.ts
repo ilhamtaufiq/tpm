@@ -6,6 +6,7 @@ export interface PrintSettings {
     footer: string;
     logoUri: string | null;
     paperSize: '58mm' | '80mm';
+    printMethod: 'browser' | 'qz';
     webPrinterName: string;
     companyName: string;
     companyAddress: string;
@@ -20,6 +21,7 @@ const DEFAULT_SETTINGS: PrintSettings = {
     footer: 'Terima kasih telah menggunakan layanan kami',
     logoUri: 'tpm_default',
     paperSize: '80mm',
+    printMethod: 'browser',
     webPrinterName: '',
     companyName: 'TPM Business',
     companyAddress: 'Jl. Contoh No. 123, Jakarta',
@@ -79,7 +81,8 @@ export const printSettingsService = {
             footer: p.footer,
             logoUri: p.logo_uri,
             showQRCode: p.show_qr_code !== undefined ? p.show_qr_code : true,
-            paperSize: p.paper_size || '80mm'
+            paperSize: p.paper_size || '80mm',
+            printMethod: p.print_method || 'browser'
         };
     }
 };

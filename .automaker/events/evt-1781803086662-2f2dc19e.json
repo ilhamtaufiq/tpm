@@ -1,0 +1,11 @@
+{
+  "id": "evt-1781803086662-2f2dc19e",
+  "trigger": "feature_error",
+  "timestamp": "2026-06-18T17:18:06.662Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781802007291-z5151ktely",
+  "featureName": "",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

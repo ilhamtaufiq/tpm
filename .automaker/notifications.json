@@ -187,6 +187,105 @@
       "dismissed": false,
       "featureId": "feature-1781798285758-4w9u6iih6je",
       "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "3012d1f9-d425-4a1e-8374-d07c29149169",
+      "type": "feature_waiting_approval",
+      "title": "qz tray web",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T17:02:51.641Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "de8f4a41-d972-45be-a63d-2b967e4c7364",
+      "type": "feature_waiting_approval",
+      "title": "qz tray web",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T17:08:41.824Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "8001f59d-4196-4e0f-9e46-698eb2c0f13b",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T17:17:52.449Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "3d88b4dd-218a-4756-84ba-8ab357299e4e",
+      "type": "auto_mode_error",
+      "title": "feature-1781802007291-z5151ktely",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T17:18:06.663Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781802007291-z5151ktely",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "70959aa7-11bf-4b2a-bd89-0323ebfb8df6",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-18T17:21:29.353Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "f6598f05-a83e-4fa7-adf5-fff153ca3901",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T17:23:10.350Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "bcfe603f-5796-4f56-9611-c8ccf29ea42f",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T17:24:22.608Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "4b72a70f-b665-4d05-a052-7ae1cd8a7f60",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Claude Code process exited with code 3221226505",
+      "createdAt": "2026-06-18T17:25:13.486Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "c6630cc5-d9fd-42c3-a4da-35e6bd9fcc1b",
+      "type": "feature_waiting_approval",
+      "title": "feature-1781802007291-z5151ktely",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T17:33:29.022Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781802007291-z5151ktely",
+      "projectPath": "C:\\laragon\\www\\tpm"
     }
   ]
 }

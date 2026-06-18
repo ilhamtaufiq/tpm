@@ -2,23 +2,63 @@ import qz from 'qz-tray';
 import { QzPrintOptions } from './qzTray.types';
 
 let connectPromise: Promise<void> | null = null;
+let certInitialized = false;
+
+/** QZ Tray install URL for user download prompt */
+export const QZ_TRAY_INSTALL_URL = 'https://qz.io/download/';
+
+/**
+ * One-time security init: configure certificate/signing promises.
+ * If window.__QZ_SIGNING_URL is set (by backend config), uses that.
+ * Otherwise falls back to QZ built-in self-signing.
+ */
+async function initSecurity(): Promise<void> {
+    if (certInitialized) return;
+    certInitialized = true;
+    try {
+        const url = typeof window !== 'undefined' ? (window as any).__QZ_SIGNING_URL : undefined;
+        if (url) {
+            qz.security.setCertificatePromise(() => fetch(url).then(r => r.text()));
+            qz.security.setSignaturePromise((d: string) =>
+                fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: d }).then(r => r.text())
+            );
+        }
+    } catch { /* non-fatal */ }
+}
 
 async function ensureConnected(): Promise<void> {
     if (qz.websocket.isActive()) return;
-
     if (!connectPromise) {
+        await initSecurity();
         connectPromise = qz.websocket.connect({
             retries: 0,
             delay: 0,
             usingSecure: typeof window !== 'undefined' ? window.location.protocol === 'https:' : false
-        })
-            .then(() => undefined)
-            .finally(() => {
-                connectPromise = null;
-            });
+        }).then(() => undefined).finally(() => { connectPromise = null; });
     }
-
     await connectPromise;
+}
+
+/**
+ * Auto-detect QZ Tray availability.
+ * Returns { available, needsInstall, message }.
+ * Call on page load to show install prompt if missing.
+ */
+export async function checkQzAvailability(): Promise<{ available: boolean; needsInstall: boolean; message: string }> {
+    try {
+        await ensureConnected();
+        await qz.printers.find();
+        return { available: true, needsInstall: false, message: 'QZ Tray tersedia.' };
+    } catch (e: any) {
+        const msg = (e?.message || '').toLowerCase();
+        if (msg.includes('connect') || msg.includes('refused') || msg.includes('timed') || msg.includes('ws://')) {
+            return { available: false, needsInstall: true, message: 'QZ Tray tidak berjalan. Install atau jalankan QZ Tray di komputer Anda.' };
+        }
+        if (msg.includes('permit') || msg.includes('allow') || msg.includes('trust')) {
+            return { available: false, needsInstall: false, message: 'QZ Tray terdeteksi tetapi belum dipercaya. Izinkan sertifikat di QZ Tray.' };
+        }
+        return { available: false, needsInstall: true, message: e?.message || 'Gagal mendeteksi QZ Tray.' };
+    }
 }
 
 export async function printHtmlViaQz(html: string, options: QzPrintOptions = {}): Promise<boolean> {
