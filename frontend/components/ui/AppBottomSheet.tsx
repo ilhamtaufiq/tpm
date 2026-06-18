@@ -122,7 +122,7 @@ export const AppBottomSheet = forwardRef<AppBottomSheetRef, AppBottomSheetProps>
                         style={{
                             width: '100%',
                             maxWidth: webMaxWidth,
-                            height: webHeight,
+                            height: webHeight as any,
                             alignSelf: 'center',
                             borderTopLeftRadius: borderRadius + 16,
                             borderTopRightRadius: borderRadius + 16,

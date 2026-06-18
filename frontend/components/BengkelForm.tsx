@@ -1271,14 +1271,13 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             </View>
 
             {/* DP / Uang Muka — muncul di bawah total */}
-            {kategori === 'umum' && !(kategori === 'jual_beli_mobil' && selectedMobil) && (
+            {kategori === 'umum' && (
                 <View className="mb-6">
                     <Card className="bg-white border border-gray-100 p-6 rounded-[32px] shadow-sm">
                         <>
                             <View className="flex-row justify-between items-center mb-4">
                                 <Typography weight="semibold">Uang Muka / DP (Opsional)</Typography>
-                                {kategori !== 'jasa_angkut' && (
-                                    <Pressable
+                                <Pressable
                                         onPress={() => {
                                             setIsSplitPayment(!isSplitPayment);
                                             if (isSplitPayment) {
@@ -1291,11 +1290,10 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                             {isSplitPayment ? 'SPLIT AKTIF' : 'SPLIT PAYMENT?'}
                                         </Typography>
                                     </Pressable>
-                                )}
                             </View>
 
                             {/* Basic Mode: Single Payment */}
-                            {!isSplitPayment && kategori !== 'jasa_angkut' && (
+                            {!isSplitPayment && (
                                 <View className="mb-4">
                                     <Typography variant="caption" weight="semibold" className="text-gray-600 mb-2 ml-1">Sumber Pembayaran</Typography>
                                     <View className="flex-row space-x-2 mb-3">

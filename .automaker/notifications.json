@@ -165,6 +165,28 @@
       "dismissed": false,
       "featureId": "feature-1781796894404-1fya40cv8ss",
       "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "a950c458-8224-4b2c-8ac3-c59f76b8e837",
+      "type": "feature_waiting_approval",
+      "title": "feature-1781796894404-1fya40cv8ss",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T16:49:40.578Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781796894404-1fya40cv8ss",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "6ef13fbf-204d-4316-a2f9-f599ec7a0492",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T16:52:22.817Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
     }
   ]
 }

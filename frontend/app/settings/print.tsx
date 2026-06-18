@@ -255,10 +255,10 @@ p { font-size: 14px; margin: 5px 0; }
 <p>Test Print QZ Tray</p>
 <p>${new Date().toLocaleString('id-ID')}</p>
 <p style="margin-top:40px;font-size:20px;font-weight:bold;">✅ BERHASIL</p>
-<p style="font-size:12px;color:#666;">Printer: ${settings.webPrinterName || 'Default'}</p>
+<p style="font-size:12px;color:#666;">Printer: ${settings?.webPrinterName || 'Default'}</p>
 </body></html>`;
             const ok = await printHtmlViaQz(testHtml, {
-                printerName: settings.webPrinterName || undefined,
+                printerName: settings?.webPrinterName || undefined,
                 pageWidthPx: 302,
             });
             setDialogConfig({

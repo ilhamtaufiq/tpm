@@ -15,7 +15,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "backlog",
+  "status": "interrupted",
   "createdAt": "2026-06-18T15:58:05.757Z",
   "id": "feature-1781798285758-4w9u6iih6je",
   "descriptionHistory": [
@@ -38,5 +38,5 @@
   ],
   "workMode": "custom",
   "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/20",
-  "updatedAt": "2026-06-18T16:52:22.765Z"
+  "updatedAt": "2026-06-18T16:52:22.645Z"
 }
