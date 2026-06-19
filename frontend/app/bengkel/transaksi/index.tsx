@@ -19,6 +19,8 @@ import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 import { printReceipt, PrintReceiptData } from '../../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
 import { FILE_URL } from '../../../utils/api';
+import api from '../../../utils/api';
+import { useScanSound } from '../../../utils/sounds';
 
 type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
 type PaymentMode = 'TUNAI' | 'TRANSFER' | 'SPLIT';
