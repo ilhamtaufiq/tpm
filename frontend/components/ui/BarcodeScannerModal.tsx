@@ -102,7 +102,18 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             try {
                 // Dynamic import — only loaded on web, no native bundle impact
                 // @ts-expect-error -- dynamic import fine for web build
-                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+                const { Html5Qrcode, Html5QrcodeSupportedFormats: Fmts } = await import('html5-qrcode');
+
+                // Fallback: enum may be undefined in some bundlers — use hardcoded numeric values
+                const QR_CODE = Fmts?.QR_CODE ?? 0;
+                const CODE_128 = Fmts?.CODE_128 ?? 8;
+                const CODE_39 = Fmts?.CODE_39 ?? 12;
+                const EAN_13 = Fmts?.EAN_13 ?? 4;
+                const EAN_8 = Fmts?.EAN_8 ?? 5;
+                const UPC_A = Fmts?.UPC_A ?? 1;
+                const UPC_E = Fmts?.UPC_E ?? 2;
+                const DATA_MATRIX = Fmts?.DATA_MATRIX ?? 6;
+                const PDF_417 = Fmts?.PDF_417 ?? 11;
 
                 if (isCancelled) return;
 
