@@ -18,9 +18,15 @@ export default function PinScreen() {
         feature?: string
     }>();
 
-    // Validate redirect against whitelist
+    // Validate redirect against whitelist (include sub-paths)
     const SAFE_REDIRECTS = ['/(tabs)/home', '/bengkel', '/mobil', '/jasa-angkut', '/settings/profile'];
-    const safeRedirect = redirect && SAFE_REDIRECTS.includes(redirect) ? redirect : '/(tabs)/home';
+    const safeRedirect = redirect && (
+        SAFE_REDIRECTS.includes(redirect) ||
+        redirect.startsWith('/settings/') ||
+        redirect.startsWith('/bengkel/') ||
+        redirect.startsWith('/mobil/') ||
+        redirect.startsWith('/jasa-angkut/')
+    ) ? redirect : '/(tabs)/home';
 
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
