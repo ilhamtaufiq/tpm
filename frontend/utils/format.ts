@@ -33,8 +33,9 @@ export const formatCurrency = (amount: any): string => {
 
 export const formatNumber = (value: string | number): string => {
     if (value === undefined || value === null || value === '' || value === '0') return '0';
-    // Strip decimal part first — "10000.00" → "10000", not "1000000"
-    const mainPart = String(value).split('.')[0];
+    const strVal = String(value);
+    // Only strip decimal for pure float from API ("10000.00"), NOT Indonesian thousands ("100.000")
+    const mainPart = /^\d+\.\d+$/.test(strVal) ? strVal.split('.')[0] : strVal;
     const cleaned = mainPart.replace(/[^0-9]/g, '');
     if (cleaned === '' || cleaned === '0') return '0';
     const num = parseInt(cleaned, 10);

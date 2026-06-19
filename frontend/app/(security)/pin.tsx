@@ -18,15 +18,18 @@ export default function PinScreen() {
         feature?: string
     }>();
 
+    // Decode URL-encoded redirect param (e.g. %2Fsettings%2Freset → /settings/reset)
+    const decodedRedirect = redirect ? decodeURIComponent(redirect) : undefined;
+
     // Validate redirect against whitelist (include sub-paths)
     const SAFE_REDIRECTS = ['/(tabs)/home', '/bengkel', '/mobil', '/jasa-angkut', '/settings/profile'];
-    const safeRedirect = redirect && (
-        SAFE_REDIRECTS.includes(redirect) ||
-        redirect.startsWith('/settings/') ||
-        redirect.startsWith('/bengkel/') ||
-        redirect.startsWith('/mobil/') ||
-        redirect.startsWith('/jasa-angkut/')
-    ) ? redirect : '/(tabs)/home';
+    const safeRedirect = decodedRedirect && (
+        SAFE_REDIRECTS.includes(decodedRedirect) ||
+        decodedRedirect.startsWith('/settings/') ||
+        decodedRedirect.startsWith('/bengkel/') ||
+        decodedRedirect.startsWith('/mobil/') ||
+        decodedRedirect.startsWith('/jasa-angkut/')
+    ) ? decodedRedirect : '/(tabs)/home';
 
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');

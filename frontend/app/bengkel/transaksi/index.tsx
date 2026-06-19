@@ -140,6 +140,7 @@ export default function BengkelTransaksiScreen() {
     });
     const hydratedTransactionIdRef = useRef<number | null>(null);
     const paymentActionOpenedRef = useRef<number | null>(null);
+    const { playSuccess, playError } = useScanSound();
     const tabBarHeight = getCustomTabBarHeight(insets.bottom);
     const transaksiMode = mode === 'sparepart' ? 'sparepart' : mode === 'servis' ? 'servis' : 'all';
     const showParts = transaksiMode !== 'servis';
@@ -462,6 +463,7 @@ export default function BengkelTransaksiScreen() {
             showNotice('error', 'Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
             return;
         }
+        playSuccess();
         setSelectedParts(prev => {
             const existing = prev[part.id];
             return { ...prev, [part.id]: { item: part, qty: existing ? existing.qty + 1 : 1 } };
@@ -474,7 +476,7 @@ export default function BengkelTransaksiScreen() {
         }, ...prev]);
     };
 
-    const handleScan = (scannedData: string) => {
+    const handleScan = async (scannedData: string) => {
         const clean = scannedData.trim();
         let part = parts.find((p: any) => p.kode === clean || p.kode_part === clean);
         if (!part) {
@@ -486,6 +488,17 @@ export default function BengkelTransaksiScreen() {
         }
         if (part) addScannedPart(part);
         else {
+            // Fallback: query API directly (bypass pagination)
+            try {
+                const res = await api.get('/spare-parts', { params: { limit: 1, search: clean } });
+                const rows = res.data?.data;
+                if (rows?.length) {
+                    const found = Array.isArray(rows) ? rows[0] : rows;
+                    addScannedPart(found);
+                    return;
+                }
+            } catch {}
+            playError();
             showNotice('error', 'Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di data sparepart.`);
             setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
         }
