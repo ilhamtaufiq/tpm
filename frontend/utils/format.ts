@@ -33,7 +33,9 @@ export const formatCurrency = (amount: any): string => {
 
 export const formatNumber = (value: string | number): string => {
     if (value === undefined || value === null || value === '' || value === '0') return '0';
-    const cleaned = typeof value === 'string' ? value.replace(/[^0-9]/g, '') : String(value);
+    // Strip decimal part first — "10000.00" → "10000", not "1000000"
+    const mainPart = String(value).split('.')[0];
+    const cleaned = mainPart.replace(/[^0-9]/g, '');
     if (cleaned === '' || cleaned === '0') return '0';
     const num = parseInt(cleaned, 10);
     if (isNaN(num)) return '0';
