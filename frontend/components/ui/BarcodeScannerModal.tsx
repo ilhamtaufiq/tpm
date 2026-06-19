@@ -102,7 +102,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             try {
                 // Dynamic import — only loaded on web, no native bundle impact
                 // @ts-expect-error -- dynamic import fine for web build
-                const { Html5Qrcode } = await import('html5-qrcode');
+                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
 
                 if (isCancelled) return;
 
@@ -124,6 +124,17 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
+                        formatsToSupport: [
+                            Html5QrcodeSupportedFormats.QR_CODE,
+                            Html5QrcodeSupportedFormats.CODE_128,
+                            Html5QrcodeSupportedFormats.CODE_39,
+                            Html5QrcodeSupportedFormats.EAN_13,
+                            Html5QrcodeSupportedFormats.EAN_8,
+                            Html5QrcodeSupportedFormats.UPC_A,
+                            Html5QrcodeSupportedFormats.UPC_E,
+                            Html5QrcodeSupportedFormats.DATA_MATRIX,
+                            Html5QrcodeSupportedFormats.PDF_417,
+                        ],
                     },
                     (decodedText: string) => {
                         if (webScanInProgress.current) return;
