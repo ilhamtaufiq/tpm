@@ -1,0 +1,31 @@
+{
+  "category": "Uncategorized",
+  "description": "**Implement Stock Validation with Visual Feedback in BarcodeScannerModal**\n\nThe barcode scanner modal on the transaction/index page currently allows adding item quantities that exceed available stock — scanning 12 times adds volume 12 even when stock is only 4. The modal may also show an inconsistent red state that doesn't correlate with actual blocking behavior.\n\n**Core behavior to fix:**\n- Before every barcode scan, validate that `current_quantity_in_transaction + scanned_quantity <= available_stock`\n- If the scan would exceed remaining stock: block the addition, set modal to red/warning state, and display a clear message showing available stock (e.g., \"Stock tersedia: 4, tidak dapat menambah 8 lagi\")\n- If partial stock remains (e.g., stock 4, already added 2), allow the next scan up to the remaining balance (2 more), then block subsequent scans\n- For zero stock: block all additions immediately and show out-of-stock indicator\n- The red state must be tied to the validation result for the current item — it should reset when the user closes the modal or switches to a different item\n\n**Requirements:**\n\n*Validation logic*\n- Compare requested quantity against available stock at each scan event (real-time, not deferred to transaction finalization)\n- Deduct items already added within the current transaction session from available stock for validation purposes\n- Apply the same stock cap to manual quantity input fields in the same modal\n\n*User feedback*\n- Red visual state on the modal (border, badge, or background) when the stock limit is hit for the current item\n- Display remaining stock information prominently in the modal\n- Show a clear, dismissable error message with format: \"Stok tidak mencukupi. Tersedia: [X], diminta: [Y]\"\n- The error state must clear correctly when the user scans a different item or closes the modal\n- Do not block the modal from opening or items from being displayed — only block quantity increments beyond stock\n\n*Edge cases*\n- Stock = 0: reject all scans, show out-of-stock indicator\n- Stock changes mid-session (concurrent tab/transaction): re-validate against current stock data on each scan\n- Rapid repeated scans: debounce scan events to prevent race conditions\n- Multiple different items in one transaction: validate per-item independently\n- Exact stock match first scan: allow, then block subsequent scans for that item\n- Manual quantity entry: cap at available stock with same validation and visual feedback\n\n*State management*\n- Reset validation state (red indicator, error message) when the modal transitions to a new item or is dismissed\n- Ensure the modal does not get stuck in an error state that prevents normal operation for subsequent items",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "waiting_approval",
+  "createdAt": "2026-06-21T08:55:13.159Z",
+  "startedAt": "2026-06-21T08:55:13.159Z",
+  "id": "feature-1782032113159-alp858uh3h",
+  "descriptionHistory": [
+    {
+      "description": "**Implement Stock Validation with Visual Feedback in BarcodeScannerModal**\n\nThe barcode scanner modal on the transaction/index page currently allows adding item quantities that exceed available stock — scanning 12 times adds volume 12 even when stock is only 4. The modal may also show an inconsistent red state that doesn't correlate with actual blocking behavior.\n\n**Core behavior to fix:**\n- Before every barcode scan, validate that `current_quantity_in_transaction + scanned_quantity <= available_stock`\n- If the scan would exceed remaining stock: block the addition, set modal to red/warning state, and display a clear message showing available stock (e.g., \"Stock tersedia: 4, tidak dapat menambah 8 lagi\")\n- If partial stock remains (e.g., stock 4, already added 2), allow the next scan up to the remaining balance (2 more), then block subsequent scans\n- For zero stock: block all additions immediately and show out-of-stock indicator\n- The red state must be tied to the validation result for the current item — it should reset when the user closes the modal or switches to a different item\n\n**Requirements:**\n\n*Validation logic*\n- Compare requested quantity against available stock at each scan event (real-time, not deferred to transaction finalization)\n- Deduct items already added within the current transaction session from available stock for validation purposes\n- Apply the same stock cap to manual quantity input fields in the same modal\n\n*User feedback*\n- Red visual state on the modal (border, badge, or background) when the stock limit is hit for the current item\n- Display remaining stock information prominently in the modal\n- Show a clear, dismissable error message with format: \"Stok tidak mencukupi. Tersedia: [X], diminta: [Y]\"\n- The error state must clear correctly when the user scans a different item or closes the modal\n- Do not block the modal from opening or items from being displayed — only block quantity increments beyond stock\n\n*Edge cases*\n- Stock = 0: reject all scans, show out-of-stock indicator\n- Stock changes mid-session (concurrent tab/transaction): re-validate against current stock data on each scan\n- Rapid repeated scans: debounce scan events to prevent race conditions\n- Multiple different items in one transaction: validate per-item independently\n- Exact stock match first scan: allow, then block subsequent scans for that item\n- Manual quantity entry: cap at available stock with same validation and visual feedback\n\n*State management*\n- Reset validation state (red indicator, error message) when the modal transitions to a new item or is dismissed\n- Ensure the modal does not get stuck in an error state that prevents normal operation for subsequent items",
+      "timestamp": "2026-06-21T08:55:13.196Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-06-21T09:05:29.923Z",
+  "justFinishedAt": "2026-06-21T09:05:29.923Z"
+}

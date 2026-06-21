@@ -15,7 +15,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "in_progress",
+  "status": "waiting_approval",
   "createdAt": "2026-06-21T08:22:47.657Z",
   "startedAt": "2026-06-21T08:26:38.948Z",
   "id": "feature-1782030167657-ntztsugiax9",
@@ -27,6 +27,6 @@
     }
   ],
   "summary": "## Summary: Uncaught Error - useCallback is not defined\n\n### Changes Implemented\n- Added `useCallback` to the React named imports in BarcodeScannerModal.tsx\n\n### Files Modified\n- `frontend/components/ui/BarcodeScannerModal.tsx`\n\n### Notes for Developer\n- N/A",
-  "updatedAt": "2026-06-21T08:24:18.950Z",
-  "justFinishedAt": "2026-06-21T08:24:18.950Z"
+  "updatedAt": "2026-06-21T08:28:58.395Z",
+  "justFinishedAt": "2026-06-21T08:28:58.395Z"
 }

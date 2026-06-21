@@ -4,25 +4,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
-import { X, Zap, ZapOff, Scan, Camera, AlertTriangle } from 'lucide-react-native';
+import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;
 
+type ScanMatch = 'none' | 'match' | 'no-match';
+
 interface BarcodeScannerModalProps {
     visible: boolean;
     onClose: () => void;
-    onScan: (data: string) => void;
+    onScan: (data: string) => boolean | Promise<boolean>;
     scanLog?: { id: string; title: string; subtitle?: string; timestamp: number }[];
     continuous?: boolean;
 }
 
-export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({ 
-    visible, 
-    onClose, 
-    onScan, 
+export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
+    visible,
+    onClose,
+    onScan,
     scanLog = [],
     continuous = false
 }) => {
@@ -50,6 +52,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [webFlashVisible, setWebFlashVisible] = useState(false);
     const flashAnim = useRef(new Animated.Value(0)).current;
 
+    // Scan match indicator state
+    const [scanMatch, setScanMatch] = useState<ScanMatch>('none');
+    const scanMatchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const triggerWebFlash = useCallback(() => {
         setWebFlashVisible(true);
         flashAnim.setValue(0);
@@ -61,6 +67,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             setWebFlashVisible(false);
         });
     }, [flashAnim]);
+
+    const showScanMatch = useCallback((match: ScanMatch) => {
+        if (scanMatchTimer.current) clearTimeout(scanMatchTimer.current);
+        setScanMatch(match);
+        scanMatchTimer.current = setTimeout(() => {
+            setScanMatch('none');
+        }, 1500);
+    }, []);
 
     // Laser Animation Effect
     useEffect(() => {
@@ -114,7 +128,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         };
     }, [visible, permission, scannerMode]);
 
-    // html5-qrcode lifecycle (web-camera mode)
+    // html5-qrcode lifecycle (web-camera mode) — Code 128 fix
     useEffect(() => {
         if (Platform.OS !== 'web' || scannerMode !== 'web-camera' || !visible) return;
 
@@ -124,18 +138,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             try {
                 // Dynamic import — only loaded on web, no native bundle impact
                 // @ts-expect-error -- dynamic import fine for web build
-                const { Html5Qrcode, Html5QrcodeSupportedFormats: Fmts } = await import('html5-qrcode');
-
-                // Fallback: enum may be undefined in some bundlers — use hardcoded numeric values
-                const QR_CODE = Fmts?.QR_CODE ?? 0;
-                const CODE_128 = Fmts?.CODE_128 ?? 8;
-                const CODE_39 = Fmts?.CODE_39 ?? 12;
-                const EAN_13 = Fmts?.EAN_13 ?? 4;
-                const EAN_8 = Fmts?.EAN_8 ?? 5;
-                const UPC_A = Fmts?.UPC_A ?? 1;
-                const UPC_E = Fmts?.UPC_E ?? 2;
-                const DATA_MATRIX = Fmts?.DATA_MATRIX ?? 6;
-                const PDF_417 = Fmts?.PDF_417 ?? 11;
+                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
 
                 if (isCancelled) return;
 
@@ -169,10 +172,22 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             Html5QrcodeSupportedFormats.PDF_417,
                         ],
                     },
-                    (decodedText: string) => {
+                    async (decodedText: string) => {
                         if (webScanInProgress.current) return;
                         webScanInProgress.current = true;
-                        onScan(decodedText);
+                        try {
+                            const matched = await onScan(decodedText);
+                            if (matched) {
+                                playSuccess();
+                                showScanMatch('match');
+                            } else {
+                                playError();
+                                showScanMatch('no-match');
+                            }
+                        } catch {
+                            playError();
+                            showScanMatch('no-match');
+                        }
                         // Short cooldown before allowing next scan
                         setTimeout(() => {
                             webScanInProgress.current = false;
@@ -182,8 +197,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         // Scan failure callback — ignore (fires on every frame with no barcode)
                     }
                 );
-            } catch (err) {
+            } catch (err: any) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
+                setWebCameraError(err?.message || 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
             }
         };
 
@@ -203,7 +219,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     });
             }
         };
-    }, [visible, scannerMode, onScan]);
+    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch]);
 
     const toggleScannerMode = async () => {
         let newMode: 'camera' | 'hardware' | 'web-camera';
@@ -221,28 +237,40 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         }
     };
 
-    const handleBarCodeScanned = (result: { type: string, data: string }) => {
+    const handleBarCodeScanned = async (result: { type: string, data: string }) => {
         if (scanned) return;
-        // console.log(`[Scanner] Scanned type: ${result.type}, data: ${result.data}`);
         setScanned(true);
-        onScan(result.data);
+        try {
+            const matched = await onScan(result.data);
+            if (matched) {
+                playSuccess();
+                showScanMatch('match');
+            } else {
+                playError();
+                showScanMatch('no-match');
+            }
+        } catch {
+            playError();
+            showScanMatch('no-match');
+        }
         // In continuous mode, use shorter cooldown (1s) so user can scan rapidly
         // In single-scan mode, use 2s cooldown
         const cooldown = continuous ? 1000 : 2000;
-        setTimeout(() => setScanned(false), cooldown);
+        setTimeout(() => {
+            setScanned(false);
+        }, cooldown);
     };
 
     // Stable settings object to prevent unnecessary re-renders/scanner resets
-    // Some browsers on Web require explicit types to activate the 1D detection engine
     const scannerSettings = useMemo(() => ({
         barcodeTypes: [
-            "qr", 
-            "ean13", 
-            "ean8", 
-            "code128", 
-            "code39", 
-            "upc_a", 
-            "upc_e", 
+            "qr",
+            "ean13",
+            "ean8",
+            "code128",
+            "code39",
+            "upc_a",
+            "upc_e",
             "datamatrix",
             "pdf417"
         ] as any[],
@@ -254,7 +282,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         <View style={[StyleSheet.absoluteFill, { zIndex: 10000, backgroundColor: 'black' }]}>
             <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
                 <StatusBar barStyle="light-content" />
-                
+
                 {!permission?.granted && scannerMode !== 'web-camera' ? (
                     <View style={styles.permissionContainer}>
                         <Typography variant="h3" weight="bold" className="text-center mb-4">Izin Kamera Diperlukan</Typography>
@@ -268,7 +296,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     </View>
                 ) : (
                     <View style={styles.cameraContainer}>
-                        {scannerMode === 'web-camera' ? (
+                        {webCameraError ? (
+                            <View className="flex-1 items-center justify-center bg-gray-900 px-10">
+                                <View className="w-20 h-20 bg-red-500/10 rounded-full items-center justify-center mb-6 border border-red-500/20">
+                                    <AlertTriangle size={40} color="#EF4444" strokeWidth={1} />
+                                </View>
+                                <Typography variant="h3" weight="bold" className="text-white text-center mb-3">Kamera Tidak Tersedia</Typography>
+                                <Typography className="text-gray-400 text-center mb-8">{webCameraError}</Typography>
+                                <View className="flex-row space-x-3">
+                                    <Button title="Coba Lagi" variant="primary" onPress={() => { setWebCameraError(null); }} />
+                                    <Button title="Tutup" variant="secondary" onPress={onClose} />
+                                </View>
+                            </View>
+                        ) : scannerMode === 'web-camera' ? (
                             <View className="flex-1 items-center justify-center bg-gray-900 px-4">
                                 {/* Web Camera Scanner via html5-qrcode */}
                                 <View className="w-full max-w-md">
@@ -292,10 +332,18 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             overflow: 'hidden',
                                             backgroundColor: '#000',
                                             borderWidth: 2,
-                                            borderColor: 'rgba(59,130,246,0.3)',
+                                            borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
                                             borderStyle: 'solid',
                                         }}
                                     />
+                                    {/* A11y: screen reader announces scan results */}
+                                    <View
+                                        aria-live="assertive"
+                                        aria-atomic="true"
+                                        style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
+                                    >
+                                        {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                    </View>
                                 </View>
                             </View>
                         ) : scannerMode === 'camera' ? (
@@ -308,11 +356,11 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 {/* Overlay */}
                                 <View style={styles.overlay}>
                                     <View style={styles.unfocusedContainer}>
-                                        {/* Continuous Mode Badge */}
+                                        {/* Item Scan Mode Badge */}
                                         {continuous && (
                                             <View style={{ position: 'absolute', bottom: 8, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}>
                                                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
-                                                <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>CONTINUOUS SCAN</Typography>
+                                                <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
                                                 {scanLog.length > 0 && (
                                                     <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
                                                         <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
@@ -328,13 +376,25 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             <View style={[styles.corner, styles.topRight]} />
                                             <View style={[styles.corner, styles.bottomLeft]} />
                                             <View style={[styles.corner, styles.bottomRight]} />
-                                            
+
                                             {/* Laser Line */}
                                             <View style={[styles.laser, { top: laserPos }]} />
 
-                                            {scanned && (
-                                                <View style={styles.scannedIndicator}>
-                                                    <Typography weight="bold" style={{ color: 'white' }}>{continuous ? '✓ Ditambahkan!' : 'Terdeteksi!'}</Typography>
+                                            {/* Scan match indicator: green for match, red for no-match */}
+                                            {scanMatch === 'match' && (
+                                                <View style={styles.scannedMatchIndicator}>
+                                                    <CheckCircle2 size={28} color="white" strokeWidth={2} />
+                                                    <Typography weight="bold" style={{ color: 'white', marginTop: 4 }}>
+                                                        {continuous ? 'Item Ditemukan!' : 'Terdeteksi!'}
+                                                    </Typography>
+                                                </View>
+                                            )}
+                                            {scanMatch === 'no-match' && (
+                                                <View style={styles.scannedNoMatchIndicator}>
+                                                    <View style={styles.noMatchIconContainer}>
+                                                        <Typography weight="bold" style={{ color: 'white', fontSize: 20 }}>✕</Typography>
+                                                    </View>
+                                                    <Typography weight="bold" style={{ color: 'white', marginTop: 4 }}>Item Tidak Ditemukan</Typography>
                                                 </View>
                                             )}
                                         </View>
@@ -343,7 +403,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     <View style={styles.unfocusedContainer}>
                                         <View className="items-center mt-6">
                                             <Typography className="text-white text-center mb-6" style={{ opacity: 0.7 }}>
-                                                {continuous 
+                                                {continuous
                                                     ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
                                                     : 'Posisikan barcode/QR code di dalam kotak'
                                                 }
@@ -364,9 +424,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                                         </View>
                                                     ))}
                                                     <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
-                                                    
-                                                    <Button 
-                                                        title="Selesai & Tutup" 
+
+                                                    <Button
+                                                        title="Selesai & Tutup"
                                                         variant="primary"
                                                         onPress={onClose}
                                                         className="h-12 rounded-2xl"
@@ -376,14 +436,22 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         </View>
                                     </View>
                                 </View>
+                                {/* A11y: screen reader announces scan results for native camera */}
+                                <View
+                                    aria-live="assertive"
+                                    aria-atomic="true"
+                                    style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
+                                >
+                                    {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                </View>
                             </CameraView>
                         ) : (
                             <View className="flex-1 items-center justify-center bg-gray-900 px-10">
-                                {/* Continuous Mode Badge for Hardware */}
+                                {/* Item Scan Mode Badge for Hardware */}
                                 {continuous && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginBottom: 24 }}>
                                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
-                                        <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>CONTINUOUS SCAN</Typography>
+                                        <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
                                         {scanLog.length > 0 && (
                                             <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
                                                 <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
@@ -396,13 +464,13 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 </View>
                                 <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Hardware Mode</Typography>
                                 <Typography className="text-gray-400 text-center mb-10">
-                                    {continuous 
+                                    {continuous
                                         ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
                                         : 'Arahkan hardware scanner ke barcode dan tekan pelatuk scan.'
                                     }
                                 </Typography>
-                                
-                                <Pressable 
+
+                                <Pressable
                                     onPress={() => hwInputRef.current?.focus()}
                                     className="bg-white/5 border border-white/10 px-6 py-4 rounded-3xl items-center w-full"
                                 >
@@ -419,8 +487,8 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         {continuous && (
                                             <View>
                                                 <Typography variant="caption" weight="bold" className="text-emerald-400 text-center mb-4">Total: {scanLog.length} item tersimpan</Typography>
-                                                <Button 
-                                                    title="Selesai & Tutup" 
+                                                <Button
+                                                    title="Selesai & Tutup"
                                                     variant="primary"
                                                     onPress={onClose}
                                                     className="h-12 rounded-2xl"
@@ -457,12 +525,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                 onPress={toggleScannerMode}
                                 style={[styles.iconButton, { width: 'auto', paddingHorizontal: 16 }]}
                             >
-                                {scannerMode === 'camera' ? (
-                                    <View className="flex-row items-center">
-                                        <Scan size={18} color="white" />
-                                        <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Hardware</Typography>
-                                    </View>
-                                ) : scannerMode === 'web-camera' ? (
+                                {scannerMode === 'camera' || scannerMode === 'web-camera' ? (
                                     <View className="flex-row items-center">
                                         <Scan size={18} color="white" />
                                         <Typography className="text-white text-[10px] ml-2 font-bold uppercase">To Hardware</Typography>
@@ -578,12 +641,27 @@ const styles = StyleSheet.create({
         borderTopWidth: 0,
         borderBottomRightRadius: 16,
     },
-    scannedIndicator: {
+    scannedMatchIndicator: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+        backgroundColor: 'rgba(16, 185, 129, 0.55)',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 16,
+    },
+    scannedNoMatchIndicator: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(239, 68, 68, 0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+    },
+    noMatchIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     laser: {
         position: 'absolute',
