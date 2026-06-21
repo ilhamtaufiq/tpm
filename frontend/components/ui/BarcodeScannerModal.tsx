@@ -217,6 +217,15 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     html5QrcodeRef.current = html5Qrcode;
                 } else {
                     // Unmounted during start — clean up orphan scanner
+                    const container = document.getElementById('web-scanner-reader');
+                    const video = container?.querySelector('video');
+                    if (video && video.srcObject) {
+                        try {
+                            const stream = video.srcObject as MediaStream;
+                            stream.getTracks().forEach(track => track.stop());
+                            video.srcObject = null;
+                        } catch (e) {}
+                    }
                     html5Qrcode.stop().catch(() => {});
                 }
             } catch (err: any) {
@@ -229,6 +238,20 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
         return () => {
             isCancelled = true;
+
+            // Find active video element in DOM and stop its media tracks aggressively to prevent WebMediaPlayer leaks
+            const container = document.getElementById('web-scanner-reader');
+            const video = container?.querySelector('video');
+            if (video && video.srcObject) {
+                try {
+                    const stream = video.srcObject as MediaStream;
+                    stream.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                } catch (e) {
+                    console.error('[WebScanner] Error stopping tracks manually:', e);
+                }
+            }
+
             if (html5QrcodeRef.current) {
                 const scanner = html5QrcodeRef.current;
                 html5QrcodeRef.current = null;
