@@ -626,8 +626,6 @@ export default function BengkelTransaksiScreen() {
         showDiscount: showDiscountInReceipt,
     });
 
-};
-
     const submit = async () => {
         const isJA = kategori === 'jasa_angkut';
         const isMobil = kategori === 'jual_beli_mobil';
