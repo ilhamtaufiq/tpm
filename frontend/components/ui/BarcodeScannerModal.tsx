@@ -165,6 +165,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
                     return;
                 }
+                container.innerHTML = '';
 
                 const html5Qrcode = new Html5Qrcode(scannerId);
 
@@ -216,7 +217,17 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     html5QrcodeRef.current = html5Qrcode;
                 } else {
                     // Unmounted during start — clean up orphan scanner
-                    html5Qrcode.stop().catch(() => {});
+                    html5Qrcode.stop()
+                        .then(() => {
+                            html5Qrcode.clear().catch(() => {});
+                            const el = document.getElementById('web-scanner-reader');
+                            if (el) el.innerHTML = '';
+                        })
+                        .catch(() => {
+                            html5Qrcode.clear().catch(() => {});
+                            const el = document.getElementById('web-scanner-reader');
+                            if (el) el.innerHTML = '';
+                        });
                 }
             } catch (err: any) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
@@ -229,14 +240,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         return () => {
             isCancelled = true;
             if (html5QrcodeRef.current) {
-                html5QrcodeRef.current
-                    .stop()
+                const scanner = html5QrcodeRef.current;
+                html5QrcodeRef.current = null;
+                scanner.stop()
                     .then(() => {
-                        html5QrcodeRef.current?.clear();
-                        html5QrcodeRef.current = null;
+                        scanner.clear().catch(() => {});
+                        const el = document.getElementById('web-scanner-reader');
+                        if (el) el.innerHTML = '';
                     })
-                    .catch(() => {
-                        html5QrcodeRef.current = null;
+                    .catch((err) => {
+                        console.error('[WebScanner] Error stopping scanner on unmount:', err);
+                        scanner.clear().catch(() => {});
+                        const el = document.getElementById('web-scanner-reader');
+                        if (el) el.innerHTML = '';
                     });
             }
         };
@@ -363,7 +379,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         aria-atomic="true"
                                         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                     >
-                                        {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                        <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                     </View>
                                 </View>
                             </View>
@@ -463,7 +479,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     aria-atomic="true"
                                     style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                 >
-                                    {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                    <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                 </View>
                             </CameraView>
                         ) : (
