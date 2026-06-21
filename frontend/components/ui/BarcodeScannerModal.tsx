@@ -217,17 +217,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     html5QrcodeRef.current = html5Qrcode;
                 } else {
                     // Unmounted during start — clean up orphan scanner
-                    html5Qrcode.stop()
-                        .then(() => {
-                            html5Qrcode.clear().catch(() => {});
-                            const el = document.getElementById('web-scanner-reader');
-                            if (el) el.innerHTML = '';
-                        })
-                        .catch(() => {
-                            html5Qrcode.clear().catch(() => {});
-                            const el = document.getElementById('web-scanner-reader');
-                            if (el) el.innerHTML = '';
-                        });
+                    html5Qrcode.stop().catch(() => {});
                 }
             } catch (err: any) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
@@ -242,18 +232,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             if (html5QrcodeRef.current) {
                 const scanner = html5QrcodeRef.current;
                 html5QrcodeRef.current = null;
-                scanner.stop()
-                    .then(() => {
-                        scanner.clear().catch(() => {});
-                        const el = document.getElementById('web-scanner-reader');
-                        if (el) el.innerHTML = '';
-                    })
-                    .catch((err) => {
-                        console.error('[WebScanner] Error stopping scanner on unmount:', err);
-                        scanner.clear().catch(() => {});
-                        const el = document.getElementById('web-scanner-reader');
-                        if (el) el.innerHTML = '';
-                    });
+                scanner.stop().catch(() => {});
             }
         };
     }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch]);
