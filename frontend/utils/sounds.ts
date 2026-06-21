@@ -50,15 +50,13 @@ function vibrateFallback(ms: number) {
     } catch {}
 }
 
-async function playWebBeep(freq: number, durationMs: number) {
+function playWebBeep(freq: number, durationMs: number) {
     try {
         const ctx = getAudioCtx();
         if (!ctx) return;
-        // Firefox: must await resume() before creating oscillator, or beep silently fails
         if (ctx.state === 'suspended') {
-            await ctx.resume().catch(() => {});
+            ctx.resume().catch(() => {});
         }
-        // Cancel prior beep to prevent overlapping tones on rapid scan
         if (_activeOsc && _activeGain) {
             try {
                 _activeOsc.onended = null;

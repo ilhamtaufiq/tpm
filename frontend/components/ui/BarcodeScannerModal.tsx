@@ -174,7 +174,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                     { facingMode: 'environment' },
                     {
                         fps: 10,
-                        qrbox: { width: 250, height: 250 },
+                        qrbox: { width: 320, height: 160 },
                         formatsToSupport: [
                             Html5QrcodeSupportedFormats.QR_CODE,
                             Html5QrcodeSupportedFormats.CODE_128,
@@ -371,24 +371,51 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             Arahkan kamera ke barcode/QR code untuk memindai.
                                         </Typography>
                                     </View>
-                                    <div
-                                        id="web-scanner-reader"
-                                        ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
-                                        style={{
-                                            width: '100%',
-                                            height: 350,
-                                            borderRadius: 16,
-                                            overflow: 'hidden',
-                                            backgroundColor: '#000',
-                                            borderWidth: 2,
-                                            borderStyle: 'solid',
-                                            borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
-                                        }}
-                                    >
-                                        {/* Style video injected by html5-qrcode to fill container */}
-                                        <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
-                                    </div>
-                                    {/* A11y: screen reader announces scan results */}
+                                    {/* Native Mirror: scanner area with overlays */}
+                                    <View style={styles.nativeMirrorContainer}>
+                                        <View style={styles.focusedContainerNative}>
+                                            {/* Divider: korner brackets + laser + video + match semuanya absolute di sini */}
+                                            <div
+                                                id="web-scanner-reader"
+                                                ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    borderRadius: 16,
+                                                    overflow: 'hidden',
+                                                    backgroundColor: '#000',
+                                                    borderWidth: 2,
+                                                    borderStyle: 'solid',
+                                                    borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
+                                                }}
+                                            >
+                                                {/* Style video injected by html5-qrcode to fill container */}
+                                                <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
+                                            </div>
+
+                                            {/* Corner brackets — absolute di atas video */}
+                                            <View style={[styles.corner, styles.topLeft]} />
+                                            <View style={[styles.corner, styles.topRight]} />
+                                            <View style={[styles.corner, styles.bottomLeft]} />
+                                            <View style={[styles.corner, styles.bottomRight]} />
+
+                                            {/* Laser line — absolute di atas video */}
+                                            <View style={[styles.laser, { top: laserPos }]} />
+
+                                            {/* Match indicator — absolute di atas video */}
+                                            {scanMatch === 'match' && (
+                                                <View style={styles.scannedMatchIndicatorNative}>
+                                                    <Typography weight="bold" style={{ color: 'white' }}>Item Ditemukan</Typography>
+                                                </View>
+                                            )}
+                                            {scanMatch === 'no-match' && (
+                                                <View style={styles.scannedNoMatchIndicatorNative}>
+                                                    <Typography weight="bold" style={{ color: 'white' }}>Item Tidak Ditemukan</Typography>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                    {/* Scan match indicator for continuous mode */}
                                     <View
                                         aria-live="assertive"
                                         aria-atomic="true"
@@ -396,6 +423,31 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     >
                                         <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                     </View>
+                                    {/* Scan log (mirroring camera branch) */}
+                                    {scanLog.length > 0 && (
+                                        <View className="mt-6 w-full">
+                                            <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
+                                            {scanLog.slice(0, 3).map((item, idx) => (
+                                                <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
+                                                    <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
+                                                    <View className="flex-1">
+                                                        <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
+                                                        {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
+                                                    </View>
+                                                    <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
+                                                </View>
+                                            ))}
+                                            <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
+                                            {continuous && (
+                                                <Button
+                                                    title="Selesai & Tutup"
+                                                    variant="primary"
+                                                    onPress={onClose}
+                                                    className="h-12 rounded-2xl"
+                                                />
+                                            )}
+                                        </View>
+                                    )}
                                 </View>
                             </View>
                         ) : scannerMode === 'camera' ? (
@@ -692,6 +744,34 @@ const styles = StyleSheet.create({
         borderLeftWidth: 0,
         borderTopWidth: 0,
         borderBottomRightRadius: 16,
+    },
+    nativeMirrorContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        minHeight: 350,
+    },
+    focusedContainerNative: {
+        width: 300,
+        height: 160,
+        position: 'relative',
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    scannedMatchIndicatorNative: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(16, 185, 129, 0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+    },
+    scannedNoMatchIndicatorNative: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(239, 68, 68, 0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
     },
     scannedMatchIndicator: {
         ...StyleSheet.absoluteFillObject,
