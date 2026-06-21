@@ -153,7 +153,6 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 }
 
                 const html5Qrcode = new Html5Qrcode(scannerId);
-                html5QrcodeRef.current = html5Qrcode;
 
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
@@ -197,9 +196,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         // Scan failure callback — ignore (fires on every frame with no barcode)
                     }
                 );
-            } catch (err: any) {
+            } catch (err) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
-                setWebCameraError(err?.message || 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
+                setWebCameraError(err instanceof Error ? err.message : 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
             }
         };
 
@@ -342,7 +341,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         aria-atomic="true"
                                         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                     >
-                                        {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                        <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                     </View>
                                 </View>
                             </View>
@@ -442,7 +441,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     aria-atomic="true"
                                     style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                 >
-                                    {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                    <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                 </View>
                             </CameraView>
                         ) : (
