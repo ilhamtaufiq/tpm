@@ -20,6 +20,7 @@ export default function PinScreen() {
 
     // Decode URL-encoded redirect param (e.g. %2Fsettings%2Freset → /settings/reset)
     const decodedRedirect = redirect ? decodeURIComponent(redirect) : undefined;
+    console.log('[PIN] Redirect:', decodedRedirect);
 
     // Validate redirect against whitelist (include sub-paths)
     const SAFE_REDIRECTS = ['/(tabs)/home', '/bengkel', '/mobil', '/jasa-angkut', '/settings/profile'];
