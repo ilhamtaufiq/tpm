@@ -34,7 +34,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [torch, setTorch] = useState(false);
     const [laserPos, setLaserPos] = useState(0);
     const [movingDown, setMovingDown] = useState(true);
-    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>('camera');
+    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>(
+        Platform.OS === 'web' ? 'web-camera' : 'camera'
+    );
     const [hwInput, setHwInput] = useState('');
     const hwInputRef = useRef<TextInput>(null);
 
@@ -105,7 +107,17 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
             // Load preferred mode
             const saved = await AsyncStorage.getItem('@scanner_mode');
-            if (mounted && saved) setScannerMode(saved as any);
+            if (mounted && saved) {
+                const mode = saved as any;
+                // Web: camera mode (expo-camera) relies on browser BarcodeDetector
+                // which doesn't reliably support Code-128 on mobile browsers.
+                // Auto-upgrade to web-camera (html5-qrcode) with explicit format support.
+                if (Platform.OS === 'web' && mode === 'camera') {
+                    setScannerMode('web-camera');
+                } else {
+                    setScannerMode(mode);
+                }
+            }
         };
 
         initializeScanner();
