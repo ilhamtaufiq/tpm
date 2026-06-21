@@ -460,12 +460,11 @@ export default function BengkelTransaksiScreen() {
         });
     };
 
-    const addScannedPart = (part: any) => {
+    const addScannedPart = (part: any): boolean => {
         if (part.stok !== 999 && Number(part.stok || 0) <= 0) {
             showNotice('error', 'Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
-            return;
+            return false;
         }
-        playSuccess();
         setSelectedParts(prev => {
             const existing = prev[part.id];
             return { ...prev, [part.id]: { item: part, qty: existing ? existing.qty + 1 : 1 } };
@@ -476,6 +475,7 @@ export default function BengkelTransaksiScreen() {
             subtitle: `Kode: ${part.kode || part.kode_part || '-'} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
             timestamp: Date.now(),
         }, ...prev]);
+        return true;
     };
 
     const handleScan = async (scannedData: string) => {
@@ -488,7 +488,7 @@ export default function BengkelTransaksiScreen() {
                 (p.kode_part || '').replace(/^0+/, '') === stripped
             );
         }
-        if (part) addScannedPart(part);
+        if (part) return addScannedPart(part);
         else {
             // Fallback: query API directly (bypass pagination)
             try {
@@ -496,13 +496,12 @@ export default function BengkelTransaksiScreen() {
                 const rows = res.data?.data;
                 if (rows?.length) {
                     const found = Array.isArray(rows) ? rows[0] : rows;
-                    addScannedPart(found);
-                    return;
+                    return addScannedPart(found);
                 }
             } catch {}
-            playError();
             showNotice('error', 'Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di data sparepart.`);
             setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${scannedData}`, timestamp: Date.now() }, ...prev]);
+            return false;
         }
     };
 
