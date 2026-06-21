@@ -1,10 +1,54 @@
 import { Platform } from 'react-native';
 
+// Singleton AudioContext — reuse across calls. Mobile browsers block
+// freshly-created contexts in non-gesture callbacks.
+let _audioCtx: AudioContext | null = null;
+let _audioUnlocked = false;
+
+function getAudioCtx(): AudioContext | null {
+    if (typeof window === 'undefined') return null;
+    const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!Ctor) return null;
+    if (!_audioCtx) _audioCtx = new Ctor() as AudioContext;
+    return _audioCtx;
+}
+
+/**
+ * Call once inside a user-gesture handler (onPress / onClick) to satisfy
+ * mobile browsers' autoplay policy. Safe to call multiple times — no-ops
+ * after first successful resume.
+ */
+export async function ensureAudioUnlocked(): Promise<void> {
+    if (_audioUnlocked) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    try {
+        if (ctx.state === 'suspended') await ctx.resume();
+        // Play silent 1-sample buffer to fully unlock on iOS Safari
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        _audioUnlocked = true;
+    } catch {
+        // Audio unavailable — degrade silently
+    }
+}
+
+function vibrateFallback(ms: number) {
+    try {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(ms);
+        }
+    } catch {}
+}
+
 function playWebBeep(freq: number, durationMs: number) {
     try {
-        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
@@ -15,8 +59,9 @@ function playWebBeep(freq: number, durationMs: number) {
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + durationMs / 1000);
-        osc.onended = () => ctx.close();
-    } catch {}
+    } catch {
+        vibrateFallback(durationMs);
+    }
 }
 
 async function playNativeBeep(freq: number, durationMs: number) {
@@ -52,12 +97,22 @@ async function playNativeBeep(freq: number, durationMs: number) {
 
 export function useScanSound() {
     const playSuccess = async () => {
-        if (Platform.OS === 'web') playWebBeep(880, 120);
-        else await playNativeBeep(880, 120);
+        if (Platform.OS === 'web') {
+            await ensureAudioUnlocked();
+            playWebBeep(880, 120);
+            vibrateFallback(50);
+        } else {
+            await playNativeBeep(880, 120);
+        }
     };
     const playError = async () => {
-        if (Platform.OS === 'web') playWebBeep(220, 300);
-        else await playNativeBeep(220, 300);
+        if (Platform.OS === 'web') {
+            await ensureAudioUnlocked();
+            playWebBeep(220, 300);
+            vibrateFallback(150);
+        } else {
+            await playNativeBeep(220, 300);
+        }
     };
     return { playSuccess, playError };
 }

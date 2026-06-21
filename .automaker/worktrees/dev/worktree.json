@@ -2,10 +2,10 @@
   "branch": "dev",
   "createdAt": "2026-06-18T16:31:22.560Z",
   "pr": {
-    "number": 21,
-    "url": "https://github.com/ilhamtaufiq/tpm/pull/21",
-    "title": "Fix 16 TypeScript errors across frontend reports and components",
+    "number": 22,
+    "url": "https://github.com/ilhamtaufiq/tpm/pull/22",
+    "title": "dev",
     "state": "OPEN",
-    "createdAt": "2026-06-18T16:55:19.865Z"
+    "createdAt": "2026-06-18T17:40:22.117Z"
   }
 }

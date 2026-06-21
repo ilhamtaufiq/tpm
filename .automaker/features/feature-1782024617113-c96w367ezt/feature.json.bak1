@@ -1,0 +1,30 @@
+{
+  "category": "Uncategorized",
+  "description": "Fix Scan Features in All Modals on Mobile Web\n\nResolve two issues across all scan modal dialogs: audio feedback (success beep/notification sound) does not play after scanning, and QR code/barcode scanning is non-functional on mobile web browsers.\n\n**Scope:** All scan modal instances in the application — apply fixes uniformly; no modal left behind. Desktop scanning must remain unaffected.\n\n**Requirements:**\n\nAudio Feedback\n- Fix success beep/notification sound in every scan modal on mobile web\n- Address mobile browser autoplay policy — audio must be triggered within a user-gesture handler (not on page load)\n- Provide visual fallback (toast/vibration) when audio cannot play\n\nQR / Barcode Scanner\n- Debug and restore camera initialization + frame decoding on mobile web (iOS Safari, Android Chrome, Samsung Internet minimum)\n- Verify `getUserMedia` permission flow: request, grant, deny, and blocked states with clear user-facing messages\n- Ensure scanner video preview / canvas renders inside modal bounds (not clipped, proper z-index, responsive viewport sizing)\n- Test with common code formats: QR, Code 128, EAN-13, UPC-A\n- Handle front/rear camera selection and orientation quirks (mirror, resolution) on mobile\n\nEdge Cases\n- Camera already in use by another app → graceful fallback\n- Rear camera unavailable → fallback to front-facing\n- HTTPS required for camera API — verify served over HTTPS\n- Modal opened before camera stream ready → show loading state\n- Multiple scan modals on same page → only one active stream at a time\n- Low-light or partially damaged codes → degrade gracefully\n- Rapid successive scans → implement debouncing\n- Scanner recovery after stream interruption or page visibility change\n- Camera permission denied → show settings-prompt fallback with guidance\n\nValidation\n- Test end-to-end on physical iOS (Safari) and Android (Chrome) devices\n- Confirm no JavaScript console errors on mobile web\n- Verify scanned data propagates correctly to parent/calling component\n- Regression test on desktop — existing desktop scan behavior unchanged\n- Target scan response time < 2 seconds on mobile",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "in_progress",
+  "createdAt": "2026-06-21T06:50:17.113Z",
+  "id": "feature-1782024617113-c96w367ezt",
+  "descriptionHistory": [
+    {
+      "description": "Fix Scan Features in All Modals on Mobile Web\n\nResolve two issues across all scan modal dialogs: audio feedback (success beep/notification sound) does not play after scanning, and QR code/barcode scanning is non-functional on mobile web browsers.\n\n**Scope:** All scan modal instances in the application — apply fixes uniformly; no modal left behind. Desktop scanning must remain unaffected.\n\n**Requirements:**\n\nAudio Feedback\n- Fix success beep/notification sound in every scan modal on mobile web\n- Address mobile browser autoplay policy — audio must be triggered within a user-gesture handler (not on page load)\n- Provide visual fallback (toast/vibration) when audio cannot play\n\nQR / Barcode Scanner\n- Debug and restore camera initialization + frame decoding on mobile web (iOS Safari, Android Chrome, Samsung Internet minimum)\n- Verify `getUserMedia` permission flow: request, grant, deny, and blocked states with clear user-facing messages\n- Ensure scanner video preview / canvas renders inside modal bounds (not clipped, proper z-index, responsive viewport sizing)\n- Test with common code formats: QR, Code 128, EAN-13, UPC-A\n- Handle front/rear camera selection and orientation quirks (mirror, resolution) on mobile\n\nEdge Cases\n- Camera already in use by another app → graceful fallback\n- Rear camera unavailable → fallback to front-facing\n- HTTPS required for camera API — verify served over HTTPS\n- Modal opened before camera stream ready → show loading state\n- Multiple scan modals on same page → only one active stream at a time\n- Low-light or partially damaged codes → degrade gracefully\n- Rapid successive scans → implement debouncing\n- Scanner recovery after stream interruption or page visibility change\n- Camera permission denied → show settings-prompt fallback with guidance\n\nValidation\n- Test end-to-end on physical iOS (Safari) and Android (Chrome) devices\n- Confirm no JavaScript console errors on mobile web\n- Verify scanned data propagates correctly to parent/calling component\n- Regression test on desktop — existing desktop scan behavior unchanged\n- Target scan response time < 2 seconds on mobile",
+      "timestamp": "2026-06-21T06:50:17.171Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-06-21T07:01:22.079Z",
+  "updatedAt": "2026-06-21T06:58:14.739Z"
+}
