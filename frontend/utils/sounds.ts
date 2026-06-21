@@ -4,6 +4,9 @@ import { Platform } from 'react-native';
 // freshly-created contexts in non-gesture callbacks.
 let _audioCtx: AudioContext | null = null;
 let _audioUnlocked = false;
+// Track active oscillator for rapid-scan cancellation
+let _activeOsc: OscillatorNode | null = null;
+let _activeGain: GainNode | null = null;
 
 function getAudioCtx(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -23,7 +26,10 @@ export async function ensureAudioUnlocked(): Promise<void> {
     const ctx = getAudioCtx();
     if (!ctx) return;
     try {
-        if (ctx.state === 'suspended') await ctx.resume();
+        // Firefox requires await — fire-and-forget silently fails
+        if (ctx.state === 'suspended') {
+            await ctx.resume();
+        }
         // Play silent 1-sample buffer to fully unlock on iOS Safari
         const buf = ctx.createBuffer(1, 1, 22050);
         const src = ctx.createBufferSource();
@@ -44,13 +50,27 @@ function vibrateFallback(ms: number) {
     } catch {}
 }
 
-function playWebBeep(freq: number, durationMs: number) {
+async function playWebBeep(freq: number, durationMs: number) {
     try {
         const ctx = getAudioCtx();
         if (!ctx) return;
-        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        // Firefox: must await resume() before creating oscillator, or beep silently fails
+        if (ctx.state === 'suspended') {
+            await ctx.resume().catch(() => {});
+        }
+        // Cancel prior beep to prevent overlapping tones on rapid scan
+        if (_activeOsc && _activeGain) {
+            try {
+                _activeOsc.onended = null;
+                _activeOsc.stop(ctx.currentTime);
+                _activeOsc.disconnect();
+                _activeGain.disconnect();
+            } catch {}
+        }
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
+        _activeOsc = osc;
+        _activeGain = gain;
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
@@ -59,6 +79,12 @@ function playWebBeep(freq: number, durationMs: number) {
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + durationMs / 1000);
+        osc.onended = () => {
+            if (_activeOsc === osc) {
+                _activeOsc = null;
+                _activeGain = null;
+            }
+        };
     } catch {
         vibrateFallback(durationMs);
     }

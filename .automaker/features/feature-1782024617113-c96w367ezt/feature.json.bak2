@@ -15,7 +15,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "backlog",
+  "status": "waiting_approval",
   "createdAt": "2026-06-21T06:50:17.113Z",
   "id": "feature-1782024617113-c96w367ezt",
   "descriptionHistory": [
@@ -25,6 +25,8 @@
       "source": "initial"
     }
   ],
-  "startedAt": "2026-06-21T06:50:21.228Z",
-  "updatedAt": "2026-06-21T06:58:14.739Z"
+  "startedAt": "2026-06-21T07:01:22.079Z",
+  "updatedAt": "2026-06-21T07:21:57.895Z",
+  "justFinishedAt": "2026-06-21T07:21:57.895Z",
+  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/28"
 }

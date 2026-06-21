@@ -15,7 +15,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "in_progress",
+  "status": "waiting_approval",
   "createdAt": "2026-06-21T06:40:47.837Z",
   "id": "feature-1782024047838-rxq4dqe370s",
   "descriptionHistory": [
@@ -25,5 +25,7 @@
       "source": "initial"
     }
   ],
-  "startedAt": "2026-06-21T06:40:50.457Z"
+  "startedAt": "2026-06-21T07:03:26.586Z",
+  "updatedAt": "2026-06-21T07:13:17.120Z",
+  "justFinishedAt": "2026-06-21T07:13:17.120Z"
 }

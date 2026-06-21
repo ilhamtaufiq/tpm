@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, FC } from 'react';
-import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, SafeAreaView, StatusBar, Platform, TextInput, Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
-import { X, Zap, ZapOff, Scan, Camera, Loader } from 'lucide-react-native';
+import { X, Zap, ZapOff, Scan, Camera, AlertTriangle } from 'lucide-react-native';
 import { Button } from './Button';
-import { useScanSound } from '../../utils/sounds';
+import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;
@@ -40,6 +40,27 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const html5QrcodeRef = useRef<Html5QrcodeType>(null);
     const webScannerContainerRef = useRef<View | null>(null);
     const webScanInProgress = useRef(false);
+    const scannerPausedRef = useRef(false);
+
+    // Scan sound hook
+    const { playSuccess, playError } = useScanSound();
+
+    // Web camera error + flash indicator state
+    const [webCameraError, setWebCameraError] = useState<string | null>(null);
+    const [webFlashVisible, setWebFlashVisible] = useState(false);
+    const flashAnim = useRef(new Animated.Value(0)).current;
+
+    const triggerWebFlash = useCallback(() => {
+        setWebFlashVisible(true);
+        flashAnim.setValue(0);
+        Animated.timing(flashAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+        }).start(() => {
+            setWebFlashVisible(false);
+        });
+    }, [flashAnim]);
 
     // Laser Animation Effect
     useEffect(() => {

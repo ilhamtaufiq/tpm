@@ -27,7 +27,7 @@
   ],
   "startedAt": "2026-06-18T15:34:56.335Z",
   "updatedAt": "2026-06-18T16:49:40.559Z",
-  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/22",
+  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/28",
   "summary": "## Summary: TypeScript Error Fixes\n\n### Changes Implemented\n- Fixed 7x TS7006 (implicit `any` in `escapeHtml` across 7 report files)\n- Fixed 2x TS18047 (`settings` possibly null in `print.tsx`)\n- Fixed 1x TS2769 (`height` type in `AppBottomSheet.tsx`)\n- Fixed 1x TS2769 (`uri` on Blob in `SparepartForm.tsx`)\n- Fixed 1x TS1323 (dynamic import module flag in `BarcodeScannerModal.tsx`)\n- Fixed 1x TS2769 (`border` → `borderWidth/borderColor/borderStyle` in `BarcodeScannerModal.tsx`)\n- Fixed 3x TS2367 (dead comparisons inside narrowed `kategori === 'umum'` block in `BengkelForm.tsx`)\n\n### Files Modified\n- `app/finance/pencairan-investor.tsx`\n- `app/laporan/jasa-angkut.tsx`\n- `app/laporan/pembelian-mobil.tsx`\n- `app/laporan/pembelian-sparepart.tsx`\n- `app/laporan/penjualan-bengkel.tsx`\n- `app/laporan/penjualan-mobil.tsx`\n- `app/laporan/stock-sparepart.tsx`\n- `app/settings/print.tsx`\n- `components/ui/AppBottomSheet.tsx`\n- `components/forms/SparepartForm.tsx`\n- `components/ui/BarcodeScannerModal.tsx`\n- `components/BengkelForm.tsx`\n\n### Notes\n`tsc --noEmit` clean. Build verified.",
   "justFinishedAt": "2026-06-18T16:49:40.559Z"
 }
