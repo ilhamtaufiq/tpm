@@ -38,6 +38,16 @@ onlineManager.setEventListener((setOnline) => {
     });
 });
 
+// Suppress harmless AbortError from media play() — triggered when
+// html5-qrcode or scanner components unmount before audio/video starts.
+if (typeof window !== 'undefined') {
+    window.addEventListener('unhandledrejection', (event) => {
+        if (event.reason instanceof DOMException && event.reason.name === 'AbortError') {
+            event.preventDefault();
+        }
+    });
+}
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {

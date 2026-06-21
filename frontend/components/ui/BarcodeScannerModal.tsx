@@ -167,7 +167,6 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 }
 
                 const html5Qrcode = new Html5Qrcode(scannerId);
-                html5QrcodeRef.current = html5Qrcode;
 
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
@@ -211,6 +210,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         // Scan failure callback — ignore (fires on every frame with no barcode)
                     }
                 );
+
+                // Only store ref AFTER start succeeds — prevents stop() on non-running scanner
+                if (!isCancelled) {
+                    html5QrcodeRef.current = html5Qrcode;
+                } else {
+                    // Unmounted during start — clean up orphan scanner
+                    html5Qrcode.stop().catch(() => {});
+                }
             } catch (err: any) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
                 setWebCameraError(err?.message || 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
