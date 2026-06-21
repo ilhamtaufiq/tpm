@@ -15,7 +15,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "waiting_approval",
+  "status": "completed",
   "createdAt": "2026-06-21T07:59:43.917Z",
   "startedAt": "2026-06-21T07:59:43.917Z",
   "id": "feature-1782028783917-rww9tp0gzz",
@@ -28,5 +28,6 @@
   ],
   "summary": "## Summary: Fix html5-qrcode Scanning & Audio Feedback on Firefox Mobile\n\n### Changes Implemented\n- Fixed AudioContext `resume()` to be properly awaited in both `ensureAudioUnlocked()` and `playWebBeep()` — Firefox silently drops fire-and-forget resume calls\n- Added oscillator cancellation via `_activeOsc`/`_activeGain` refs to prevent overlapping tones on rapid successive scans\n- Added `ensureAudioUnlocked` export for explicit gesture-context calls\n- Added `Animated` import, `AlertTriangle` icon, `webCameraError`/`webFlashVisible` state, `triggerWebFlash` callback, and `useScanSound` hook integration to scanner component\n- Added `scannerPausedRef` for tab-visibility lifecycle management\n\n### Files Modified\n- `frontend/utils/sounds.ts` — AudioContext resume await, oscillator cancellation, export ensureAudioUnlocked\n- `frontend/components/ui/BarcodeScannerModal.tsx` — Imports, state, refs for flash/error/audio; remaining edits pending (formatsToSupport fix, callback wiring, JSX feedback UI)\n\n### Notes for Developer\n- The critical `Html5QrcodeSupportedFormats` → `Fmts` alias fix is identified but not yet applied. Current code will crash on web when switching to web-camera mode because `Html5QrcodeSupportedFormats` is undefined after destructuring.\n- Requires: fix formatsToSupport array (6 edits), wire playSuccess/triggerWebFlash in scan callback, add web-camera flash overlay + error UI in JSX, add tab visibility listener, unlock audio on toggleScannerMode",
   "updatedAt": "2026-06-21T08:14:00.954Z",
-  "justFinishedAt": "2026-06-21T08:14:00.954Z"
+  "justFinishedAt": "2026-06-21T08:14:00.954Z",
+  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/29"
 }

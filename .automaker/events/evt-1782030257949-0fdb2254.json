@@ -1,0 +1,11 @@
+{
+  "id": "evt-1782030257949-0fdb2254",
+  "trigger": "feature_error",
+  "timestamp": "2026-06-21T08:24:17.949Z",
+  "projectPath": "C:\\laragon\\www\\tpm",
+  "projectName": "tpm",
+  "featureId": "feature-1781798285758-4w9u6iih6je",
+  "featureName": "qz tray web",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}
