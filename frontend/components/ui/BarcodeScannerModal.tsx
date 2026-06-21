@@ -204,9 +204,10 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             showScanMatch('no-match');
                         }
                         // Short cooldown before allowing next scan
+                        const scanCooldown = continuous ? 1000 : 1500;
                         setTimeout(() => {
                             webScanInProgress.current = false;
-                        }, 1500);
+                        }, scanCooldown);
                     },
                     () => {
                         // Scan failure callback — ignore (fires on every frame with no barcode)
@@ -368,9 +369,26 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         </View>
                                         <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Web Camera</Typography>
                                         <Typography className="text-gray-400 text-center text-sm">
-                                            Arahkan kamera ke barcode/QR code untuk memindai.
+                                            {continuous
+                                                ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
+                                                : 'Arahkan kamera ke barcode/QR code untuk memindai.'
+                                            }
                                         </Typography>
                                     </View>
+                                    {/* Continuous mode badge */}
+                                    {continuous && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}>
+                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
+                                                <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
+                                                {scanLog.length > 0 && (
+                                                    <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                                                        <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+                                    )}
                                     {/* Native Mirror: scanner area with overlays */}
                                     <View style={styles.nativeMirrorContainer}>
                                         <View style={styles.focusedContainerNative}>
