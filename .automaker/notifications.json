@@ -286,6 +286,72 @@
       "dismissed": false,
       "featureId": "feature-1781802007291-z5151ktely",
       "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "1086d500-89b4-4ccb-8c0b-c8bda8a1296a",
+      "type": "feature_waiting_approval",
+      "title": "qz tray web",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-18T17:41:55.907Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "2918ddb0-f819-400c-b43d-63124160cc7e",
+      "type": "auto_mode_error",
+      "title": "qz tray web",
+      "message": "Auto Mode Error: Operation was cancelled",
+      "createdAt": "2026-06-18T17:46:46.072Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1781798285758-4w9u6iih6je",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "d276f513-7b15-4828-a1e7-6dec35220ac5",
+      "type": "auto_mode_error",
+      "title": "feature-1782024617113-c96w367ezt",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-06-21T06:58:14.797Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782024617113-c96w367ezt",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "5b642346-375b-4a47-a1c1-53dac06a5c76",
+      "type": "feature_waiting_approval",
+      "title": "feature-1782024047838-rxq4dqe370s",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-21T06:58:24.946Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782024047838-rxq4dqe370s",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "c1d011ba-8069-4457-a555-b96502eb0446",
+      "type": "feature_waiting_approval",
+      "title": "feature-1782024047838-rxq4dqe370s",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-21T07:13:17.148Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782024047838-rxq4dqe370s",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "5bc3d246-e1ea-4ee7-813d-fb042abad405",
+      "type": "feature_waiting_approval",
+      "title": "feature-1782024617113-c96w367ezt",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-21T07:21:57.910Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782024617113-c96w367ezt",
+      "projectPath": "C:\\laragon\\www\\tpm"
     }
   ]
 }

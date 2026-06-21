@@ -230,9 +230,12 @@ function RootLayoutContent() {
 
         // 2a. Global app lock (after background / restart)
         if (isLocked && protectedFeatures.app_lock) {
-            // Get current path to redirect back after unlock
-            const path = segments.join('/');
-            router.replace(`/(security)/pin?mode=verify&redirect=${path}`);
+            // Get current path to redirect back after unlock — add leading / for whitelist in pin.tsx
+            const path = segments.length > 0 ? '/' + segments.join('/') : '/(tabs)/home';
+            router.replace({
+                pathname: '/(security)/pin',
+                params: { mode: 'verify', redirect: path }
+            } as any);
             return;
         }
 

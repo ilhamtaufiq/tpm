@@ -4,8 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Typography } from './Typography';
-import { X, Zap, ZapOff, Scan, Camera } from 'lucide-react-native';
+import { X, Zap, ZapOff, Scan, Camera, Loader } from 'lucide-react-native';
 import { Button } from './Button';
+import { useScanSound } from '../../utils/sounds';
 
 // Dynamic import type for html5-qrcode (web only)
 type Html5QrcodeType = any;

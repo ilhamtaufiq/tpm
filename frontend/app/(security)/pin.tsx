@@ -13,24 +13,31 @@ export default function PinScreen() {
     const router = useRouter();
     const { mode, action, redirect, feature } = useLocalSearchParams<{
         mode: 'setup' | 'verify' | 'confirm',
-        action?: 'disable_pin' | 'change_pin',
+        action?: 'disable_pin' | 'change_pin' | 'reset_transactions',
         redirect?: string,
         feature?: string
     }>();
 
     // Decode URL-encoded redirect param (e.g. %2Fsettings%2Freset → /settings/reset)
     const decodedRedirect = redirect ? decodeURIComponent(redirect) : undefined;
-    console.log('[PIN] Redirect:', decodedRedirect);
+    // Normalize: add leading / if missing (old redirects from segments.join('/') omit it)
+    const normalizedRedirect = decodedRedirect
+        ? (decodedRedirect.startsWith('/') ? decodedRedirect : '/' + decodedRedirect)
+        : undefined;
+    console.log('[PIN] Redirect (normalized):', normalizedRedirect);
 
-    // Validate redirect against whitelist (include sub-paths)
-    const SAFE_REDIRECTS = ['/(tabs)/home', '/bengkel', '/mobil', '/jasa-angkut', '/settings/profile'];
-    const safeRedirect = decodedRedirect && (
-        SAFE_REDIRECTS.includes(decodedRedirect) ||
-        decodedRedirect.startsWith('/settings/') ||
-        decodedRedirect.startsWith('/bengkel/') ||
-        decodedRedirect.startsWith('/mobil/') ||
-        decodedRedirect.startsWith('/jasa-angkut/')
-    ) ? decodedRedirect : '/(tabs)/home';
+    // Validate redirect against all known app routes (include sub-paths)
+    const SAFE_REDIRECTS = [
+        '/', '/(tabs)/home', '/(tabs)/history', '/(tabs)/finance', '/(tabs)/profile',
+        '/bengkel', '/mobil', '/jasa-angkut', '/finance', '/laporan', '/master-data',
+        '/sdm', '/settings', '/monitor',
+    ];
+    const safeRedirect = normalizedRedirect && (
+        SAFE_REDIRECTS.includes(normalizedRedirect) ||
+        SAFE_REDIRECTS.some(route => route !== '/' && normalizedRedirect.startsWith(route + '/')) ||
+        normalizedRedirect.startsWith('/settings/') ||
+        normalizedRedirect.startsWith('/receipt/')
+    ) ? normalizedRedirect : '/(tabs)/home';
 
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
