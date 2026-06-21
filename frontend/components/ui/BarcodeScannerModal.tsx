@@ -389,49 +389,24 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             </View>
                                         </View>
                                     )}
-                                    {/* Native Mirror: scanner area with overlays */}
-                                    <View style={styles.nativeMirrorContainer}>
-                                        <View style={styles.focusedContainerNative}>
-                                            {/* Divider: korner brackets + laser + video + match semuanya absolute di sini */}
-                                            <div
-                                                id="web-scanner-reader"
-                                                ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    borderRadius: 16,
-                                                    overflow: 'hidden',
-                                                    backgroundColor: '#000',
-                                                    borderWidth: 2,
-                                                    borderStyle: 'solid',
-                                                    borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
-                                                }}
-                                            >
-                                                {/* Style video injected by html5-qrcode to fill container */}
-                                                <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
-                                            </div>
-
-                                            {/* Corner brackets — absolute di atas video */}
-                                            <View style={[styles.corner, styles.topLeft]} />
-                                            <View style={[styles.corner, styles.topRight]} />
-                                            <View style={[styles.corner, styles.bottomLeft]} />
-                                            <View style={[styles.corner, styles.bottomRight]} />
-
-                                            {/* Laser line — absolute di atas video */}
-                                            <View style={[styles.laser, { top: laserPos }]} />
-
-                                            {/* Match indicator — absolute di atas video */}
-                                            {scanMatch === 'match' && (
-                                                <View style={styles.scannedMatchIndicatorNative}>
-                                                    <Typography weight="bold" style={{ color: 'white' }}>Item Ditemukan</Typography>
-                                                </View>
-                                            )}
-                                            {scanMatch === 'no-match' && (
-                                                <View style={styles.scannedNoMatchIndicatorNative}>
-                                                    <Typography weight="bold" style={{ color: 'white' }}>Item Tidak Ditemukan</Typography>
-                                                </View>
-                                            )}
-                                        </View>
+                                    {/* Web Camera Scanner container */}
+                                    <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center' }}>
+                                        <div
+                                            id="web-scanner-reader"
+                                            ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
+                                            style={{
+                                                width: '100%',
+                                                height: 350,
+                                                borderRadius: 16,
+                                                overflow: 'hidden',
+                                                backgroundColor: '#000',
+                                                borderWidth: 2,
+                                                borderStyle: 'solid',
+                                                borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
+                                            }}
+                                        >
+                                            <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
+                                        </div>
                                     </View>
                                     {/* Scan match indicator for continuous mode */}
                                     <View
@@ -762,34 +737,6 @@ const styles = StyleSheet.create({
         borderLeftWidth: 0,
         borderTopWidth: 0,
         borderBottomRightRadius: 16,
-    },
-    nativeMirrorContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        minHeight: 350,
-    },
-    focusedContainerNative: {
-        width: 300,
-        height: 160,
-        position: 'relative',
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
-    scannedMatchIndicatorNative: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(16, 185, 129, 0.55)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 16,
-    },
-    scannedNoMatchIndicatorNative: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(239, 68, 68, 0.55)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 16,
     },
     scannedMatchIndicator: {
         ...StyleSheet.absoluteFillObject,
