@@ -10,6 +10,7 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { onlineManager } from '@tanstack/react-query';
 import { useCreateSparePart, useUpdateSparePart, useDeleteSparePart, useUploadSparePartImage, useNextSparePartKode } from '../../hooks';
 import { FILE_URL } from '../../utils/api';
+import { useScanSound } from '../../utils/sounds';
 import { Package, Image as ImageIcon, Camera, QrCode, Sparkles, Check } from 'lucide-react-native';
 
 export interface SparePartFormData {

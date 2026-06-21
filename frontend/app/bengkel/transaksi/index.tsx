@@ -240,7 +240,6 @@ export default function BengkelTransaksiScreen() {
     const splitTotal = splitTunaiAmount + splitTransferAmount;
 
     useEffect(() => {
-        printSettingsService.getSettings().then(setPrintSettings);
     }, []);
 
     useEffect(() => {
@@ -425,23 +424,26 @@ export default function BengkelTransaksiScreen() {
     const toggleService = (service: any) => {
         setSelectedServices(prev => {
             const next = { ...prev };
-            if (next[service.id]) delete next[service.id];
-            else next[service.id] = { item: service, qty: 1 };
+            const key = String(service.id);
+            if (next[key]) delete next[key];
+            else next[key] = { item: service, qty: 1 };
             return next;
         });
     };
 
     const setServiceQty = (serviceId: number, qty: number) => {
-        setSelectedServices(prev => prev[serviceId] ? { ...prev, [serviceId]: { ...prev[serviceId], qty: Math.max(1, qty) } } : prev);
+        const key = String(serviceId);
+        setSelectedServices(prev => prev[key] ? { ...prev, [key]: { ...prev[key], qty: Math.max(1, qty) } } : prev);
     };
 
     const setServicePrice = (serviceId: number, priceStr: string, fallbackItem?: any) => {
+        const key = String(serviceId);
         setSelectedServices(prev => {
-            const existing = prev[serviceId];
+            const existing = prev[key];
             if (existing) {
                 return {
                     ...prev,
-                    [serviceId]: {
+                    [key]: {
                         ...existing,
                         item: { ...existing.item, harga: parseNumber(priceStr) }
                     }
@@ -450,7 +452,7 @@ export default function BengkelTransaksiScreen() {
             if (!fallbackItem) return prev;
             return {
                 ...prev,
-                [serviceId]: {
+                [key]: {
                     item: { ...fallbackItem, harga: parseNumber(priceStr) },
                     qty: 1
                 }
@@ -624,56 +626,7 @@ export default function BengkelTransaksiScreen() {
         showDiscount: showDiscountInReceipt,
     });
 
-    const handlePrintCreatedReceipt = async () => {
-        if (!createdTransaction) return;
-        if (!printSettings) {
-            setReceiptActionMessage('Pengaturan cetak belum dimuat.');
-            return;
-        }
-
-        try {
-            setPrintingReceipt(true);
-            setReceiptActionMessage('');
-            await printReceipt(buildReceiptData(createdTransaction), printSettings);
-            setReceiptActionMessage('Struk berhasil dicetak.');
-        } catch {
-            setReceiptActionMessage('Gagal mencetak struk.');
-        } finally {
-            setPrintingReceipt(false);
-        }
-    };
-
-    const handleShareCreatedReceipt = async () => {
-        const receiptToken = createdTransaction?.public_receipt_token;
-        if (!receiptToken) {
-            setReceiptActionMessage('Token struk belum tersedia. Muat ulang transaksi lalu coba lagi.');
-            return;
-        }
-
-        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/bengkel/${receiptToken}`;
-        const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
-
-        try {
-            setSharingReceipt(true);
-            setReceiptActionMessage('');
-            if (Platform.OS === 'web' && !navigator.share) {
-                await navigator.clipboard.writeText(shareMessage);
-                setReceiptActionMessage('Link struk telah disalin.');
-                return;
-            }
-
-            await Share.share({
-                message: shareMessage,
-                url: shareUrl,
-                title: 'Bagikan Struk Digital',
-            });
-            setReceiptActionMessage('Struk berhasil dibagikan.');
-        } catch {
-            setReceiptActionMessage('Gagal membagikan struk.');
-        } finally {
-            setSharingReceipt(false);
-        }
-    };
+};
 
     const submit = async () => {
         const isJA = kategori === 'jasa_angkut';
@@ -922,7 +875,7 @@ export default function BengkelTransaksiScreen() {
                         {showServiceCatalog && (
                         <View className="w-full">
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
-                                const selected = selectedServices[service.id];
+                                const selected = selectedServices[String(service.id)];
                                 return (
                                     <View key={`service-${service.id}`} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
@@ -1036,7 +989,7 @@ export default function BengkelTransaksiScreen() {
                                     />
                                 </View>
                             ))}
-                            {openBillServiceList.filter((obs: any) => !selectedServices[obs.item.id]).map((row: any) => (
+                            {openBillServiceList.filter((obs: any) => !selectedServices[String(obs.item.id)]).map((row: any) => (
                                 <View key={`open-service-${row.item.id}`} className="mb-3 p-3 rounded-2xl border bg-amber-50 border-amber-100">
                                     <View className="flex-row items-start">
                                         <Wrench size={18} color="#D97706" />
@@ -1055,10 +1008,10 @@ export default function BengkelTransaksiScreen() {
                                         </View>
                                     </View>
                                     <QtyControl
-                                        value={selectedServices[row.item.id]?.qty || row.qty}
+                                        value={selectedServices[String(row.item.id)]?.qty || row.qty}
                                         color={"amber" as "blue" | "emerald"}
-                                        onMinus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) - 1)}
-                                        onPlus={() => setServiceQty(row.item.id, (selectedServices[row.item.id]?.qty || row.qty) + 1)}
+                                        onMinus={() => setServiceQty(row.item.id, (selectedServices[String(row.item.id)]?.qty || row.qty) - 1)}
+                                        onPlus={() => setServiceQty(row.item.id, (selectedServices[String(row.item.id)]?.qty || row.qty) + 1)}
                                         onChangeQty={(qty) => setServiceQty(row.item.id, qty)}
                                     />
                                 </View>
@@ -1848,7 +1801,7 @@ export default function BengkelTransaksiScreen() {
                         <SearchBox value={serviceSearch} onChange={setServiceSearch} placeholder="Cari service..." />
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
                             {isJasaLoading ? <ActivityIndicator color="#023C69" /> : visibleServices.map((service: any) => {
-                                const selected = selectedServices[service.id];
+                                const selected = selectedServices[String(service.id)];
                                 return (
                                     <Pressable key={`sheet-service-${service.id}`} onPress={() => toggleService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
                                         <View className="flex-row items-start">
