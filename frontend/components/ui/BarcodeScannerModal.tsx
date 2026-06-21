@@ -191,20 +191,20 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         if (webScanInProgress.current) return;
                         webScanInProgress.current = true;
                         try {
-                            const matched = await onScan(decodedText);
+                            const matched = await onScanRef.current(decodedText);
                             if (matched) {
-                                playSuccess();
+                                playSuccessRef.current();
                                 showScanMatch('match');
                             } else {
-                                playError();
+                                playErrorRef.current();
                                 showScanMatch('no-match');
                             }
                         } catch {
-                            playError();
+                            playErrorRef.current();
                             showScanMatch('no-match');
                         }
                         // Short cooldown before allowing next scan
-                        const scanCooldown = continuous ? 1000 : 1500;
+                        const scanCooldown = continuous ? 600 : 1500;
                         setTimeout(() => {
                             webScanInProgress.current = false;
                         }, scanCooldown);
