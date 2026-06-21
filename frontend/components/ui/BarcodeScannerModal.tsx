@@ -7,9 +7,7 @@ import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
-
-// Dynamic import type for html5-qrcode (web only)
-type Html5QrcodeType = any;
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 type ScanMatch = 'none' | 'match' | 'no-match';
 
@@ -42,12 +40,20 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
     // html5-qrcode refs (web camera scanner)
     const html5QrcodeRef = useRef<Html5QrcodeType>(null);
-    const webScannerContainerRef = useRef<View | null>(null);
+    const webScannerContainerRef = useRef<HTMLDivElement | null>(null);
     const webScanInProgress = useRef(false);
     const scannerPausedRef = useRef(false);
 
-    // Scan sound hook
+    // Stable ref for onScan to prevent effect restart loop
+    const onScanRef = useRef(onScan);
+    onScanRef.current = onScan;
+
+    // Scan sound hook — wrap in refs to keep stable references
     const { playSuccess, playError } = useScanSound();
+    const playSuccessRef = useRef(playSuccess);
+    const playErrorRef = useRef(playError);
+    playSuccessRef.current = playSuccess;
+    playErrorRef.current = playError;
 
     // Web camera error + flash indicator state
     const [webCameraError, setWebCameraError] = useState<string | null>(null);
@@ -147,28 +153,23 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         let isCancelled = false;
 
         const startWebScanner = async () => {
+            console.log('[DEBUG] startWebScanner ENTERED');
+            if (isCancelled) { console.log('[DEBUG] startWebScanner CANCELLED before start'); return; }
+
+            const scannerId = 'web-scanner-reader';
+            const container = document.getElementById(scannerId);
+            console.log('[DEBUG] container element:', container);
+            if (!container) {
+                console.log('[DEBUG] container not found — retry in 200ms');
+                setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
+                return;
+            }
+            container.innerHTML = '';
+
+            console.log('[DEBUG] Html5Qrcode class:', typeof Html5Qrcode);
+            const html5Qrcode = new Html5Qrcode(scannerId);
+
             try {
-                // Dynamic import — only loaded on web, no native bundle impact
-                // @ts-expect-error -- dynamic import fine for web build
-                const Html5QrcodeLib = require('html5-qrcode');
-                const Html5Qrcode = Html5QrcodeLib.Html5Qrcode;
-                const Html5QrcodeSupportedFormats = Html5QrcodeLib.Html5QrcodeSupportedFormats;
-
-                if (isCancelled) return;
-
-                const scannerId = 'web-scanner-reader';
-
-                // Ensure the DOM element exists before init
-                const container = document.getElementById(scannerId);
-                if (!container) {
-                    // Not mounted yet — retry briefly
-                    setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
-                    return;
-                }
-
-                const html5Qrcode = new Html5Qrcode(scannerId);
-                html5QrcodeRef.current = html5Qrcode;
-
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
                     {
@@ -211,9 +212,30 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         // Scan failure callback — ignore (fires on every frame with no barcode)
                     }
                 );
-            } catch (err: any) {
+
+                // Only store ref AFTER start succeeds — prevents stop() on non-running scanner
+                if (!isCancelled) {
+                    html5QrcodeRef.current = html5Qrcode;
+                } else {
+                    // Unmounted during start — clean up orphan scanner
+                    const container = document.getElementById('web-scanner-reader');
+                    const video = container?.querySelector('video');
+                    if (video) {
+                        video.onabort = null;
+                        video.onerror = null;
+                        if (video.srcObject) {
+                            try {
+                                const stream = video.srcObject as MediaStream;
+                                stream.getTracks().forEach(track => track.stop());
+                                video.srcObject = null;
+                            } catch (e) {}
+                        }
+                    }
+                    html5Qrcode.stop().catch(() => {});
+                }
+            } catch (err) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
-                setWebCameraError(err?.message || 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
+                setWebCameraError(err instanceof Error ? err.message : 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
             }
         };
 
@@ -221,19 +243,33 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
         return () => {
             isCancelled = true;
+
+            // Find active video element in DOM and stop its media tracks aggressively to prevent WebMediaPlayer leaks
+            const container = document.getElementById('web-scanner-reader');
+            const video = container?.querySelector('video');
+            if (video) {
+                video.onabort = null;
+                video.onerror = null;
+                if (video.srcObject) {
+                    try {
+                        const stream = video.srcObject as MediaStream;
+                        stream.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    } catch (e) {
+                        console.error('[WebScanner] Error stopping tracks manually:', e);
+                    }
+                }
+            }
+
             if (html5QrcodeRef.current) {
-                html5QrcodeRef.current
-                    .stop()
-                    .then(() => {
-                        html5QrcodeRef.current?.clear();
-                        html5QrcodeRef.current = null;
-                    })
-                    .catch(() => {
-                        html5QrcodeRef.current = null;
-                    });
+                const scanner = html5QrcodeRef.current;
+                html5QrcodeRef.current = null;
+                scanner.stop().catch(() => {});
             }
         };
-    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch]);
+    // NOTE: onScan, playSuccess, playError accessed via refs to prevent restart loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visible, scannerMode, showScanMatch]);
 
     const toggleScannerMode = async () => {
         let newMode: 'camera' | 'hardware' | 'web-camera';
@@ -335,10 +371,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             Arahkan kamera ke barcode/QR code untuk memindai.
                                         </Typography>
                                     </View>
-                                    <View
-                                        // @ts-ignore — id is valid on web for html5-qrcode to attach
+                                    <div
                                         id="web-scanner-reader"
-                                        ref={webScannerContainerRef}
+                                        ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
                                         style={{
                                             width: '100%',
                                             height: 350,
@@ -346,17 +381,20 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                             overflow: 'hidden',
                                             backgroundColor: '#000',
                                             borderWidth: 2,
-                                            borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
                                             borderStyle: 'solid',
+                                            borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
                                         }}
-                                    />
+                                    >
+                                        {/* Style video injected by html5-qrcode to fill container */}
+                                        <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
+                                    </div>
                                     {/* A11y: screen reader announces scan results */}
                                     <View
                                         aria-live="assertive"
                                         aria-atomic="true"
                                         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                     >
-                                        {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                        <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                     </View>
                                 </View>
                             </View>
@@ -456,7 +494,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     aria-atomic="true"
                                     style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                 >
-                                    {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
+                                    <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
                                 </View>
                             </CameraView>
                         ) : (
