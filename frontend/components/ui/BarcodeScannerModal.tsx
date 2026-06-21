@@ -7,7 +7,9 @@ import { Typography } from './Typography';
 import { X, Zap, ZapOff, Scan, Camera, AlertTriangle, CheckCircle2 } from 'lucide-react-native';
 import { Button } from './Button';
 import { useScanSound, ensureAudioUnlocked } from '../../utils/sounds';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+
+// Dynamic import type for html5-qrcode (web only)
+type Html5QrcodeType = any;
 
 type ScanMatch = 'none' | 'match' | 'no-match';
 
@@ -32,28 +34,18 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
     const [torch, setTorch] = useState(false);
     const [laserPos, setLaserPos] = useState(0);
     const [movingDown, setMovingDown] = useState(true);
-    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>(
-        Platform.OS === 'web' ? 'web-camera' : 'camera'
-    );
+    const [scannerMode, setScannerMode] = useState<'camera' | 'hardware' | 'web-camera'>('camera');
     const [hwInput, setHwInput] = useState('');
     const hwInputRef = useRef<TextInput>(null);
 
     // html5-qrcode refs (web camera scanner)
     const html5QrcodeRef = useRef<Html5QrcodeType>(null);
-    const webScannerContainerRef = useRef<HTMLDivElement | null>(null);
+    const webScannerContainerRef = useRef<View | null>(null);
     const webScanInProgress = useRef(false);
     const scannerPausedRef = useRef(false);
 
-    // Stable ref for onScan to prevent effect restart loop
-    const onScanRef = useRef(onScan);
-    onScanRef.current = onScan;
-
-    // Scan sound hook — wrap in refs to keep stable references
+    // Scan sound hook
     const { playSuccess, playError } = useScanSound();
-    const playSuccessRef = useRef(playSuccess);
-    const playErrorRef = useRef(playError);
-    playSuccessRef.current = playSuccess;
-    playErrorRef.current = playError;
 
     // Web camera error + flash indicator state
     const [webCameraError, setWebCameraError] = useState<string | null>(null);
@@ -113,17 +105,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
             // Load preferred mode
             const saved = await AsyncStorage.getItem('@scanner_mode');
-            if (mounted && saved) {
-                const mode = saved as any;
-                // Web: camera mode (expo-camera) relies on browser BarcodeDetector
-                // which doesn't reliably support Code-128 on mobile browsers.
-                // Auto-upgrade to web-camera (html5-qrcode) with explicit format support.
-                if (Platform.OS === 'web' && mode === 'camera') {
-                    setScannerMode('web-camera');
-                } else {
-                    setScannerMode(mode);
-                }
-            }
+            if (mounted && saved) setScannerMode(saved as any);
         };
 
         initializeScanner();
@@ -153,36 +135,31 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
         let isCancelled = false;
 
         const startWebScanner = async () => {
-            console.log('[DEBUG] startWebScanner ENTERED');
-            if (isCancelled) { console.log('[DEBUG] startWebScanner CANCELLED before start'); return; }
-
-            const scannerId = 'web-scanner-reader';
-            const container = document.getElementById(scannerId);
-            console.log('[DEBUG] container element:', container);
-            if (!container) {
-                console.log('[DEBUG] container not found — retry in 200ms');
-                setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
-                return;
-            }
-            container.innerHTML = '';
-            // Global style — persists across html5-qrcode DOM manipulation
-            const styleId = '__scanner_video_fill';
-            if (!document.getElementById(styleId)) {
-                const styleEl = document.createElement('style');
-                styleEl.id = styleId;
-                styleEl.textContent = '#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }';
-                document.head.appendChild(styleEl);
-            }
-
-            console.log('[DEBUG] Html5Qrcode class:', typeof Html5Qrcode);
-            const html5Qrcode = new Html5Qrcode(scannerId);
-
             try {
+                // Dynamic import — only loaded on web, no native bundle impact
+                // @ts-expect-error -- dynamic import fine for web build
+                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+
+                if (isCancelled) return;
+
+                const scannerId = 'web-scanner-reader';
+
+                // Ensure the DOM element exists before init
+                const container = document.getElementById(scannerId);
+                if (!container) {
+                    // Not mounted yet — retry briefly
+                    setTimeout(() => { if (!isCancelled) startWebScanner(); }, 200);
+                    return;
+                }
+
+                const html5Qrcode = new Html5Qrcode(scannerId);
+                html5QrcodeRef.current = html5Qrcode;
+
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
                     {
-                        fps: 15,
-                        qrbox: { width: 320, height: 160 },
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
                         formatsToSupport: [
                             Html5QrcodeSupportedFormats.QR_CODE,
                             Html5QrcodeSupportedFormats.CODE_128,
@@ -199,52 +176,30 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                         if (webScanInProgress.current) return;
                         webScanInProgress.current = true;
                         try {
-                            const matched = await onScanRef.current(decodedText);
+                            const matched = await onScan(decodedText);
                             if (matched) {
-                                playSuccessRef.current();
+                                playSuccess();
                                 showScanMatch('match');
                             } else {
-                                playErrorRef.current();
+                                playError();
                                 showScanMatch('no-match');
                             }
                         } catch {
-                            playErrorRef.current();
+                            playError();
                             showScanMatch('no-match');
                         }
                         // Short cooldown before allowing next scan
-                        const scanCooldown = continuous ? 600 : 1500;
                         setTimeout(() => {
                             webScanInProgress.current = false;
-                        }, scanCooldown);
+                        }, 1500);
                     },
                     () => {
                         // Scan failure callback — ignore (fires on every frame with no barcode)
                     }
                 );
-
-                // Only store ref AFTER start succeeds — prevents stop() on non-running scanner
-                if (!isCancelled) {
-                    html5QrcodeRef.current = html5Qrcode;
-                } else {
-                    // Unmounted during start — clean up orphan scanner
-                    const container = document.getElementById('web-scanner-reader');
-                    const video = container?.querySelector('video');
-                    if (video) {
-                        video.onabort = null;
-                        video.onerror = null;
-                        if (video.srcObject) {
-                            try {
-                                const stream = video.srcObject as MediaStream;
-                                stream.getTracks().forEach(track => track.stop());
-                                video.srcObject = null;
-                            } catch (e) {}
-                        }
-                    }
-                    html5Qrcode.stop().catch(() => {});
-                }
-            } catch (err) {
+            } catch (err: any) {
                 console.error('[WebScanner] Failed to start html5-qrcode:', err);
-                setWebCameraError(err instanceof Error ? err.message : 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
+                setWebCameraError(err?.message || 'Gagal mengakses kamera. Periksa izin browser atau coba browser lain.');
             }
         };
 
@@ -252,33 +207,19 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
 
         return () => {
             isCancelled = true;
-
-            // Find active video element in DOM and stop its media tracks aggressively to prevent WebMediaPlayer leaks
-            const container = document.getElementById('web-scanner-reader');
-            const video = container?.querySelector('video');
-            if (video) {
-                video.onabort = null;
-                video.onerror = null;
-                if (video.srcObject) {
-                    try {
-                        const stream = video.srcObject as MediaStream;
-                        stream.getTracks().forEach(track => track.stop());
-                        video.srcObject = null;
-                    } catch (e) {
-                        console.error('[WebScanner] Error stopping tracks manually:', e);
-                    }
-                }
-            }
-
             if (html5QrcodeRef.current) {
-                const scanner = html5QrcodeRef.current;
-                html5QrcodeRef.current = null;
-                scanner.stop().catch(() => {});
+                html5QrcodeRef.current
+                    .stop()
+                    .then(() => {
+                        html5QrcodeRef.current?.clear();
+                        html5QrcodeRef.current = null;
+                    })
+                    .catch(() => {
+                        html5QrcodeRef.current = null;
+                    });
             }
         };
-    // NOTE: onScan, playSuccess, playError accessed via refs to prevent restart loop
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visible, scannerMode, showScanMatch]);
+    }, [visible, scannerMode, onScan, playSuccess, playError, showScanMatch]);
 
     const toggleScannerMode = async () => {
         let newMode: 'camera' | 'hardware' | 'web-camera';
@@ -377,78 +318,32 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                         </View>
                                         <Typography variant="h3" weight="bold" className="text-white text-center mb-2">Web Camera</Typography>
                                         <Typography className="text-gray-400 text-center text-sm">
-                                            {continuous
-                                                ? 'Scan terus-menerus — arahkan ke barcode berikutnya'
-                                                : 'Arahkan kamera ke barcode/QR code untuk memindai.'
-                                            }
+                                            Arahkan kamera ke barcode/QR code untuk memindai.
                                         </Typography>
                                     </View>
-                                    {/* Continuous mode badge */}
-                                    {continuous && (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(16, 185, 129, 0.85)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}>
-                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#6EE7B7', marginRight: 8 }} />
-                                                <Typography weight="bold" style={{ color: 'white', fontSize: 11 }}>ITEM SCAN</Typography>
-                                                {scanLog.length > 0 && (
-                                                    <View style={{ backgroundColor: 'white', borderRadius: 10, marginLeft: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-                                                        <Typography weight="bold" style={{ color: '#059669', fontSize: 11 }}>{scanLog.length}</Typography>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        </View>
-                                    )}
-                                    {/* Web Camera Scanner container */}
-                                    <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center' }}>
-                                        <div
-                                            id="web-scanner-reader"
-                                            ref={webScannerContainerRef as React.RefObject<HTMLDivElement>}
-                                            style={{
-                                                width: '100%',
-                                                height: 350,
-                                                borderRadius: 16,
-                                                overflow: 'hidden',
-                                                backgroundColor: '#000',
-                                                borderWidth: 2,
-                                                borderStyle: 'solid',
-                                                borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
-                                            }}
-                                        >
-                                            <style>{`#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }`}</style>
-                                        </div>
-                                    </View>
-                                    {/* Scan match indicator for continuous mode */}
+                                    <View
+                                        // @ts-ignore — id is valid on web for html5-qrcode to attach
+                                        id="web-scanner-reader"
+                                        ref={webScannerContainerRef}
+                                        style={{
+                                            width: '100%',
+                                            height: 350,
+                                            borderRadius: 16,
+                                            overflow: 'hidden',
+                                            backgroundColor: '#000',
+                                            borderWidth: 2,
+                                            borderColor: scanMatch === 'no-match' ? '#EF4444' : scanMatch === 'match' ? '#10B981' : 'rgba(59,130,246,0.3)',
+                                            borderStyle: 'solid',
+                                        }}
+                                    />
+                                    {/* A11y: screen reader announces scan results */}
                                     <View
                                         aria-live="assertive"
                                         aria-atomic="true"
                                         style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                     >
-                                        <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
+                                        {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
                                     </View>
-                                    {/* Scan log (mirroring camera branch) */}
-                                    {scanLog.length > 0 && (
-                                        <View className="mt-6 w-full">
-                                            <Typography variant="caption" weight="bold" className="text-white/60 mb-3 ml-1 uppercase" style={{ letterSpacing: 1 }}>History Scan Terakhir</Typography>
-                                            {scanLog.slice(0, 3).map((item, idx) => (
-                                                <View key={item.id} className={`flex-row items-center py-2.5 px-3 mb-2 rounded-2xl ${idx === 0 ? 'bg-blue-600/30 border border-blue-500/30' : 'bg-white/5 border border-white/5'}`}>
-                                                    <View className={`w-2 h-2 rounded-full mr-3 ${idx === 0 ? 'bg-blue-400' : 'bg-white/20'}`} />
-                                                    <View className="flex-1">
-                                                        <Typography weight="bold" className="text-white text-sm" numberOfLines={1}>{item.title}</Typography>
-                                                        {item.subtitle && <Typography variant="caption" className="text-white/50 text-[10px]">{item.subtitle}</Typography>}
-                                                    </View>
-                                                    <Typography variant="caption" className="text-white/40 ml-2">Baru saja</Typography>
-                                                </View>
-                                            ))}
-                                            <Typography variant="caption" weight="bold" className="text-blue-400 text-center mt-2 mb-4">Total: {scanLog.length} item tersimpan</Typography>
-                                            {continuous && (
-                                                <Button
-                                                    title="Selesai & Tutup"
-                                                    variant="primary"
-                                                    onPress={onClose}
-                                                    className="h-12 rounded-2xl"
-                                                />
-                                            )}
-                                        </View>
-                                    )}
                                 </View>
                             </View>
                         ) : scannerMode === 'camera' ? (
@@ -547,7 +442,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                                     aria-atomic="true"
                                     style={{ position: 'absolute', opacity: 0, height: 1, width: 1 }}
                                 >
-                                    <Typography>{scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}</Typography>
+                                    {scanMatch === 'match' ? 'Item ditemukan' : scanMatch === 'no-match' ? 'Item tidak ditemukan' : ''}
                                 </View>
                             </CameraView>
                         ) : (
