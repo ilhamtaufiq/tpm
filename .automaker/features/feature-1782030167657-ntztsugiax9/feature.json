@@ -28,5 +28,6 @@
   ],
   "summary": "## Summary: Uncaught Error - useCallback is not defined\n\n### Changes Implemented\n- Added `useCallback` to the React named imports in BarcodeScannerModal.tsx\n\n### Files Modified\n- `frontend/components/ui/BarcodeScannerModal.tsx`\n\n### Notes for Developer\n- N/A",
   "updatedAt": "2026-06-21T08:28:58.395Z",
-  "justFinishedAt": "2026-06-21T08:28:58.395Z"
+  "justFinishedAt": "2026-06-21T08:28:58.395Z",
+  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/30"
 }

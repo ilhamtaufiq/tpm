@@ -1,0 +1,31 @@
+{
+  "category": "Uncategorized",
+  "description": "Improve BarcodeScannerModal: Scan Feedback, Labeling & Code 128 Support (Html5Qrcode)\n\nEnhance the barcode scanning modal with clear visual/audio feedback for scan outcomes, correct mislabeled UI text, and fix linear Code 128 barcode decoding (currently non-functional — only QR codes scan).\n\n---\n\n**1. Red Indicator for Unmatched Scans**\n- Display a red border/background/overlay on the scanner UI when a barcode does not match any item in the system.\n- Include a text label (e.g., \"Item Not Found\") and/or icon alongside the red color for color-blind users.\n- Keep existing green/neutral styling for successful matches — do not alter.\n- Auto-dismiss red state after ~1.5 seconds or reset immediately on the next scan attempt.\n\n**2. Increase Scan Feedback Volume**\n- Raise beep/gain for both success and failure sounds to **0.8–1.0** range, avoiding clipping.\n- Cap at system maximum (gain ≤ 1.0).\n- Ensure consistent volume behavior across Chrome, Firefox, Safari (desktop + mobile).\n\n**3. Relabel Scan Mode: \"Continuous Scan\" → \"Item Scan\"**\n- Fix typo: \"Conitunous\" → \"Continuous\".\n- Then rename the mode to **\"Item Scan\"**.\n- Update all occurrences: button text, modal header, tooltip, aria-labels, and all i18n locale strings across every supported language file.\n\n**4. Fix Linear Code 128 Barcode Support (Currently Broken)**\n- Currently only QR codes decode successfully. Code 128 linear barcodes fail entirely.\n- Debug `Html5Qrcode` configuration: verify `formatsToSupport` includes `Html5QrcodeSupportedFormats.CODE_128`.\n- Check if `experimental` flags or decoder loading is needed for 1D barcode formats.\n- Test with real Code 128 barcode samples on both desktop webcam and mobile camera.\n- Confirm no regression in QR code scanning after the fix.\n\n**5. Accessibility**\n- Red \"not found\" indicator must not rely on color alone — add icon (e.g., ❌) and/or text label.\n- Verify WCAG AA contrast ratio (≥ 4.5:1) for all feedback overlay text.\n- Ensure screen readers announce scan results via `aria-live` region or equivalent.\n\n**6. Edge Cases**\n- Handle scanner initialization failure gracefully (camera denied, camera absent) with a user-friendly fallback message and optional retry.\n- Prevent volume from exceeding system maximum per OS/browser.\n- Maintain label consistency across all locales — ensure all new strings exist in every supported language file.\n- Test on desktop (Chrome, Firefox, Safari) and mobile (iOS Safari, Chrome Android).\n- Verify scanner robustness across viewport sizes and device orientations.",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "waiting_approval",
+  "createdAt": "2026-06-21T08:41:36.256Z",
+  "startedAt": "2026-06-21T08:41:36.256Z",
+  "id": "feature-1782031296256-c6b4r5i3yl",
+  "descriptionHistory": [
+    {
+      "description": "Improve BarcodeScannerModal: Scan Feedback, Labeling & Code 128 Support (Html5Qrcode)\n\nEnhance the barcode scanning modal with clear visual/audio feedback for scan outcomes, correct mislabeled UI text, and fix linear Code 128 barcode decoding (currently non-functional — only QR codes scan).\n\n---\n\n**1. Red Indicator for Unmatched Scans**\n- Display a red border/background/overlay on the scanner UI when a barcode does not match any item in the system.\n- Include a text label (e.g., \"Item Not Found\") and/or icon alongside the red color for color-blind users.\n- Keep existing green/neutral styling for successful matches — do not alter.\n- Auto-dismiss red state after ~1.5 seconds or reset immediately on the next scan attempt.\n\n**2. Increase Scan Feedback Volume**\n- Raise beep/gain for both success and failure sounds to **0.8–1.0** range, avoiding clipping.\n- Cap at system maximum (gain ≤ 1.0).\n- Ensure consistent volume behavior across Chrome, Firefox, Safari (desktop + mobile).\n\n**3. Relabel Scan Mode: \"Continuous Scan\" → \"Item Scan\"**\n- Fix typo: \"Conitunous\" → \"Continuous\".\n- Then rename the mode to **\"Item Scan\"**.\n- Update all occurrences: button text, modal header, tooltip, aria-labels, and all i18n locale strings across every supported language file.\n\n**4. Fix Linear Code 128 Barcode Support (Currently Broken)**\n- Currently only QR codes decode successfully. Code 128 linear barcodes fail entirely.\n- Debug `Html5Qrcode` configuration: verify `formatsToSupport` includes `Html5QrcodeSupportedFormats.CODE_128`.\n- Check if `experimental` flags or decoder loading is needed for 1D barcode formats.\n- Test with real Code 128 barcode samples on both desktop webcam and mobile camera.\n- Confirm no regression in QR code scanning after the fix.\n\n**5. Accessibility**\n- Red \"not found\" indicator must not rely on color alone — add icon (e.g., ❌) and/or text label.\n- Verify WCAG AA contrast ratio (≥ 4.5:1) for all feedback overlay text.\n- Ensure screen readers announce scan results via `aria-live` region or equivalent.\n\n**6. Edge Cases**\n- Handle scanner initialization failure gracefully (camera denied, camera absent) with a user-friendly fallback message and optional retry.\n- Prevent volume from exceeding system maximum per OS/browser.\n- Maintain label consistency across all locales — ensure all new strings exist in every supported language file.\n- Test on desktop (Chrome, Firefox, Safari) and mobile (iOS Safari, Chrome Android).\n- Verify scanner robustness across viewport sizes and device orientations.",
+      "timestamp": "2026-06-21T08:41:36.605Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-06-21T08:59:48.041Z",
+  "justFinishedAt": "2026-06-21T08:59:48.041Z"
+}

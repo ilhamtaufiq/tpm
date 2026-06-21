@@ -73,7 +73,7 @@ async function playWebBeep(freq: number, durationMs: number) {
         _activeGain = gain;
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.setValueAtTime(0.85, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + durationMs / 1000);
         osc.connect(gain);
         gain.connect(ctx.destination);

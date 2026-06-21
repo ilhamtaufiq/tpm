@@ -35,5 +35,5 @@
   "providerId": "provider-1781796206507-ijwlnveq8",
   "summary": "## Summary: Added Missing FABs to Master Data Pages\n\n### Changes Implemented\n- Added Floating Action Button (+) to `customer.tsx`, `jasa-servis.tsx`, and `supplier.tsx` for creating new entries\n- Each FAB uses identical styling: absolute bottom-right, 64x64, primary background, Plus icon\n- Wired to existing page-specific \"add\" functions\n- `sparepart.tsx` already had a working FAB (verified)\n\n### Files Modified\n- `frontend/app/master-data/customer.tsx`\n- `frontend/app/master-data/jasa-servis.tsx`\n- `frontend/app/master-data/supplier.tsx`\n\n### Notes for Developer\n- All root views already have `position: relative` — no extra layout fix needed\n- FAB placement is consistent across all 4 master-data index pages",
   "justFinishedAt": "2026-06-18T15:53:03.783Z",
-  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/29"
+  "prUrl": "https://github.com/ilhamtaufiq/tpm/pull/30"
 }

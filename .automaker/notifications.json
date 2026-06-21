@@ -396,6 +396,28 @@
       "dismissed": false,
       "featureId": "feature-1782030167657-ntztsugiax9",
       "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "f070d682-557f-4a58-a0c3-4026a1f2a222",
+      "type": "feature_waiting_approval",
+      "title": "feature-1782031296256-c6b4r5i3yl",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-21T08:59:48.081Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782031296256-c6b4r5i3yl",
+      "projectPath": "C:\\laragon\\www\\tpm"
+    },
+    {
+      "id": "98195da7-333f-4425-ad56-8412e2001be1",
+      "type": "feature_waiting_approval",
+      "title": "feature-1782032113159-alp858uh3h",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-06-21T09:05:29.930Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1782032113159-alp858uh3h",
+      "projectPath": "C:\\laragon\\www\\tpm"
     }
   ]
 }
