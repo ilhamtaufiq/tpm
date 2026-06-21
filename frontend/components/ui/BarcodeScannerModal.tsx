@@ -150,7 +150,9 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
             try {
                 // Dynamic import — only loaded on web, no native bundle impact
                 // @ts-expect-error -- dynamic import fine for web build
-                const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import('html5-qrcode');
+                const Html5QrcodeLib = require('html5-qrcode');
+                const Html5Qrcode = Html5QrcodeLib.Html5Qrcode;
+                const Html5QrcodeSupportedFormats = Html5QrcodeLib.Html5QrcodeSupportedFormats;
 
                 if (isCancelled) return;
 

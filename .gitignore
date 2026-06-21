@@ -50,6 +50,8 @@ backend/__pycache__/
 # AI & Agent Files (AI slop)
 .agent/
 .antigravitycli/
+.automaker/
+.automaker/
 .claude/
 .gemini/
 artifacts/scratch/
