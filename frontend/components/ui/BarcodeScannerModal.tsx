@@ -165,6 +165,14 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 return;
             }
             container.innerHTML = '';
+            // Global style — persists across html5-qrcode DOM manipulation
+            const styleId = '__scanner_video_fill';
+            if (!document.getElementById(styleId)) {
+                const styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                styleEl.textContent = '#web-scanner-reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }';
+                document.head.appendChild(styleEl);
+            }
 
             console.log('[DEBUG] Html5Qrcode class:', typeof Html5Qrcode);
             const html5Qrcode = new Html5Qrcode(scannerId);
