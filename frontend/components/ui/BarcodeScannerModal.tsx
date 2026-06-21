@@ -173,7 +173,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                 await html5Qrcode.start(
                     { facingMode: 'environment' },
                     {
-                        fps: 10,
+                        fps: 15,
                         qrbox: { width: 320, height: 160 },
                         formatsToSupport: [
                             Html5QrcodeSupportedFormats.QR_CODE,
