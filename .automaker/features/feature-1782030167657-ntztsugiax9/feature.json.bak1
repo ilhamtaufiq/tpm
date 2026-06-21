@@ -1,0 +1,32 @@
+{
+  "category": "Uncategorized",
+  "description": "Uncaught Error\nuseCallback is not defined\nCall Stack\nBarcodeScannerModal\ncomponents/ui/BarcodeScannerModal.tsx",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "st1combo",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "providerId": "provider-1781796206507-ijwlnveq8",
+  "branchName": "dev",
+  "priority": 1,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "verified",
+  "createdAt": "2026-06-21T08:22:47.657Z",
+  "startedAt": "2026-06-21T08:26:38.948Z",
+  "id": "feature-1782030167657-ntztsugiax9",
+  "descriptionHistory": [
+    {
+      "description": "Uncaught Error\nuseCallback is not defined\nCall Stack\nBarcodeScannerModal\ncomponents/ui/BarcodeScannerModal.tsx",
+      "timestamp": "2026-06-21T08:22:48.086Z",
+      "source": "initial"
+    }
+  ],
+  "summary": "## Summary: Uncaught Error - useCallback is not defined\n\n### Changes Implemented\n- Added `useCallback` to the React named imports in BarcodeScannerModal.tsx\n\n### Files Modified\n- `frontend/components/ui/BarcodeScannerModal.tsx`\n\n### Notes for Developer\n- N/A",
+  "updatedAt": "2026-06-21T08:28:58.395Z",
+  "justFinishedAt": "2026-06-21T08:28:58.395Z"
+}
