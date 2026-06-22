@@ -490,12 +490,16 @@ export default function BengkelTransaksiScreen() {
         }
         if (part) return addScannedPart(part);
         else {
-            // Fallback: query API directly (bypass pagination)
+            // Fallback: query API directly (bypass pagination) — match by kode/kode_part
             try {
-                const res = await api.get('/spare-parts', { params: { limit: 1, search: clean } });
+                const res = await api.get('/spare-parts', { params: { limit: 5, search: clean } });
                 const rows = res.data?.data;
-                if (rows?.length) {
-                    const found = Array.isArray(rows) ? rows[0] : rows;
+                if (Array.isArray(rows) && rows.length) {
+                    const found = rows.find((p: any) =>
+                        p.kode === clean || p.kode_part === clean ||
+                        (p.kode || '').replace(/^0+/, '') === clean.replace(/^0+/, '') ||
+                        (p.kode_part || '').replace(/^0+/, '') === clean.replace(/^0+/, '')
+                    ) || rows[0];
                     return addScannedPart(found);
                 }
             } catch {}
