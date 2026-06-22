@@ -119,11 +119,20 @@ async function playNativeBeep(freq: number, durationMs: number) {
     } catch {}
 }
 
+// Web Audio API mp3 player — mobile-friendly fallback from synth to store-beep.mp3
+function playWebStoreSound() {
+    try {
+        const audio = new Audio('/store-beep.mp3');
+        audio.volume = 0.7;
+        audio.play().catch(() => { playWebBeep(880, 120); });
+    } catch { playWebBeep(880, 120); }
+}
+
 export function useScanSound() {
     const playSuccess = async () => {
         if (Platform.OS === 'web') {
             await ensureAudioUnlocked();
-            playWebBeep(880, 120);
+            playWebStoreSound();
             vibrateFallback(50);
         } else {
             await playNativeBeep(880, 120);
