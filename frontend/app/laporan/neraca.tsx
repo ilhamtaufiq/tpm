@@ -16,7 +16,7 @@ import { id as localeID } from 'date-fns/locale';
 import { Typography } from '../../components/ui/Typography';
 import { useUIStore } from '../../store/useUIStore';
 import { Card } from '../../components/ui/Card';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrencyDisplay } from '../../utils/format';
 import { useNeracaReport } from '../../hooks/useKeuangan';
 import { buildNeracaExportHtml } from '../../utils/reportTemplates';
 import { FinancialRow } from '../../components/ui/FinancialRow';
@@ -171,8 +171,8 @@ export default function NeracaScreen() {
                         </View>
                     </View>
                     <View className="bg-emerald-100/50 px-3 py-1.5 rounded-full border border-emerald-200/30">
-                        <Typography variant="body2" weight="bold" className="text-emerald-800">
-                            {formatCurrency(totalAktivaLancarAdj)}
+                        <Typography variant="body2" weight="bold" className={totalAktivaLancarAdj < 0 ? "text-red-600" : "text-emerald-800"}>
+                            {formatCurrencyDisplay(totalAktivaLancarAdj)}
                         </Typography>
                     </View>
                 </View>
@@ -255,8 +255,8 @@ export default function NeracaScreen() {
                         </View>
                     </View>
                     <View className="bg-indigo-100/50 px-3 py-1.5 rounded-full border border-indigo-200/30">
-                        <Typography variant="body2" weight="bold" className="text-indigo-800">
-                            {formatCurrency(at.total_aktiva_tetap || 0)}
+                        <Typography variant="body2" weight="bold" className={(at.total_aktiva_tetap || 0) < 0 ? "text-red-600" : "text-indigo-800"}>
+                            {formatCurrencyDisplay(at.total_aktiva_tetap || 0)}
                         </Typography>
                     </View>
                 </View>
@@ -296,8 +296,8 @@ export default function NeracaScreen() {
                         </View>
                     </View>
                     <View className="bg-violet-100/50 px-3 py-1.5 rounded-full border border-violet-200/30">
-                        <Typography variant="body2" weight="bold" className="text-violet-800">
-                            {formatCurrency(m.total_modal || 0)}
+                        <Typography variant="body2" weight="bold" className={(m.total_modal || 0) < 0 ? "text-red-600" : "text-violet-800"}>
+                            {formatCurrencyDisplay(m.total_modal || 0)}
                         </Typography>
                     </View>
                 </View>
@@ -351,8 +351,8 @@ export default function NeracaScreen() {
                         </View>
                     </View>
                     <View className="bg-rose-100/50 px-3 py-1.5 rounded-full border border-rose-200/30">
-                        <Typography variant="body2" weight="bold" className="text-rose-800">
-                            {formatCurrency(totalHutangExternal)}
+                        <Typography variant="body2" weight="bold" className={totalHutangExternal < 0 ? "text-red-600" : "text-rose-800"}>
+                            {formatCurrencyDisplay(totalHutangExternal)}
                         </Typography>
                     </View>
                 </View>
@@ -417,9 +417,18 @@ export default function NeracaScreen() {
                     <View className="h-[1px] bg-white/20 w-full my-3" />
                     <View className="flex-row justify-between items-center w-full">
                         <Typography className="text-white/60 text-xs flex-1">Selisih Neraca</Typography>
-                        <Typography variant="h4" weight="bold" className={Math.abs(selisih) < 100 ? "text-emerald-300" : "text-amber-300"}>
-                            {formatCurrency(selisih)}
-                        </Typography>
+                        {(() => {
+                            const isNegSelisih = selisih < 0;
+                            const selisihDisplay = formatCurrencyDisplay(selisih);
+                            const selisihColor = Math.abs(selisih) < 100
+                                ? 'text-emerald-300'
+                                : (isNegSelisih ? 'text-red-400' : 'text-amber-300');
+                            return (
+                                <Typography variant="h4" weight="bold" className={selisihColor}>
+                                    {selisihDisplay}
+                                </Typography>
+                            );
+                        })()}
                     </View>
                 </View>
 
@@ -435,7 +444,11 @@ export default function NeracaScreen() {
                         isDark
                         bold
                         isNegative={selisihModal < 0}
-                        color={Math.abs(selisihModal) < 100 ? "text-emerald-300" : "text-amber-300"}
+                        color={
+                            Math.abs(selisihModal) < 100
+                                ? "text-emerald-300"
+                                : (selisihModal < 0 ? "text-red-400" : "text-amber-300")
+                        }
                     />
                 </View>
 
@@ -587,12 +600,12 @@ export default function NeracaScreen() {
                             <View className="flex-row justify-between pt-1">
                                 <View className="flex-1">
                                     <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Aktiva</Typography>
-                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_aktiva || 0)}</Typography>
+                                    <Typography weight="bold" className={(report?.total_aktiva || 0) < 0 ? "text-red-400" : "text-white"}>{formatCurrencyDisplay(report?.total_aktiva || 0)}</Typography>
                                 </View>
                                 <View className="w-[1px] bg-slate-700/50 mx-4" />
                                 <View className="flex-1 items-end">
                                     <Typography className="text-slate-400 text-[9px] uppercase font-bold mb-1 tracking-widest">Total Pasiva</Typography>
-                                    <Typography weight="bold" className="text-white text-base">{formatCurrency(report?.total_pasiva || 0)}</Typography>
+                                    <Typography weight="bold" className={(report?.total_pasiva || 0) < 0 ? "text-red-400" : "text-white"}>{formatCurrencyDisplay(report?.total_pasiva || 0)}</Typography>
                                 </View>
                             </View>
                         </View>

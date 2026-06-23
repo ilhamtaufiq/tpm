@@ -40,6 +40,7 @@ export const useCreateTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
         },
     });
 };
@@ -56,6 +57,7 @@ export const useUpdateTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
         },
     });
 };
@@ -69,6 +71,7 @@ export const useUpdateTransaksiBengkelPayment = () => {
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel'] });
             queryClient.invalidateQueries({ queryKey: ['transaksi_bengkel_summary'] });
             queryClient.invalidateQueries({ queryKey: ['piutang'] });
+            queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
         },
     });
 };
@@ -96,6 +99,7 @@ export const useVoidTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['piutang_summary'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
+            queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
         },
     });
 };

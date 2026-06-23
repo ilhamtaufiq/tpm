@@ -305,28 +305,12 @@ class MuatanService:
         muatan.laba_supir = profit["laba_supir"]
 
         if muatan.status_bayar == PaymentStatus.BELUM_LUNAS:
-            # Generate Piutang Record
+            # Generate Piutang Record for TPM share only ("share tpm nya saja")
+            # Effective tagihan for piutang = gross share minus biaya_operasional (tol etc "dipotong")
+            # This way "tagihan after potong tol" is what is tracked as piutang / sisa.
             debtor_name = muatan.supir_nama or "Unknown Driver"
-            nominal_piutang = data.pendapatan_kotor # Using profit margin as receivable base per previous logic?
-            # WAIT. If it's an external invoice, receivable should be 'harga_jual'.
-            # But the previous code used 'nominal_piutang = data.pendapatan_kotor' (I saw this in step 16 ViewFile).
-            # If the business model is "Driver sets deposit", maybe?
-            # "Pendapatan Kotor" = Jual - Beli.
-            # If I fix this, I should be careful.
-            # Let's stick to existing Piutang logic (pendapatan_kotor) to avoid breaking business logic I don't fully grasp yet.
-            # Actually, let's verify if I should fix it to harga_jual.
-            # User query is about "Method Payment".
-            # I will assume the previous Piutang logic was intentional or I should check it.
-            # Step 16 showed: `nominal_piutang = data.pendapatan_kotor`.  Wait, `data` is `MuatanCreate`.
-            # If I change status to LUNAS, I must record CASH IN.
-            # Cash In should normally be `harga_jual` (Total Invoice).
-            # But if Piutang is only `pendapatan_kotor`, maybe the `harga_beli` is handled externally?
-            # Let's check `harga_beli`. Usually "Uang Jalan" given to driver?
-            # If `harga_beli` is "Modal" (Cost), and we sell at `harga_jual`.
-            # If we receive `harga_jual`, we cover the `harga_beli`.
-            # I'll use `muatan.harga_jual` for Kas Masuk as it's the real money coming in.
-            
-            # nominal_piutang should be the TPM share (laba_tpm) as requested by the user
+            gross_share = muatan.laba_tpm
+            net_share_for_piutang = max(Decimal("0"), gross_share - total_dynamic_cost)
             piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
                 tanggal=data.tanggal,
@@ -338,11 +322,11 @@ class MuatanService:
                 nama_debitur=debtor_name,
                 telepon_debitur=supir.telepon if supir else None,
                 alamat_debitur=supir.alamat if supir else None,
-                nominal_piutang=muatan.laba_tpm,
+                nominal_piutang=net_share_for_piutang,
                 total_dibayar=Decimal("0"),
-                sisa_piutang=muatan.laba_tpm,
+                sisa_piutang=net_share_for_piutang,
                 status=PiutangStatus.BELUM_LUNAS,
-                catatan=f"Piutang Jasa Angkut {muatan.nomor_transaksi} (Bagian TPM)",
+                catatan=f"Piutang Jasa Angkut {muatan.nomor_transaksi} (Bagian TPM net of costs)",
                 created_by=user_id,
             )
             self.db.add(piutang)
@@ -380,15 +364,16 @@ class MuatanService:
                         )
         
         elif muatan.status_bayar == PaymentStatus.LUNAS:
-             # Record Income to Kas/Bank
-             tpm_gross_portion = muatan.laba_tpm
+             # Record Income to Kas/Bank - use net share (after costs "dipotong") to match piutang base
+             current_costs = sum(item.jumlah for item in data.biaya_operasional)
+             tpm_net_portion = max(Decimal("0"), muatan.laba_tpm - current_costs)
              
              if data.payments and len(data.payments) > 0:
-                 # Normalized Split Payment: ensure sum matches laba_tpm
+                 # Normalized Split Payment: ensure sum matches net share
                  total_input = sum(p.nominal for p in data.payments)
-                 if total_input > 0 and total_input != tpm_gross_portion:
+                 if total_input > 0 and total_input != tpm_net_portion:
                      # Normalize each payment proportionally to match the expected share
-                     ratio = tpm_gross_portion / total_input
+                     ratio = tpm_net_portion / total_input
                      for p in data.payments:
                          p.nominal = (p.nominal * ratio).quantize(Decimal("0.01"))
                  
@@ -412,7 +397,7 @@ class MuatanService:
                     db=self.db,
                     tanggal=data.tanggal,
                     tipe=KasBankType.MASUK,
-                    nominal=tpm_gross_portion,
+                    nominal=tpm_net_portion,
                     sumber=KasBankSource.JASA_ANGKUT,
                     metode_bayar=data.metode_bayar or PaymentMethod.TUNAI, # Use provided method
                     referensi_id=muatan.id,
@@ -719,14 +704,15 @@ class MuatanService:
             ).first()
             
             if not existing_kas:
-                tpm_gross_portion = muatan.laba_tpm # Use the calculated laba_tpm (Net TPM Share)
+                current_costs = sum(b.jumlah for b in muatan.biaya_tambahan)
+                tpm_net_portion = max(Decimal("0"), muatan.laba_tpm - current_costs)
                 
                 if data.payments and len(data.payments) > 0:
-                    # Normalized Split Payment: ensure sum matches laba_tpm
+                    # Normalized Split Payment: ensure sum matches net share
                     total_input = sum(p.nominal for p in data.payments)
-                    if total_input > 0 and total_input != tpm_gross_portion:
+                    if total_input > 0 and total_input != tpm_net_portion:
                         # Normalize each payment proportionally to match the expected share
-                        ratio = tpm_gross_portion / total_input
+                        ratio = tpm_net_portion / total_input
                         for p in data.payments:
                             p.nominal = (p.nominal * ratio).quantize(Decimal("0.01"))
                     
@@ -750,7 +736,7 @@ class MuatanService:
                         db=self.db,
                         tanggal=muatan.tanggal,
                         tipe=KasBankType.MASUK,
-                        nominal=tpm_gross_portion,
+                        nominal=tpm_net_portion,
                         sumber=KasBankSource.JASA_ANGKUT,
                         metode_bayar=data.metode_bayar or PaymentMethod.TUNAI,
                         referensi_id=muatan.id,
@@ -778,8 +764,11 @@ class MuatanService:
             ).first()
             
             if piutang:
-                # Re-sync nominal_piutang in case revenue changed
-                piutang.nominal_piutang = muatan.laba_tpm
+                # Re-sync nominal_piutang in case revenue/costs changed.
+                # Use net (after costs) so "dipotong biaya tol" affects the effective tagihan/piutang.
+                current_costs = sum(b.jumlah for b in muatan.biaya_tambahan)
+                net_share = max(Decimal("0"), muatan.laba_tpm - current_costs)
+                piutang.nominal_piutang = net_share
                 
                 # Check if partial payments were provided in update
                 if data.payments and len(data.payments) > 0:
@@ -831,7 +820,7 @@ class MuatanService:
                                 kas_jenis=p.kas_jenis,
                             )
                 else:
-                    # Just recalc sisa if nominal_piutang changed
+                    # Just recalc sisa if nominal_piutang changed (net after costs)
                     piutang.sisa_piutang = piutang.nominal_piutang - piutang.total_dibayar
                     
                 self.db.commit()

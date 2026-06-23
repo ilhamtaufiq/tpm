@@ -237,7 +237,10 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
         const revenue = jual - beli;
         
         const totalCosts = formData.biaya_operasional.reduce((acc, b) => acc + (parseNumber(b.jumlah) || 0), 0);
-        const tpmShare = (revenue * 0.5); // Per User Request: TPM share is gross (expenses moved to armada)
+        // TPM share after operational costs (tol etc) are deducted - matches ProfitSplitCard logic
+        // "dipotong biaya tol" affects the effective tagihan/share that is tracked as piutang
+        const grossShare = revenue * 0.5;
+        const tpmShare = Math.max(0, grossShare - totalCosts);
 
 
         return { revenue, tpmShare, totalCosts, beli, jual, bengkelTotal: 0 };
@@ -920,7 +923,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                     </Typography>
                 </View>
                 <View className="flex-row justify-between items-center mt-1">
-                    <Typography variant="caption" className="text-blue-600 font-bold italic">Share TPM (50%)</Typography>
+                    <Typography variant="caption" className="text-blue-600 font-bold italic">Share TPM (50% net of costs)</Typography>
                     <Typography weight="bold" className="text-blue-700">
                         {formatCurrency(calculations.tpmShare)}
                     </Typography>
@@ -1057,7 +1060,7 @@ export const MuatanForm = ({ onSuccess, initialData }: MuatanFormProps) => {
                                 <View className="flex-row justify-between items-center p-3 bg-primary/5 rounded-xl mt-2 border border-primary/10">
                                     <View>
                                         <Typography variant="caption" weight="bold" className="text-primary">TOTAL BAYAR</Typography>
-                                        <Typography variant="caption" className="text-primary/70 text-[8px] font-bold">(TARGET: SHARE TPM 50%)</Typography>
+                                        <Typography variant="caption" className="text-primary/70 text-[8px] font-bold">(TARGET: SHARE TPM 50% NET)</Typography>
                                     </View>
                                     <View className="items-end">
                                         <Typography weight="bold" className="text-primary">{formatCurrency(totalSplitAmount)}</Typography>
