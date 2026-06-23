@@ -55,6 +55,45 @@ export const parseNumber = (formattedValue: string): number => {
     return isNaN(num) ? 0 : num;
 };
 
+/**
+ * Formats currency for display in financial reports.
+ * Negative values are shown in parentheses with no minus sign: (Rp100.000)
+ */
+export const formatCurrencyDisplay = (amount: any): string => {
+    let value: number;
+    if (typeof amount === 'number') {
+        value = amount;
+    } else if (typeof amount === 'string') {
+        if (amount.includes(',') && !amount.includes('.')) {
+            value = parseFloat(amount.replace(/,/g, '.'));
+        } else if (amount.includes('.') && amount.includes(',')) {
+            value = parseFloat(amount.replace(/\./g, '').replace(/,/g, '.'));
+        } else if (amount.includes('.') && !amount.includes(',')) {
+            const dotCount = (amount.match(/\./g) || []).length;
+            if (dotCount > 1) {
+                value = parseFloat(amount.replace(/\./g, ''));
+            } else {
+                const parts = amount.split('.');
+                const lastSegLen = parts[parts.length - 1].length;
+                const firstSegLen = parts[0].length;
+                if (lastSegLen === 3 && firstSegLen <= 3) {
+                    value = parseFloat(amount.replace(/\./g, ''));
+                } else {
+                    value = parseFloat(amount);
+                }
+            }
+        } else {
+            value = parseFloat(amount);
+        }
+    } else {
+        value = 0;
+    }
+    const safeAmount = isNaN(value) ? 0 : value;
+    const absAmount = Math.abs(Math.round(safeAmount));
+    const formatted = 'Rp' + absAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return safeAmount < 0 ? `(${formatted})` : formatted;
+};
+
 export const formatDateTime = (dateString: string): string => {
     if (!dateString) return '-';
     try {

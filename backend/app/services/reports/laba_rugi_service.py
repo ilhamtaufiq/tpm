@@ -1,6 +1,8 @@
 from datetime import date
 from typing import Dict, Any
+from sqlalchemy import func
 from app.services.reports.base import BaseReportService
+from app.utils.constants import PaymentStatus
 
 class LabaRugiService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
@@ -13,7 +15,16 @@ class LabaRugiService(BaseReportService):
 
         # 1. BENGKEL
         internal_jbm_profit = data.get("internal_jbm_unrealized_profit", 0)
-        b_revenue = data["raw_summaries"]["bengkel"]["total_penjualan"]
+        # Ensure revenue from internal bengkel transaksi (kategori jasa_angkut and jual_beli_mobil
+        # created from jasa-angkut and mobil modules via bengkel/transaksi) are included in bengkel revenue.
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.utils.constants import PaymentStatus, WorkshopStatus
+        b_revenue_full = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
+            TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
+        ).scalar() or 0)
+        b_revenue = b_revenue_full or data["raw_summaries"]["bengkel"]["total_penjualan"]
         b_hpp = data["raw_summaries"]["bengkel"]["total_hpp"]
         b_laba_kotor = data["units"]["bengkel"]["laba_kotor"]
         b_gaji = b["gaji"]

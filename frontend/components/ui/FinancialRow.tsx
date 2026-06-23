@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Typography } from './Typography';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrencyDisplay } from '../../utils/format';
 
 interface FinancialRowProps {
     label: string;
@@ -27,21 +27,37 @@ export const FinancialRow = React.memo(({
     isDark,
     indent,
     className
-}: FinancialRowProps) => (
-    <View className={`flex-row justify-between items-center py-1.5 w-full ${indent ? 'pl-4' : ''} ${className || ''}`}>
-        <Typography
-            variant={small ? 'caption' : 'body2'}
-            className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
-        >
-            {label}
-        </Typography>
-        <Typography
-            variant={large ? 'h3' : small ? 'body2' : 'body1'}
-            weight={bold ? 'bold' : 'semibold'}
-            className={`${color || (isDark ? 'text-white' : 'text-slate-800')} text-right flex-shrink-0`}
-        >
-            {isNegative && value > 0 ? `(${formatCurrency(value)})` : formatCurrency(value || 0)}
-        </Typography>
-    </View>
-));
+}: FinancialRowProps) => {
+    const numericValue = typeof value === 'number' ? value : (Number(value) || 0);
+    const isNeg = isNegative || numericValue < 0;
+    const displayValue = formatCurrencyDisplay(numericValue);
+
+    // Determine color: explicit color wins; else red for negative, else default
+    let textClass = color;
+    if (!textClass) {
+        if (isNeg) {
+            textClass = isDark ? 'text-red-400' : 'text-red-600';
+        } else {
+            textClass = isDark ? 'text-white' : 'text-slate-800';
+        }
+    }
+
+    return (
+        <View className={`flex-row justify-between items-center py-1.5 w-full ${indent ? 'pl-4' : ''} ${className || ''}`}>
+            <Typography
+                variant={small ? 'caption' : 'body2'}
+                className={`${isDark ? 'text-white/70' : small ? 'text-slate-500' : 'text-slate-600'} flex-1 pr-2`}
+            >
+                {label}
+            </Typography>
+            <Typography
+                variant={large ? 'h3' : small ? 'body2' : 'body1'}
+                weight={bold ? 'bold' : 'semibold'}
+                className={`${textClass} text-right flex-shrink-0`}
+            >
+                {displayValue}
+            </Typography>
+        </View>
+    );
+});
 FinancialRow.displayName = 'FinancialRow';
