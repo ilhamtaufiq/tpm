@@ -373,7 +373,13 @@ class BaseReportService:
         bengkel_ops_total = max(0, float(pengeluaran_summary["per_unit"].get("bengkel", 0)) - float(b_prive_unit))
         bengkel_common = max(0, float(pengeluaran_summary["per_unit"].get("umum", 0)) + common_expenses)
 
-        ja_revenue_tpm = float(muatan_summary.get("total_pendapatan", 0))
+        # Gross TPM share (50% of pendapatan_kotor)
+        ja_revenue_gross = float(muatan_summary.get("total_pendapatan", 0))
+        # Biaya operasional muatan (tol, dll.) sudah dipotong dari tagihan/piutang — netkan pendapatan JA
+        ja_muatan_ops_dipotong = float(muatan_summary.get("total_biaya_linked", 0))
+        ja_revenue_tpm = ja_revenue_gross - ja_muatan_ops_dipotong
+        # Jangan deduct lagi di total_operasional (hindari double-count dengan piutang net)
+        ja_expenses_trip_reportable = max(0.0, ja_expenses_trip - ja_muatan_ops_dipotong)
         raw_bengkel_outflow = bengkel_wallet_out
         raw_ja_outflow = ja_wallet_out
 
@@ -856,7 +862,7 @@ class BaseReportService:
         # Total operational expenses (Excluding capitalized costs to avoid double-counting in equity)
         total_operasional = (
             bengkel_ops_total + bengkel_common + 
-            ja_expenses_trip + ja_expenses_bengkel + ja_tagged_from_wallet + general_ja_overhead +
+            ja_expenses_trip_reportable + ja_expenses_bengkel + ja_tagged_from_wallet + general_ja_overhead +
             admin_fees_unrecorded + ja_untracked_gap + general_mobil_overhead +
             manual_hutang_non_pinjaman
         )
@@ -954,14 +960,16 @@ class BaseReportService:
             for cats in pengeluaran_summary.get("jasa_angkut_armada", {}).get(arm.nama, {}).values():
                 ledger_ops += float(cats)
             
-            total_cost = trip + manual_ops + repairs_int + repairs_manual + ledger_ops
-            laba_armada = rev - total_cost
+            # manual_ops sudah dipotong dari tagihan — netkan pendapatan, jangan deduct ulang
+            rev_net = rev - manual_ops
+            total_cost = trip + repairs_int + repairs_manual + ledger_ops
+            laba_armada = rev_net - total_cost
             
             ja_details_breakdown.append({
                 "id": arm.id,
                 "label": arm.nama,
                 "laba": laba_armada,
-                "pendapatan": rev,
+                "pendapatan": rev_net,
                 "biaya": total_cost
             })
         
@@ -1024,7 +1032,10 @@ class BaseReportService:
                     "repairs": ja_expenses_bengkel,
                     "armada_ops": float(ja_details.get("armada_period_ops", 0)),
                     "armada_ops_ledger": ja_tagged_from_wallet,
-                    "trip_costs": ja_expenses_trip,
+                    "trip_costs": ja_expenses_trip_reportable,
+                    "trip_costs_gross": ja_expenses_trip,
+                    "muatan_ops_dipotong": ja_muatan_ops_dipotong,
+                    "revenue_tpm_gross": ja_revenue_gross,
                     "overhead": general_ja_overhead,
                     "double_exp_adjustment": ja_double_exp,
                     "total_outflow_wallet": raw_ja_outflow,

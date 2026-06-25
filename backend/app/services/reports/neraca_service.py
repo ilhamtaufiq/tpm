@@ -26,8 +26,9 @@ class NeracaService(BaseReportService):
         from app.models.bengkel import SparePart
         from app.utils.constants import InvestorDisbursementStatus, OwnershipType
         
-        # Auto-sync: fix orphaned internal piutang/hutang before computing
+        # Auto-sync: fix orphaned internal piutang/hutang + JA muatan kas before computing
         self.sync_internal_transactions()
+        self.sync_ja_muatan_finance()
         
         # 1. ASSETS
         
@@ -391,6 +392,36 @@ class NeracaService(BaseReportService):
                 "units": hist.get("units")
             }
         }
+
+    def sync_ja_muatan_finance(self) -> Dict[str, Any]:
+        """Clean legacy JA operasional kas rows and rebuild unit wallet saldo chain.
+
+        Biaya operasional muatan (tol, dll.) dipotong dari tagihan/piutang — tidak boleh
+        punya KasBank KELUAR terpisah. Entri legacy membuat saldo unit JA salah sehingga
+        pemasukan sebagian tidak terlihat di neraca.
+        """
+        from app.services.kas_bank_service import KasBankService
+
+        try:
+            deleted = self.db.query(KasBank).filter(
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.keterangan.ilike("Biaya Operational Muatan %"),
+            ).delete(synchronize_session=False)
+
+            rebuild = KasBankService(self.db).rebuild_balances(KasBankJenis.KAS_UNIT_JASA_ANGKUT)
+
+            if deleted or rebuild.get("updated", 0):
+                self.db.commit()
+
+            return {
+                "status": "success",
+                "deleted_legacy_ops_kas": deleted,
+                "rebuilt_kas_rows": rebuild.get("updated", 0),
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {"status": "error", "message": str(e)}
 
     def sync_internal_transactions(self, user_id: Optional[int] = None) -> Dict[str, Any]:
         """Automatically fix internal transaction discrepancies (bidirectional).

@@ -56,6 +56,18 @@ Ketika transaksi bengkel dibatalkan:
 - **File utama**: `backend/app/services/transaksi_bengkel_service.py` method `void_transaction()`.
 - **File terkait**: `backend/app/services/kas_bank_service.py`, `backend/app/services/piutang_service.py`, `backend/app/services/hutang_service.py`.
 
+## Jasa Angkut — Biaya Operasional Dipotong Tagihan
+
+Untuk muatan jasa angkut dengan biaya operasional (tol, dll.) yang **dipotong dari share/tagihan TPM**:
+
+- Piutang JA = `laba_tpm` (gross share) − `total_biaya` operasional muatan (net tagihan).
+- Pembayaran sebagian mengurangi `sisa_piutang`; kas masuk ke `KAS_UNIT_JASA_ANGKUT` (tunai) atau `BANK_UTAMA` (transfer).
+- **Jangan** buat `KasBank` KELUAR terpisah untuk biaya operasional muatan — biaya sudah tercermin di piutang net.
+- Laporan konsolidasi: `revenue_tpm` JA = gross share − `total_biaya_linked`; `trip_costs` di P&L tidak mengurangi ulang biaya yang sama.
+- `NeracaService.sync_ja_muatan_finance()` membersihkan entri legacy `Biaya Operational Muatan` dan rebuild saldo unit JA agar pemasukan sebagian terbaca di aktiva.
+
+**Pitfall**: Menghapus entri kas legacy tanpa rebuild `saldo_sesudah` membuat `KAS_UNIT_JASA_ANGKUT` tampak Rp0 padahal ada pemasukan sebagian → neraca selisih = laba ditahan − piutang JA.
+
 ## Checklist Verifikasi Minimum
 
 - UI sesuai flow terbaru.
