@@ -45,6 +45,26 @@ class KasBankService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def rebuild_balances(self, jenis: Optional[KasBankJenis] = None) -> Dict[str, int]:
+        """Recalculate saldo_sebelum/saldo_sesudah after orphaned row deletions."""
+        query = self.db.query(KasBank)
+        if jenis is not None:
+            query = query.filter(KasBank.jenis == jenis)
+
+        rows = query.order_by(KasBank.jenis, KasBank.id, KasBank.created_at).all()
+        updated = 0
+        last_by_jenis: Dict[Any, Decimal] = {}
+
+        for row in rows:
+            saldo_sebelum = last_by_jenis.get(row.jenis, Decimal("0"))
+            row.calculate_saldo(saldo_sebelum)
+            last_by_jenis[row.jenis] = row.saldo_sesudah
+            updated += 1
+
+        if updated:
+            self.db.commit()
+        return {"updated": updated}
+
     def _get_current_balance(
         self, 
         jenis: KasBankJenis, 

@@ -24,6 +24,11 @@ from app.utils.constants import (
 class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
         """Laporan Perubahan Modal (Capital Change) - Extended structure for Frontend"""
+        from app.services.reports.neraca_service import NeracaService
+        neraca_sync = NeracaService(self.db)
+        neraca_sync.sync_internal_transactions()
+        neraca_sync.sync_ja_muatan_finance()
+
         data = self.get_unit_financial_breakdown(tanggal_dari, tanggal_sampai)
         
         m = data["units"]["mobil"]

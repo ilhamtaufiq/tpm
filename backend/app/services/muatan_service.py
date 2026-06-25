@@ -266,26 +266,9 @@ class MuatanService:
                 jumlah=item.jumlah,
             )
             self.db.add(biaya)
-
-
-            # Record operational cost to kas/bank (money going out)
-            # Use the main payment method if it is TRANSFER to satisfy user request "tidak kepotong [di bank]"
-            # Otherwise default to TUNAI as operational costs are typically paid in cash.
-            ops_metode = data.metode_bayar if data.metode_bayar == PaymentMethod.TRANSFER else PaymentMethod.TUNAI
-            
-            create_kas_entry(
-                db=self.db,
-                tanggal=data.tanggal,
-                tipe=KasBankType.KELUAR,
-                nominal=item.jumlah,
-                sumber=KasBankSource.JASA_ANGKUT,
-                metode_bayar=ops_metode,
-                referensi_id=muatan.id,
-                nomor_referensi=muatan.nomor_transaksi,
-                keterangan=f"Biaya Operational Muatan {nomor_transaksi}: {item.deskripsi}",
-                user_id=user_id,
-                allow_negative=True
-            )
+            # Biaya operasional muatan (tol, dll.) dipotong dari tagihan/piutang TPM.
+            # Jangan buat KasBank KELUAR terpisah — menghindari double-reduction aktiva
+            # (piutang net + kas keluar) yang membuat neraca tidak balance.
         
         # Determine total dynamic cost initially
         total_dynamic_cost = sum(item.jumlah for item in data.biaya_operasional)
@@ -600,14 +583,10 @@ class MuatanService:
                 func.lower(JasaAngkutBiayaLainnya.kategori).in_(["operasional", "biaya operasional", "ops"])
             ).delete()
             
-            # Add new costs
-            # Use the main payment method if it is TRANSFER to satisfy user request "tidak kepotong [di bank]"
-            ops_metode = muatan.metode_bayar if muatan.metode_bayar == PaymentMethod.TRANSFER else PaymentMethod.TUNAI
-
-            # Delete existing KasBank entries for operational costs to synchronize with the new list
+            # Hapus legacy KasBank operasional muatan (sebelum fix neraca balance)
             from app.models.keuangan import KasBank
             from app.utils.constants import KasBankSource, KasBankType
-            
+
             self.db.query(KasBank).filter(
                 KasBank.referensi_id == muatan.id,
                 KasBank.sumber == KasBankSource.JASA_ANGKUT,
@@ -625,22 +604,6 @@ class MuatanService:
                     jumlah=item.jumlah,
                 )
                 self.db.add(biaya)
-
-                # Create corresponding KasBank entry
-                create_kas_entry(
-                    db=self.db,
-                    tanggal=muatan.tanggal,
-                    tipe=KasBankType.KELUAR,
-                    nominal=item.jumlah,
-                    sumber=KasBankSource.JASA_ANGKUT,
-                    metode_bayar=ops_metode,
-                    referensi_id=muatan.id,
-                    nomor_referensi=muatan.nomor_transaksi,
-                    keterangan=f"Biaya Operational Muatan {muatan.nomor_transaksi}: {item.deskripsi}",
-                    user_id=None,
-                    allow_negative=True,
-                    commit=False
-                )
             
             # Calculate total dynamic cost from the input list directly for profit calc
             # We must also include existing 'Perawatan Bengkel' cost if any
@@ -1417,6 +1380,7 @@ class MuatanService:
             "hutang_supir_count": active_count,
             "total_pendapatan": total_pendapatan,
             "total_laba_supir": total_laba_supir,
+            "total_biaya_linked": total_biaya_linked,
             "total_biaya_trip": total_biaya_trip,
             "total_biaya_operasional_unit": total_biaya_operasional_unit,
             "total_biaya": total_biaya_trip + total_biaya_operasional_unit,

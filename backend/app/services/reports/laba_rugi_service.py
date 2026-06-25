@@ -34,8 +34,8 @@ class LabaRugiService(BaseReportService):
         b_laba_bersih = b_laba_kotor - b_gaji - b_lembur - b_ops
 
         # 2. JASA ANGKUT
-        # revenue_tpm = TPM's 50% share of pendapatan_kotor (BEFORE trip costs)
-        # Trip costs (BBM, Tol, etc.) are a separate deduction, NOT included in revenue
+        # revenue_tpm = share TPM NET setelah biaya operasional muatan dipotong dari tagihan
+        # trip_costs hanya biaya trip yang belum dipotong (kolom legacy BBM/tol, dll.)
         ja_trip_costs = ja.get("trip_costs", 0)
         ja_revenue_net = ja["revenue_tpm"]
         
