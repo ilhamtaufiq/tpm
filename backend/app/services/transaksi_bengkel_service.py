@@ -295,7 +295,11 @@ class TransaksiBengkelService:
             (data.payments and any(p.jumlah > 0 for p in data.payments)) or
             (data.jumlah_bayar and data.jumlah_bayar > 0)
         )
-        should_finalize_finance = requested_work_status == WorkshopStatus.SELESAI or has_upfront_payment or grand_total > 0
+        should_finalize_finance = (
+            grand_total > 0
+            or has_upfront_payment
+            or requested_work_status == WorkshopStatus.SELESAI
+        )
 
         # Calculate summary of payments
         total_pembayaran = Decimal("0")
@@ -812,7 +816,13 @@ class TransaksiBengkelService:
             PiutangUsaha.sumber == PiutangSource.BENGKEL
         ).first()
         is_not_internal = data.kategori not in ('jasa_angkut', 'jual_beli_mobil')
-        if not existing_piutang and status_bayar == PaymentStatus.CICILAN and grand_total > 0 and is_not_internal:
+        should_invoice_finance = grand_total > 0
+        if (
+            not existing_piutang
+            and should_invoice_finance
+            and status_bayar in (PaymentStatus.CICILAN, PaymentStatus.BELUM_LUNAS)
+            and is_not_internal
+        ):
             debtor_name = transaksi.nama_customer or "Guest"
             new_piutang = PiutangUsaha(
                 nomor_piutang=self._generate_nomor_piutang(),
@@ -826,8 +836,12 @@ class TransaksiBengkelService:
                 nomor_referensi=transaksi.nomor_transaksi,
                 nominal_piutang=grand_total,
                 total_dibayar=transaksi.jumlah_bayar,
-                sisa_piutang=grand_total - transaksi.jumlah_bayar,
-                status=PiutangStatus.BELUM_LUNAS,
+                sisa_piutang=max(Decimal("0"), grand_total - transaksi.jumlah_bayar),
+                status=(
+                    PiutangStatus.SEBAGIAN
+                    if (transaksi.jumlah_bayar or 0) > 0
+                    else PiutangStatus.BELUM_LUNAS
+                ),
                 catatan=f"Piutang from {transaksi.nomor_transaksi}",
                 is_internal=False,
                 unit=KasBankSource.BENGKEL,
@@ -1525,6 +1539,10 @@ class TransaksiBengkelService:
             transaksi.status_bayar = PaymentStatus.BATAL
 
             self.db.commit()
+
+            from app.services.kas_bank_service import KasBankService
+            KasBankService(self.db).rebuild_balances()
+
             self._emit_change(transaksi, "voided")
 
             return True

@@ -24,16 +24,16 @@ export default function LaporanLayout() {
                 contentStyle: { backgroundColor: '#F9FAFB' },
             }}
         >
-            <Stack.Screen name="index" options={{ title: 'Laporan Bisnis' }} />
-            <Stack.Screen name="jasa-angkut" />
-            <Stack.Screen name="laba-rugi" />
-            <Stack.Screen name="neraca" />
-            <Stack.Screen name="pembelian-mobil" />
-            <Stack.Screen name="pembelian-sparepart" />
-            <Stack.Screen name="penjualan-bengkel" />
-            <Stack.Screen name="penjualan-mobil" />
-            <Stack.Screen name="perubahan-modal" />
-            <Stack.Screen name="stock-sparepart" />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="jasa-angkut" options={{ headerShown: false }} />
+            <Stack.Screen name="laba-rugi" options={{ headerShown: false }} />
+            <Stack.Screen name="neraca" options={{ headerShown: false }} />
+            <Stack.Screen name="pembelian-mobil" options={{ headerShown: false }} />
+            <Stack.Screen name="pembelian-sparepart" options={{ headerShown: false }} />
+            <Stack.Screen name="penjualan-bengkel" options={{ headerShown: false }} />
+            <Stack.Screen name="penjualan-mobil" options={{ headerShown: false }} />
+            <Stack.Screen name="perubahan-modal" options={{ headerShown: false }} />
+            <Stack.Screen name="stock-sparepart" options={{ headerShown: false }} />
         </Stack>
     );
 }

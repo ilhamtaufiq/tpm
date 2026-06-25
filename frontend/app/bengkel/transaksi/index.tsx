@@ -15,6 +15,7 @@ import { useJasaList } from '../../../hooks/useJasaServis';
 import { useActiveArmada } from '../../../hooks/useJasaAngkut';
 import { useMobilList } from '../../../hooks/useMobil';
 import { formatCurrency, formatNumber, parseNumber } from '../../../utils/format';
+import { isBengkelTransactionLocked } from '../../../utils/bengkelTransaction';
 import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
@@ -58,7 +59,7 @@ export default function BengkelTransaksiScreen() {
     const [showDiscountInput, setShowDiscountInput] = useState(false);
     const [showDiscountInReceipt, setShowDiscountInReceipt] = useState(true);
     const [selectedParts, setSelectedParts] = useState<Record<number, { item: any; qty: number }>>({});
-    const [selectedServices, setSelectedServices] = useState<Record<number, { item: any; qty: number }>>({});
+    const [selectedServices, setSelectedServices] = useState<Record<string, { item: any; qty: number }>>({});
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [customerSource, setCustomerSource] = useState<'antrian' | 'customer'>('antrian');
     const [selectedCustomerTransaction, setSelectedCustomerTransaction] = useState<any>(null);
@@ -146,6 +147,7 @@ export default function BengkelTransaksiScreen() {
     });
     const hydratedTransactionIdRef = useRef<number | null>(null);
     const paymentActionOpenedRef = useRef<number | null>(null);
+    const lockedRedirectRef = useRef(false);
     const { playSuccess, playError } = useScanSound();
     const tabBarHeight = getCustomTabBarHeight(insets.bottom);
     const transaksiMode = mode === 'sparepart' ? 'sparepart' : mode === 'servis' ? 'servis' : 'all';
@@ -244,9 +246,32 @@ export default function BengkelTransaksiScreen() {
     const splitTunaiAmount = parseNumber(splitTunai);
     const splitTransferAmount = parseNumber(splitTransfer);
     const splitTotal = splitTunaiAmount + splitTransferAmount;
+    const totalPaidAfterPayment = useMemo(() => {
+        if (kategori === 'jasa_angkut') return subtotal;
+        if (kategori === 'jual_beli_mobil') return existingDp;
+        if (paymentMode === 'SPLIT') return existingDp + splitTotal;
+        return existingDp + receivedAmount;
+    }, [kategori, subtotal, existingDp, paymentMode, splitTotal, receivedAmount]);
+    const willBeLunas = subtotal > 0 && totalPaidAfterPayment >= subtotal;
+    const isEditLocked = useMemo(
+        () => isBengkelTransactionLocked(editingTransaction || selectedOpenTransactionDetail),
+        [editingTransaction, selectedOpenTransactionDetail],
+    );
 
     useEffect(() => {
     }, []);
+
+    useEffect(() => {
+        if (!isEditLocked || !transactionToUpdateId || lockedRedirectRef.current) return;
+        if (!editingTransaction && !selectedOpenTransactionDetail) return;
+        lockedRedirectRef.current = true;
+        showNotice('info', 'Tidak Dapat Diedit', 'Transaksi sudah lunas dan selesai.');
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/bengkel/queue');
+        }
+    }, [isEditLocked, transactionToUpdateId, editingTransaction, selectedOpenTransactionDetail]);
 
     useEffect(() => {
         if (!editingTransaction || !editTransactionId || hydratedTransactionIdRef.current === editTransactionId) return;
@@ -587,6 +612,10 @@ export default function BengkelTransaksiScreen() {
     };
 
     const confirmSubmit = (withPayment = false) => {
+        if (isEditLocked) {
+            showNotice('info', 'Tidak Dapat Diedit', 'Transaksi sudah lunas dan selesai.');
+            return;
+        }
         const isJA = kategori === 'jasa_angkut';
         const isMobil = kategori === 'jual_beli_mobil';
         if (withPayment && !isJA && !isMobil && paymentMode === 'SPLIT' && splitTotal !== sisaBayar) {
@@ -738,7 +767,8 @@ export default function BengkelTransaksiScreen() {
                 detail_parts: billPartList.map(row => ({ spare_part_id: row.item.id, qty: row.qty, harga_jual: Number(row.item.harga_jual || 0) })),
                 detail_services: billServiceList.map(row => ({ nama_jasa: row.item.nama, harga: Number(row.item.harga || 0), qty: row.qty })),
                 diskon: discountAmount,
-                status_pengerjaan: shouldPay ? 'SELESAI' : undefined,
+                // SELESAI only when payment lunas; update order tanpa bayar tetap status existing.
+                status_pengerjaan: shouldPay && willBeLunas ? 'SELESAI' : undefined,
                 metode_bayar: shouldPay
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),
@@ -1376,6 +1406,11 @@ export default function BengkelTransaksiScreen() {
                 <View className="flex-row space-x-3">
                     {step > 1 && <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />}
                     {step === 3 ? (
+                        isEditLocked ? (
+                            <Typography className="flex-1 text-center text-gray-500 text-xs py-3">
+                                Transaksi sudah lunas dan selesai. Tidak dapat diedit.
+                            </Typography>
+                        ) : (
                         <>
                             <Button
                                 title={transactionToUpdateId ? 'Update Transaksi' : 'Simpan Transaksi'}
@@ -1391,6 +1426,7 @@ export default function BengkelTransaksiScreen() {
                                 icon={<Wallet size={16} color="white" />}
                             />
                         </>
+                        )
                     ) : (
                         <Button
                             title="Lanjut"

@@ -253,7 +253,7 @@ export default function PurchaseScreen() {
     };
 
     // Scan handler
-    const handleScanPart = (data: string) => {
+    const handleScanPart = (data: string): boolean => {
         const cleanData = data.trim();
         const availableParts = spareParts || [];
 
@@ -285,11 +285,13 @@ export default function PurchaseScreen() {
                 subtitle: `Kode: ${part.kode || '-'}`,
                 timestamp: Date.now(),
             }, ...prev]);
-        } else {
-            setScannerOpen(false);
-            setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${data}`, timestamp: Date.now() }, ...prev]);
-            showNotice('error', 'Tidak Ditemukan', `Part dengan kode "${data}" tidak ditemukan.`);
+            return true;
         }
+
+        setScannerOpen(false);
+        setScanLog(prev => [{ id: Math.random().toString(), title: 'Tidak ditemukan', subtitle: `Kode: ${data}`, timestamp: Date.now() }, ...prev]);
+        showNotice('error', 'Tidak Ditemukan', `Part dengan kode "${data}" tidak ditemukan.`);
+        return false;
     };
 
     // Navigation

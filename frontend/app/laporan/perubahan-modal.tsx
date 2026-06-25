@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Platform, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter, useNavigation } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import {
-    ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Wallet,
-    Download, Eye, X, AlertTriangle, Building, Printer, Scale, CheckCircle
+    ArrowUpRight, ArrowDownLeft, Wallet,
+    X, AlertTriangle, Building, Printer, Scale, CheckCircle,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -20,13 +20,17 @@ import { useCapitalReport } from '../../hooks/useKeuangan';
 import { buildCapitalExportHtml } from '../../utils/reportTemplates';
 import { FinancialRow } from '../../components/ui/FinancialRow';
 import { CapitalReport } from '../../types/reports';
-
-type FilterType = 'daily' | 'monthly' | 'yearly';
+import {
+    ReportPageHeader,
+    ReportDateControls,
+    ReportExportSheet,
+    ReportFilterType,
+} from '../../components/laporan';
 
 export default function LaporanPerubahanModalScreen() {
     const router = useRouter();
     const navigation = useNavigation();
-    const [filterType, setFilterType] = useState<FilterType>('monthly');
+    const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -53,12 +57,6 @@ export default function LaporanPerubahanModalScreen() {
 
     const formattedDate = useMemo(() => {
         if (filterType === 'daily') return format(date, 'd MMMM yyyy', { locale: localeID });
-        if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
-        return format(date, 'yyyy', { locale: localeID });
-    }, [date, filterType]);
-
-    const headerDate = useMemo(() => {
-        if (filterType === 'daily') return format(date, 'dd MMM yyyy', { locale: localeID });
         if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
         return format(date, 'yyyy', { locale: localeID });
     }, [date, filterType]);
@@ -205,66 +203,34 @@ export default function LaporanPerubahanModalScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
-            <Stack.Screen options={{ headerShown: false }} />
+        <SafeAreaView className="flex-1 bg-surface">
+            <StatusBar barStyle="dark-content" />
 
-            <View className="bg-slate-50 px-4 pt-2 pb-6 z-20 rounded-b-[40px] shadow-sm">
-                <View className="flex-row items-center justify-between mb-6">
-                    <View className="flex-row items-center">
-                        <Pressable onPress={handleBack} className="w-10 h-10 items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm">
-                            <ChevronLeft size={20} color={themeColors.text} />
-                        </Pressable>
-                        <View className="ml-3">
-                            <Typography variant="h4" weight="bold" className="text-slate-900">Perubahan Ekuitas</Typography>
-                            <Typography variant="caption" weight="medium" className="text-slate-400">Capital Statement</Typography>
-                        </View>
-                    </View>
-                    <Pressable
-                        onPress={() => setShowExportMenu(true)}
-                        disabled={isExporting || isLoading}
-                        className={`w-10 h-10 rounded-full items-center justify-center shadow-sm ${isExporting ? 'bg-slate-100' : 'bg-white border border-slate-100'}`}
-                    >
-                        {isExporting ? <ActivityIndicator size="small" color={themeColors.primary} /> : <Download size={18} color={themeColors.primary} />}
-                    </Pressable>
-                </View>
-
-                <View className="flex-row bg-slate-200/50 p-1.5 rounded-2xl mb-6">
-                    {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <Pressable
-                            key={type}
-                            onPress={() => setFilterType(type)}
-                            className={`flex-1 py-2.5 items-center justify-center rounded-xl ${filterType === type ? 'bg-white shadow-sm' : ''}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={filterType === type ? 'text-indigo-600' : 'text-slate-400'}>
-                                {type === 'daily' ? 'HARIAN' : type === 'monthly' ? 'BULANAN' : 'TAHUNAN'}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
-
-                <View className="bg-white p-2 rounded-3xl shadow-sm border border-slate-100 flex-row items-center">
-                    <Pressable onPress={handlePrev} className="w-11 h-11 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100">
-                        <ChevronLeft size={18} color={themeColors.text} />
-                    </Pressable>
-                    <View className="flex-1 flex-row items-center justify-center">
-                        <Calendar size={16} color={themeColors.primary} className="mr-2" />
-                        <Typography variant="body2" weight="bold" className="text-slate-800 capitalize">
-                            {formattedDate}
-                        </Typography>
-                    </View>
-                    <Pressable onPress={handleNext} className="w-11 h-11 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100">
-                        <ChevronRight size={18} color={themeColors.text} />
-                    </Pressable>
-                </View>
-            </View>
+            <ReportPageHeader
+                title="Perubahan Ekuitas"
+                subtitle="Capital Statement"
+                onBack={handleBack}
+                onExport={() => setShowExportMenu(true)}
+                isExporting={isExporting}
+            />
 
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={refetch} colors={[themeColors.primary]} />}
             >
+                <View className="px-6 pt-4">
+                    <ReportDateControls
+                        filterType={filterType}
+                        onFilterTypeChange={setFilterType}
+                        formattedDate={formattedDate}
+                        onPrev={handlePrev}
+                        onNext={handleNext}
+                    />
+                </View>
+
+                <View className="px-4 pt-2">
                 {isLoading && !report ? (
                     <View className="py-12 items-center justify-center">
                         <ActivityIndicator size="large" color={themeColors.primary} />
@@ -407,40 +373,17 @@ export default function LaporanPerubahanModalScreen() {
                         </View>
                     </View>
                 )}
+                </View>
             </ScrollView>
 
-            {showExportMenu && (
-                <Modal visible={showExportMenu} transparent animationType="fade">
-                    <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setShowExportMenu(false)}>
-                        <View className="bg-white rounded-t-[40px] p-8">
-                            <View className="w-12 h-1.5 bg-slate-200 rounded-full self-center mb-8" />
-                            <Typography variant="h4" weight="bold" className="text-slate-900 mb-6 text-center">Ekspor Laporan</Typography>
-
-                            <View className="space-y-4">
-                                <Pressable onPress={() => handleExportPDF('preview')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-                                    <View className="w-12 h-12 bg-indigo-100 rounded-2xl items-center justify-center mr-4"><Eye size={22} color="#4f46e5" /></View>
-                                    <View className="flex-1">
-                                        <Typography variant="body1" weight="bold" className="text-slate-900">Preview Laporan</Typography>
-                                        <Typography variant="caption" className="text-slate-500">Lihat tampilan PDF secara instan</Typography>
-                                    </View>
-                                </Pressable>
-
-                                <Pressable onPress={() => handleExportPDF('print')} className="flex-row items-center p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-                                    <View className="w-12 h-12 bg-emerald-100 rounded-2xl items-center justify-center mr-4"><Printer size={22} color="#059669" /></View>
-                                    <View className="flex-1">
-                                        <Typography variant="body1" weight="bold" className="text-slate-900">Cetak / Simpan PDF</Typography>
-                                        <Typography variant="caption" className="text-slate-500">Kirim ke printer atau simpan ke file</Typography>
-                                    </View>
-                                </Pressable>
-                            </View>
-
-                            <Pressable onPress={() => setShowExportMenu(false)} className="mt-8 py-5 items-center justify-center">
-                                <Typography variant="body1" weight="bold" className="text-rose-500">Batalkan</Typography>
-                            </Pressable>
-                        </View>
-                    </Pressable>
-                </Modal>
-            )}
+            <ReportExportSheet
+                visible={showExportMenu}
+                onClose={() => setShowExportMenu(false)}
+                subtitle="Pilih metode ekspor dokumen PDF"
+                onPreview={() => handleExportPDF('preview')}
+                onPrint={() => handleExportPDF('print')}
+                onDownload={() => handleExportPDF('download')}
+            />
 
             {/* PDF PREVIEW MODAL */}
             {showPdfPreview && (

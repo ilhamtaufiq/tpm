@@ -53,6 +53,10 @@ import { id as localeID } from 'date-fns/locale';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
+import {
+    formatBengkelWorkStatusLabel,
+    isBengkelTransactionLocked,
+} from '../../utils/bengkelTransaction';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
@@ -869,9 +873,10 @@ export default function BengkelScreen() {
         }
     };
 
-    const handleScanBarcode = (data: string) => {
+    const handleScanBarcode = (data: string): boolean => {
         setSearchQuery(data);
         setIsScannerOpen(false);
+        return true;
     };
 
     const renderDateContent = () => (
@@ -938,6 +943,7 @@ export default function BengkelScreen() {
         const outstanding = Math.max((selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0), 0);
         const isPaid = selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas';
         const isVoided = selectedItem.status_bayar === 'batal' || selectedItem.status_bayar === 'BATAL';
+        const isLocked = isBengkelTransactionLocked(selectedItem);
         const canSettlePayment = !isPaid && !isVoided && outstanding > 0 && selectedItem.kategori !== 'jual_beli_mobil';
         return (
             <>
@@ -959,7 +965,7 @@ export default function BengkelScreen() {
                             <Printer size={16} color="#023C69" />
                         </Pressable>
                         <Badge
-                            label={(selectedItem.status_pengerjaan || '').toUpperCase()}
+                            label={formatBengkelWorkStatusLabel(selectedItem.status_pengerjaan)}
                             variant={
                                 selectedItem.status_pengerjaan === 'proses' ? 'info' :
                                     selectedItem.status_pengerjaan === 'selesai' ? 'success' :
@@ -1133,7 +1139,7 @@ export default function BengkelScreen() {
 
                 {/* Action Buttons */}
                 <View className="flex-row flex-wrap -mx-1">
-                    {!isVoided && (
+                    {!isVoided && !isLocked && (
                         <View className="w-1/2 px-1 mb-2">
                             <Button
                                 variant="secondary"
@@ -1173,15 +1179,17 @@ export default function BengkelScreen() {
                             className="rounded-xl h-12 bg-[#00ADEF]"
                         />
                     </View>
-                    <View className="w-full px-1">
-                        <Button
-                            variant="outline-danger"
-                            title="Batalkan Order"
-                            onPress={() => handleVoidOrder(selectedItem)}
-                            loading={voidMutation.isPending}
-                            className="rounded-xl h-12"
-                        />
-                    </View>
+                    {!isVoided ? (
+                        <View className="w-full px-1">
+                            <Button
+                                variant="outline-danger"
+                                title="Batalkan Order"
+                                onPress={() => handleVoidOrder(selectedItem)}
+                                loading={voidMutation.isPending}
+                                className="rounded-xl h-12"
+                            />
+                        </View>
+                    ) : null}
                 </View>
             </>
         );
@@ -1235,6 +1243,7 @@ export default function BengkelScreen() {
 
     const openEditTransaction = (item: any) => {
         if (!item?.id) return;
+        if (isBengkelTransactionLocked(item)) return;
         handleClosePress();
         router.push({ pathname: '/bengkel/order', params: { id: String(item.id) } } as any);
     };
@@ -1396,7 +1405,7 @@ export default function BengkelScreen() {
                                         </Typography>
                                     </View>
                                     <Badge
-                                        label={(item.status_pengerjaan || '').toUpperCase()}
+                                        label={formatBengkelWorkStatusLabel(item.status_pengerjaan)}
                                         variant={item.status_pengerjaan === 'proses' ? 'info' : item.status_pengerjaan === 'selesai' ? 'success' : 'neutral'}
                                     />
                                 </View>
@@ -2035,7 +2044,7 @@ export default function BengkelScreen() {
                                 { key: 'LUNAS', label: 'Lunas', count: stats.lunas, active: 'bg-emerald-600 border-emerald-600', inactive: 'bg-emerald-50 border-emerald-100 text-emerald-700' },
                                 { key: 'PARTIAL', label: 'Belum Lunas', count: stats.partial, active: 'bg-blue-600 border-blue-600', inactive: 'bg-blue-50 border-blue-100 text-blue-700' },
                                 { key: 'UNPAID', label: 'Belum Bayar', count: stats.unpaid, active: 'bg-amber-600 border-amber-600', inactive: 'bg-amber-50 border-amber-100 text-amber-700' },
-                                { key: 'BATAL', label: 'Batal', count: stats.batal, active: 'bg-rose-600 border-rose-600', inactive: 'bg-rose-50 border-rose-100 text-rose-700' },
+                                { key: 'BATAL', label: 'Dibatalkan', count: stats.batal, active: 'bg-rose-600 border-rose-600', inactive: 'bg-rose-50 border-rose-100 text-rose-700' },
                             ].map((item) => {
                                 const active = paymentFilter === item.key;
                                 return (

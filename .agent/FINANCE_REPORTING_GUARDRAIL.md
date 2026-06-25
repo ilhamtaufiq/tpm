@@ -34,17 +34,21 @@ Untuk mobil milik investor:
 ## Bengkel Work Order Finance Gate
 
 Untuk transaksi bengkel:
-- `SELESAI` = transaksi finansial final, semua komponen laporan diakui (laba, piutang, kas).
-- `PROSES` dengan `grand_total > 0` = finalize finance: laba diakui, piutang/kas dicatat sesuai pembayaran.
-- `ANTRE` dengan `grand_total > 0` = sama seperti PROSES, finalize finance.
-- `ANTRE`/`PROSES` dengan `grand_total = 0` = belum finalize (kecuali ada DP).
+- **Status kerja** (`ANTRE`/`PROSES`/`SELESAI`) terpisah dari **pengakuan keuangan**.
+- `grand_total > 0` (sudah ada tagihan/item) = laba & pendapatan diakui di Laba Rugi & Neraca, termasuk saat status masih `PROSES`/`ANTRE`.
+- Belum lunas (`BELUM_LUNAS`/`CICILAN`) = piutang dibuat, kas belum naik.
+- `Update Transaksi` / `Simpan Transaksi` tanpa pembayaran **tidak** mengubah status kerja ke `SELESAI`; status tetap `ANTRE`/`PROSES`.
+- `SELESAI` (status kerja) hanya dari: (1) pembayaran lunas, atau (2) ubah status manual di daftar antrian.
+- `grand_total = 0` = belum ada tagihan (kecuali ada DP tercatat terpisah).
 - DP pada transaksi tanpa item (`grand_total = 0`) dicatat sebagai kas masuk dan muncul di Neraca sebagai "Uang Muka Penjualan" (Hutang).
 - Saat transaksi di-settle (SELESAI), DP diakui sebagai pendapatan dan pos "Uang Muka Penjualan" hilang.
 - **Pitfall**: Jangan double-counting `customer_dp` di `kewajiban_usaha` (`modal_service.py`) karena `hutang_usaha_total` sudah memuatnya.
 - **Pitfall**: Query DP di `reports/base.py` tidak boleh memfilter `status_bayar != LUNAS` atau `status != LUNAS` untuk piutang, agar overpayment/DP tetap masuk sebagai liabilitas meski sistem menandainya LUNAS (karena `bayar >= grand_total`).
-- Dashboard operasional boleh menampilkan semua status; dashboard finansial pakai filter `SELESAI` untuk laporan final.
+- Dashboard operasional boleh menampilkan semua status; laporan finansial memakai filter `grand_total > 0` dan `status_bayar != BATAL`.
 
 ## Pembatalan Transaksi (Void)
+
+Status tampilan UI untuk void: **Dibatalkan** (bukan "Batal"/"BATAL").
 
 Ketika transaksi bengkel dibatalkan:
 - Semua entry `KasBank` terkait transaksi **harus dihapus** agar saldo kas kembali normal.
@@ -52,6 +56,8 @@ Ketika transaksi bengkel dibatalkan:
 - `HutangUsaha` internal (jika ada) **harus dihapus** agar neraca tetap seimbang.
 - Stok sparepart **harus dikembalikan** ke jumlah awal.
 - Status transaksi di-set ke `status_pengerjaan = BATAL` dan `status_bayar = BATAL`.
+- Saldo kas/bank di-rebuild setelah penghapusan entri `KasBank` agar Neraca tidak selisih.
+- Laporan finansial mengecualikan transaksi/piutang/hutang berstatus `BATAL`.
 - Transaksi yang sudah `BATAL` **tidak bisa di-unvoid**. Buat transaksi baru jika perlu.
 - **File utama**: `backend/app/services/transaksi_bengkel_service.py` method `void_transaction()`.
 - **File terkait**: `backend/app/services/kas_bank_service.py`, `backend/app/services/piutang_service.py`, `backend/app/services/hutang_service.py`.

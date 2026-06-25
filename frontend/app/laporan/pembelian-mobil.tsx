@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
     View, ScrollView, Pressable, StatusBar,
     RefreshControl as RNRefreshControl, ActivityIndicator,
-    TextInput, Alert, Modal
+    Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft, ChevronRight, Calendar, Car,
-    Wallet, TrendingUp, Search, X, User,
-    Wrench, Package, Printer, Download, Eye, Share2
+    Car, Wallet, TrendingUp, X, Package
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -21,15 +19,21 @@ import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import {
+    ReportPageHeader,
+    ReportStatsBento,
+    ReportDateControls,
+    ReportSectionHeader,
+    ReportExportSheet,
+    ReportFilterType,
+} from '../../components/laporan';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
-
-type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PembelianMobilReportScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const [filterType, setFilterType] = useState<FilterType>('monthly');
+    const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -113,29 +117,31 @@ export default function PembelianMobilReportScreen() {
         return format(date, 'yyyy', { locale: localeID });
     };
 
-    const STATS = [
+    const stats = useMemo(() => [
         {
-            label: "Total Belanja",
+            label: 'Total Belanja',
             value: formatCurrency(summary?.total_modal_pembelian || 0),
             icon: Wallet,
-            color: "#10B981",
-            isCurrency: true
+            color: '#10B981',
+            bg: 'bg-emerald-50',
         },
         {
-            label: "Unit Dibeli",
-            value: summary?.total_mobil || 0,
+            label: 'Unit Dibeli',
+            value: String(summary?.total_mobil || 0),
             icon: Car,
-            color: "#3B82F6",
-            unit: "Unit"
+            color: '#3B82F6',
+            bg: 'bg-blue-50',
+            sub: 'Unit',
         },
         {
-            label: "Tersedia",
-            value: summary?.per_status?.Tersedia || 0,
+            label: 'Tersedia',
+            value: String(summary?.per_status?.Tersedia || 0),
             icon: TrendingUp,
-            color: "#F59E0B",
-            unit: "Unit"
-        }
-    ];
+            color: '#F59E0B',
+            bg: 'bg-amber-50',
+            sub: 'Unit',
+        },
+    ], [summary]);
 
     const handleBack = () => {
         if (router.canGoBack()) {
@@ -163,186 +169,192 @@ export default function PembelianMobilReportScreen() {
         bottomSheetModalRef.current?.dismiss();
     };
 
+    const buildExportHtml = useCallback(() => {
+        if (!summary) return '';
+        return `
+            <div class="section-header">RINGKASAN PEMBELIAN</div>
+            <div class="row-item">
+                <span>Total Belanja</span>
+                <span>${formatCurrency(summary.total_modal_pembelian || 0)}</span>
+            </div>
+            <div class="row-item">
+                <span>Unit Dibeli</span>
+                <span>${summary.total_mobil || 0} Unit</span>
+            </div>
+            <div class="row-item">
+                <span>Unit Tersedia</span>
+                <span>${summary.per_status?.Tersedia || 0} Unit</span>
+            </div>
+            <div class="row-item">
+                <span>Unit Terjual</span>
+                <span>${summary.per_status?.Terjual || 0} Unit</span>
+            </div>
+
+            <div class="section-header" style="margin-top:30px;">DAFTAR UNIT MASUK</div>
+            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                <thead>
+                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tgl Masuk</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Unit</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Harga Beli</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${mobils.map(item => `
+                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px;">
+                                ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
+                            </td>
+                            <td style="padding: 8px;">
+                                <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
+                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_plat)} • ${escapeHtml(item.tahun)}</span><br/>
+                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${escapeHtml(item.nama_investor)}`}</span>
+                            </td>
+                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.harga_beli || 0)}</td>
+                            <td style="padding: 8px;">
+                                <span style="color: ${item.status === 'Tersedia' ? '#10b981' : item.status === 'Terjual' ? '#3b82f6' : '#f59e0b'}; font-weight: bold; font-size: 8px;">
+                                    ${escapeHtml(item.status)}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }, [summary, mobils]);
+
+    const handleExportPreview = useCallback(async () => {
+        setShowExportMenu(false);
+        if (!summary) return;
+        try {
+            await printReportHTML(buildExportHtml(), {
+                title: 'Laporan Pembelian Mobil',
+                dateRange: getFormattedDate(),
+            });
+        } catch {
+            Alert.alert('Error', 'Gagal mencetak laporan');
+        }
+    }, [summary, buildExportHtml, getFormattedDate]);
+
+    const handleExportDownload = useCallback(async () => {
+        setShowExportMenu(false);
+        if (!summary) return;
+        try {
+            await printReportHTML(buildExportHtml(), {
+                title: 'Laporan Pembelian Mobil',
+                dateRange: getFormattedDate(),
+            });
+        } catch {
+            Alert.alert('Error', 'Gagal membuat PDF');
+        }
+    }, [summary, buildExportHtml, getFormattedDate]);
+
     return (
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
-                <View className="flex-row items-center">
-                    <Pressable onPress={handleBack} className="mr-4">
-                        <ChevronLeft size={24} color="#1C1C1C" />
-                    </Pressable>
-                    <Typography variant="h2" weight="bold">Laporan Pembelian Mobil</Typography>
-                </View>
-                <View className="flex-row items-center">
-                    <Badge variant="info" label="Inventory" className="px-3 py-1 mr-2" />
-                    <Pressable
-                        onPress={() => setShowExportMenu(true)}
-                        disabled={isExporting}
-                        className="w-10 h-10 bg-gray-50 rounded-xl items-center justify-center border border-gray-100"
-                    >
-                        <Download size={20} color="#023C69" />
-                    </Pressable>
-                </View>
-            </View>
-
-            {/* Date Filter Section */}
-            <View className="px-6 py-4 bg-white border-b border-gray-100">
-                <View className="flex-row bg-gray-100 p-1 rounded-xl mb-4">
-                    {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <Pressable
-                            key={type}
-                            onPress={() => {
-                                setFilterType(type);
-                                setDate(new Date());
-                            }}
-                            className={`flex-1 py-2 items-center rounded-lg ${filterType === type ? 'bg-white shadow-sm' : ''}`}
-                        >
-                            <Typography
-                                variant="caption"
-                                weight="bold"
-                                className={filterType === type ? 'text-primary' : 'text-gray-500'}
-                            >
-                                {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
-
-                <View className="flex-row justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                    <Pressable
-                        onPress={handlePrev}
-                        className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                    >
-                        <ChevronLeft size={20} color="#374151" />
-                    </Pressable>
-
-                    <View className="flex-row items-center">
-                        <Calendar size={18} color="#4B5563" className="mr-2" />
-                        <Typography variant="body2" weight="bold" className="text-gray-800 capitalize">
-                            {getFormattedDate()}
-                        </Typography>
-                    </View>
-
-                    <Pressable
-                        onPress={handleNext}
-                        className="p-1 bg-white rounded-full shadow-sm border border-gray-100"
-                    >
-                        <ChevronRight size={20} color="#374151" />
-                    </Pressable>
-                </View>
-            </View>
+            <ReportPageHeader
+                title="Pembelian Mobil"
+                subtitle="Laporan Inventory"
+                onBack={handleBack}
+                onExport={() => setShowExportMenu(true)}
+                isExporting={isExporting}
+            />
 
             <ScrollView
-                className="flex-1 p-6"
+                className="flex-1"
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
-                {/* Stats Row Pattern */}
-                <View className="flex-row justify-between mb-8">
-                    {STATS.map((stat) => (
-                        <Card key={stat.label} variant="outlined" className="w-[31%] p-3 items-center border-gray-100">
-                            <View className="p-2 rounded-full mb-2" style={{ backgroundColor: `${stat.color}15` }}>
-                                <stat.icon size={18} color={stat.color} />
-                            </View>
-                            <Typography
-                                variant={stat.isCurrency ? "caption" : "h3"}
-                                weight="bold"
-                                style={{ color: stat.color }}
-                                numberOfLines={1}
-                            >
-                                {stat.value}
-                            </Typography>
-                            <Typography variant="caption" className="text-center" numberOfLines={1}>{stat.label}</Typography>
-                        </Card>
-                    ))}
-                </View>
-
-                {/* Search */}
-                <View className="flex-row items-center bg-gray-50 rounded-2xl px-4 h-12 mb-6 border border-gray-100">
-                    <Search size={20} color="#767676" />
-                    <TextInput
-                        placeholder="Cari merek, model, atau plat..."
-                        className="flex-1 ml-2 text-text font-outfit"
-                        value={search}
-                        onChangeText={setSearch}
+                <View className="px-6 pt-4">
+                    <ReportStatsBento stats={stats} />
+                    <ReportDateControls
+                        filterType={filterType}
+                        onFilterTypeChange={(type) => {
+                            setFilterType(type);
+                            setDate(new Date());
+                        }}
+                        formattedDate={getFormattedDate()}
+                        onPrev={handlePrev}
+                        onNext={handleNext}
+                        search={search}
+                        onSearchChange={setSearch}
+                        searchPlaceholder="Cari merek, model, atau plat..."
                     />
+                    <ReportSectionHeader title="Unit Masuk" count={mobils.length} countLabel="Kendaraan" />
                 </View>
 
-                {/* Car List */}
-                <View className="flex-row justify-between items-center mb-4">
-                    <Typography variant="h3" weight="bold">Unit Masuk</Typography>
-                    <Typography variant="caption" className="text-gray-500">{mobils.length} Kendaraan</Typography>
-                </View>
-
-                {isLoading ? (
-                    <ActivityIndicator size="large" color="#3B82F6" className="mt-10" />
-                ) : (
-                    <View className="space-y-4">
-                        {mobils.length === 0 ? (
-                            <View className="items-center justify-center p-10 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                                <Car size={48} color="#D1D5DB" />
-                                <Typography className="text-gray-400 mt-4">Tidak ada unit masuk periode ini</Typography>
+                <View className="px-6">
+                    {isLoading ? (
+                        <View className="py-20 items-center">
+                            <ActivityIndicator size="large" color="#023C69" />
+                            <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
+                        </View>
+                    ) : mobils.length === 0 ? (
+                        <View className="items-center justify-center py-20 bg-white rounded-[40px] border border-dashed border-gray-100">
+                            <View className="w-24 h-24 bg-gray-50 rounded-full items-center justify-center mb-6 opacity-30">
+                                <Car size={40} color="#9CA3AF" />
                             </View>
-                        ) : (
-                            mobils.map((item) => (
-                                <Pressable
-                                    key={item.id}
-                                    onPress={() => handlePressMobil(item)}
-                                >
-                                    <Card className="p-4 border-gray-100 mb-4">
-                                        <View className="flex-row justify-between mb-2">
-                                            <View className="flex-1">
-                                                <Typography variant="body2" weight="bold">{item.merek} {item.model} ({item.tahun})</Typography>
-                                                <Typography variant="caption" className="text-gray-400 font-bold">{item.nomor_plat}</Typography>
-                                            </View>
-                                            <Badge
-                                                variant={item.status === 'Tersedia' ? 'success' : item.status === 'Terjual' ? 'info' : 'warning'}
-                                                label={item.status}
-                                            />
+                            <Typography className="text-textGray font-bold uppercase tracking-[6px]">Belum Ada Data</Typography>
+                            <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ada unit masuk periode ini</Typography>
+                        </View>
+                    ) : (
+                        mobils.map((item) => (
+                            <Pressable
+                                key={item.id}
+                                onPress={() => handlePressMobil(item)}
+                            >
+                                <Card className="p-4 border-gray-100 mb-4">
+                                    <View className="flex-row justify-between mb-2">
+                                        <View className="flex-1">
+                                            <Typography variant="body2" weight="bold">{item.merek} {item.model} ({item.tahun})</Typography>
+                                            <Typography variant="caption" className="text-gray-400 font-bold">{item.nomor_plat}</Typography>
                                         </View>
+                                        <Badge
+                                            variant={item.status === 'Tersedia' ? 'success' : item.status === 'Terjual' ? 'info' : 'warning'}
+                                            label={item.status}
+                                        />
+                                    </View>
 
-                                        <View className="flex-row justify-between items-end mt-2 pt-2 border-t border-gray-50">
-                                            <View>
-                                                <Typography variant="caption" className="text-gray-500">
-                                                    Tgl Masuk: {format(new Date(item.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}
-                                                </Typography>
-                                                <Typography variant="caption" className="text-gray-400">
-                                                    By: {item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}
-                                                </Typography>
-                                            </View>
-                                            <View className="items-end">
-                                                <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
-                                                <Typography variant="body2" weight="bold" className="text-primary">
-                                                    {formatCurrency(item.harga_beli || 0)}
-                                                </Typography>
-                                            </View>
+                                    <View className="flex-row justify-between items-end mt-2 pt-2 border-t border-gray-50">
+                                        <View>
+                                            <Typography variant="caption" className="text-gray-500">
+                                                Tgl Masuk: {format(new Date(item.tanggal_masuk), 'dd MMM yyyy', { locale: localeID })}
+                                            </Typography>
+                                            <Typography variant="caption" className="text-gray-400">
+                                                By: {item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${item.nama_investor}`}
+                                            </Typography>
                                         </View>
-                                    </Card>
-                                </Pressable>
-                            ))
-                        )}
-                    </View>
-                )}
-
-                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
+                                        <View className="items-end">
+                                            <Typography variant="caption" className="text-gray-400">Harga Beli</Typography>
+                                            <Typography variant="body2" weight="bold" className="text-primary">
+                                                {formatCurrency(item.harga_beli || 0)}
+                                            </Typography>
+                                        </View>
+                                    </View>
+                                </Card>
+                            </Pressable>
+                        ))
+                    )}
+                </View>
             </ScrollView>
 
             {/* Detail Modal */}
             <BottomSheetModal
-    ref={bottomSheetModalRef}
-    index={0}
-    snapPoints={snapPoints}
-    enablePanDownToClose={true}
-    topInset={insets.top}
-    backdropComponent={({ style }) => (
-        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-    )}
-    backgroundStyle={{ borderRadius: 32 }}
->
+                ref={bottomSheetModalRef}
+                index={0}
+                snapPoints={snapPoints}
+                enablePanDownToClose={true}
+                topInset={insets.top}
+                backdropComponent={({ style }) => (
+                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+                )}
+                backgroundStyle={{ borderRadius: 32 }}
+            >
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
@@ -485,181 +497,13 @@ export default function PembelianMobilReportScreen() {
                 </BottomSheetView>
             </BottomSheetModal>
 
-            {/* Export Action Menu */}
-            <Modal
+            <ReportExportSheet
                 visible={showExportMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowExportMenu(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-black/50 justify-end"
-                    onPress={() => setShowExportMenu(false)}
-                >
-                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-8">
-                            <View>
-                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
-                            </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
-                                <X size={20} color="#64748B" />
-                            </Pressable>
-                        </View>
-
-                        <View className="flex-row gap-4">
-                            <Pressable
-                                onPress={async () => {
-                                    setShowExportMenu(false);
-                                    if (!summary) return;
-                                    try {
-                                        const html = `
-                                            <div class="section-header">RINGKASAN PEMBELIAN</div>
-                                            <div class="row-item">
-                                                <span>Total Belanja</span>
-                                                <span>${formatCurrency(summary.total_modal_pembelian || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Dibeli</span>
-                                                <span>${summary.total_mobil || 0} Unit</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Tersedia</span>
-                                                <span>${summary.per_status?.Tersedia || 0} Unit</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Terjual</span>
-                                                <span>${summary.per_status?.Terjual || 0} Unit</span>
-                                            </div>
-
-                                            <div class="section-header" style="margin-top:30px;">DAFTAR UNIT MASUK</div>
-                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-                                                <thead>
-                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tgl Masuk</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Unit</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Harga Beli</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${mobils.map(item => `
-                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
-                                                            <td style="padding: 8px;">
-                                                                ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
-                                                            </td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_plat)} • ${escapeHtml(item.tahun)}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${escapeHtml(item.nama_investor)}`}</span>
-                                                            </td>
-                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.harga_beli || 0)}</td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="color: ${item.status === 'Tersedia' ? '#10b981' : item.status === 'Terjual' ? '#3b82f6' : '#f59e0b'}; font-weight: bold; font-size: 8px;">
-                                                                    ${escapeHtml(item.status)}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
-                                        `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Pembelian Mobil',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal mencetak laporan');
-                                    }
-                                }}
-                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
-                            >
-                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
-                                    <Eye size={28} color="white" />
-                                </View>
-                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={async () => {
-                                    setShowExportMenu(false);
-                                    if (!summary) return;
-                                    try {
-                                        // Use same HTML as above
-                                        const html = `
-                                            <div class="section-header">RINGKASAN PEMBELIAN</div>
-                                            <div class="row-item">
-                                                <span>Total Belanja</span>
-                                                <span>${formatCurrency(summary.total_modal_pembelian || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Dibeli</span>
-                                                <span>${summary.total_mobil || 0} Unit</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Tersedia</span>
-                                                <span>${summary.per_status?.Tersedia || 0} Unit</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Unit Terjual</span>
-                                                <span>${summary.per_status?.Terjual || 0} Unit</span>
-                                            </div>
-
-                                            <div class="section-header" style="margin-top:30px;">DAFTAR UNIT MASUK</div>
-                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-                                                <thead>
-                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tgl Masuk</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Unit</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Harga Beli</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${mobils.map(item => `
-                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
-                                                            <td style="padding: 8px;">
-                                                                ${format(new Date(item.tanggal_masuk), 'dd/MM/yy', { locale: localeID })}
-                                                            </td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${escapeHtml(item.merek)} ${escapeHtml(item.model)}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_plat)} • ${escapeHtml(item.tahun)}</span><br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${item.tipe_kepemilikan === 'TPM' ? 'Unit TPM' : `Investor: ${escapeHtml(item.nama_investor)}`}</span>
-                                                            </td>
-                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.harga_beli || 0)}</td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="color: ${item.status === 'Tersedia' ? '#10b981' : item.status === 'Terjual' ? '#3b82f6' : '#f59e0b'}; font-weight: bold; font-size: 8px;">
-                                                                    ${escapeHtml(item.status)}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
-                                        `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Pembelian Mobil',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal membuat PDF');
-                                    }
-                                }}
-                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
-                            >
-                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
-                                    <Share2 size={28} color="white" />
-                                </View>
-                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
-                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                            </Pressable>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
+                onClose={() => setShowExportMenu(false)}
+                subtitle="Pilih metode ekspor dokumen PDF"
+                onPreview={handleExportPreview}
+                onDownload={handleExportDownload}
+            />
         </SafeAreaView>
     );
 }

@@ -120,7 +120,7 @@ export const bengkelService = {
         return response.data;
     },
 
-    getSparePartById: async (id: number) => {
+    getSparePartById: async (id: number): Promise<SparePart> => {
         const response = await api.get(`/spare-parts/${id}`);
         return response.data;
     },

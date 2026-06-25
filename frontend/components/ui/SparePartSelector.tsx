@@ -52,13 +52,10 @@ export const SparePartSelector = ({
         handleClose();
     };
 
-    const handleScan = (data: string) => {
-        // Since we don't have all results here, we can set it as search query 
-        // OR better, use a dedicated find-by-code if the service supports it.
-        // For now, we'll just set it as search query and let the user pick, 
-        // but if there's exactly one match, we could auto-select.
+    const handleScan = (data: string): boolean => {
         setSearchQuery(data);
         setIsScannerOpen(false);
+        return true;
     };
 
     return (

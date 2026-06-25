@@ -2,17 +2,14 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
     View, ScrollView, Pressable, StatusBar,
     RefreshControl as RNRefreshControl, ActivityIndicator,
-    TextInput, Platform, Alert, Modal
+    Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Typography } from '../../components/ui/Typography';
-import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import {
-    ChevronLeft, ChevronRight, Calendar, ShoppingCart,
-    Wallet, Clock, Search, Filter, X, Package,
-    FileText, TrendingUp, ArrowUpRight, ClipboardList,
-    User, Printer, Download, Eye, Share2
+    ShoppingCart, TrendingUp, Clock, Package,
+    ClipboardList, X
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { format, addDays, subDays, addMonths, subMonths, addYears, subYears, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -22,15 +19,21 @@ import { formatCurrency } from '../../utils/format';
 import { printReportHTML } from '../../utils/printReport';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import {
+    ReportPageHeader,
+    ReportStatsBento,
+    ReportDateControls,
+    ReportSectionHeader,
+    ReportExportSheet,
+    ReportFilterType,
+} from '../../components/laporan';
 
 const escapeHtml = (str: any) => String(str ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
-
-type FilterType = 'daily' | 'monthly' | 'yearly';
 
 export default function PembelianSparepartReportScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const [filterType, setFilterType] = useState<FilterType>('monthly');
+    const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +115,14 @@ export default function PembelianSparepartReportScreen() {
         return format(date, 'yyyy', { locale: localeID });
     };
 
+    const handleBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/laporan');
+        }
+    };
+
     const handlePressTransaction = async (item: any) => {
         setSelectedTransaction(item);
         bottomSheetModalRef.current?.present();
@@ -130,178 +141,136 @@ export default function PembelianSparepartReportScreen() {
         bottomSheetModalRef.current?.dismiss();
     };
 
-    const handleBack = () => {
-        if (router.canGoBack()) {
-            router.back();
-        } else {
-            router.replace('/laporan');
+    const stats = useMemo(() => [
+        { label: 'Total Nilai', value: formatCurrency(summary?.total_nilai || 0), icon: TrendingUp, color: '#10B981', bg: 'bg-emerald-50' },
+        { label: 'Nota', value: String(summary?.total_transaksi || 0), icon: ClipboardList, color: '#3B82F6', bg: 'bg-blue-50', sub: 'Transaksi' },
+    ], [summary]);
+
+    const secondaryStats = useMemo(() => [
+        { label: 'Hutang', value: formatCurrency(summary?.belum_lunas_nilai || 0), icon: Clock, color: '#EF4444', bg: 'bg-red-50', sub: 'Unpaid' },
+        { label: 'Lunas', value: formatCurrency((summary?.total_nilai || 0) - (summary?.belum_lunas_nilai || 0)), icon: ShoppingCart, color: '#10B981', bg: 'bg-emerald-50', sub: 'Paid' },
+    ], [summary]);
+
+    const buildExportHtml = useCallback(() => {
+        if (!summary) return '';
+        return `
+            <div class="section-header">RINGKASAN PEMBELIAN SPAREPART</div>
+            <div class="row-item">
+                <span>Total Nilai Pembelian</span>
+                <span class="font-bold">${formatCurrency(summary.total_nilai || 0)}</span>
+            </div>
+            <div class="row-item">
+                <span>Total Transaksi</span>
+                <span>${summary.total_transaksi || 0} Nota</span>
+            </div>
+            <div class="row-item">
+                <span>Total Hutang (Unpaid)</span>
+                <span class="text-error font-bold">${formatCurrency(summary.belum_lunas_nilai || 0)}</span>
+            </div>
+            <div class="row-item">
+                <span>Total Lunas (Paid)</span>
+                <span class="text-success font-bold">${formatCurrency((summary.total_nilai || 0) - (summary.belum_lunas_nilai || 0))}</span>
+            </div>
+
+            <div class="section-header" style="margin-top:30px;">DAFTAR PEMBELIAN SPAREPART</div>
+            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                <thead>
+                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tanggal/Nota</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Supplier</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Total</th>
+                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${purchases.map(item => `
+                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px;">
+                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
+                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
+                            </td>
+                            <td style="padding: 8px;">
+                                <span style="font-weight: bold;">${escapeHtml(item.supplier?.nama || item.supplier_nama || 'Supplier Umum')}</span>
+                            </td>
+                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
+                            <td style="padding: 8px;">
+                                <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
+                                    ${escapeHtml(item.status_bayar)}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }, [summary, purchases]);
+
+    const handleExportPreview = useCallback(async () => {
+        setShowExportMenu(false);
+        if (!summary) return;
+        try {
+            await printReportHTML(buildExportHtml(), {
+                title: 'Laporan Pembelian Sparepart',
+                dateRange: getFormattedDate(),
+            });
+        } catch {
+            Alert.alert('Error', 'Gagal mencetak laporan');
         }
-    };
+    }, [summary, buildExportHtml, getFormattedDate]);
+
+    const handleExportDownload = useCallback(async () => {
+        setShowExportMenu(false);
+        if (!summary) return;
+        try {
+            await printReportHTML(buildExportHtml(), {
+                title: 'Laporan Pembelian Sparepart',
+                dateRange: getFormattedDate(),
+            });
+        } catch {
+            Alert.alert('Error', 'Gagal membuat PDF');
+        }
+    }, [summary, buildExportHtml, getFormattedDate]);
 
     return (
-        <View className="flex-1 bg-surface">
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-surface">
+            <StatusBar barStyle="dark-content" />
 
-            {/* Premium Adaptive Header (Design System) */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable
-                            onPress={handleBack}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5"
-                        >
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <View className="flex-row items-center mb-0.5">
-                                <View className="w-1.5 h-1.5 rounded-full bg-secondary mr-2" />
-                                <Typography className="text-white/40 text-[9px] uppercase tracking-widest font-bold">Jasa Angkut & Stok</Typography>
-                            </View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Pembelian Sparepart</Typography>
-                        </View>
-                    </View>
-                    <View className="flex-row items-center">
-                        <View className="bg-white/10 px-3 py-1.5 rounded-full border border-white/10 mr-2">
-                            <Typography className="text-white uppercase text-[8px] font-bold tracking-widest">REALTIME</Typography>
-                        </View>
-                        <Pressable
-                            onPress={() => setShowExportMenu(true)}
-                            disabled={isExporting}
-                            className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5"
-                        >
-                            <Download size={22} color="white" />
-                        </Pressable>
-                    </View>
-                </View>
-
-                {/* Main Bento Stats Row */}
-                <View className="flex-row justify-between mb-4">
-                    <View className="flex-[1.5] bg-white/10 p-5 rounded-[28px] border border-white/5 mr-3">
-                        <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Total Nilai Pembelian</Typography>
-                        <View className="flex-row items-end">
-                            <Typography className="text-white/60 text-xs font-bold mb-1 mr-1">Rp</Typography>
-                            <Typography weight="bold" className="text-white text-2xl tracking-tighter">
-                                {formatCurrency(summary?.total_nilai || 0).replace('Rp', '').trim()}
-                            </Typography>
-                        </View>
-                        <View className="flex-row items-center mt-2">
-                            <View className="bg-blue-500/20 flex-row items-center px-2 py-0.5 rounded-lg mr-2">
-                                <TrendingUp size={10} color="#60A5FA" />
-                                <Typography className="text-blue-400 text-[10px] font-bold ml-1">Asset Growth</Typography>
-                            </View>
-                        </View>
-                    </View>
-                    <View className="flex-1 bg-white/10 p-5 rounded-[28px] border border-white/5">
-                        <Typography className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Total Nota</Typography>
-                        <Typography weight="bold" className="text-white text-3xl tracking-tighter">{summary?.total_transaksi || 0}</Typography>
-                        <Typography className="text-white/30 text-[10px] mt-1">Transaksi</Typography>
-                    </View>
-                </View>
-
-                {/* Detail Stats Bento Cards */}
-                <View className="flex-row justify-between">
-                    <View className="flex-1 bg-white/5 p-4 rounded-[24px] border border-white/5 mr-3">
-                        <View className="flex-row items-center mb-1">
-                            <View className="w-5 h-5 bg-red-500/20 rounded-md items-center justify-center mr-2">
-                                <Clock size={12} color="#F87171" />
-                            </View>
-                            <Typography className="text-white/40 text-[9px] uppercase font-bold">Hutang (Unpaid)</Typography>
-                        </View>
-                        <Typography weight="bold" className="text-white text-sm">
-                            {formatCurrency(summary?.belum_lunas_nilai || 0)}
-                        </Typography>
-                    </View>
-                    <View className="flex-1 bg-white/5 p-4 rounded-[24px] border border-white/5">
-                        <View className="flex-row items-center mb-1">
-                            <View className="w-5 h-5 bg-emerald-500/20 rounded-md items-center justify-center mr-2">
-                                <ShoppingCart size={12} color="#10B981" />
-                            </View>
-                            <Typography className="text-white/40 text-[9px] uppercase font-bold">Lunas (Paid)</Typography>
-                        </View>
-                        <Typography weight="bold" className="text-white text-sm">
-                            {formatCurrency((summary?.total_nilai || 0) - (summary?.belum_lunas_nilai || 0))}
-                        </Typography>
-                    </View>
-                </View>
-            </View>
-
-            {/* Date Filter & Search Section (Floating Pattern) */}
-            <View className="px-6 -mt-8 z-10">
-                <View className="bg-white p-4 rounded-[32px] shadow-xl border border-gray-50">
-                    <View className="flex-row bg-gray-50 p-1 rounded-2xl mb-4">
-                        {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                            <Pressable
-                                key={type}
-                                onPress={() => {
-                                    setFilterType(type);
-                                    setDate(new Date());
-                                }}
-                                className={`flex-1 py-2.5 items-center rounded-xl ${filterType === type ? 'bg-white shadow-sm' : ''}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={filterType === type ? 'text-primary' : 'text-gray-400'}
-                                >
-                                    {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
-                                </Typography>
-                            </Pressable>
-                        ))}
-                    </View>
-
-                    <View className="flex-row justify-between items-center px-2">
-                        <Pressable
-                            onPress={handlePrev}
-                            className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
-                        >
-                            <ChevronLeft size={20} color="#1C1C1C" />
-                        </Pressable>
-
-                        <View className="flex-row items-center">
-                            <Calendar size={18} color="#023C69" className="mr-2" />
-                            <Typography variant="body1" weight="bold" className="text-textMain">
-                                {getFormattedDate()}
-                            </Typography>
-                        </View>
-
-                        <Pressable
-                            onPress={handleNext}
-                            className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
-                        >
-                            <ChevronRight size={20} color="#1C1C1C" />
-                        </Pressable>
-                    </View>
-
-                    {/* Search Field */}
-                    <View className="mt-4 flex-row items-center px-4 bg-gray-50 h-12 rounded-2xl border border-gray-100">
-                        <Search size={18} color="#9CA3AF" />
-                        <TextInput
-                            placeholder="Cari supplier atau nota..."
-                            className="flex-1 ml-3 text-sm font-medium"
-                            value={search}
-                            onChangeText={setSearch}
-                        />
-                    </View>
-                </View>
-            </View>
+            <ReportPageHeader
+                title="Pembelian Sparepart"
+                subtitle="Jasa Angkut & Stok"
+                onBack={handleBack}
+                onExport={() => setShowExportMenu(true)}
+                isExporting={isExporting}
+            />
 
             <ScrollView
-                className="flex-1 px-6 pt-6"
+                className="flex-1"
+                contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
                 }
             >
-                {/* Section Header */}
-                <View className="flex-row items-center justify-between mb-6 px-1">
-                    <View className="flex-row items-center">
-                        <View className="w-1.5 h-6 bg-primary rounded-full mr-3" />
-                        <Typography variant="h3" weight="bold" className="text-textMain tracking-tight">Riwayat Pembelian</Typography>
-                    </View>
-                    <View className="bg-gray-100 px-3 py-1 rounded-full">
-                        <Typography variant="caption" className="text-textGray font-bold">{purchases.length} Nota</Typography>
-                    </View>
+                <View className="px-6 pt-4">
+                    <ReportStatsBento stats={stats} />
+                    <ReportStatsBento stats={secondaryStats} className="mb-4" />
+                    <ReportDateControls
+                        filterType={filterType}
+                        onFilterTypeChange={(type) => {
+                            setFilterType(type);
+                            setDate(new Date());
+                        }}
+                        formattedDate={getFormattedDate()}
+                        onPrev={handlePrev}
+                        onNext={handleNext}
+                        search={search}
+                        onSearchChange={setSearch}
+                        searchPlaceholder="Cari supplier atau nota..."
+                    />
+                    <ReportSectionHeader title="Riwayat Pembelian" count={purchases.length} countLabel="Nota" />
                 </View>
+
+                <View className="px-6">
 
                 {isLoading ? (
                     <View className="py-20 items-center">
@@ -317,14 +286,14 @@ export default function PembelianSparepartReportScreen() {
                         <Typography variant="caption" className="text-textGray/40 mt-2">Tidak ditemukan transaksi pada periode ini</Typography>
                     </View>
                 ) : (
-                    purchases.map((item, index) => (
+                    purchases.map((item) => (
                         <Pressable
                             key={item.id}
                             onPress={() => handlePressTransaction(item)}
                             className="bg-white p-5 rounded-[32px] mb-6 border border-gray-50 shadow-sm"
                         >
                             <View className="flex-row items-center mb-4">
-                                <View className={`w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4`}>
+                                <View className="w-14 h-14 bg-blue-50 rounded-2xl items-center justify-center mr-4">
                                     <Package size={24} color="#3B82F6" />
                                 </View>
                                 <View className="flex-1">
@@ -365,22 +334,21 @@ export default function PembelianSparepartReportScreen() {
                     ))
                 )
                 }
-
-                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 16) }} />
+                </View>
             </ScrollView>
 
             {/* Detail Modal */}
             <BottomSheetModal
-    ref={bottomSheetModalRef}
-    index={0}
-    snapPoints={snapPoints}
-    enablePanDownToClose={true}
-    topInset={insets.top}
-    backdropComponent={({ style }) => (
-        <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
-    )}
-    backgroundStyle={{ borderRadius: 32 }}
->
+                ref={bottomSheetModalRef}
+                index={0}
+                snapPoints={snapPoints}
+                enablePanDownToClose={true}
+                topInset={insets.top}
+                backdropComponent={({ style }) => (
+                    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.5)' }]} />
+                )}
+                backgroundStyle={{ borderRadius: 32 }}
+            >
                 <BottomSheetView className="flex-1 px-6 pb-6">
                     <View className="flex-row justify-between items-center mb-6">
                         <View>
@@ -509,178 +477,13 @@ export default function PembelianSparepartReportScreen() {
                 </BottomSheetView>
             </BottomSheetModal>
 
-            {/* Export Action Menu */}
-            <Modal
+            <ReportExportSheet
                 visible={showExportMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowExportMenu(false)}
-            >
-                <Pressable
-                    className="flex-1 bg-black/50 justify-end"
-                    onPress={() => setShowExportMenu(false)}
-                >
-                    <View className="bg-surface rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-8">
-                            <View>
-                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
-                            </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-background p-2 rounded-full">
-                                <X size={20} color="#64748B" />
-                            </Pressable>
-                        </View>
-
-                        <View className="flex-row gap-4">
-                            <Pressable
-                                onPress={async () => {
-                                    setShowExportMenu(false);
-                                    if (!summary) return;
-                                    try {
-                                        const html = `
-                                            <div class="section-header">RINGKASAN PEMBELIAN SPAREPART</div>
-                                            <div class="row-item">
-                                                <span>Total Nilai Pembelian</span>
-                                                <span class="font-bold">${formatCurrency(summary.total_nilai || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Transaksi</span>
-                                                <span>${summary.total_transaksi || 0} Nota</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Hutang (Unpaid)</span>
-                                                <span class="text-error font-bold">${formatCurrency(summary.belum_lunas_nilai || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Lunas (Paid)</span>
-                                                <span class="text-success font-bold">${formatCurrency((summary.total_nilai || 0) - (summary.belum_lunas_nilai || 0))}</span>
-                                            </div>
-
-                                            <div class="section-header" style="margin-top:30px;">DAFTAR PEMBELIAN SPAREPART</div>
-                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-                                                <thead>
-                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tanggal/Nota</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Supplier</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Total</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${purchases.map(item => `
-                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
-                                                            <td style="padding: 8px;">
-                                                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
-                                                            </td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${escapeHtml(item.supplier?.nama || item.supplier_nama || 'Supplier Umum')}</span>
-                                                            </td>
-                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
-                                                                    ${escapeHtml(item.status_bayar)}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
-                                        `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Pembelian Sparepart',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal mencetak laporan');
-                                    }
-                                }}
-                                className="flex-1 bg-blue-50 p-6 rounded-[32px] border border-blue-100 items-center"
-                            >
-                                <View className="w-14 h-14 bg-blue-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-blue-200">
-                                    <Eye size={28} color="white" />
-                                </View>
-                                <Typography weight="bold" className="text-blue-900">Tampilkan</Typography>
-                                <Typography variant="caption" className="text-blue-600/70 text-center mt-1">Lihat dokumen PDF</Typography>
-                            </Pressable>
-
-                            <Pressable
-                                onPress={async () => {
-                                    setShowExportMenu(false);
-                                    if (!summary) return;
-                                    try {
-                                        const html = `
-                                            <div class="section-header">RINGKASAN PEMBELIAN SPAREPART</div>
-                                            <div class="row-item">
-                                                <span>Total Nilai Pembelian</span>
-                                                <span class="font-bold">${formatCurrency(summary.total_nilai || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Transaksi</span>
-                                                <span>${summary.total_transaksi || 0} Nota</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Hutang (Unpaid)</span>
-                                                <span class="text-error font-bold">${formatCurrency(summary.belum_lunas_nilai || 0)}</span>
-                                            </div>
-                                            <div class="row-item">
-                                                <span>Total Lunas (Paid)</span>
-                                                <span class="text-success font-bold">${formatCurrency((summary.total_nilai || 0) - (summary.belum_lunas_nilai || 0))}</span>
-                                            </div>
-
-                                            <div class="section-header" style="margin-top:30px;">DAFTAR PEMBELIAN SPAREPART</div>
-                                            <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-                                                <thead>
-                                                    <tr style="background-color: #f8fafc; text-align: left; font-size: 10px;">
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Tanggal/Nota</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Supplier</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Total</th>
-                                                        <th style="padding: 8px; border-bottom: 1px solid #e2e8f0;">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    ${purchases.map(item => `
-                                                        <tr style="font-size: 10px; border-bottom: 1px solid #f1f5f9;">
-                                                            <td style="padding: 8px;">
-                                                                ${format(new Date(item.tanggal), 'dd/MM/yy', { locale: localeID })}<br/>
-                                                                <span style="color: #64748b; font-size: 8px;">${escapeHtml(item.nomor_transaksi)}</span>
-                                                            </td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="font-weight: bold;">${escapeHtml(item.supplier?.nama || item.supplier_nama || 'Supplier Umum')}</span>
-                                                            </td>
-                                                            <td style="padding: 8px; font-weight: bold;">${formatCurrency(item.total_biaya || item.grand_total || 0)}</td>
-                                                            <td style="padding: 8px;">
-                                                                <span style="color: ${item.status_bayar?.toUpperCase() === 'LUNAS' ? '#10b981' : '#ef4444'}; font-weight: bold;">
-                                                                    ${escapeHtml(item.status_bayar)}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
-                                        `;
-
-                                        await printReportHTML(html, {
-                                            title: 'Laporan Pembelian Sparepart',
-                                            dateRange: getFormattedDate()
-                                        });
-                                    } catch (e) {
-                                        Alert.alert('Error', 'Gagal membuat PDF');
-                                    }
-                                }}
-                                className="flex-1 bg-primary/5 p-6 rounded-[32px] border border-primary/10 items-center"
-                            >
-                                <View className="w-14 h-14 bg-primary rounded-2xl items-center justify-center mb-4 shadow-lg shadow-green-200">
-                                    <Share2 size={28} color="white" />
-                                </View>
-                                <Typography weight="bold" className="text-primary-dark">Download</Typography>
-                                <Typography variant="caption" className="text-primary/70 text-center mt-1">Unduh & Bagikan</Typography>
-                            </Pressable>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
-        </View>
+                onClose={() => setShowExportMenu(false)}
+                subtitle="Pilih metode ekspor dokumen PDF"
+                onPreview={handleExportPreview}
+                onDownload={handleExportDownload}
+            />
+        </SafeAreaView>
     );
 }
