@@ -1,21 +1,21 @@
 ## Summary
 
-<!-- 1-2 sentence description of what this PR does and why -->
+_Describe what this PR does and why (1–2 sentences)._
+
+> Tip: generate automatically with `./scripts/pr-body.sh main dev` or `./scripts/create-pr.sh main dev`
 
 ## Changes
 
-<!-- Bulleted list of changes grouped by area -->
+- _List key changes here_
 
 ## Files Changed
 
-| File | Type | Description |
-|------|------|-------------|
-| `path` | Modified | what changed |
+_See **Files** tab on GitHub, or run `./scripts/pr-body.sh` for an auto-generated table._
 
 ## Testing
 
-<!-- Steps to test, or "Needs testing" -->
+- [ ] _How you tested, or "Needs testing"_
 
 ## Related Issues
 
-<!-- Closes/Fixes/Relates to #N, or "None" -->
+_None — or Closes #123_

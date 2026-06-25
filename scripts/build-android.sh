@@ -68,7 +68,12 @@ gradle_progress_pct() {
         return
     fi
 
-    tasks=$(grep -cE '^> Task ' "$log_file" 2>/dev/null || echo 0)
+    tasks=0
+    if [ -s "$log_file" ]; then
+        # grep -c exits 1 when count=0; avoid "0\n0" from `|| echo 0`
+        tasks=$(grep -cE '^> Task ' "$log_file" 2>/dev/null || true)
+        tasks=${tasks:-0}
+    fi
     pct=$((10 + tasks / 4))
     [ "$pct" -gt 94 ] && pct=94
     [ "$pct" -lt 5 ] && pct=5
@@ -85,7 +90,9 @@ run_gradle_build() {
 
     while kill -0 "$gradle_pid" 2>/dev/null; do
         pct=$(gradle_progress_pct "$log_file")
-        if [ "$pct" -ne "$last_pct" ]; then
+        pct=${pct//$'\n'/}
+        pct=${pct:-0}
+        if [ "$pct" -ne "$last_pct" ] 2>/dev/null; then
             show_build_progress "$pct"
             last_pct=$pct
         fi
@@ -95,6 +102,8 @@ run_gradle_build() {
     wait "$gradle_pid" || return $?
 
     pct=$(gradle_progress_pct "$log_file")
+    pct=${pct//$'\n'/}
+    pct=${pct:-0}
     show_build_progress "$pct"
     echo ""
     return 0
