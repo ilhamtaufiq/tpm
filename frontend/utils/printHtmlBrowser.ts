@@ -1,4 +1,18 @@
-export async function printHtmlInBrowser(html: string): Promise<void> {
+import { getPaperDimensions, PaperSize } from './paperSize';
+
+function ensurePageSize(html: string, paperSize?: PaperSize): string {
+    if (!paperSize) return html;
+    const { widthMm } = getPaperDimensions(paperSize);
+    const pageRule = `@page { size: ${widthMm}mm auto; margin: 0; }`;
+    if (html.includes('@page')) return html;
+    if (/<style[^>]*>/i.test(html)) {
+        return html.replace(/<style([^>]*)>/i, `<style$1>${pageRule}`);
+    }
+    return html.replace(/<head([^>]*)>/i, `<head$1><style>${pageRule}</style>`);
+}
+
+export async function printHtmlInBrowser(html: string, paperSize?: PaperSize): Promise<void> {
+    const printableHtml = ensurePageSize(html, paperSize);
     if (typeof document === 'undefined') {
         throw new Error('Browser print tidak tersedia di platform ini');
     }
@@ -30,7 +44,7 @@ export async function printHtmlInBrowser(html: string): Promise<void> {
 
     iframe.onload = triggerPrint;
     iframeDoc.open();
-    iframeDoc.write(html);
+    iframeDoc.write(printableHtml);
     iframeDoc.close();
 
     setTimeout(() => {

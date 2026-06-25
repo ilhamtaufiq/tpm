@@ -1,8 +1,8 @@
 import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { printHtmlInBrowser } from './printHtmlBrowser';
-import { printHtmlViaQz } from './qzTray';
+import { printSettingsService } from './printSettings';
+import { printHtmlOnWeb } from './printHtmlWeb';
 
 export interface PrintReportConfig {
     title: string;
@@ -129,10 +129,11 @@ export async function printReportHTML(htmlContent: string, config: PrintReportCo
 
     try {
         if (Platform.OS === 'web') {
-            const printedByQz = await printHtmlViaQz(fullHtml);
-            if (!printedByQz) {
-                await printHtmlInBrowser(fullHtml);
-            }
+            const settings = await printSettingsService.getSettings();
+            await printHtmlOnWeb(fullHtml, settings, {
+                pageWidthPx: 794,
+                pageHeightPx: 1123,
+            });
         } else {
             const { uri } = await Print.printToFileAsync({ html: fullHtml });
             if (await Sharing.isAvailableAsync()) {

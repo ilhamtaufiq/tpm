@@ -2,13 +2,8 @@ import { useCallback, useState } from 'react';
 import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
 
-let _settingsCache: PrintSettings | null = null;
-
 async function getSettings(): Promise<PrintSettings> {
-    if (!_settingsCache) {
-        _settingsCache = await printSettingsService.getSettings();
-    }
-    return _settingsCache;
+    return printSettingsService.getSettings();
 }
 
 export function usePrintReceipt() {

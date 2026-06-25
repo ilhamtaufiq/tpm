@@ -39,10 +39,10 @@ def get_kas_jenis(metode_bayar: PaymentMethod, sumber: Optional[KasBankSource] =
     except (ValueError, TypeError):
         method = PaymentMethod.TUNAI
 
-    # POLICY: Unit-specific isolation. 
-    # - TRANSFER flows directly to the Main Bank account (Akun Utama) as it is physically moved to Bank.
-    # - For other methods (TUNAI/INTERNAL), they are recorded in the unit-specific drawer 
-    #   to ensure the Unit Wallet reflects the true Net Balance of that unit.
+    # POLICY: Unit-specific isolation.
+    # - TRANSFER flows directly to the Main Bank account (Akun Utama).
+    # - TUNAI uses the unit drawer (physical cash).
+    # - INTERNAL is bookkeeping-only for inter-unit debt; it must not move unit wallets.
     if method == PaymentMethod.TRANSFER:
         return KasBankJenis.BANK_UTAMA
     

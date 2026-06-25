@@ -126,6 +126,50 @@ class TransaksiBengkelService:
 
         return f"{prefix}{date_str}{new_num:04d}"
 
+    def settle_internal_debts_for_transaksi(
+        self,
+        nomor_transaksi: str,
+        *,
+        user_id: Optional[int] = None,
+        note: str = "",
+    ) -> None:
+        """Mark internal piutang/hutang as settled without touching unit cash wallets."""
+        suffix = f" | {note}" if note else ""
+
+        piutang_rows = (
+            self.db.query(PiutangUsaha)
+            .filter(
+                PiutangUsaha.nomor_referensi == nomor_transaksi,
+                PiutangUsaha.is_internal == True,
+                PiutangUsaha.status != PiutangStatus.BATAL,
+            )
+            .all()
+        )
+        for piutang in piutang_rows:
+            piutang.status = PiutangStatus.LUNAS
+            piutang.total_dibayar = piutang.nominal_piutang
+            piutang.sisa_piutang = Decimal("0")
+            if not piutang.tanggal_lunas:
+                piutang.tanggal_lunas = date.today()
+            if suffix and suffix not in (piutang.catatan or ""):
+                piutang.catatan = (piutang.catatan or "") + suffix
+
+        hutang_rows = (
+            self.db.query(HutangUsaha)
+            .filter(
+                HutangUsaha.nomor_referensi == nomor_transaksi,
+                HutangUsaha.is_internal == True,
+                HutangUsaha.status != HutangStatus.BATAL,
+            )
+            .all()
+        )
+        for hutang in hutang_rows:
+            hutang.status = HutangStatus.LUNAS
+            hutang.total_dibayar = hutang.nominal_hutang
+            hutang.sisa_hutang = Decimal("0")
+            if suffix and suffix not in (hutang.catatan or ""):
+                hutang.catatan = (hutang.catatan or "") + suffix
+
     def _validate_customer(self, customer_id: int) -> Customer:
         """Validate customer exists."""
         customer = (
@@ -263,25 +307,16 @@ class TransaksiBengkelService:
         is_internal_mobil = bool(getattr(data, "kategori", "umum") == "jual_beli_mobil" and getattr(data, "mobil_id", None))
         
         if is_internal_jasa_angkut and should_finalize_finance:
-            # Internal transactions for Jasa Angkut are considered paid immediately
-            total_pembayaran = grand_total
-            # Respect user's choice (Tunai vs Transfer from Bank)
-            user_metode = data.metode_bayar
-            if data.payments and len(data.payments) > 0:
-                user_metode = data.payments[0].metode
-            
-            if user_metode == PaymentMethod.TRANSFER:
-                metode_utama = PaymentMethod.TRANSFER
-            else:
-                metode_utama = PaymentMethod.INTERNAL # Default to internal cash bookkeeping
+            # Internal JA: hutang/piutang antar unit — tidak memotong dompet fisik unit.
+            total_pembayaran = Decimal("0")
+            metode_utama = PaymentMethod.INTERNAL
         elif is_internal_jasa_angkut:
             total_pembayaran = Decimal("0")
             metode_utama = PaymentMethod.KREDIT
         elif is_internal_mobil:
-            # Internal transactions for JB Mobil are NOT paid immediately
-            # They stay as Piutang (receivable) until the car is sold
+            # Internal JB Mobil: hutang/piutang internal — dompet unit tidak dipotong.
             total_pembayaran = Decimal("0")
-            metode_utama = PaymentMethod.KREDIT
+            metode_utama = PaymentMethod.INTERNAL
         elif data.payments:
             total_pembayaran = sum(p.jumlah for p in data.payments)
             # If multiple methods used, set main method as SPLIT
@@ -348,12 +383,23 @@ class TransaksiBengkelService:
             if sp.stok != 999:
                 sp.stok -= item.qty
 
-        # Create piutang if not fully paid
+        # Create piutang if not fully paid (external customers + internal unit transfers)
         if should_finalize_finance and status_bayar != PaymentStatus.LUNAS and grand_total > 0:
-            # Special debtor name for JB Mobil internal transfers
             debtor_name = nama_customer or (customer.nama if customer else "Guest")
             if is_internal_mobil:
                 debtor_name = f"JB MOBIL - {data.nomor_plat}"
+            elif is_internal_jasa_angkut:
+                debtor_name = nama_customer or f"Armada {data.nomor_plat}"
+
+            if is_internal_jasa_angkut:
+                piutang_sumber = PiutangSource.JASA_ANGKUT
+                piutang_catatan = f"Piutang Internal Jasa Angkut dari transaksi bengkel {nomor_transaksi}"
+            elif is_internal_mobil:
+                piutang_sumber = PiutangSource.JUAL_BELI_MOBIL
+                piutang_catatan = f"Piutang Internal JB Mobil dari transaksi bengkel {nomor_transaksi}"
+            else:
+                piutang_sumber = PiutangSource.BENGKEL
+                piutang_catatan = f"Piutang dari transaksi bengkel {nomor_transaksi}"
 
             out_amount = grand_total
             piutang = PiutangUsaha(
@@ -364,15 +410,15 @@ class TransaksiBengkelService:
                 telepon_debitur=customer.telepon if customer else None,
                 alamat_debitur=customer.alamat if customer else None,
                 nominal_piutang=out_amount,
-                sumber=PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL,
-                unit=KasBankSource.BENGKEL, # Bengkel is the one who owns the receivable
-                is_internal=is_internal_mobil,
-                referensi_id=None,  # Will update after commit
+                sumber=piutang_sumber,
+                unit=KasBankSource.BENGKEL,
+                is_internal=is_internal_mobil or is_internal_jasa_angkut,
+                referensi_id=None,
                 nomor_referensi=nomor_transaksi,
                 total_dibayar=Decimal("0"),
                 sisa_piutang=out_amount,
                 status=PiutangStatus.BELUM_LUNAS,
-                catatan=f"Piutang Internal JB Mobil dari transaksi bengkel {nomor_transaksi}" if is_internal_mobil else f"Piutang dari transaksi bengkel {nomor_transaksi}",
+                catatan=piutang_catatan,
                 created_by=user_id,
             )
             self.db.add(piutang)
@@ -381,10 +427,13 @@ class TransaksiBengkelService:
         self.db.commit()
         self.db.refresh(transaksi)
 
-        # Update Piutang's referensi_id and process DP if any
-        if should_finalize_finance and not is_internal_jasa_angkut:
-            # Determine correct sumber based on category
-            piutang_sumber = PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil else PiutangSource.BENGKEL
+        # Update Piutang's referensi_id, create internal hutang, or process DP
+        if should_finalize_finance and (is_internal_mobil or is_internal_jasa_angkut or total_pembayaran > 0):
+            piutang_sumber = (
+                PiutangSource.JUAL_BELI_MOBIL if is_internal_mobil
+                else PiutangSource.JASA_ANGKUT if is_internal_jasa_angkut
+                else PiutangSource.BENGKEL
+            )
             piutang_record = self.db.query(PiutangUsaha).filter(
                 PiutangUsaha.nomor_referensi == nomor_transaksi,
                 PiutangUsaha.sumber == piutang_sumber
@@ -393,8 +442,6 @@ class TransaksiBengkelService:
                 piutang_record.referensi_id = transaksi.id
 
                 if is_internal_mobil:
-                    # Internal JB Mobil: keep as Piutang (receivable) until car is sold.
-                    # ALSO: Create corresponding HutangUsaha for the mobil side to balance the books
                     new_hutang = HutangUsaha(
                         nomor_hutang=self._generate_nomor_hutang(),
                         tanggal=transaksi_tanggal,
@@ -412,6 +459,29 @@ class TransaksiBengkelService:
                         created_by=user_id
                     )
                     self.db.add(new_hutang)
+                elif is_internal_jasa_angkut:
+                    existing_hutang = self.db.query(HutangUsaha).filter(
+                        HutangUsaha.nomor_referensi == nomor_transaksi,
+                        HutangUsaha.is_internal == True,
+                    ).first()
+                    if not existing_hutang:
+                        new_hutang = HutangUsaha(
+                            nomor_hutang=self._generate_nomor_hutang(),
+                            tanggal=transaksi_tanggal,
+                            nama_kreditur="BENGKEL TPM",
+                            nominal_hutang=grand_total,
+                            sisa_hutang=grand_total,
+                            total_dibayar=Decimal("0"),
+                            status=HutangStatus.BELUM_LUNAS,
+                            sumber=HutangSource.LAINNYA,
+                            unit=KasBankSource.JASA_ANGKUT,
+                            is_internal=True,
+                            referensi_id=transaksi.id,
+                            nomor_referensi=nomor_transaksi,
+                            catatan=f"Hutang Internal Repair Armada {data.nomor_plat} dari bengkel {nomor_transaksi}",
+                            created_by=user_id,
+                        )
+                        self.db.add(new_hutang)
                 elif total_pembayaran > 0:
                     # External customer: process DP payment against piutang
                     from app.services.piutang_service import PiutangService
@@ -571,10 +641,8 @@ class TransaksiBengkelService:
                     user_id=user_id,
                 )
 
-        # Record internal transfer for integrated units
-        if should_finalize_finance and is_internal_jasa_angkut and grand_total > 0:
-            record_bilateral_payment(grand_total, metode_utama, transaksi.id, transaksi.nomor_transaksi)
-        
+        # Internal JA: no bilateral kas — biaya tercatat via hutang/piutang internal saja.
+
         # 2. Handle Non-Internal (UMUM) LUNAS Transactions 
         # (Internal Mobil and non-internal partial payments are already handled via Piutang system)
         elif should_finalize_finance and not is_internal_mobil and status_bayar == PaymentStatus.LUNAS:
@@ -1391,26 +1459,35 @@ class TransaksiBengkelService:
                 if spare_part and spare_part.stok != 999:
                     spare_part.stok += detail.qty
 
-            # 2. Void related Piutang
-            piutang = (
+            # 2. Void related Piutang (external + internal unit transfers)
+            piutang_rows = (
                 self.db.query(PiutangUsaha)
                 .filter(
                     PiutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
-                    PiutangUsaha.sumber == PiutangSource.BENGKEL,
+                    PiutangUsaha.sumber.in_([
+                        PiutangSource.BENGKEL,
+                        PiutangSource.JASA_ANGKUT,
+                        PiutangSource.JUAL_BELI_MOBIL,
+                    ]),
                 )
-                .first()
+                .all()
             )
 
             # 3. Delete related KasBank entries (Financial Balance)
-            # Direct payments
+            self.db.query(KasBank).filter(
+                KasBank.nomor_referensi == transaksi.nomor_transaksi,
+                KasBank.sumber.in_([
+                    KasBankSource.BENGKEL,
+                    KasBankSource.JASA_ANGKUT,
+                    KasBankSource.JUAL_BELI_MOBIL,
+                ]),
+            ).delete(synchronize_session=False)
             self.db.query(KasBank).filter(
                 KasBank.referensi_id == transaksi.id,
                 KasBank.sumber == KasBankSource.BENGKEL,
             ).delete(synchronize_session=False)
 
-            # Piutang and its payments
-            if piutang:
-                # Delete payment entries in KasBank for this Piutang
+            for piutang in piutang_rows:
                 pembayaran_ids = [p.id for p in piutang.pembayaran]
                 if pembayaran_ids:
                     self.db.query(KasBank).filter(
@@ -1418,20 +1495,19 @@ class TransaksiBengkelService:
                         or_(KasBank.sumber == KasBankSource.PIUTANG, KasBank.sumber == KasBankSource.BENGKEL)
                     ).delete(synchronize_session=False)
 
-                # Set Piutang status to BATAL instead of deleting
                 piutang.status = PiutangStatus.BATAL
                 piutang.sisa_piutang = Decimal("0")
 
             # 4. Void related Hutang (Internal)
-            hutang = (
+            hutang_rows = (
                 self.db.query(HutangUsaha)
                 .filter(
                     HutangUsaha.nomor_referensi == transaksi.nomor_transaksi,
                     HutangUsaha.is_internal == True,
                 )
-                .first()
+                .all()
             )
-            if hutang:
+            for hutang in hutang_rows:
                 hutang.status = HutangStatus.BATAL
                 hutang.sisa_hutang = Decimal("0")
 

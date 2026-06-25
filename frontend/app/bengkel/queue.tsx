@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
     View,
@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
     Alert,
     Platform,
+    Share,
     RefreshControl as RNRefreshControl
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +54,10 @@ import {
 import { useMobilList } from '../../hooks/useMobil';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
+import { printReceipt, PrintReceiptData } from '../../utils/printReceipt';
+import { printSettingsService, PrintSettings } from '../../utils/printSettings';
+import { buildPublicReceiptUrl } from '../../utils/publicReceiptUrl';
+import { getErrorMessage } from '../../utils/error';
 
 export default function QueueScreen() {
     const insets = useSafeAreaInsets();
@@ -70,6 +75,10 @@ export default function QueueScreen() {
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+    // Print State
+    const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
+    const [printing, setPrinting] = useState(false);
+
     // Payment State
     const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
     const updateTransaksiMutation = useUpdateTransaksiBengkelPayment();
@@ -84,6 +93,12 @@ export default function QueueScreen() {
     });
 
     const formattedDateString = useMemo(() => format(date, 'yyyy-MM-dd'), [date]);
+
+    useEffect(() => {
+        printSettingsService.getSettings()
+            .then(setPrintSettings)
+            .catch((error) => console.error('Failed to load print settings:', error));
+    }, []);
 
     // Data fetching
     const { data: queueData, isLoading, refetch } = useTransaksiBengkelList({
@@ -237,6 +252,120 @@ export default function QueueScreen() {
 
     const getFormattedDate = () => {
         return format(date, 'dd MMMM yyyy', { locale: localeID });
+    };
+
+    const buildReceiptData = (item: any): PrintReceiptData => ({
+        type: 'bengkel',
+        transactionNumber: item.nomor_transaksi || item.id?.toString() || '-',
+        publicReceiptToken: item.public_receipt_token,
+        antrian: item.nomor_antrian || '-',
+        date: new Date(item.created_at || new Date()),
+        customerName: item.customer_nama || item.nama_customer || '-',
+        cashierName: item.kasir_nama || '-',
+        mechanicName: item.mekanik_nama || '-',
+        status: item.status_bayar || 'Belum Bayar',
+        vehiclePlate: item.nomor_plat,
+        vehicleType: item.jenis_kendaraan,
+        services: (item.detail_services || []).map((s: any) => ({
+            description: s.nama_jasa || s.nama || 'Jasa',
+            quantity: 1,
+            unitPrice: Number(s.harga) || 0,
+            subtotal: Number(s.harga) || 0,
+        })),
+        parts: (item.detail_parts || []).map((p: any) => ({
+            description: p.spare_part_nama || 'Sparepart',
+            quantity: p.qty,
+            unitPrice: Number(p.subtotal) / (p.qty || 1),
+            subtotal: Number(p.subtotal),
+        })),
+        subtotal: item.subtotal || item.total_biaya || item.grand_total || 0,
+        discount: item.diskon || 0,
+        total: item.grand_total || 0,
+        paid: item.jumlah_bayar,
+        change: item.kembalian,
+        paymentMethod: item.metode_bayar || '-',
+        notes: item.catatan,
+        showDiscount: true,
+    });
+
+    const handlePrintReceipt = async (item: any) => {
+        try {
+            setPrinting(true);
+            const latestSettings = await printSettingsService.getSettings();
+            setPrintSettings(latestSettings);
+            await printReceipt(buildReceiptData(item), latestSettings);
+            setDialogConfig({
+                visible: true,
+                title: 'Sukses',
+                message: 'Struk berhasil dicetak',
+                variant: 'success',
+            });
+        } catch (error) {
+            setDialogConfig({
+                visible: true,
+                title: 'Error',
+                message: getErrorMessage(error, 'Gagal mencetak struk'),
+                variant: 'error',
+            });
+        } finally {
+            setPrinting(false);
+        }
+    };
+
+    const handleSharePublicReceipt = async (item: any) => {
+        const receiptToken = item?.public_receipt_token;
+        if (!receiptToken) {
+            setDialogConfig({
+                visible: true,
+                title: 'Token Tidak Tersedia',
+                message: 'Token struk publik belum tersedia untuk transaksi ini.',
+                variant: 'error',
+            });
+            return;
+        }
+
+        const shareUrl = buildPublicReceiptUrl('bengkel', receiptToken);
+        const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
+
+        try {
+            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && !navigator.share) {
+                await navigator.clipboard.writeText(shareMessage);
+                setDialogConfig({
+                    visible: true,
+                    title: 'Berhasil',
+                    message: 'Link struk publik telah disalin ke clipboard.',
+                    variant: 'success',
+                });
+                return;
+            }
+
+            await Share.share({
+                message: shareMessage,
+                url: shareUrl,
+                title: 'Bagikan Struk Publik',
+            });
+        } catch (error: any) {
+            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+                try {
+                    await navigator.clipboard.writeText(shareMessage);
+                    setDialogConfig({
+                        visible: true,
+                        title: 'Berhasil',
+                        message: 'Link struk publik telah disalin ke clipboard.',
+                        variant: 'success',
+                    });
+                    return;
+                } catch {
+                    // fall through
+                }
+            }
+            setDialogConfig({
+                visible: true,
+                title: 'Gagal',
+                message: getErrorMessage(error, 'Gagal membagikan link struk'),
+                variant: 'error',
+            });
+        }
     };
 
     const openEditTransaction = (item: any) => {
@@ -699,44 +828,32 @@ export default function QueueScreen() {
 
                                 <View className="flex-row space-x-3 mb-4">
                                     <Pressable
-                                        onPress={() => {
-                                            const token = selectedItem?.public_receipt_token;
-                                            if (!token) {
-                                                Alert.alert('Error', 'Struk tidak tersedia');
-                                                return;
-                                            }
-                                            setDetailModalOpen(false);
-                                            router.push(`/receipt/bengkel/${token}`);
-                                        }}
+                                        onPress={() => handlePrintReceipt(selectedItem)}
+                                        disabled={printing}
                                         className="flex-1 bg-primary py-3.5 rounded-xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
                                     >
-                                        <Printer size={16} color="white" />
+                                        {printing ? (
+                                            <ActivityIndicator size="small" color="white" />
+                                        ) : (
+                                            <Printer size={16} color="white" />
+                                        )}
                                         <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                            Print Struk
+                                            {printing ? 'Mencetak...' : 'Print Struk'}
                                         </Typography>
                                     </Pressable>
                                 </View>
 
-                                {/* Share Struk Public */}
-                                {selectedItem?.public_receipt_token && (
+                                {selectedItem?.public_receipt_token ? (
                                     <Pressable
-                                        onPress={() => {
-                                            const token = selectedItem?.public_receipt_token;
-                                            if (!token) {
-                                                Alert.alert('Error', 'Struk tidak tersedia');
-                                                return;
-                                            }
-                                            setDetailModalOpen(false);
-                                            router.push(`/receipt/bengkel/${token}`);
-                                        }}
-                                        className="bg-primary py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90 border border-primary/20"
+                                        onPress={() => handleSharePublicReceipt(selectedItem)}
+                                        className="bg-[#00ADEF] py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90 border border-sky-300/30"
                                     >
                                         <Share2 size={16} color="white" />
                                         <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
                                             Share Struk Public
                                         </Typography>
                                     </Pressable>
-                                )}
+                                ) : null}
 
                                 <Pressable
                                     onPress={() => handleVoidTransaction(selectedItem)}

@@ -419,7 +419,9 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
 
         try {
             setIsPrintingOrderSlip(true);
-            await printReceipt(buildOrderSlipData(), printSettings);
+            const latestSettings = await printSettingsService.getSettings();
+            setPrintSettings(latestSettings);
+            await printReceipt(buildOrderSlipData(), latestSettings);
             setDialogConfig({
                 visible: true,
                 title: 'Sukses',
@@ -1167,7 +1169,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 <View className="ml-3 flex-1">
                                     <Typography variant="body2" weight="bold" className="text-amber-800">Internal Jual Beli</Typography>
                                     <Typography variant="caption" className="text-amber-600 mt-1">
-                                        Biaya bengkel ini akan dicatat sebagai Hutang Unit Mobil dan otomatis ditambahkan ke HPP. Pelunasan dilakukan saat mobil terjual.
+                                        Dicatat sebagai hutang internal Mobil → Bengkel. Dompet unit tidak dipotong; biaya masuk HPP. Pelunasan buku saat mobil terjual.
                                     </Typography>
                                 </View>
                             </View>
@@ -1182,7 +1184,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                                 <View className="ml-3 flex-1">
                                     <Typography variant="body2" weight="bold" className="text-emerald-800">Biaya Internal Jasa Angkut</Typography>
                                     <Typography variant="caption" className="text-emerald-600 mt-1">
-                                        Biaya ini akan otomatis memotong laba dari bank unit Jasa Angkut terkait.
+                                        Dicatat sebagai hutang internal JA → Bengkel. Dompet unit tidak dipotong; biaya masuk laporan trip/armada.
                                     </Typography>
                                 </View>
                             </View>

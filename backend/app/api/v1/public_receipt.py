@@ -204,6 +204,9 @@ def get_jasa_angkut_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "date": muatan.created_at.isoformat() if muatan.created_at else datetime.now().isoformat(),
         "customerName": muatan.supir_nama or "Umum",
         "vehiclePlate": plat_nomor,
+        "origin": muatan.asal,
+        "destination": muatan.tujuan,
+        "driverName": muatan.supir_nama,
         "details": details,
         "items": items,
         "subtotal": float(muatan.harga_jual or 0),
@@ -252,6 +255,7 @@ def get_mobil_receipt(db: Session, transaction_id: str) -> Dict[str, Any]:
         "discount": 0,
         "total": float(mobil.harga_jual or 0),
         "paid": float((mobil.harga_jual or 0) - (transaksi.sisa_bayar or 0)),
+        "remaining": float(transaksi.sisa_bayar or 0),
         "paymentMethod": format_payment_method(transaksi.metode_bayar.value if transaksi.metode_bayar else "TUNAI"),
         "notes": transaksi.catatan if transaksi.catatan else (mobil.catatan or "-"),
         "companyName": "Tiga Putra Motor",
@@ -438,8 +442,6 @@ async def get_receipt_image(
             data = get_bengkel_receipt(db, transaction_id)
         elif receipt_type == "jasa_angkut":
             data = get_jasa_angkut_receipt(db, transaction_id)
-        elif receipt_type == "mobil":
-            data = get_mobil_receipt(db, transaction_id)
         elif receipt_type == "mobil":
             data = get_mobil_receipt(db, transaction_id)
         else:
@@ -762,6 +764,8 @@ async def get_receipt_pdf(
             data = get_bengkel_receipt(db, transaction_id)
         elif receipt_type == "jasa_angkut":
             data = get_jasa_angkut_receipt(db, transaction_id)
+        elif receipt_type == "mobil":
+            data = get_mobil_receipt(db, transaction_id)
         else:
             raise HTTPException(status_code=400, detail="Invalid receipt type")
             

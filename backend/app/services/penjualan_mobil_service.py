@@ -427,10 +427,8 @@ class PenjualanMobilService:
                     commit=False # ATOMIC
                 )
         
-        # 5. Settle Associated Financial Obligations (Workshop Piutangs & Unit Hutangs)
-        # Process this AFTER adding funds to JUAL_BELI_MOBIL to avoid unnecessary wallet deficit.
-        # It uses the sale's payment method to decide between Cash (Wallet) or Transfer (Bank) settlement.
-        # Only settle if the car is fully paid (LUNAS), otherwise keep internal debts active.
+        # 5. Settle internal workshop debts (bookkeeping only — dompet tidak dipotong).
+        # Only when the car sale is LUNAS; otherwise keep internal debts active.
         if status_bayar == PaymentStatus.LUNAS:
             self._settle_unit_financial_obligations(
                 mobil, 
@@ -458,10 +456,13 @@ class PenjualanMobilService:
         payments: List[Any] = [],
         user_id: Optional[int] = None
     ):
-        """Robustly settle any outstanding workshop piutangs and unit payables (Hutangs) for this unit."""
-        # --- A. PIUTANG (RECEIVABLES) & WORKSHOP SETTLEMENT ---
-        # 1. Update all unpaid workshop transactions for this car to LUNAS directly
-        # This fixes the "Belum Bayar" status in the Workshop Index regardless of category
+        """Settle internal workshop debts for a sold unit — bookkeeping only, no wallet movement."""
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+
+        bengkel_service = TransaksiBengkelService(self.db)
+        settle_note = f"Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
+
         self.db.query(TransaksiPenjualanBengkel).filter(
             TransaksiPenjualanBengkel.mobil_id == mobil.id,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS
@@ -471,106 +472,36 @@ class PenjualanMobilService:
             "status_pengerjaan": WorkshopStatus.SELESAI
         }, synchronize_session='fetch')
 
-        # 2. Update linked Piutang records
-        # Fetch nomor_transaksi from workshop transactions linked to this car
-        workshop_nos = [t.nomor_transaksi for t in (mobil.bengkel_perbaikan or [])]
-        
-        # Fallback: also query directly by mobil_id in case relationship is empty
-        if not workshop_nos:
-            workshop_nos = [
-                t.nomor_transaksi for t in self.db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
-                    TransaksiPenjualanBengkel.mobil_id == mobil.id
-                ).all()
-            ]
-        
-        internal_pi_q = self.db.query(PiutangUsaha).filter(
+        workshop_nos = {
+            t.nomor_transaksi
+            for t in (mobil.bengkel_perbaikan or [])
+            if t.nomor_transaksi
+        }
+        direct_refs = self.db.query(TransaksiPenjualanBengkel.nomor_transaksi).filter(
+            TransaksiPenjualanBengkel.mobil_id == mobil.id,
+            TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+        ).all()
+        workshop_nos.update(row[0] for row in direct_refs if row[0])
+
+        internal_piutangs = self.db.query(PiutangUsaha).filter(
             or_(
                 PiutangUsaha.nomor_referensi.in_(workshop_nos) if workshop_nos else False,
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat}"),
                 PiutangUsaha.nama_debitur.ilike(f"JB MOBIL - {mobil.nomor_plat.replace(' ', '')}"),
             ),
-            PiutangUsaha.status != PiutangStatus.LUNAS
-        )
-        
-        # Calculate amount settled for any logging/adjustments if needed
-        total_piutang_settled = Decimal("0")
-        for p in internal_pi_q.all():
-            total_piutang_settled += p.sisa_piutang
-            p.status = PiutangStatus.LUNAS
-            p.total_dibayar = p.nominal_piutang
-            p.sisa_piutang = Decimal("0")
-            p.tanggal_lunas = tanggal
-            p.catatan = (p.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
+            PiutangUsaha.is_internal == True,
+            PiutangUsaha.status != PiutangStatus.LUNAS,
+        ).all()
+        for piutang in internal_piutangs:
+            if piutang.nomor_referensi:
+                workshop_nos.add(piutang.nomor_referensi)
 
-        # Determine settlement method based on sale's payment method
-        # Policy: If there's any TRANSFER in the sale, we treat the internal settlement 
-        # as a TRANSFER to the workshop bank (BANK_UTAMA). Otherwise, it's TUNAI (KAS_UNIT_BENGKEL).
-        settlement_method = metode_bayar
-        
-        if metode_bayar == PaymentMethod.SPLIT:
-            # First, check the provided payments list (used during initial creation)
-            has_transfer = any(
-                (isinstance(p, tuple) and p[0] == PaymentMethod.TRANSFER) or 
-                (hasattr(p, 'metode') and p.metode == PaymentMethod.TRANSFER) 
-                for p in payments
-            )
-            
-            # If no transfer found in list, check the existing ledger (used during update_payment)
-            if not has_transfer:
-                from app.models.keuangan import KasBank
-                has_transfer = self.db.query(KasBank).filter(
-                    KasBank.nomor_referensi == ref_no,
-                    KasBank.metode_bayar == PaymentMethod.TRANSFER,
-                    KasBank.tipe == KasBankType.MASUK
-                ).first() is not None
-                
-            settlement_method = PaymentMethod.TRANSFER if has_transfer else PaymentMethod.TUNAI
-        
-        # If the sale itself is TRANSFER, prioritize it
-        if metode_bayar == PaymentMethod.TRANSFER:
-            settlement_method = PaymentMethod.TRANSFER
-
-        if total_piutang_settled > 0:
-            # 1. MASUK to Workshop (Paying their receivable)
-            # This goes to BANK_UTAMA if settlement_method is TRANSFER, or KAS_UNIT_BENGKEL if TUNAI/INTERNAL
-            create_kas_entry(
-                db=self.db, tanggal=tanggal, tipe=KasBankType.MASUK,
-                nominal=total_piutang_settled, sumber=KasBankSource.BENGKEL, 
-                metode_bayar=settlement_method,
-                referensi_id=None, nomor_referensi=ref_no,
-                keterangan=f"Pelunasan Piutang Internal via Penjualan {mobil.nomor_plat} ({settlement_method})",
+        for nomor in workshop_nos:
+            bengkel_service.settle_internal_debts_for_transaksi(
+                nomor,
                 user_id=user_id,
-                commit=False # ATOMIC
+                note=settle_note,
             )
-            # 2. KELUAR from JB Mobil (Settling the repair cost)
-            # This goes from BANK_UTAMA if settlement_method is TRANSFER, or KAS_UNIT_MOBIL if TUNAI/INTERNAL
-            create_kas_entry(
-                db=self.db, tanggal=tanggal, tipe=KasBankType.KELUAR,
-                nominal=total_piutang_settled, sumber=KasBankSource.JUAL_BELI_MOBIL, 
-                metode_bayar=settlement_method,
-                referensi_id=None, nomor_referensi=ref_no,
-                keterangan=f"Pelunasan Biaya Repair Internal {mobil.nomor_plat} ({settlement_method})",
-                user_id=user_id,
-                allow_negative=True, # Critical: Allow wallet to go minus as it carries repair costs until sold
-                commit=False # ATOMIC
-            )
-
-        # --- B. HUTANG (PAYABLES) SETTLEMENT ---
-        # Settle INTERNAL payables (debts to Workshop) automatically
-        internal_hu_q = self.db.query(HutangUsaha).filter(
-            HutangUsaha.nomor_referensi.in_(workshop_nos) if workshop_nos else False,
-            HutangUsaha.is_internal == True,
-            HutangUsaha.status != HutangStatus.LUNAS
-        )
-        
-        for h in internal_hu_q.all():
-            h.status = HutangStatus.LUNAS
-            h.total_dibayar = h.nominal_hutang
-            h.sisa_hutang = Decimal("0")
-            h.catatan = (h.catatan or "") + f" | Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
-
-        # External debts still must be settled manually per user request.
-        pass
 
     def get_by_id(self, transaksi_id: int) -> TransaksiPenjualanMobil:
         """Get transaction by ID."""

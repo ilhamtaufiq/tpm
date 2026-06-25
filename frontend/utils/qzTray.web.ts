@@ -1,5 +1,6 @@
 import qz from 'qz-tray';
 import { QzPrintOptions } from './qzTray.types';
+import { getPaperDimensions } from './paperSize';
 
 let connectPromise: Promise<void> | null = null;
 let certInitialized = false;
@@ -31,8 +32,8 @@ async function ensureConnected(): Promise<void> {
     if (!connectPromise) {
         await initSecurity();
         connectPromise = qz.websocket.connect({
-            retries: 0,
-            delay: 0,
+            retries: 2,
+            delay: 500,
             usingSecure: typeof window !== 'undefined' ? window.location.protocol === 'https:' : false
         }).then(() => undefined).finally(() => { connectPromise = null; });
     }
@@ -61,6 +62,39 @@ export async function checkQzAvailability(): Promise<{ available: boolean; needs
     }
 }
 
+function isFullHtmlDocument(html: string): boolean {
+    const trimmed = html.trim();
+    return /^<!DOCTYPE/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
+}
+
+function extractBodyContent(html: string): string {
+    const match = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    return match ? match[1].trim() : html;
+}
+
+function buildQzPrintHtml(html: string, widthPx: number, widthMm: number): string {
+    const content = isFullHtmlDocument(html) ? extractBodyContent(html) : html;
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@page { size: ${widthMm}mm auto; margin: 0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Courier New',monospace; font-size:13px; padding:3mm; background:#fff; color:#000; width:${widthPx}px; max-width:${widthMm}mm; }
+.divider { border-top:1px dashed #000; margin:5px 0; }
+.center { text-align:center; }
+.bold { font-weight:bold; }
+img { max-width: 80px; height: auto; display: block; margin: 0 auto 5px; }
+</style>
+</head>
+<body style="width:${widthPx}px;max-width:${widthMm}mm;height:auto;">
+${content}
+</body>
+</html>`;
+}
+
 export async function printHtmlViaQz(html: string, options: QzPrintOptions = {}): Promise<boolean> {
     try {
         await ensureConnected();
@@ -70,34 +104,38 @@ export async function printHtmlViaQz(html: string, options: QzPrintOptions = {})
             printerName = await qz.printers.getDefault();
         }
 
-        const config = qz.configs.create(printerName, {
-            copies: 1,
-            margins: 0,
-            rasterize: true,
-            scaleContent: true,
-        });
+        const paper = getPaperDimensions(options.paperSize);
+        const widthPx = options.pageWidthPx || paper.widthPx;
+        const widthMm = paper.widthMm;
+        const isThermal = widthPx <= 320;
+        const pageHeightPx = options.pageHeightPx ?? 9999;
 
-        const widthPx = options.pageWidthPx || 302;
-        const heightPx = options.pageHeightPx || 9999;
+        const qzConfig: Record<string, unknown> = isThermal
+            ? {
+                copies: 1,
+                margins: 0,
+                rasterize: false,
+                scaleContent: true,
+                units: 'mm',
+                size: { width: widthMm },
+            }
+            : {
+                copies: 1,
+                margins: 0,
+                rasterize: false,
+                scaleContent: true,
+                units: 'mm',
+                size: pageHeightPx < 9000
+                    ? {
+                        width: widthMm,
+                        height: Math.max(50, Math.round(pageHeightPx / 3.78)),
+                    }
+                    : { width: widthMm },
+            };
 
-        // Simple HTML without SVG wrapper - let QZ handle page size naturally
-        const fullHtml = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Courier New',monospace; font-size:13px; padding:3mm; background:#fff; color:#000; }
-.divider { border-top:1px dashed #000; margin:5px 0; }
-.center { text-align:center; }
-.bold { font-weight:bold; }
-img { max-width: 80px; height: auto; display: block; margin: 0 auto 5px; }
-</style>
-</head>
-<body style="width:${widthPx}px;height:auto;">
-${html}
-</body>
-</html>`;
+        const config = qz.configs.create(printerName, qzConfig);
+
+        const fullHtml = buildQzPrintHtml(html, widthPx, widthMm);
 
         const printData: any = {
             type: 'pixel',

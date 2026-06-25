@@ -73,8 +73,15 @@ def get_all_balances(
     current_user: CurrentUser,
 ):
     """Get balances for all kas/bank types."""
-    service = KasBankService(db)
     unit_scope = get_unit_scope_for_role(current_user.role)
+    from app.services.reports.neraca_service import NeracaService
+    neraca_service = NeracaService(db)
+    if unit_scope in (None, "jasa_angkut"):
+        neraca_service.sync_ja_internal_bengkel_finance()
+    if unit_scope in (None, "mobil"):
+        neraca_service.sync_mobil_internal_bengkel_finance()
+
+    service = KasBankService(db)
     allowed_jenis = [UNIT_WALLET_MAP[unit_scope]] if unit_scope else None
     return service.get_all_balances(allowed_jenis=allowed_jenis)
 

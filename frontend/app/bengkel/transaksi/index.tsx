@@ -16,9 +16,9 @@ import { useActiveArmada } from '../../../hooks/useJasaAngkut';
 import { useMobilList } from '../../../hooks/useMobil';
 import { formatCurrency, formatNumber, parseNumber } from '../../../utils/format';
 import { getCustomTabBarHeight } from '../../../components/ui/CustomTabBar';
-import { printReceipt, PrintReceiptData } from '../../../utils/printReceipt';
+import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
-import { FILE_URL } from '../../../utils/api';
+import { buildPublicReceiptUrl } from '../../../utils/publicReceiptUrl';
 import api from '../../../utils/api';
 import { useScanSound } from '../../../utils/sounds';
 
@@ -88,6 +88,12 @@ export default function BengkelTransaksiScreen() {
     const [printingReceipt, setPrintingReceipt] = useState(false);
     const [sharingReceipt, setSharingReceipt] = useState(false);
     const [receiptActionMessage, setReceiptActionMessage] = useState('');
+    useEffect(() => {
+        printSettingsService.getSettings()
+            .then(setPrintSettings)
+            .catch((error) => console.error('Failed to load print settings:', error));
+    }, []);
+
     const debouncedPartSearch = useDebounce(partSearch, 300);
     const debouncedExistingSearch = useDebounce(existingSearch, 300);
     const debouncedCustomerTransactionSearch = useDebounce(customerTransactionSearch, 300);
@@ -594,6 +600,63 @@ export default function BengkelTransaksiScreen() {
 
     const openPaymentSheet = () => {
         setPaymentSheetOpen(true);
+    };
+
+    const handlePrintCreatedReceipt = async () => {
+        if (!createdTransaction) return;
+        try {
+            setPrintingReceipt(true);
+            setReceiptActionMessage('');
+            const settings = await printSettingsService.getSettings();
+            setPrintSettings(settings);
+            await printReceipt(buildReceiptData(createdTransaction), settings);
+            setReceiptActionMessage('Struk berhasil dicetak.');
+        } catch (error: any) {
+            setReceiptActionMessage(error?.message || 'Gagal mencetak struk.');
+        } finally {
+            setPrintingReceipt(false);
+        }
+    };
+
+    const handleShareCreatedReceipt = async () => {
+        if (!createdTransaction) return;
+        try {
+            setSharingReceipt(true);
+            setReceiptActionMessage('');
+            const settings = await printSettingsService.getSettings();
+            setPrintSettings(settings);
+            await saveReceiptPDF(buildReceiptData(createdTransaction), settings);
+            setReceiptActionMessage('Struk siap dibagikan / disimpan.');
+        } catch (error: any) {
+            const token = createdTransaction?.public_receipt_token;
+            if (token) {
+                const shareUrl = buildPublicReceiptUrl('bengkel', token);
+                if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Struk Tiga Putra Motor',
+                            text: `Struk transaksi ${createdTransaction?.nomor_transaksi || ''}`,
+                            url: shareUrl,
+                        });
+                        setReceiptActionMessage('Link struk berhasil dibagikan.');
+                        return;
+                    } catch {
+                        // fall through to clipboard/message fallback
+                    }
+                }
+                if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(shareUrl);
+                    setReceiptActionMessage('Link struk disalin ke clipboard.');
+                    return;
+                }
+                await Share.share({ message: shareUrl, url: shareUrl, title: 'Bagikan Struk' });
+                setReceiptActionMessage('Link struk berhasil dibagikan.');
+                return;
+            }
+            setReceiptActionMessage(error?.message || 'Gagal membagikan struk.');
+        } finally {
+            setSharingReceipt(false);
+        }
     };
 
     const buildReceiptData = (transaction: any): PrintReceiptData => ({
@@ -1496,7 +1559,7 @@ export default function BengkelTransaksiScreen() {
                             ) : (
                                 <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
                                     <Typography weight="bold" className="text-amber-800">{kategori === 'jasa_angkut' ? 'Internal Jasa Angkut' : 'Internal Jual Beli Mobil'}</Typography>
-                                    <Typography className="text-amber-700 text-xs mt-1">{kategori === 'jasa_angkut' ? 'Transaksi dicatat sebagai biaya internal armada.' : 'Transaksi dicatat sebagai piutang internal dan menambah HPP mobil.'}</Typography>
+                                    <Typography className="text-amber-700 text-xs mt-1">{kategori === 'jasa_angkut' ? 'Dicatat sebagai hutang internal JA → Bengkel. Dompet unit tidak dipotong; biaya masuk laporan trip/armada.' : 'Dicatat sebagai hutang internal Mobil → Bengkel. Dompet tidak dipotong; biaya masuk HPP mobil. Pelunasan buku saat mobil terjual.'}</Typography>
                                 </View>
                             )}
                         </ScrollView>

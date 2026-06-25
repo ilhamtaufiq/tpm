@@ -9,6 +9,7 @@ import { AlertDialog } from '../../components/ui/AlertDialog';
 import { router } from 'expo-router';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { testQzTrayConnection, QzConnectionTestResult, getQzPrinters, printHtmlViaQz } from '../../utils/qzTray';
+import { getPaperDimensions } from '../../utils/paperSize';
 import { settingsService } from '../../services/settings';
 import * as ImagePicker from 'expo-image-picker';
 import { Tabs } from '../../components/ui/Tabs';
@@ -258,9 +259,11 @@ p { font-size: 14px; margin: 5px 0; }
 <p style="margin-top:40px;font-size:20px;font-weight:bold;">✅ BERHASIL</p>
 <p style="font-size:12px;color:#666;">Printer: ${settings?.webPrinterName || 'Default'}</p>
 </body></html>`;
+            const paper = getPaperDimensions(settings?.paperSize);
             const ok = await printHtmlViaQz(testHtml, {
                 printerName: settings?.webPrinterName || undefined,
-                pageWidthPx: 302,
+                paperSize: paper.paperSize,
+                pageWidthPx: paper.widthPx,
             });
             setDialogConfig({
                 visible: true,

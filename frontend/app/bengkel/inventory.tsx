@@ -1274,8 +1274,8 @@ export default function InventoryScreen() {
                                         </Typography>
                                         <Typography className="text-amber-700 text-xs mt-1">
                                             {transactionKategori === 'jasa_angkut'
-                                                ? 'Transaksi dicatat sebagai biaya internal armada.'
-                                                : 'Transaksi dicatat sebagai piutang internal dan menambah HPP mobil.'}
+                                                ? 'Dicatat sebagai hutang internal JA → Bengkel (dompet unit tidak dipotong).'
+                                                : 'Hutang internal Mobil → Bengkel (dompet tidak dipotong); biaya masuk HPP.'}
                                         </Typography>
                                     </View>
                                 )}
