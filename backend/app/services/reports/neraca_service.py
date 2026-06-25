@@ -712,7 +712,7 @@ class NeracaService(BaseReportService):
 
             bengkel_service = TransaksiBengkelService(self.db)
             completed_unpaid = self.db.query(TransaksiPenjualanBengkel).filter(
-                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+                TransaksiPenjualanBengkel.grand_total > 0,
                 TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS,
                 TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
                 TransaksiPenjualanBengkel.grand_total > TransaksiPenjualanBengkel.jumlah_bayar,

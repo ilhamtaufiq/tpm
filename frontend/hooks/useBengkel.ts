@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import { bengkelService } from '../services/bengkel';
+import { bengkelService, SparePart } from '../services/bengkel';
 
 // =============================================
 // TRANSAKSI BENGKEL
@@ -100,6 +100,8 @@ export const useVoidTransaksiBengkel = () => {
             queryClient.invalidateQueries({ queryKey: ['kas_bank_balances'] });
             queryClient.invalidateQueries({ queryKey: ['kas_bank_list'] });
             queryClient.invalidateQueries({ queryKey: ['laba_rugi_report'] });
+            queryClient.invalidateQueries({ queryKey: ['neraca_report'] });
+            queryClient.invalidateQueries({ queryKey: ['perubahan_modal_report'] });
         },
     });
 };
@@ -121,7 +123,7 @@ export const useSparePartsList = (params?: any) => {
 };
 
 export const useSparePartDetail = (id?: number | null, options?: any) => {
-    return useQuery({
+    return useQuery<SparePart & { kode_part?: string; merek?: string; lokasi_rak?: string }>({
         queryKey: ['spare_parts_detail', id],
         queryFn: () => bengkelService.getSparePartById(id as number),
         enabled: !!id,

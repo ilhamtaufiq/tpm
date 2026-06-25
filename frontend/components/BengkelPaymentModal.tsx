@@ -20,6 +20,7 @@ interface BengkelPaymentModalProps {
         metode_bayar: string;
         diskon: number | null;
         payments: PaymentItem[];
+        willBeLunas: boolean;
     }) => Promise<void>;
     loading?: boolean;
     grandTotal: number;
@@ -121,6 +122,7 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
             metode_bayar: isInternalja ? 'INTERNAL' : isInternalMobil ? 'KREDIT' : (paymentMode === 'SPLIT' ? 'SPLIT' : paymentMode),
             diskon: diskonAmt > 0 ? diskonAmt : null,
             payments: paymentItems,
+            willBeLunas: isLunas,
         });
     };
 
@@ -170,7 +172,7 @@ export const BengkelPaymentModal: React.FC<BengkelPaymentModalProps> = ({
                             {existingDp > 0 && (
                                 <View className="flex-row justify-between mt-1">
                                     <Typography className="text-emerald-600 text-xs">
-                                        DP Dibayar
+                                        Sudah Dibayar
                                     </Typography>
                                     <Typography className="text-emerald-600 text-xs font-bold">
                                         -{formatCurrency(existingDp)}

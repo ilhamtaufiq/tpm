@@ -170,7 +170,7 @@ export const BarcodeScannerModal: FC<BarcodeScannerModalProps> = ({
                             Html5QrcodeSupportedFormats.DATA_MATRIX,
                             Html5QrcodeSupportedFormats.PDF_417,
                         ],
-                    },
+                    } as any,
                     async (decodedText: string) => {
                         if (webScanInProgress.current) return;
                         webScanInProgress.current = true;

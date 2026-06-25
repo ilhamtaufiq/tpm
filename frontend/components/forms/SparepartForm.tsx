@@ -224,7 +224,15 @@ export default function SparepartForm({ initialData, onSuccess }: Props) {
                 </View>
             </View>
 
-            <BarcodeScannerModal visible={isScannerOpen} onClose={() => setIsScannerOpen(false)} onScan={(d) => { setForm(prev => ({ ...prev, [scannerTarget]: d })); setIsScannerOpen(false); }} />
+            <BarcodeScannerModal
+                visible={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={(d) => {
+                    setForm(prev => ({ ...prev, [scannerTarget]: d }));
+                    setIsScannerOpen(false);
+                    return true;
+                }}
+            />
         </ScrollView>
     );
 }

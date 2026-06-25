@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     ScrollView,
@@ -10,7 +10,6 @@ import {
     ActivityIndicator,
     FlatList,
     Image,
-    StyleSheet,
     Platform,
     Modal
 } from 'react-native';
@@ -27,7 +26,6 @@ import {
     AlertTriangle,
     Package,
     ArrowUpDown,
-    Filter,
     Barcode as BarcodeIcon,
     Edit3,
     Minus,
@@ -36,28 +34,31 @@ import {
     Check,
     Circle,
     Download,
-    Wrench,
-    User,
-    Car,
+    Boxes,
+    TrendingUp,
+    ShoppingCart,
+    ChevronRight,
+    Receipt,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { useCreateTransaksiBengkel, useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts } from '../../hooks/useBengkel';
-import { useJasaList } from '../../hooks/useJasaServis';
-import { useMobilList } from '../../hooks/useMobil';
+import { useSparePartsList, useLowStockParts, useUpdateSparePart, useUpdateSparePartStock, useSparePartStats, useExportSpareParts, useSparePartStockValue } from '../../hooks/useBengkel';
 import { BarcodeScannerModal } from '../../components/ui/BarcodeScannerModal';
-import { SkeletonCard, SkeletonListItem } from '../../components/ui/Skeleton';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatNumber } from '../../utils/format';
 import { BaseModal } from '../../components/ui/BaseModal';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { MasterDataSelector } from '../../components/ui/MasterDataSelector';
-import { ArmadaSelector } from '../../components/ui/ArmadaSelector';
-import * as Print from 'expo-print';
 import { FILE_URL } from '../../utils/api';
 
-type BengkelKategori = 'umum' | 'jasa_angkut' | 'jual_beli_mobil';
-type PaymentMode = 'TUNAI' | 'TRANSFER' | 'PIUTANG';
+type StockFilter = 'ALL' | 'low' | 'available' | 'empty' | 'always';
+
+const getPartStockStatus = (part: any): 'always' | 'low' | 'empty' | 'ok' => {
+    if (part.stok === 999) return 'always';
+    if (Number(part.stok || 0) <= 0) return 'empty';
+    if (Number(part.stok) < Number(part.stok_minimum || 0)) return 'low';
+    return 'ok';
+};
 
 export default function InventoryScreen() {
     const [search, setSearch] = useState('');
@@ -69,14 +70,13 @@ export default function InventoryScreen() {
 
     // Quick Stock States
     const [isScannerOpen, setIsScannerOpen] = useState(false);
-    const [scannerMode, setScannerMode] = useState<'stock' | 'transaction'>('stock');
-    const [scanLog, setScanLog] = useState<{ id: string; title: string; subtitle?: string; timestamp: number }[]>([]);
     const [isQuickStockVisible, setIsQuickStockVisible] = useState(false);
     const [scannedPart, setScannedPart] = useState<any>(null);
     const [stockChange, setStockChange] = useState('0');
     const [stockOp, setStockOp] = useState<'add' | 'subtract'>('add');
     const [sortBy, setSortBy] = useState('nama');
     const [sortOrder, setSortOrder] = useState('asc');
+    const [stockFilter, setStockFilter] = useState<StockFilter>('ALL');
     const [sheetIndex, setSheetIndex] = useState(-1);
     const sortSheetRef = useRef<BottomSheet>(null);
     const insets = useSafeAreaInsets();
@@ -104,47 +104,55 @@ export default function InventoryScreen() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage
-    } = useSparePartsList({ search, sort_by: sortBy, sort_order: sortOrder });
+    } = useSparePartsList({
+        search,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        low_stock_only: stockFilter === 'low',
+    });
     const { data: lowStockData } = useLowStockParts();
-    const { data: statsData, isLoading: isStatsLoading } = useSparePartStats();
+    const { data: statsData } = useSparePartStats();
+    const { data: stockValueData, isLoading: isStockValueLoading } = useSparePartStockValue();
     const updatePartMutation = useUpdateSparePart();
 
     const parts = React.useMemo(() =>
         partsData?.pages.flatMap((page: any) => page.data) || [],
         [partsData]);
+    const totalProducts = partsData?.pages?.[0]?.total ?? parts.length;
     const lowStockCount = lowStockData?.length || 0;
+
+    const filteredParts = useMemo(() => {
+        if (stockFilter === 'ALL' || stockFilter === 'low') return parts;
+        return parts.filter((part: any) => {
+            const status = getPartStockStatus(part);
+            if (stockFilter === 'always') return status === 'always';
+            if (stockFilter === 'empty') return status === 'empty';
+            if (stockFilter === 'available') return status === 'always' || status === 'ok' || status === 'low';
+            return true;
+        });
+    }, [parts, stockFilter]);
+
+    const stockFilterStats = useMemo(() => {
+        return parts.reduce((acc: Record<string, number>, part: any) => {
+            const status = getPartStockStatus(part);
+            acc.ALL += 1;
+            if (status === 'low') acc.low += 1;
+            if (status === 'empty') acc.empty += 1;
+            if (status === 'always') acc.always += 1;
+            if (status === 'always' || status === 'ok' || status === 'low') acc.available += 1;
+            return acc;
+        }, { ALL: 0, low: 0, available: 0, empty: 0, always: 0 });
+    }, [parts]);
 
     const exportMutation = useExportSpareParts();
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [isExportModalVisible, setIsExportModalVisible] = useState(false);
 
-    // Workshop transaction wizard
-    const [isTransactionModalVisible, setIsTransactionModalVisible] = useState(false);
-    const [transactionStep, setTransactionStep] = useState<1 | 2 | 3>(1);
-    const [selectedTransactionParts, setSelectedTransactionParts] = useState<Record<number, { item: any; qty: number }>>({});
-    const [selectedTransactionServices, setSelectedTransactionServices] = useState<Record<number, { item: any; qty: number }>>({});
-    const [transactionKategori, setTransactionKategori] = useState<BengkelKategori>('umum');
-    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-    const [guestName, setGuestName] = useState('');
-    const [selectedArmada, setSelectedArmada] = useState<any>(null);
-    const [selectedMobil, setSelectedMobil] = useState<any>(null);
-    const [paymentMode, setPaymentMode] = useState<PaymentMode>('TUNAI');
-    const [transactionNote, setTransactionNote] = useState('');
-    const [transactionPartSearch, setTransactionPartSearch] = useState('');
-    const [transactionServiceSearch, setTransactionServiceSearch] = useState('');
-
-    const createTransactionMutation = useCreateTransaksiBengkel();
-    const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 100 });
-    const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
-
-    const jasaList = jasaData?.data || [];
-    const mobilList = Array.isArray(mobilData) ? mobilData : (mobilData?.data || []);
-
     const toggleSelectAll = () => {
-        if (selectedIds.length === parts.length && parts.length > 0) {
+        if (selectedIds.length === filteredParts.length && filteredParts.length > 0) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(parts.map((item: any) => item.id));
+            setSelectedIds(filteredParts.map((item: any) => item.id));
         }
     };
 
@@ -152,218 +160,6 @@ export default function InventoryScreen() {
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
-    };
-
-    const selectedPartList = useMemo(() => Object.values(selectedTransactionParts), [selectedTransactionParts]);
-    const selectedServiceList = useMemo(() => Object.values(selectedTransactionServices), [selectedTransactionServices]);
-    const filteredTransactionParts = useMemo(() => {
-        const q = transactionPartSearch.trim().toLowerCase();
-        const list = q ? parts.filter((part: any) =>
-            (part.nama || '').toLowerCase().includes(q) ||
-            (part.kode || '').toLowerCase().includes(q) ||
-            (part.kode_part || '').toLowerCase().includes(q) ||
-            (part.kategori || '').toLowerCase().includes(q)
-        ) : parts;
-
-        return [...list].sort((a: any, b: any) => {
-            const rank = (part: any) => {
-                if (part.stok === 999) return 0;
-                if (Number(part.stok || 0) > 0) return 1;
-                return 2;
-            };
-            const rankDiff = rank(a) - rank(b);
-            if (rankDiff !== 0) return rankDiff;
-            return String(a.nama || '').localeCompare(String(b.nama || ''), 'id');
-        });
-    }, [parts, transactionPartSearch]);
-    const filteredTransactionServices = useMemo(() => {
-        const q = transactionServiceSearch.trim().toLowerCase();
-        if (!q) return jasaList;
-        return jasaList.filter((service: any) =>
-            (service.nama || '').toLowerCase().includes(q) ||
-            (service.kategori || '').toLowerCase().includes(q) ||
-            (service.deskripsi || '').toLowerCase().includes(q)
-        );
-    }, [jasaList, transactionServiceSearch]);
-    const transactionSubtotal = useMemo(() => {
-        const partTotal = selectedPartList.reduce((sum, row) => sum + (Number(row.item.harga_jual || 0) * row.qty), 0);
-        const serviceTotal = selectedServiceList.reduce((sum, row) => sum + (Number(row.item.harga || 0) * row.qty), 0);
-        return partTotal + serviceTotal;
-    }, [selectedPartList, selectedServiceList]);
-    const hasTransactionItems = selectedPartList.length > 0 || selectedServiceList.length > 0;
-
-    const resetTransactionWizard = () => {
-        setTransactionStep(1);
-        setSelectedTransactionParts({});
-        setSelectedTransactionServices({});
-        setTransactionKategori('umum');
-        setSelectedCustomer(null);
-        setGuestName('');
-        setSelectedArmada(null);
-        setSelectedMobil(null);
-        setPaymentMode('TUNAI');
-        setTransactionNote('');
-        setTransactionPartSearch('');
-        setTransactionServiceSearch('');
-    };
-
-    const openTransactionWizard = () => {
-        resetTransactionWizard();
-        setIsTransactionModalVisible(true);
-    };
-
-    const closeTransactionWizard = () => {
-        setIsTransactionModalVisible(false);
-        resetTransactionWizard();
-        router.setParams({ action: undefined } as any);
-    };
-
-    const toggleTransactionPart = (part: any) => {
-        if (part.stok !== 999 && Number(part.stok || 0) <= 0) return;
-        setSelectedTransactionParts(prev => {
-            const next = { ...prev };
-            if (next[part.id]) {
-                delete next[part.id];
-            } else {
-                next[part.id] = { item: part, qty: 1 };
-            }
-            return next;
-        });
-    };
-
-    const setTransactionPartQty = (partId: number, qty: number) => {
-        setSelectedTransactionParts(prev => {
-            if (!prev[partId]) return prev;
-            return { ...prev, [partId]: { ...prev[partId], qty: Math.max(1, qty) } };
-        });
-    };
-
-    const addScannedTransactionPart = (part: any) => {
-        if (part.stok !== 999 && Number(part.stok || 0) <= 0) {
-            Alert.alert('Stok Habis', `${part.nama} tidak bisa dipilih karena stok kosong.`);
-            return;
-        }
-        setSelectedTransactionParts(prev => {
-            const existing = prev[part.id];
-            return {
-                ...prev,
-                [part.id]: {
-                    item: part,
-                    qty: existing ? existing.qty + 1 : 1,
-                },
-            };
-        });
-        setScanLog(prev => [{
-            id: Math.random().toString(),
-            title: part.nama,
-            subtitle: `Kode: ${part.kode || part.kode_part || '-'} - ${part.stok === 999 ? 'Always Ready' : `Stok: ${part.stok}`}`,
-            timestamp: Date.now(),
-        }, ...prev]);
-    };
-
-    const toggleTransactionService = (service: any) => {
-        setSelectedTransactionServices(prev => {
-            const next = { ...prev };
-            if (next[service.id]) {
-                delete next[service.id];
-            } else {
-                next[service.id] = { item: service, qty: 1 };
-            }
-            return next;
-        });
-    };
-
-    const setTransactionServiceQty = (serviceId: number, qty: number) => {
-        setSelectedTransactionServices(prev => {
-            if (!prev[serviceId]) return prev;
-            return { ...prev, [serviceId]: { ...prev[serviceId], qty: Math.max(1, qty) } };
-        });
-    };
-
-    const goToNextTransactionStep = () => {
-        if (transactionStep === 1 && !hasTransactionItems) {
-            Alert.alert('Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
-            return;
-        }
-        if (transactionStep === 2) {
-            if (transactionKategori === 'umum' && !(selectedCustomer || guestName.trim())) {
-                Alert.alert('Validasi', 'Pilih customer atau isi nama guest untuk kategori umum.');
-                return;
-            }
-            if (transactionKategori === 'jasa_angkut' && !selectedArmada) {
-                Alert.alert('Validasi', 'Pilih armada untuk kategori Jasa Angkut.');
-                return;
-            }
-            if (transactionKategori === 'jual_beli_mobil' && !selectedMobil) {
-                Alert.alert('Validasi', 'Pilih mobil untuk kategori Jual Beli Mobil.');
-                return;
-            }
-        }
-        setTransactionStep(prev => Math.min(3, prev + 1) as 1 | 2 | 3);
-    };
-
-    const submitTransaction = async () => {
-        if (!hasTransactionItems) {
-            Alert.alert('Validasi', 'Pilih minimal satu sparepart atau jasa servis.');
-            return;
-        }
-
-        const isJasaAngkut = transactionKategori === 'jasa_angkut';
-        const isJualBeliMobil = transactionKategori === 'jual_beli_mobil';
-        const customerName = isJasaAngkut
-            ? `Armada ${selectedArmada?.nama || selectedArmada?.nopol || ''}`.trim()
-            : isJualBeliMobil
-                ? 'TPM (Internal)'
-                : (selectedCustomer?.nama || guestName.trim());
-        const nomorPlat = isJasaAngkut
-            ? (selectedArmada?.nopol || '-')
-            : isJualBeliMobil
-                ? (selectedMobil?.nomor_plat || '-')
-                : (selectedCustomer?.vehicles?.[0]?.plat_nomor || '-');
-        const jenisKendaraan = isJasaAngkut
-            ? 'Armada Jasa Angkut'
-            : isJualBeliMobil
-                ? `${selectedMobil?.merek || ''} ${selectedMobil?.model || ''}`.trim() || 'Mobil'
-                : (selectedCustomer?.vehicles?.[0]?.jenis_unit || 'Umum');
-
-        const payload = {
-            tanggal: new Date().toISOString().split('T')[0],
-            customer_id: transactionKategori === 'umum' ? selectedCustomer?.id || null : null,
-            nama_customer: customerName,
-            nomor_plat: String(nomorPlat).substring(0, 15),
-            jenis_kendaraan: String(jenisKendaraan).substring(0, 50),
-            kategori: transactionKategori,
-            armada_id: isJasaAngkut ? selectedArmada?.id : null,
-            mobil_id: isJualBeliMobil ? selectedMobil?.id : null,
-            detail_parts: selectedPartList.map(row => ({
-                spare_part_id: row.item.id,
-                qty: row.qty,
-                harga_jual: Number(row.item.harga_jual || 0),
-            })),
-            detail_services: selectedServiceList.map(row => ({
-                nama_jasa: row.item.nama,
-                harga: Number(row.item.harga || 0),
-                qty: row.qty,
-            })),
-            diskon: 0,
-            metode_bayar: isJasaAngkut ? 'INTERNAL' : (isJualBeliMobil ? 'KREDIT' : paymentMode),
-            jumlah_bayar: isJasaAngkut ? transactionSubtotal : (isJualBeliMobil || paymentMode === 'PIUTANG' ? 0 : transactionSubtotal),
-            payments: isJasaAngkut
-                ? [{ metode: 'INTERNAL', jumlah: transactionSubtotal }]
-                : isJualBeliMobil || paymentMode === 'PIUTANG'
-                    ? []
-                    : [{ metode: paymentMode, jumlah: transactionSubtotal, kas_jenis: paymentMode === 'TUNAI' ? 'KAS_UNIT_BENGKEL' : undefined }],
-            catatan: transactionNote,
-        };
-
-        try {
-            await createTransactionMutation.mutateAsync(payload);
-            Alert.alert('Sukses', 'Transaksi bengkel berhasil dibuat.');
-            closeTransactionWizard();
-            refetch();
-        } catch (error) {
-            Alert.alert('Error', 'Gagal membuat transaksi bengkel.');
-        }
     };
 
     const handleBulkExport = async (ids?: number[]) => {
@@ -424,50 +220,24 @@ export default function InventoryScreen() {
         }
     };
 
-    const handleScanForStockUpdate = (scannedData: string) => {
-        setIsScannerOpen(false);
+    const handleScanForStockUpdate = (scannedData: string): boolean => {
         const cleanData = scannedData.trim();
-        // search for part locally
         const part = parts.find((p: any) =>
             p.kode === cleanData ||
             (p.kode_part && p.kode_part === cleanData)
         );
 
         if (part) {
+            setIsScannerOpen(false);
             setScannedPart(part);
             setStockChange('1');
             setStockOp('add');
             setIsQuickStockVisible(true);
-        } else {
-            Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
-        }
-    };
-
-    const handleScanForTransaction = (scannedData: string) => {
-        const cleanData = scannedData.trim();
-        let part = parts.find((p: any) =>
-            p.kode === cleanData ||
-            (p.kode_part && p.kode_part === cleanData)
-        );
-
-        if (!part) {
-            const strippedData = cleanData.replace(/^0+/, '');
-            part = parts.find((p: any) =>
-                (p.kode || '').replace(/^0+/, '') === strippedData ||
-                (p.kode_part || '').replace(/^0+/, '') === strippedData
-            );
+            return true;
         }
 
-        if (part) {
-            addScannedTransactionPart(part);
-        } else {
-            setScanLog(prev => [{
-                id: Math.random().toString(),
-                title: 'Tidak ditemukan',
-                subtitle: `Kode: ${scannedData}`,
-                timestamp: Date.now(),
-            }, ...prev]);
-        }
+        Alert.alert('Tidak Ditemukan', `Kode "${scannedData}" tidak terdaftar di database.`);
+        return false;
     };
 
     const handleQuickStockUpdate = async () => {
@@ -521,104 +291,193 @@ export default function InventoryScreen() {
         []
     );
 
+    const renderStockBadge = (part: any) => {
+        const status = getPartStockStatus(part);
+        if (status === 'always') {
+            return <Badge label="Always Ready" variant="success" />;
+        }
+        if (status === 'empty') {
+            return <Badge label="Stok Habis" variant="error" />;
+        }
+        if (status === 'low') {
+            return <Badge label={`Stok ${part.stok} ${part.satuan || 'pcs'}`} variant="warning" />;
+        }
+        return <Badge label={`Stok ${part.stok} ${part.satuan || 'pcs'}`} variant="neutral" />;
+    };
+
+    const listHeader = (
+        <View>
+            <View className="flex-row gap-3 mb-4">
+                {[
+                    { label: 'Total SKU', value: formatNumber(totalProducts), icon: Boxes, color: '#023C69', bg: 'bg-primary/5' },
+                    { label: 'Stok Menipis', value: formatNumber(lowStockCount), icon: AlertTriangle, color: '#D97706', bg: 'bg-amber-50' },
+                    { label: 'Nilai Modal', value: isStockValueLoading ? '...' : formatCurrency(stockValueData?.total_value || 0), icon: TrendingUp, color: '#059669', bg: 'bg-emerald-50' },
+                ].map((stat) => {
+                    const StatIcon = stat.icon;
+                    return (
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-gray-100`}>
+                            <View className="flex-row items-center mb-2">
+                                <StatIcon size={14} color={stat.color} />
+                                <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>{stat.value}</Typography>
+                        </View>
+                    );
+                })}
+            </View>
+
+            <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 mb-3">
+                <Search size={18} color="#9CA3AF" />
+                <TextInput
+                    placeholder="Cari nama, kode, atau kategori..."
+                    placeholderTextColor="#9CA3AF"
+                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                    value={search}
+                    onChangeText={setSearch}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                />
+                {search.length > 0 && (
+                    <Pressable onPress={() => setSearch('')} className="p-1 mr-1">
+                        <X size={16} color="#9CA3AF" />
+                    </Pressable>
+                )}
+                <Pressable
+                    onPress={handlePresentSortSheet}
+                    className={`w-9 h-9 rounded-xl items-center justify-center ${sortBy !== 'nama' || sortOrder !== 'asc' ? 'bg-primary/10' : 'bg-white border border-gray-100'}`}
+                >
+                    <ArrowUpDown size={16} color={sortBy !== 'nama' || sortOrder !== 'asc' ? '#023C69' : '#6B7280'} />
+                </Pressable>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3 -mx-1">
+                {([
+                    { id: 'ALL' as StockFilter, label: 'Semua', count: totalProducts, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'low' as StockFilter, label: 'Menipis', count: lowStockCount, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'available' as StockFilter, label: 'Tersedia', count: stockFilterStats.available, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                    { id: 'empty' as StockFilter, label: 'Habis', count: stockFilterStats.empty, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
+                    { id: 'always' as StockFilter, label: 'Always Ready', count: stockFilterStats.always, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
+                ]).map((filter) => {
+                    const isActive = stockFilter === filter.id;
+                    return (
+                        <Pressable
+                            key={filter.id}
+                            onPress={() => setStockFilter(filter.id)}
+                            className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
+                                {filter.label} ({filter.count})
+                            </Typography>
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
+            <View className="flex-row gap-2 mb-4">
+                {[
+                    { label: 'Scan', icon: BarcodeIcon, color: '#2563EB', onPress: () => setIsScannerOpen(true) },
+                    { label: 'Restock', icon: ShoppingCart, color: '#059669', onPress: () => router.push('/bengkel/purchase') },
+                    { label: 'Export', icon: Download, color: '#D97706', onPress: () => setIsExportModalVisible(true) },
+                    { label: 'Transaksi', icon: Receipt, color: '#023C69', onPress: () => router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all' } } as any) },
+                ].map((action) => {
+                    const ActionIcon = action.icon;
+                    return (
+                        <Pressable
+                            key={action.label}
+                            onPress={action.onPress}
+                            className="flex-1 bg-white border border-gray-100 rounded-2xl py-3 items-center active:opacity-80"
+                        >
+                            <ActionIcon size={18} color={action.color} />
+                            <Typography className="text-[9px] font-bold text-gray-600 mt-1">{action.label}</Typography>
+                        </Pressable>
+                    );
+                })}
+            </View>
+
+            {lowStockCount > 0 && stockFilter !== 'low' && (
+                <Pressable
+                    onPress={() => setStockFilter('low')}
+                    className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4 flex-row items-center active:opacity-90"
+                >
+                    <View className="bg-amber-500 p-2 rounded-full mr-3">
+                        <AlertTriangle size={18} color="white" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body2" weight="bold" className="text-amber-800">Stok Menipis</Typography>
+                        <Typography variant="caption" className="text-amber-700/80">{lowStockCount} item di bawah stok minimum — ketuk untuk filter</Typography>
+                    </View>
+                    <ChevronRight size={18} color="#D97706" />
+                </Pressable>
+            )}
+
+            {filteredParts.length > 0 && (
+                <View className="bg-white p-3 rounded-2xl border border-gray-100 flex-row items-center justify-between mb-4">
+                    <View className="flex-row items-center">
+                        <Pressable onPress={toggleSelectAll} className="flex-row items-center mr-3">
+                            <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === filteredParts.length && filteredParts.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                                {selectedIds.length === filteredParts.length && filteredParts.length > 0 && <Check size={14} color="white" />}
+                            </View>
+                            <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
+                        </Pressable>
+                        {selectedIds.length > 0 && (
+                            <Typography className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded-lg">
+                                {selectedIds.length} terpilih
+                            </Typography>
+                        )}
+                    </View>
+                    <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {filteredParts.length} item
+                    </Typography>
+                </View>
+            )}
+
+            {statsData?.top_sales?.length > 0 && (
+                <View className="mb-4">
+                    <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+                        Terlaris
+                    </Typography>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {statsData.top_sales.slice(0, 5).map((item: any) => (
+                            <Pressable
+                                key={`top-${item.id}`}
+                                onPress={() => handleOpenDetail(item)}
+                                className="bg-white border border-gray-100 rounded-2xl p-3 mr-3 min-w-[140px] active:opacity-90"
+                            >
+                                <Typography weight="bold" className="text-textMain text-xs" numberOfLines={2}>{item.nama}</Typography>
+                                <Typography className="text-emerald-600 text-[10px] font-bold mt-2">{item.total_sales} terjual</Typography>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </View>
+    );
+
     return (
-        <SafeAreaView className="flex-1 bg-white">
+        <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
                     </Pressable>
-                    <Typography variant="h2" weight="bold">Stok Sparepart</Typography>
-                </View>
-                <View className="flex-row items-center">
-                    <Pressable
-                        onPress={() => {
-                            setScannerMode('stock');
-                            setIsScannerOpen(true);
-                        }}
-                        className="bg-primary/5 p-2 rounded-full mr-2"
-                    >
-                        <BarcodeIcon size={22} color="#023C69" />
-                    </Pressable>
-                    <Pressable
-                        onPress={() => router.push('/bengkel/purchase')}
-                        className="bg-primary/10 px-3 py-1.5 rounded-full flex-row items-center"
-                    >
-                        <Plus size={16} color="#023C69" />
-                        <Typography className="text-primary text-xs font-bold ml-1">Restock</Typography>
-                    </Pressable>
-                </View>
-            </View>
-
-            <View className="p-6 pb-0 bg-white">
-                {/* Search & Filter */}
-                <View className="flex-row items-center space-x-3 mb-6">
-                    <View className="flex-1 flex-row items-center bg-gray-100 rounded-2xl px-4 h-12">
-                        <Search size={20} color="#767676" />
-                        <TextInput
-                            placeholder="Cari nama atau kode part..."
-                            className="flex-1 ml-2 text-text font-outfit"
-                            value={search}
-                            onChangeText={setSearch}
-                        />
+                    <View>
+                        <Typography variant="h2" weight="bold">Inventory Sparepart</Typography>
+                        <Typography className="text-gray-400 text-xs mt-0.5">Kelola stok, harga, dan restock</Typography>
                     </View>
-                    <Pressable
-                        onPress={handlePresentSortSheet}
-                        className={`w-12 h-12 rounded-2xl items-center justify-center ${sortBy !== 'nama' ? 'bg-primary/10 border border-primary/20' : 'bg-gray-100'}`}
-                    >
-                        <Filter size={20} color={sortBy !== 'nama' ? '#023C69' : '#1C1C1C'} />
-                    </Pressable>
                 </View>
-
-                {/* Stats Section */}
-
-
-                {/* Low Stock Banner */}
-                {lowStockCount > 0 && (
-                    <Card className="bg-secondary/10 border border-secondary/20 p-4 mb-6 flex-row items-center">
-                        <View className="bg-secondary p-2 rounded-full mr-4">
-                            <AlertTriangle size={20} color="white" />
-                        </View>
-                        <View className="flex-1">
-                            <Typography variant="body2" weight="bold" className="text-secondary">Peringatan Stok Menipis</Typography>
-                            <Typography variant="caption" className="text-secondary/80">Ada {lowStockCount} item yang berada di bawah stok minimum.</Typography>
-                        </View>
-                    </Card>
-                )}
+                <Pressable
+                    onPress={() => router.push('/bengkel/purchase')}
+                    className="bg-primary px-4 py-2 rounded-xl flex-row items-center active:opacity-90"
+                >
+                    <Plus size={16} color="white" />
+                    <Typography weight="bold" className="text-white text-xs ml-1">Restock</Typography>
+                </Pressable>
             </View>
-
-            {parts.length > 0 && (
-                <View className="px-6 mb-4">
-                    <Card className="bg-white p-3 rounded-2xl border border-gray-100 flex-row items-center justify-between shadow-sm">
-                        <View className="flex-row items-center">
-                            <Pressable onPress={toggleSelectAll} className="flex-row items-center mr-4">
-                                <View className={`w-6 h-6 rounded-lg border items-center justify-center ${selectedIds.length === parts.length && parts.length > 0 ? 'bg-primary border-primary' : 'border-gray-300'}`}>
-                                    {selectedIds.length === parts.length && parts.length > 0 && <Check size={14} color="white" />}
-                                </View>
-                                <Typography className="ml-2 text-xs font-bold text-textGray">Pilih Semua</Typography>
-                            </Pressable>
-                            {selectedIds.length > 0 && (
-                                <Typography className="text-xs font-bold text-primary px-2 py-1 bg-primary/5 rounded-lg">
-                                    {selectedIds.length} terpilih
-                                </Typography>
-                            )}
-                        </View>
-                        <Pressable 
-                            onPress={() => setIsExportModalVisible(true)}
-                            className="px-4 py-2 bg-emerald-50 rounded-xl flex-row items-center border border-emerald-100"
-                        >
-                            <Download size={14} color="#059669" className="mr-2" />
-                            <Typography className="text-xs font-bold text-emerald-700">Export</Typography>
-                        </Pressable>
-                    </Card>
-                </View>
-            )}
 
             {isLoading ? (
-                <View className="flex-1 px-6 pt-4">
+                <View className="flex-1 px-6 pt-6">
                     <SkeletonCard />
                     <SkeletonCard />
                     <SkeletonCard />
@@ -626,9 +485,10 @@ export default function InventoryScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={parts}
+                    data={filteredParts}
                     keyExtractor={(item: any) => item.id.toString()}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24), paddingTop: 10 }}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24), paddingTop: 16 }}
+                    ListHeaderComponent={listHeader}
                     onEndReached={() => {
                         if (hasNextPage && !isFetchingNextPage) {
                             fetchNextPage();
@@ -640,7 +500,7 @@ export default function InventoryScreen() {
                             <View className="py-4 items-center">
                                 <ActivityIndicator size="small" color="#023C69" />
                             </View>
-                        ) : hasNextPage ? null : parts.length > 0 ? (
+                        ) : hasNextPage ? null : filteredParts.length > 0 ? (
                             <View className="py-8 items-center border-t border-gray-100 border-dashed mt-4">
                                 <Typography className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Semua data telah dimuat</Typography>
                             </View>
@@ -652,63 +512,73 @@ export default function InventoryScreen() {
                     renderItem={({ item: part }: { item: any }) => {
                         const imageUrl = part.gambar ? `${FILE_URL}/uploads/${part.gambar}` : null;
                         const isSelected = selectedIds.includes(part.id);
+                        const status = getPartStockStatus(part);
                         return (
-                            <View key={`row-${part.id}`} className="flex-row items-center space-x-3 mb-4">
-                                <Pressable onPress={() => toggleSelect(part.id)} className="p-1">
-                                    {isSelected ? (
-                                        <View className="bg-primary rounded-lg p-1">
-                                            <Check size={16} color="white" />
-                                        </View>
-                                    ) : (
-                                        <Circle size={24} color="#CBD5E1" strokeWidth={1} />
-                                    )}
-                                </Pressable>
-                                <Card className="p-4 flex-1 flex-row items-center border-gray-50/50">
-                                    <View className="w-16 h-16 bg-gray-50 rounded-2xl items-center justify-center mr-4 overflow-hidden border border-gray-100">
+                            <Pressable
+                                onPress={() => handleOpenDetail(part)}
+                                className="bg-white p-4 rounded-[28px] mb-4 border border-gray-50 shadow-sm active:scale-[0.98]"
+                            >
+                                <View className="flex-row items-center">
+                                    <Pressable
+                                        onPress={(e: any) => {
+                                            e?.stopPropagation?.();
+                                            toggleSelect(part.id);
+                                        }}
+                                        className="mr-3"
+                                    >
+                                        {isSelected ? (
+                                            <View className="w-7 h-7 bg-primary rounded-lg items-center justify-center">
+                                                <Check size={14} color="white" />
+                                            </View>
+                                        ) : (
+                                            <Circle size={26} color="#CBD5E1" strokeWidth={1.5} />
+                                        )}
+                                    </Pressable>
+
+                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-3 overflow-hidden border ${
+                                        status === 'low' ? 'bg-amber-50 border-amber-100' :
+                                        status === 'empty' ? 'bg-rose-50 border-rose-100' :
+                                        status === 'always' ? 'bg-emerald-50 border-emerald-100' :
+                                        'bg-primary/5 border-primary/10'
+                                    }`}>
                                         {imageUrl ? (
                                             <Image source={{ uri: imageUrl }} className="w-full h-full" resizeMode="cover" />
                                         ) : (
-                                            <Package size={24} color={part.stok < part.stok_minimum ? '#EE2737' : '#023C69'} />
+                                            <Package size={22} color={
+                                                status === 'low' ? '#D97706' :
+                                                status === 'empty' ? '#F43F5E' :
+                                                status === 'always' ? '#059669' : '#023C69'
+                                            } />
                                         )}
                                     </View>
 
                                     <View className="flex-1">
-                                        <Typography variant="body2" weight="bold" className="text-textMain">{part.nama}</Typography>
-                                        <Typography variant="caption" className="text-textGray/60">{part.kode} • {part.kategori || 'Suku Cadang'}</Typography>
-
-                                        <View className="flex-row items-center mt-2">
-                                            <View className={`px-2 py-0.5 rounded-lg mr-2 ${part.stok === 999 ? 'bg-emerald-50' : (part.stok < part.stok_minimum ? 'bg-secondary/10' : 'bg-primary/5')}`}>
-                                                <Typography
-                                                    variant="caption"
-                                                    weight="bold"
-                                                    className={part.stok === 999 ? 'text-emerald-600' : (part.stok < part.stok_minimum ? 'text-secondary' : 'text-primary')}
-                                                >
-                                                    Stok: {part.stok === 999 ? 'Always Ready' : `${part.stok} ${part.satuan || 'Unit'}`}
-                                                </Typography>
-                                            </View>
-                                            {part.stok !== 999 && (
-                                                <Typography variant="caption" className="text-gray-400 font-medium">Min: {part.stok_minimum}</Typography>
-                                            )}
+                                        <View className="flex-row items-start justify-between gap-2">
+                                            <Typography weight="bold" className="text-textMain text-sm flex-1" numberOfLines={2}>
+                                                {part.nama}
+                                            </Typography>
+                                            {renderStockBadge(part)}
+                                        </View>
+                                        <Typography className="text-textGray text-[11px] mt-1" numberOfLines={1}>
+                                            {part.kode || part.kode_part || '-'} • {part.kategori || 'Suku Cadang'}
+                                        </Typography>
+                                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                                            <Typography className="text-textGray text-[10px] font-semibold">
+                                                {part.stok !== 999 ? `Min: ${part.stok_minimum} ${part.satuan || 'pcs'}` : 'Katalog referensi'}
+                                            </Typography>
+                                            <Typography weight="bold" className="text-primary text-sm">
+                                                {formatCurrency(part.harga_jual)}
+                                            </Typography>
                                         </View>
                                     </View>
-
-                                    <View className="items-end">
-                                        <Typography variant="body2" weight="bold" className="text-primary">{formatCurrency(part.harga_jual)}</Typography>
-                                        <Pressable
-                                            className="mt-3 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100"
-                                            onPress={() => handleOpenDetail(part)}
-                                        >
-                                            <Typography className="text-primary text-[10px] font-bold">Detail</Typography>
-                                        </Pressable>
-                                    </View>
-                                </Card>
-                            </View>
+                                </View>
+                            </Pressable>
                         );
                     }}
                     ListEmptyComponent={
                         <EmptyState
                             title="Sparepart tidak ditemukan"
-                            description={search ? `Tidak ada hasil for "${search}"` : "Belum ada item sparepart di database."}
+                            description={search ? `Tidak ada hasil untuk "${search}"` : stockFilter !== 'ALL' ? 'Tidak ada item pada filter ini.' : 'Belum ada item sparepart di database.'}
                             icon={Package}
                         />
                     }
@@ -716,119 +586,172 @@ export default function InventoryScreen() {
                 />
             )}
 
-            {/* Detail & Edit Modal */}
-            <BaseModal
-                visible={isModalVisible}
-                onClose={() => setIsModalVisible(false)}
-                title={isEditing ? "Edit Sparepart" : "Detail Sparepart"}
-                maxHeight="92%"
-                containerClassName="p-0 border-0"
-            >
-                <View className="flex-1">
-                    <View className="items-center mb-6">
-                        <View className="w-40 h-40 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
-                            {formData.gambar ? (
-                                <Image
-                                    source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }}
-                                    className="w-full h-full"
-                                    resizeMode="cover"
-                                />
-                            ) : (
-                                <Package size={48} color="#9CA3AF" strokeWidth={1} />
-                            )}
+            {selectedPart && (
+                <Modal
+                    visible={isModalVisible}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => {
+                        setIsModalVisible(false);
+                        setIsEditing(false);
+                    }}
+                    statusBarTranslucent
+                >
+                    <View className="flex-1 justify-end bg-black/50">
+                        <Pressable
+                            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                            onPress={() => {
+                                setIsModalVisible(false);
+                                setIsEditing(false);
+                            }}
+                        />
+                        <View className="bg-white rounded-t-[48px] p-6 max-h-[90%]">
+                            <View className="flex-row justify-between items-center mb-5">
+                                <View>
+                                    <Typography variant="h3" weight="bold">
+                                        {isEditing ? 'Edit Sparepart' : 'Detail Sparepart'}
+                                    </Typography>
+                                    <Typography className="text-gray-400 text-xs mt-0.5">
+                                        {formData.kode || selectedPart.kode || '-'}
+                                    </Typography>
+                                </View>
+                                <Pressable
+                                    onPress={() => {
+                                        setIsModalVisible(false);
+                                        setIsEditing(false);
+                                    }}
+                                    className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+                                >
+                                    <X size={18} color="#4B5563" />
+                                </Pressable>
+                            </View>
+
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View className="items-center mb-5">
+                                    <View className="w-32 h-32 bg-gray-50 rounded-3xl items-center justify-center overflow-hidden border border-gray-100">
+                                        {formData.gambar ? (
+                                            <Image
+                                                source={{ uri: `${FILE_URL}/uploads/${formData.gambar}` }}
+                                                className="w-full h-full"
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Package size={40} color="#9CA3AF" strokeWidth={1} />
+                                        )}
+                                    </View>
+                                    {!isEditing && selectedPart && (
+                                        <View className="mt-3">
+                                            {renderStockBadge(selectedPart)}
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View className="space-y-4">
+                                    <Input
+                                        label="Nama Sparepart"
+                                        value={formData.nama}
+                                        onChangeText={(text) => setFormData({ ...formData, nama: text })}
+                                        editable={isEditing}
+                                        placeholder="Contoh: Oli MPX 2"
+                                    />
+                                    <Input
+                                        label="Kode Part"
+                                        value={formData.kode}
+                                        onChangeText={(text) => setFormData({ ...formData, kode: text })}
+                                        editable={isEditing}
+                                        placeholder="Contoh: OL-001"
+                                    />
+                                    <View className="flex-row space-x-3">
+                                        <Input
+                                            label="Kategori"
+                                            value={formData.kategori}
+                                            containerClassName="flex-1"
+                                            onChangeText={(text) => setFormData({ ...formData, kategori: text })}
+                                            editable={isEditing}
+                                            placeholder="Pelumas"
+                                        />
+                                        <Input
+                                            label="Satuan"
+                                            value={formData.satuan}
+                                            containerClassName="flex-[0.7]"
+                                            onChangeText={(text) => setFormData({ ...formData, satuan: text })}
+                                            editable={isEditing}
+                                            placeholder="Unit"
+                                        />
+                                    </View>
+                                    <View className="flex-row space-x-3">
+                                        <View className="flex-1">
+                                            <Input
+                                                label="Stok"
+                                                value={formData.stok}
+                                                onChangeText={(text) => setFormData({ ...formData, stok: text })}
+                                                editable={isEditing}
+                                                keyboardType="numeric"
+                                            />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Input
+                                                label="Stok Min."
+                                                value={formData.stok_minimum}
+                                                onChangeText={(text) => setFormData({ ...formData, stok_minimum: text })}
+                                                editable={isEditing}
+                                                keyboardType="numeric"
+                                            />
+                                        </View>
+                                    </View>
+                                    <Input
+                                        label="Harga Jual (Rp)"
+                                        value={formData.harga_jual}
+                                        onChangeText={(text) => setFormData({ ...formData, harga_jual: text })}
+                                        editable={isEditing}
+                                        keyboardType="numeric"
+                                    />
+
+                                    {!isEditing && selectedPart?.stok !== 999 && (
+                                        <Pressable
+                                            onPress={() => {
+                                                setScannedPart(selectedPart);
+                                                setStockChange('1');
+                                                setStockOp('add');
+                                                setIsQuickStockVisible(true);
+                                            }}
+                                            className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex-row items-center active:opacity-90"
+                                        >
+                                            <BarcodeIcon size={20} color="#023C69" />
+                                            <Typography weight="bold" className="text-primary text-sm ml-3">Update Stok Cepat</Typography>
+                                        </Pressable>
+                                    )}
+
+                                    <View className="mt-2 pb-6">
+                                        {isEditing ? (
+                                            <View className="space-y-3">
+                                                <Button
+                                                    title="Simpan Perubahan"
+                                                    onPress={handleUpdate}
+                                                    loading={updatePartMutation.isPending}
+                                                />
+                                                <Button
+                                                    title="Batal"
+                                                    variant="outline"
+                                                    onPress={() => setIsEditing(false)}
+                                                />
+                                            </View>
+                                        ) : (
+                                            <Button
+                                                title="Ubah Data"
+                                                variant="outline-neutral"
+                                                className="bg-gray-100 border-0"
+                                                onPress={() => setIsEditing(true)}
+                                                icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
+                                            />
+                                        )}
+                                    </View>
+                                </View>
+                            </ScrollView>
                         </View>
                     </View>
-                    <View className="space-y-4 px-1">
-                        <Input
-                            label="Nama Sparepart"
-                            value={formData.nama}
-                            onChangeText={(text) => setFormData({ ...formData, nama: text })}
-                            editable={isEditing}
-                            placeholder="Contoh: Oli MPX 2"
-                        />
-                        <Input
-                            label="Kode Part"
-                            value={formData.kode}
-                            onChangeText={(text) => setFormData({ ...formData, kode: text })}
-                            editable={isEditing}
-                            placeholder="Contoh: OL-001"
-                        />
-                        <View className="flex-row space-x-3">
-                            <Input
-                                label="Kategori"
-                                value={formData.kategori}
-                                containerClassName="flex-1"
-                                onChangeText={(text) => setFormData({ ...formData, kategori: text })}
-                                editable={isEditing}
-                                placeholder="Pelumas"
-                            />
-                            <Input
-                                label="Satuan"
-                                value={formData.satuan}
-                                containerClassName="flex-[0.7]"
-                                onChangeText={(text) => setFormData({ ...formData, satuan: text })}
-                                editable={isEditing}
-                                placeholder="Unit"
-                            />
-                        </View>
-                        <View className="flex-row space-x-3">
-                            <View className="flex-1">
-                                <Input
-                                    label="Stok"
-                                    value={formData.stok}
-                                    onChangeText={(text) => setFormData({ ...formData, stok: text })}
-                                    editable={isEditing}
-                                    keyboardType="numeric"
-                                />
-                            </View>
-                            <View className="flex-1">
-                                <Input
-                                    label="Stok Min."
-                                    value={formData.stok_minimum}
-                                    onChangeText={(text) => setFormData({ ...formData, stok_minimum: text })}
-                                    editable={isEditing}
-                                    keyboardType="numeric"
-                                />
-                            </View>
-                        </View>
-                        <Input
-                            label="Harga Jual (Rp)"
-                            value={formData.harga_jual}
-                            onChangeText={(text) => setFormData({ ...formData, harga_jual: text })}
-                            editable={isEditing}
-                            keyboardType="numeric"
-                        />
-
-                        <View className="mt-6">
-                            {isEditing ? (
-                                <View className="space-y-3">
-                                    <Button
-                                        title="Simpan Perubahan"
-                                        onPress={handleUpdate}
-                                        loading={updatePartMutation.isPending}
-                                    />
-                                    <Button
-                                        title="Batal"
-                                        variant="outline"
-                                        onPress={() => setIsEditing(false)}
-                                    />
-                                </View>
-                            ) : (
-                                <View className="space-y-3">
-                                    <Button
-                                        title="Ubah Data"
-                                        variant="outline-neutral"
-                                        className="bg-gray-100 border-0"
-                                        onPress={() => setIsEditing(true)}
-                                        icon={<Edit3 size={16} color="#4B5563" style={{ marginRight: 8 }} />}
-                                    />
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
-                </View>
-            </BaseModal>
+                </Modal>
+            )}
             {/* Quick Stock Modal */}
             <BaseModal
                 visible={isQuickStockVisible}
@@ -894,15 +817,8 @@ export default function InventoryScreen() {
 
             <BarcodeScannerModal
                 visible={isScannerOpen}
-                onClose={() => {
-                    setIsScannerOpen(false);
-                    if (scannerMode === 'transaction') {
-                        setTransactionStep(1);
-                    }
-                }}
-                onScan={scannerMode === 'transaction' ? handleScanForTransaction : handleScanForStockUpdate}
-                scanLog={scannerMode === 'transaction' ? scanLog : undefined}
-                continuous={scannerMode === 'transaction'}
+                onClose={() => setIsScannerOpen(false)}
+                onScan={handleScanForStockUpdate}
             />
 
             {/* Export Selection Modal */}
@@ -973,343 +889,6 @@ export default function InventoryScreen() {
                 </View>
             </BaseModal>
 
-            <Modal
-                visible={isTransactionModalVisible}
-                animationType="slide"
-                onRequestClose={closeTransactionWizard}
-            >
-                <SafeAreaView className="flex-1 bg-white">
-                    <View className="px-5 py-4 border-b border-gray-100 flex-row items-center justify-between">
-                        <View>
-                            <Typography variant="h3" weight="bold">Transaksi Bengkel</Typography>
-                            <Typography className="text-gray-400 text-xs mt-0.5">Step {transactionStep} dari 3</Typography>
-                        </View>
-                        <Pressable onPress={closeTransactionWizard} className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
-                            <X size={20} color="#475569" />
-                        </Pressable>
-                    </View>
-
-                    <View className="px-5 py-3 flex-row bg-gray-50">
-                        {[
-                            { id: 1, label: 'Item' },
-                            { id: 2, label: 'Kategori' },
-                            { id: 3, label: 'Bayar' },
-                        ].map((step) => (
-                            <View key={step.id} className="flex-1 flex-row items-center">
-                                <View className={`w-8 h-8 rounded-full items-center justify-center ${transactionStep >= step.id ? 'bg-primary' : 'bg-gray-200'}`}>
-                                    <Typography className={`text-xs font-bold ${transactionStep >= step.id ? 'text-white' : 'text-gray-500'}`}>{step.id}</Typography>
-                                </View>
-                                <Typography className={`ml-2 text-xs font-bold ${transactionStep === step.id ? 'text-primary' : 'text-gray-400'}`}>{step.label}</Typography>
-                            </View>
-                        ))}
-                    </View>
-
-                    <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-                        {transactionStep === 1 && (
-                            <View>
-                                <View className="flex-row space-x-4">
-                                    <View className="flex-1">
-                                        <View className="mb-4">
-                                            <Typography variant="body1" weight="bold" className="text-textMain mb-1">Sparepart</Typography>
-                                            <Typography className="text-gray-400 text-xs">Stok kosong tidak bisa dipilih.</Typography>
-                                        </View>
-                                        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
-                                            <Search size={16} color="#94A3B8" />
-                                            <TextInput
-                                                placeholder="Cari sparepart..."
-                                                placeholderTextColor="#94A3B8"
-                                                className="flex-1 ml-2 text-sm text-textMain"
-                                                value={transactionPartSearch}
-                                                onChangeText={setTransactionPartSearch}
-                                            />
-                                            {transactionPartSearch.length > 0 && (
-                                                <Pressable onPress={() => setTransactionPartSearch('')}>
-                                                    <X size={16} color="#94A3B8" />
-                                                </Pressable>
-                                            )}
-                                        </View>
-                                        <Pressable
-                                            onPress={() => {
-                                                setScannerMode('transaction');
-                                                setScanLog([]);
-                                                setIsScannerOpen(true);
-                                            }}
-                                            className="mb-3 bg-blue-50 border border-blue-100 rounded-2xl p-3 flex-row items-center justify-center"
-                                        >
-                                            <BarcodeIcon size={18} color="#2563EB" />
-                                            <Typography className="text-blue-700 text-xs font-bold ml-2">Scan Sparepart Continuous</Typography>
-                                        </Pressable>
-
-                                        {filteredTransactionParts.slice(0, 60).map((part: any) => {
-                                            const selected = selectedTransactionParts[part.id];
-                                            const outOfStock = part.stok !== 999 && Number(part.stok || 0) <= 0;
-                                            return (
-                                                <Pressable
-                                                    key={`trx-part-${part.id}`}
-                                                    disabled={outOfStock}
-                                                    onPress={() => toggleTransactionPart(part)}
-                                                    className={`mb-3 p-3 rounded-2xl border ${outOfStock ? 'bg-gray-50 border-gray-100 opacity-60' : selected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}
-                                                >
-                                                    <View className="flex-row items-start">
-                                                        <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-blue-600 border-blue-600' : outOfStock ? 'bg-gray-100 border-gray-200' : 'border-gray-300'}`}>
-                                                            {selected && <Check size={16} color="white" />}
-                                                        </View>
-                                                        <View className="flex-1">
-                                                            <View className="flex-row items-center">
-                                                                <Package size={18} color={selected ? '#2563EB' : outOfStock ? '#CBD5E1' : '#94A3B8'} />
-                                                                <Typography weight="bold" className={`text-sm ml-2 flex-1 ${outOfStock ? 'text-gray-400' : 'text-textMain'}`} numberOfLines={1}>{part.nama}</Typography>
-                                                            </View>
-                                                            <Typography className="text-gray-400 text-[11px] mt-1">{part.kode || '-'} - Stok {part.stok === 999 ? 'Always Ready' : Number(part.stok || 0)}</Typography>
-                                                            {outOfStock && (
-                                                                <Typography className="text-rose-500 text-[10px] font-bold mt-1">STOK HABIS</Typography>
-                                                            )}
-                                                            <Typography className="text-primary text-xs font-bold mt-1">{formatCurrency(part.harga_jual || 0)}</Typography>
-                                                        </View>
-                                                    </View>
-                                                    {selected && (
-                                                        <View className="flex-row items-center self-end mt-3 bg-white rounded-xl border border-blue-100 overflow-hidden">
-                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionPartQty(part.id, selected.qty - 1); }} className="px-3 py-1.5">
-                                                                <Typography className="font-bold text-blue-600">-</Typography>
-                                                            </Pressable>
-                                                            <Typography className="px-2 text-xs font-bold">{selected.qty}</Typography>
-                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionPartQty(part.id, selected.qty + 1); }} className="px-3 py-1.5">
-                                                                <Typography className="font-bold text-blue-600">+</Typography>
-                                                            </Pressable>
-                                                        </View>
-                                                    )}
-                                                </Pressable>
-                                            );
-                                        })}
-                                        {filteredTransactionParts.length === 0 && (
-                                            <Typography className="text-gray-400 text-center text-xs py-8">Sparepart tidak ditemukan</Typography>
-                                        )}
-                                    </View>
-
-                                    <View className="flex-1">
-                                        <View className="mb-4">
-                                            <Typography variant="body1" weight="bold" className="text-textMain mb-1">Service</Typography>
-                                            <Typography className="text-gray-400 text-xs">Data dari Master Data Jasa Servis.</Typography>
-                                        </View>
-                                        <View className="flex-row items-center bg-gray-100 rounded-2xl px-3 h-11 mb-3 border border-gray-200">
-                                            <Search size={16} color="#94A3B8" />
-                                            <TextInput
-                                                placeholder="Cari service..."
-                                                placeholderTextColor="#94A3B8"
-                                                className="flex-1 ml-2 text-sm text-textMain"
-                                                value={transactionServiceSearch}
-                                                onChangeText={setTransactionServiceSearch}
-                                            />
-                                            {transactionServiceSearch.length > 0 && (
-                                                <Pressable onPress={() => setTransactionServiceSearch('')}>
-                                                    <X size={16} color="#94A3B8" />
-                                                </Pressable>
-                                            )}
-                                        </View>
-
-                                        {isJasaLoading ? (
-                                            <ActivityIndicator color="#023C69" />
-                                        ) : filteredTransactionServices.map((service: any) => {
-                                            const selected = selectedTransactionServices[service.id];
-                                            return (
-                                                <Pressable key={`trx-service-${service.id}`} onPress={() => toggleTransactionService(service)} className={`mb-3 p-3 rounded-2xl border ${selected ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-gray-100'}`}>
-                                                    <View className="flex-row items-start">
-                                                        <View className={`w-7 h-7 rounded-lg border items-center justify-center mr-3 ${selected ? 'bg-emerald-600 border-emerald-600' : 'border-gray-300'}`}>
-                                                            {selected && <Check size={16} color="white" />}
-                                                        </View>
-                                                        <View className="flex-1">
-                                                            <View className="flex-row items-center">
-                                                                <Wrench size={18} color={selected ? '#059669' : '#94A3B8'} />
-                                                                <Typography weight="bold" className="text-sm text-textMain ml-2 flex-1" numberOfLines={1}>{service.nama}</Typography>
-                                                            </View>
-                                                            <Typography className="text-gray-400 text-[11px] mt-1">{service.kategori || 'Servis'}</Typography>
-                                                            <Typography className="text-emerald-700 text-xs font-bold mt-1">{formatCurrency(service.harga || 0)}</Typography>
-                                                        </View>
-                                                    </View>
-                                                    {selected && (
-                                                        <View className="flex-row items-center self-end mt-3 bg-white rounded-xl border border-emerald-100 overflow-hidden">
-                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionServiceQty(service.id, selected.qty - 1); }} className="px-3 py-1.5">
-                                                                <Typography className="font-bold text-emerald-600">-</Typography>
-                                                            </Pressable>
-                                                            <Typography className="px-2 text-xs font-bold">{selected.qty}</Typography>
-                                                            <Pressable onPress={(e) => { e.stopPropagation(); setTransactionServiceQty(service.id, selected.qty + 1); }} className="px-3 py-1.5">
-                                                                <Typography className="font-bold text-emerald-600">+</Typography>
-                                                            </Pressable>
-                                                        </View>
-                                                    )}
-                                                </Pressable>
-                                            );
-                                        })}
-                                        {!isJasaLoading && filteredTransactionServices.length === 0 && (
-                                            <Typography className="text-gray-400 text-center text-xs py-8">Service tidak ditemukan</Typography>
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
-                        )}
-
-                        {transactionStep === 2 && (
-                            <View>
-                                <Typography variant="body1" weight="bold" className="text-textMain mb-4">Kategori Bengkel</Typography>
-                                <View className="space-y-3 mb-6">
-                                    {[
-                                        { id: 'umum', label: 'Umum', icon: User, desc: 'Transaksi customer bengkel biasa' },
-                                        { id: 'jasa_angkut', label: 'Jasa Angkut', icon: Wrench, desc: 'Biaya internal armada jasa angkut' },
-                                        { id: 'jual_beli_mobil', label: 'Jual Beli Mobil', icon: Car, desc: 'Biaya internal stok mobil' },
-                                    ].map((cat) => {
-                                        const Icon = cat.icon;
-                                        const active = transactionKategori === cat.id;
-                                        return (
-                                            <Pressable
-                                                key={cat.id}
-                                                onPress={() => {
-                                                    setTransactionKategori(cat.id as BengkelKategori);
-                                                    setSelectedCustomer(null);
-                                                    setGuestName('');
-                                                    setSelectedArmada(null);
-                                                    setSelectedMobil(null);
-                                                }}
-                                                className={`p-4 rounded-2xl border flex-row items-center ${active ? 'bg-primary/5 border-primary/30' : 'bg-white border-gray-100'}`}
-                                            >
-                                                <View className={`w-11 h-11 rounded-xl items-center justify-center mr-3 ${active ? 'bg-primary' : 'bg-gray-100'}`}>
-                                                    <Icon size={20} color={active ? 'white' : '#64748B'} />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <Typography weight="bold" className={active ? 'text-primary' : 'text-textMain'}>{cat.label}</Typography>
-                                                    <Typography className="text-gray-400 text-xs mt-0.5">{cat.desc}</Typography>
-                                                </View>
-                                                {active && <CheckCircle2 size={20} color="#023C69" />}
-                                            </Pressable>
-                                        );
-                                    })}
-                                </View>
-
-                                {transactionKategori === 'umum' && (
-                                    <View>
-                                        <Typography variant="body2" weight="bold" className="text-primary mb-2">Customer</Typography>
-                                        <MasterDataSelector
-                                            type="customer"
-                                            value={selectedCustomer}
-                                            onSelect={setSelectedCustomer}
-                                            allowGuest
-                                            placeholder="Pilih Customer atau Ketik Nama"
-                                            onGuestNameChange={(name) => {
-                                                setGuestName(name);
-                                                setSelectedCustomer(null);
-                                            }}
-                                        />
-                                    </View>
-                                )}
-
-                                {transactionKategori === 'jasa_angkut' && (
-                                    <View>
-                                        <Typography variant="body2" weight="bold" className="text-primary mb-2">Armada</Typography>
-                                        <ArmadaSelector value={selectedArmada} onSelect={setSelectedArmada} placeholder="Pilih armada jasa angkut" />
-                                    </View>
-                                )}
-
-                                {transactionKategori === 'jual_beli_mobil' && (
-                                    <View>
-                                        <Typography variant="body2" weight="bold" className="text-primary mb-3">Mobil Stok</Typography>
-                                        {mobilList.map((mobil: any) => {
-                                            const active = selectedMobil?.id === mobil.id;
-                                            return (
-                                                <Pressable key={`trx-mobil-${mobil.id}`} onPress={() => setSelectedMobil(mobil)} className={`p-4 rounded-2xl border mb-3 flex-row items-center ${active ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'}`}>
-                                                    <Car size={22} color={active ? '#D97706' : '#94A3B8'} />
-                                                    <View className="flex-1 ml-3">
-                                                        <Typography weight="bold" className="text-textMain">{mobil.nomor_plat || '-'}</Typography>
-                                                        <Typography className="text-gray-400 text-xs">{mobil.merek} {mobil.model} {mobil.tahun || ''}</Typography>
-                                                    </View>
-                                                    {active && <CheckCircle2 size={20} color="#D97706" />}
-                                                </Pressable>
-                                            );
-                                        })}
-                                    </View>
-                                )}
-                            </View>
-                        )}
-
-                        {transactionStep === 3 && (
-                            <View>
-                                <Typography variant="body1" weight="bold" className="text-textMain mb-4">Pembayaran</Typography>
-
-                                <View className="bg-slate-50 p-5 rounded-3xl border border-slate-100 mb-5">
-                                    <View className="flex-row justify-between mb-2">
-                                        <Typography className="text-gray-500">Sparepart</Typography>
-                                        <Typography weight="bold">{selectedPartList.length} item</Typography>
-                                    </View>
-                                    <View className="flex-row justify-between mb-2">
-                                        <Typography className="text-gray-500">Service</Typography>
-                                        <Typography weight="bold">{selectedServiceList.length} item</Typography>
-                                    </View>
-                                    <View className="h-[1px] bg-slate-200 my-3" />
-                                    <View className="flex-row justify-between items-center">
-                                        <Typography weight="bold" className="text-textMain">Total</Typography>
-                                        <Typography variant="h3" weight="bold" className="text-primary">{formatCurrency(transactionSubtotal)}</Typography>
-                                    </View>
-                                </View>
-
-                                {transactionKategori === 'umum' ? (
-                                    <View className="mb-5">
-                                        <Typography variant="caption" weight="bold" className="text-gray-500 mb-2 uppercase">Metode Pembayaran</Typography>
-                                        <View className="flex-row space-x-2">
-                                            {[
-                                                { id: 'TUNAI', label: 'Tunai' },
-                                                { id: 'TRANSFER', label: 'Transfer' },
-                                                { id: 'PIUTANG', label: 'Piutang' },
-                                            ].map((mode) => (
-                                                <Pressable
-                                                    key={mode.id}
-                                                    onPress={() => setPaymentMode(mode.id as PaymentMode)}
-                                                    className={`flex-1 py-4 rounded-2xl border items-center ${paymentMode === mode.id ? 'bg-primary border-primary' : 'bg-white border-gray-100'}`}
-                                                >
-                                                    <Typography weight="bold" className={paymentMode === mode.id ? 'text-white' : 'text-gray-500'}>{mode.label}</Typography>
-                                                </Pressable>
-                                            ))}
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <View className="bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-5">
-                                        <Typography weight="bold" className="text-amber-800">
-                                            {transactionKategori === 'jasa_angkut' ? 'Internal Jasa Angkut' : 'Internal Jual Beli Mobil'}
-                                        </Typography>
-                                        <Typography className="text-amber-700 text-xs mt-1">
-                                            {transactionKategori === 'jasa_angkut'
-                                                ? 'Dicatat sebagai hutang internal JA → Bengkel (dompet unit tidak dipotong).'
-                                                : 'Hutang internal Mobil → Bengkel (dompet tidak dipotong); biaya masuk HPP.'}
-                                        </Typography>
-                                    </View>
-                                )}
-
-                                <Input
-                                    label="Catatan"
-                                    placeholder="Catatan transaksi..."
-                                    value={transactionNote}
-                                    onChangeText={setTransactionNote}
-                                    multiline
-                                />
-                            </View>
-                        )}
-                    </ScrollView>
-
-                    <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 py-4">
-                        <View className="flex-row items-center justify-between mb-3">
-                            <Typography className="text-gray-400 text-xs font-bold uppercase">Total Transaksi</Typography>
-                            <Typography weight="bold" className="text-primary text-lg">{formatCurrency(transactionSubtotal)}</Typography>
-                        </View>
-                        <View className="flex-row space-x-3">
-                            {transactionStep > 1 && (
-                                <Button title="Kembali" variant="outline" className="flex-1" onPress={() => setTransactionStep(prev => Math.max(1, prev - 1) as 1 | 2 | 3)} />
-                            )}
-                            <Button
-                                title={transactionStep === 3 ? 'Simpan Transaksi' : 'Lanjut'}
-                                className="flex-1"
-                                onPress={transactionStep === 3 ? submitTransaction : goToNextTransactionStep}
-                                loading={createTransactionMutation.isPending}
-                            />
-                        </View>
-                    </View>
-                </SafeAreaView>
-            </Modal>
 
             {/* Sort UI - Hybrid (BottomSheet on Mobile, Modal on Web) */}
             {Platform.OS === 'web' ? (

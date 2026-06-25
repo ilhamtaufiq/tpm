@@ -221,12 +221,15 @@ export const CustomTabBar = () => {
         outputRange: [0, -60],
     }), [animationProgress]);
 
+    const tabBarHeight = getCustomTabBarHeight(insets.bottom);
+
     return (
+        <>
         <View
             className="absolute left-0 right-0 flex-row items-center justify-around px-2 rounded-t-[24px] border-t border-gray-200 bg-white"
             style={{
                 bottom: 0,
-                height: getCustomTabBarHeight(insets.bottom),
+                height: tabBarHeight,
                 paddingBottom: insets.bottom,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: -4 },
@@ -335,135 +338,138 @@ export const CustomTabBar = () => {
                     </Pressable>
                 );
             })}
+        </View>
 
-            {/* Radial FAB Overlay (no Modal — avoid Android touch-eating bug) */}
-            {quickActionsVisible && (
+        {/* Full-screen FAB overlay (sibling of tab bar — backdrop must cover page, not just tab bar) */}
+        {quickActionsVisible && (
+            <View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 9999,
+                }}
+                pointerEvents="box-none"
+            >
+                <Animated.View
+                    testID="fab-backdrop-blur"
+                    className="fab-backdrop-blur"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        opacity: backdropOpacity,
+                        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                    }}
+                >
+                    <Pressable style={{ flex: 1 }} onPress={hideQuickActions} accessibilityRole="button" accessibilityLabel="Tutup menu cepat" />
+                </Animated.View>
+
                 <View
                     style={{
                         position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        zIndex: 999,
+                        left: 0,
+                        right: 0,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingHorizontal: 8,
+                        bottom: 0,
+                        height: tabBarHeight,
+                        paddingBottom: insets.bottom,
+                        pointerEvents: 'box-none',
                     }}
-                    pointerEvents="box-none"
                 >
-                    {/* Backdrop */}
-                    <Animated.View
-                        testID="fab-backdrop-blur"
-                        style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            opacity: backdropOpacity,
-                            backgroundColor: 'rgba(15, 23, 42, 0.35)',
-                        }}
-                    >
-                        <Pressable style={{ flex: 1 }} onPress={hideQuickActions} />
-                    </Animated.View>
-
-                    {/* Centered Radial FABs overlay at Bottom Navigation bar */}
                     <View
-                        style={{
-                            position: 'absolute',
-                            left: 0, right: 0,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            paddingHorizontal: 8,
-                            bottom: 0,
-                            height: getCustomTabBarHeight(insets.bottom),
-                            paddingBottom: insets.bottom,
-                            pointerEvents: 'box-none',
-                        }}
+                        className="w-16 h-16 items-center justify-center -mt-12 relative"
+                        style={{ overflow: 'visible' }}
                     >
-                        <View
-                            className="w-16 h-16 items-center justify-center -mt-12 relative"
-                            style={{ overflow: 'visible' }}
+                        <Animated.View
+                            style={{
+                                position: 'absolute',
+                                opacity: backdropOpacity,
+                                transform: [
+                                    { translateX: subFab1X },
+                                    { translateY: subFab1Y },
+                                ],
+                            }}
                         >
-                            {/* Sub-FAB 1 */}
-                            <Animated.View
-                                style={{
-                                    position: 'absolute',
-                                    opacity: backdropOpacity,
-                                    transform: [
-                                        { translateX: subFab1X },
-                                        { translateY: subFab1Y },
-                                    ],
-                                }}
-                            >
-                                <Pressable
-                                    onPress={() => {
-                                        hideQuickActions();
-                                        router.navigate(subFab1.path as any);
-                                    }}
-                                    className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
-                                >
-                                    <subFab1.icon size={20} color={subFab1.color} strokeWidth={2.5} />
-                                </Pressable>
-                            </Animated.View>
-
-                            {/* Sub-FAB 2 */}
-                            <Animated.View
-                                style={{
-                                    position: 'absolute',
-                                    opacity: backdropOpacity,
-                                    transform: [
-                                        { translateY: subFab2Y },
-                                    ],
-                                }}
-                            >
-                                <Pressable
-                                    onPress={() => {
-                                        hideQuickActions();
-                                        router.navigate(subFab2.path as any);
-                                    }}
-                                    className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
-                                >
-                                    <subFab2.icon size={20} color={subFab2.color} strokeWidth={2.5} />
-                                </Pressable>
-                            </Animated.View>
-
-                            {/* Sub-FAB 3 */}
-                            <Animated.View
-                                style={{
-                                    position: 'absolute',
-                                    opacity: backdropOpacity,
-                                    transform: [
-                                        { translateX: subFab3X },
-                                        { translateY: subFab3Y },
-                                    ],
-                                }}
-                            >
-                                <Pressable
-                                    onPress={() => {
-                                        hideQuickActions();
-                                        router.navigate(subFab3.path as any);
-                                    }}
-                                    className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
-                                >
-                                    <subFab3.icon size={20} color={subFab3.color} strokeWidth={2.5} />
-                                </Pressable>
-                            </Animated.View>
-
-                            {/* Main FAB (now acts as X close) */}
                             <Pressable
-                                onPress={hideQuickActions}
-                                className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
-                                style={{
-                                    backgroundColor: themeColors.primary,
-                                    shadowColor: themeColors.primary,
-                                    shadowOffset: { width: 0, height: 8 },
-                                    shadowOpacity: 0.3,
-                                    shadowRadius: 20,
-                                    elevation: 10,
+                                onPress={() => {
+                                    hideQuickActions();
+                                    router.navigate(subFab1.path as any);
                                 }}
+                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
                             >
-                                <Animated.View style={{ transform: [{ rotate: mainFabRotation }] }}>
-                                    <Plus size={24} color="white" strokeWidth={2.5} />
-                                </Animated.View>
+                                <subFab1.icon size={20} color={subFab1.color} strokeWidth={2.5} />
                             </Pressable>
-                        </View>
+                        </Animated.View>
+
+                        <Animated.View
+                            style={{
+                                position: 'absolute',
+                                opacity: backdropOpacity,
+                                transform: [
+                                    { translateY: subFab2Y },
+                                ],
+                            }}
+                        >
+                            <Pressable
+                                onPress={() => {
+                                    hideQuickActions();
+                                    router.navigate(subFab2.path as any);
+                                }}
+                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
+                            >
+                                <subFab2.icon size={20} color={subFab2.color} strokeWidth={2.5} />
+                            </Pressable>
+                        </Animated.View>
+
+                        <Animated.View
+                            style={{
+                                position: 'absolute',
+                                opacity: backdropOpacity,
+                                transform: [
+                                    { translateX: subFab3X },
+                                    { translateY: subFab3Y },
+                                ],
+                            }}
+                        >
+                            <Pressable
+                                onPress={() => {
+                                    hideQuickActions();
+                                    router.navigate(subFab3.path as any);
+                                }}
+                                className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 shadow-lg active:scale-90"
+                            >
+                                <subFab3.icon size={20} color={subFab3.color} strokeWidth={2.5} />
+                            </Pressable>
+                        </Animated.View>
+
+                        <Pressable
+                            onPress={hideQuickActions}
+                            className="w-16 h-16 rounded-full flex items-center justify-center border-4 border-white active:scale-95 transition-all duration-300"
+                            style={{
+                                backgroundColor: themeColors.primary,
+                                shadowColor: themeColors.primary,
+                                shadowOffset: { width: 0, height: 8 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 20,
+                                elevation: 10,
+                            }}
+                        >
+                            <Animated.View style={{ transform: [{ rotate: mainFabRotation }] }}>
+                                <Plus size={24} color="white" strokeWidth={2.5} />
+                            </Animated.View>
+                        </Pressable>
                     </View>
                 </View>
-            )}
-        </View>
+            </View>
+        )}
+        </>
     );
 };

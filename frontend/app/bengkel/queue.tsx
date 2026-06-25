@@ -11,6 +11,7 @@ import {
     Alert,
     Platform,
     Share,
+    FlatList,
     RefreshControl as RNRefreshControl
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import {
     ChevronLeft,
@@ -36,7 +38,11 @@ import {
     Edit2,
     ChevronRight,
     CheckCircle2,
-    Wallet
+    Wallet,
+    ListOrdered,
+    Banknote,
+    Car,
+    TrendingUp,
 } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { format, subDays, addDays } from 'date-fns';
@@ -53,6 +59,12 @@ import {
 } from '../../hooks/useBengkel';
 import { useMobilList } from '../../hooks/useMobil';
 import { formatCurrency, formatNumber } from '../../utils/format';
+import {
+    formatBengkelWorkStatusLabel,
+    formatBengkelPaymentStatusLabel,
+    isBengkelTransactionLocked,
+    isBengkelTransactionVoided,
+} from '../../utils/bengkelTransaction';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { printReceipt, PrintReceiptData } from '../../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
@@ -65,7 +77,6 @@ export default function QueueScreen() {
 
     // Filters and search state
     const [date, setDate] = useState(new Date());
-    const [queueSearchOpen, setQueueSearchOpen] = useState(false);
     const [queueSearchQuery, setQueueSearchQuery] = useState('');
     const [queueWorkStatusFilter, setQueueWorkStatusFilter] = useState<'ALL' | 'antre' | 'proses' | 'selesai' | 'batal'>('ALL');
     const [queuePaymentFilter, setQueuePaymentFilter] = useState<'ALL' | 'LUNAS' | 'BELUM_LUNAS' | 'BELUM_BAYAR' | 'BATAL'>('ALL');
@@ -196,6 +207,20 @@ export default function QueueScreen() {
         if (status === 'LUNAS') return 'LUNAS';
         if (paidAmount > 0) return 'BELUM_LUNAS';
         return 'BELUM_BAYAR';
+    }, []);
+
+    const getPaidSummary = useCallback((item: any) => {
+        const paid = Number(item?.jumlah_bayar || 0);
+        const total = Number(item?.grand_total || 0);
+        const status = String(item?.status_bayar || '').toUpperCase();
+        const isLunas = status === 'LUNAS' || (total > 0 && paid >= total);
+        return {
+            paid,
+            total,
+            isLunas,
+            hasPartialPayment: paid > 0 && !isLunas,
+            remaining: Math.max(0, total - paid),
+        };
     }, []);
 
     const queuePaymentStats = useMemo(() => {
@@ -370,11 +395,29 @@ export default function QueueScreen() {
 
     const openEditTransaction = (item: any) => {
         if (!item?.id) return;
+        if (isBengkelTransactionLocked(item)) {
+            setDialogConfig({
+                visible: true,
+                title: 'Tidak Dapat Diedit',
+                message: 'Transaksi sudah lunas dan selesai.',
+                variant: 'warning',
+            });
+            return;
+        }
         setDetailModalOpen(false);
         router.push({ pathname: '/bengkel/transaksi', params: { mode: 'all', transactionId: String(item.id) } } as any);
     };
 
     const openQueueTransactionMode = (mode: 'sparepart' | 'servis', item: any) => {
+        if (isBengkelTransactionLocked(item)) {
+            setDialogConfig({
+                visible: true,
+                title: 'Tidak Dapat Diedit',
+                message: 'Transaksi sudah lunas dan selesai.',
+                variant: 'warning',
+            });
+            return;
+        }
         setDetailModalOpen(false);
         router.push({ pathname: '/bengkel/transaksi', params: { mode, transactionId: String(item.id) } } as any);
     };
@@ -410,19 +453,301 @@ export default function QueueScreen() {
         }
     };
 
+    const isSelectedToday = useMemo(() => format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'), [date]);
+
+    const dayStats = useMemo(() => ({
+        total: summary?.total_transaksi ?? todayQueue.length,
+        omzet: summary?.total_penjualan ?? 0,
+        piutang: summary?.piutang_nilai ?? 0,
+        piutangCount: summary?.piutang_count ?? queuePaymentStats.BELUM_LUNAS + queuePaymentStats.BELUM_BAYAR,
+        proses: summary?.proses ?? queueWorkStatusStats.proses,
+    }), [summary, todayQueue.length, queuePaymentStats, queueWorkStatusStats.proses]);
+
+    const getWorkStatusTheme = (status?: string | null) => {
+        const normalized = String(status || 'antre').toLowerCase();
+        if (normalized === 'proses') return { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700', accent: '#2563EB' };
+        if (normalized === 'selesai') return { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-700', accent: '#059669' };
+        if (normalized === 'batal') return { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-700', accent: '#F43F5E' };
+        return { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-700', accent: '#D97706' };
+    };
+
+    const getPaymentBadgeVariant = (item: any): 'success' | 'warning' | 'error' | 'info' | 'neutral' => {
+        const status = getQueuePaymentStatus(item);
+        if (status === 'LUNAS') return 'success';
+        if (status === 'BATAL') return 'error';
+        if (status === 'BELUM_LUNAS') return 'warning';
+        return 'info';
+    };
+
+    const renderQueueCard = (item: any) => {
+        const workTheme = getWorkStatusTheme(item.status_pengerjaan);
+        const payment = getPaidSummary(item);
+        const itemCount = (item.detail_services?.length || 0) + (item.detail_parts?.length || 0);
+        const isActiveWork = ['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase());
+
+        return (
+            <Pressable
+                onPress={() => {
+                    setSelectedItem(item);
+                    setDetailModalOpen(true);
+                }}
+                className="bg-white p-4 rounded-[28px] mb-4 border border-gray-50 shadow-sm active:scale-[0.98]"
+            >
+                <View className="flex-row items-start">
+                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-3 border ${workTheme.bg} ${workTheme.border}`}>
+                        <Car size={20} color={workTheme.accent} />
+                        <Typography weight="bold" className={`text-[8px] mt-0.5 uppercase tracking-tighter ${workTheme.text}`} numberOfLines={1}>
+                            {(item.nomor_plat || '-').slice(0, 8)}
+                        </Typography>
+                    </View>
+
+                    <View className="flex-1">
+                        <View className="flex-row items-start justify-between gap-2">
+                            <View className="flex-1 mr-2">
+                                <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>
+                                    {item.nomor_plat || '-'}
+                                </Typography>
+                                <Typography className="text-textGray text-[11px] mt-0.5" numberOfLines={1}>
+                                    {item.nama_customer || 'Umum'} • {item.jenis_kendaraan || '-'}
+                                </Typography>
+                                <Typography className="text-gray-400 text-[10px] mt-1" numberOfLines={1}>
+                                    {item.nomor_transaksi || '-'}
+                                </Typography>
+                            </View>
+                            <View className="items-end gap-1">
+                                <Badge
+                                    label={formatBengkelWorkStatusLabel(item.status_pengerjaan)}
+                                    variant={
+                                        item.status_pengerjaan === 'proses' ? 'info' :
+                                        item.status_pengerjaan === 'selesai' ? 'success' :
+                                        item.status_pengerjaan === 'batal' ? 'error' : 'warning'
+                                    }
+                                />
+                                <Badge
+                                    label={formatBengkelPaymentStatusLabel(getQueuePaymentStatus(item))}
+                                    variant={getPaymentBadgeVariant(item)}
+                                />
+                            </View>
+                        </View>
+
+                        <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
+                            <View className="flex-row items-center">
+                                <Clock size={12} color="#9CA3AF" />
+                                <Typography className="text-textGray text-[10px] font-semibold ml-1">
+                                    {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
+                                </Typography>
+                                {itemCount > 0 && (
+                                    <Typography className="text-gray-400 text-[10px] ml-2">
+                                        • {itemCount} item
+                                    </Typography>
+                                )}
+                            </View>
+                            <View className="items-end">
+                                {payment.hasPartialPayment && (
+                                    <Typography className="text-amber-600 text-[9px] font-bold">
+                                        Terbayar {formatCurrency(payment.paid)}
+                                    </Typography>
+                                )}
+                                <Typography weight="bold" className="text-primary text-sm">
+                                    {formatCurrency(item.grand_total || 0)}
+                                </Typography>
+                            </View>
+                        </View>
+
+                        {isActiveWork && !isBengkelTransactionLocked(item) && (
+                            <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50 gap-2">
+                                {[
+                                    { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
+                                    { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
+                                ].map((action) => {
+                                    const ActionIcon = action.icon;
+                                    return (
+                                        <Pressable
+                                            key={action.label}
+                                            onPress={(event: any) => {
+                                                event?.stopPropagation?.();
+                                                openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
+                                            }}
+                                            className="flex-1 h-9 rounded-xl bg-gray-50 border border-gray-100 flex-row items-center justify-center active:scale-95"
+                                        >
+                                            <ActionIcon size={13} color={action.color} />
+                                            <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
+                                                {action.label}
+                                            </Typography>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </Pressable>
+        );
+    };
+
+    const listHeader = (
+        <View>
+            <View className="flex-row gap-3 mb-4">
+                {[
+                    { label: 'Total Antrian', value: formatNumber(dayStats.total), icon: ListOrdered, color: '#023C69', bg: 'bg-primary/5' },
+                    { label: 'Omzet', value: formatCurrency(dayStats.omzet), icon: TrendingUp, color: '#059669', bg: 'bg-emerald-50' },
+                    { label: 'Piutang', value: formatCurrency(dayStats.piutang), icon: Banknote, color: '#D97706', bg: 'bg-amber-50', sub: `${dayStats.piutangCount} order` },
+                ].map((stat) => {
+                    const StatIcon = stat.icon;
+                    return (
+                        <View key={stat.label} className={`flex-1 ${stat.bg} rounded-2xl p-3 border border-gray-100`}>
+                            <View className="flex-row items-center mb-2">
+                                <StatIcon size={14} color={stat.color} />
+                                <Typography className="text-[9px] font-bold text-gray-500 ml-1.5 uppercase tracking-wide">{stat.label}</Typography>
+                            </View>
+                            <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>{stat.value}</Typography>
+                            {stat.sub ? (
+                                <Typography className="text-[9px] text-gray-400 mt-0.5">{stat.sub}</Typography>
+                            ) : null}
+                        </View>
+                    );
+                })}
+            </View>
+
+            <View className="bg-white border border-gray-100 rounded-2xl p-3 mb-4">
+                <View className="flex-row justify-between items-center">
+                    <Pressable
+                        onPress={handlePrev}
+                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
+                    >
+                        <ChevronLeft size={20} color="#1C1C1C" />
+                    </Pressable>
+
+                    <View className="items-center flex-1 mx-2">
+                        <View className="flex-row items-center">
+                            <Calendar size={16} color="#023C69" />
+                            <Typography variant="body2" weight="bold" className="text-textMain ml-2">
+                                {getFormattedDate()}
+                            </Typography>
+                        </View>
+                        {isSelectedToday && (
+                            <Typography className="text-primary text-[9px] font-bold uppercase tracking-widest mt-1">Hari Ini</Typography>
+                        )}
+                    </View>
+
+                    <Pressable
+                        onPress={handleNext}
+                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
+                    >
+                        <ChevronRight size={20} color="#1C1C1C" />
+                    </Pressable>
+                </View>
+            </View>
+
+            <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12 mb-3">
+                <Search size={18} color="#9CA3AF" />
+                <TextInput
+                    value={queueSearchQuery}
+                    onChangeText={setQueueSearchQuery}
+                    placeholder="Cari plat, customer, nomor transaksi..."
+                    placeholderTextColor="#9CA3AF"
+                    className="flex-1 ml-3 text-sm font-medium text-textMain"
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                />
+                {queueSearchQuery.length > 0 && (
+                    <Pressable onPress={() => setQueueSearchQuery('')} className="p-1">
+                        <X size={16} color="#9CA3AF" />
+                    </Pressable>
+                )}
+            </View>
+
+            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+                Status Pengerjaan
+            </Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+                {[
+                    { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
+                    { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                    { id: 'batal', label: 'Dibatalkan', count: queueWorkStatusStats.batal, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
+                ].map((filter) => {
+                    const isActive = queueWorkStatusFilter === filter.id;
+                    return (
+                        <Pressable
+                            key={filter.id}
+                            onPress={() => setQueueWorkStatusFilter(filter.id as any)}
+                            className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
+                                {filter.label} ({filter.count})
+                            </Typography>
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
+            <Typography variant="caption" weight="bold" className="text-gray-400 uppercase tracking-widest text-[10px] mb-2 ml-1">
+                Status Pembayaran
+            </Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+                {[
+                    { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
+                    { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
+                    { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
+                    { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
+                    { id: 'BATAL', label: 'Dibatalkan', count: queuePaymentStats.BATAL, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
+                ].map((filter) => {
+                    const isActive = queuePaymentFilter === filter.id;
+                    return (
+                        <Pressable
+                            key={filter.id}
+                            onPress={() => setQueuePaymentFilter(filter.id as any)}
+                            className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
+                        >
+                            <Typography variant="caption" weight="bold" className={isActive ? 'text-white' : filter.text}>
+                                {filter.label} ({filter.count})
+                            </Typography>
+                        </Pressable>
+                    );
+                })}
+            </ScrollView>
+
+            {dayStats.proses > 0 && queueWorkStatusFilter !== 'proses' && (
+                <Pressable
+                    onPress={() => setQueueWorkStatusFilter('proses')}
+                    className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 flex-row items-center active:opacity-90"
+                >
+                    <View className="bg-blue-500 p-2 rounded-full mr-3">
+                        <Wrench size={18} color="white" />
+                    </View>
+                    <View className="flex-1">
+                        <Typography variant="body2" weight="bold" className="text-blue-800">Sedang Dikerjakan</Typography>
+                        <Typography variant="caption" className="text-blue-700/80">{dayStats.proses} order dalam proses — ketuk untuk filter</Typography>
+                    </View>
+                    <ChevronRight size={18} color="#2563EB" />
+                </Pressable>
+            )}
+
+            <View className="flex-row items-center justify-between mb-3 px-1">
+                <Typography className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Daftar Antrian
+                </Typography>
+                <Typography className="text-[10px] font-bold text-primary">
+                    {queueSheetItems.length} order
+                </Typography>
+            </View>
+        </View>
+    );
+
     return (
         <SafeAreaView className="flex-1 bg-surface">
             <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
             <View className="px-6 py-4 flex-row items-center justify-between border-b border-gray-100 bg-white">
                 <View className="flex-row items-center">
                     <Pressable onPress={handleBack} className="mr-4">
                         <ChevronLeft size={24} color="#1C1C1C" />
                     </Pressable>
                     <View>
-                        <Typography variant="h2" weight="bold">Antrian Hari Ini</Typography>
-                        <Typography className="text-gray-400 text-xs mt-0.5">Daftar order & pengerjaan aktif</Typography>
+                        <Typography variant="h2" weight="bold">Antrian Bengkel</Typography>
+                        <Typography className="text-gray-400 text-xs mt-0.5">Monitor order, status & pembayaran</Typography>
                     </View>
                 </View>
                 <Pressable
@@ -434,209 +759,34 @@ export default function QueueScreen() {
                 </Pressable>
             </View>
 
-            {/* Date Picker & Search Row */}
-            <View className="p-6 bg-white border-b border-gray-50">
-                <View className="flex-row justify-between items-center mb-4">
-                    <Pressable
-                        onPress={handlePrev}
-                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
-                    >
-                        <ChevronLeft size={20} color="#1C1C1C" />
-                    </Pressable>
-
-                    <View className="flex-row items-center">
-                        <Calendar size={18} color="#023C69" className="mr-2" />
-                        <Typography variant="body1" weight="bold" className="text-textMain">
-                            {getFormattedDate()}
-                        </Typography>
-                    </View>
-
-                    <Pressable
-                        onPress={handleNext}
-                        className="w-10 h-10 bg-gray-50 rounded-full items-center justify-center border border-gray-100"
-                    >
-                        <ChevronRight size={20} color="#1C1C1C" />
-                    </Pressable>
+            {isLoading ? (
+                <View className="flex-1 px-6 pt-6">
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
                 </View>
-
-                {/* Search Toggle */}
-                <View className="flex-row items-center bg-gray-50 border border-gray-100 rounded-2xl px-4 h-12">
-                    <Search size={18} color="#9CA3AF" />
-                    <TextInput
-                        value={queueSearchQuery}
-                        onChangeText={setQueueSearchQuery}
-                        placeholder="Cari plat, customer, nomor transaksi..."
-                        placeholderTextColor="#9CA3AF"
-                        className="flex-1 ml-3 text-sm font-medium text-textMain"
-                        autoCorrect={false}
-                        autoCapitalize="none"
-                    />
-                    {queueSearchQuery.length > 0 && (
-                        <Pressable onPress={() => setQueueSearchQuery('')} className="p-1">
-                            <X size={16} color="#9CA3AF" />
-                        </Pressable>
-                    )}
-                </View>
-            </View>
-
-            {/* Scrollable Filters */}
-            <View className="bg-white py-3 border-b border-gray-100">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-6 mb-2">
-                    {[
-                        { id: 'ALL', label: 'Semua', count: queueWorkStatusStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
-                        { id: 'antre', label: 'Antre', count: queueWorkStatusStats.antre, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
-                        { id: 'proses', label: 'Proses', count: queueWorkStatusStats.proses, active: 'bg-blue-500 border-blue-500', inactive: 'bg-blue-50 border-blue-100', text: 'text-blue-700' },
-                        { id: 'selesai', label: 'Selesai', count: queueWorkStatusStats.selesai, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
-                        { id: 'batal', label: 'Batal', count: queueWorkStatusStats.batal, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
-                    ].map((filter) => {
-                        const isActive = queueWorkStatusFilter === filter.id;
-                        return (
-                            <Pressable
-                                key={filter.id}
-                                onPress={() => setQueueWorkStatusFilter(filter.id as any)}
-                                className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={isActive ? 'text-white' : filter.text}
-                                >
-                                    {filter.label} ({filter.count})
-                                </Typography>
-                            </Pressable>
-                        );
-                    })}
-                </ScrollView>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-6">
-                    {[
-                        { id: 'ALL', label: 'Semua Bayar', count: queuePaymentStats.total, active: 'bg-primary border-primary', inactive: 'bg-gray-50 border-gray-200', text: 'text-gray-600' },
-                        { id: 'LUNAS', label: 'Lunas', count: queuePaymentStats.LUNAS, active: 'bg-emerald-500 border-emerald-500', inactive: 'bg-emerald-50 border-emerald-100', text: 'text-emerald-700' },
-                        { id: 'BELUM_LUNAS', label: 'Belum Lunas', count: queuePaymentStats.BELUM_LUNAS, active: 'bg-amber-500 border-amber-500', inactive: 'bg-amber-50 border-amber-100', text: 'text-amber-700' },
-                        { id: 'BELUM_BAYAR', label: 'Belum Bayar', count: queuePaymentStats.BELUM_BAYAR, active: 'bg-orange-500 border-orange-500', inactive: 'bg-orange-50 border-orange-100', text: 'text-orange-700' },
-                        { id: 'BATAL', label: 'Dibatalkan', count: queuePaymentStats.BATAL, active: 'bg-rose-500 border-rose-500', inactive: 'bg-rose-50 border-rose-100', text: 'text-rose-700' },
-                    ].map((filter) => {
-                        const isActive = queuePaymentFilter === filter.id;
-                        return (
-                            <Pressable
-                                key={filter.id}
-                                onPress={() => setQueuePaymentFilter(filter.id as any)}
-                                className={`px-4 py-2 rounded-full border mr-2 ${isActive ? filter.active : filter.inactive}`}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    weight="bold"
-                                    className={isActive ? 'text-white' : filter.text}
-                                >
-                                    {filter.label} ({filter.count})
-                                </Typography>
-                            </Pressable>
-                        );
-                    })}
-                </ScrollView>
-            </View>
-
-            {/* List View */}
-            <ScrollView
-                className="flex-1 px-6 pt-6"
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
-                }
-            >
-                {isLoading ? (
-                    <View className="py-20 items-center">
-                        <ActivityIndicator size="large" color="#023C69" />
-                        <Typography className="text-textGray/40 text-xs mt-4 font-bold tracking-widest">MEMUAT DATA...</Typography>
-                    </View>
-                ) : queueSheetItems.length === 0 ? (
-                    <EmptyState
-                        title="Antrian Masih Kosong"
-                        description="Tidak ada data antrian untuk periode ini."
-                        icon={Clock}
-                    />
-                ) : (
-                    queueSheetItems.map((item: any) => {
-                        const paymentStatus = getQueuePaymentStatus(item);
-                        return (
-                            <Pressable
-                                key={item.id}
-                                onPress={() => {
-                                    setSelectedItem(item);
-                                    setDetailModalOpen(true);
-                                }}
-                                className="bg-white p-5 rounded-[32px] mb-4 border border-gray-50 shadow-sm flex-row items-center active:scale-[0.98] transition-transform"
-                            >
-                                <View className="w-14 h-14 bg-emerald-50 rounded-2xl items-center justify-center mr-4 border border-emerald-100/70">
-                                    <Typography weight="bold" className="text-primary text-[10px] uppercase tracking-tighter">
-                                        {item.nomor_plat?.split(' ')[0] || '-'}
-                                    </Typography>
-                                    <Typography weight="bold" className="text-primary/40 text-[8px] mt-0.5">
-                                        KENDARAAN
-                                    </Typography>
-                                </View>
-                                <View className="flex-1">
-                                    <View className="flex-row items-start justify-between gap-2">
-                                        <View className="flex-1 mr-2">
-                                            <Typography weight="bold" className="text-textMain text-sm" numberOfLines={1}>
-                                                {item.nomor_plat}
-                                            </Typography>
-                                            <Typography className="text-textGray text-[11px] mt-0.5" numberOfLines={1}>
-                                                {item.nama_customer || 'Umum'} • {item.jenis_kendaraan || '-'}
-                                            </Typography>
-                                        </View>
-                                        <Badge
-                                            label={(item.status_pengerjaan || '').toUpperCase()}
-                                            variant={item.status_pengerjaan === 'proses' ? 'info' : item.status_pengerjaan === 'selesai' ? 'success' : 'neutral'}
-                                        />
-                                    </View>
-                                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                                        <Typography className="text-textGray text-[10px] font-semibold">
-                                            {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: localeID }) : '-'}
-                                        </Typography>
-                                        <View className="flex-row items-center">
-                                            {Number(item.jumlah_bayar || 0) > 0 && (
-                                                <Typography className="text-emerald-600 text-[9px] font-bold mr-2">
-                                                    DP: {formatCurrency(item.jumlah_bayar)}
-                                                </Typography>
-                                            )}
-                                            <Typography weight="bold" className="text-primary text-xs">
-                                                {formatCurrency(item.grand_total || 0)}
-                                            </Typography>
-                                        </View>
-                                    </View>
-                                    {['antre', 'proses'].includes(String(item.status_pengerjaan || '').toLowerCase()) ? (
-                                        <View className="flex-row items-center mt-3 pt-3 border-t border-gray-50">
-                                            {[
-                                                { label: 'Sparepart', mode: 'sparepart', icon: Package, color: '#059669' },
-                                                { label: 'Servis', mode: 'servis', icon: Wrench, color: '#2563EB' },
-                                            ].map((action) => {
-                                                const ActionIcon = action.icon;
-                                                return (
-                                                    <Pressable
-                                                        key={action.label}
-                                                        onPress={(event: any) => {
-                                                            event?.stopPropagation?.();
-                                                            openQueueTransactionMode(action.mode as 'sparepart' | 'servis', item);
-                                                        }}
-                                                        className="flex-1 mr-2 h-9 rounded-xl bg-gray-50 border border-gray-100 flex-row items-center justify-center active:scale-95"
-                                                    >
-                                                        <ActionIcon size={13} color={action.color} />
-                                                        <Typography weight="bold" className="text-[9px] text-textMain ml-1" numberOfLines={1}>
-                                                            {action.label}
-                                                        </Typography>
-                                                    </Pressable>
-                                                );
-                                            })}
-                                        </View>
-                                    ) : null}
-                                </View>
-                            </Pressable>
-                        );
-                    })
-                )}
-                <View style={{ height: getCustomTabBarBottomPadding(insets.bottom, 24) }} />
-            </ScrollView>
+            ) : (
+                <FlatList
+                    data={queueSheetItems}
+                    keyExtractor={(item: any) => String(item.id)}
+                    contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 24) }}
+                    ListHeaderComponent={listHeader}
+                    refreshControl={
+                        <RNRefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#023C69" />
+                    }
+                    renderItem={({ item }) => renderQueueCard(item)}
+                    ListEmptyComponent={
+                        <EmptyState
+                            title="Antrian Masih Kosong"
+                            description={queueSearchQuery || queueWorkStatusFilter !== 'ALL' || queuePaymentFilter !== 'ALL'
+                                ? 'Tidak ada order yang cocok dengan filter saat ini.'
+                                : 'Tidak ada data antrian untuk tanggal ini.'}
+                            icon={Clock}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                />
+            )}
 
             {/* Queue Detail Modal */}
             {selectedItem && (
@@ -651,9 +801,11 @@ export default function QueueScreen() {
                         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={() => setDetailModalOpen(false)} />
                         <View className="bg-white rounded-t-[48px] p-6 max-h-[85%] overflow-hidden">
                             <View className="flex-row justify-between items-center mb-6">
-                                <View>
+                                <View className="flex-1 mr-3">
                                     <Typography variant="h3" weight="bold">Detail Antrian</Typography>
-                                    <Typography className="text-gray-400 text-xs mt-0.5">Rincian status & transaksi customer</Typography>
+                                    <Typography className="text-gray-400 text-xs mt-0.5" numberOfLines={1}>
+                                        {selectedItem.nomor_transaksi || '-'} • {selectedItem.nama_customer || 'Umum'}
+                                    </Typography>
                                 </View>
                                 <Pressable onPress={() => setDetailModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
                                     <X size={18} color="#4B5563" />
@@ -669,7 +821,7 @@ export default function QueueScreen() {
                                         </Typography>
                                     </View>
                                     <Badge
-                                        label={(selectedItem.status_pengerjaan || '').toUpperCase()}
+                                        label={formatBengkelWorkStatusLabel(selectedItem.status_pengerjaan)}
                                         variant={
                                             selectedItem.status_pengerjaan === 'proses' ? 'info' :
                                                 selectedItem.status_pengerjaan === 'selesai' ? 'success' :
@@ -778,30 +930,49 @@ export default function QueueScreen() {
                                         <Typography variant="body2" weight="bold" className="text-emerald-800">Total Tagihan</Typography>
                                         <Typography variant="h4" weight="bold" className="text-emerald-800">{formatCurrency((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0)}</Typography>
                                     </View>
-                                    {(selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0) > 0 && (
-                                        <>
-                                            <View className="flex-row items-center justify-between mb-1">
-                                                <Typography className="text-emerald-600 text-xs">DP Dibayar</Typography>
-                                                <Typography className="text-emerald-600 text-xs font-bold">-{formatCurrency(selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0)}</Typography>
-                                            </View>
-                                            <View className="flex-row items-center justify-between pt-2 border-t border-emerald-200">
-                                                <Typography variant="body2" weight="bold" className="text-emerald-800">Sisa Bayar</Typography>
-                                                <Typography variant="h4" weight="bold" className="text-emerald-800">
-                                                    {formatCurrency(Math.max(0, ((selectedItem?.grand_total ?? selectedItem?.grand_total) || 0) - (selectedItem?.jumlah_bayar || selectedItem?.jumlah_bayar || 0)))}
-                                                </Typography>
-                                            </View>
-                                        </>
-                                    )}
+                                    {(() => {
+                                        const payment = getPaidSummary(selectedItem);
+                                        if (payment.isLunas) {
+                                            return (
+                                                <View className="flex-row items-center justify-between pt-2 border-t border-emerald-200">
+                                                    <Typography className="text-emerald-600 text-xs font-semibold uppercase">Status Pembayaran</Typography>
+                                                    <Typography className="text-emerald-700 text-xs font-bold uppercase">Lunas</Typography>
+                                                </View>
+                                            );
+                                        }
+                                        if (!payment.hasPartialPayment) return null;
+                                        return (
+                                            <>
+                                                <View className="flex-row items-center justify-between mb-1">
+                                                    <Typography className="text-emerald-600 text-xs">Sudah Dibayar</Typography>
+                                                    <Typography className="text-emerald-600 text-xs font-bold">-{formatCurrency(payment.paid)}</Typography>
+                                                </View>
+                                                <View className="flex-row items-center justify-between pt-2 border-t border-emerald-200">
+                                                    <Typography variant="body2" weight="bold" className="text-emerald-800">Sisa Bayar</Typography>
+                                                    <Typography variant="h4" weight="bold" className="text-emerald-800">
+                                                        {formatCurrency(payment.remaining)}
+                                                    </Typography>
+                                                </View>
+                                            </>
+                                        );
+                                    })()}
                                 </Card>
 
                                 {/* Action Buttons */}
                                 <View className="flex-row space-x-3 mb-4">
                                     <Pressable
                                         onPress={() => openEditTransaction(selectedItem)}
-                                        className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center flex-row active:opacity-90"
+                                        disabled={isBengkelTransactionLocked(selectedItem)}
+                                        className={`flex-1 py-3 rounded-xl items-center justify-center flex-row ${
+                                            isBengkelTransactionLocked(selectedItem)
+                                                ? 'bg-gray-200 opacity-60'
+                                                : 'bg-amber-500 active:opacity-90'
+                                        }`}
                                     >
-                                        <Edit2 size={16} color="white" />
-                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                        <Edit2 size={16} color={isBengkelTransactionLocked(selectedItem) ? '#9CA3AF' : 'white'} />
+                                        <Typography weight="bold" className={`text-xs ml-2 uppercase tracking-widest ${
+                                            isBengkelTransactionLocked(selectedItem) ? 'text-gray-400' : 'text-white'
+                                        }`}>
                                             Edit
                                         </Typography>
                                     </Pressable>
@@ -855,15 +1026,17 @@ export default function QueueScreen() {
                                     </Pressable>
                                 ) : null}
 
-                                <Pressable
-                                    onPress={() => handleVoidTransaction(selectedItem)}
-                                    className="mt-3 bg-rose-600 py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90"
-                                >
-                                    <Trash2 size={16} color="white" />
-                                    <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
-                                        Void Transaksi
-                                    </Typography>
-                                </Pressable>
+                                {!isBengkelTransactionVoided(selectedItem) ? (
+                                    <Pressable
+                                        onPress={() => handleVoidTransaction(selectedItem)}
+                                        className="mt-3 bg-rose-600 py-3.5 rounded-2xl items-center justify-center flex-row active:opacity-90"
+                                    >
+                                        <Trash2 size={16} color="white" />
+                                        <Typography weight="bold" className="text-white text-xs ml-2 uppercase tracking-widest">
+                                            Batalkan Transaksi
+                                        </Typography>
+                                    </Pressable>
+                                ) : null}
                             </ScrollView>
                         </View>
                     </View>
@@ -877,11 +1050,12 @@ export default function QueueScreen() {
                     onClose={() => setPaymentSheetOpen(false)}
                     onConfirm={async (paymentData) => {
                         try {
+                            const { willBeLunas, ...paymentPayload } = paymentData;
                             await updateTransaksiMutation.mutateAsync({
                                 id: selectedItem.id,
                                 data: {
-                                    ...paymentData,
-                                    status_pengerjaan: 'SELESAI',
+                                    ...paymentPayload,
+                                    ...(willBeLunas ? { status_pengerjaan: 'SELESAI' } : {}),
                                 }
                             });
                             setPaymentSheetOpen(false);

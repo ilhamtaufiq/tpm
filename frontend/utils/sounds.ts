@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { Audio as ExpoAudio } from 'expo-av';
 
 // Singleton AudioContext — reuse across calls. Mobile browsers block
 // freshly-created contexts in non-gesture callbacks.
@@ -90,7 +91,6 @@ function playWebBeep(freq: number, durationMs: number) {
 
 async function playNativeBeep(freq: number, durationMs: number) {
     try {
-        const { Audio } = await import('expo-av');
         const sampleRate = 8000;
         const numSamples = Math.floor(sampleRate * (durationMs / 1000));
         const buffer = new ArrayBuffer(44 + numSamples * 2);
@@ -110,7 +110,7 @@ async function playNativeBeep(freq: number, durationMs: number) {
         let binary = '';
         for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
         const uri = 'data:audio/wav;base64,' + btoa(binary);
-        const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+        const { sound } = await ExpoAudio.Sound.createAsync({ uri }, { shouldPlay: true });
         const timeout = durationMs + 200;
         const start = Date.now();
         sound.setOnPlaybackStatusUpdate(() => {

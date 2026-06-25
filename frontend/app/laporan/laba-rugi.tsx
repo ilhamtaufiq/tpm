@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, Pressable, RefreshControl as RNRefreshControl, ActivityIndicator, StatusBar, Modal, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect, useNavigation, Stack } from 'expo-router';
-import { 
-    ChevronLeft, ChevronRight, Calendar, TrendingUp,
-    BarChart3, ArrowUpRight, ArrowDownLeft, Download, Eye, X, Truck, Printer 
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import {
+    TrendingUp, BarChart3, ArrowUpRight, ArrowDownLeft, Download, X, Truck,
 } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import * as Print from 'expo-print';
@@ -21,14 +20,18 @@ import { buildLabaRugiExportHtml } from '../../utils/reportTemplates';
 import { FinancialRow } from '../../components/ui/FinancialRow';
 import { LabaRugiReport } from '../../types/reports';
 import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
-
-type FilterType = 'daily' | 'monthly' | 'yearly';
+import {
+    ReportPageHeader,
+    ReportDateControls,
+    ReportExportSheet,
+    ReportFilterType,
+} from '../../components/laporan';
 
 export default function LabaRugiScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const navigation = useNavigation();
-    const [filterType, setFilterType] = useState<FilterType>('monthly');
+    const [filterType, setFilterType] = useState<ReportFilterType>('monthly');
     const [date, setDate] = useState(new Date());
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -59,12 +62,6 @@ export default function LabaRugiScreen() {
         return format(date, 'yyyy', { locale: localeID });
     }, [date, filterType]);
 
-    const headerDate = useMemo(() => {
-        if (filterType === 'daily') return format(date, 'dd MMM yyyy', { locale: localeID });
-        if (filterType === 'monthly') return format(date, 'MMMM yyyy', { locale: localeID });
-        return format(date, 'yyyy', { locale: localeID });
-    }, [date, filterType]);
-
     const reportParams = useMemo(() => {
         const start = filterType === 'daily' ? date : (filterType === 'monthly' ? startOfMonth(date) : startOfYear(date));
         const end = filterType === 'daily' ? date : (filterType === 'monthly' ? endOfMonth(date) : endOfYear(date));
@@ -90,11 +87,6 @@ export default function LabaRugiScreen() {
             router.replace('/(tabs)/home');
         }
     }, [navigation, router]);
-
-    const handleFilterChange = (type: FilterType) => {
-        setFilterType(type);
-        // Preserve date context
-    };
 
     // Data Mappings
     const bengkelData = useMemo(() => {
@@ -390,70 +382,34 @@ export default function LabaRugiScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-50">
-            <StatusBar barStyle="light-content" />
-            <Stack.Screen options={{ headerShown: false }} />
+        <SafeAreaView className="flex-1 bg-surface">
+            <StatusBar barStyle="dark-content" />
 
-            {/* Header */}
-            <View className="bg-primary pt-14 pb-12 px-6 rounded-b-[48px] shadow-2xl z-20">
-                <View className="flex-row items-center justify-between mb-8">
-                    <View className="flex-row items-center">
-                        <Pressable onPress={handleBack} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center mr-4 border border-white/5">
-                            <ChevronLeft size={24} color="white" />
-                        </Pressable>
-                        <View>
-                            <Typography variant="h2" weight="bold" className="text-white text-2xl tracking-tighter">Laba Rugi</Typography>
-                            <Typography className="text-white/50 text-xs mt-0.5">Analisa Finansial TPM</Typography>
-                        </View>
-                    </View>
-                    <View className="flex-row items-center">
-                        <View className="bg-white/10 px-4 py-2 rounded-2xl border border-white/5 mr-2">
-                            <Typography variant="caption" weight="bold" className="text-white uppercase tracking-widest text-[10px]">{headerDate}</Typography>
-                        </View>
-                        <Pressable onPress={() => setShowExportMenu(true)} disabled={isExporting} className="w-11 h-11 bg-white/10 rounded-2xl items-center justify-center border border-white/5">
-                            {isExporting ? <ActivityIndicator size="small" color="white" /> : <Download size={22} color="white" />}
-                        </Pressable>
-                    </View>
-                </View>
-
-                {/* Filter Tabs */}
-                <View className="flex-row bg-black/20 p-1.5 rounded-2xl border border-white/5">
-                    {(['daily', 'monthly', 'yearly'] as FilterType[]).map((type) => (
-                        <Pressable
-                            key={type}
-                            onPress={() => handleFilterChange(type)}
-                            className={`flex-1 py-2.5 items-center rounded-xl ${filterType === type ? 'bg-primary shadow-lg border border-white/10' : ''}`}
-                        >
-                            <Typography variant="caption" weight="bold" className={filterType === type ? 'text-white' : 'text-white/40'}>
-                                {type === 'daily' ? 'Harian' : type === 'monthly' ? 'Bulanan' : 'Tahunan'}
-                            </Typography>
-                        </Pressable>
-                    ))}
-                </View>
-            </View>
-
-            {/* Date Navigator */}
-            <View className="px-6 -mt-6 z-30">
-                <View className="bg-surface p-2 rounded-3xl shadow-xl flex-row items-center border border-gray-50">
-                    <Pressable onPress={handlePrev} className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100">
-                        <ChevronLeft size={20} color={themeColors.text} />
-                    </Pressable>
-                    <View className="flex-1 flex-row items-center justify-center">
-                        <Calendar size={18} color={themeColors.primary} className="mr-2" />
-                        <Typography variant="body2" weight="bold" className="text-text capitalize tracking-tight">{formattedDate}</Typography>
-                    </View>
-                    <Pressable onPress={handleNext} className="w-12 h-12 bg-background rounded-2xl items-center justify-center border border-gray-100">
-                        <ChevronRight size={20} color={themeColors.text} />
-                    </Pressable>
-                </View>
-            </View>
+            <ReportPageHeader
+                title="Laba Rugi"
+                subtitle="Analisa Finansial TPM"
+                onBack={handleBack}
+                onExport={() => setShowExportMenu(true)}
+                isExporting={isExporting}
+            />
 
             <ScrollView
-                className="flex-1 px-4 pt-5"
+                className="flex-1"
                 contentContainerStyle={{ paddingBottom: getCustomTabBarBottomPadding(insets.bottom, 40) }}
                 refreshControl={<RNRefreshControl refreshing={isLoading} onRefresh={fetchData} />}
                 showsVerticalScrollIndicator={false}
             >
+                <View className="px-6 pt-4">
+                    <ReportDateControls
+                        filterType={filterType}
+                        onFilterTypeChange={setFilterType}
+                        formattedDate={formattedDate}
+                        onPrev={handlePrev}
+                        onNext={handleNext}
+                    />
+                </View>
+
+                <View className="px-4 pt-5">
                 {isLoading ? (
                     <View className="py-20">
                         <ActivityIndicator size="large" color={themeColors.primary} />
@@ -472,38 +428,17 @@ export default function LabaRugiScreen() {
                         {renderFinalRecap()}
                     </>
                 )}
+                </View>
             </ScrollView>
 
-            <Modal visible={showExportMenu} transparent animationType="fade">
-                <Pressable className="flex-1 bg-black/50 justify-end" onPress={() => setShowExportMenu(false)}>
-                    <View className="bg-white rounded-t-[40px] p-8 pb-12 shadow-2xl">
-                        <View className="flex-row justify-between items-center mb-8">
-                            <View>
-                                <Typography variant="h3" weight="bold">Ekspor Laporan</Typography>
-                                <Typography variant="caption" className="text-gray-500">Pilih metode ekspor dokumen PDF</Typography>
-                            </View>
-                            <Pressable onPress={() => setShowExportMenu(false)} className="bg-slate-100 p-2 rounded-full">
-                                <X size={20} color="#64748b" />
-                            </Pressable>
-                        </View>
-
-                        <View className="flex-row gap-4">
-                            <Pressable onPress={() => handleExportPDF('preview')} className="flex-1 bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 items-center">
-                                <View className="w-14 h-14 bg-indigo-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-indigo-200"><Eye size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-indigo-900">Preview</Typography>
-                            </Pressable>
-                            <Pressable onPress={() => handleExportPDF('print')} className="flex-1 bg-emerald-50 p-6 rounded-[32px] border border-emerald-100 items-center">
-                                <View className="w-14 h-14 bg-emerald-600 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200"><Printer size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-emerald-900">Cetak</Typography>
-                            </Pressable>
-                            <Pressable onPress={() => handleExportPDF('download')} className="flex-1 bg-amber-50 p-6 rounded-[32px] border border-amber-100 items-center">
-                                <View className="w-14 h-14 bg-amber-500 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-amber-200"><Download size={28} color="white" /></View>
-                                <Typography weight="bold" className="text-amber-900">PDF</Typography>
-                            </Pressable>
-                        </View>
-                    </View>
-                </Pressable>
-            </Modal>
+            <ReportExportSheet
+                visible={showExportMenu}
+                onClose={() => setShowExportMenu(false)}
+                subtitle="Pilih metode ekspor dokumen PDF"
+                onPreview={() => handleExportPDF('preview')}
+                onPrint={() => handleExportPDF('print')}
+                onDownload={() => handleExportPDF('download')}
+            />
 
             {/* Preview Modal */}
             <Modal visible={showPdfPreview} animationType="slide">

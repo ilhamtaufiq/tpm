@@ -18,8 +18,9 @@ class LabaRugiService(BaseReportService):
         # Ensure revenue from internal bengkel transaksi (kategori jasa_angkut and jual_beli_mobil
         # created from jasa-angkut and mobil modules via bengkel/transaksi) are included in bengkel revenue.
         from app.models.bengkel import TransaksiPenjualanBengkel
-        from app.utils.constants import PaymentStatus, WorkshopStatus
+        from app.utils.constants import PaymentStatus
         b_revenue_full = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
+            TransaksiPenjualanBengkel.grand_total > 0,
             TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,

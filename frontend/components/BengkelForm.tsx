@@ -25,6 +25,7 @@ import { printReceipt, PrintReceiptData } from '../utils/printReceipt';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
 import { useJasaList } from '../hooks/useJasaServis';
 import { getCustomTabBarBottomPadding } from './ui/CustomTabBar';
+import { isBengkelTransactionLocked } from '../utils/bengkelTransaction';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -38,6 +39,7 @@ interface BengkelFormProps {
 
 export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelFormProps) => {
     const insets = useSafeAreaInsets();
+    const isLocked = isBengkelTransactionLocked(initialData);
     // Category selection
     const [kategori, setKategori] = useState<BengkelKategori>('umum');
     const [selectedMuatan, setSelectedMuatan] = useState<any>(null);
@@ -440,7 +442,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
         }
     };
 
-    const handleScanSparePart = (scannedData: string) => {
+    const handleScanSparePart = (scannedData: string): boolean => {
         const cleanData = scannedData.trim();
 
         // Try exact match on internal kode or manufacturer kode_part
@@ -510,21 +512,20 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 variant: 'success'
             });
             setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 1200);
-        } else {
-            // For not found, we don't close either, just show alert or skip
-            // setIsScannerOpen(false); 
-            setDialogConfig({
-                visible: true,
-                title: 'Tidak Ditemukan',
-                message: `Kode "${scannedData}" tidak terdaftar sebagai Kode Part Pabrik maupun Kode Stok Internal.`,
-                variant: 'warning'
-            });
-            // Auto hide the warning after a while so they can keep scanning
-            setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 2000);
+            return true;
         }
+
+        setDialogConfig({
+            visible: true,
+            title: 'Tidak Ditemukan',
+            message: `Kode "${scannedData}" tidak terdaftar sebagai Kode Part Pabrik maupun Kode Stok Internal.`,
+            variant: 'warning'
+        });
+        setTimeout(() => setDialogConfig(prev => ({ ...prev, visible: false })), 2000);
+        return false;
     };
 
-    const handleScanPlate = (scannedData: string) => {
+    const handleScanPlate = (scannedData: string): boolean => {
         const cleanData = scannedData.trim().toUpperCase();
         setIsScannerOpen(false);
 
@@ -536,7 +537,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 setSelectedArmada({ id: armada.armada_id, nopol: armada.nopol, nama: armada.armada?.nama } as any);
                 setNomorPlat(armada.nopol);
                 setJenisKendaraan(armada.info_kendaraan || '');
-                return;
+                return true;
             }
         }
 
@@ -547,7 +548,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                 setSelectedMobil(mobil);
                 setNomorPlat(mobil.nomor_plat);
                 setJenisKendaraan(`${mobil.merek} ${mobil.model}`);
-                return;
+                return true;
             }
         }
 
@@ -570,9 +571,11 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
             subtitle: 'Data kendaraan diperbarui',
             timestamp: Date.now()
         }, ...prev]);
+        return true;
     };
 
     const handleSubmit = async () => {
+        if (isLocked) return;
         const isJasaAngkutInternal = kategori === 'jasa_angkut' && !!selectedArmada;
         const isMobilInternal = kategori === 'jual_beli_mobil' && !!selectedMobil;
         const { finalPlat, finalCustomer, finalJenis } = resolveWorkOrderIdentity();
@@ -1475,6 +1478,7 @@ export const BengkelForm = ({ onSuccess, initialData, isPage = false }: BengkelF
                             title={initialData ? "Update Antrian" : "Buat Antrian Bengkel"}
                     onPress={handleSubmit}
                     className="rounded-2xl"
+                    disabled={isLocked}
                     loading={createTransaksiMutation.isPending || updateTransaksiMutation.isPending}
                 />
             </View>
