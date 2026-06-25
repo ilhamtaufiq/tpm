@@ -63,6 +63,50 @@ import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
 
+type TripDeduction = { label: string; amount: number; kategori?: string };
+
+function getTripDeductions(trip: Muatan): TripDeduction[] {
+    const deductions: TripDeduction[] = [];
+
+    for (const item of trip.biaya_tambahan || []) {
+        const kategori = String(item.kategori || '').toLowerCase();
+        if (kategori === 'perawatan bengkel') continue;
+        deductions.push({
+            label: item.deskripsi || item.kategori || 'Biaya Operasional',
+            amount: Number(item.jumlah || 0),
+            kategori: item.kategori,
+        });
+    }
+
+    const legacyCosts: { key: keyof Muatan; label: string }[] = [
+        { key: 'biaya_tol', label: 'Tol' },
+        { key: 'biaya_bbm', label: 'BBM' },
+        { key: 'biaya_makan', label: 'Makan' },
+        { key: 'biaya_parkir', label: 'Parkir' },
+        { key: 'biaya_lainnya', label: 'Biaya Lainnya' },
+    ];
+
+    for (const { key, label } of legacyCosts) {
+        const amount = Number(trip[key] || 0);
+        if (amount > 0) {
+            deductions.push({ label, amount, kategori: 'Legacy' });
+        }
+    }
+
+    return deductions;
+}
+
+function getTripFinancials(trip: Muatan) {
+    const grossTpmShare = Number(trip.pendapatan_kotor || 0) - Number(trip.laba_supir || 0);
+    const deductions = getTripDeductions(trip);
+    const totalPotongan = deductions.length > 0
+        ? deductions.reduce((sum, item) => sum + item.amount, 0)
+        : Number(trip.total_biaya || 0);
+    const netTpmShare = Math.max(0, grossTpmShare - totalPotongan);
+
+    return { grossTpmShare, deductions, totalPotongan, netTpmShare };
+}
+
 export default function JasaAngkutScreen() {
     // UI States (Moved up to prevent use-before-declaration)
     const [searchQuery, setSearchQuery] = useState('');
@@ -1111,6 +1155,8 @@ export default function JasaAngkutScreen() {
 
     function renderDetailContent(trip: Muatan) {
         const ScrollContainer = Platform.OS === 'web' ? ScrollView : BottomSheetScrollView;
+        const { grossTpmShare, deductions, totalPotongan, netTpmShare } = getTripFinancials(trip);
+        const sisaTagihan = Math.max(0, netTpmShare - Number(trip.jumlah_bayar || 0));
 
         return (
             <ScrollContainer style={{ flex: 1 }}>
@@ -1172,16 +1218,60 @@ export default function JasaAngkutScreen() {
                     <Card variant="outlined" className="p-6 border-gray-100 mb-6 rounded-[32px]">
                         <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Analisa Laba Rugi</Typography>
                         <View className="flex-row justify-between mb-3">
-                            <Typography variant="body2" className="text-textGray">Pendapatan TPM (Gross)</Typography>
-                            <Typography weight="bold" className="text-textMain">{formatCurrency(Number(trip.pendapatan_kotor) - Number(trip.laba_supir))}</Typography>
+                            <Typography variant="body2" className="text-textGray">Share TPM (Gross 50%)</Typography>
+                            <Typography weight="bold" className="text-textMain">{formatCurrency(grossTpmShare)}</Typography>
                         </View>
 
-                        <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl mt-4">
-                            <Typography variant="body2" weight="bold" className="text-primary text-[11px]">PENDAPATAN TPM (NET)</Typography>
-                            <Typography weight="bold" className="text-primary">{formatCurrency(trip.laba_tpm)}</Typography>
+                        <View className="mt-2 mb-3">
+                            <View className="flex-row items-center mb-2">
+                                <TrendingDown size={14} color="#E11D48" />
+                                <Typography variant="caption" weight="bold" className="text-rose-600 ml-1.5 uppercase tracking-widest text-[10px]">
+                                    Potongan / Biaya Operasional
+                                </Typography>
+                            </View>
+                            {deductions.length > 0 ? (
+                                <View className="bg-rose-50/60 rounded-2xl border border-rose-100/80 px-3 py-2">
+                                    {deductions.map((item, index) => (
+                                        <View
+                                            key={`${item.label}-${index}`}
+                                            className={`flex-row justify-between items-center py-2 ${index < deductions.length - 1 ? 'border-b border-rose-100/60' : ''}`}
+                                        >
+                                            <View className="flex-1 pr-3">
+                                                <Typography variant="caption" weight="bold" className="text-textMain">
+                                                    {item.label}
+                                                </Typography>
+                                                {item.kategori && item.kategori !== 'Legacy' ? (
+                                                    <Typography variant="caption" className="text-textGray/60 text-[10px] mt-0.5">
+                                                        {item.kategori}
+                                                    </Typography>
+                                                ) : null}
+                                            </View>
+                                            <Typography variant="caption" weight="bold" className="text-rose-600">
+                                                -{formatCurrency(item.amount)}
+                                            </Typography>
+                                        </View>
+                                    ))}
+                                    <View className="flex-row justify-between items-center pt-2 mt-1 border-t border-rose-200/80">
+                                        <Typography variant="caption" weight="bold" className="text-rose-700">Total Potongan</Typography>
+                                        <Typography variant="caption" weight="bold" className="text-rose-700">
+                                            -{formatCurrency(totalPotongan)}
+                                        </Typography>
+                                    </View>
+                                </View>
+                            ) : (
+                                <View className="bg-gray-50 rounded-2xl border border-gray-100 px-3 py-3">
+                                    <Typography variant="caption" className="text-textGray/70 italic">
+                                        Tidak ada potongan biaya operasional
+                                    </Typography>
+                                </View>
+                            )}
                         </View>
 
-                        {/* Driver share shown but secondary, as requested 'boleh di form' assuming detail is close to form context */}
+                        <View className="flex-row justify-between mb-3 bg-primary/5 p-3 rounded-xl">
+                            <Typography variant="body2" weight="bold" className="text-primary text-[11px]">SHARE TPM (NET)</Typography>
+                            <Typography weight="bold" className="text-primary">{formatCurrency(netTpmShare)}</Typography>
+                        </View>
+
                         <View className="flex-row justify-between px-3 py-1">
                             <Typography variant="caption" className="text-textGray/60">Hak Driver (Tidak Dicatat Kas)</Typography>
                             <Typography variant="caption" weight="bold" className="text-textGray/40">{formatCurrency(trip.laba_supir)}</Typography>
@@ -1192,8 +1282,14 @@ export default function JasaAngkutScreen() {
                         <Typography variant="caption" weight="bold" className="mb-4 text-slate-500 uppercase tracking-widest">Informasi Pembayaran</Typography>
                         <View className="flex-row justify-between mb-3">
                             <Typography variant="body2" className="text-textGray">Total Tagihan (Net TPM)</Typography>
-                            <Typography weight="bold" className="text-textMain">{formatCurrency(trip.laba_tpm)}</Typography>
+                            <Typography weight="bold" className="text-textMain">{formatCurrency(netTpmShare)}</Typography>
                         </View>
+                        {totalPotongan > 0 && (
+                            <View className="flex-row justify-between mb-3 px-3 py-2 bg-rose-50/50 rounded-xl">
+                                <Typography variant="caption" className="text-rose-600">Sudah dipotong biaya trip</Typography>
+                                <Typography variant="caption" weight="bold" className="text-rose-600">-{formatCurrency(totalPotongan)}</Typography>
+                            </View>
+                        )}
                         <View className="flex-row justify-between mb-3">
                             <Typography variant="body2" className="text-emerald-600">Telah Dibayar</Typography>
                             <Typography weight="bold" className="text-emerald-700">{formatCurrency(trip.jumlah_bayar || 0)}</Typography>
@@ -1201,7 +1297,7 @@ export default function JasaAngkutScreen() {
                         {trip.status_bayar === 'BELUM_LUNAS' && (
                             <View className="flex-row justify-between pt-3 border-t border-gray-100 mt-2">
                                 <Typography variant="body2" weight="bold" className="text-rose-600">Sisa Tagihan (Piutang)</Typography>
-                                <Typography weight="bold" className="text-rose-700">{formatCurrency(Number(trip.laba_tpm) - Number(trip.jumlah_bayar || 0))}</Typography>
+                                <Typography weight="bold" className="text-rose-700">{formatCurrency(sisaTagihan)}</Typography>
                             </View>
                         )}
 
@@ -1890,7 +1986,7 @@ export default function JasaAngkutScreen() {
                         refetch();
                     }}
                     id={selectedTrip.piutang_id}
-                    initialAmount={Number(selectedTrip.pendapatan_kotor) - Number(selectedTrip.laba_supir) - Number(selectedTrip.jumlah_bayar || 0)}
+                    initialAmount={Math.max(0, getTripFinancials(selectedTrip).netTpmShare - Number(selectedTrip.jumlah_bayar || 0))}
                     title="Pelunasan Jasa Angkut"
                     allowedMethods={['TUNAI_PUSAT', 'TUNAI_UNIT', 'TRANSFER']}
                     unit="JASA_ANGKUT"
