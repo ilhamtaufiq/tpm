@@ -13,17 +13,25 @@ type PushPayload = Record<string, any>;
 
 const ANDROID_CHANNEL_ID = 'default';
 
-if (Platform.OS !== 'web') {
-    Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: false,
-            shouldSetBadge: false,
-            shouldShowBanner: true,
-            shouldShowList: true,
-        }),
-    });
-}
+const ensureNotificationHandler = () => {
+    if (Platform.OS === 'web') {
+        return;
+    }
+
+    try {
+        Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+                shouldShowAlert: true,
+                shouldPlaySound: false,
+                shouldSetBadge: false,
+                shouldShowBanner: true,
+                shouldShowList: true,
+            }),
+        });
+    } catch (error) {
+        console.warn('[Push] Failed to configure notification handler', error);
+    }
+};
 
 const getProjectId = () => {
     return (
@@ -117,6 +125,10 @@ const registerForPushNotificationsAsync = async () => {
 };
 
 export function usePushNotifications() {
+    useEffect(() => {
+        ensureNotificationHandler();
+    }, []);
+
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const token = useAuthStore(state => state.token);
     const user = useAuthStore(state => state.user);

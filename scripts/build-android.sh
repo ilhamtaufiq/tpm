@@ -192,8 +192,8 @@ fi
 info "Menjalankan expo prebuild..."
 cd "$FRONTEND_DIR"
 rm -rf android
-if npx expo prebuild --platform android --clean >"$PREBUILD_LOG" 2>&1; then
-    ok "Prebuild selesai"
+if EXPO_UPDATES_CHANNEL=production npx expo prebuild --platform android --clean >"$PREBUILD_LOG" 2>&1; then
+    ok "Prebuild selesai (channel: production)"
 else
     err "Prebuild gagal. Log: $PREBUILD_LOG"
     tail -40 "$PREBUILD_LOG" >&2 || true
@@ -205,7 +205,9 @@ info "Memulai build Android APK..."
 cd "$FRONTEND_DIR/android"
 
 if run_gradle_build "$GRADLE_LOG"; then
-    ok "Build berhasil!"
+    BUNDLE_FILE=$(find "$FRONTEND_DIR/android/app/build" \( -name '*.bundle' -o -name '*.hbc' \) -type f 2>/dev/null | head -1)
+    [ -n "$BUNDLE_FILE" ] || die "JS bundle release tidak ditemukan. APK akan force-close saat dibuka."
+    ok "Build berhasil! (bundle: $(basename "$BUNDLE_FILE"))"
 else
     err "Build gagal. Log lengkap: $GRADLE_LOG"
     grep -E 'FAILURE:|error:|Error:|BUILD FAILED' "$GRADLE_LOG" | tail -20 >&2 || tail -30 "$GRADLE_LOG" >&2

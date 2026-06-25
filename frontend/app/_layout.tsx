@@ -94,7 +94,7 @@ function RootLayoutContent() {
 
     const segments = useSegments();
     const [isReady, setIsReady] = useState(false);
-    const [isUpdating, setIsUpdating] = useState(false);
+
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const hasHydrated = useAuthStore(state => state.hasHydrated);
     
@@ -133,26 +133,39 @@ function RootLayoutContent() {
         '--color-text-gray': themeColors.textGray,
     });
 
-    // Handle OTA Updates on app mount
+    // OTA: cek setelah app siap — jangan block splash / auto-reload terlalu awal
     useEffect(() => {
+        if (__DEV__ || !Updates.isEnabled || !loaded || !hasHydrated || !isReady) {
+            return;
+        }
+
+        let cancelled = false;
+
         async function onFetchUpdateAsync() {
-            if (__DEV__) return; // Skip in development
             try {
-                // IMPORTANT: In Expo 51+, we use the new Updates API
                 const update = await Updates.checkForUpdateAsync();
-                if (update.isAvailable) {
-                    setIsUpdating(true);
-                    await Updates.fetchUpdateAsync();
-                    await Updates.reloadAsync(); // App will restart with new version
+                if (!update.isAvailable || cancelled) {
+                    return;
+                }
+
+                await Updates.fetchUpdateAsync();
+                if (!cancelled) {
+                    await Updates.reloadAsync();
                 }
             } catch (error) {
                 console.log('Update check failed:', error);
-            } finally {
-                setIsUpdating(false);
             }
         }
-        onFetchUpdateAsync();
-    }, []);
+
+        const timer = setTimeout(() => {
+            void onFetchUpdateAsync();
+        }, 1500);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [loaded, hasHydrated, isReady]);
 
     // Sync remote API settings to local store
     useEffect(() => {
@@ -293,10 +306,8 @@ function RootLayoutContent() {
     }
 
     // Show loading indicator while fonts are loading or update is downloading
-    if (!loaded || !isReady || !hasHydrated || isUpdating) {
-        const loadingMessage = isUpdating 
-            ? "Mendownload versi terbaru..." 
-            : "Memuat TPM Super App...";
+    if (!loaded || !isReady || !hasHydrated) {
+        const loadingMessage = "Memuat TPM Super App...";
 
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
@@ -304,11 +315,7 @@ function RootLayoutContent() {
                 <Text style={{ marginTop: 16, fontSize: 14, color: '#666', fontWeight: '600' }}>
                     {loadingMessage}
                 </Text>
-                {isUpdating && (
-                    <Text style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                        Aplikasi akan restart secara otomatis
-                    </Text>
-                )}
+
             </View>
         );
     }
