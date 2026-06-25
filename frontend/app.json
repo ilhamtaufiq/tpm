@@ -2,7 +2,7 @@
   "expo": {
     "name": "TPM Super App",
     "slug": "tpm-super-app",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/logo_tpm.png",
     "userInterfaceStyle": "light",
@@ -49,7 +49,24 @@
       "expo-font",
       "expo-image-picker",
       "expo-av",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo_tpm.png",
+          "color": "#023C69"
+        }
+      ],
+      "expo-camera",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minifyEnabled": false,
+            "enableProguardInReleaseBuilds": false
+          }
+        }
+      ]
     ],
     "scheme": "tpm",
     "extra": {
@@ -61,7 +78,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/e9ea627b-eee0-4cc1-9d9e-14268a911a7d"
+      "url": "https://u.expo.dev/e9ea627b-eee0-4cc1-9d9e-14268a911a7d",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     }
   }
 }
