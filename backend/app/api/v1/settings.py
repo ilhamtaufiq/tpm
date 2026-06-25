@@ -37,7 +37,8 @@ def get_settings(db: DBSession, current_user: CurrentUser):
             "footer": "Terima kasih telah menggunakan layanan kami",
             "logo_uri": "tpm_default",
             "show_qr_code": True,
-            "paper_size": "80mm"
+            "paper_size": "80mm",
+            "print_method": "browser"
         }
     }
     

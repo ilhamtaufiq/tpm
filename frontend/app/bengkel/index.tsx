@@ -60,6 +60,7 @@ import { getCustomTabBarBottomPadding } from '../../components/ui/CustomTabBar';
 import { AlertDialog as AlertDialogComponent } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
 import { FILE_URL } from '../../utils/api';
+import { buildPublicReceiptUrl } from '../../utils/publicReceiptUrl';
 import { KaryawanSelector } from '../../components/ui/KaryawanSelector';
 import { Karyawan } from '../../services/sdm';
 import { Header } from '../../components/ui/Header';
@@ -471,10 +472,10 @@ export default function BengkelScreen() {
                 vehiclePlate: item.nomor_plat,
                 vehicleType: item.jenis_kendaraan,
                 services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa,
+                    description: s.nama_jasa || s.nama || 'Jasa',
                     quantity: 1,
-                    unitPrice: Number(s.harga),
-                    subtotal: Number(s.harga)
+                    unitPrice: Number(s.harga) || 0,
+                    subtotal: Number(s.harga) || 0
                 })),
                 parts: (item.detail_parts || []).map((p: any) => ({
                     description: p.spare_part_nama || 'Sparepart',
@@ -492,7 +493,9 @@ export default function BengkelScreen() {
                 showDiscount: true
             };
 
-            await printReceipt(receiptData, printSettings);
+            const latestSettings = await printSettingsService.getSettings();
+            setPrintSettings(latestSettings);
+            await printReceipt(receiptData, latestSettings);
 
             setDialogConfig({
                 visible: true,
@@ -544,10 +547,10 @@ export default function BengkelScreen() {
                 vehiclePlate: item.nomor_plat,
                 vehicleType: item.jenis_kendaraan,
                 services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa,
+                    description: s.nama_jasa || s.nama || 'Jasa',
                     quantity: 1,
-                    unitPrice: Number(s.harga),
-                    subtotal: Number(s.harga)
+                    unitPrice: Number(s.harga) || 0,
+                    subtotal: Number(s.harga) || 0
                 })),
                 parts: (item.detail_parts || []).map((p: any) => ({
                     description: p.spare_part_nama || 'Sparepart',
@@ -598,7 +601,7 @@ export default function BengkelScreen() {
             return;
         }
 
-        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/bengkel/${receiptToken}`;
+        const shareUrl = buildPublicReceiptUrl('bengkel', receiptToken);
         const shareMessage = `Halo, ini adalah struk transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
 
         try {
@@ -689,10 +692,10 @@ export default function BengkelScreen() {
                 vehiclePlate: item.nomor_plat,
                 vehicleType: item.jenis_kendaraan,
                 services: (item.detail_services || []).map((s: any) => ({
-                    description: s.nama_jasa,
+                    description: s.nama_jasa || s.nama || 'Jasa',
                     quantity: 1,
-                    unitPrice: Number(s.harga),
-                    subtotal: Number(s.harga)
+                    unitPrice: Number(s.harga) || 0,
+                    subtotal: Number(s.harga) || 0
                 })),
                 parts: (item.detail_parts || []).map((p: any) => ({
                     description: p.spare_part_nama || 'Sparepart',
@@ -709,7 +712,9 @@ export default function BengkelScreen() {
                 showDiscount: true
             };
 
-            await printReceipt(orderSlipData, printSettings);
+            const latestOrderSettings = await printSettingsService.getSettings();
+            setPrintSettings(latestOrderSettings);
+            await printReceipt(orderSlipData, latestOrderSettings);
 
             setDialogConfig({
                 visible: true,

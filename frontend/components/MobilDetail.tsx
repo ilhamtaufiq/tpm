@@ -36,6 +36,7 @@ import { useMobilDetail, useUploadMedia, useDeleteMedia, usePenjualanMobilList, 
 import { onlineManager } from '@tanstack/react-query';
 import { useHutangList } from '../hooks/useKeuangan';
 import { FILE_URL } from '../utils/api';
+import { buildPublicReceiptUrl } from '../utils/publicReceiptUrl';
 import { formatCurrency, parseNumber, formatNumber, formatDate } from '../utils/format';
 import { RelatedBengkelTransactions } from './RelatedBengkelTransactions';
 import { PaymentModal } from './PaymentModal';
@@ -201,8 +202,7 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
             return;
         }
         
-        const baseUrl = (FILE_URL || 'https://tpm.cianjur.space').replace(/\/$/, '');
-        const shareUrl = `${baseUrl}/api/v1/public/receipt/view/mobil/${receiptToken}`;
+        const shareUrl = buildPublicReceiptUrl('mobil', receiptToken);
         const shareMessage = `Halo, ini adalah faktur penjualan unit mobil ${activeUnit.merek} ${activeUnit.model} Anda: ${shareUrl}`;
         
         try {

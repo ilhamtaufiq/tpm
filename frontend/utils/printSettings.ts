@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { ReceiptTemplate } from './receiptTemplates';
+import { getPaperDimensions, normalizePaperSize } from './paperSize';
+import { normalizeQrCodeBaseUrl } from './publicReceiptUrl';
 
 export interface PrintSettings {
     header: string;
@@ -21,14 +24,14 @@ const DEFAULT_SETTINGS: PrintSettings = {
     footer: 'Terima kasih telah menggunakan layanan kami',
     logoUri: 'tpm_default',
     paperSize: '80mm',
-    printMethod: 'browser',
+    printMethod: Platform.OS === 'web' ? 'qz' : 'browser',
     webPrinterName: '',
     companyName: 'TPM Business',
     companyAddress: 'Jl. Contoh No. 123, Jakarta',
     companyPhone: '(021) 1234-5678',
     template: 'standard',
     showQRCode: true,
-    qrCodeBaseURL: 'https://tpm.app'
+    qrCodeBaseURL: ''
 };
 
 const STORAGE_KEY = '@print_settings';
@@ -38,7 +41,17 @@ export const printSettingsService = {
         try {
             const data = await AsyncStorage.getItem(STORAGE_KEY);
             if (data) {
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
+                const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(data) } as PrintSettings;
+                if (
+                    Platform.OS === 'web'
+                    && parsed.webPrinterName
+                    && parsed.printMethod === 'browser'
+                ) {
+                    parsed.printMethod = 'qz';
+                }
+                parsed.paperSize = getPaperDimensions(parsed.paperSize).paperSize;
+                parsed.qrCodeBaseURL = normalizeQrCodeBaseUrl(parsed.qrCodeBaseURL);
+                return parsed;
             }
             return DEFAULT_SETTINGS;
         } catch (error) {
@@ -81,7 +94,7 @@ export const printSettingsService = {
             footer: p.footer,
             logoUri: p.logo_uri,
             showQRCode: p.show_qr_code !== undefined ? p.show_qr_code : true,
-            paperSize: p.paper_size || '80mm',
+            paperSize: normalizePaperSize(p.paper_size),
             printMethod: p.print_method || 'browser'
         };
     }

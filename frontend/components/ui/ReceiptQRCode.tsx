@@ -41,14 +41,4 @@ export function generateTransactionQRData(
     return `${type.toUpperCase()}-${transactionNumber}-${total}`;
 }
 
-/**
- * Generate URL QR code for online receipt viewing
- */
-export function generateReceiptURL(
-    baseURL: string,
-    transactionNumber: string,
-    type: 'bengkel' | 'jasa_angkut'
-): string {
-    // Example: https://tpm.app/receipt/bengkel/12345
-    return `${baseURL}/receipt/${type}/${transactionNumber}`;
-}
+export { buildPublicReceiptUrl as generateReceiptURL } from '../../utils/publicReceiptUrl';

@@ -1,10 +1,15 @@
-import { Platform, Image } from 'react-native';
+import { Platform } from 'react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PrintSettings } from './printSettings';
+import { PrintSettings, printSettingsService } from './printSettings';
+import { getPaperDimensions } from './paperSize';
 import { printHtmlInBrowser } from './printHtmlBrowser';
-import { printHtmlViaQz } from './qzTray';
+import { printHtmlOnWeb } from './printHtmlWeb';
+import { buildPublicReceiptUrl } from './publicReceiptUrl';
+import { ensureLogoBase64, buildReceiptLogoHtml } from './receiptLogo';
+
+export { ensureLogoBase64 } from './receiptLogo';
 
 let BLEPrinter: any = null;
 if (Platform.OS === 'android') {
@@ -23,7 +28,7 @@ export interface PrintReceiptItem {
 }
 
 export interface PrintReceiptData {
-    type: 'bengkel' | 'jasa_angkut';
+    type: 'bengkel' | 'jasa_angkut' | 'mobil';
     transactionNumber: string;
     publicReceiptToken?: string;
     antrian?: string | number;
@@ -51,14 +56,30 @@ export interface PrintReceiptData {
     driverName?: string;
 }
 
+function buildReceiptQrHtml(data: PrintReceiptData, settings: PrintSettings, fsS: number): string {
+    if (!settings.showQRCode) return '';
+
+    const qrType = data.type === 'mobil' ? 'mobil' : data.type;
+    const receiptId = data.publicReceiptToken || data.transactionNumber;
+    const receiptUrl = buildPublicReceiptUrl(qrType, receiptId, settings.qrCodeBaseURL);
+
+    const encoded = encodeURIComponent(receiptUrl);
+    return `
+<div class="center" style="margin-top:8px">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encoded}" width="80" height="80" alt="QR Struk" />
+    <div style="font-size:${fsS}px;margin-top:4px">Scan untuk lihat struk online</div>
+</div>`;
+}
+
 export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSettings): string {
-    const is80mm = settings.paperSize !== '58mm';
-    const paperWidth = is80mm ? '80mm' : '58mm';
-    const fsB = is80mm ? 11 : 10;
-    const fsS = is80mm ? 10 : 9;
-    const fsTitle = is80mm ? 16 : 14;
-    const fsFooter = is80mm ? 10 : 9;
-    const pad = is80mm ? '4mm' : '2mm';
+    const paper = getPaperDimensions(settings.paperSize);
+    const paperWidth = `${paper.widthMm}mm`;
+    const fsB = paper.fontBase;
+    const fsS = paper.fontSmall;
+    const fsTitle = paper.fontTitle;
+    const fsFooter = paper.fontFooter;
+    const pad = paper.padding;
+    const is80mm = paper.paperSize === '80mm';
 
     const fmt = (n: number) => 'Rp' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
@@ -78,7 +99,7 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
     const renderItems = (items: PrintReceiptItem[] | undefined, title: string) => {
         if (!items || items.length === 0) return '';
         const rows = items.map(i => `
-            <tr><td colspan="2" style="font-size:${fsB}px;padding:1px 0;font-weight:bold">${i.description.toUpperCase()}</td></tr>
+            <tr><td colspan="2" style="font-size:${fsB}px;padding:1px 0;font-weight:bold">${String(i.description || '-').toUpperCase()}</td></tr>
             <tr>
                 <td style="font-size:${fsB}px;padding:1px 0">${i.quantity} x ${fmt(i.unitPrice)}</td>
                 <td style="font-size:${fsB}px;padding:1px 0;text-align:right">${fmt(i.subtotal)}</td>
@@ -90,23 +111,28 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
     const services = data.services || (data.type === 'bengkel' ? [] : data.items || []);
     const parts = data.parts || [];
     const items = data.items || [];
+    const itemSectionTitle = data.type === 'mobil'
+        ? 'UNIT MOBIL'
+        : data.type === 'jasa_angkut'
+            ? 'JASA ANGKUT'
+            : 'ITEMS';
     const servicesHtml = (services.length > 0)
         ? renderItems(services, 'JASA')
         : (data.type !== 'bengkel' && items.length > 0)
-            ? renderItems(items, 'ITEMS')
+            ? renderItems(items, itemSectionTitle)
             : '';
     const partsHtml = parts.length > 0 ? renderItems(parts, 'SPAREPART') : '';
 
-    const logoHtml = settings.logoUri && settings.logoUri.startsWith('data:')
-        ? `<img src="${settings.logoUri}" style="max-width:80px;height:auto;display:block;margin:0 auto 6px" />`
-        : '';
+    const logoMaxPx = paper.paperSize === '58mm' ? 64 : 80;
+    const logoHtml = buildReceiptLogoHtml(settings.logoUri, logoMaxPx);
 
     const sisa = data.total - (data.paid || 0);
 
     return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
+@page { size: ${paperWidth} auto; margin: 0; }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Courier New',monospace; font-size:${fsB}px; padding:${pad}; background:#fff; color:#000; width:${paperWidth}; }
+body { font-family:'Courier New',monospace; font-size:${fsB}px; padding:${pad}; background:#fff; color:#000; width:${paper.widthPx}px; max-width:${paperWidth}; }
 .divider { border-top:1px dashed #000; margin:4px 0; }
 .center { text-align:center; }
 .bold { font-weight:bold; }
@@ -118,7 +144,7 @@ ${settings.header ? `<div class="center" style="font-size:${fsS}px">${settings.h
 <div class="center" style="font-size:${fsS}px">${settings.companyAddress || ''}</div>
 <div class="center" style="font-size:${fsS}px">Telp: ${settings.companyPhone || ''}</div>
 <div class="divider"></div>
-<table>${infoRow('No. Nota:', data.transactionNumber)}${infoRow('Tanggal:', formatDate(data.date))}${infoRow('Pelanggan:', data.customerName)}${data.vehiclePlate ? infoRow('No. Polisi:', data.vehiclePlate) : ''}</table>
+<table>${infoRow('No. Nota:', data.transactionNumber)}${infoRow('Tanggal:', formatDate(data.date))}${infoRow('Pelanggan:', data.customerName)}${data.vehiclePlate ? infoRow('No. Polisi:', data.vehiclePlate) : ''}${data.type === 'jasa_angkut' ? infoRow('Asal:', data.origin) + infoRow('Tujuan:', data.destination) + infoRow('Sopir:', data.driverName) : ''}</table>
 <div class="divider"></div>
 ${servicesHtml}
 ${servicesHtml && partsHtml ? '<div class="divider"></div>' : ''}
@@ -134,46 +160,27 @@ ${sisa > 0 ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">
 ${data.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${String(data.paymentMethod).toUpperCase()}</td></tr>` : ''}
 </table>
 <div class="divider"></div>
+${buildReceiptQrHtml(data, settings, fsS)}
 <div class="center" style="font-size:${fsFooter}px">${settings.footer || 'Terima kasih'}</div>
 </body></html>`;
 }
 
-export async function ensureLogoBase64(uri: string | null): Promise<string | null> {
-    if (!uri) return null;
-    let targetUri = uri;
-    if (uri === 'tpm_default') {
-        const asset = Image.resolveAssetSource(require('../assets/logo_tpm.png'));
-        targetUri = asset.uri;
-    }
-    if (targetUri.startsWith('data:')) return targetUri;
+export async function printReceipt(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        const response = await fetch(targetUri);
-        const blob = await response.blob();
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = () => resolve(uri);
-            reader.readAsDataURL(blob);
-        });
-    } catch (e) {
-        console.warn('Failed to convert logo to base64:', e);
-        return uri;
-    }
-}
-
-export async function printReceipt(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
-    try {
-        const base64Logo = await ensureLogoBase64(settings.logoUri);
-        const processedSettings = { ...settings, logoUri: base64Logo };
+        const activeSettings = settings ?? await printSettingsService.getSettings();
+        const normalizedSettings = {
+            ...activeSettings,
+            paperSize: getPaperDimensions(activeSettings.paperSize).paperSize,
+        };
+        const base64Logo = normalizedSettings.logoUri
+            ? await ensureLogoBase64(normalizedSettings.logoUri)
+            : null;
+        const processedSettings = { ...normalizedSettings, logoUri: base64Logo };
         const html = generateReceiptHTML(data, processedSettings);
-        const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
+        const paperWidthPoints = getPaperDimensions(normalizedSettings.paperSize).widthPx;
 
         if (Platform.OS === 'web') {
-            const printedByQz = await printHtmlViaQz(html, {
-                printerName: settings.webPrinterName,
-                pageWidthPx: settings.paperSize === '80mm' ? 302 : 220,
-            });
-            if (!printedByQz) await printHtmlInBrowser(html);
+            await printHtmlOnWeb(html, normalizedSettings);
         } else {
             if (Platform.OS === 'android' && BLEPrinter) {
                 try {
@@ -203,20 +210,26 @@ export async function printReceipt(data: PrintReceiptData, settings: PrintSettin
             }
             await Print.printAsync({ html, width: paperWidthPoints });
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Print error:', error);
-        throw new Error('Gagal mencetak struk. Cek koneksi QZ Tray di Pengaturan Cetak atau pastikan printer terhubung.');
+        const detail = error?.message ? ` (${error.message})` : '';
+        throw new Error(`Gagal mencetak struk. Cek koneksi QZ Tray di Pengaturan Cetak atau pastikan printer terhubung.${detail}`);
     }
 }
 
-export async function saveReceiptPDF(data: PrintReceiptData, settings: PrintSettings): Promise<void> {
+export async function saveReceiptPDF(data: PrintReceiptData, settings?: PrintSettings): Promise<void> {
     try {
-        const base64Logo = await ensureLogoBase64(settings.logoUri);
-        const processedSettings = { ...settings, logoUri: base64Logo };
+        const activeSettings = settings ?? await printSettingsService.getSettings();
+        const base64Logo = activeSettings.logoUri
+            ? await ensureLogoBase64(activeSettings.logoUri)
+            : null;
+        const processedSettings = { ...activeSettings, logoUri: base64Logo };
         const html = generateReceiptHTML(data, processedSettings);
-        const paperWidthPoints = settings.paperSize === '80mm' ? 227 : 164;
+        const paperWidthPoints = getPaperDimensions(processedSettings.paperSize).widthPx;
 
-        if (Platform.OS === 'web') return printHtmlInBrowser(html);
+        if (Platform.OS === 'web') {
+            return printHtmlInBrowser(html, getPaperDimensions(processedSettings.paperSize).paperSize);
+        }
 
         const { uri } = await Print.printToFileAsync({ html, width: paperWidthPoints });
         if (await Sharing.isAvailableAsync()) {

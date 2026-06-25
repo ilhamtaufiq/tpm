@@ -1,250 +1,394 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, ActivityIndicator, Platform, Image, Alert } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    View,
+    ScrollView,
+    ActivityIndicator,
+    Platform,
+    Share,
+    Pressable,
+    useWindowDimensions,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Typography } from '../../../components/ui/Typography';
-import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
-import { CheckCircle2, Download, Share2, ArrowLeft, Image as ImageIcon, Printer } from 'lucide-react-native';
-import { formatCurrency } from '../../../utils/format';
-import api, { FILE_URL } from '../../../utils/api';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { Alert as RNAlert } from 'react-native';
-import { printSettingsService } from '../../../utils/printSettings';
-import { printReceipt, generateReceiptHTML, PrintReceiptData, ensureLogoBase64 } from '../../../utils/printReceipt';
-import { printHtmlViaQz } from '../../../utils/qzTray';
+import {
+    Download,
+    Share2,
+    ArrowLeft,
+    Image as ImageIcon,
+    Printer,
+    Link2,
+    ShieldCheck,
+    RefreshCw,
+} from 'lucide-react-native';
+import api from '../../../utils/api';
+import { printSettingsService, PrintSettings } from '../../../utils/printSettings';
+import {
+    exportPublicReceiptPdf,
+    exportPublicReceiptImage,
+    prepareReceiptCapture,
+    PUBLIC_RECEIPT_CAPTURE_ROOT_ID,
+} from '../../../utils/exportPublicReceipt';
+import { printReceipt, PrintReceiptData, ensureLogoBase64 } from '../../../utils/printReceipt';
+import { PublicReceiptCard, PublicReceiptData } from '../../../components/receipt/PublicReceiptCard';
+import { getErrorMessage } from '../../../utils/error';
+import { buildPublicReceiptUrl, PublicReceiptType } from '../../../utils/publicReceiptUrl';
+
+type ReceiptType = 'bengkel' | 'jasa_angkut' | 'mobil';
+
+function buildPrintData(type: ReceiptType, id: string, receipt: PublicReceiptData): PrintReceiptData {
+    const receiptType = type === 'mobil' ? 'bengkel' : type;
+    return {
+        type: receiptType as 'bengkel' | 'jasa_angkut',
+        transactionNumber: receipt.transactionNumber,
+        publicReceiptToken: id,
+        date: new Date(receipt.date),
+        customerName: receipt.customerName || '-',
+        items: receipt.items,
+        services: receipt.services,
+        parts: receipt.parts,
+        subtotal: receipt.subtotal || 0,
+        discount: receipt.discount || 0,
+        total: receipt.total || 0,
+        paid: receipt.paid,
+        paymentMethod: receipt.paymentMethod,
+        notes: receipt.notes,
+        showDiscount: true,
+        vehiclePlate: receipt.vehiclePlate,
+        vehicleType: receipt.vehicleType,
+        origin: receipt.origin,
+        destination: receipt.destination,
+        driverName: receipt.driverName,
+    };
+}
+
+function buildPrintSettingsFromReceipt(
+    receipt: PublicReceiptData,
+    fallback: PrintSettings,
+): PrintSettings {
+    return {
+        ...fallback,
+        companyName: receipt.companyName || fallback.companyName,
+        companyAddress: receipt.companyAddress || fallback.companyAddress,
+        companyPhone: receipt.companyPhone || fallback.companyPhone,
+        header: receipt.customHeader || fallback.header,
+        footer: receipt.customFooter || fallback.footer,
+        logoUri: receipt.customLogo || fallback.logoUri || 'tpm_default',
+        showQRCode: receipt.showQRCode !== false,
+        paperSize: receipt.paperSize === '58mm' ? '58mm' : '80mm',
+    };
+}
 
 export default function PublicReceiptPage() {
     const params = useLocalSearchParams();
     const router = useRouter();
-    const { type, id } = params as { type: 'bengkel' | 'jasa_angkut', id: string };
+    const { width } = useWindowDimensions();
+    const { type, id } = params as { type: ReceiptType; id: string };
 
-    const [receipt, setReceipt] = useState<any>(null);
+    const [receipt, setReceipt] = useState<PublicReceiptData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [sharing, setSharing] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [printSettings, setPrintSettings] = useState<any>(null);
+    const [toast, setToast] = useState<string | null>(null);
+    const cardRef = useRef<View>(null);
+    const [captureMode, setCaptureMode] = useState(false);
 
-    useEffect(() => {
-        loadSettings();
-        loadReceipt();
-    }, [id, type]);
-
-    const loadSettings = async () => {
-        const settings = await printSettingsService.getSettings();
-        setPrintSettings(settings);
+    const runCaptureExport = async (action: () => Promise<void>) => {
+        setCaptureMode(true);
+        try {
+            await prepareReceiptCapture();
+            await action();
+        } finally {
+            setCaptureMode(false);
+        }
     };
 
-    const loadReceipt = async () => {
+    const shareUrl = useMemo(
+        () => buildPublicReceiptUrl(type as PublicReceiptType, id),
+        [type, id],
+    );
+    const contentMaxWidth = Math.min(width - 32, 480);
+
+    const loadReceipt = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
             const response = await api.get(`/public/receipt/${type}/${id}`);
-            setReceipt(response.data);
+            const data = response.data as PublicReceiptData;
+            setReceipt(data);
         } catch (err: any) {
             console.error('Failed to load receipt:', err);
             setError(err.response?.data?.detail || 'Struk tidak ditemukan atau tidak valid');
         } finally {
             setLoading(false);
         }
+    }, [id, type]);
+
+    useEffect(() => {
+        loadReceipt();
+    }, [loadReceipt]);
+
+    const showToast = (message: string) => {
+        setToast(message);
+        setTimeout(() => setToast(null), 2800);
     };
 
     const handlePrint = async () => {
         if (!receipt) return;
         try {
-            const settings = await printSettingsService.getSettings();
-
-            // Pre-process logo to ensure it's base64 for QZ Tray and thermal
-            const base64Logo = await ensureLogoBase64(settings.logoUri);
-            const processedSettings = { ...settings, logoUri: base64Logo };
-
-            const printData: PrintReceiptData = {
-                type: type as 'bengkel' | 'jasa_angkut',
-                transactionNumber: receipt.transactionNumber,
-                publicReceiptToken: id,
-                date: new Date(receipt.date),
-                customerName: receipt.customerName || '-',
-                cashierName: receipt.cashierName,
-                mechanicName: receipt.mechanicName,
-                items: receipt.items,
-                subtotal: receipt.subtotal || 0,
-                discount: receipt.discount || 0,
-                total: receipt.total || 0,
-                paid: receipt.paid,
-                change: receipt.change,
-                paymentMethod: receipt.paymentMethod,
-                notes: receipt.notes,
-                showDiscount: true,
-                vehiclePlate: receipt.vehiclePlate,
-                vehicleType: receipt.vehicleType,
-            };
-
-            if (Platform.OS === 'web') {
-                const html = generateReceiptHTML(printData, processedSettings);
-                const is80mm = settings.paperSize !== '58mm';
-                const widthPx = is80mm ? 302 : 220;
-                const ok = await printHtmlViaQz(html, {
-                    printerName: settings.webPrinterName || undefined,
-                    pageWidthPx: widthPx,
-                    pageHeightPx: 9999,
-                });
-                if (!ok) window.print();
-            } else {
-                await printReceipt(printData, processedSettings);
-            }
+            setActionLoading('print');
+            const localSettings = await printSettingsService.getSettings();
+            const mergedSettings = buildPrintSettingsFromReceipt(receipt, localSettings);
+            const base64Logo = mergedSettings.logoUri
+                ? await ensureLogoBase64(mergedSettings.logoUri)
+                : null;
+            await printReceipt(
+                buildPrintData(type, id, receipt),
+                { ...mergedSettings, logoUri: base64Logo },
+            );
+            showToast('Struk dikirim ke printer');
         } catch (err: any) {
-            Alert.alert('Gagal Mencetak', err.message || 'Gagal mencetak struk.');
+            showToast(getErrorMessage(err, 'Gagal mencetak struk'));
+        } finally {
+            setActionLoading(null);
         }
     };
 
     const handleDownloadPDF = async () => {
         if (!receipt) return;
         try {
-            setLoading(true);
-            const pdfUrl = `${FILE_URL}/api/v1/public/receipt/${type}/${id}/pdf`;
-            const clean = (str: string) => (str || '').replace(/[^a-zA-Z0-9]/g, '_');
-            const datePart = new Date(receipt.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
-            const fileName = `${clean(receipt.transactionNumber)}-${clean(receipt.customerName)}-${clean(receipt.vehiclePlate || 'NoPol')}-${datePart}.pdf`;
-            const fileUri = FileSystem.cacheDirectory + fileName;
-            if (Platform.OS === 'web') { window.open(pdfUrl, '_blank'); return; }
-            const downloadRes = await FileSystem.downloadAsync(pdfUrl, fileUri);
-            if (downloadRes.status !== 200) throw new Error('Gagal mengunduh PDF struk');
-            await Sharing.shareAsync(downloadRes.uri, { mimeType: 'application/pdf', dialogTitle: 'Download Struk PDF', UTI: 'com.adobe.pdf' });
+            setActionLoading('pdf');
+            await runCaptureExport(() => exportPublicReceiptPdf({
+                receipt,
+                receiptType: type as PublicReceiptType,
+                shareUrl,
+                cardRef,
+            }));
+            showToast('PDF struk berhasil dibuat');
         } catch (err: any) {
-            console.error('Download error:', err);
-            Alert.alert('Error', 'Gagal mengunduh PDF. Silakan coba lagi nanti.');
-        } finally { setLoading(false); }
+            showToast(getErrorMessage(err, 'Gagal mengunduh PDF'));
+        } finally {
+            setActionLoading(null);
+        }
     };
 
-    const handleShare = async () => {
+    const handleShareLink = async () => {
         if (!receipt) return;
-        const shareUrl = typeof window !== 'undefined' && window.location?.origin
-            ? `${window.location.origin}/receipt/${type}/${id}`
-            : `${FILE_URL}/receipt/${type}/${id}`;
-        if (Platform.OS === 'web') {
-            if (navigator.share) {
-                try { await navigator.share({ title: `Struk Tiga Putra Motor`, text: `Lihat struk transaksi ${type.toUpperCase()} #${receipt.transactionNumber}`, url: shareUrl }); }
-                catch (err) { console.log('Error sharing:', err); }
-            } else { Alert.alert('Copy Link', 'Link struk: ' + shareUrl); }
-        } else { await Sharing.shareAsync(shareUrl, { dialogTitle: 'Bagikan Link Struk', mimeType: 'text/plain' }); }
+        const message = `Struk transaksi ${receipt.transactionNumber} — Tiga Putra Motor\n${shareUrl}`;
+        try {
+            setActionLoading('share');
+            if (Platform.OS === 'web') {
+                if (typeof navigator !== 'undefined' && navigator.share) {
+                    await navigator.share({
+                        title: 'Struk Tiga Putra Motor',
+                        text: message,
+                        url: shareUrl,
+                    });
+                    return;
+                }
+                if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(shareUrl);
+                    showToast('Link struk disalin');
+                    return;
+                }
+            }
+            await Share.share({ message, url: shareUrl, title: 'Bagikan Struk' });
+        } catch (err: any) {
+            if (!String(err?.message || '').toLowerCase().includes('cancel')) {
+                showToast(getErrorMessage(err, 'Gagal membagikan link'));
+            }
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleCopyLink = async () => {
+        try {
+            if (Platform.OS === 'web' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(shareUrl);
+                showToast('Link disalin ke clipboard');
+            } else {
+                await handleShareLink();
+            }
+        } catch {
+            showToast('Gagal menyalin link');
+        }
     };
 
     const handleShareAsImage = async () => {
         if (!receipt) return;
         try {
-            setSharing(true);
-            const imageUrl = `${FILE_URL}/api/v1/public/receipt/image/${type}/${id}`;
-            const fileName = `Struk_TPM_${receipt.transactionNumber}.png`;
-            const fileUri = FileSystem.cacheDirectory + fileName;
-            if (Platform.OS === 'web') { window.open(imageUrl, '_blank'); return; }
-            const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
-            if (downloadRes.status !== 200) throw new Error('Gagal mengunduh gambar struk');
-            await Sharing.shareAsync(downloadRes.uri, { mimeType: 'image/png', dialogTitle: 'Bagikan Gambar Struk', UTI: 'public.png' });
-        } catch (err) { console.error('Error sharing image:', err); Alert.alert('Gagal Berbagi', 'Maaf, terjadi kesalahan saat menyiapkan gambar struk.'); }
-        finally { setSharing(false); }
+            setActionLoading('image');
+            await runCaptureExport(() => exportPublicReceiptImage({
+                receipt,
+                receiptType: type as PublicReceiptType,
+                shareUrl,
+                cardRef,
+            }));
+            showToast('Gambar struk berhasil dibuat');
+        } catch (err: any) {
+            showToast(getErrorMessage(err, 'Gagal membagikan gambar struk'));
+        } finally {
+            setActionLoading(null);
+        }
     };
-
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     if (loading) {
         return (
-            <SafeAreaView className="flex-1 bg-background items-center justify-center">
-                <ActivityIndicator size="large" color="#023C69" />
-                <Typography variant="body2" className="mt-4 text-textGray">Memuat struk...</Typography>
+            <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
+                <View className="items-center px-8">
+                    <ActivityIndicator size="large" color="#023C69" />
+                    <Typography variant="body2" className="mt-4 text-textGray text-center">
+                        Memuat struk digital...
+                    </Typography>
+                </View>
             </SafeAreaView>
         );
     }
 
     if (error || !receipt) {
         return (
-            <SafeAreaView className="flex-1 bg-background">
+            <SafeAreaView className="flex-1 bg-slate-50">
                 <View className="flex-1 items-center justify-center px-6">
-                    <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-4">
-                        <Typography variant="h1" className="text-red-500">❌</Typography>
+                    <View className="w-full max-w-sm bg-white rounded-[28px] p-8 items-center border border-gray-100 shadow-sm">
+                        <View className="w-16 h-16 bg-rose-50 rounded-full items-center justify-center mb-4">
+                            <ShieldCheck size={28} color="#EF4444" />
+                        </View>
+                        <Typography variant="h3" weight="bold" className="text-center mb-2">
+                            Struk Tidak Ditemukan
+                        </Typography>
+                        <Typography variant="body2" className="text-center text-textGray mb-6">
+                            {error || 'Link struk tidak valid atau sudah tidak tersedia.'}
+                        </Typography>
+                        <Button
+                            title="Coba Lagi"
+                            onPress={loadReceipt}
+                            icon={<RefreshCw size={18} color="white" />}
+                            className="w-full mb-3"
+                        />
+                        <Button
+                            variant="outline-neutral"
+                            title="Kembali"
+                            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+                            icon={<ArrowLeft size={18} color="#6B7280" />}
+                            className="w-full"
+                        />
                     </View>
-                    <Typography variant="h3" weight="bold" className="text-center mb-2">Struk Tidak Ditemukan</Typography>
-                    <Typography variant="body2" className="text-center text-textGray mb-6">{error || 'Nomor transaksi tidak valid atau sudah tidak tersedia'}</Typography>
-                    <Button title="Kembali" onPress={() => router.back()} icon={<ArrowLeft size={20} color="white" />} className="w-48" />
                 </View>
             </SafeAreaView>
         );
     }
 
-    const receiptStyles = {
-        paper: { backgroundColor: '#fff', padding: 20, width: '100%' as const, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-        mono: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-        divider: { borderBottomWidth: 1, borderBottomColor: '#000', borderStyle: 'dashed' as const, marginVertical: 15 },
-    };
-
-    const ps = printSettings;
-    const companyName = receipt.companyName || ps?.companyName || 'TPM';
-    const companyAddress = receipt.companyAddress || ps?.companyAddress || '';
-    const companyPhone = receipt.companyPhone || ps?.companyPhone || '';
-
     return (
-        <SafeAreaView className="flex-1 bg-gray-100" edges={['top']}>
-            <ScrollView className="flex-1" contentContainerStyle={{ padding: 16 }}>
-                <View style={[receiptStyles.paper, { maxWidth: ps?.paperSize === '58mm' ? 302 : 400 }]}>
-                    {ps?.header && <Typography style={[{ fontSize: 10, textAlign: 'center', marginBottom: 8 }, receiptStyles.mono]}>{ps.header}</Typography>}
-                    {ps?.logoUri && (
-                        <View className="items-center mb-2">
-                            <Image source={ps.logoUri === 'tpm_default' ? require('../../../assets/logo_tpm.png') : { uri: ps.logoUri }} style={{ width: 80, height: 60 }} resizeMode="contain" />
-                        </View>
-                    )}
-                    <View className="items-center mb-2">
-                        <Typography weight="bold" style={[{ fontSize: 18, textAlign: 'center' }, receiptStyles.mono]}>{companyName}</Typography>
-                        <Typography style={[{ fontSize: 12, textAlign: 'center', marginTop: 4 }, receiptStyles.mono]}>{companyAddress}</Typography>
-                        <Typography style={[{ fontSize: 12, textAlign: 'center' }, receiptStyles.mono]}>Telp: {companyPhone}</Typography>
-                    </View>
-                    <View style={receiptStyles.divider} />
-                    <View>
-                        <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>No. Nota:</Typography><Typography style={[{ fontSize: 12, fontWeight: 'bold' }, receiptStyles.mono]}>{receipt.transactionNumber}</Typography></View>
-                        <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>Tanggal:</Typography><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{formatDate(receipt.date)}</Typography></View>
-                        <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>Pelanggan:</Typography><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{receipt.customerName}</Typography></View>
-                        {receipt.vehiclePlate && <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>No. Polisi:</Typography><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{receipt.vehiclePlate}</Typography></View>}
-                    </View>
-                    <View style={receiptStyles.divider} />
-                    <View>{receipt.items.map((item: any, index: number) => (
-                        <View key={index} className="mb-4">
-                            <Typography style={[{ fontSize: 13, fontWeight: 'bold' }, receiptStyles.mono]}>{item.description.toUpperCase()}</Typography>
-                            <View className="flex-row justify-between mt-1">
-                                <Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{item.quantity} x {formatCurrency(item.unitPrice).replace('Rp', '').trim()}</Typography>
-                                <Typography style={[{ fontSize: 12, fontWeight: 'bold' }, receiptStyles.mono]}>{formatCurrency(item.subtotal).replace('Rp', '').trim()}</Typography>
-                            </View>
-                        </View>
-                    ))}</View>
-                    <View style={receiptStyles.divider} />
-                    <View>
-                        <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>SUBTOTAL</Typography><Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.subtotal).replace('Rp', '').trim()}</Typography></View>
-                        {receipt.tax > 0 && <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>PAJAK</Typography><Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>{formatCurrency(receipt.tax).replace('Rp', '').trim()}</Typography></View>}
-                        {receipt.discount > 0 && <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 13 }, receiptStyles.mono]}>DISKON</Typography><Typography style={[{ fontSize: 13, color: '#EF4444' }, receiptStyles.mono]}>-{formatCurrency(receipt.discount).replace('Rp', '').trim()}</Typography></View>}
-                        <View className="my-2" style={{ borderTopWidth: 1, borderTopColor: '#000' }} />
-                        <View className="flex-row justify-between items-center py-1"><Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>TOTAL</Typography><Typography style={[{ fontSize: 16, fontWeight: 'bold' }, receiptStyles.mono]}>{formatCurrency(receipt.total).replace('Rp', '').trim()}</Typography></View>
-                        {receipt.total - receipt.paid > 0 ? (
-                            <>
-                                <View className="flex-row justify-between mb-1 mt-2"><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>DIBAYAR</Typography><Typography style={[{ fontSize: 12 }, receiptStyles.mono]}>{formatCurrency(receipt.paid).replace('Rp', '').trim()}</Typography></View>
-                                <View className="flex-row justify-between mb-1"><Typography style={[{ fontSize: 12, fontWeight: 'bold', color: '#EF4444' }, receiptStyles.mono]}>SISA</Typography><Typography style={[{ fontSize: 12, fontWeight: 'bold', color: '#EF4444' }, receiptStyles.mono]}>{formatCurrency(receipt.total - receipt.paid).replace('Rp', '').trim()}</Typography></View>
-                            </>
-                        ) : <Typography style={[{ fontSize: 14, fontWeight: 'bold', textAlign: 'center', marginTop: 10 }, receiptStyles.mono]}>*** LUNAS ***</Typography>}
-                        <View className="flex-row justify-between mt-4"><Typography style={[{ fontSize: 11 }, receiptStyles.mono]}>Metode Bayar:</Typography><Typography style={[{ fontSize: 11, fontWeight: 'bold' }, receiptStyles.mono]}>{String(receipt.paymentMethod || '-').toUpperCase()}</Typography></View>
-                    </View>
-                    <View style={receiptStyles.divider} />
-                    <View className="items-center">
-                        {ps?.footer && <Typography style={[{ fontSize: 11, textAlign: 'center', marginBottom: 8 }, receiptStyles.mono]}>{ps.footer}</Typography>}
-                        <Typography style={[{ fontSize: 11, textAlign: 'center' }, receiptStyles.mono]}>TERIMA KASIH</Typography>
-                        <Typography style={[{ fontSize: 10, textAlign: 'center', marginTop: 4, color: '#6B7280' }, receiptStyles.mono]}>Bukti pembayaran sah {companyName}</Typography>
-                        {receipt.notes && <Typography style={[{ fontSize: 11, textAlign: 'center', marginTop: 10, fontStyle: 'italic' }, receiptStyles.mono]}>"{receipt.notes}"</Typography>}
-                    </View>
+        <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'bottom']}>
+            <View className="px-4 pt-3 pb-2 flex-row items-center justify-between">
+                <Pressable
+                    onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+                    className="w-10 h-10 rounded-full bg-white border border-gray-100 items-center justify-center"
+                >
+                    <ArrowLeft size={20} color="#023C69" />
+                </Pressable>
+                <View className="items-center flex-1 mx-3">
+                    <Typography weight="bold" className="text-primary text-sm tracking-tight">
+                        Struk Publik
+                    </Typography>
+                    <Typography className="text-gray-400 text-[10px] uppercase tracking-widest">
+                        {receipt.transactionNumber}
+                    </Typography>
                 </View>
+                <Pressable
+                    onPress={handleCopyLink}
+                    className="w-10 h-10 rounded-full bg-white border border-gray-100 items-center justify-center"
+                >
+                    <Link2 size={18} color="#023C69" />
+                </Pressable>
+            </View>
 
-                <View className="mt-8 mb-10" style={{ gap: 12 }}>
-                    <Button title="Cetak Struk" onPress={handlePrint} icon={<Printer size={20} color="white" />} className="h-14 rounded-2xl" />
-                    <Button title={sharing ? "Menyiapkan Gambar..." : "Bagikan Gambar Struk"} onPress={handleShareAsImage} disabled={sharing} loading={sharing} icon={<ImageIcon size={20} color="white" />} className="h-14 rounded-2xl" />
-                    <Button variant="outline" title="Download PDF" onPress={handleDownloadPDF} icon={<Download size={20} color="#023C69" />} className="h-14 rounded-2xl" />
-                    <Button variant="outline-neutral" title="Bagikan Link Struk" onPress={handleShare} icon={<Share2 size={20} color="#6B7280" />} className="h-14 rounded-2xl" />
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    paddingBottom: 32,
+                    alignItems: 'center',
+                }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={{ width: '100%', maxWidth: contentMaxWidth }}>
+                    <View
+                        ref={cardRef}
+                        collapsable={false}
+                        nativeID={PUBLIC_RECEIPT_CAPTURE_ROOT_ID}
+                        className="bg-slate-50 py-6 px-4 items-center"
+                    >
+                        <PublicReceiptCard
+                            receipt={receipt}
+                            receiptType={type}
+                            shareUrl={shareUrl}
+                            captureMode={captureMode}
+                        />
+                    </View>
+
+                    <View className="mt-6 bg-white rounded-[24px] p-4 border border-gray-100">
+                        <Typography weight="bold" className="text-gray-800 text-sm mb-3">
+                            Aksi Struk
+                        </Typography>
+                        <View style={{ gap: 10 }}>
+                            {Platform.OS === 'web' ? (
+                                <Button
+                                    title="Cetak Struk"
+                                    onPress={handlePrint}
+                                    loading={actionLoading === 'print'}
+                                    icon={<Printer size={18} color="white" />}
+                                    className="h-12 rounded-2xl"
+                                />
+                            ) : null}
+                            <View className="flex-row" style={{ gap: 10 }}>
+                                <View className="flex-1">
+                                    <Button
+                                        variant="outline"
+                                        title="PDF"
+                                        onPress={handleDownloadPDF}
+                                        loading={actionLoading === 'pdf'}
+                                        icon={<Download size={16} color="#023C69" />}
+                                        className="h-12 rounded-2xl"
+                                    />
+                                </View>
+                                <View className="flex-1">
+                                    <Button
+                                        variant="outline"
+                                        title="Gambar"
+                                        onPress={handleShareAsImage}
+                                        loading={actionLoading === 'image'}
+                                        icon={<ImageIcon size={16} color="#023C69" />}
+                                        className="h-12 rounded-2xl"
+                                    />
+                                </View>
+                            </View>
+                            <Button
+                                variant="secondary"
+                                title="Bagikan Link"
+                                onPress={handleShareLink}
+                                loading={actionLoading === 'share'}
+                                icon={<Share2 size={18} color="white" />}
+                                className="h-12 rounded-2xl bg-[#00ADEF]"
+                            />
+                        </View>
+                    </View>
+
+                    <Typography className="text-center text-[10px] text-gray-400 mt-5 px-4 leading-4">
+                        Struk ini diterbitkan secara digital oleh Tiga Putra Motor. Pastikan nominal dan nomor nota sesuai sebelum melakukan pembayaran.
+                    </Typography>
                 </View>
             </ScrollView>
+
+            {toast ? (
+                <View className="absolute bottom-6 left-4 right-4 items-center pointer-events-none">
+                    <View className="bg-gray-900/90 px-4 py-3 rounded-2xl max-w-sm">
+                        <Typography className="text-white text-sm text-center">{toast}</Typography>
+                    </View>
+                </View>
+            ) : null}
         </SafeAreaView>
     );
 }

@@ -18,6 +18,7 @@ class PrintSetting(BaseModel):
     logo_uri: Optional[str] = None  # Base64 logo
     show_qr_code: bool = True
     paper_size: str = "80mm"
+    print_method: str = "browser"
 
 class SettingsUpdate(BaseModel):
     smtp: Optional[SMTPSetting] = None

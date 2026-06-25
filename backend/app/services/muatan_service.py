@@ -863,9 +863,17 @@ class MuatanService:
             )
             .all()
         )
-        for tb in linked_bengkel:
-            tb.status_bayar = PaymentStatus.LUNAS
-            tb.jumlah_bayar = tb.grand_total
+        if linked_bengkel:
+            from app.services.transaksi_bengkel_service import TransaksiBengkelService
+            bengkel_service = TransaksiBengkelService(self.db)
+            for tb in linked_bengkel:
+                tb.status_bayar = PaymentStatus.LUNAS
+                tb.jumlah_bayar = tb.grand_total
+                bengkel_service.settle_internal_debts_for_transaksi(
+                    tb.nomor_transaksi,
+                    user_id=user_id,
+                    note="Pelunasan bookkeeping saat muatan lunas",
+                )
 
         self.db.commit()
         self.db.refresh(muatan)
@@ -931,9 +939,17 @@ class MuatanService:
             )
             .all()
         )
-        for tb in linked_bengkel:
-            tb.status_bayar = PaymentStatus.LUNAS
-            tb.jumlah_bayar = tb.grand_total
+        if linked_bengkel:
+            from app.services.transaksi_bengkel_service import TransaksiBengkelService
+            bengkel_service = TransaksiBengkelService(self.db)
+            for tb in linked_bengkel:
+                tb.status_bayar = PaymentStatus.LUNAS
+                tb.jumlah_bayar = tb.grand_total
+                bengkel_service.settle_internal_debts_for_transaksi(
+                    tb.nomor_transaksi,
+                    user_id=user_id,
+                    note="Pelunasan bookkeeping saat muatan lunas (split)",
+                )
 
         self.db.commit()
         self.db.refresh(muatan)

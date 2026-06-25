@@ -39,14 +39,54 @@ import { bengkelService } from '../services/bengkel';
 import { jasaAngkutService } from '../services/jasaAngkut';
 import { sdmService } from '../services/sdm';
 import { mobilService } from '../services/mobil';
-import { FILE_URL } from '../utils/api';
 import { AlertDialog } from './ui/AlertDialog';
 import * as Linking from 'expo-linking';
 import { printSettingsService, PrintSettings } from '../utils/printSettings';
-import { printReceipt, PrintReceiptData, saveReceiptPDF } from '../utils/printReceipt';
+import { printReceipt } from '../utils/printReceipt';
+import {
+    buildPrintReceiptDataForUnit,
+    ReceiptBusinessUnit,
+} from '../utils/buildPrintReceiptData';
+import { buildPublicReceiptUrl } from '../utils/publicReceiptUrl';
 import { useAuthStore } from '../store/useAuthStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+function resolveReceiptUnit(item: ActivityItem | null, subDetails: any): ReceiptBusinessUnit | null {
+    if (!item) return null;
+    const source = String(item.source || '').toLowerCase();
+
+    if (source === 'jasa_angkut') return 'jasa_angkut';
+    if (item.type === 'workshop' || source === 'bengkel') return 'bengkel';
+    if (subDetails?.type === 'penjualan_mobil') return 'mobil';
+    if (subDetails?.type === 'workshop') return 'bengkel';
+    if (subDetails?.type === 'logistics') return 'jasa_angkut';
+    if (source === 'jual_beli_mobil' && subDetails?.type === 'penjualan_mobil') return 'mobil';
+
+    return null;
+}
+
+function getPrintSourceData(
+    unit: ReceiptBusinessUnit,
+    details: any,
+    subDetails: any,
+): any | null {
+    if (unit === 'mobil') return subDetails;
+    if (unit === 'jasa_angkut') {
+        return subDetails?.type === 'logistics' ? subDetails : details;
+    }
+    if (unit === 'bengkel') {
+        return subDetails?.type === 'workshop' ? subDetails : details;
+    }
+    return details;
+}
+
+function getPublicReceiptId(unit: ReceiptBusinessUnit, source: any, fallbackId: number): string {
+    if (unit === 'mobil' || unit === 'bengkel') {
+        return source?.public_receipt_token || String(source?.id || fallbackId);
+    }
+    return String(source?.id || fallbackId);
+}
 
 interface TransactionDetailModalProps {
     item: ActivityItem | null;
@@ -197,10 +237,8 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
     const handleShareLink = async () => {
         if (!item) return;
 
-        const type = (item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT') ? 'jasa_angkut' :
-            (item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL') ? 'bengkel' : null;
-
-        if (!type) {
+        const unit = resolveReceiptUnit(item, subDetails);
+        if (!unit) {
             setDialogConfig({
                 visible: true,
                 title: 'Info',
@@ -211,7 +249,9 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
             return;
         }
 
-        const shareUrl = `${FILE_URL}/api/v1/public/receipt/view/${type}/${item.original_id}`;
+        const source = getPrintSourceData(unit, details, subDetails);
+        const receiptId = getPublicReceiptId(unit, source, item.original_id);
+        const shareUrl = buildPublicReceiptUrl(unit, receiptId);
         const shareMessage = `Halo, ini adalah rincian transaksi Anda di Tiga Putra Motor: ${shareUrl}`;
 
         try {
@@ -265,72 +305,20 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
 
         try {
             setPrinting(true);
-            const sourceKey = item.source?.toUpperCase() || '';
-            const type = (sourceKey === 'JASA_ANGKUT') ? 'jasa_angkut' : 'bengkel';
-
-            let receiptData: PrintReceiptData;
-
-            if (type === 'bengkel') {
-                receiptData = {
-                    type: 'bengkel',
-                    transactionNumber: details.nomor_transaksi || details.id.toString(),
-                    antrian: details.nomor_antrian || '-',
-                    date: new Date(details.created_at || new Date()),
-                    customerName: details.customer_nama || details.nama_customer || '-',
-                    cashierName: user?.nama || '-',
-                    mechanicName: details.mekanik_nama || '-',
-                    status: details.status_bayar || 'Belum Lunas',
-                    vehiclePlate: details.nomor_plat || '-',
-                    vehicleType: details.jenis_kendaraan || '-',
-                    services: (details.detail_services || []).map((s: any) => ({
-                        description: s.nama_jasa,
-                        quantity: 1,
-                        unitPrice: Number(s.harga),
-                        subtotal: Number(s.harga)
-                    })),
-                    parts: (details.detail_parts || []).map((p: any) => ({
-                        description: p.spare_part_nama || p.spare_part?.nama || 'Sparepart',
-                        quantity: p.qty,
-                        unitPrice: Number(p.subtotal) / p.qty,
-                        subtotal: Number(p.subtotal)
-                    })),
-                    subtotal: details.subtotal || details.total_biaya || 0,
-                    total: details.grand_total || details.total_biaya || 0,
-                    discount: details.diskon || 0,
-                    paymentMethod: details.metode_bayar || '-',
-                    paid: details.total_bayar || 0,
-                    change: details.kembalian || 0,
-                    notes: details.catatan,
-                    showDiscount: true,
-                };
-            } else {
-                // Jasa Angkut
-                receiptData = {
-                    type: 'jasa_angkut',
-                    transactionNumber: details.nomor_transaksi || details.id.toString(),
-                    date: new Date(details.tanggal || new Date()),
-                    customerName: details.customer_nama || '-',
-                    cashierName: user?.nama || '-',
-                    status: details.status_bayar || 'Belum Lunas',
-                    origin: details.asal || '-',
-                    destination: details.tujuan || '-',
-                    driverName: details.supir_nama || details.supir?.nama || '-',
-                    items: [{
-                        description: `Ritase: ${details.asal} - ${details.tujuan}`,
-                        quantity: details.ritase || 1,
-                        unitPrice: Number(details.pendapatan_kotor) / (details.ritase || 1),
-                        subtotal: Number(details.pendapatan_kotor)
-                    }],
-                    subtotal: Number(details.pendapatan_kotor),
-                    total: Number(details.pendapatan_kotor),
-                    paymentMethod: 'TRANSFER/TUNAI',
-                    paid: details.jumlah_bayar || 0,
-                    notes: details.catatan,
-                    showDiscount: true,
-                };
+            const unit = resolveReceiptUnit(item, subDetails);
+            if (!unit) {
+                throw new Error('Cetak struk tidak tersedia untuk tipe transaksi ini.');
             }
 
-            await printReceipt(receiptData, printSettings);
+            const source = getPrintSourceData(unit, details, subDetails);
+            if (!source) {
+                throw new Error('Data struk belum lengkap. Muat ulang detail transaksi.');
+            }
+
+            const receiptData = buildPrintReceiptDataForUnit(unit, source);
+            const latestSettings = await printSettingsService.getSettings();
+            setPrintSettings(latestSettings);
+            await printReceipt(receiptData, latestSettings);
         } catch (error: any) {
             setDialogConfig({
                 visible: true,
@@ -576,6 +564,7 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
     };
 
     const statusConfig = getStatusConfig(item.status);
+    const receiptUnit = resolveReceiptUnit(item, subDetails);
 
     return (
         <Modal
@@ -649,7 +638,7 @@ export const TransactionDetailModal = ({ item, visible, onClose }: TransactionDe
                                         (item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL') ? renderWorkshopDetail() :
                                             renderFinancialDetail()}
 
-                                {((item.source === 'jasa_angkut' || item.source === 'JASA_ANGKUT' || item.type === 'workshop' || item.source === 'bengkel' || item.source === 'BENGKEL')) && (
+                                {receiptUnit && (
                                     <View className="flex-row gap-4 mt-4">
                                         <Pressable
                                             onPress={handleShareLink}

@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from typing import Dict, Any, Optional
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from app.services.reports.base import BaseReportService
 from app.models.keuangan import KasBank, PiutangUsaha, HutangUsaha, Aset
 
@@ -29,6 +29,8 @@ class NeracaService(BaseReportService):
         # Auto-sync: fix orphaned internal piutang/hutang + JA muatan kas before computing
         self.sync_internal_transactions()
         self.sync_ja_muatan_finance()
+        self.sync_ja_internal_bengkel_finance()
+        self.sync_mobil_internal_bengkel_finance()
         
         # 1. ASSETS
         
@@ -392,6 +394,268 @@ class NeracaService(BaseReportService):
                 "units": hist.get("units")
             }
         }
+
+    def sync_ja_internal_bengkel_finance(self, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """Migrate legacy internal JA bengkel kas entries to hutang/piutang bookkeeping.
+
+        Older flows wrote INTERNAL repair as KELUAR from KAS_UNIT_JASA_ANGKUT (dompet bisa
+        minus). Phase 2 keeps dompet cash-only and records the obligation as internal debt.
+        """
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+        from app.services.kas_bank_service import KasBankService
+        from app.utils.constants import PaymentMethod
+
+        try:
+            deleted_kas = 0
+            created_debt = 0
+            settled_debt = 0
+            bengkel_service = TransaksiBengkelService(self.db)
+
+            legacy_kas = self.db.query(KasBank).filter(
+                KasBank.sumber == KasBankSource.JASA_ANGKUT,
+                KasBank.tipe == KasBankType.KELUAR,
+                KasBank.keterangan.ilike("Biaya Repair Internal via Bengkel:%"),
+            ).all()
+
+            affected_refs = {row.nomor_referensi for row in legacy_kas if row.nomor_referensi}
+
+            for ref in affected_refs:
+                deleted_kas += self.db.query(KasBank).filter(
+                    KasBank.nomor_referensi == ref,
+                    or_(
+                        KasBank.keterangan.ilike("Biaya Repair Internal via Bengkel:%"),
+                        KasBank.keterangan.ilike("Pembayaran (INTERNAL)% bengkel%"),
+                        KasBank.keterangan.ilike("Pembayaran (TRANSFER)% bengkel%"),
+                    ),
+                ).delete(synchronize_session=False)
+
+            internal_trx = self.db.query(TransaksiPenjualanBengkel).filter(
+                TransaksiPenjualanBengkel.kategori == "jasa_angkut",
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanBengkel.grand_total > 0,
+            ).all()
+
+            for trx in internal_trx:
+                piutang = self.db.query(PiutangUsaha).filter(
+                    PiutangUsaha.nomor_referensi == trx.nomor_transaksi,
+                    PiutangUsaha.sumber == PiutangSource.JASA_ANGKUT,
+                    PiutangUsaha.is_internal == True,
+                    PiutangUsaha.status != PiutangStatus.BATAL,
+                ).first()
+
+                if not piutang:
+                    debtor_name = trx.nama_customer or f"Armada {trx.nomor_plat}"
+                    amount = Decimal(str(trx.grand_total or 0))
+                    piutang = PiutangUsaha(
+                        nomor_piutang=bengkel_service._generate_nomor_piutang(),
+                        tanggal=trx.tanggal,
+                        nama_debitur=debtor_name,
+                        nominal_piutang=amount,
+                        total_dibayar=Decimal("0"),
+                        sisa_piutang=amount,
+                        status=PiutangStatus.BELUM_LUNAS,
+                        sumber=PiutangSource.JASA_ANGKUT,
+                        unit=KasBankSource.BENGKEL,
+                        is_internal=True,
+                        referensi_id=trx.id,
+                        nomor_referensi=trx.nomor_transaksi,
+                        catatan=f"AUTO-SYNC: Piutang internal JA dari {trx.nomor_transaksi}",
+                        created_by=user_id,
+                    )
+                    self.db.add(piutang)
+                    created_debt += 1
+
+                    hutang = self.db.query(HutangUsaha).filter(
+                        HutangUsaha.nomor_referensi == trx.nomor_transaksi,
+                        HutangUsaha.is_internal == True,
+                        HutangUsaha.status != HutangStatus.BATAL,
+                    ).first()
+                    if not hutang:
+                        self.db.add(HutangUsaha(
+                            nomor_hutang=bengkel_service._generate_nomor_hutang(),
+                            tanggal=trx.tanggal,
+                            nama_kreditur="BENGKEL TPM",
+                            nominal_hutang=amount,
+                            sisa_hutang=amount,
+                            total_dibayar=Decimal("0"),
+                            status=HutangStatus.BELUM_LUNAS,
+                            sumber=HutangSource.LAINNYA,
+                            unit=KasBankSource.JASA_ANGKUT,
+                            is_internal=True,
+                            referensi_id=trx.id,
+                            nomor_referensi=trx.nomor_transaksi,
+                            catatan=f"AUTO-SYNC: Hutang internal JA dari {trx.nomor_transaksi}",
+                            created_by=user_id,
+                        ))
+                        created_debt += 1
+
+                if trx.metode_bayar != PaymentMethod.INTERNAL:
+                    trx.metode_bayar = PaymentMethod.INTERNAL
+
+                if trx.status_bayar == PaymentStatus.LUNAS and (trx.jumlah_bayar or 0) > 0:
+                    trx.jumlah_bayar = Decimal("0")
+                    trx.status_bayar = PaymentStatus.BELUM_LUNAS
+
+                muatan_lunas = False
+                if trx.muatan_id:
+                    from app.models.jasa_angkut import MuatanJasaAngkut
+                    muatan = self.db.query(MuatanJasaAngkut).filter(
+                        MuatanJasaAngkut.id == trx.muatan_id
+                    ).first()
+                    muatan_lunas = bool(muatan and muatan.status_bayar == PaymentStatus.LUNAS)
+
+                if muatan_lunas:
+                    trx.status_bayar = PaymentStatus.LUNAS
+                    trx.jumlah_bayar = trx.grand_total
+                    bengkel_service.settle_internal_debts_for_transaksi(
+                        trx.nomor_transaksi,
+                        user_id=user_id,
+                        note="AUTO-SYNC: Pelunasan saat muatan sudah lunas",
+                    )
+                    settled_debt += 1
+
+            rebuild = KasBankService(self.db).rebuild_balances(KasBankJenis.KAS_UNIT_JASA_ANGKUT)
+
+            if deleted_kas or created_debt or settled_debt or rebuild.get("updated", 0):
+                self.db.commit()
+
+            return {
+                "status": "success",
+                "deleted_legacy_internal_kas": deleted_kas,
+                "created_debt_pairs": created_debt,
+                "settled_debt_pairs": settled_debt,
+                "rebuilt_kas_rows": rebuild.get("updated", 0),
+                "affected_refs": len(affected_refs),
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {"status": "error", "message": str(e)}
+
+    def sync_mobil_internal_bengkel_finance(self, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """Migrate legacy internal mobil bengkel flows to hutang/piutang without wallet movement."""
+        from app.models.bengkel import TransaksiPenjualanBengkel
+        from app.models.mobil import Mobil, TransaksiPenjualanMobil
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+        from app.services.kas_bank_service import KasBankService
+        from app.utils.constants import PaymentMethod
+
+        try:
+            deleted_kas = self.db.query(KasBank).filter(
+                or_(
+                    KasBank.keterangan.ilike("Pelunasan Biaya Repair Internal%"),
+                    KasBank.keterangan.ilike("Pelunasan Piutang Internal via Penjualan%"),
+                    and_(
+                        KasBank.sumber == KasBankSource.JUAL_BELI_MOBIL,
+                        KasBank.keterangan.ilike("Biaya Repair Internal via Bengkel:%"),
+                    ),
+                )
+            ).delete(synchronize_session=False)
+
+            bengkel_service = TransaksiBengkelService(self.db)
+            created_debt = 0
+            settled_debt = 0
+
+            internal_trx = self.db.query(TransaksiPenjualanBengkel).filter(
+                TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
+                TransaksiPenjualanBengkel.mobil_id.isnot(None),
+                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanBengkel.grand_total > 0,
+            ).all()
+
+            for trx in internal_trx:
+                piutang = self.db.query(PiutangUsaha).filter(
+                    PiutangUsaha.nomor_referensi == trx.nomor_transaksi,
+                    PiutangUsaha.sumber == PiutangSource.JUAL_BELI_MOBIL,
+                    PiutangUsaha.is_internal == True,
+                    PiutangUsaha.status != PiutangStatus.BATAL,
+                ).first()
+
+                amount = Decimal(str(trx.grand_total or 0))
+                if not piutang and amount > 0:
+                    debtor_name = trx.nama_customer or f"JB MOBIL - {trx.nomor_plat}"
+                    self.db.add(PiutangUsaha(
+                        nomor_piutang=bengkel_service._generate_nomor_piutang(),
+                        tanggal=trx.tanggal,
+                        nama_debitur=debtor_name,
+                        nominal_piutang=amount,
+                        total_dibayar=Decimal("0"),
+                        sisa_piutang=amount,
+                        status=PiutangStatus.BELUM_LUNAS,
+                        sumber=PiutangSource.JUAL_BELI_MOBIL,
+                        unit=KasBankSource.BENGKEL,
+                        is_internal=True,
+                        referensi_id=trx.id,
+                        nomor_referensi=trx.nomor_transaksi,
+                        catatan=f"AUTO-SYNC: Piutang internal mobil dari {trx.nomor_transaksi}",
+                        created_by=user_id,
+                    ))
+                    created_debt += 1
+
+                    hutang = self.db.query(HutangUsaha).filter(
+                        HutangUsaha.nomor_referensi == trx.nomor_transaksi,
+                        HutangUsaha.is_internal == True,
+                        HutangUsaha.status != HutangStatus.BATAL,
+                    ).first()
+                    if not hutang:
+                        self.db.add(HutangUsaha(
+                            nomor_hutang=bengkel_service._generate_nomor_hutang(),
+                            tanggal=trx.tanggal,
+                            nama_kreditur="BENGKEL TPM",
+                            nominal_hutang=amount,
+                            sisa_hutang=amount,
+                            total_dibayar=Decimal("0"),
+                            status=HutangStatus.BELUM_LUNAS,
+                            sumber=HutangSource.JUAL_BELI_MOBIL,
+                            unit=KasBankSource.JUAL_BELI_MOBIL,
+                            is_internal=True,
+                            referensi_id=trx.id,
+                            nomor_referensi=trx.nomor_transaksi,
+                            catatan=f"AUTO-SYNC: Hutang internal mobil dari {trx.nomor_transaksi}",
+                            created_by=user_id,
+                        ))
+                        created_debt += 1
+
+                if trx.metode_bayar not in (PaymentMethod.INTERNAL, PaymentMethod.KREDIT):
+                    trx.metode_bayar = PaymentMethod.INTERNAL
+
+                mobil = self.db.query(Mobil).filter(Mobil.id == trx.mobil_id).first()
+                sale_lunas = None
+                if mobil and mobil.status == CarStatus.TERJUAL:
+                    sale_lunas = self.db.query(TransaksiPenjualanMobil).filter(
+                        TransaksiPenjualanMobil.mobil_id == mobil.id,
+                        TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+                    ).first()
+
+                if sale_lunas:
+                    trx.status_bayar = PaymentStatus.LUNAS
+                    trx.jumlah_bayar = trx.grand_total
+                    bengkel_service.settle_internal_debts_for_transaksi(
+                        trx.nomor_transaksi,
+                        user_id=user_id,
+                        note="AUTO-SYNC: Pelunasan saat mobil sudah terjual",
+                    )
+                    settled_debt += 1
+
+            rebuild_mobil = KasBankService(self.db).rebuild_balances(KasBankJenis.KAS_UNIT_MOBIL)
+            rebuild_bengkel = KasBankService(self.db).rebuild_balances(KasBankJenis.KAS_UNIT_BENGKEL)
+
+            if deleted_kas or created_debt or settled_debt or rebuild_mobil.get("updated", 0) or rebuild_bengkel.get("updated", 0):
+                self.db.commit()
+
+            return {
+                "status": "success",
+                "deleted_legacy_internal_kas": deleted_kas,
+                "created_debt_pairs": created_debt,
+                "settled_debt_pairs": settled_debt,
+                "rebuilt_mobil_kas_rows": rebuild_mobil.get("updated", 0),
+                "rebuilt_bengkel_kas_rows": rebuild_bengkel.get("updated", 0),
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {"status": "error", "message": str(e)}
 
     def sync_ja_muatan_finance(self) -> Dict[str, Any]:
         """Clean legacy JA operasional kas rows and rebuild unit wallet saldo chain.
