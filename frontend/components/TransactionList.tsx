@@ -25,8 +25,11 @@ const getSourceConfig = (source: string, title?: string) => {
     if (t.includes('repair') || t.includes('bengkel') || t.includes('bgl')) {
         return { icon: Wrench, color: '#3B82F6', label: 'Bengkel' };
     }
-    if (t.includes('mobil') || t.includes('mbl')) {
+    if (t.includes('servis stok') || t.includes('mobil') || t.includes('mbl')) {
         return { icon: CarFront, color: '#F59E0B', label: 'Mobil' };
+    }
+    if (t.includes('servis armada')) {
+        return { icon: Truck, color: '#10B981', label: 'Jasa Angkut' };
     }
     if (t.includes('angkut') || t.includes('muatan') || t.includes('jas')) {
         return { icon: Truck, color: '#10B981', label: 'Jasa Angkut' };

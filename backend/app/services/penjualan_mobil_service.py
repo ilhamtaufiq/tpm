@@ -466,11 +466,13 @@ class PenjualanMobilService:
 
         self.db.query(TransaksiPenjualanBengkel).filter(
             TransaksiPenjualanBengkel.mobil_id == mobil.id,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.LUNAS
+            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.grand_total > 0,
         ).update({
             "status_bayar": PaymentStatus.LUNAS,
             "jumlah_bayar": TransaksiPenjualanBengkel.grand_total,
-            "status_pengerjaan": WorkshopStatus.SELESAI
+            "status_pengerjaan": WorkshopStatus.SELESAI,
+            "updated_at": datetime.now(),
         }, synchronize_session='fetch')
 
         workshop_nos = {
