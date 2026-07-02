@@ -119,6 +119,9 @@ export default function BengkelTransaksiScreen() {
     const { data: jasaData, isLoading: isJasaLoading } = useJasaList({ limit: 200 });
     const { data: armadaData, isLoading: isArmadaLoading } = useActiveArmada();
     const { data: mobilData } = useMobilList({ status: 'TERSEDIA', limit: 100 });
+    const { data: mobilStatusData } = useMobilList({ limit: 200 }, {
+        enabled: kategori === 'jual_beli_mobil' || Boolean(editTransactionId),
+    });
     const { data: existingTransactionsData, isLoading: isExistingTransactionsLoading } = useTransaksiBengkelList({
         limit: 100,
         sort_by: 'tanggal',
@@ -170,6 +173,17 @@ export default function BengkelTransaksiScreen() {
                 ? armadaData.pages.flatMap((page: any) => page.data || [])
                 : [];
     const mobilList = Array.isArray(mobilData) ? mobilData : (mobilData?.data || []);
+    const mobilStatusById = useMemo(() => {
+        const rows = Array.isArray(mobilStatusData) ? mobilStatusData : (mobilStatusData?.data || []);
+        return new Map(rows.map((m: any) => [String(m.id), String(m.status || '').toUpperCase()]));
+    }, [mobilStatusData]);
+    const activeMobilId = selectedMobil?.id || editingTransaction?.mobil_id || selectedOpenTransactionDetail?.mobil_id;
+    const isSelectedMobilSold = useMemo(() => {
+        if (!activeMobilId) return false;
+        const directStatus = String(selectedMobil?.status || '').toUpperCase();
+        if (directStatus === 'TERJUAL') return true;
+        return mobilStatusById.get(String(activeMobilId)) === 'TERJUAL';
+    }, [activeMobilId, selectedMobil?.status, mobilStatusById]);
 
     const selectedPartList = useMemo(() => Object.values(selectedParts), [selectedParts]);
     const selectedServiceList = useMemo(() => Object.values(selectedServices), [selectedServices]);
@@ -763,12 +777,15 @@ export default function BengkelTransaksiScreen() {
                 jenis_kendaraan: String(jenisKendaraan).substring(0, 50),
                 kategori,
                 armada_id: isJA ? selectedArmada?.id : null,
-                mobil_id: isMobil ? selectedMobil?.id : null,
+                mobil_id: isMobil ? (selectedMobil?.id || editingTransaction?.mobil_id || selectedOpenTransactionDetail?.mobil_id) : null,
                 detail_parts: billPartList.map(row => ({ spare_part_id: row.item.id, qty: row.qty, harga_jual: Number(row.item.harga_jual || 0) })),
                 detail_services: billServiceList.map(row => ({ nama_jasa: row.item.nama, harga: Number(row.item.harga || 0), qty: row.qty })),
                 diskon: discountAmount,
-                // SELESAI only when payment lunas; update order tanpa bayar tetap status existing.
-                status_pengerjaan: shouldPay && willBeLunas ? 'SELESAI' : undefined,
+                // Jual beli mobil: PROSES selama unit belum TERJUAL; SELESAI otomatis saat unit terjual.
+                // Kategori lain: SELESAI hanya ketika pembayaran lunas.
+                status_pengerjaan: isMobil
+                    ? (isSelectedMobilSold ? 'SELESAI' : 'PROSES')
+                    : (shouldPay && willBeLunas ? 'SELESAI' : undefined),
                 metode_bayar: shouldPay
                     ? (isJA ? 'INTERNAL' : isMobil ? 'KREDIT' : paymentMode)
                     : (editingTransaction?.metode_bayar || selectedOpenTransactionDetail?.metode_bayar || 'KREDIT'),

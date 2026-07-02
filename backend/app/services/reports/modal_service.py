@@ -21,6 +21,11 @@ from app.utils.constants import (
     PaymentMethod,
     WorkshopStatus
 )
+from app.utils.workshop_finance import (
+    internal_mobil_workshop_filters,
+    workshop_finance_recognized_filters,
+)
+
 class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
         """Laporan Perubahan Modal (Capital Change) - Extended structure for Frontend"""
@@ -69,8 +74,7 @@ class ModalService(BaseReportService):
             return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
                 TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
             ).filter(
-                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                *workshop_finance_recognized_filters(),
                 TransaksiPenjualanBengkel.tanggal <= d
             ).scalar() or 0)
 
@@ -205,8 +209,7 @@ class ModalService(BaseReportService):
             return float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
                 TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
             ).filter(
-                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+                *workshop_finance_recognized_filters(),
                 TransaksiPenjualanBengkel.tanggal <= d
             ).scalar() or 0)
             
@@ -823,8 +826,7 @@ class ModalService(BaseReportService):
                     Mobil.deleted_at.is_(None)
                 )
             ),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.tanggal <= as_of
         )
         total_repair_int = float(repair_int_q.scalar() or 0)

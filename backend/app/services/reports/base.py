@@ -41,6 +41,10 @@ from app.utils.constants import (
     InvestorDisbursementStatus,
     WorkshopStatus
 )
+from app.utils.workshop_finance import (
+    internal_mobil_workshop_filters,
+    workshop_finance_recognized_filters,
+)
 
 class BaseReportService:
     def __init__(self, db: Session):
@@ -411,7 +415,7 @@ class BaseReportService:
         ).scalar() or 0)
         
         usage_after = float(self.db.query(func.sum(DetailTransaksiSpareParts.qty * DetailTransaksiSpareParts.harga_beli)).join(TransaksiPenjualanBengkel).filter(
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
+            *workshop_finance_recognized_filters(),
             TransaksiPenjualanBengkel.tanggal > tanggal_sampai
         ).scalar() or 0)
         
@@ -450,8 +454,7 @@ class BaseReportService:
         # We query TransaksiPenjualanBengkel directly for internal bills tagged to unsold cars
         snapshot_unsold_repairs_int = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.mobil_id.in_(unsold_car_ids),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).scalar() or 0)
 
@@ -472,8 +475,7 @@ class BaseReportService:
         
         rep_int_per_car = dict(self.db.query(TransaksiPenjualanBengkel.mobil_id, func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
             TransaksiPenjualanBengkel.mobil_id.in_(unsold_car_ids),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai
         ).group_by(TransaksiPenjualanBengkel.mobil_id).all())
 
@@ -810,9 +812,7 @@ class BaseReportService:
         internal_elimination = float(self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).join(
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
             or_(
@@ -823,9 +823,7 @@ class BaseReportService:
         internal_jbm_unrealized_profit = float(self.db.query(func.sum(TransaksiPenjualanBengkel.laba_kotor)).join(
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.tanggal >= tanggal_dari,
             TransaksiPenjualanBengkel.tanggal <= tanggal_sampai,
             or_(
