@@ -32,6 +32,7 @@ from app.utils.constants import (
 )
 from app.services.kas_bank_integration import create_kas_entry
 from app.utils.constants import KasBankJenis
+from app.utils.workshop_finance import internal_mobil_workshop_filters
 from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource, KasBank
 
 
@@ -1203,9 +1204,7 @@ class PenjualanMobilService:
 
         # Total Bengkel for SOLD units only (Accrual)
         bengkel_parts_sold_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *internal_mobil_workshop_filters(),
             TransaksiPenjualanBengkel.mobil_id.in_(sold_mobil_ids) if sold_mobil_ids else False
         )
         
@@ -1219,9 +1218,7 @@ class PenjualanMobilService:
 
         # Total Bengkel (All workshop transactions in period for overall summary)
         bengkel_parts_all_q = self.db.query(func.sum(TransaksiPenjualanBengkel.grand_total)).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+            *internal_mobil_workshop_filters(),
         )
         if tanggal_dari: bengkel_parts_all_q = bengkel_parts_all_q.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_parts_all_q = bengkel_parts_all_q.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)
@@ -1302,9 +1299,7 @@ class PenjualanMobilService:
         ).join(
             Mobil, TransaksiPenjualanBengkel.mobil_id == Mobil.id
         ).filter(
-            TransaksiPenjualanBengkel.kategori.in_(['jual_beli_mobil', 'mobil', 'penjualan_mobil']),
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL
+            *internal_mobil_workshop_filters(),
         )
         if tanggal_dari: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal >= tanggal_dari)
         if tanggal_sampai: bengkel_mobil_query = bengkel_mobil_query.filter(TransaksiPenjualanBengkel.tanggal <= tanggal_sampai)

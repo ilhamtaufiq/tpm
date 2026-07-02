@@ -18,6 +18,10 @@ from app.utils.constants import (
     PaymentStatus,
     WorkshopStatus
 )
+from app.utils.workshop_finance import (
+    internal_mobil_workshop_filters,
+    workshop_finance_recognized_filters,
+)
 
 class NeracaService(BaseReportService):
     def get_report(self, as_of_date: date) -> Dict[str, Any]:
@@ -183,8 +187,7 @@ class NeracaService(BaseReportService):
         akumulasi_hpp_parts = float(self.db.query(func.sum(DetailTransaksiSpareParts.harga_beli * DetailTransaksiSpareParts.qty)).join(
             TransaksiPenjualanBengkel, DetailTransaksiSpareParts.transaksi_id == TransaksiPenjualanBengkel.id
         ).filter(
-            TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            *workshop_finance_recognized_filters(),
             TransaksiPenjualanBengkel.tanggal <= as_of_date
         ).scalar() or 0)
         
@@ -558,11 +561,8 @@ class NeracaService(BaseReportService):
             settled_debt = 0
 
             internal_trx = self.db.query(TransaksiPenjualanBengkel).filter(
-                TransaksiPenjualanBengkel.kategori == "jual_beli_mobil",
                 TransaksiPenjualanBengkel.mobil_id.isnot(None),
-                TransaksiPenjualanBengkel.status_pengerjaan == WorkshopStatus.SELESAI,
-                TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
-                TransaksiPenjualanBengkel.grand_total > 0,
+                *internal_mobil_workshop_filters(),
             ).all()
 
             for trx in internal_trx:

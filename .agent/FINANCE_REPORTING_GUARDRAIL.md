@@ -45,6 +45,7 @@ Untuk transaksi bengkel:
 - **Pitfall**: Jangan double-counting `customer_dp` di `kewajiban_usaha` (`modal_service.py`) karena `hutang_usaha_total` sudah memuatnya.
 - **Pitfall**: Query DP di `reports/base.py` tidak boleh memfilter `status_bayar != LUNAS` atau `status != LUNAS` untuk piutang, agar overpayment/DP tetap masuk sebagai liabilitas meski sistem menandainya LUNAS (karena `bayar >= grand_total`).
 - Dashboard operasional boleh menampilkan semua status; laporan finansial memakai filter `grand_total > 0` dan `status_bayar != BATAL`.
+- **Internal JB Mobil (part/service)**: transaksi `jual_beli_mobil` dengan `grand_total > 0` dan status `PROSES` tetap diakui di Laba Rugi **dan** dikapitalisasi ke stok mobil (`perbaikan_internal`) di Neraca/Perubahan Modal. Filter terpusat: `app/utils/workshop_finance.py` (`workshop_finance_recognized_filters`, `internal_mobil_workshop_filters`). Jangan pakai `status_pengerjaan == SELESAI` saja untuk laporan finansial internal mobil — itu membuat laba bengkel terhitung tapi nilai stok mobil tidak naik (selisih perubahan modal).
 
 ## Pembatalan Transaksi (Void)
 
