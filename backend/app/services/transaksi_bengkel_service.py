@@ -1057,10 +1057,9 @@ class TransaksiBengkelService:
         financial_only: bool = False,
     ) -> Dict[str, Any]:
         """Get sales summary statistics with the same filters as get_list."""
-        if exclude_sold_internal_jbm:
-            from app.services.penjualan_mobil_service import PenjualanMobilService
+        from app.services.penjualan_mobil_service import PenjualanMobilService
 
-            PenjualanMobilService(self.db).reconcile_unsettled_workshop_for_sold_mobils()
+        PenjualanMobilService(self.db).reconcile_unsettled_workshop_for_sold_mobils()
 
         # Base query
         query = self.db.query(TransaksiPenjualanBengkel)
