@@ -360,15 +360,7 @@ export default function BengkelScreen() {
     }, [piutangData, soldCarPlates]);
 
     const queue = queueData?.data || [];
-    const todayQueue = useMemo(() => {
-        return queue.filter((item: any) => {
-            const kategori = String(item.kategori || '').toLowerCase();
-            if (kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
-                return false;
-            }
-            return true;
-        });
-    }, [queue, soldCars]);
+    const todayQueue = queue;
     const getQueuePaymentStatus = useCallback((item: any) => {
         return getBengkelQueuePaymentStatus(item, soldCars);
     }, [soldCars]);
@@ -423,17 +415,10 @@ export default function BengkelScreen() {
         // Fallback to local calculation if summary not yet loaded
         let lunas = 0, partial = 0, unpaid = 0, batal = 0;
         queue.forEach((item: any) => {
-            // Apply virtual filtering here too for stats consistency
-            const kategori = String(item.kategori || '').toLowerCase();
-            if (kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
-                return;
-            }
-
-            const s = (item.status_bayar || '').toUpperCase();
-            const paidNum = Number(item.jumlah_bayar || 0);
-            if (s === 'LUNAS') lunas++;
-            else if (s === 'BATAL') batal++;
-            else if (paidNum > 0) partial++;
+            const status = getBengkelQueuePaymentStatus(item, soldCars);
+            if (status === 'LUNAS') lunas++;
+            else if (status === 'BATAL') batal++;
+            else if (status === 'BELUM_LUNAS') partial++;
             else unpaid++;
         });
         return { total: lunas + partial + unpaid + batal, lunas, partial, unpaid, batal };

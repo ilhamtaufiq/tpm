@@ -176,22 +176,14 @@ export default function QueueScreen() {
         }, [refetch, refetchSummary])
     );
 
-    // Sold cars set to filter out sold items (JB Mobil category)
+    // Mobil TERJUAL dipakai untuk menampilkan status bayar lunas (bukan menyembunyikan antrian).
     const soldCars = useMemo(() => {
         const rows = Array.isArray(mobilData) ? mobilData : (mobilData?.data || []);
         return buildSoldMobilIdSet(rows);
     }, [mobilData]);
 
     const queue = queueData?.data || [];
-    const todayQueue = useMemo(() => {
-        return queue.filter((item: any) => {
-            const kategori = String(item.kategori || '').toLowerCase();
-            if (kategori === 'jual_beli_mobil' && item.mobil_id && soldCars.has(String(item.mobil_id))) {
-                return false;
-            }
-            return true;
-        });
-    }, [queue, soldCars]);
+    const todayQueue = queue;
 
     const getQueuePaymentStatus = useCallback((item: any) => {
         return getBengkelQueuePaymentStatus(item, soldCars);
@@ -200,16 +192,16 @@ export default function QueueScreen() {
     const getPaidSummary = useCallback((item: any) => {
         const paid = Number(item?.jumlah_bayar || 0);
         const total = Number(item?.grand_total || 0);
-        const status = String(item?.status_bayar || '').toUpperCase();
-        const isLunas = status === 'LUNAS' || (total > 0 && paid >= total);
+        const paymentStatus = getBengkelQueuePaymentStatus(item, soldCars);
+        const isLunas = paymentStatus === 'LUNAS';
         return {
-            paid,
+            paid: isLunas && paid < total ? total : paid,
             total,
             isLunas,
-            hasPartialPayment: paid > 0 && !isLunas,
-            remaining: Math.max(0, total - paid),
+            hasPartialPayment: paymentStatus === 'BELUM_LUNAS',
+            remaining: isLunas ? 0 : Math.max(0, total - paid),
         };
-    }, []);
+    }, [soldCars]);
 
     const queuePaymentStats = useMemo(() => {
         return todayQueue.reduce((acc: any, item: any) => {

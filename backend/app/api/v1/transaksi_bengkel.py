@@ -83,7 +83,7 @@ def get_transaksi_summary(
         customer_id=customer_id,
         mobil_id=mobil_id,
         muatan_id=muatan_id,
-        exclude_sold_internal_jbm=True,
+        exclude_sold_internal_jbm=False,
     )
 
 
