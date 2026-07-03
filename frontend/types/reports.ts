@@ -246,7 +246,12 @@ export interface CapitalReport {
             piutang: { total: number; breakdown?: Record<string, number> };
             hutang: { total: number; breakdown?: Record<string, number> };
         };
+        uang_muka_penjualan?: number;
+        piutang_booking?: number;
         validasi?: {
+            modal_teoritis?: number;
+            modal_aktual?: number;
+            selisih?: number;
             status: string;
             penyesuaian?: number;
         };

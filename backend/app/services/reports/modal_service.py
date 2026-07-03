@@ -597,7 +597,10 @@ class ModalService(BaseReportService):
         customer_dp = float(data["raw_summaries"]["hutang"]["breakdown"].get("uang_muka_penjualan", 0))
         piutang_booking = float(data["raw_summaries"]["hutang"]["breakdown"].get("piutang_booking", 0))
 
-        kewajiban_usaha = (hutang_usaha_total - hutang_investor_total) + piutang_booking
+        # hutang_total already includes customer_dp + net_booking_piutang (piutang_booking).
+        # Do not add piutang_booking again — that double-counts booking liability and
+        # depresses modal_aktual by exactly the DP/sisa-booking amount (see NeracaService).
+        kewajiban_usaha = hutang_usaha_total - hutang_investor_total
 
         piutang_internal = float(data["raw_summaries"]["piutang"]["breakdown"].get("internal", 0))
         hutang_internal = float(data["raw_summaries"]["hutang"]["breakdown"].get("internal", 0))

@@ -239,10 +239,12 @@ export const buildCapitalExportHtml = (data: CapitalReport, date: Date, filterTy
     const pembayaranInvestor = data.pengurangan?.pembayaran_investor || 0;
     const modalAkhir = data.modal_akhir || 0;
     const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih - prive - pembayaranInvestor;
-    const expectedModalAkhir = modalAwal + perubahanBersih;
-    
-    const selisih = modalAkhir - expectedModalAkhir;
-    const isBalanced = Math.abs(selisih) < 100;
+    const expectedModalAkhirAliran = modalAwal + perubahanBersih;
+    const validasi = data.info?.validasi;
+    const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
+
+    const selisih = validasi?.selisih ?? data.selisih ?? (modalAkhir - expectedModalAkhir);
+    const isBalanced = data.is_balanced ?? (Math.abs(selisih) < 100);
 
     return `
         <!DOCTYPE html>

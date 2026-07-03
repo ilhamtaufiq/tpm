@@ -119,15 +119,15 @@ export default function LaporanPerubahanModalScreen() {
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
         const modalAkhir = r.modal_akhir || 0;
-        
-        const perubahanBersih = setoranKas + modalNonKas + investorFunding + labaBersih + labaInvestor - prive - pembayaranInvestor;
-        const expectedModalAkhir = modalAwal + perubahanBersih;
-        
-        // Use the same values shown on screen for reconciliation. Backend
-        // `selisih` can include diagnostic fields that are not part of this
-        // displayed equity flow.
-        const selisih = modalAkhir - expectedModalAkhir;
-        const isBalanced = Math.abs(selisih) < 100;
+
+        const perubahanBersihAliran =
+            setoranKas + modalNonKas + investorFunding + labaBersih + labaInvestor - prive - pembayaranInvestor;
+        const expectedModalAkhirAliran = modalAwal + perubahanBersihAliran;
+
+        const validasi = r.info?.validasi;
+        const expectedModalAkhir = validasi?.modal_teoritis ?? expectedModalAkhirAliran;
+        const selisih = validasi?.selisih ?? r.selisih ?? (modalAkhir - expectedModalAkhir);
+        const isBalanced = r.is_balanced ?? (Math.abs(selisih) < 100);
 
         return {
             modalAwal,
@@ -139,8 +139,9 @@ export default function LaporanPerubahanModalScreen() {
             prive,
             pembayaranInvestor,
             modalAkhir,
-            perubahanBersih,
+            perubahanBersih: perubahanBersihAliran,
             expectedModalAkhir,
+            expectedModalAkhirAliran,
             selisih,
             isBalanced,
             status: isBalanced ? 'BALANCE' : 'UNBALANCED',
@@ -326,7 +327,7 @@ export default function LaporanPerubahanModalScreen() {
                             </View>
 
                             <View className="mt-4 pt-5 border-t-2 border-slate-100">
-                                <FinancialRow label="Perubahan Bersih Modal" value={equity.perubahanBersih} bold color="text-slate-700" />
+                                <FinancialRow label="Perubahan Bersih Modal (Aliran)" value={equity.perubahanBersih} bold color="text-slate-700" />
                                 <FinancialRow label="Modal Akhir Periode (Teoritis)" value={equity.expectedModalAkhir} bold color="text-indigo-700" />
                             </View>
                         </Card>
@@ -348,7 +349,7 @@ export default function LaporanPerubahanModalScreen() {
 
                             <View className="bg-white/10 rounded-2xl p-4 border border-white/10 mb-4 w-full">
                                 <FinancialRow label="Modal Akhir (Aktual - Neraca)" value={equity.modalAkhir} isDark small />
-                                <FinancialRow label="Modal Akhir (Teoritis - Aliran)" value={equity.expectedModalAkhir} isDark small />
+                                <FinancialRow label="Modal Akhir (Teoritis - Backend)" value={equity.expectedModalAkhir} isDark small />
                                 <View className="h-[1px] bg-white/20 w-full my-2" />
                                 <View className="flex-row justify-between items-center w-full">
                                     <Typography className="text-white/60 text-xs flex-1">Selisih Rekonsiliasi</Typography>
