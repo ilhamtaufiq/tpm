@@ -448,6 +448,53 @@ class PenjualanMobilService:
 
 
 
+    def reconcile_unsettled_workshop_for_sold_mobils(self) -> int:
+        """Auto-heal workshop rows still unpaid while the linked car is already TERJUAL."""
+        from app.services.transaksi_bengkel_service import TransaksiBengkelService
+
+        mobil_ids = [
+            row[0]
+            for row in self.db.query(TransaksiPenjualanBengkel.mobil_id)
+            .join(Mobil, Mobil.id == TransaksiPenjualanBengkel.mobil_id)
+            .filter(
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.deleted_at.is_(None),
+                TransaksiPenjualanBengkel.mobil_id.isnot(None),
+                TransaksiPenjualanBengkel.status_bayar.notin_(
+                    [PaymentStatus.LUNAS, PaymentStatus.BATAL]
+                ),
+                TransaksiPenjualanBengkel.grand_total > 0,
+            )
+            .distinct()
+            .all()
+        ]
+        if not mobil_ids:
+            return 0
+
+        reconciled = 0
+        for mobil_id in mobil_ids:
+            mobil = (
+                self.db.query(Mobil)
+                .options(joinedload(Mobil.bengkel_perbaikan))
+                .filter(Mobil.id == mobil_id, Mobil.deleted_at.is_(None))
+                .first()
+            )
+            if not mobil or mobil.status != CarStatus.TERJUAL:
+                continue
+            self._settle_unit_financial_obligations(
+                mobil,
+                mobil.tanggal_terjual or date.today(),
+                "AUTO-RECONCILE",
+                PaymentMethod.INTERNAL,
+                [],
+                None,
+            )
+            reconciled += 1
+
+        if reconciled:
+            self.db.commit()
+        return reconciled
+
     def _settle_unit_financial_obligations(
         self, 
         mobil: Mobil, 
@@ -461,12 +508,21 @@ class PenjualanMobilService:
         from app.models.bengkel import TransaksiPenjualanBengkel
         from app.services.transaksi_bengkel_service import TransaksiBengkelService
 
+        mobil = (
+            self.db.query(Mobil)
+            .options(joinedload(Mobil.bengkel_perbaikan))
+            .filter(Mobil.id == mobil.id)
+            .first()
+        ) or mobil
+
         bengkel_service = TransaksiBengkelService(self.db)
         settle_note = f"Terlunasi otomatis saat unit terjual (Ref: {ref_no})"
 
         self.db.query(TransaksiPenjualanBengkel).filter(
             TransaksiPenjualanBengkel.mobil_id == mobil.id,
-            TransaksiPenjualanBengkel.status_bayar != PaymentStatus.BATAL,
+            TransaksiPenjualanBengkel.status_bayar.notin_(
+                [PaymentStatus.LUNAS, PaymentStatus.BATAL]
+            ),
             TransaksiPenjualanBengkel.grand_total > 0,
         ).update({
             "status_bayar": PaymentStatus.LUNAS,
