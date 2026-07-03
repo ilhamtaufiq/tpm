@@ -63,6 +63,16 @@ def test_frontend_finance_pages_render_investor_booking_lines():
     assert "h.piutang_booking" in neraca
 
 
+def test_modal_snapshot_does_not_double_count_booking_liability():
+    modal = read("backend/app/services/reports/modal_service.py")
+    neraca = read("backend/app/services/reports/neraca_service.py")
+
+    assert "kewajiban_usaha = hutang_usaha_total - hutang_investor_total" in modal
+    assert "+ piutang_booking" not in modal.split("kewajiban_usaha")[1].split("modal_aktual")[0]
+    assert "piutang_booking = 0" in neraca
+    assert "uang_muka_penjualan" in neraca
+
+
 def test_internal_repair_elimination_contract():
     base = read("backend/app/services/reports/base.py")
     laba_rugi = read("backend/app/services/reports/laba_rugi_service.py")
