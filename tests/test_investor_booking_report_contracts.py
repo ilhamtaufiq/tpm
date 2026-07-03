@@ -31,6 +31,8 @@ def test_laba_rugi_uses_sold_only_mobil_contract():
     assert 'm.get("repairs", 0)' in laba_rugi
     assert "mobil_total_repairs_sold = max(0, workshop_bills + capital_sold_repairs)" in base
     assert "Booking/DP transactions are not realized sales yet" in penjualan_mobil
+    assert "defer investor profit until the unit is fully sold" in penjualan_mobil
+    assert "_finalize_investor_profit_split" in penjualan_mobil
     assert "TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS" in penjualan_mobil
     assert "Mobil.tanggal_terjual >= tanggal_dari" in penjualan_mobil
     assert '"maintenance": m_maintenance' in laba_rugi

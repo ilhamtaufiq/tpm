@@ -30,6 +30,10 @@ class ModalService(BaseReportService):
     def get_report(self, tanggal_dari: date, tanggal_sampai: date) -> Dict[str, Any]:
         """Laporan Perubahan Modal (Capital Change) - Extended structure for Frontend"""
         from app.services.reports.neraca_service import NeracaService
+        from app.services.penjualan_mobil_service import PenjualanMobilService
+
+        PenjualanMobilService(self.db).heal_deferred_investor_profit_on_bookings()
+
         neraca_sync = NeracaService(self.db)
         neraca_sync.sync_internal_transactions()
         neraca_sync.sync_ja_muatan_finance()
@@ -400,7 +404,16 @@ class ModalService(BaseReportService):
         # Laba Kotor (Gross Profit) per unit
         laba_mobil_total_kotor = float(data["units"]["mobil"].get("total_laba_kotor", 0))
         laba_investor_periode = float(
-            data["units"]["mobil"].get("laba_investor", data["units"]["mobil"].get("sharing_investor", 0))
+            self.db.query(func.sum(TransaksiPenjualanMobil.laba_investor))
+            .join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            .filter(
+                TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+                Mobil.status == CarStatus.TERJUAL,
+                Mobil.tanggal_terjual >= tanggal_dari,
+                Mobil.tanggal_terjual <= tanggal_sampai,
+            )
+            .scalar()
+            or 0
         )
         laba_mobil_tpm_gross = laba_mobil_total_kotor - laba_investor_periode
         
@@ -605,7 +618,8 @@ class ModalService(BaseReportService):
             setoran_modal + 
             investor_capital_baru +
             (total_non_kas + modal_stok_mobil_delta_external) + 
-            period_profit_sot - 
+            period_profit_sot +
+            laba_investor_periode -
             (prive + pengembalian_modal + pembayaran_investor)
         )
         penyesuaian = modal_akhir - raw_theoretical
@@ -699,6 +713,8 @@ class ModalService(BaseReportService):
                 "laba_bengkel": laba_bengkel_tpm_gross,
                 "laba_mobil": laba_mobil_tpm_gross,
                 "laba_investor": laba_investor_periode,
+                "uang_muka_penjualan": customer_dp,
+                "piutang_booking": piutang_booking,
                 "laba_jasa_angkut": laba_ja_tpm_gross,
                 "laba_usaha": laba_kotor,
                 "overhead_gaji": total_overhead_gaji,
