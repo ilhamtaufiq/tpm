@@ -27,6 +27,43 @@ from sqlalchemy import func, or_, and_, case
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+def _workshop_activity_recognized(item) -> bool:
+    """Match financial recognition: billed workshop orders, excluding voided."""
+    if (item.grand_total or 0) <= 0:
+        return False
+    if item.status_bayar == PaymentStatus.BATAL:
+        return False
+    if item.status_pengerjaan == WorkshopStatus.BATAL:
+        return False
+    return True
+
+
+def _workshop_activity_source(item) -> str:
+    kategori = (getattr(item, "kategori", None) or "umum").lower()
+    if kategori in ("jual_beli_mobil", "jasa_angkut"):
+        return kategori
+    return "bengkel"
+
+
+def _workshop_activity_labels(item) -> tuple[str, str]:
+    kategori = (getattr(item, "kategori", None) or "umum").lower()
+    plat = item.nomor_plat or "Tanpa Plat"
+    if kategori == "jual_beli_mobil":
+        return (
+            f"Servis Stok • {plat}",
+            f"{item.jenis_kendaraan or 'Mobil'} • {item.nomor_transaksi}",
+        )
+    if kategori == "jasa_angkut":
+        return (
+            f"Servis Armada • {plat}",
+            f"{item.nama_customer or 'Armada'} • {item.nomor_transaksi}",
+        )
+    return (
+        plat,
+        f"{item.jenis_kendaraan or 'Kendaraan'} • {item.nama_customer or 'Guest'}",
+    )
+
+
 @router.get("/summary")
 def get_dashboard_summary(
     db: DBSession,
@@ -235,16 +272,15 @@ def get_recent_activity(
     )["data"]
 
     # 2. Fetch recent workshop sales (Bengkel)
+    # Use updated_at so internal JB Mobil services resurface in history after auto-settle on sale.
     bengkel_service = TransaksiBengkelService(db)
+    bengkel_pool_limit = max(limit * 5, 50)
     bengkel_data = bengkel_service.get_list(
-        limit=limit,
-        sort_by="created_at",
+        limit=bengkel_pool_limit,
+        sort_by="updated_at",
         sort_order="desc"
     )["data"]
-    bengkel_data = [
-        item for item in bengkel_data
-        if (item.grand_total or 0) > 0 and item.status_pengerjaan == WorkshopStatus.SELESAI
-    ]
+    bengkel_data = [item for item in bengkel_data if _workshop_activity_recognized(item)]
 
     # 3. Fetch recent transport loads (Jasa Angkut)
     muatan_service = MuatanService(db)
@@ -281,17 +317,19 @@ def get_recent_activity(
         })
 
     for item in bengkel_data:
+        title, subtitle = _workshop_activity_labels(item)
+        activity_ts = getattr(item, "updated_at", None) or item.created_at
         activities.append({
             "type": "workshop",
             "id": f"bengkel_{item.id}",
             "original_id": item.id,
-            "title": item.nomor_plat or "Tanpa Plat",
-            "subtitle": f"{item.jenis_kendaraan or 'Kendaraan'} • {item.nama_customer or 'Guest'}",
+            "title": title,
+            "subtitle": subtitle,
             "amount": float(item.grand_total),
             "is_incoming": True,
             "status": item.status_pengerjaan.name,  # ANTRE, PROSES, SELESAI
-            "timestamp": item.created_at.isoformat(),
-            "source": "bengkel",
+            "timestamp": activity_ts.isoformat(),
+            "source": _workshop_activity_source(item),
             "ref_number": item.nomor_transaksi,
         })
 

@@ -60,8 +60,10 @@ import {
 import { useMobilList } from '../../hooks/useMobil';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import {
+    buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
     formatBengkelPaymentStatusLabel,
+    getBengkelQueuePaymentStatus,
     isBengkelTransactionLocked,
     isBengkelTransactionVoided,
 } from '../../utils/bengkelTransaction';
@@ -122,7 +124,7 @@ export default function QueueScreen() {
         tanggal_sampai: formattedDateString
     });
 
-    const { data: mobilData } = useMobilList({ status: 'TERJUAL', limit: 100 });
+    const { data: mobilData } = useMobilList({ status: 'TERJUAL', limit: 500 });
 
     const updateStatsMutation = useUpdateTransaksiBengkelStatus();
     const voidTransaksiMutation = useVoidTransaksiBengkel();
@@ -176,16 +178,8 @@ export default function QueueScreen() {
 
     // Sold cars set to filter out sold items (JB Mobil category)
     const soldCars = useMemo(() => {
-        const soldSet = new Set<string>();
-        if (mobilData) {
-            const rows = Array.isArray(mobilData) ? mobilData : (mobilData.data || []);
-            rows.forEach((m: any) => {
-                if (m.status?.toUpperCase() === 'TERJUAL') {
-                    soldSet.add(String(m.id));
-                }
-            });
-        }
-        return soldSet;
+        const rows = Array.isArray(mobilData) ? mobilData : (mobilData?.data || []);
+        return buildSoldMobilIdSet(rows);
     }, [mobilData]);
 
     const queue = queueData?.data || [];
@@ -200,14 +194,8 @@ export default function QueueScreen() {
     }, [queue, soldCars]);
 
     const getQueuePaymentStatus = useCallback((item: any) => {
-        const status = String(item.status_bayar || '').toUpperCase();
-        const paidAmount = Number(item.jumlah_bayar || 0);
-
-        if (status === 'BATAL') return 'BATAL';
-        if (status === 'LUNAS') return 'LUNAS';
-        if (paidAmount > 0) return 'BELUM_LUNAS';
-        return 'BELUM_BAYAR';
-    }, []);
+        return getBengkelQueuePaymentStatus(item, soldCars);
+    }, [soldCars]);
 
     const getPaidSummary = useCallback((item: any) => {
         const paid = Number(item?.jumlah_bayar || 0);

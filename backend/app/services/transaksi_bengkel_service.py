@@ -946,6 +946,11 @@ class TransaksiBengkelService:
         sort_order: str = "desc",
     ) -> Dict[str, Any]:
         """Get list of transactions with pagination and filters."""
+        if skip == 0:
+            from app.services.penjualan_mobil_service import PenjualanMobilService
+
+            PenjualanMobilService(self.db).reconcile_unsettled_workshop_for_sold_mobils()
+
         query = self.db.query(TransaksiPenjualanBengkel).options(
             joinedload(TransaksiPenjualanBengkel.customer),
             joinedload(TransaksiPenjualanBengkel.detail_parts).joinedload(DetailTransaksiSpareParts.spare_part),
@@ -1052,6 +1057,11 @@ class TransaksiBengkelService:
         financial_only: bool = False,
     ) -> Dict[str, Any]:
         """Get sales summary statistics with the same filters as get_list."""
+        if exclude_sold_internal_jbm:
+            from app.services.penjualan_mobil_service import PenjualanMobilService
+
+            PenjualanMobilService(self.db).reconcile_unsettled_workshop_for_sold_mobils()
+
         # Base query
         query = self.db.query(TransaksiPenjualanBengkel)
 

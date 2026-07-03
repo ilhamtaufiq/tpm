@@ -54,8 +54,11 @@ import { printReceipt, saveReceiptPDF, PrintReceiptData } from '../../utils/prin
 import { printSettingsService, PrintSettings } from '../../utils/printSettings';
 import { formatCurrency, formatNumber, parseNumber } from '../../utils/format';
 import {
+    buildSoldMobilIdSet,
     formatBengkelWorkStatusLabel,
+    getBengkelQueuePaymentStatus,
     isBengkelTransactionLocked,
+    isSoldJbmWorkshopItem,
 } from '../../utils/bengkelTransaction';
 import { useKasBankBalances, useCreateTransaction, useTransfer, useKasBankList, useCreatePiutang, useHutangList, usePiutangList } from '../../hooks/useKeuangan';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -332,21 +335,29 @@ export default function BengkelScreen() {
     const { data: balances } = useKasBankBalances();
     const unitBalance = balances?.kas_unit_bengkel?.saldo || 0;
     const bengkelHutangList = useMemo(() => (hutangData?.data || []).filter((item: any) => item.unit === 'BENGKEL'), [hutangData]);
-    const bengkelPiutangList = useMemo(() => (piutangData?.data || []).filter((item: any) => item.unit === 'BENGKEL'), [piutangData]);
-
     // Logic for internal auto-settlement (Virtual Elimination)
-    const { data: mobilData } = useMobilList({ limit: 100 });
-    const soldCars = useMemo(() => {
-        const soldSet = new Set<string>();
-        if (mobilData?.data) {
-            mobilData.data.forEach((m: any) => {
-                if (m.status?.toUpperCase() === 'TERJUAL') {
-                    soldSet.add(String(m.id));
-                }
-            });
-        }
-        return soldSet;
+    const { data: mobilData } = useMobilList({ status: 'TERJUAL', limit: 500 });
+    const soldCars = useMemo(() => buildSoldMobilIdSet(mobilData?.data), [mobilData]);
+    const soldCarPlates = useMemo(() => {
+        const plates = new Set<string>();
+        (mobilData?.data || []).forEach((mobil: any) => {
+            if (mobil?.nomor_plat) {
+                plates.add(String(mobil.nomor_plat).replace(/\s+/g, '').toUpperCase());
+            }
+        });
+        return plates;
     }, [mobilData]);
+    const bengkelPiutangList = useMemo(() => {
+        return (piutangData?.data || []).filter((item: any) => {
+            if (item.unit !== 'BENGKEL') return false;
+            const debitur = String(item.nama_debitur || '').toUpperCase();
+            if (debitur.startsWith('JB MOBIL - ')) {
+                const plate = debitur.replace('JB MOBIL - ', '').replace(/\s+/g, '');
+                if (soldCarPlates.has(plate)) return false;
+            }
+            return true;
+        });
+    }, [piutangData, soldCarPlates]);
 
     const queue = queueData?.data || [];
     const todayQueue = useMemo(() => {
@@ -359,14 +370,8 @@ export default function BengkelScreen() {
         });
     }, [queue, soldCars]);
     const getQueuePaymentStatus = useCallback((item: any) => {
-        const status = String(item.status_bayar || '').toUpperCase();
-        const paidAmount = Number(item.jumlah_bayar || 0);
-
-        if (status === 'BATAL') return 'BATAL';
-        if (status === 'LUNAS') return 'LUNAS';
-        if (paidAmount > 0) return 'BELUM_LUNAS';
-        return 'BELUM_BAYAR';
-    }, []);
+        return getBengkelQueuePaymentStatus(item, soldCars);
+    }, [soldCars]);
     const queuePaymentStats = useMemo(() => {
         return todayQueue.reduce((acc: any, item: any) => {
             const status = getQueuePaymentStatus(item);
@@ -941,7 +946,9 @@ export default function BengkelScreen() {
         const detailParts = selectedItem.detail_parts || [];
         const hasDetails = detailServices.length > 0 || detailParts.length > 0;
         const outstanding = Math.max((selectedItem.grand_total || 0) - (selectedItem.jumlah_bayar || 0), 0);
-        const isPaid = selectedItem.status_bayar === 'LUNAS' || selectedItem.status_bayar === 'lunas';
+        const paymentStatus = getBengkelQueuePaymentStatus(selectedItem, soldCars);
+        const isPaid = paymentStatus === 'LUNAS';
+        const isSoldJbm = isSoldJbmWorkshopItem(selectedItem, soldCars);
         const isVoided = selectedItem.status_bayar === 'batal' || selectedItem.status_bayar === 'BATAL';
         const isLocked = isBengkelTransactionLocked(selectedItem);
         const canSettlePayment = !isPaid && !isVoided && outstanding > 0 && selectedItem.kategori !== 'jual_beli_mobil';
@@ -1082,9 +1089,15 @@ export default function BengkelScreen() {
                                     </Typography>
                                 )
                             ) : selectedItem.kategori === 'jual_beli_mobil' && selectedItem.mobil_id ? (
-                                <Typography variant="caption" className="text-orange-600 font-bold">
-                                    Hutang Unit - Dibayar saat Terjual
-                                </Typography>
+                                isSoldJbm || isPaid ? (
+                                    <Typography variant="caption" className="text-emerald-600 font-bold">
+                                        Lunas - Terlunasi saat unit terjual
+                                    </Typography>
+                                ) : (
+                                    <Typography variant="caption" className="text-orange-600 font-bold">
+                                        Hutang Unit - Dibayar saat Terjual
+                                    </Typography>
+                                )
                             ) : outstanding > 0 && (
                                 <Typography variant="caption" className="text-rose-600 font-bold">
                                     Sisa: {formatCurrency(outstanding)}
