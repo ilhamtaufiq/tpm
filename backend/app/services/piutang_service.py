@@ -461,10 +461,12 @@ class PiutangService:
                         mobil.tanggal_terjual = tanggal
                     if mobil:
                         from app.services.penjualan_mobil_service import PenjualanMobilService
+                        sale_service = PenjualanMobilService(self.db)
+                        sale_service._finalize_investor_profit_split(mobil_trx, mobil)
                         settlement_method = PaymentMethod.SPLIT if len(payment_details or []) > 1 else (
                             payment_details[0].metode if payment_details else mobil_trx.metode_bayar
                         )
-                        PenjualanMobilService(self.db)._settle_unit_financial_obligations(
+                        sale_service._settle_unit_financial_obligations(
                             mobil,
                             tanggal,
                             mobil_trx.nomor_transaksi,

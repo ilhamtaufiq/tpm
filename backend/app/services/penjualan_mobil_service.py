@@ -172,6 +172,47 @@ class PenjualanMobilService:
 
         return laba_investor, laba_tpm
 
+    def heal_deferred_investor_profit_on_bookings(self) -> int:
+        """Zero premature investor profit on booking/DP transactions (historical fix)."""
+        rows = (
+            self.db.query(TransaksiPenjualanMobil)
+            .filter(
+                TransaksiPenjualanMobil.status_bayar != PaymentStatus.LUNAS,
+                TransaksiPenjualanMobil.status_bayar != PaymentStatus.BATAL,
+                TransaksiPenjualanMobil.laba_investor > 0,
+            )
+            .all()
+        )
+        for tx in rows:
+            tx.laba_investor = Decimal("0")
+            tx.laba_tpm = tx.laba_kotor
+        if rows:
+            self.db.commit()
+        return len(rows)
+
+    def _finalize_investor_profit_split(
+        self,
+        transaksi: TransaksiPenjualanMobil,
+        mobil: Mobil,
+    ) -> None:
+        """Recognize investor profit only after the sale is fully settled (LUNAS)."""
+        if transaksi.status_bayar != PaymentStatus.LUNAS:
+            transaksi.laba_investor = Decimal("0")
+            transaksi.laba_tpm = transaksi.laba_kotor
+            return
+
+        real_total_modal = mobil.total_modal
+        laba_split_investor = transaksi.harga_jual - real_total_modal
+        laba_investor, _ = self._calculate_profit_split(
+            laba_split_investor,
+            transaksi.tipe_kepemilikan,
+            transaksi.persentase_investor,
+            mobil.nominal_investor,
+            real_total_modal,
+        )
+        transaksi.laba_investor = laba_investor
+        transaksi.laba_tpm = transaksi.laba_kotor - laba_investor
+
     def create(
         self,
         data: TransaksiMobilCreate,
@@ -313,9 +354,6 @@ class PenjualanMobilService:
             real_total_modal,
         )
         
-        # TPM's share of this specific transaction is the remaining Accounting Laba
-        laba_tpm = laba_kotor - laba_investor
-
         # Determine payment status
         sisa_bayar = data.harga_jual - data.dp
         if sisa_bayar <= 0:
@@ -325,6 +363,13 @@ class PenjualanMobilService:
             status_bayar = PaymentStatus.CICILAN
         else:
             status_bayar = PaymentStatus.BELUM_LUNAS
+
+        # Booking/DP: defer investor profit until the unit is fully sold (LUNAS).
+        if status_bayar == PaymentStatus.LUNAS:
+            laba_tpm = laba_kotor - laba_investor
+        else:
+            laba_investor = Decimal("0")
+            laba_tpm = laba_kotor
 
         # Create transaction
         transaksi = TransaksiPenjualanMobil(
@@ -762,6 +807,7 @@ class PenjualanMobilService:
                 joinedload(Mobil.bengkel_perbaikan)
             ).filter(Mobil.id == transaksi.mobil_id).first()
             if mobil:
+                self._finalize_investor_profit_split(transaksi, mobil)
                 # Ensure internal obligations are settled if they weren't already
                 self._settle_unit_financial_obligations(
                     mobil, 
@@ -1422,7 +1468,22 @@ class PenjualanMobilService:
         # Use full modal for accurate profit split on sold cars
         dynamic_laba_unit = Decimal(aggregates.total_penjualan or 0) - total_full_modal
         total_laba_kotor_val = float(dynamic_laba_unit)
-        total_laba_tpm_val = float(dynamic_laba_unit - (aggregates.total_laba_investor or 0))
+
+        sold_laba_q = (
+            self.db.query(func.sum(TransaksiPenjualanMobil.laba_investor))
+            .join(Mobil, TransaksiPenjualanMobil.mobil_id == Mobil.id)
+            .filter(
+                TransaksiPenjualanMobil.status_bayar == PaymentStatus.LUNAS,
+                Mobil.status == CarStatus.TERJUAL,
+            )
+        )
+        if tanggal_dari:
+            sold_laba_q = sold_laba_q.filter(Mobil.tanggal_terjual >= tanggal_dari)
+        if tanggal_sampai:
+            sold_laba_q = sold_laba_q.filter(Mobil.tanggal_terjual <= tanggal_sampai)
+        sold_laba_investor = float(sold_laba_q.scalar() or 0)
+
+        total_laba_tpm_val = float(dynamic_laba_unit - Decimal(str(sold_laba_investor)))
 
         return {
             "total_transaksi": total_count,
@@ -1436,7 +1497,7 @@ class PenjualanMobilService:
             "total_biaya_persiapan": total_prep,
             "total_pembelian_period": total_pembelian_period,
             "total_laba_kotor": total_laba_kotor_val,
-            "laba_investor": float(aggregates.total_laba_investor or 0),
+            "laba_investor": sold_laba_investor,
             "laba_tpm": total_laba_tpm_val,
             "total_dp": float(aggregates.total_dp or 0),
             "total_biaya_bengkel": total_biaya_bengkel_sold,

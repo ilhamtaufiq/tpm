@@ -114,6 +114,7 @@ export default function LaporanPerubahanModalScreen() {
         const modalNonKas = r.penambahan?.modal_non_kas?.total || 0;
         const investorFunding = r.penambahan?.investor_funding || 0;
         const labaBersih = r.info?.laba_bersih || 0;
+        // Laba investor hanya diakui setelah penjualan mobil LUNAS/TERJUAL (bukan saat DP/booking).
         const labaInvestor = r.info?.laba_investor || 0;
         const prive = (r.pengurangan?.prive || 0) + (r.pengurangan?.pengembalian_modal || 0);
         const pembayaranInvestor = r.pengurangan?.pembayaran_investor || 0;
@@ -302,7 +303,7 @@ export default function LaporanPerubahanModalScreen() {
                                     <FinancialRow label="Laba Bersih Periode" value={equity.labaBersih} color="text-emerald-700" />
                                 )}
                                 {equity.labaInvestor > 0 && (
-                                    <FinancialRow label="Laba Investor (Jual Beli Mobil)" value={equity.labaInvestor} color="text-emerald-700" />
+                                    <FinancialRow label="Laba Investor (Unit Terjual)" value={equity.labaInvestor} color="text-emerald-700" />
                                 )}
                             </View>
 
