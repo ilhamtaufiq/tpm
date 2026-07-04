@@ -53,3 +53,12 @@ def test_migration_adds_uang_muka_penjualan_enum():
     )
 
     assert "UANG_MUKA_PENJUALAN" in migration
+
+
+def test_cancel_booking_auto_heals_hutang_enum_before_partial_refund():
+    service = read("backend/app/services/penjualan_mobil_service.py")
+    schema = read("backend/app/utils/db_schema.py")
+
+    assert "ensure_hutang_sumber_enum" in schema
+    assert "if refund > 0:" in service
+    assert "ensure_hutang_sumber_enum(self.db)" in service
