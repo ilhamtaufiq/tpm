@@ -3,7 +3,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PrintSettings, printSettingsService } from './printSettings';
-import { getPaperDimensions } from './paperSize';
+import { getPaperDimensions, PaperDimensions, receiptDivider } from './paperSize';
 import { printHtmlInBrowser } from './printHtmlBrowser';
 import { printHtmlOnWeb } from './printHtmlWeb';
 import { buildPublicReceiptUrl } from './publicReceiptUrl';
@@ -56,7 +56,11 @@ export interface PrintReceiptData {
     driverName?: string;
 }
 
-function buildReceiptQrHtml(data: PrintReceiptData, settings: PrintSettings, fsS: number): string {
+function buildReceiptQrHtml(
+    data: PrintReceiptData,
+    settings: PrintSettings,
+    paper: PaperDimensions,
+): string {
     if (!settings.showQRCode) return '';
 
     const qrType = data.type === 'mobil' ? 'mobil' : data.type;
@@ -64,10 +68,11 @@ function buildReceiptQrHtml(data: PrintReceiptData, settings: PrintSettings, fsS
     const receiptUrl = buildPublicReceiptUrl(qrType, receiptId, settings.qrCodeBaseURL);
 
     const encoded = encodeURIComponent(receiptUrl);
+    const qr = paper.qrSizePx;
     return `
 <div class="center" style="margin-top:8px">
-    <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encoded}" width="80" height="80" alt="QR Struk" />
-    <div style="font-size:${fsS}px;margin-top:4px">Scan untuk lihat struk online</div>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=${qr}x${qr}&data=${encoded}" width="${qr}" height="${qr}" alt="QR Struk" />
+    <div style="font-size:${paper.fontSmall}px;margin-top:4px">Scan untuk lihat struk online</div>
 </div>`;
 }
 
@@ -123,8 +128,7 @@ export function generateReceiptHTML(data: PrintReceiptData, settings: PrintSetti
             : '';
     const partsHtml = parts.length > 0 ? renderItems(parts, 'SPAREPART') : '';
 
-    const logoMaxPx = paper.paperSize === '58mm' ? 64 : 80;
-    const logoHtml = buildReceiptLogoHtml(settings.logoUri, logoMaxPx);
+    const logoHtml = buildReceiptLogoHtml(settings.logoUri, paper.logoMaxPx);
 
     const sisa = data.total - (data.paid || 0);
 
@@ -160,7 +164,7 @@ ${sisa > 0 ? `<tr><td style="font-size:${fsB}px;color:#EF4444;font-weight:bold">
 ${data.paymentMethod ? `<tr><td style="font-size:${fsS}px">Metode Bayar:</td><td style="font-size:${fsS}px;text-align:right">${String(data.paymentMethod).toUpperCase()}</td></tr>` : ''}
 </table>
 <div class="divider"></div>
-${buildReceiptQrHtml(data, settings, fsS)}
+${buildReceiptQrHtml(data, settings, paper)}
 <div class="center" style="font-size:${fsFooter}px">${settings.footer || 'Terima kasih'}</div>
 </body></html>`;
 }
@@ -189,17 +193,19 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
                         const device = JSON.parse(savedPrinter);
                         await BLEPrinter.init();
                         await BLEPrinter.connectPrinter(device.inner_mac_address);
+                        const blePaper = getPaperDimensions(normalizedSettings.paperSize);
+                        const div = receiptDivider(blePaper.charWidth);
                         let text = `<center><b>${processedSettings.companyName || 'TIGA PUTRA MOTOR'}</b></center>\n`;
-                        text += `${'--------------------------------'}\n`;
+                        text += `${div}\n`;
                         text += `No: ${data.transactionNumber}\nTgl: ${new Date(data.date).toLocaleString('id-ID')}\nPlg: ${data.customerName}\n`;
-                        text += `${'--------------------------------'}\n`;
+                        text += `${div}\n`;
                         const all = [...(data.services || []), ...(data.parts || []), ...(data.items || [])];
                         all.forEach(i => { text += `${i.description.toUpperCase()}\n  ${i.quantity} x ${i.unitPrice}\t${i.subtotal}\n`; });
-                        text += `${'--------------------------------'}\n`;
+                        text += `${div}\n`;
                         text += `<B>Total: ${data.total}</B>\n`;
                         if (data.paid !== undefined) text += `Dibayar: ${data.paid}\n`;
                         if (data.paid !== undefined && data.total > data.paid) text += `Sisa: ${data.total - data.paid}\n`;
-                        text += `${'--------------------------------'}\n`;
+                        text += `${div}\n`;
                         text += `<center>${processedSettings.footer || 'Terimakasih'}</center>\n\n\n\n`;
                         await BLEPrinter.printText(text);
                         return;
