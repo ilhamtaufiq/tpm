@@ -283,8 +283,17 @@ export default function LabaRugiScreen() {
                 <View className="p-5 w-full">
                     <Typography variant="caption" weight="bold" className="text-amber-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Penjualan</Typography>
                     <FinancialRow label="Total Penjualan Unit (Gross)" value={unit.revenue} bold large color="text-slate-800" />
-                    {(unit.pendapatan_lainnya || 0) > 0 && (
-                        <FinancialRow label="Pendapatan Lainnya (Penalti Booking)" value={unit.pendapatan_lainnya || 0} bold color="text-amber-700" />
+
+                    {(unit.dana_penalti ?? unit.pendapatan_lainnya ?? 0) > 0 && (
+                        <View className="bg-amber-50/80 p-3 rounded-xl mb-4 mt-4 border border-amber-100">
+                            <Typography variant="caption" weight="bold" className="text-amber-700 mb-2 uppercase tracking-widest text-[10px]">Dana Penalti</Typography>
+                            <FinancialRow
+                                label="Penalti Pembatalan Booking"
+                                value={unit.dana_penalti ?? unit.pendapatan_lainnya ?? 0}
+                                bold
+                                color="text-amber-800"
+                            />
+                        </View>
                     )}
 
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
@@ -296,7 +305,9 @@ export default function LabaRugiScreen() {
 
                     <View className="p-1 px-3 mb-4">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">III. Beban Umum Unit</Typography>
-                        <FinancialRow label="Bagi Hasil Investor" value={unit.sharing_investor || 0} isNegative color="text-rose-600" />
+                        {(unit.sharing_investor || 0) > 0 && (
+                            <FinancialRow label="Bagi Hasil Investor" value={unit.sharing_investor || 0} isNegative color="text-rose-600" />
+                        )}
                         <FinancialRow label="Beban Umum & Operasional" value={unit.beban_umum} isNegative />
                     </View>
 

@@ -185,6 +185,9 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr class="unit-header" style="background-color: #d97706;"><td colspan="2">UNIT JUAL BELI MOBIL</td></tr>
                 <tr class="section-title"><td colspan="2">I. PENDAPATAN JUAL BELI</td></tr>
                 <tr><td>Total Penjualan Unit Mobil</td><td class="amount">${formatCurrency(data.units.mobil.revenue)}</td></tr>
+                ${(data.units.mobil.dana_penalti || data.units.mobil.pendapatan_lainnya || 0) > 0 ? `
+                <tr class="section-title"><td colspan="2">DANA PENALTI</td></tr>
+                <tr><td>Penalti Pembatalan Booking</td><td class="amount">${formatCurrency(data.units.mobil.dana_penalti || data.units.mobil.pendapatan_lainnya || 0)}</td></tr>` : ''}
 
                 <tr class="section-title"><td colspan="2">II. BEBAN POKOK (HPP)</td></tr>
                 <tr><td>Harga Beli Unit Mobil</td><td class="amount negative">(${formatCurrency(data.units.mobil.hpp)})</td></tr>
@@ -192,7 +195,7 @@ export const buildLabaRugiExportHtml = (data: LabaRugiReport, date: Date, filter
                 <tr><td>Biaya Perbaikan Bengkel - Mobil Terjual</td><td class="amount negative">(${formatCurrency(mobilRepairSold)})</td></tr>
 
                 <tr class="section-title"><td colspan="2">III. BAGI HASIL & UMUM</td></tr>
-                <tr><td>Bagi Hasil Investor (Sharing)</td><td class="amount negative">(${formatCurrency(data.units.mobil.sharing_investor || 0)})</td></tr>
+                ${(data.units.mobil.sharing_investor || 0) > 0 ? `<tr><td>Bagi Hasil Investor (Sharing)</td><td class="amount negative">(${formatCurrency(data.units.mobil.sharing_investor || 0)})</td></tr>` : ''}
                 <tr><td>Beban Umum Unit Mobil</td><td class="amount negative">(${formatCurrency(data.units.mobil.beban_umum || 0)})</td></tr>
                 <tr class="total-row" style="background-color: #f0fdf4;"><td>LABA BERSIH UNIT MOBIL</td><td class="amount positive">${formatCurrency(data.units.mobil.laba_bersih)}</td></tr>
             </table>

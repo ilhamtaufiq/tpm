@@ -846,7 +846,8 @@ class BaseReportService:
             func.date(TransaksiPenjualanMobil.updated_at) >= tanggal_dari,
             func.date(TransaksiPenjualanMobil.updated_at) <= tanggal_sampai,
         ).scalar() or 0)
-        laba_mobil_tpm = laba_mobil_gross - sold_laba_investor + mobil_penalty_income
+        laba_mobil_tpm_sales = laba_mobil_gross - sold_laba_investor
+        laba_mobil_tpm = laba_mobil_tpm_sales + mobil_penalty_income
         laba_bengkel_kotor_gross = float(bengkel_summary.get("total_laba_kotor", 0))
         # Unit Bengkel recognizes internal JB Mobil work immediately. The
         # konsolidasi fields below are kept only as trace data for reports that
@@ -861,8 +862,8 @@ class BaseReportService:
         gaji_pokok = float(gaji_summary.get("total_gaji_pokok", 0))
         gaji_lembur = float(gaji_summary.get("total_uang_lembur", 0))
         
-        # Investor sharing (already net in laba_mobil_tpm, so NOT double-subtracted)
-        investor_sharing = laba_mobil_gross - laba_mobil_tpm
+        # Investor sharing only from realized unit sales — penalty stays separate.
+        investor_sharing = sold_laba_investor
         
         # Include ja_expenses_bengkel here.
         # Internal workshop repairs (JA -> Bengkel) are revenue for Bengkel, 
@@ -1014,10 +1015,11 @@ class BaseReportService:
                 "mobil": {
                     "sales_revenue": sold_revenue,
                     "pendapatan_lainnya": mobil_penalty_income,
+                    "dana_penalti": mobil_penalty_income,
                     "total_laba_kotor": laba_mobil_gross, 
                     "total_laba_tpm": laba_mobil_tpm,
-                    "sharing_investor": laba_mobil_gross - laba_mobil_tpm,
-                    "laba_investor": laba_mobil_gross - laba_mobil_tpm,
+                    "sharing_investor": sold_laba_investor,
+                    "laba_investor": sold_laba_investor,
                     "purchase_hpp": hpp_sold_price,
                     "prep_hpp": hpp_sold_prep,
                     "stock_purchase_period": total_stock_purchase_period,
