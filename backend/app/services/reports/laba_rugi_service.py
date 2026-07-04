@@ -113,6 +113,7 @@ class LabaRugiService(BaseReportService):
                 "mobil": {
                     "revenue": m_revenue,
                     "pendapatan_lainnya": m_pendapatan_lainnya,
+                    "dana_penalti": m_pendapatan_lainnya,
                     "hpp": m_hpp_unit,
                     "beban_operasional": m_prep,
                     "maintenance": m_maintenance,

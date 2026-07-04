@@ -122,6 +122,7 @@ export interface LabaRugiUnit {
     maintenance?: number;
     sharing_investor?: number;
     pendapatan_lainnya?: number;
+    dana_penalti?: number;
     laba_bersih: number;
 }
 

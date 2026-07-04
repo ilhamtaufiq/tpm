@@ -36,7 +36,9 @@ def test_laba_rugi_mobil_penalty_as_pendapatan_lainnya():
     assert "TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL" in base
     assert 'm.get("pendapatan_lainnya", 0)' in laba_rugi
     assert "+ m_pendapatan_lainnya" in laba_rugi
-    assert "Pendapatan Lainnya (Penalti Booking)" in ui
+    assert "Dana Penalti" in ui
+    assert '"sharing_investor": sold_laba_investor' in base
+    assert "laba_mobil_gross - laba_mobil_tpm" not in base.split('"sharing_investor"')[1].split("details")[0]
 
 
 def test_hutang_menu_labels_refund_dp_source():
