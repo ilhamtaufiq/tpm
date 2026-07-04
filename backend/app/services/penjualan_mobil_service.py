@@ -34,7 +34,7 @@ from app.services.kas_bank_integration import create_kas_entry
 from app.utils.constants import KasBankJenis
 from app.utils.db_schema import ensure_hutang_sumber_enum
 from app.utils.workshop_finance import internal_mobil_workshop_filters
-from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource, KasBank
+from app.models.keuangan import KasBank
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -973,14 +973,12 @@ class PenjualanMobilService:
             }, synchronize_session='fetch')
 
             # Cancel linked Hutang internal (mobil's payable)
-            from app.models.keuangan import HutangUsaha
-            from app.utils.constants import HutangStatus, HutangSource
             self.db.query(HutangUsaha).filter(
                 HutangUsaha.nomor_referensi == bgl.nomor_transaksi,
                 HutangUsaha.status != HutangStatus.BATAL,
             ).update({
                 "status": HutangStatus.BATAL,
-                "nominal_terbayar": 0,
+                "total_dibayar": 0,
                 "sisa_hutang": 0,
                 "catatan": f"Dibatalkan: booking {transaksi.nomor_transaksi} batal"
             }, synchronize_session='fetch')
