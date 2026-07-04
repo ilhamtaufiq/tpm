@@ -283,6 +283,9 @@ export default function LabaRugiScreen() {
                 <View className="p-5 w-full">
                     <Typography variant="caption" weight="bold" className="text-amber-600 mb-2 uppercase tracking-widest text-[10px]">I. Pendapatan Penjualan</Typography>
                     <FinancialRow label="Total Penjualan Unit (Gross)" value={unit.revenue} bold large color="text-slate-800" />
+                    {(unit.pendapatan_lainnya || 0) > 0 && (
+                        <FinancialRow label="Pendapatan Lainnya (Penalti Booking)" value={unit.pendapatan_lainnya || 0} bold color="text-amber-700" />
+                    )}
 
                     <View className="bg-slate-50/80 p-3 rounded-xl mb-4 mt-4 border border-slate-100">
                         <Typography variant="caption" weight="bold" className="text-slate-500 mb-2 uppercase tracking-widest text-[10px]">II. Beban Pokok Penjualan (HPP)</Typography>

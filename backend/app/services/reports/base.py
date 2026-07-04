@@ -667,6 +667,10 @@ class BaseReportService:
 
         customer_dp += direct_bengkel_dp
 
+        # Refund DP from cancelled bookings (payable via Hutang menu).
+        dp_refund_hutang = get_debt_balance_by_unit([HutangSource.UANG_MUKA_PENJUALAN])
+        customer_dp += dp_refund_hutang
+
         # 4. Unearned Receivables (Piutang Booking)
         # If a car is BOOKED, we have a Piutang record, but the revenue isn't earned yet.
         # We must neutralize this in the equity calculation.
@@ -836,7 +840,13 @@ class BaseReportService:
         # Mobil profit is recognized only after the car is fully sold. Active
         # bookings remain stock + customer DP/piutang neutralizers.
         laba_mobil_gross = sold_revenue - hpp_sold_price - hpp_sold_prep - mobil_total_repairs_sold
-        laba_mobil_tpm = laba_mobil_gross - sold_laba_investor
+        mobil_penalty_income = float(self.db.query(func.sum(TransaksiPenjualanMobil.laba_tpm)).filter(
+            TransaksiPenjualanMobil.status_bayar == PaymentStatus.BATAL,
+            TransaksiPenjualanMobil.laba_tpm > 0,
+            func.date(TransaksiPenjualanMobil.updated_at) >= tanggal_dari,
+            func.date(TransaksiPenjualanMobil.updated_at) <= tanggal_sampai,
+        ).scalar() or 0)
+        laba_mobil_tpm = laba_mobil_gross - sold_laba_investor + mobil_penalty_income
         laba_bengkel_kotor_gross = float(bengkel_summary.get("total_laba_kotor", 0))
         # Unit Bengkel recognizes internal JB Mobil work immediately. The
         # konsolidasi fields below are kept only as trace data for reports that
@@ -1003,6 +1013,7 @@ class BaseReportService:
             "units": {
                 "mobil": {
                     "sales_revenue": sold_revenue,
+                    "pendapatan_lainnya": mobil_penalty_income,
                     "total_laba_kotor": laba_mobil_gross, 
                     "total_laba_tpm": laba_mobil_tpm,
                     "sharing_investor": laba_mobil_gross - laba_mobil_tpm,

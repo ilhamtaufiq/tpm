@@ -848,6 +848,27 @@ class PenjualanMobilService:
         return transaksi
 
 
+    def _generate_nomor_hutang(self) -> str:
+        """Generate unique payable number for refund DP liabilities."""
+        today = datetime.now()
+        prefix = TRANSACTION_PREFIXES["hutang"]
+        date_str = today.strftime("%y%m%d")
+
+        last = (
+            self.db.query(HutangUsaha)
+            .filter(HutangUsaha.nomor_hutang.like(f"{prefix}{date_str}%"))
+            .order_by(HutangUsaha.id.desc())
+            .first()
+        )
+
+        if last:
+            last_num = int(last.nomor_hutang[-4:])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+
+        return f"{prefix}{date_str}{new_num:04d}"
+
     def cancel_booking(
         self,
         transaksi_id: int,
@@ -856,7 +877,7 @@ class PenjualanMobilService:
         alasan: str = "",
         user_id: Optional[int] = None,
     ) -> TransaksiPenjualanMobil:
-        """Cancel a booking and process penalty/refund (supports split refund)."""
+        """Cancel a booking, recognize penalty income, and defer refund via hutang."""
         transaksi = self.get_by_id(transaksi_id)
 
         # Validate: must be a non-LUNAS booking
@@ -864,6 +885,12 @@ class PenjualanMobilService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Transaksi sudah lunas, tidak bisa dibatalkan",
+            )
+
+        if transaksi.status_bayar == PaymentStatus.BATAL:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Transaksi booking sudah dibatalkan",
             )
 
         mobil = self.db.query(Mobil).filter(Mobil.id == transaksi.mobil_id).first()
@@ -890,16 +917,17 @@ class PenjualanMobilService:
         transaksi.status_bayar = PaymentStatus.BATAL
         transaksi.mobil_id = None  # Crucial: Allow car to be sold again
         
-        # Adjust financial values to reflect only the penalty
-        transaksi.harga_jual = penalti
+        # Penalty is recognized as JB Mobil other income (laba_tpm on BATAL tx).
+        # Do not treat cancellation as a unit sale.
+        transaksi.harga_jual = Decimal("0")
         transaksi.total_modal = Decimal("0")
-        transaksi.laba_kotor = penalti
-        transaksi.laba_investor = Decimal("0") # Penalty usually stays with TPM unless split
+        transaksi.laba_kotor = Decimal("0")
+        transaksi.laba_investor = Decimal("0")
         transaksi.laba_tpm = penalti
-        transaksi.dp = penalti
+        transaksi.dp = Decimal("0")
         transaksi.sisa_bayar = Decimal("0")
         
-        catatan_batal = f"DIBATALKAN - Penalti: {penalti}, Refund: {refund}"
+        catatan_batal = f"DIBATALKAN - DP: {dp_terbayar}, Penalti: {penalti}, Refund: {refund}"
         if alasan:
             catatan_batal += f" | Alasan: {alasan}"
         transaksi.catatan = catatan_batal
@@ -963,46 +991,27 @@ class PenjualanMobilService:
 
         self.db.flush()
 
-        # 4. Note: We DO NOT record a new MASUK for the penalty because it is
-        # already in the bank from the original DP. We only record the REFUND (KELUAR).
-        # This prevents double-counting the penalty money in KasBank.
-
-        # 5. Record refund as expense (if > 0)
+        # 5. Defer refund as hutang DP jual mobil (uang muka penjualan).
+        # Cash stays unchanged until refund is paid from the Hutang menu.
         if refund > 0:
-            if not refund_entries:
-                # Fallback to cash if no entries provided
-                refund_entries = [(PaymentMethod.TUNAI, refund)]
-            
-            prepared_refunds = []
-            for metode, nominal in refund_entries:
-                if nominal is None:
-                    prepared_refunds.append((metode, refund))
-                else:
-                    prepared_refunds.append((metode, nominal))
-            
-            # Validate total refund matches
-            total_refund_input = sum(n for m, n in prepared_refunds)
-            if total_refund_input != refund:
-                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Total nominal refund ({total_refund_input}) tidak sesuai dengan sisa DP ({refund})",
-                )
-
-            for metode, nominal in prepared_refunds:
-                if nominal > 0:
-                    create_kas_entry(
-                        db=self.db,
-                        tanggal=date.today(),
-                        tipe=KasBankType.KELUAR,
-                        nominal=nominal,
-                        sumber=KasBankSource.JUAL_BELI_MOBIL,
-                        metode_bayar=metode,
-                        referensi_id=transaksi.id,
-                        nomor_referensi=transaksi.nomor_transaksi,
-                        keterangan=f"Refund pembatalan booking {transaksi.nomor_transaksi} ({metode})",
-                        user_id=user_id,
-                        commit=False
-                    )
+            refund_hutang = HutangUsaha(
+                nomor_hutang=self._generate_nomor_hutang(),
+                tanggal=date.today(),
+                sumber=HutangSource.UANG_MUKA_PENJUALAN,
+                unit=KasBankSource.JUAL_BELI_MOBIL,
+                referensi_id=transaksi.id,
+                nomor_referensi=transaksi.nomor_transaksi,
+                nama_kreditur=transaksi.nama_pembeli,
+                telepon_kreditur=transaksi.telepon_pembeli,
+                alamat_kreditur=transaksi.alamat_pembeli,
+                nominal_hutang=refund,
+                total_dibayar=Decimal("0"),
+                sisa_hutang=refund,
+                status=HutangStatus.BELUM_LUNAS,
+                catatan=f"Refund DP pembatalan booking {transaksi.nomor_transaksi}. {catatan_batal}",
+                created_by=user_id,
+            )
+            self.db.add(refund_hutang)
 
         self.db.commit()
         self.db.refresh(transaksi)

@@ -5,7 +5,7 @@ import api from '../utils/api';
 export type PiutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
 export type HutangStatus = 'BELUM_LUNAS' | 'LUNAS' | 'SEBAGIAN';
 export type PiutangSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'KASBON_KARYAWAN' | 'LAINNYA';
-export type HutangSource = 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'LAINNYA';
+export type HutangSource = 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'JUAL_BELI_MOBIL' | 'UANG_MUKA_PENJUALAN' | 'LAINNYA';
 export type KasBankJenis = 'CASH' | 'BANK_BCA' | 'BANK_MANDIRI' | 'BANK_BRI' | 'BANK_LAINNYA' | 'KAS_UNIT_BENGKEL' | 'KAS_UNIT_JASA_ANGKUT' | 'KAS_UNIT_MOBIL' | 'KAS_UTAMA' | 'BANK_UTAMA';
 export type KasBankType = 'MASUK' | 'KELUAR';
 export type KasBankSource = 'BENGKEL' | 'JUAL_BELI_MOBIL' | 'JASA_ANGKUT' | 'PEMBELIAN_PART' | 'PEMBELIAN_MOBIL' | 'PENGELUARAN' | 'GAJI' | 'KASBON' | 'PIUTANG' | 'HUTANG' | 'MODAL' | 'PRIVE' | 'LAINNYA';
