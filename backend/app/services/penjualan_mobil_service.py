@@ -32,8 +32,10 @@ from app.utils.constants import (
 )
 from app.services.kas_bank_integration import create_kas_entry
 from app.utils.constants import KasBankJenis
+from app.utils.db_schema import ensure_hutang_sumber_enum
 from app.utils.workshop_finance import internal_mobil_workshop_filters
 from app.models.keuangan import PiutangUsaha, HutangUsaha, HutangStatus, HutangSource, KasBank
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class PenjualanMobilService:
@@ -909,6 +911,9 @@ class PenjualanMobilService:
 
         refund = dp_terbayar - penalti
 
+        if refund > 0:
+            ensure_hutang_sumber_enum(self.db)
+
         # 1. Revert car status to TERSEDIA and DETACH transaction
         mobil.status = CarStatus.TERSEDIA
         mobil.tanggal_terjual = None
@@ -1013,8 +1018,21 @@ class PenjualanMobilService:
             )
             self.db.add(refund_hutang)
 
-        self.db.commit()
-        self.db.refresh(transaksi)
+        try:
+            self.db.commit()
+            self.db.refresh(transaksi)
+        except SQLAlchemyError as exc:
+            self.db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "Gagal menyimpan pembatalan booking. "
+                    "Pastikan migration database terbaru sudah dijalankan "
+                    f"(alembic upgrade head). Detail: {exc.orig}"
+                    if getattr(exc, "orig", None)
+                    else f"Gagal menyimpan pembatalan booking: {exc}"
+                ),
+            ) from exc
 
         return transaksi
 
