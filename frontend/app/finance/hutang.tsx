@@ -49,6 +49,8 @@ const STATUS_BADGE_MAP: Record<HutangStatus, 'warning' | 'success' | 'info'> = {
 const SUMBER_LABEL: Record<string, string> = {
     PEMBELIAN_PART: 'Pembelian Part',
     PEMBELIAN_MOBIL: 'Pembelian Unit',
+    JUAL_BELI_MOBIL: 'Jual Beli Mobil',
+    UANG_MUKA_PENJUALAN: 'Refund DP Booking',
     LAINNYA: 'Lainnya',
 };
 

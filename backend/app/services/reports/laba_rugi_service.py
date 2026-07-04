@@ -58,9 +58,19 @@ class LabaRugiService(BaseReportService):
         m_prep = float(data["units"]["mobil"].get("prep_hpp", 0))
         m_overhead = m["overhead"] # Unit general overhead
         m_sharing = m["sharing_investor"] # Investor's share (Accrual from base.py)
+        m_pendapatan_lainnya = float(m.get("pendapatan_lainnya", 0))
 
         # Correct Laba Bersih calculation: Revenue - (Purchase + Prep + Repairs) - Overhead - Sharing
-        m_laba_bersih = m_revenue - m_hpp_unit - m_maintenance - m_prep - m_overhead - m_sharing
+        # Booking cancellation penalties are other income under JB Mobil.
+        m_laba_bersih = (
+            m_revenue
+            - m_hpp_unit
+            - m_maintenance
+            - m_prep
+            - m_overhead
+            - m_sharing
+            + m_pendapatan_lainnya
+        )
 
         # 4. SUMMARY
         overhead_pusat = b["common_expenses"]
@@ -102,6 +112,7 @@ class LabaRugiService(BaseReportService):
                 },
                 "mobil": {
                     "revenue": m_revenue,
+                    "pendapatan_lainnya": m_pendapatan_lainnya,
                     "hpp": m_hpp_unit,
                     "beban_operasional": m_prep,
                     "maintenance": m_maintenance,

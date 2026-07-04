@@ -890,109 +890,29 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 <Typography className="text-red-500">Penalti</Typography>
                                                 <Typography weight="bold" className="text-red-500">- {formatCurrency(penaltiVal)}</Typography>
                                             </View>
+                                            {penaltiVal > 0 && (
+                                                <View className="flex-row justify-between items-center mb-2">
+                                                    <Typography className="text-amber-600">Pendapatan Penalti</Typography>
+                                                    <Typography weight="bold" className="text-amber-600">+ {formatCurrency(penaltiVal)}</Typography>
+                                                </View>
+                                            )}
                                             <View className="border-t border-gray-200 mt-2 pt-3 flex-row justify-between items-center">
                                                 <View className="flex-row items-center">
                                                     <ArrowDownLeft size={16} color="#10B981" />
-                                                    <Typography weight="bold" className="text-emerald-600 ml-1">Refund ke Pembeli</Typography>
+                                                    <Typography weight="bold" className="text-emerald-600 ml-1">
+                                                        {refundVal > 0 ? 'Sisa DP (Hutang Refund)' : 'Refund ke Pembeli'}
+                                                    </Typography>
                                                 </View>
                                                 <Typography variant="h3" weight="bold" className="text-emerald-600">{formatCurrency(refundVal)}</Typography>
                                             </View>
+                                            {refundVal > 0 && (
+                                                <Typography variant="caption" className="text-gray-500 mt-3 leading-relaxed">
+                                                    Sisa DP dicatat sebagai hutang di menu Hutang. Kas tidak keluar saat pembatalan; refund dibayar dari menu Hutang.
+                                                </Typography>
+                                            )}
                                         </View>
                                     );
                                 })()}
-
-                                {/* Split Refund Toggle (only if refund > 0) */}
-                                {Math.max(0, parseFloat(String(activeTx?.dp || 0)) - (parseFloat(cancelPenalti) || 0)) > 0 && (
-                                    <View className="mb-6 flex-row justify-between items-center bg-gray-50/80 p-5 rounded-[28px] border border-gray-100">
-                                        <View className="flex-row items-center">
-                                            <View className="w-10 h-10 bg-primary/10 rounded-xl items-center justify-center mr-3">
-                                                <ArrowDownLeft size={18} color="#023C69" />
-                                            </View>
-                                            <View>
-                                                <Typography weight="bold" className="text-textMain text-sm">Split Refund</Typography>
-                                                <Typography variant="caption" className="text-textGray">Refund dengan beberapa metode</Typography>
-                                            </View>
-                                        </View>
-                                        <Pressable
-                                            onPress={() => {
-                                                setUseRefundSplit(!useRefundSplit);
-                                                if (useRefundSplit) {
-                                                    const dp = parseFloat(String(activeTx?.dp || 0));
-                                                    const refundVal = Math.max(0, dp - parseFloat(cancelPenalti));
-                                                    setRefundSplits([{ metode: 'TUNAI', nominal: String(refundVal) }]);
-                                                }
-                                            }}
-                                            className={`w-12 h-7 rounded-full px-1 justify-center ${useRefundSplit ? 'bg-primary' : 'bg-gray-300'}`}
-                                        >
-                                            <View className={`w-5 h-5 bg-white rounded-full shadow-sm ${useRefundSplit ? 'self-end' : 'self-start'}`} />
-                                        </Pressable>
-                                    </View>
-                                )}
-
-                                {/* Refund Methods Selection */}
-                                {Math.max(0, parseFloat(String(activeTx?.dp || 0)) - (parseFloat(cancelPenalti) || 0)) > 0 && (
-                                    !useRefundSplit ? (
-                                        <View className="mb-8">
-                                            <Typography weight="bold" className="text-textMain mb-3">Metode Refund</Typography>
-                                            <View className="flex-row space-x-3">
-                                                {['TUNAI', 'TRANSFER'].map((method) => (
-                                                    <Pressable
-                                                        key={method}
-                                                        onPress={() => setRefundSplits([{ metode: method, nominal: String(Math.max(0, parseFloat(String(activeTx?.dp || 0)) - (parseFloat(cancelPenalti) || 0))) }])}
-                                                        className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 ${refundSplits[0]?.metode === method
-                                                            ? method === 'TUNAI' ? 'bg-emerald-50 border-emerald-500' : 'bg-blue-50 border-blue-500'
-                                                            : 'bg-gray-50 border-gray-200'
-                                                            }`}
-                                                    >
-                                                        {method === 'TUNAI' ? <Banknote size={20} color={refundSplits[0]?.metode === 'TUNAI' ? '#10B981' : '#9CA3AF'} /> : <CreditCard size={20} color={refundSplits[0]?.metode === 'TRANSFER' ? '#3B82F6' : '#9CA3AF'} />}
-                                                        <Typography weight="bold" className={`ml-2 ${refundSplits[0]?.metode === method ? (method === 'TUNAI' ? 'text-emerald-600' : 'text-blue-600') : 'text-gray-400'}`}>{method === 'TUNAI' ? 'Tunai' : 'Transfer'}</Typography>
-                                                    </Pressable>
-                                                ))}
-                                            </View>
-                                        </View>
-                                    ) : (
-                                        <View className="mb-8 p-5 bg-gray-50/50 rounded-[32px] border border-gray-100/50">
-                                            <Typography weight="bold" className="text-textMain mb-4">Rincian Split Refund</Typography>
-                                            {refundSplits.map((split, index) => (
-                                                <View key={index} className="mb-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm shadow-black/5">
-                                                    <View className="flex-row justify-between items-center mb-3">
-                                                        <View className="flex-row items-center">
-                                                            {split.metode === 'TUNAI' ? <Banknote size={14} color="#10B981" /> : <CreditCard size={14} color="#3B82F6" />}
-                                                            <Typography weight="bold" className="text-textGray text-[10px] ml-1 uppercase">{split.metode}</Typography>
-                                                        </View>
-                                                        <View className="flex-row space-x-1">
-                                                            {['TUNAI', 'TRANSFER'].map((m) => (
-                                                                <Pressable
-                                                                    key={m}
-                                                                    onPress={() => {
-                                                                        const next = [...refundSplits];
-                                                                        next[index].metode = m;
-                                                                        setRefundSplits(next);
-                                                                    }}
-                                                                    className={`px-3 py-1 rounded-full border ${split.metode === m ? 'bg-primary border-primary' : 'bg-white border-gray-200'}`}
-                                                                >
-                                                                    <Typography className={`text-[9px] font-bold ${split.metode === m ? 'text-white' : 'text-gray-400'}`}>{m}</Typography>
-                                                                </Pressable>
-                                                            ))}
-                                                        </View>
-                                                    </View>
-                                                    <TextInput
-                                                        className="bg-gray-50/50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-textMain text-base"
-                                                        value={formatNumber(split.nominal)}
-                                                        onChangeText={(val) => {
-                                                            const cleanVal = String(parseNumber(val));
-                                                            const next = [...refundSplits];
-                                                            next[index].nominal = cleanVal;
-                                                            setRefundSplits(next);
-                                                        }}
-                                                        keyboardType="numeric"
-                                                        placeholder="0"
-                                                    />
-                                                </View>
-                                            ))}
-                                        </View>
-                                    )
-                                )}
 
                                 {/* Reason */}
                                 <View className="mb-8">
@@ -1044,25 +964,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                 }
 
                                                 const penaltiVal = parseNumber(cancelPenalti) || 0;
-                                                const dpVal = Math.round(parseFloat(String(activeTx.dp || 0)));
-                                                const totalRefundNeeded = Math.max(0, dpVal - penaltiVal);
-
-                                                const refundPayments = refundSplits
-                                                    .filter(p => parseNumber(p.nominal) > 0)
-                                                    .map(p => ({
-                                                        metode: p.metode,
-                                                        nominal: parseNumber(p.nominal)
-                                                    }));
-
-                                                const totalRefundInput = refundPayments.reduce((acc, curr) => acc + curr.nominal, 0);
-
-                                                if (totalRefundNeeded > 0 && Math.abs(totalRefundInput - totalRefundNeeded) > 1) {
-                                                    const msg = `Total refund (${formatCurrency(totalRefundInput)}) harus sama dengan sisa DP (${formatCurrency(totalRefundNeeded)})`;
-                                                    setCancelError(msg);
-                                                    if (Platform.OS === 'web') window.alert(msg);
-                                                    else Alert.alert('Error', msg);
-                                                    return;
-                                                }
 
                                                 setCancelError(null);
 
@@ -1074,8 +975,6 @@ export const MobilDetail = ({ unit: initialUnit, onClose, onEdit, onSell }: Mobi
                                                             id: activeTx.id,
                                                             data: {
                                                                 penalti: penaltiVal,
-                                                                metode_refund: !useRefundSplit ? refundSplits[0]?.metode : undefined,
-                                                                refund_payments: useRefundSplit ? refundPayments : undefined,
                                                                 alasan: cancelAlasan,
                                                             },
                                                         },

@@ -73,7 +73,8 @@ class HutangService:
                  unit_source = KasBankSource.JUAL_BELI_MOBIL
              elif data.sumber == HutangSource.JUAL_BELI_MOBIL:
                  unit_source = KasBankSource.JUAL_BELI_MOBIL
-             # Add more mappings as needed
+             elif data.sumber == HutangSource.UANG_MUKA_PENJUALAN:
+                 unit_source = KasBankSource.JUAL_BELI_MOBIL
 
         hutang = HutangUsaha(
             nomor_hutang=nomor_hutang,

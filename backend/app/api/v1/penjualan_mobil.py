@@ -206,7 +206,7 @@ def cancel_booking(
     db: DBSession,
     current_user: ManagerUser,
 ):
-    """Cancel a booking and process penalty/refund."""
+    """Cancel a booking, recognize penalty income, and defer refund via hutang."""
     service = PenjualanMobilService(db)
     # Build refund entries
     refund_entries = []

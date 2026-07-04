@@ -121,6 +121,7 @@ export interface LabaRugiUnit {
     beban_umum?: number;
     maintenance?: number;
     sharing_investor?: number;
+    pendapatan_lainnya?: number;
     laba_bersih: number;
 }
 
