@@ -55,6 +55,12 @@ def test_migration_adds_uang_muka_penjualan_enum():
     assert "UANG_MUKA_PENJUALAN" in migration
 
 
+def test_cancel_booking_does_not_shadow_hutang_usaha_import():
+    service = read("backend/app/services/penjualan_mobil_service.py")
+
+    assert "from app.models.keuangan import HutangUsaha" not in service.split("def cancel_booking")[1]
+
+
 def test_cancel_booking_auto_heals_hutang_enum_before_partial_refund():
     service = read("backend/app/services/penjualan_mobil_service.py")
     schema = read("backend/app/utils/db_schema.py")
