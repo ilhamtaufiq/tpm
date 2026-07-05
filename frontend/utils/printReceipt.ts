@@ -8,17 +8,9 @@ import { printHtmlInBrowser } from './printHtmlBrowser';
 import { printHtmlOnWeb } from './printHtmlWeb';
 import { buildPublicReceiptUrl } from './publicReceiptUrl';
 import { ensureLogoBase64, buildReceiptLogoHtml } from './receiptLogo';
+import { getBLEPrinter } from './blePrinter';
 
 export { ensureLogoBase64 } from './receiptLogo';
-
-let BLEPrinter: any = null;
-if (Platform.OS === 'android') {
-    try {
-        BLEPrinter = require('react-native-thermal-receipt-printer').BLEPrinter;
-    } catch (e) {
-        console.warn('Thermal Printer library not available');
-    }
-}
 
 export interface PrintReceiptItem {
     description: string;
@@ -186,13 +178,14 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
         if (Platform.OS === 'web') {
             await printHtmlOnWeb(html, normalizedSettings);
         } else {
-            if (Platform.OS === 'android' && BLEPrinter) {
+            const blePrinter = getBLEPrinter();
+            if (Platform.OS === 'android' && blePrinter) {
                 try {
                     const savedPrinter = await AsyncStorage.getItem('bluetooth_printer');
                     if (savedPrinter) {
                         const device = JSON.parse(savedPrinter);
-                        await BLEPrinter.init();
-                        await BLEPrinter.connectPrinter(device.inner_mac_address);
+                        await blePrinter.init();
+                        await blePrinter.connectPrinter(device.inner_mac_address);
                         const blePaper = getPaperDimensions(normalizedSettings.paperSize);
                         const div = receiptDivider(blePaper.charWidth);
                         let text = `<center><b>${processedSettings.companyName || 'TIGA PUTRA MOTOR'}</b></center>\n`;
@@ -207,7 +200,7 @@ export async function printReceipt(data: PrintReceiptData, settings?: PrintSetti
                         if (data.paid !== undefined && data.total > data.paid) text += `Sisa: ${data.total - data.paid}\n`;
                         text += `${div}\n`;
                         text += `<center>${processedSettings.footer || 'Terimakasih'}</center>\n\n\n\n`;
-                        await BLEPrinter.printText(text);
+                        await blePrinter.printText(text);
                         return;
                     }
                 } catch (e) {

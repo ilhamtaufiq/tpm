@@ -5,6 +5,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 GIT_BRANCH="${GIT_BRANCH:-main}"
+BUMP_VERSION="${BUMP_VERSION:-patch}"  # patch | minor | major | none
 GRADLE_LOG="/tmp/gradle-build.log"
 NPM_LOG="/tmp/npm-install.log"
 PREBUILD_LOG="/tmp/expo-prebuild.log"
@@ -144,6 +145,124 @@ read_version_from_git() {
     ok "Versi dari git ($GIT_BRANCH): $VERSION"
 }
 
+version_to_code() {
+    local ver="${1%%-*}"
+    local major minor patch
+    IFS='.' read -r major minor patch <<< "$ver"
+    major=${major:-0}
+    minor=${minor:-0}
+    patch=${patch:-0}
+    echo $((major * 10000 + minor * 100 + patch))
+}
+
+bump_semver() {
+    local ver="$1"
+    local bump_type="$2"
+    local major minor patch suffix=""
+
+    if [[ "$ver" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-.+)?$ ]]; then
+        major="${BASH_REMATCH[1]}"
+        minor="${BASH_REMATCH[2]}"
+        patch="${BASH_REMATCH[3]}"
+        suffix="${BASH_REMATCH[4]}"
+    else
+        die "Tidak bisa bump versi: '$ver'"
+    fi
+
+    case "$bump_type" in
+        patch) patch=$((patch + 1)) ;;
+        minor) minor=$((minor + 1)); patch=0 ;;
+        major) major=$((major + 1)); minor=0; patch=0 ;;
+        none) echo "$ver"; return ;;
+        *) die "BUMP_VERSION tidak valid: '$bump_type' (pakai patch|minor|major|none)" ;;
+    esac
+
+    echo "${major}.${minor}.${patch}${suffix}"
+}
+
+write_version_files() {
+    local new_version="$1"
+    local new_code="$2"
+    local pkg_json="$FRONTEND_DIR/package.json"
+    local app_json="$FRONTEND_DIR/app.json"
+    local lock_json="$FRONTEND_DIR/package-lock.json"
+
+    jq --arg v "$new_version" '.version = $v' "$pkg_json" > "${pkg_json}.tmp" \
+        && mv "${pkg_json}.tmp" "$pkg_json"
+
+    jq --arg v "$new_version" --argjson c "$new_code" \
+        '.expo.version = $v | .expo.android.versionCode = $c' \
+        "$app_json" > "${app_json}.tmp" \
+        && mv "${app_json}.tmp" "$app_json"
+
+    if [ -f "$lock_json" ]; then
+        jq --arg v "$new_version" \
+            '.version = $v | .packages[""].version = $v' \
+            "$lock_json" > "${lock_json}.tmp" \
+            && mv "${lock_json}.tmp" "$lock_json"
+    fi
+}
+
+auto_bump_version() {
+    local old_version="$VERSION"
+    local new_version new_code current_code
+
+    if [ "$BUMP_VERSION" = "none" ]; then
+        info "Auto bump dimatikan (BUMP_VERSION=none), pakai versi $VERSION"
+        current_code=$(jq -r '.expo.android.versionCode // empty' < "$FRONTEND_DIR/app.json")
+        if [ -z "$current_code" ]; then
+            VERSION_CODE=$(version_to_code "$VERSION")
+            write_version_files "$VERSION" "$VERSION_CODE"
+            ok "android.versionCode diset ke $VERSION_CODE"
+        else
+            VERSION_CODE="$current_code"
+        fi
+        return
+    fi
+
+    new_version=$(bump_semver "$VERSION" "$BUMP_VERSION")
+    [ "$new_version" = "$old_version" ] && die "Gagal menghitung versi baru dari $old_version"
+
+    current_code=$(jq -r '.expo.android.versionCode // 0' < "$FRONTEND_DIR/app.json")
+    if [ "$current_code" -gt 0 ] 2>/dev/null; then
+        new_code=$((current_code + 1))
+    else
+        new_code=$(version_to_code "$new_version")
+    fi
+
+    write_version_files "$new_version" "$new_code"
+    VERSION="$new_version"
+    VERSION_CODE="$new_code"
+
+    ok "Versi dibump: $old_version → $VERSION (versionCode: $VERSION_CODE)"
+}
+
+commit_version_bump() {
+    local pkg_json="$FRONTEND_DIR/package.json"
+    local app_json="$FRONTEND_DIR/app.json"
+    local lock_json="$FRONTEND_DIR/package-lock.json"
+
+    cd "$PROJECT_DIR"
+
+    if [ "$BUMP_VERSION" = "none" ]; then
+        if git diff --quiet -- "$pkg_json" "$app_json" "$lock_json" 2>/dev/null; then
+            return
+        fi
+    fi
+
+    if git diff --quiet -- "$pkg_json" "$app_json" "$lock_json" 2>/dev/null; then
+        return
+    fi
+
+    info "Commit & push version bump ke origin/$GIT_BRANCH..."
+    git add "$pkg_json" "$app_json"
+    [ -f "$lock_json" ] && git add "$lock_json"
+
+    git commit -m "chore(release): bump version to $VERSION (versionCode $VERSION_CODE)"
+    git push origin "$GIT_BRANCH"
+    ok "Version bump terpush: $VERSION"
+}
+
 # ─── Cek prasyarat ─────────────────────────────────────────────
 info "Memeriksa prasyarat..."
 require_cmd node
@@ -175,6 +294,8 @@ ok "Semua prasyarat terpenuhi (SDK: $ANDROID_HOME, JDK: $JAVA_VER)"
 # ─── Sinkron git & versi ───────────────────────────────────────
 sync_from_git
 read_version_from_git
+auto_bump_version
+commit_version_bump
 
 APP_NAME=$(jq -r '.expo.name' < "$FRONTEND_DIR/app.json")
 RELEASE_TITLE="v$VERSION"
@@ -246,12 +367,13 @@ info "Membuat git tag $TAG..."
 cd "$PROJECT_DIR"
 
 if git rev-parse "$TAG" &>/dev/null; then
-    info "Tag $TAG sudah ada lokal, menghapus..."
-    git tag -d "$TAG"
+    die "Tag $TAG sudah ada. Bump versi gagal atau release duplikat. Gunakan BUMP_VERSION=patch (default) atau naikkan versi manual."
 fi
-git push origin ":refs/tags/$TAG" 2>/dev/null || true
+if [ -n "$(git ls-remote --tags origin "refs/tags/$TAG" 2>/dev/null)" ]; then
+    die "Tag $TAG sudah ada di origin. Jangan rebuild versi yang sama."
+fi
 
-git tag -a "$TAG" -m "Release $TAG"
+git tag -a "$TAG" -m "Release $TAG (versionCode $VERSION_CODE)"
 git push origin "$TAG"
 ok "Tag $TAG terpush"
 
@@ -283,6 +405,7 @@ echo ""
 echo "  ═══════════════════════════════════════"
 echo "   Branch   : $GIT_BRANCH @ $(git rev-parse --short HEAD)"
 echo "   Release  : $RELEASE_TITLE"
+echo "   Code     : $VERSION_CODE"
 echo "   APK      : $DIST_APK"
 REPO_URL=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "<repo>")
 echo "   URL      : https://github.com/$REPO_URL/releases/tag/$TAG"

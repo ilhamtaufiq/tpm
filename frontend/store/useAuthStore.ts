@@ -1,7 +1,10 @@
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+
+const SECURE_STORE_MAX_BYTES = 2048;
 
 interface AuthState {
     user: any | null;
@@ -104,19 +107,53 @@ export const useAuthStore = create<AuthState>()(
                         removeItem: async (key: string) => localStorage.removeItem(key),
                     };
                 }
+
                 return {
-                    getItem: SecureStore.getItemAsync,
-                    setItem: SecureStore.setItemAsync,
-                    removeItem: SecureStore.deleteItemAsync,
+                    getItem: async (key: string) => {
+                        try {
+                            const secureValue = await SecureStore.getItemAsync(key);
+                            if (secureValue) {
+                                return secureValue;
+                            }
+                        } catch (error) {
+                            console.warn('[Auth Store] SecureStore read failed, falling back to AsyncStorage', error);
+                        }
+                        return AsyncStorage.getItem(key);
+                    },
+                    setItem: async (key: string, value: string) => {
+                        if (value.length > SECURE_STORE_MAX_BYTES) {
+                            await AsyncStorage.setItem(key, value);
+                            try {
+                                await SecureStore.deleteItemAsync(key);
+                            } catch {
+                                // non-fatal
+                            }
+                            return;
+                        }
+
+                        try {
+                            await SecureStore.setItemAsync(key, value);
+                            await AsyncStorage.removeItem(key);
+                        } catch (error) {
+                            console.warn('[Auth Store] SecureStore write failed, using AsyncStorage', error);
+                            await AsyncStorage.setItem(key, value);
+                        }
+                    },
+                    removeItem: async (key: string) => {
+                        await Promise.allSettled([
+                            SecureStore.deleteItemAsync(key),
+                            AsyncStorage.removeItem(key),
+                        ]);
+                    },
                 };
             }),
             onRehydrateStorage: () => (state, error) => {
                 if (error) {
                     console.error('[Auth Store] Hydration error:', error);
                 } else {
-                    state?.setHasHydrated(true);
                     console.log('[Auth Store] Hydration complete:', state?.isAuthenticated ? 'Authenticated' : 'Not authenticated');
                 }
+                state?.setHasHydrated(true);
             },
         }
     )
