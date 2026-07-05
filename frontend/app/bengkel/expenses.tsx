@@ -3,6 +3,8 @@
  *
  * This route is registered as /bengkel/expenses in APP_ROUTES
  * for contextual navigation from the Bengkel menu.
- * It re-exports the same ExpensesScreen from finance/expenses.
+ * Explicit default export (re-export breaks expo-router on Hermes release builds).
  */
-export { default } from '../finance/expenses/index';
+import ExpensesScreen from '../finance/expenses/index';
+
+export default ExpensesScreen;
