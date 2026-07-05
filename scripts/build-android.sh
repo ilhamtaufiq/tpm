@@ -87,7 +87,7 @@ run_gradle_build() {
     local gradle_pid last_pct=0 pct
 
     : > "$log_file"
-    ./gradlew assembleRelease --console=plain >"$log_file" 2>&1 &
+    NODE_ENV=production ./gradlew assembleRelease --console=plain >"$log_file" 2>&1 &
     gradle_pid=$!
 
     while kill -0 "$gradle_pid" 2>/dev/null; do
@@ -353,8 +353,9 @@ fi
 info "Menjalankan expo prebuild..."
 cd "$FRONTEND_DIR"
 rm -rf android
-if EXPO_UPDATES_CHANNEL=production npx expo prebuild --platform android --clean >"$PREBUILD_LOG" 2>&1; then
-    ok "Prebuild selesai (channel: production)"
+export NODE_ENV=production
+if NODE_ENV=production npx expo prebuild --platform android --clean >"$PREBUILD_LOG" 2>&1; then
+    ok "Prebuild selesai (NODE_ENV=production, expo-updates disabled)"
 else
     err "Prebuild gagal. Log: $PREBUILD_LOG"
     tail -40 "$PREBUILD_LOG" >&2 || true
