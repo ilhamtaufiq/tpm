@@ -10,6 +10,7 @@ GRADLE_LOG="/tmp/gradle-build.log"
 NPM_LOG="/tmp/npm-install.log"
 PREBUILD_LOG="/tmp/expo-prebuild.log"
 RELEASE_NOTES=""
+VERSION_BUMP_PENDING=0
 
 # ─── Fungsi bantuan ────────────────────────────────────────────
 info()  { echo -e "\033[1;34m[*]\033[0m $*"; }
@@ -203,7 +204,7 @@ write_version_files() {
     fi
 }
 
-auto_bump_version() {
+prepare_version_bump() {
     local old_version="$VERSION"
     local new_version new_code current_code
 
@@ -213,7 +214,8 @@ auto_bump_version() {
         if [ -z "$current_code" ]; then
             VERSION_CODE=$(version_to_code "$VERSION")
             write_version_files "$VERSION" "$VERSION_CODE"
-            ok "android.versionCode diset ke $VERSION_CODE"
+            VERSION_BUMP_PENDING=1
+            ok "android.versionCode diset ke $VERSION_CODE (belum di-commit)"
         else
             VERSION_CODE="$current_code"
         fi
@@ -233,8 +235,25 @@ auto_bump_version() {
     write_version_files "$new_version" "$new_code"
     VERSION="$new_version"
     VERSION_CODE="$new_code"
+    VERSION_BUMP_PENDING=1
 
-    ok "Versi dibump: $old_version → $VERSION (versionCode: $VERSION_CODE)"
+    ok "Versi disiapkan untuk build: $old_version → $VERSION (versionCode: $VERSION_CODE, commit setelah sukses)"
+}
+
+rollback_version_bump() {
+    local pkg_json="$FRONTEND_DIR/package.json"
+    local app_json="$FRONTEND_DIR/app.json"
+    local lock_json="$FRONTEND_DIR/package-lock.json"
+
+    if [ "$VERSION_BUMP_PENDING" != "1" ]; then
+        return
+    fi
+
+    info "Build gagal — mengembalikan file versi ke commit terakhir..."
+    cd "$PROJECT_DIR"
+    git checkout -- "$pkg_json" "$app_json"
+    [ -f "$lock_json" ] && git checkout -- "$lock_json"
+    VERSION_BUMP_PENDING=0
 }
 
 commit_version_bump() {
@@ -260,7 +279,13 @@ commit_version_bump() {
 
     git commit -m "chore(release): bump version to $VERSION (versionCode $VERSION_CODE)"
     git push origin "$GIT_BRANCH"
+    VERSION_BUMP_PENDING=0
     ok "Version bump terpush: $VERSION"
+}
+
+finalize_release_version() {
+    info "Build sukses — menyimpan version bump ke git..."
+    commit_version_bump
 }
 
 # ─── Cek prasyarat ─────────────────────────────────────────────
@@ -294,8 +319,14 @@ ok "Semua prasyarat terpenuhi (SDK: $ANDROID_HOME, JDK: $JAVA_VER)"
 # ─── Sinkron git & versi ───────────────────────────────────────
 sync_from_git
 read_version_from_git
-auto_bump_version
-commit_version_bump
+prepare_version_bump
+
+cleanup_on_exit() {
+    if [ "$VERSION_BUMP_PENDING" = "1" ]; then
+        rollback_version_bump
+    fi
+}
+trap cleanup_on_exit EXIT
 
 APP_NAME=$(jq -r '.expo.name' < "$FRONTEND_DIR/app.json")
 RELEASE_TITLE="v$VERSION"
@@ -343,6 +374,8 @@ else
     grep -E 'FAILURE:|error:|Error:|BUILD FAILED' "$GRADLE_LOG" | tail -20 >&2 || tail -30 "$GRADLE_LOG" >&2
     exit 1
 fi
+
+finalize_release_version
 
 # ─── Cari APK hasil build ──────────────────────────────────────
 APK_FILE=$(find "$FRONTEND_DIR/android/app/build/outputs/apk" -name "*-release.apk" -type f | head -1)
