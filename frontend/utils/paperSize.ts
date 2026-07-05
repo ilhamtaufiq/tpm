@@ -10,6 +10,12 @@ export interface PaperDimensions {
     fontSmall: number;
     fontTitle: number;
     fontFooter: number;
+    /** Typical monospace character width for BLE / plain-text thermal output */
+    charWidth: number;
+    /** QR code edge length in pixels for HTML receipts */
+    qrSizePx: number;
+    /** Max logo width in pixels for HTML receipts */
+    logoMaxPx: number;
 }
 
 const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
@@ -22,6 +28,9 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         fontSmall: 9,
         fontTitle: 14,
         fontFooter: 9,
+        charWidth: 32,
+        qrSizePx: 56,
+        logoMaxPx: 64,
     },
     '80mm': {
         widthMm: 80,
@@ -32,8 +41,16 @@ const PAPER_MAP: Record<PaperSize, Omit<PaperDimensions, 'paperSize'>> = {
         fontSmall: 10,
         fontTitle: 16,
         fontFooter: 10,
+        charWidth: 48,
+        qrSizePx: 80,
+        logoMaxPx: 80,
     },
 };
+
+/** Dashed line for plain-text / BLE thermal receipts */
+export function receiptDivider(charWidth: number): string {
+    return '-'.repeat(Math.max(16, charWidth));
+}
 
 export function normalizePaperSize(value?: string | null): PaperSize {
     if (!value) return '80mm';

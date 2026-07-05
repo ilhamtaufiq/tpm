@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import { Typography } from '../../components/ui/Typography';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { getErrorMessage } from '../../utils/error';
-import { BLEPrinter } from 'react-native-thermal-receipt-printer';
+import { getBLEPrinter } from '../../utils/blePrinter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface BluetoothDevice {
@@ -33,10 +33,8 @@ export default function BluetoothSettingsScreen() {
     });
 
     useEffect(() => {
-        // Load saved printer on mount
         loadSavedPrinter();
-        // Initialize printer module
-        BLEPrinter.init().catch(err => console.warn(err));
+        getBLEPrinter()?.init().catch(err => console.warn(err));
     }, []);
 
     const loadSavedPrinter = async () => {
@@ -90,9 +88,12 @@ export default function BluetoothSettingsScreen() {
         setDevices([]);
 
         try {
+            const printer = getBLEPrinter();
+            if (!printer) {
+                throw new Error('Modul printer Bluetooth tidak tersedia di perangkat ini');
+            }
 
-            // BLEPrinter.getDeviceList returns a promise
-            const list = await BLEPrinter.getDeviceList();
+            const list = await printer.getDeviceList();
             // The list format depends on the library version, assuming array of objects
             setDevices(list as BluetoothDevice[]);
 
@@ -111,7 +112,11 @@ export default function BluetoothSettingsScreen() {
     const handleConnect = async (device: BluetoothDevice) => {
         setConnecting(device.inner_mac_address);
         try {
-            await BLEPrinter.connectPrinter(device.inner_mac_address);
+            const printer = getBLEPrinter();
+            if (!printer) {
+                throw new Error('Modul printer Bluetooth tidak tersedia');
+            }
+            await printer.connectPrinter(device.inner_mac_address);
             setConnectedDevice(device);
             await AsyncStorage.setItem('bluetooth_printer', JSON.stringify(device));
 
@@ -136,7 +141,7 @@ export default function BluetoothSettingsScreen() {
     const handleDisconnect = async () => {
         try {
             if (connectedDevice) {
-                await BLEPrinter.closeConn();
+                await getBLEPrinter()?.closeConn();
                 await AsyncStorage.removeItem('bluetooth_printer');
                 setConnectedDevice(null);
                 setDialogConfig({
@@ -154,9 +159,13 @@ export default function BluetoothSettingsScreen() {
     const handleTestPrint = async () => {
         if (!connectedDevice) return;
         try {
-            await BLEPrinter.printText("<C>TEST PRINT\n</C>");
-            await BLEPrinter.printText("<C>Tiga Putra Motor\n</C>");
-            await BLEPrinter.printText("<C>----------------\n</C>\n");
+            const printer = getBLEPrinter();
+            if (!printer) {
+                throw new Error('Modul printer Bluetooth tidak tersedia');
+            }
+            await printer.printText("<C>TEST PRINT\n</C>");
+            await printer.printText("<C>Tiga Putra Motor\n</C>");
+            await printer.printText("<C>----------------\n</C>\n");
         } catch (error) {
             setDialogConfig({
                 visible: true,

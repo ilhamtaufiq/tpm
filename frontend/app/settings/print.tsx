@@ -246,20 +246,24 @@ export default function PrintSettingsScreen() {
         if (Platform.OS !== 'web') return;
         try {
             setTestingPrint(true);
+            const paper = getPaperDimensions(settings?.paperSize);
             const testHtml = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
-@page { margin: 0; }
-body { font-family: 'Courier New', monospace; padding: 10mm; text-align: center; }
-h1 { font-size: 24px; margin-bottom: 20px; }
-p { font-size: 14px; margin: 5px 0; }
+@page { size: ${paper.widthMm}mm auto; margin: 0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Courier New', monospace; font-size: ${paper.fontBase}px; padding: ${paper.padding}; text-align: center; width: ${paper.widthPx}px; max-width: ${paper.widthMm}mm; }
+h1 { font-size: ${paper.fontTitle}px; margin-bottom: 12px; font-weight: bold; }
+p { font-size: ${paper.fontBase}px; margin: 4px 0; }
+.success { margin-top: 24px; font-size: ${paper.fontTitle}px; font-weight: bold; }
+.small { font-size: ${paper.fontSmall}px; color: #666; }
 </style></head><body>
 <h1>TPM</h1>
 <p>Test Print QZ Tray</p>
 <p>${new Date().toLocaleString('id-ID')}</p>
-<p style="margin-top:40px;font-size:20px;font-weight:bold;">✅ BERHASIL</p>
-<p style="font-size:12px;color:#666;">Printer: ${settings?.webPrinterName || 'Default'}</p>
+<p class="success">BERHASIL</p>
+<p class="small">Kertas: ${paper.paperSize}</p>
+<p class="small">Printer: ${settings?.webPrinterName || 'Default'}</p>
 </body></html>`;
-            const paper = getPaperDimensions(settings?.paperSize);
             const ok = await printHtmlViaQz(testHtml, {
                 printerName: settings?.webPrinterName || undefined,
                 paperSize: paper.paperSize,

@@ -1,6 +1,6 @@
 import qz from 'qz-tray';
 import { QzPrintOptions } from './qzTray.types';
-import { getPaperDimensions } from './paperSize';
+import { getPaperDimensions, PaperDimensions } from './paperSize';
 
 let connectPromise: Promise<void> | null = null;
 let certInitialized = false;
@@ -72,8 +72,9 @@ function extractBodyContent(html: string): string {
     return match ? match[1].trim() : html;
 }
 
-function buildQzPrintHtml(html: string, widthPx: number, widthMm: number): string {
+function buildQzPrintHtml(html: string, paper: PaperDimensions): string {
     const content = isFullHtmlDocument(html) ? extractBodyContent(html) : html;
+    const { widthPx, widthMm, fontBase, padding, logoMaxPx } = paper;
 
     return `<!DOCTYPE html>
 <html>
@@ -82,11 +83,11 @@ function buildQzPrintHtml(html: string, widthPx: number, widthMm: number): strin
 <style>
 @page { size: ${widthMm}mm auto; margin: 0; }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Courier New',monospace; font-size:13px; padding:3mm; background:#fff; color:#000; width:${widthPx}px; max-width:${widthMm}mm; }
-.divider { border-top:1px dashed #000; margin:5px 0; }
+body { font-family:'Courier New',monospace; font-size:${fontBase}px; padding:${padding}; background:#fff; color:#000; width:${widthPx}px; max-width:${widthMm}mm; }
+.divider { border-top:1px dashed #000; margin:4px 0; }
 .center { text-align:center; }
 .bold { font-weight:bold; }
-img { max-width: 80px; height: auto; display: block; margin: 0 auto 5px; }
+img { max-width: ${logoMaxPx}px; height: auto; display: block; margin: 0 auto 5px; }
 </style>
 </head>
 <body style="width:${widthPx}px;max-width:${widthMm}mm;height:auto;">
@@ -135,7 +136,7 @@ export async function printHtmlViaQz(html: string, options: QzPrintOptions = {})
 
         const config = qz.configs.create(printerName, qzConfig);
 
-        const fullHtml = buildQzPrintHtml(html, widthPx, widthMm);
+        const fullHtml = buildQzPrintHtml(html, paper);
 
         const printData: any = {
             type: 'pixel',

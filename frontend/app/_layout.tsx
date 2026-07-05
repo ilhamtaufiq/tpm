@@ -187,6 +187,21 @@ function RootLayoutContent() {
     }, [loaded, error]);
 
     useEffect(() => {
+        if (hasHydrated) {
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            if (!useAuthStore.getState().hasHydrated) {
+                console.warn('[LAYOUT] Auth hydration timeout — continuing startup');
+                useAuthStore.getState().setHasHydrated(true);
+            }
+        }, 5000);
+
+        return () => clearTimeout(timeout);
+    }, [hasHydrated]);
+
+    useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
             // Only lock if PIN is enabled AND we are NOT in development mode
             // This avoids annoying locks while developer is testing/switching windows
